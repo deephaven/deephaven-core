@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
@@ -10,13 +10,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb.FetchFileRequest",
+        name = "dhinternal.io.deephaven.proto.storage_pb.DeleteItemRequest",
         namespace = JsPackage.GLOBAL)
-public class FetchFileRequest {
+public class DeleteItemRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsOverlay
-        static FetchFileRequest.ToObjectReturnType create() {
+        static DeleteItemRequest.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -30,7 +30,7 @@ public class FetchFileRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsOverlay
-        static FetchFileRequest.ToObjectReturnType0 create() {
+        static DeleteItemRequest.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -41,15 +41,15 @@ public class FetchFileRequest {
         void setPath(String path);
     }
 
-    public static native FetchFileRequest deserializeBinary(Uint8Array bytes);
+    public static native DeleteItemRequest deserializeBinary(Uint8Array bytes);
 
-    public static native FetchFileRequest deserializeBinaryFromReader(
-            FetchFileRequest message, Object reader);
+    public static native DeleteItemRequest deserializeBinaryFromReader(
+            DeleteItemRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(FetchFileRequest message, Object writer);
+    public static native void serializeBinaryToWriter(DeleteItemRequest message, Object writer);
 
-    public static native FetchFileRequest.ToObjectReturnType toObject(
-            boolean includeInstance, FetchFileRequest msg);
+    public static native DeleteItemRequest.ToObjectReturnType toObject(
+            boolean includeInstance, DeleteItemRequest msg);
 
     public native String getPath();
 
@@ -57,7 +57,7 @@ public class FetchFileRequest {
 
     public native void setPath(String value);
 
-    public native FetchFileRequest.ToObjectReturnType0 toObject();
+    public native DeleteItemRequest.ToObjectReturnType0 toObject();
 
-    public native FetchFileRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native DeleteItemRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

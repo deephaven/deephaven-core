@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
@@ -11,7 +11,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb.ListItemsResponse",
+        name = "dhinternal.io.deephaven.proto.storage_pb.ListItemsResponse",
         namespace = JsPackage.GLOBAL)
 public class ListItemsResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

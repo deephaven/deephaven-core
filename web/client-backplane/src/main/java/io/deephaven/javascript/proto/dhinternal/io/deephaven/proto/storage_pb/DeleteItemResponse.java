@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsPackage;
@@ -6,7 +6,7 @@ import jsinterop.annotations.JsType;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb.DeleteItemResponse",
+        name = "dhinternal.io.deephaven.proto.storage_pb.DeleteItemResponse",
         namespace = JsPackage.GLOBAL)
 public class DeleteItemResponse {
     public static native DeleteItemResponse deserializeBinary(Uint8Array bytes);

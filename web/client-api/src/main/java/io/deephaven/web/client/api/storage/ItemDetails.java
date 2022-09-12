@@ -1,8 +1,8 @@
 package io.deephaven.web.client.api.storage;
 
 import elemental2.core.JsArray;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Notebook_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.FileInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Storage_pb;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FileInfo;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
@@ -13,12 +13,12 @@ public class ItemDetails {
 
     @JsMethod(namespace = "dh.storage.ItemDetails")
     public static ItemDetails file(String... pathParts) {
-        return new ItemDetails(JsArray.asJsArray(pathParts).join("/"), Notebook_pb.FileKind.getFILE(), null);
+        return new ItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.FileKind.getFILE(), null);
     }
 
     @JsMethod(namespace = "dh.storage.ItemDetails")
     public static ItemDetails directory(String... pathParts) {
-        return new ItemDetails(JsArray.asJsArray(pathParts).join("/"), Notebook_pb.FileKind.getDIRECTORY(), null);
+        return new ItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.FileKind.getDIRECTORY(), null);
     }
 
     public ItemDetails(String path, int kind, String size) {
@@ -45,7 +45,7 @@ public class ItemDetails {
     }
     @JsProperty
     public String getKind() {
-        return kind == Notebook_pb.FileKind.getDIRECTORY() ? "directory" : "file";
+        return kind == Storage_pb.FileKind.getDIRECTORY() ? "directory" : "file";
     }
     @JsProperty
     public Double getSize() {

@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb;
 
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -9,7 +9,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb.FileKindMap",
+        name = "dhinternal.io.deephaven.proto.storage_pb.FileKindMap",
         namespace = JsPackage.GLOBAL)
 public interface FileKindMap {
     @JsOverlay

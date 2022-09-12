@@ -1,18 +1,18 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb_service;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service;
 
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.CreateDirectoryRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.CreateDirectoryResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.DeleteItemRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.DeleteItemResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.FetchFileRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.FetchFileResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.ListItemsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.ListItemsResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.MoveItemRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.MoveItemResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.SaveFileRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.SaveFileResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.CreateDirectoryRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.CreateDirectoryResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.DeleteItemRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.DeleteItemResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FetchFileRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FetchFileResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ListItemsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ListItemsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.MoveItemRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.MoveItemResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.SaveFileRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.SaveFileResponse;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -23,15 +23,15 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb_service.NotebookServiceClient",
+        name = "dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient",
         namespace = JsPackage.GLOBAL)
-public class NotebookServiceClient {
+public class StorageServiceClient {
     @JsFunction
     public interface CreateDirectoryCallbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.CreateDirectoryCallbackFn.P0Type create() {
+            static StorageServiceClient.CreateDirectoryCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -55,7 +55,7 @@ public class NotebookServiceClient {
         }
 
         void onInvoke(
-                NotebookServiceClient.CreateDirectoryCallbackFn.P0Type p0, CreateDirectoryResponse p1);
+                StorageServiceClient.CreateDirectoryCallbackFn.P0Type p0, CreateDirectoryResponse p1);
     }
 
     @JsFunction
@@ -63,7 +63,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.CreateDirectoryMetadata_or_callbackFn.P0Type create() {
+            static StorageServiceClient.CreateDirectoryMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -87,14 +87,14 @@ public class NotebookServiceClient {
         }
 
         void onInvoke(
-                NotebookServiceClient.CreateDirectoryMetadata_or_callbackFn.P0Type p0,
+                StorageServiceClient.CreateDirectoryMetadata_or_callbackFn.P0Type p0,
                 CreateDirectoryResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateDirectoryMetadata_or_callbackUnionType {
         @JsOverlay
-        static NotebookServiceClient.CreateDirectoryMetadata_or_callbackUnionType of(Object o) {
+        static StorageServiceClient.CreateDirectoryMetadata_or_callbackUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -104,7 +104,7 @@ public class NotebookServiceClient {
         }
 
         @JsOverlay
-        default NotebookServiceClient.CreateDirectoryMetadata_or_callbackFn asCreateDirectoryMetadata_or_callbackFn() {
+        default StorageServiceClient.CreateDirectoryMetadata_or_callbackFn asCreateDirectoryMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -115,7 +115,7 @@ public class NotebookServiceClient {
 
         @JsOverlay
         default boolean isCreateDirectoryMetadata_or_callbackFn() {
-            return (Object) this instanceof NotebookServiceClient.CreateDirectoryMetadata_or_callbackFn;
+            return (Object) this instanceof StorageServiceClient.CreateDirectoryMetadata_or_callbackFn;
         }
     }
 
@@ -124,7 +124,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.DeleteItemCallbackFn.P0Type create() {
+            static StorageServiceClient.DeleteItemCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -147,7 +147,7 @@ public class NotebookServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(NotebookServiceClient.DeleteItemCallbackFn.P0Type p0, DeleteItemResponse p1);
+        void onInvoke(StorageServiceClient.DeleteItemCallbackFn.P0Type p0, DeleteItemResponse p1);
     }
 
     @JsFunction
@@ -155,7 +155,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.DeleteItemMetadata_or_callbackFn.P0Type create() {
+            static StorageServiceClient.DeleteItemMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -179,13 +179,13 @@ public class NotebookServiceClient {
         }
 
         void onInvoke(
-                NotebookServiceClient.DeleteItemMetadata_or_callbackFn.P0Type p0, DeleteItemResponse p1);
+                StorageServiceClient.DeleteItemMetadata_or_callbackFn.P0Type p0, DeleteItemResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface DeleteItemMetadata_or_callbackUnionType {
         @JsOverlay
-        static NotebookServiceClient.DeleteItemMetadata_or_callbackUnionType of(Object o) {
+        static StorageServiceClient.DeleteItemMetadata_or_callbackUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -195,7 +195,7 @@ public class NotebookServiceClient {
         }
 
         @JsOverlay
-        default NotebookServiceClient.DeleteItemMetadata_or_callbackFn asDeleteItemMetadata_or_callbackFn() {
+        default StorageServiceClient.DeleteItemMetadata_or_callbackFn asDeleteItemMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -206,7 +206,7 @@ public class NotebookServiceClient {
 
         @JsOverlay
         default boolean isDeleteItemMetadata_or_callbackFn() {
-            return (Object) this instanceof NotebookServiceClient.DeleteItemMetadata_or_callbackFn;
+            return (Object) this instanceof StorageServiceClient.DeleteItemMetadata_or_callbackFn;
         }
     }
 
@@ -215,7 +215,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.FetchFileCallbackFn.P0Type create() {
+            static StorageServiceClient.FetchFileCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -238,7 +238,7 @@ public class NotebookServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(NotebookServiceClient.FetchFileCallbackFn.P0Type p0, FetchFileResponse p1);
+        void onInvoke(StorageServiceClient.FetchFileCallbackFn.P0Type p0, FetchFileResponse p1);
     }
 
     @JsFunction
@@ -246,7 +246,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.FetchFileMetadata_or_callbackFn.P0Type create() {
+            static StorageServiceClient.FetchFileMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -270,13 +270,13 @@ public class NotebookServiceClient {
         }
 
         void onInvoke(
-                NotebookServiceClient.FetchFileMetadata_or_callbackFn.P0Type p0, FetchFileResponse p1);
+                StorageServiceClient.FetchFileMetadata_or_callbackFn.P0Type p0, FetchFileResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface FetchFileMetadata_or_callbackUnionType {
         @JsOverlay
-        static NotebookServiceClient.FetchFileMetadata_or_callbackUnionType of(Object o) {
+        static StorageServiceClient.FetchFileMetadata_or_callbackUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -286,7 +286,7 @@ public class NotebookServiceClient {
         }
 
         @JsOverlay
-        default NotebookServiceClient.FetchFileMetadata_or_callbackFn asFetchFileMetadata_or_callbackFn() {
+        default StorageServiceClient.FetchFileMetadata_or_callbackFn asFetchFileMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -297,7 +297,7 @@ public class NotebookServiceClient {
 
         @JsOverlay
         default boolean isFetchFileMetadata_or_callbackFn() {
-            return (Object) this instanceof NotebookServiceClient.FetchFileMetadata_or_callbackFn;
+            return (Object) this instanceof StorageServiceClient.FetchFileMetadata_or_callbackFn;
         }
     }
 
@@ -306,7 +306,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.ListItemsCallbackFn.P0Type create() {
+            static StorageServiceClient.ListItemsCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -329,7 +329,7 @@ public class NotebookServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(NotebookServiceClient.ListItemsCallbackFn.P0Type p0, ListItemsResponse p1);
+        void onInvoke(StorageServiceClient.ListItemsCallbackFn.P0Type p0, ListItemsResponse p1);
     }
 
     @JsFunction
@@ -337,7 +337,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.ListItemsMetadata_or_callbackFn.P0Type create() {
+            static StorageServiceClient.ListItemsMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -361,13 +361,13 @@ public class NotebookServiceClient {
         }
 
         void onInvoke(
-                NotebookServiceClient.ListItemsMetadata_or_callbackFn.P0Type p0, ListItemsResponse p1);
+                StorageServiceClient.ListItemsMetadata_or_callbackFn.P0Type p0, ListItemsResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ListItemsMetadata_or_callbackUnionType {
         @JsOverlay
-        static NotebookServiceClient.ListItemsMetadata_or_callbackUnionType of(Object o) {
+        static StorageServiceClient.ListItemsMetadata_or_callbackUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -377,7 +377,7 @@ public class NotebookServiceClient {
         }
 
         @JsOverlay
-        default NotebookServiceClient.ListItemsMetadata_or_callbackFn asListItemsMetadata_or_callbackFn() {
+        default StorageServiceClient.ListItemsMetadata_or_callbackFn asListItemsMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -388,7 +388,7 @@ public class NotebookServiceClient {
 
         @JsOverlay
         default boolean isListItemsMetadata_or_callbackFn() {
-            return (Object) this instanceof NotebookServiceClient.ListItemsMetadata_or_callbackFn;
+            return (Object) this instanceof StorageServiceClient.ListItemsMetadata_or_callbackFn;
         }
     }
 
@@ -397,7 +397,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.MoveItemCallbackFn.P0Type create() {
+            static StorageServiceClient.MoveItemCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -420,7 +420,7 @@ public class NotebookServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(NotebookServiceClient.MoveItemCallbackFn.P0Type p0, MoveItemResponse p1);
+        void onInvoke(StorageServiceClient.MoveItemCallbackFn.P0Type p0, MoveItemResponse p1);
     }
 
     @JsFunction
@@ -428,7 +428,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.MoveItemMetadata_or_callbackFn.P0Type create() {
+            static StorageServiceClient.MoveItemMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -452,13 +452,13 @@ public class NotebookServiceClient {
         }
 
         void onInvoke(
-                NotebookServiceClient.MoveItemMetadata_or_callbackFn.P0Type p0, MoveItemResponse p1);
+                StorageServiceClient.MoveItemMetadata_or_callbackFn.P0Type p0, MoveItemResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface MoveItemMetadata_or_callbackUnionType {
         @JsOverlay
-        static NotebookServiceClient.MoveItemMetadata_or_callbackUnionType of(Object o) {
+        static StorageServiceClient.MoveItemMetadata_or_callbackUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -468,7 +468,7 @@ public class NotebookServiceClient {
         }
 
         @JsOverlay
-        default NotebookServiceClient.MoveItemMetadata_or_callbackFn asMoveItemMetadata_or_callbackFn() {
+        default StorageServiceClient.MoveItemMetadata_or_callbackFn asMoveItemMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -479,7 +479,7 @@ public class NotebookServiceClient {
 
         @JsOverlay
         default boolean isMoveItemMetadata_or_callbackFn() {
-            return (Object) this instanceof NotebookServiceClient.MoveItemMetadata_or_callbackFn;
+            return (Object) this instanceof StorageServiceClient.MoveItemMetadata_or_callbackFn;
         }
     }
 
@@ -488,7 +488,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.SaveFileCallbackFn.P0Type create() {
+            static StorageServiceClient.SaveFileCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -511,7 +511,7 @@ public class NotebookServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(NotebookServiceClient.SaveFileCallbackFn.P0Type p0, SaveFileResponse p1);
+        void onInvoke(StorageServiceClient.SaveFileCallbackFn.P0Type p0, SaveFileResponse p1);
     }
 
     @JsFunction
@@ -519,7 +519,7 @@ public class NotebookServiceClient {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static NotebookServiceClient.SaveFileMetadata_or_callbackFn.P0Type create() {
+            static StorageServiceClient.SaveFileMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -543,13 +543,13 @@ public class NotebookServiceClient {
         }
 
         void onInvoke(
-                NotebookServiceClient.SaveFileMetadata_or_callbackFn.P0Type p0, SaveFileResponse p1);
+                StorageServiceClient.SaveFileMetadata_or_callbackFn.P0Type p0, SaveFileResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface SaveFileMetadata_or_callbackUnionType {
         @JsOverlay
-        static NotebookServiceClient.SaveFileMetadata_or_callbackUnionType of(Object o) {
+        static StorageServiceClient.SaveFileMetadata_or_callbackUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -559,7 +559,7 @@ public class NotebookServiceClient {
         }
 
         @JsOverlay
-        default NotebookServiceClient.SaveFileMetadata_or_callbackFn asSaveFileMetadata_or_callbackFn() {
+        default StorageServiceClient.SaveFileMetadata_or_callbackFn asSaveFileMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -570,24 +570,24 @@ public class NotebookServiceClient {
 
         @JsOverlay
         default boolean isSaveFileMetadata_or_callbackFn() {
-            return (Object) this instanceof NotebookServiceClient.SaveFileMetadata_or_callbackFn;
+            return (Object) this instanceof StorageServiceClient.SaveFileMetadata_or_callbackFn;
         }
     }
 
     public String serviceHost;
 
-    public NotebookServiceClient(String serviceHost, Object options) {}
+    public StorageServiceClient(String serviceHost, Object options) {}
 
-    public NotebookServiceClient(String serviceHost) {}
+    public StorageServiceClient(String serviceHost) {}
 
     @JsOverlay
     public final UnaryResponse createDirectory(
             CreateDirectoryRequest requestMessage,
             BrowserHeaders metadata_or_callback,
-            NotebookServiceClient.CreateDirectoryCallbackFn callback) {
+            StorageServiceClient.CreateDirectoryCallbackFn callback) {
         return createDirectory(
                 requestMessage,
-                Js.<NotebookServiceClient.CreateDirectoryMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.CreateDirectoryMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -597,18 +597,18 @@ public class NotebookServiceClient {
             CreateDirectoryRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return createDirectory(
                 requestMessage,
-                Js.<NotebookServiceClient.CreateDirectoryMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.CreateDirectoryMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse createDirectory(
             CreateDirectoryRequest requestMessage,
-            NotebookServiceClient.CreateDirectoryMetadata_or_callbackFn metadata_or_callback,
-            NotebookServiceClient.CreateDirectoryCallbackFn callback) {
+            StorageServiceClient.CreateDirectoryMetadata_or_callbackFn metadata_or_callback,
+            StorageServiceClient.CreateDirectoryCallbackFn callback) {
         return createDirectory(
                 requestMessage,
-                Js.<NotebookServiceClient.CreateDirectoryMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.CreateDirectoryMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -616,30 +616,30 @@ public class NotebookServiceClient {
     @JsOverlay
     public final UnaryResponse createDirectory(
             CreateDirectoryRequest requestMessage,
-            NotebookServiceClient.CreateDirectoryMetadata_or_callbackFn metadata_or_callback) {
+            StorageServiceClient.CreateDirectoryMetadata_or_callbackFn metadata_or_callback) {
         return createDirectory(
                 requestMessage,
-                Js.<NotebookServiceClient.CreateDirectoryMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.CreateDirectoryMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     public native UnaryResponse createDirectory(
             CreateDirectoryRequest requestMessage,
-            NotebookServiceClient.CreateDirectoryMetadata_or_callbackUnionType metadata_or_callback,
-            NotebookServiceClient.CreateDirectoryCallbackFn callback);
+            StorageServiceClient.CreateDirectoryMetadata_or_callbackUnionType metadata_or_callback,
+            StorageServiceClient.CreateDirectoryCallbackFn callback);
 
     public native UnaryResponse createDirectory(
             CreateDirectoryRequest requestMessage,
-            NotebookServiceClient.CreateDirectoryMetadata_or_callbackUnionType metadata_or_callback);
+            StorageServiceClient.CreateDirectoryMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse deleteItem(
             DeleteItemRequest requestMessage,
             BrowserHeaders metadata_or_callback,
-            NotebookServiceClient.DeleteItemCallbackFn callback) {
+            StorageServiceClient.DeleteItemCallbackFn callback) {
         return deleteItem(
                 requestMessage,
-                Js.<NotebookServiceClient.DeleteItemMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.DeleteItemMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -649,18 +649,18 @@ public class NotebookServiceClient {
             DeleteItemRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return deleteItem(
                 requestMessage,
-                Js.<NotebookServiceClient.DeleteItemMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.DeleteItemMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse deleteItem(
             DeleteItemRequest requestMessage,
-            NotebookServiceClient.DeleteItemMetadata_or_callbackFn metadata_or_callback,
-            NotebookServiceClient.DeleteItemCallbackFn callback) {
+            StorageServiceClient.DeleteItemMetadata_or_callbackFn metadata_or_callback,
+            StorageServiceClient.DeleteItemCallbackFn callback) {
         return deleteItem(
                 requestMessage,
-                Js.<NotebookServiceClient.DeleteItemMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.DeleteItemMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -668,30 +668,30 @@ public class NotebookServiceClient {
     @JsOverlay
     public final UnaryResponse deleteItem(
             DeleteItemRequest requestMessage,
-            NotebookServiceClient.DeleteItemMetadata_or_callbackFn metadata_or_callback) {
+            StorageServiceClient.DeleteItemMetadata_or_callbackFn metadata_or_callback) {
         return deleteItem(
                 requestMessage,
-                Js.<NotebookServiceClient.DeleteItemMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.DeleteItemMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     public native UnaryResponse deleteItem(
             DeleteItemRequest requestMessage,
-            NotebookServiceClient.DeleteItemMetadata_or_callbackUnionType metadata_or_callback,
-            NotebookServiceClient.DeleteItemCallbackFn callback);
+            StorageServiceClient.DeleteItemMetadata_or_callbackUnionType metadata_or_callback,
+            StorageServiceClient.DeleteItemCallbackFn callback);
 
     public native UnaryResponse deleteItem(
             DeleteItemRequest requestMessage,
-            NotebookServiceClient.DeleteItemMetadata_or_callbackUnionType metadata_or_callback);
+            StorageServiceClient.DeleteItemMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse fetchFile(
             FetchFileRequest requestMessage,
             BrowserHeaders metadata_or_callback,
-            NotebookServiceClient.FetchFileCallbackFn callback) {
+            StorageServiceClient.FetchFileCallbackFn callback) {
         return fetchFile(
                 requestMessage,
-                Js.<NotebookServiceClient.FetchFileMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.FetchFileMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -701,18 +701,18 @@ public class NotebookServiceClient {
             FetchFileRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return fetchFile(
                 requestMessage,
-                Js.<NotebookServiceClient.FetchFileMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.FetchFileMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse fetchFile(
             FetchFileRequest requestMessage,
-            NotebookServiceClient.FetchFileMetadata_or_callbackFn metadata_or_callback,
-            NotebookServiceClient.FetchFileCallbackFn callback) {
+            StorageServiceClient.FetchFileMetadata_or_callbackFn metadata_or_callback,
+            StorageServiceClient.FetchFileCallbackFn callback) {
         return fetchFile(
                 requestMessage,
-                Js.<NotebookServiceClient.FetchFileMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.FetchFileMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -720,30 +720,30 @@ public class NotebookServiceClient {
     @JsOverlay
     public final UnaryResponse fetchFile(
             FetchFileRequest requestMessage,
-            NotebookServiceClient.FetchFileMetadata_or_callbackFn metadata_or_callback) {
+            StorageServiceClient.FetchFileMetadata_or_callbackFn metadata_or_callback) {
         return fetchFile(
                 requestMessage,
-                Js.<NotebookServiceClient.FetchFileMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.FetchFileMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     public native UnaryResponse fetchFile(
             FetchFileRequest requestMessage,
-            NotebookServiceClient.FetchFileMetadata_or_callbackUnionType metadata_or_callback,
-            NotebookServiceClient.FetchFileCallbackFn callback);
+            StorageServiceClient.FetchFileMetadata_or_callbackUnionType metadata_or_callback,
+            StorageServiceClient.FetchFileCallbackFn callback);
 
     public native UnaryResponse fetchFile(
             FetchFileRequest requestMessage,
-            NotebookServiceClient.FetchFileMetadata_or_callbackUnionType metadata_or_callback);
+            StorageServiceClient.FetchFileMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse listItems(
             ListItemsRequest requestMessage,
             BrowserHeaders metadata_or_callback,
-            NotebookServiceClient.ListItemsCallbackFn callback) {
+            StorageServiceClient.ListItemsCallbackFn callback) {
         return listItems(
                 requestMessage,
-                Js.<NotebookServiceClient.ListItemsMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.ListItemsMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -753,18 +753,18 @@ public class NotebookServiceClient {
             ListItemsRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return listItems(
                 requestMessage,
-                Js.<NotebookServiceClient.ListItemsMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.ListItemsMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse listItems(
             ListItemsRequest requestMessage,
-            NotebookServiceClient.ListItemsMetadata_or_callbackFn metadata_or_callback,
-            NotebookServiceClient.ListItemsCallbackFn callback) {
+            StorageServiceClient.ListItemsMetadata_or_callbackFn metadata_or_callback,
+            StorageServiceClient.ListItemsCallbackFn callback) {
         return listItems(
                 requestMessage,
-                Js.<NotebookServiceClient.ListItemsMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.ListItemsMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -772,30 +772,30 @@ public class NotebookServiceClient {
     @JsOverlay
     public final UnaryResponse listItems(
             ListItemsRequest requestMessage,
-            NotebookServiceClient.ListItemsMetadata_or_callbackFn metadata_or_callback) {
+            StorageServiceClient.ListItemsMetadata_or_callbackFn metadata_or_callback) {
         return listItems(
                 requestMessage,
-                Js.<NotebookServiceClient.ListItemsMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.ListItemsMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     public native UnaryResponse listItems(
             ListItemsRequest requestMessage,
-            NotebookServiceClient.ListItemsMetadata_or_callbackUnionType metadata_or_callback,
-            NotebookServiceClient.ListItemsCallbackFn callback);
+            StorageServiceClient.ListItemsMetadata_or_callbackUnionType metadata_or_callback,
+            StorageServiceClient.ListItemsCallbackFn callback);
 
     public native UnaryResponse listItems(
             ListItemsRequest requestMessage,
-            NotebookServiceClient.ListItemsMetadata_or_callbackUnionType metadata_or_callback);
+            StorageServiceClient.ListItemsMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse moveItem(
             MoveItemRequest requestMessage,
             BrowserHeaders metadata_or_callback,
-            NotebookServiceClient.MoveItemCallbackFn callback) {
+            StorageServiceClient.MoveItemCallbackFn callback) {
         return moveItem(
                 requestMessage,
-                Js.<NotebookServiceClient.MoveItemMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.MoveItemMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -805,18 +805,18 @@ public class NotebookServiceClient {
             MoveItemRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return moveItem(
                 requestMessage,
-                Js.<NotebookServiceClient.MoveItemMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.MoveItemMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse moveItem(
             MoveItemRequest requestMessage,
-            NotebookServiceClient.MoveItemMetadata_or_callbackFn metadata_or_callback,
-            NotebookServiceClient.MoveItemCallbackFn callback) {
+            StorageServiceClient.MoveItemMetadata_or_callbackFn metadata_or_callback,
+            StorageServiceClient.MoveItemCallbackFn callback) {
         return moveItem(
                 requestMessage,
-                Js.<NotebookServiceClient.MoveItemMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.MoveItemMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -824,30 +824,30 @@ public class NotebookServiceClient {
     @JsOverlay
     public final UnaryResponse moveItem(
             MoveItemRequest requestMessage,
-            NotebookServiceClient.MoveItemMetadata_or_callbackFn metadata_or_callback) {
+            StorageServiceClient.MoveItemMetadata_or_callbackFn metadata_or_callback) {
         return moveItem(
                 requestMessage,
-                Js.<NotebookServiceClient.MoveItemMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.MoveItemMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     public native UnaryResponse moveItem(
             MoveItemRequest requestMessage,
-            NotebookServiceClient.MoveItemMetadata_or_callbackUnionType metadata_or_callback,
-            NotebookServiceClient.MoveItemCallbackFn callback);
+            StorageServiceClient.MoveItemMetadata_or_callbackUnionType metadata_or_callback,
+            StorageServiceClient.MoveItemCallbackFn callback);
 
     public native UnaryResponse moveItem(
             MoveItemRequest requestMessage,
-            NotebookServiceClient.MoveItemMetadata_or_callbackUnionType metadata_or_callback);
+            StorageServiceClient.MoveItemMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse saveFile(
             SaveFileRequest requestMessage,
             BrowserHeaders metadata_or_callback,
-            NotebookServiceClient.SaveFileCallbackFn callback) {
+            StorageServiceClient.SaveFileCallbackFn callback) {
         return saveFile(
                 requestMessage,
-                Js.<NotebookServiceClient.SaveFileMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.SaveFileMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -857,18 +857,18 @@ public class NotebookServiceClient {
             SaveFileRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return saveFile(
                 requestMessage,
-                Js.<NotebookServiceClient.SaveFileMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.SaveFileMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse saveFile(
             SaveFileRequest requestMessage,
-            NotebookServiceClient.SaveFileMetadata_or_callbackFn metadata_or_callback,
-            NotebookServiceClient.SaveFileCallbackFn callback) {
+            StorageServiceClient.SaveFileMetadata_or_callbackFn metadata_or_callback,
+            StorageServiceClient.SaveFileCallbackFn callback) {
         return saveFile(
                 requestMessage,
-                Js.<NotebookServiceClient.SaveFileMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.SaveFileMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
@@ -876,19 +876,19 @@ public class NotebookServiceClient {
     @JsOverlay
     public final UnaryResponse saveFile(
             SaveFileRequest requestMessage,
-            NotebookServiceClient.SaveFileMetadata_or_callbackFn metadata_or_callback) {
+            StorageServiceClient.SaveFileMetadata_or_callbackFn metadata_or_callback) {
         return saveFile(
                 requestMessage,
-                Js.<NotebookServiceClient.SaveFileMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<StorageServiceClient.SaveFileMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     public native UnaryResponse saveFile(
             SaveFileRequest requestMessage,
-            NotebookServiceClient.SaveFileMetadata_or_callbackUnionType metadata_or_callback,
-            NotebookServiceClient.SaveFileCallbackFn callback);
+            StorageServiceClient.SaveFileMetadata_or_callbackUnionType metadata_or_callback,
+            StorageServiceClient.SaveFileCallbackFn callback);
 
     public native UnaryResponse saveFile(
             SaveFileRequest requestMessage,
-            NotebookServiceClient.SaveFileMetadata_or_callbackUnionType metadata_or_callback);
+            StorageServiceClient.SaveFileMetadata_or_callbackUnionType metadata_or_callback);
 }

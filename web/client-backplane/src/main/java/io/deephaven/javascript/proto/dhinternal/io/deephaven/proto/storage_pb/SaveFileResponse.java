@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsPackage;
@@ -6,7 +6,7 @@ import jsinterop.annotations.JsType;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb.SaveFileResponse",
+        name = "dhinternal.io.deephaven.proto.storage_pb.SaveFileResponse",
         namespace = JsPackage.GLOBAL)
 public class SaveFileResponse {
     public static native SaveFileResponse deserializeBinary(Uint8Array bytes);

@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
@@ -10,13 +10,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb.SaveFileRequest",
+        name = "dhinternal.io.deephaven.proto.storage_pb.FetchFileResponse",
         namespace = JsPackage.GLOBAL)
-public class SaveFileRequest {
+public class FetchFileResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetContentsUnionType {
         @JsOverlay
-        static SaveFileRequest.GetContentsUnionType of(Object o) {
+        static FetchFileResponse.GetContentsUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -44,7 +44,7 @@ public class SaveFileRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface SetContentsValueUnionType {
         @JsOverlay
-        static SaveFileRequest.SetContentsValueUnionType of(Object o) {
+        static FetchFileResponse.SetContentsValueUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -74,7 +74,7 @@ public class SaveFileRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetContentsUnionType {
             @JsOverlay
-            static SaveFileRequest.ToObjectReturnType.GetContentsUnionType of(Object o) {
+            static FetchFileResponse.ToObjectReturnType.GetContentsUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -100,39 +100,27 @@ public class SaveFileRequest {
         }
 
         @JsOverlay
-        static SaveFileRequest.ToObjectReturnType create() {
+        static FetchFileResponse.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        SaveFileRequest.ToObjectReturnType.GetContentsUnionType getContents();
+        FetchFileResponse.ToObjectReturnType.GetContentsUnionType getContents();
 
         @JsProperty
-        String getPath();
-
-        @JsProperty
-        boolean isNewFile();
-
-        @JsProperty
-        void setContents(SaveFileRequest.ToObjectReturnType.GetContentsUnionType contents);
+        void setContents(FetchFileResponse.ToObjectReturnType.GetContentsUnionType contents);
 
         @JsOverlay
         default void setContents(String contents) {
             setContents(
-                    Js.<SaveFileRequest.ToObjectReturnType.GetContentsUnionType>uncheckedCast(contents));
+                    Js.<FetchFileResponse.ToObjectReturnType.GetContentsUnionType>uncheckedCast(contents));
         }
 
         @JsOverlay
         default void setContents(Uint8Array contents) {
             setContents(
-                    Js.<SaveFileRequest.ToObjectReturnType.GetContentsUnionType>uncheckedCast(contents));
+                    Js.<FetchFileResponse.ToObjectReturnType.GetContentsUnionType>uncheckedCast(contents));
         }
-
-        @JsProperty
-        void setNewFile(boolean newFile);
-
-        @JsProperty
-        void setPath(String path);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -140,7 +128,7 @@ public class SaveFileRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetContentsUnionType {
             @JsOverlay
-            static SaveFileRequest.ToObjectReturnType0.GetContentsUnionType of(Object o) {
+            static FetchFileResponse.ToObjectReturnType0.GetContentsUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -166,80 +154,60 @@ public class SaveFileRequest {
         }
 
         @JsOverlay
-        static SaveFileRequest.ToObjectReturnType0 create() {
+        static FetchFileResponse.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        SaveFileRequest.ToObjectReturnType0.GetContentsUnionType getContents();
+        FetchFileResponse.ToObjectReturnType0.GetContentsUnionType getContents();
 
         @JsProperty
-        String getPath();
-
-        @JsProperty
-        boolean isNewFile();
-
-        @JsProperty
-        void setContents(SaveFileRequest.ToObjectReturnType0.GetContentsUnionType contents);
+        void setContents(FetchFileResponse.ToObjectReturnType0.GetContentsUnionType contents);
 
         @JsOverlay
         default void setContents(String contents) {
             setContents(
-                    Js.<SaveFileRequest.ToObjectReturnType0.GetContentsUnionType>uncheckedCast(contents));
+                    Js.<FetchFileResponse.ToObjectReturnType0.GetContentsUnionType>uncheckedCast(contents));
         }
 
         @JsOverlay
         default void setContents(Uint8Array contents) {
             setContents(
-                    Js.<SaveFileRequest.ToObjectReturnType0.GetContentsUnionType>uncheckedCast(contents));
+                    Js.<FetchFileResponse.ToObjectReturnType0.GetContentsUnionType>uncheckedCast(contents));
         }
-
-        @JsProperty
-        void setNewFile(boolean newFile);
-
-        @JsProperty
-        void setPath(String path);
     }
 
-    public static native SaveFileRequest deserializeBinary(Uint8Array bytes);
+    public static native FetchFileResponse deserializeBinary(Uint8Array bytes);
 
-    public static native SaveFileRequest deserializeBinaryFromReader(
-            SaveFileRequest message, Object reader);
+    public static native FetchFileResponse deserializeBinaryFromReader(
+            FetchFileResponse message, Object reader);
 
-    public static native void serializeBinaryToWriter(SaveFileRequest message, Object writer);
+    public static native void serializeBinaryToWriter(FetchFileResponse message, Object writer);
 
-    public static native SaveFileRequest.ToObjectReturnType toObject(
-            boolean includeInstance, SaveFileRequest msg);
+    public static native FetchFileResponse.ToObjectReturnType toObject(
+            boolean includeInstance, FetchFileResponse msg);
 
-    public native SaveFileRequest.GetContentsUnionType getContents();
+    public native FetchFileResponse.GetContentsUnionType getContents();
 
     public native String getContents_asB64();
 
     public native Uint8Array getContents_asU8();
 
-    public native boolean getNewFile();
-
-    public native String getPath();
-
     public native Uint8Array serializeBinary();
 
-    public native void setContents(SaveFileRequest.SetContentsValueUnionType value);
+    public native void setContents(FetchFileResponse.SetContentsValueUnionType value);
 
     @JsOverlay
     public final void setContents(String value) {
-        setContents(Js.<SaveFileRequest.SetContentsValueUnionType>uncheckedCast(value));
+        setContents(Js.<FetchFileResponse.SetContentsValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public final void setContents(Uint8Array value) {
-        setContents(Js.<SaveFileRequest.SetContentsValueUnionType>uncheckedCast(value));
+        setContents(Js.<FetchFileResponse.SetContentsValueUnionType>uncheckedCast(value));
     }
 
-    public native void setNewFile(boolean value);
+    public native FetchFileResponse.ToObjectReturnType0 toObject();
 
-    public native void setPath(String value);
-
-    public native SaveFileRequest.ToObjectReturnType0 toObject();
-
-    public native SaveFileRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native FetchFileResponse.ToObjectReturnType0 toObject(boolean includeInstance);
 }

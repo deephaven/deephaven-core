@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
@@ -10,13 +10,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb.DeleteItemRequest",
+        name = "dhinternal.io.deephaven.proto.storage_pb.CreateDirectoryRequest",
         namespace = JsPackage.GLOBAL)
-public class DeleteItemRequest {
+public class CreateDirectoryRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsOverlay
-        static DeleteItemRequest.ToObjectReturnType create() {
+        static CreateDirectoryRequest.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -30,7 +30,7 @@ public class DeleteItemRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsOverlay
-        static DeleteItemRequest.ToObjectReturnType0 create() {
+        static CreateDirectoryRequest.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -41,15 +41,15 @@ public class DeleteItemRequest {
         void setPath(String path);
     }
 
-    public static native DeleteItemRequest deserializeBinary(Uint8Array bytes);
+    public static native CreateDirectoryRequest deserializeBinary(Uint8Array bytes);
 
-    public static native DeleteItemRequest deserializeBinaryFromReader(
-            DeleteItemRequest message, Object reader);
+    public static native CreateDirectoryRequest deserializeBinaryFromReader(
+            CreateDirectoryRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(DeleteItemRequest message, Object writer);
+    public static native void serializeBinaryToWriter(CreateDirectoryRequest message, Object writer);
 
-    public static native DeleteItemRequest.ToObjectReturnType toObject(
-            boolean includeInstance, DeleteItemRequest msg);
+    public static native CreateDirectoryRequest.ToObjectReturnType toObject(
+            boolean includeInstance, CreateDirectoryRequest msg);
 
     public native String getPath();
 
@@ -57,7 +57,7 @@ public class DeleteItemRequest {
 
     public native void setPath(String value);
 
-    public native DeleteItemRequest.ToObjectReturnType0 toObject();
+    public native CreateDirectoryRequest.ToObjectReturnType0 toObject();
 
-    public native DeleteItemRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native CreateDirectoryRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

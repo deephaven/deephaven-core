@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb_service;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service;
 
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import jsinterop.annotations.JsFunction;
@@ -11,7 +11,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.notebook_pb_service.RequestStream",
+        name = "dhinternal.io.deephaven.proto.storage_pb_service.RequestStream",
         namespace = JsPackage.GLOBAL)
 public interface RequestStream<T> {
     @JsFunction
