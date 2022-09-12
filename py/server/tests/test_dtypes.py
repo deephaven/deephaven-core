@@ -192,6 +192,13 @@ class DTypesTestCase(BaseTestCase):
         j_array = dtypes.array(DateTime, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))
 
+    def test_bool_array(self):
+        np_array = np.array([True, False], np.bool_)
+        j_array = dtypes.array(dtypes.bool_, np_array)
+        j_array2 = dtypes.array(dtypes.bool_, [True, False])
+        self.assertEqual(j_array[0], j_array2[0])
+        self.assertEqual(j_array[1], j_array2[1])
+
 
 if __name__ == '__main__':
     unittest.main()
