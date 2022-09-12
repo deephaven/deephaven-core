@@ -69,7 +69,6 @@ public class TestRollingSum extends BaseUpdateByTest {
         }
     }
 
-
     @Test
     public void testStaticZeroKeyFwdRevWindow() {
         final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
@@ -82,6 +81,114 @@ public class TestRollingSum extends BaseUpdateByTest {
         for (String col : t.getDefinition().getColumnNamesArray()) {
             assertWithRollingSumTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
                     summed.getColumn(col).getType(), prevTicks, postTicks);
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyTimed() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
+                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final OperationControl resetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
+
+        Duration prevTime = Duration.ofMinutes(10);
+        Duration postTime = Duration.ZERO;
+
+        final Table summed =
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
+                ));
+
+
+        DateTime[] ts = (DateTime[])t.getColumn("ts").getDirect();
+        long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = ts[i].getNanos();
+        }
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
+                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyFwdWindowTimed() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
+                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final OperationControl resetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
+
+        Duration prevTime = Duration.ZERO;
+        Duration postTime = Duration.ofMinutes(10);
+
+        final Table summed =
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
+                ));
+
+
+        DateTime[] ts = (DateTime[])t.getColumn("ts").getDirect();
+        long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = ts[i].getNanos();
+        }
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
+                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyFwdRevWindowTimed() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
+                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final OperationControl resetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
+
+        Duration prevTime = Duration.ofMinutes(10);
+        Duration postTime = Duration.ofMinutes(10);
+
+        final Table summed =
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
+                ));
+
+
+        DateTime[] ts = (DateTime[])t.getColumn("ts").getDirect();
+        long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = ts[i].getNanos();
+        }
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
+                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -130,8 +237,7 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                        "doubleCol", "boolCol"
-// TODO: put these back                        ,"bigIntCol", "bigDecimalCol"
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
                 ), "Sym");
 
 
@@ -150,40 +256,49 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testStaticZeroKeyTimed() {
-        final QueryTable t = createTestTable(1000, false, false, false, 0xFFFABBBC,
+    public void testStaticBucketedTimed() {
+        doTestStaticBucketedTimed(false, Duration.ofMinutes(10), Duration.ZERO);
+    }
+
+    @Test
+    public void testStaticBucketedFwdWindowTimed() {
+        doTestStaticBucketedTimed(false, Duration.ZERO, Duration.ofMinutes(10));
+    }
+
+    @Test
+    public void testStaticBucketedFwdRevWindowTimed() {
+        doTestStaticBucketedTimed(false, Duration.ofMinutes(10), Duration.ofMinutes(10));
+    }
+
+    private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
+        final QueryTable t = createTestTable(10000, true, grouped, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
-        final OperationControl skipControl = OperationControl.builder()
-                .onNullValue(BadDataBehavior.SKIP)
-                .onNanValue(BadDataBehavior.SKIP).build();
-
-        final OperationControl resetControl = OperationControl.builder()
-                .onNullValue(BadDataBehavior.RESET)
-                .onNanValue(BadDataBehavior.RESET).build();
-
-        Duration prevTime = Duration.ofMinutes(10);
-        Duration postTime = Duration.ZERO;
-
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                        "doubleCol", "boolCol"
-// TODO: put these back                        ,"bigIntCol", "bigDecimalCol"
-                ));
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
+                ), "Sym");
 
 
-        DateTime[] ts = (DateTime[])t.getColumn("ts").getDirect();
-        long[] timestamps = new long[t.intSize()];
-        for (int i = 0; i < t.intSize(); i++) {
-            timestamps[i] = ts[i].getNanos();
-        }
+        final PartitionedTable preOp = t.partitionBy("Sym");
+        final PartitionedTable postOp = summed.partitionBy("Sym");
 
-        for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
-                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
-        }
+        String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
+
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            DateTime[] ts = (DateTime[])source.getColumn("ts").getDirect();
+            long[] timestamps = new long[source.intSize()];
+            for (int i = 0; i < source.intSize(); i++) {
+                timestamps[i] = ts[i].getNanos();
+            }
+            Arrays.stream(columns).forEach(col -> {
+                assertWithRollingSumTime(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(), timestamps,
+                        actual.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+            });
+            return source;
+        });
     }
 
     // endregion
@@ -211,6 +326,47 @@ public class TestRollingSum extends BaseUpdateByTest {
                     protected Table e() {
                         return bucketed ? t.updateBy(UpdateByOperation.RollingSum(100), "Sym")
                                 : t.updateBy(UpdateByOperation.RollingSum(100));
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
+            TstUtils.validate("Table", nuggets);
+        }
+    }
+
+    @Test
+    public void testZeroKeyAppendOnlyTimed() {
+        doTestAppendOnlyTimed(false);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyTimed() {
+        doTestAppendOnlyTimed(true);
+    }
+
+
+    private void doTestAppendOnlyTimed(boolean bucketed) {
+        final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
+                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+        final QueryTable t = result.t;
+        t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+        t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+        Duration prevTime = Duration.ofMinutes(10);
+        Duration postTime = Duration.ZERO;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return bucketed ? t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym")
+                                : t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime));
                     }
                 }
         };
@@ -270,9 +426,7 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testBucketedGeneralTicking() {
-        final CreateResult result = createTestTable(100, true, false, true, 0x31313131);
-
-//        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -355,51 +509,6 @@ public class TestRollingSum extends BaseUpdateByTest {
             final int head = Math.max(0, i - prevTicks + 1);
             final int tail = Math.min(values.length - 1, i + postTicks);
 
-
-            // compute everything in this window
-            for (int computeIdx = head; computeIdx <= tail; computeIdx++) {
-                if (!isNull(values[computeIdx])) {
-                    if (result[i] == NULL_LONG) {
-                        result[i] = values[computeIdx];
-                    } else {
-                        result[i] += values[computeIdx];
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private long[] rollingSumTime(short[] values, long[] timestamps, long prevNanos, long postNanos) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new long[0];
-        }
-
-        long[] result = new long[values.length];
-
-        int head = 0;
-        int tail = 0;
-
-        for (int i = 0; i < values.length; i++) {
-            result[i] = NULL_LONG;
-
-            // set the head and the tail
-            final long headTime = timestamps[i] - prevNanos;
-            final long tailTime = timestamps[i] + postNanos;
-
-            // advance head and tail until they are in the correct spots
-            while (head < values.length && timestamps[head] < headTime) {
-                head++;
-            }
-
-            while (tail < values.length && timestamps[tail] < tailTime) {
-                tail++;
-            }
 
             // compute everything in this window
             for (int computeIdx = head; computeIdx <= tail; computeIdx++) {
@@ -625,6 +734,412 @@ public class TestRollingSum extends BaseUpdateByTest {
         return result;
     }
 
+    private long[] rollingSumTime(byte[] values, long[] timestamps, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new long[0];
+        }
+
+        long[] result = new long[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = NULL_LONG;
+
+            // check the current timestamp. skip if NULL
+            if (timestamps[i] == NULL_LONG) {
+                continue;
+            }
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] <= tailTime) {
+                tail++;
+            }
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx < tail; computeIdx++) {
+                if (!isNull(values[computeIdx])) {
+                    if (result[i] == NULL_LONG) {
+                        result[i] = values[computeIdx];
+                    } else {
+                        result[i] += values[computeIdx];
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private long[] rollingSumTime(short[] values, long[] timestamps, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new long[0];
+        }
+
+        long[] result = new long[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = NULL_LONG;
+
+            // check the current timestamp. skip if NULL
+            if (timestamps[i] == NULL_LONG) {
+                continue;
+            }
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] <= tailTime) {
+                tail++;
+            }
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx < tail; computeIdx++) {
+                if (!isNull(values[computeIdx])) {
+                    if (result[i] == NULL_LONG) {
+                        result[i] = values[computeIdx];
+                    } else {
+                        result[i] += values[computeIdx];
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private long[] rollingSumTime(int[] values, long[] timestamps, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new long[0];
+        }
+
+        long[] result = new long[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = NULL_LONG;
+
+            // check the current timestamp. skip if NULL
+            if (timestamps[i] == NULL_LONG) {
+                continue;
+            }
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] <= tailTime) {
+                tail++;
+            }
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx < tail; computeIdx++) {
+                if (!isNull(values[computeIdx])) {
+                    if (result[i] == NULL_LONG) {
+                        result[i] = values[computeIdx];
+                    } else {
+                        result[i] += values[computeIdx];
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private long[] rollingSumTime(long[] values, long[] timestamps, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new long[0];
+        }
+
+        long[] result = new long[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = NULL_LONG;
+
+            // check the current timestamp. skip if NULL
+            if (timestamps[i] == NULL_LONG) {
+                continue;
+            }
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] <= tailTime) {
+                tail++;
+            }
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx < tail; computeIdx++) {
+                if (!isNull(values[computeIdx])) {
+                    if (result[i] == NULL_LONG) {
+                        result[i] = values[computeIdx];
+                    } else {
+                        result[i] += values[computeIdx];
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private float[] rollingSumTime(float[] values, long[] timestamps, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new float[0];
+        }
+
+        float[] result = new float[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = NULL_FLOAT;
+
+            // check the current timestamp. skip if NULL
+            if (timestamps[i] == NULL_LONG) {
+                continue;
+            }
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] <= tailTime) {
+                tail++;
+            }
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx < tail; computeIdx++) {
+                if (!isNull(values[computeIdx])) {
+                    if (result[i] == NULL_FLOAT) {
+                        result[i] = values[computeIdx];
+                    } else {
+                        result[i] += values[computeIdx];
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private double[] rollingSumTime(double[] values, long[] timestamps, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new double[0];
+        }
+
+        double[] result = new double[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = NULL_DOUBLE;
+
+            // check the current timestamp. skip if NULL
+            if (timestamps[i] == NULL_LONG) {
+                continue;
+            }
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] <= tailTime) {
+                tail++;
+            }
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx < tail; computeIdx++) {
+                if (!isNull(values[computeIdx])) {
+                    if (result[i] == NULL_DOUBLE) {
+                        result[i] = values[computeIdx];
+                    } else {
+                        result[i] += values[computeIdx];
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private long[] rollingSumTime(Boolean[] values, long[] timestamps, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new long[0];
+        }
+
+        long[] result = new long[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = NULL_LONG;
+
+            // check the current timestamp. skip if NULL
+            if (timestamps[i] == NULL_LONG) {
+                continue;
+            }
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] <= tailTime) {
+                tail++;
+            }
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx < tail; computeIdx++) {
+                if (!isNull(values[computeIdx])) {
+                    if (result[i] == NULL_LONG) {
+                        result[i] = values[computeIdx] ? 1 : 0;
+                    } else {
+                        result[i] += (values[computeIdx] ? 1 : 0);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private Object[] rollingSumTime(Object[] values, long[] timestamps, final boolean isBD, long prevNanos, long postNanos) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new Object[0];
+        }
+
+        Object[] result = new Object[values.length];
+
+        int head = 0;
+        int tail = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            result[i] = null;
+
+            // check the current timestamp. skip if NULL
+            if (timestamps[i] == NULL_LONG) {
+                continue;
+            }
+
+            // set the head and the tail
+            final long headTime = timestamps[i] - prevNanos;
+            final long tailTime = timestamps[i] + postNanos;
+
+            // advance head and tail until they are in the correct spots
+            while (head < values.length && timestamps[head] < headTime) {
+                head++;
+            }
+
+            while (tail < values.length && timestamps[tail] <= tailTime) {
+                tail++;
+            }
+
+            // compute everything in this window
+            for (int computeIdx = head; computeIdx < tail; computeIdx++) {
+                if (values[computeIdx] != null) {
+                    if (result[i] == null) {
+                        result[i] = values[computeIdx];
+                    } else {
+                        if (isBD) {
+                            result[i] = ((BigDecimal) result[i]).add((BigDecimal) values[computeIdx],
+                                    UpdateByControl.mathContextDefault());
+                        } else {
+                            result[i] = ((BigInteger) result[i]).add((BigInteger) values[computeIdx]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+
     final void assertWithRollingSumTicks(final @NotNull Object expected, final @NotNull Object actual, Class type, int prevTicks, int postTicks) {
         final float deltaF = .001f;
         final double deltaD = .001d;
@@ -644,7 +1159,11 @@ public class TestRollingSum extends BaseUpdateByTest {
         } else if (expected instanceof Boolean[]) {
             assertArrayEquals(rollingSum((Boolean[]) expected, prevTicks, postTicks), (long[]) actual);
         } else {
-//            assertArrayEquals(rollingSum((Object[]) expected, type == BigDecimal.class, prevTicks, postTicks), (Object[]) actual);
+            if (type == BigDecimal.class) {
+                assertArrayEquals(rollingSum((Object[]) expected, true, prevTicks, postTicks), (Object[]) actual);
+            } else if (type == BigInteger.class) {
+                assertArrayEquals(rollingSum((Object[]) expected, false, prevTicks, postTicks), (Object[]) actual);
+            }
         }
     }
 
@@ -653,25 +1172,26 @@ public class TestRollingSum extends BaseUpdateByTest {
         final float deltaF = .001f;
         final double deltaD = .001d;
 
-        if (expected instanceof short[]) {
+        if (expected instanceof byte[]) {
+            assertArrayEquals(rollingSumTime((byte[]) expected, timestamps, prevTime, postTime), (long[]) actual);
+        } else if (expected instanceof short[]) {
             assertArrayEquals(rollingSumTime((short[]) expected, timestamps, prevTime, postTime), (long[]) actual);
+        } else if (expected instanceof int[]) {
+            assertArrayEquals(rollingSumTime((int[]) expected, timestamps, prevTime, postTime), (long[]) actual);
+        } else if (expected instanceof long[]) {
+            assertArrayEquals(rollingSumTime((long[]) expected, timestamps, prevTime, postTime), (long[]) actual);
+        } else if (expected instanceof float[]) {
+            assertArrayEquals(rollingSumTime((float[]) expected, timestamps, prevTime, postTime), (float[]) actual, deltaF);
+        } else if (expected instanceof double[]) {
+            assertArrayEquals(rollingSumTime((double[]) expected, timestamps, prevTime, postTime), (double[]) actual, deltaD);
+        } else if (expected instanceof Boolean[]) {
+            assertArrayEquals(rollingSumTime((Boolean[]) expected, timestamps, prevTime, postTime), (long[]) actual);
+        } else {
+            if (type == BigDecimal.class) {
+                assertArrayEquals(rollingSumTime((Object[]) expected, timestamps, true, prevTime, postTime), (Object[]) actual);
+            } else if (type == BigInteger.class) {
+                assertArrayEquals(rollingSumTime((Object[]) expected, timestamps, false, prevTime, postTime), (Object[]) actual);
+            }
         }
-//        if (expected instanceof byte[]) {
-//            assertArrayEquals(rollingSum((byte[]) expected, prevTicks, postTicks), (long[]) actual);
-//        } else if (expected instanceof short[]) {
-//            assertArrayEquals(rollingSum((short[]) expected, prevTicks, postTicks), (long[]) actual);
-//        } else if (expected instanceof int[]) {
-//            assertArrayEquals(rollingSum((int[]) expected, prevTicks, postTicks), (long[]) actual);
-//        } else if (expected instanceof long[]) {
-//            assertArrayEquals(rollingSum((long[]) expected, prevTicks, postTicks), (long[]) actual);
-//        } else if (expected instanceof float[]) {
-//            assertArrayEquals(rollingSum((float[]) expected, prevTicks, postTicks), (float[]) actual, deltaF);
-//        } else if (expected instanceof double[]) {
-//            assertArrayEquals(rollingSum((double[]) expected, prevTicks, postTicks), (double[]) actual, deltaD);
-//        } else if (expected instanceof Boolean[]) {
-//            assertArrayEquals(rollingSum((Boolean[]) expected, prevTicks, postTicks), (long[]) actual);
-//        } else {
-//            assertArrayEquals(rollingSum((Object[]) expected, type == BigDecimal.class, prevTicks, postTicks), (Object[]) actual);
-//        }
     }
 }

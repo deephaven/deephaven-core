@@ -73,8 +73,8 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
                                    @Nullable final ColumnSource<?> timestampColumnSource,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final ColumnSource<Short> valueSource,
-                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+                                   @NotNull final ColumnSource<Short> valueSource
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
@@ -98,7 +98,7 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
     @Override
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        Short val = ctx.candidateValuesChunk.get(pos);
+        short val = ctx.candidateValuesChunk.get(pos);
 
         // increase the running sum
         if (val != NULL_SHORT) {
@@ -107,17 +107,21 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
             } else {
                 ctx.currentVal += val;
             }
+        } else {
+            ctx.nullCount++;
         }
     }
 
     @Override
     public void pop(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        Short val = ctx.candidateValuesChunk.get(pos);
+        short val = ctx.candidateValuesChunk.get(pos);
 
         // reduce the running sum
         if (val != NULL_SHORT) {
             ctx.currentVal -= val;
+        } else {
+            ctx.nullCount--;
         }
     }
 
@@ -141,7 +145,6 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
             computeTime(ctx, inputKeys);
         }
 
-
         //noinspection unchecked
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
@@ -152,8 +155,8 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
 
         final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
         for (int ii = 0; ii < runLength; ii++) {
+            // the output value is computed by push/pop operations triggered by fillWindow
             ctx.fillWindowTicks(ctx, posChunk.get(ii));
-            // the sum was computed by push/pop operations
             localOutputValues.set(ii, ctx.currentVal);
         }
     }
@@ -167,8 +170,8 @@ public class ShortRollingSumOperator extends BaseWindowedShortUpdateByOperator {
             LongChunk timestampChunk = timestampColumnSource.getChunk(context, inputKeys).asLongChunk();
 
             for (int ii = 0; ii < inputKeys.intSize(); ii++) {
+                // the output value is computed by push/pop operations triggered by fillWindow
                 ctx.fillWindowTime(ctx, timestampChunk.get(ii));
-                // the sum was computed by push/pop operations
                 localOutputValues.set(ii, ctx.currentVal);
             }
         }

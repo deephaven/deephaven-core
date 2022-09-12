@@ -1,9 +1,11 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.LongRingBuffer;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedFloatChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
@@ -11,14 +13,12 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedFloatUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedShortUpdateByOperator;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableFloat;
@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
 
@@ -43,8 +44,6 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     protected class Context extends BaseWindowedFloatUpdateByOperator.Context {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
         public final SizedFloatChunk<Values> outputValues;
-
-        public LinkedList<Float> windowValues = new LinkedList<>();
 
         // position data for the chunk being currently processed
         public SizedLongChunk<? extends RowKeys> valuePositionChunk;
@@ -87,8 +86,8 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
                                    @Nullable final ColumnSource<?> timestampColumnSource,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final ColumnSource<Float> valueSource,
-                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+                                   @NotNull final ColumnSource<Float> valueSource
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
@@ -113,14 +112,18 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
         float val = ctx.candidateValuesChunk.get(pos);
-        ctx.windowValues.addLast(val);
+        if (val == NULL_FLOAT) {
+            ctx.nullCount++;
+        }
     }
 
     @Override
     public void pop(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
         float val = ctx.candidateValuesChunk.get(pos);
-        ctx.windowValues.pop();
+        if (val == NULL_FLOAT) {
+            ctx.nullCount--;
+        }
     }
 
     @Override
@@ -137,41 +140,74 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
         final Context ctx = (Context) context;
 
         if (timestampColumnName == null) {
-            // produce position data for the window (will be timestamps for time-based)
-            // TODO: gotta be a better way than creating two rowsets
-            try (final RowSet rs = inputKeys.asRowSet();
-                 final RowSet positions = ctx.sourceRowSet.invert(rs)) {
-                positions.fillRowKeyChunk(ctx.valuePositionChunk.get());
-            }
+            computeTicks(ctx, posChunk, inputKeys.intSize());
+        } else {
+            computeTime(ctx, inputKeys);
         }
 
-        computeTicks(ctx, 0, inputKeys.intSize());
         //noinspection unchecked
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
 
     private void computeTicks(@NotNull final Context ctx,
-                              final int runStart,
+                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
                               final int runLength) {
 
         final WritableFloatChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            if (timestampColumnName == null) {
-                ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get().get(ii));
-            }
+        for (int ii = 0; ii < runLength; ii++) {
+            ctx.fillWindowTicks(ctx, posChunk.get(ii));
 
-            MutableFloat sum = new MutableFloat(NULL_FLOAT);
-            ctx.windowValues.forEach(v-> {
+            float sum = NULL_FLOAT;
+
+            LongRingBuffer.Iterator it = ctx.windowIndices.iterator();
+            while (it.hasNext()) {
+                float v = ctx.candidateValuesChunk.get((int)it.next());
                 if (v != QueryConstants.NULL_FLOAT) {
-                    if (sum.getValue() == NULL_FLOAT) {
-                        sum.setValue(v);
+                    if (sum == NULL_FLOAT) {
+                        sum = v;
                     } else {
-                        sum.add(v);
+                        sum += v;
                     }
                 }
-            });
+            }
+            localOutputValues.set(ii, sum);
+        }
+    }
 
-            localOutputValues.set(ii, sum.getValue());
+    private void computeTime(@NotNull final Context ctx,
+                             @NotNull final RowSequence inputKeys) {
+
+        final WritableFloatChunk<Values> localOutputValues = ctx.outputValues.get();
+        // get the timestamp values for this chunk
+        try (final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(inputKeys.intSize())) {
+            LongChunk timestampChunk = timestampColumnSource.getChunk(context, inputKeys).asLongChunk();
+
+            for (int ii = 0; ii < inputKeys.intSize(); ii++) {
+                long ts = timestampChunk.get(ii);
+
+                // does this value have a valid timestamp
+                if (ts == NULL_LONG) {
+                    localOutputValues.set(ii, NULL_FLOAT);
+                } else {
+                    // the output value is computed by push/pop operations triggered by fillWindow
+                    ctx.fillWindowTime(ctx, timestampChunk.get(ii));
+
+                    float sum = NULL_FLOAT;
+
+                    LongRingBuffer.Iterator it = ctx.windowIndices.iterator();
+                    while (it.hasNext()) {
+                        float v = ctx.candidateValuesChunk.get((int)it.next());
+                        if (v != QueryConstants.NULL_FLOAT) {
+                            if (sum == NULL_FLOAT) {
+                                sum = v;
+                            } else {
+                                sum += v;
+                            }
+                        }
+                    }
+                    localOutputValues.set(ii, sum);
+                }
+            }
         }
     }
 

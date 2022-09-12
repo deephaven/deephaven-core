@@ -44,14 +44,10 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
 
         public long currentVal = NULL_LONG;
 
-        // position data for the chunk being currently processed
-        public SizedLongChunk<? extends RowKeys> valuePositionChunk;
-
         protected Context(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
             this.outputValues = new SizedLongChunk<>(chunkSize);
-            this.valuePositionChunk = new SizedLongChunk<>(chunkSize);
             this.timestampSsa = timestampSsa;
         }
 
@@ -60,7 +56,6 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
             super.close();
             outputValues.close();
             fillContext.close();
-            this.valuePositionChunk.close();
         }
     }
 
@@ -75,7 +70,6 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
         final Context ctx = (Context) context;
         ctx.outputValues.ensureCapacity(chunkSize);
         ctx.fillContext.ensureCapacity(chunkSize);
-        ctx.valuePositionChunk.ensureCapacity(chunkSize);
     }
 
     public ByteRollingSumOperator(@NotNull final MatchPair pair,
@@ -85,8 +79,8 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
                                    @Nullable final ColumnSource<?> timestampColumnSource,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final ColumnSource<Byte> valueSource,
-                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+                                   @NotNull final ColumnSource<Byte> valueSource
                                    // region extra-constructor-args
                                ,final byte nullValue
                                    // endregion extra-constructor-args
@@ -112,7 +106,7 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
     @Override
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        Byte val = ctx.candidateValuesChunk.get(pos);
+        byte val = ctx.candidateValuesChunk.get(pos);
 
         // increase the running sum
         if (val != NULL_BYTE) {
@@ -121,17 +115,21 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
             } else {
                 ctx.currentVal += val;
             }
+        } else {
+            ctx.nullCount++;
         }
     }
 
     @Override
     public void pop(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        Byte val = ctx.candidateValuesChunk.get(pos);
+        byte val = ctx.candidateValuesChunk.get(pos);
 
         // reduce the running sum
         if (val != NULL_BYTE) {
             ctx.currentVal -= val;
+        } else {
+            ctx.nullCount--;
         }
     }
 
@@ -150,31 +148,40 @@ public class ByteRollingSumOperator extends BaseWindowedByteUpdateByOperator {
         final Context ctx = (Context) context;
 
         if (timestampColumnName == null) {
-            // produce position data for the window (will be timestamps for time-based)
-            // TODO: gotta be a better way than creating two rowsets
-            try (final RowSet rs = inputKeys.asRowSet();
-                 final RowSet positions = ctx.sourceRowSet.invert(rs)) {
-                positions.fillRowKeyChunk(ctx.valuePositionChunk.get());
-            }
+            computeTicks(ctx, posChunk, inputKeys.intSize());
+        } else {
+            computeTime(ctx, inputKeys);
         }
-
-        computeTicks(ctx, 0, inputKeys.intSize());
 
         //noinspection unchecked
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
 
     private void computeTicks(@NotNull final Context ctx,
-                              final int runStart,
+                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
                               final int runLength) {
 
         final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            if (timestampColumnName == null) {
-                ctx.fillWindowTicks(ctx, ctx.valuePositionChunk.get().get(ii));
-            }
-            // the sum was computed by push/pop operations
+        for (int ii = 0; ii < runLength; ii++) {
+            // the output value is computed by push/pop operations triggered by fillWindow
+            ctx.fillWindowTicks(ctx, posChunk.get(ii));
             localOutputValues.set(ii, ctx.currentVal);
+        }
+    }
+
+    private void computeTime(@NotNull final Context ctx,
+                             @NotNull final RowSequence inputKeys) {
+
+        final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
+        // get the timestamp values for this chunk
+        try (final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(inputKeys.intSize())) {
+            LongChunk timestampChunk = timestampColumnSource.getChunk(context, inputKeys).asLongChunk();
+
+            for (int ii = 0; ii < inputKeys.intSize(); ii++) {
+                // the output value is computed by push/pop operations triggered by fillWindow
+                ctx.fillWindowTime(ctx, timestampChunk.get(ii));
+                localOutputValues.set(ii, ctx.currentVal);
+            }
         }
     }
 

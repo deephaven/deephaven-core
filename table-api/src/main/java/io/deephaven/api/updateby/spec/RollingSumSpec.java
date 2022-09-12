@@ -109,8 +109,8 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
                         || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
                         || inputType.equals(byte.class)
 
-//                        // is boxed numeric?
-//                        || Number.class.isAssignableFrom(inputType)
+                        // is boxed numeric?
+                        || Number.class.isAssignableFrom(inputType)
 
                         // is boolean?
                         || inputType == boolean.class || inputType == Boolean.class;

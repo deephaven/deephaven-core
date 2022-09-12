@@ -104,9 +104,14 @@ public interface UpdateByOperator {
                                            final boolean initialStep);
 
         /**
-         * Return the rows computed by the {@Code determineAffectedRows()}
+         * Return the affected rows computed by the {@Code determineAffectedRows()}
          */
         RowSet getAffectedRows();
+
+        /**
+         * Return the influencer rows computed by the {@Code determineAffectedRows()}
+         */
+        RowSet getInfluencerRows();
 
         LongSegmentedSortedArray getTimestampSsa();
     }

@@ -1,52 +1,46 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortRollingSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedLongChunk;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.chunk.sized.SizedObjectChunk;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.table.impl.updateby.internal.*;
+import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Collections;
 import java.util.Map;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_INT;
+public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdateByOperator<BigDecimal> {
+    @NotNull
+    private final MathContext mathContext;
 
-public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
+    private final WritableColumnSource<BigDecimal> outputSource;
+    private final WritableColumnSource<BigDecimal> maybeInnerSource;
 
-    // RollingSum will output Long values for integral types
-    private final WritableColumnSource<Long> outputSource;
-    private final WritableColumnSource<Long> maybeInnerSource;
-
-    // region extra-fields
-    // endregion extra-fields
-
-    protected class Context extends BaseWindowedIntUpdateByOperator.Context {
+    protected class Context extends BaseWindowedObjectUpdateByOperator<BigDecimal>.Context {
         public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
-        public final SizedLongChunk<Values> outputValues;
+        public final SizedObjectChunk<BigDecimal, Values> outputValues;
 
-        public long currentVal = NULL_LONG;
+        public BigDecimal currentVal = null;
 
         protected Context(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
-            this.outputValues = new SizedLongChunk<>(chunkSize);
+            this.outputValues = new SizedObjectChunk<>(chunkSize);
             this.timestampSsa = timestampSsa;
         }
 
@@ -71,28 +65,30 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
         ctx.fillContext.ensureCapacity(chunkSize);
     }
 
-    public IntRollingSumOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @NotNull final OperationControl control,
-                                   @Nullable final String timestampColumnName,
-                                   @Nullable final ColumnSource<?> timestampColumnSource,
-                                   final long reverseTimeScaleUnits,
-                                   final long forwardTimeScaleUnits,
-                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
-                                   @NotNull final ColumnSource<Integer> valueSource
-                                   // region extra-constructor-args
-                                   // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, control, timestampColumnName, timestampColumnSource, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource);
+
+    public BigDecimalRollingSumOperator(@NotNull final MatchPair pair,
+                                        @NotNull final String[] affectingColumns,
+                                        @NotNull final OperationControl control,
+                                        @Nullable final String timestampColumnName,
+                                        @Nullable final ColumnSource<?> timestampColumnSource,
+                                        final long reverseTimeScaleUnits,
+                                        final long forwardTimeScaleUnits,
+                                        @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+                                        @NotNull final ColumnSource<Object> valueSource
+                                        // region extra-constructor-args
+                                        // endregion extra-constructor-args
+                                        , @NotNull final MathContext mathContext) {
+        super(pair, affectingColumns, control, timestampColumnName, timestampColumnSource, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource, BigDecimal.class);
+        this.mathContext = mathContext;
         if(redirContext.isRedirected()) {
             // region create-dense
-            this.maybeInnerSource = new LongArraySource();
+            this.maybeInnerSource = new ObjectArraySource<BigDecimal>(BigDecimal.class);
             // endregion create-dense
             this.outputSource = new WritableRedirectedColumnSource(redirContext.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
-            this.outputSource = new LongSparseArraySource();
+            this.outputSource = new ObjectSparseArraySource<BigDecimal>(BigDecimal.class);
             // endregion create-sparse
         }
 
@@ -103,14 +99,14 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
     @Override
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        int val = ctx.candidateValuesChunk.get(pos);
+        BigDecimal val = (BigDecimal)ctx.candidateValuesChunk.get(pos);
 
         // increase the running sum
-        if (val != NULL_INT) {
-            if (ctx.currentVal == NULL_LONG) {
+        if (val != null) {
+            if (ctx.currentVal == null) {
                 ctx.currentVal = val;
             } else {
-                ctx.currentVal += val;
+                ctx.currentVal = ctx.currentVal.add(val, mathContext);
             }
         } else {
             ctx.nullCount++;
@@ -120,11 +116,11 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
     @Override
     public void pop(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        int val = ctx.candidateValuesChunk.get(pos);
+        BigDecimal val = (BigDecimal)ctx.candidateValuesChunk.get(pos);
 
         // reduce the running sum
-        if (val != NULL_INT) {
-            ctx.currentVal -= val;
+        if (val != null) {
+            ctx.currentVal = ctx.currentVal.subtract(val, mathContext);
         } else {
             ctx.nullCount--;
         }
@@ -133,15 +129,15 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
     @Override
     public void reset(UpdateContext context) {
         final Context ctx = (Context) context;
-        ctx.currentVal = NULL_LONG;
+        ctx.currentVal = null;
     }
 
     @Override
-    public void doProcessChunk(@NotNull final BaseWindowedIntUpdateByOperator.Context context,
-                              @NotNull final RowSequence inputKeys,
-                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                              @NotNull final Chunk<Values> workingChunk) {
+    public void doProcessChunk(@NotNull final BaseWindowedObjectUpdateByOperator<BigDecimal>.Context context,
+                               @NotNull final RowSequence inputKeys,
+                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+                               @Nullable final LongChunk<OrderedRowKeys> posChunk,
+                               @NotNull final Chunk<Values> workingChunk) {
         final Context ctx = (Context) context;
 
         if (timestampColumnName == null) {
@@ -158,7 +154,7 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
                               @Nullable final LongChunk<OrderedRowKeys> posChunk,
                               final int runLength) {
 
-        final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
+        final WritableObjectChunk<BigDecimal, Values> localOutputValues = ctx.outputValues.get();
         for (int ii = 0; ii < runLength; ii++) {
             // the output value is computed by push/pop operations triggered by fillWindow
             ctx.fillWindowTicks(ctx, posChunk.get(ii));
@@ -169,10 +165,10 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
     private void computeTime(@NotNull final Context ctx,
                              @NotNull final RowSequence inputKeys) {
 
-        final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
+        final WritableObjectChunk<BigDecimal, Values> localOutputValues = ctx.outputValues.get();
         // get the timestamp values for this chunk
         try (final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(inputKeys.intSize())) {
-            LongChunk timestampChunk = timestampColumnSource.getChunk(context, inputKeys).asLongChunk();
+            LongChunk<? extends Values> timestampChunk = timestampColumnSource.getChunk(context, inputKeys).asLongChunk();
 
             for (int ii = 0; ii < inputKeys.intSize(); ii++) {
                 // the output value is computed by push/pop operations triggered by fillWindow
@@ -200,6 +196,6 @@ public class IntRollingSumOperator extends BaseWindowedIntUpdateByOperator {
     public void applyOutputShift(@NotNull final UpdateContext context,
                                  @NotNull final RowSet subIndexToShift,
                                  final long delta) {
-        ((LongSparseArraySource)outputSource).shift(subIndexToShift, delta);
+        ((ObjectSparseArraySource<BigDecimal>)outputSource).shift(subIndexToShift, delta);
     }
 }

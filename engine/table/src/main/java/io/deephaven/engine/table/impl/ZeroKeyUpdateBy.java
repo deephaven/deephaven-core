@@ -632,12 +632,13 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
         @Override
         public void onUpdate(TableUpdate upstream) {
+            // update the Ssa
+            if (timestampColumnName != null) {
+                processUpdateForSsa(upstream);
+            }
 
             try (final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
-                // update the Ssa
-                if (timestampColumnName != null) {
-                    processUpdateForSsa(upstream);
-                }
+
 
                 if (applyShifts) {
                     if (redirContext.isRedirected()) {

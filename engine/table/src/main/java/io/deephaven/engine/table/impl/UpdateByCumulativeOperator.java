@@ -116,6 +116,10 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
             return affectedRows;
         }
 
+        public RowSet getInfluencerRows() {
+            return affectedRows;
+        }
+
         public RowSetBuilderSequential getModifiedBuilder() {
             if(modifiedBuilder == null) {
                 modifiedBuilder = RowSetFactory.builderSequential();
