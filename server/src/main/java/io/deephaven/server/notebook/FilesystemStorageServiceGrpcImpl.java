@@ -18,9 +18,9 @@ import io.deephaven.proto.backplane.grpc.ListItemsRequest;
 import io.deephaven.proto.backplane.grpc.ListItemsResponse;
 import io.deephaven.proto.backplane.grpc.MoveItemRequest;
 import io.deephaven.proto.backplane.grpc.MoveItemResponse;
-import io.deephaven.proto.backplane.grpc.NotebookServiceGrpc;
 import io.deephaven.proto.backplane.grpc.SaveFileRequest;
 import io.deephaven.proto.backplane.grpc.SaveFileResponse;
+import io.deephaven.proto.backplane.grpc.StorageServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
@@ -37,7 +37,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Singleton
-public class FilesystemStorageServiceGrpcImpl extends NotebookServiceGrpc.NotebookServiceImplBase {
+public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.StorageServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(FilesystemStorageServiceGrpcImpl.class);
 
     private static final String STORAGE_PATH = Configuration.getInstance().getStringWithDefault("storage.path", "<workspace>/storage")

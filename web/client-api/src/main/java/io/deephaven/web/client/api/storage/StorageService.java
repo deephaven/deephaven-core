@@ -4,19 +4,19 @@ import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.CreateDirectoryRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.CreateDirectoryResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.DeleteItemRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.DeleteItemResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.FetchFileRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.FetchFileResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.ListItemsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.ListItemsResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.MoveItemRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.MoveItemResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.SaveFileRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb.SaveFileResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb_service.NotebookServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.CreateDirectoryRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.CreateDirectoryResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.DeleteItemRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.DeleteItemResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FetchFileRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FetchFileResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ListItemsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ListItemsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.MoveItemRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.MoveItemResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.SaveFileRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.SaveFileResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.WorkerConnection;
 import jsinterop.annotations.JsMethod;
@@ -29,8 +29,8 @@ public class StorageService {
         this.connection = connection;
     }
 
-    private NotebookServiceClient client() {
-        return connection.notebookServiceClient();
+    private StorageServiceClient client() {
+        return connection.storageServiceClient();
     }
 
     private BrowserHeaders metadata() {
