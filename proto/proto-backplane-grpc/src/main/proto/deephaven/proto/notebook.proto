@@ -1,0 +1,89 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/notebook";
+
+/*
+ * Notebook/script management service
+*/
+service NotebookService {
+  rpc ListItems(ListItemsRequest) returns (ListItemsResponse) {}
+  rpc FetchFile(FetchFileRequest) returns (FetchFileResponse) {}
+  // Can create new files or modify existing
+  rpc SaveFile(SaveFileRequest) returns (SaveFileResponse) {}
+  rpc MoveItem(MoveItemRequest) returns (MoveItemResponse) {}
+  rpc CreateDirectory(CreateDirectoryRequest) returns (CreateDirectoryResponse) {}
+  rpc DeleteItem(DeleteItemRequest) returns (DeleteItemResponse) {}
+}
+
+message ListItemsRequest {
+  string path = 1;// the path to the directory to list. empty to list top level
+  optional string filter_glob = 2;// A pattern to filter for, with "*" as a wildcard
+}
+
+enum FileKind {
+  UNKNOWN = 0;// Should not be used, exists only to indicate that this was unset
+  DIRECTORY = 1;
+  FILE = 2;
+}
+
+message FileInfo {
+  string path = 1;
+  FileKind kind = 2;
+  sint64 size = 3 [jstype=JS_STRING];
+}
+
+message ListItemsResponse {
+  repeated FileInfo items = 1;
+}
+
+//message ByteRange {
+//  sint64 start = 1 [jstype=JS_STRING];
+//  sint64 end = 2 [jstype=JS_STRING];
+//}
+
+
+message FetchFileRequest {
+  string path = 1;
+//  ByteRange range = 2;//helpful? do we need this to save too, or have a truncate/append?
+}
+message FetchFileResponse {
+  bytes contents = 1;
+}
+
+message SaveFileRequest {
+  // True to force new file creation and prevent overwriting an existing file
+  bool new_file = 1;
+  string path = 2;
+  bytes contents = 3;
+}
+message SaveFileResponse {
+}
+
+message MoveItemRequest {
+  string old_path = 1;
+  string new_path = 2;
+}
+
+message MoveItemResponse {
+}
+
+message CreateDirectoryRequest {
+  string path = 1;
+}
+
+message CreateDirectoryResponse {
+
+}
+
+message DeleteItemRequest {
+  string path = 1;
+}
+message DeleteItemResponse {
+}

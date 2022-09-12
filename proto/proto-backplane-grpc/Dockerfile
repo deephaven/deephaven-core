@@ -24,7 +24,8 @@ RUN set -eux; \
     /includes/deephaven/proto/table.proto \
     /includes/deephaven/proto/application.proto \
     /includes/deephaven/proto/inputtable.proto \
-    /includes/deephaven/proto/partitionedtable.proto; \
+    /includes/deephaven/proto/partitionedtable.proto \
+    /includes/deephaven/proto/notebook.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-ts=/usr/src/app/node_modules/.bin/protoc-gen-ts \
     --js_out=import_style=commonjs:/generated/js \
@@ -40,7 +41,8 @@ RUN set -eux; \
     /includes/deephaven/proto/table.proto \
     /includes/deephaven/proto/application.proto \
     /includes/deephaven/proto/inputtable.proto \
-    /includes/deephaven/proto/partitionedtable.proto; \
+    /includes/deephaven/proto/partitionedtable.proto \
+    /includes/deephaven/proto/notebook.proto; \
   python3 -m grpc_tools.protoc \
     --grpc_python_out=/generated/python \
     --python_out=/generated/python \
@@ -52,7 +54,8 @@ RUN set -eux; \
     /includes/deephaven/proto/table.proto \
     /includes/deephaven/proto/application.proto \
     /includes/deephaven/proto/inputtable.proto \
-    /includes/deephaven/proto/partitionedtable.proto; \
+    /includes/deephaven/proto/partitionedtable.proto \
+    /includes/deephaven/proto/notebook.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-go=/opt/protoc-gen-go \
     --plugin=protoc-gen-go-grpc=/opt/protoc-gen-go-grpc \
@@ -68,4 +71,5 @@ RUN set -eux; \
     /includes/deephaven/proto/table.proto \
     /includes/deephaven/proto/application.proto \
     /includes/deephaven/proto/inputtable.proto \
-    /includes/deephaven/proto/partitionedtable.proto;
+    /includes/deephaven/proto/partitionedtable.proto \
+    /includes/deephaven/proto/notebook.proto;

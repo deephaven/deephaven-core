@@ -40,6 +40,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Lo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.notebook_pb_service.NotebookServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
@@ -181,6 +182,7 @@ public class WorkerConnection {
     private InputTableServiceClient inputTableServiceClient;
     private ObjectServiceClient objectServiceClient;
     private PartitionedTableServiceClient partitionedTableServiceClient;
+    private NotebookServiceClient notebookServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -224,6 +226,7 @@ public class WorkerConnection {
         objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         partitionedTableServiceClient =
                 new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        notebookServiceClient = new NotebookServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -923,6 +926,9 @@ public class WorkerConnection {
 
     public PartitionedTableServiceClient partitionedTableServiceClient() {
         return partitionedTableServiceClient;
+    }
+    public NotebookServiceClient notebookServiceClient() {
+        return notebookServiceClient;
     }
 
     public BrowserHeaders metadata() {
