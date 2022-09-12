@@ -8,6 +8,7 @@ rootProject.name='Deephaven Community Core'
 
 String[] mods = [
         'Util',
+        'QueryUtil',
         'Numerics',
         'TableLogger',
         'Plot',

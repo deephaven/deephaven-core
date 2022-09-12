@@ -1,0 +1,283 @@
+package io.deephaven.queryutil.dataadapter;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterUtil;
+import io.deephaven.util.QueryConstants;
+import org.apache.commons.lang3.mutable.MutableInt;
+
+import java.util.Arrays;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static io.deephaven.engine.table.impl.TstUtils.i;
+
+public class TableToRecordListenerTest extends RefreshingTableTestCase {
+
+    @SuppressWarnings("FieldCanBeLocal") // can't be local; for retention
+    private TableToRecordListener<ObjectNode> tableToRecordListener;
+
+    public void testJsonRecordListenerNoAsync() {
+        runJsonRecordListenerTest(false);
+    }
+
+    public void testJsonRecordListenerAsync() {
+        runJsonRecordListenerTest(true);
+    }
+
+    public void runJsonRecordListenerTest(boolean async) {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(2, 4, 6, 8).toTracking(),
+                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
+                TableTools.col("KeyCol2", 0, 0, 1, 1),
+                TableTools.col("StringCol", "Aa", null, "Cc", "Dd"),
+                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D'),
+                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4),
+                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
+                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
+                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
+                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L, 40_000_000_000L),
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d)
+        );
+        TableTools.show(source);
+
+        Queue<ObjectNode> addedUpdated = new ConcurrentLinkedDeque<>();
+        Queue<ObjectNode> removed = new ConcurrentLinkedDeque<>();
+
+        ReentrantLock l = !async ? null : new ReentrantLock();
+        Condition recordsProcessedCondition = !async ? null : l.newCondition();
+        MutableInt nProcessedRecords = !async ? null : new MutableInt(0);
+
+        final boolean processInitialData = true;
+
+        tableToRecordListener = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> new TableToRecordListener<>(
+                "desc",
+                source,
+                JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol", "DoubleCol")),
+                addedUpdated::add,
+                removed::add,
+                processInitialData,
+                async,
+                !async ? null : nUpdatesProcessed -> {
+                    try {
+                        l.lock();
+                        nProcessedRecords.setValue(nUpdatesProcessed);
+                        recordsProcessedCondition.signal();
+                    } finally {
+                        l.unlock();
+                    }
+                }
+        ));
+
+        Runnable awaitRecordProcessing;
+        if (!async) {
+            awaitRecordProcessing = () -> {
+            };
+        } else {
+            awaitRecordProcessing = () -> {
+                final int timeout = 10;
+                final TimeUnit timeoutUnit = TimeUnit.SECONDS;
+
+                l.lock();
+                try {
+                    if (nProcessedRecords.intValue() == 0 && !recordsProcessedCondition.await(timeout, timeoutUnit)) {
+                        throw new RuntimeException("No records processed after " + timeout + " " + timeoutUnit);
+                    }
+
+                    if (nProcessedRecords.intValue() <= 0) {
+                        throw new IllegalStateException();
+                    }
+
+                    nProcessedRecords.setValue(0);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Interrupted while waiting for records to process", e);
+                } finally {
+                    l.unlock();
+                }
+            };
+        }
+
+        ObjectNode record = addedUpdated.remove();
+        assertNotNull(record);
+
+        assertEquals("KeyA", record.get("KeyCol1").textValue());
+        assertEquals(0, record.get("KeyCol2").intValue());
+        assertEquals("Aa", record.get("StringCol").textValue());
+        assertEquals('A', record.get("CharCol").textValue().charAt(0));
+        assertEquals((byte) 0, (byte) record.get("ByteCol").shortValue());
+        assertEquals((short) 1, record.get("ShortCol").shortValue());
+        assertEquals(100, record.get("IntCol").intValue());
+        assertEquals(0.1f, record.get("FloatCol").floatValue());
+        assertEquals(10_000_000_000L, record.get("LongCol").longValue());
+        assertEquals(1.1d, record.get("DoubleCol").doubleValue());
+
+        record = addedUpdated.remove();
+        assertNotNull(record);
+
+        assertEquals("KeyB", record.get("KeyCol1").textValue());
+        assertEquals(0, record.get("KeyCol2").intValue());
+        assertTrue(record.get("StringCol").isNull());
+        assertTrue(record.get("CharCol").isNull());
+        assertTrue(record.get("ByteCol").isNull());
+        assertTrue(record.get("ShortCol").isNull());
+        assertTrue(record.get("IntCol").isNull());
+        assertTrue(record.get("FloatCol").isNull());
+        assertTrue(record.get("LongCol").isNull());
+        assertTrue(record.get("DoubleCol").isNull());
+
+        record = addedUpdated.remove();
+        assertNotNull(record);
+
+        assertEquals("KeyA", record.get("KeyCol1").textValue());
+        assertEquals(1, record.get("KeyCol2").intValue());
+        assertEquals("Cc", record.get("StringCol").textValue());
+        assertEquals("C", record.get("CharCol").textValue());
+        assertEquals((byte) 3, record.get("ByteCol").shortValue());
+        assertEquals((short) 3, record.get("ShortCol").shortValue());
+        assertEquals(300, record.get("IntCol").intValue());
+        assertEquals(0.3f, record.get("FloatCol").floatValue());
+        assertEquals(30_000_000_000L, record.get("LongCol").longValue());
+        assertEquals(3.3d, record.get("DoubleCol").doubleValue());
+
+        record = addedUpdated.remove();
+        assertNotNull(record);
+
+        assertEquals("KeyB", record.get("KeyCol1").textValue());
+        assertEquals(1, record.get("KeyCol2").intValue());
+        assertEquals("Dd", record.get("StringCol").textValue());
+        assertEquals("D", record.get("CharCol").textValue());
+        assertEquals((byte) 4, record.get("ByteCol").shortValue());
+        assertEquals((short) 4, record.get("ShortCol").shortValue());
+        assertEquals(400, record.get("IntCol").intValue());
+        assertEquals(0.4f, record.get("FloatCol").floatValue());
+        assertEquals(40_000_000_000L, record.get("LongCol").longValue());
+        assertEquals(4.4d, record.get("DoubleCol").doubleValue());
+
+        assertTrue(addedUpdated.isEmpty());
+        assertTrue(removed.isEmpty());
+
+        // modify a row
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(4).toTracking(),
+                    TableTools.col("KeyCol1", "KeyB"),
+                    TableTools.col("KeyCol2", 0),
+                    TableTools.col("StringCol", "Zz"),
+                    TableTools.charCol("CharCol", 'Z'),
+                    TableTools.byteCol("ByteCol", (byte) 9),
+                    TableTools.shortCol("ShortCol", (short) 9),
+                    TableTools.intCol("IntCol", 900),
+                    TableTools.floatCol("FloatCol", 0.9f),
+                    TableTools.longCol("LongCol", 90_000_000_000L),
+                    TableTools.doubleCol("DoubleCol", 9.9d)
+            );
+            TableTools.show(source);
+            source.notifyListeners(i(), i(), i(4));
+        });
+
+        awaitRecordProcessing.run();
+
+        // check the new row at the modified index
+        record = addedUpdated.remove();
+        assertNotNull(record);
+
+        assertEquals("KeyB", record.get("KeyCol1").textValue());
+        assertEquals(0, record.get("KeyCol2").intValue());
+        assertEquals("Zz", record.get("StringCol").textValue());
+        assertEquals("Z", record.get("CharCol").textValue());
+        assertEquals((byte) 9, record.get("ByteCol").shortValue());
+        assertEquals((short) 9, record.get("ShortCol").shortValue());
+        assertEquals(900, record.get("IntCol").intValue());
+        assertEquals(0.9f, record.get("FloatCol").floatValue());
+        assertEquals(90_000_000_000L, record.get("LongCol").longValue());
+        assertEquals(9.9d, record.get("DoubleCol").doubleValue());
+
+        // check the old row at the modified index
+        record = removed.remove();
+        assertNotNull(record);
+
+        assertEquals("KeyB", record.get("KeyCol1").textValue());
+        assertEquals(0, record.get("KeyCol2").intValue());
+        assertTrue(record.get("StringCol").isNull());
+        assertTrue(record.get("CharCol").isNull());
+        assertTrue(record.get("ByteCol").isNull());
+        assertTrue(record.get("ShortCol").isNull());
+        assertTrue(record.get("IntCol").isNull());
+        assertTrue(record.get("FloatCol").isNull());
+        assertTrue(record.get("LongCol").isNull());
+        assertTrue(record.get("DoubleCol").isNull());
+
+        assertTrue(addedUpdated.isEmpty());
+        assertTrue(removed.isEmpty());
+
+        // remove a row
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(source, i(6));
+            TableTools.show(source);
+            source.notifyListeners(i(), i(6), i());
+        });
+
+        awaitRecordProcessing.run();
+
+        record = removed.remove();
+        assertNotNull(record);
+
+        assertEquals("KeyA", record.get("KeyCol1").textValue());
+        assertEquals(1, record.get("KeyCol2").intValue());
+        assertEquals("Cc", record.get("StringCol").textValue());
+        assertEquals("C", record.get("CharCol").textValue());
+        assertEquals((byte) 3, record.get("ByteCol").shortValue());
+        assertEquals((short) 3, record.get("ShortCol").shortValue());
+        assertEquals(300, record.get("IntCol").intValue());
+        assertEquals(0.3f, record.get("FloatCol").floatValue());
+        assertEquals(30_000_000_000L, record.get("LongCol").longValue());
+        assertEquals(3.3d, record.get("DoubleCol").doubleValue());
+
+        assertTrue(addedUpdated.isEmpty());
+        assertTrue(removed.isEmpty());
+
+        // add a row (same one that was removed, but new index)
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(7).toTracking(),
+                    TableTools.col("KeyCol1", "KeyA"),
+                    TableTools.col("KeyCol2", 1),
+                    TableTools.col("StringCol", "Cc"),
+                    TableTools.charCol("CharCol", 'C'),
+                    TableTools.byteCol("ByteCol", (byte) 3),
+                    TableTools.shortCol("ShortCol", (short) 3),
+                    TableTools.intCol("IntCol", 300),
+                    TableTools.floatCol("FloatCol", 0.3f),
+                    TableTools.longCol("LongCol", 30_000_000_000L),
+                    TableTools.doubleCol("DoubleCol", 3.3d)
+            );
+            TableTools.show(source);
+            source.notifyListeners(i(7), i(), i());
+        });
+
+        awaitRecordProcessing.run();
+
+        record = addedUpdated.remove();
+        assertNotNull(record);
+
+        assertEquals("KeyA", record.get("KeyCol1").textValue());
+        assertEquals(1, record.get("KeyCol2").intValue());
+        assertEquals("Cc", record.get("StringCol").textValue());
+        assertEquals("C", record.get("CharCol").textValue());
+        assertEquals((byte) 3, record.get("ByteCol").shortValue());
+        assertEquals((short) 3, record.get("ShortCol").shortValue());
+        assertEquals(300, record.get("IntCol").intValue());
+        assertEquals(0.3f, record.get("FloatCol").floatValue());
+        assertEquals(30_000_000_000L, record.get("LongCol").longValue());
+        assertEquals(3.3d, record.get("DoubleCol").doubleValue());
+
+        assertTrue(addedUpdated.isEmpty());
+        assertTrue(removed.isEmpty());
+    }
+
+}
