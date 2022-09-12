@@ -12,13 +12,7 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
@@ -993,6 +987,22 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             throw new UnsupportedOperationException("getColumnStatistics");
         }).then(
                 tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
+    }
+
+    @JsMethod
+    public Promise<LongWrapper> seekRow(LongWrapper startingRow, Column column, String valueType, String seekValue, boolean insensitive, boolean contains, boolean isBackwards) {
+        SeekRowRequest seekRowRequest = new SeekRowRequest();
+        seekRowRequest.setSourceId(state().getHandle().makeTableReference());
+        seekRowRequest.setStartingRow(Long.toString(startingRow.getWrapped()));
+        seekRowRequest.setColumnName(column.getName());
+        seekRowRequest.setValueType(valueType);
+        seekRowRequest.setSeekValue(seekValue);
+        seekRowRequest.setInsensitive(insensitive);
+        seekRowRequest.setContains(contains);
+        seekRowRequest.setIsBackward(isBackwards);
+
+        return Callbacks.<SeekRowResponse, String>promise(null, c -> workerConnection.tableServiceClient().seekRow(seekRowRequest, workerConnection.metadata(), c))
+                .then(seekRowResponse -> Promise.resolve(LongWrapper.ofString(seekRowResponse.getResultRow())));
     }
 
     public void maybeRevive(ClientTableState state) {
