@@ -28,9 +28,11 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
@@ -68,8 +70,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     public void listItems(ListItemsRequest request, StreamObserver<ListItemsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             ListItemsResponse.Builder builder = ListItemsResponse.newBuilder();
+            PathMatcher matcher = request.hasFilterGlob() ? FileSystems.getDefault().getPathMatcher("glob:" + request.getFilterGlob()) : ignore -> true;
             try (Stream<Path> list = Files.list(resolveOrThrow(request.getPath()))) {
                 for (Path p : (Iterable<Path>) list::iterator) {
+                    if (!matcher.matches(p)) {
+                        continue;
+                    }
                     builder.addItems(FileInfo.newBuilder()
                             .setPath(p.getFileName().toString())
                             .setSize(Files.isDirectory(p) ? 0 : Files.size(p))

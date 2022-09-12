@@ -21,11 +21,16 @@ import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.WorkerConnection;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsType;
 
-public class StorageService {
+/**
+ * Remote service to read and write files on the server.
+ */
+@JsType(namespace = "dh.storage", name = "StorageService")
+public class JsStorageService {
     private final WorkerConnection connection;
 
-    public StorageService(WorkerConnection connection) {
+    public JsStorageService(WorkerConnection connection) {
         this.connection = connection;
     }
 
