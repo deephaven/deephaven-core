@@ -5,6 +5,8 @@ import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.ConcurrentMethod;
@@ -291,12 +293,12 @@ public class SeekRow implements Function<Table, Long> {
                     sampleSize--;
                 }
             }
-            Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
+            RowSetBuilderRandom builder = RowSetFactory.builderRandom();
             set.forEach(row -> {
-                builder.addKey(table.getIndex().get(row));
+                builder.addKey(table.getRowSet().get(row));
                 return true;
             });
-            index = builder.getIndex();
+            index = builder.build();
         }
 
         boolean isAscending = true;
