@@ -24,6 +24,7 @@ import io.deephaven.proto.backplane.grpc.SaveFileResponse;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -35,20 +36,21 @@ import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class NotebookServiceGrpcImpl extends NotebookServiceGrpc.NotebookServiceImplBase {
-    private static final Logger log = LoggerFactory.getLogger(NotebookServiceGrpcImpl.class);
+@Singleton
+public class FilesystemStorageServiceGrpcImpl extends NotebookServiceGrpc.NotebookServiceImplBase {
+    private static final Logger log = LoggerFactory.getLogger(FilesystemStorageServiceGrpcImpl.class);
 
-    private static final String NOTEBOOK_PATH = Configuration.getInstance().getStringWithDefault("notebook.path", "<workspace>/notebooks")
+    private static final String STORAGE_PATH = Configuration.getInstance().getStringWithDefault("storage.path", "<workspace>/storage")
             .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
 
-    private final Path root = Paths.get(NOTEBOOK_PATH).normalize();
+    private final Path root = Paths.get(STORAGE_PATH).normalize();
 
     @Inject
-    public NotebookServiceGrpcImpl() {
+    public FilesystemStorageServiceGrpcImpl() {
         try {
             Files.createDirectories(root);
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to initialize notebooks", e);
+            throw new UncheckedIOException("Failed to initialize storage", e);
         }
     }
 

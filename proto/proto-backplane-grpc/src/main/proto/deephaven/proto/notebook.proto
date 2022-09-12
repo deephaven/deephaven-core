@@ -7,12 +7,12 @@ package io.deephaven.proto.backplane.grpc;
 
 option java_multiple_files = true;
 option optimize_for = SPEED;
-option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/notebook";
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/storage";
 
 /*
- * Notebook/script management service
+ * Shared storage management service.
 */
-service NotebookService {
+service StorageService {
   rpc ListItems(ListItemsRequest) returns (ListItemsResponse) {}
   rpc FetchFile(FetchFileRequest) returns (FetchFileResponse) {}
   // Can create new files or modify existing
