@@ -2,12 +2,12 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from pydeephaven.proto import notebook_pb2 as deephaven_dot_proto_dot_notebook__pb2
+from pydeephaven.proto import storage_pb2 as deephaven_dot_proto_dot_storage__pb2
 
 
-class NotebookServiceStub(object):
+class StorageServiceStub(object):
     """
-    Notebook/script management service
+    Shared storage management service.
     """
 
     def __init__(self, channel):
@@ -17,40 +17,40 @@ class NotebookServiceStub(object):
             channel: A grpc.Channel.
         """
         self.ListItems = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.NotebookService/ListItems',
-                request_serializer=deephaven_dot_proto_dot_notebook__pb2.ListItemsRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_notebook__pb2.ListItemsResponse.FromString,
+                '/io.deephaven.proto.backplane.grpc.StorageService/ListItems',
+                request_serializer=deephaven_dot_proto_dot_storage__pb2.ListItemsRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_storage__pb2.ListItemsResponse.FromString,
                 )
         self.FetchFile = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.NotebookService/FetchFile',
-                request_serializer=deephaven_dot_proto_dot_notebook__pb2.FetchFileRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_notebook__pb2.FetchFileResponse.FromString,
+                '/io.deephaven.proto.backplane.grpc.StorageService/FetchFile',
+                request_serializer=deephaven_dot_proto_dot_storage__pb2.FetchFileRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_storage__pb2.FetchFileResponse.FromString,
                 )
         self.SaveFile = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.NotebookService/SaveFile',
-                request_serializer=deephaven_dot_proto_dot_notebook__pb2.SaveFileRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_notebook__pb2.SaveFileResponse.FromString,
+                '/io.deephaven.proto.backplane.grpc.StorageService/SaveFile',
+                request_serializer=deephaven_dot_proto_dot_storage__pb2.SaveFileRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_storage__pb2.SaveFileResponse.FromString,
                 )
         self.MoveItem = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.NotebookService/MoveItem',
-                request_serializer=deephaven_dot_proto_dot_notebook__pb2.MoveItemRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_notebook__pb2.MoveItemResponse.FromString,
+                '/io.deephaven.proto.backplane.grpc.StorageService/MoveItem',
+                request_serializer=deephaven_dot_proto_dot_storage__pb2.MoveItemRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_storage__pb2.MoveItemResponse.FromString,
                 )
         self.CreateDirectory = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.NotebookService/CreateDirectory',
-                request_serializer=deephaven_dot_proto_dot_notebook__pb2.CreateDirectoryRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_notebook__pb2.CreateDirectoryResponse.FromString,
+                '/io.deephaven.proto.backplane.grpc.StorageService/CreateDirectory',
+                request_serializer=deephaven_dot_proto_dot_storage__pb2.CreateDirectoryRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_storage__pb2.CreateDirectoryResponse.FromString,
                 )
         self.DeleteItem = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.NotebookService/DeleteItem',
-                request_serializer=deephaven_dot_proto_dot_notebook__pb2.DeleteItemRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_notebook__pb2.DeleteItemResponse.FromString,
+                '/io.deephaven.proto.backplane.grpc.StorageService/DeleteItem',
+                request_serializer=deephaven_dot_proto_dot_storage__pb2.DeleteItemRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_storage__pb2.DeleteItemResponse.FromString,
                 )
 
 
-class NotebookServiceServicer(object):
+class StorageServiceServicer(object):
     """
-    Notebook/script management service
+    Shared storage management service.
     """
 
     def ListItems(self, request, context):
@@ -91,48 +91,48 @@ class NotebookServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
 
-def add_NotebookServiceServicer_to_server(servicer, server):
+def add_StorageServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'ListItems': grpc.unary_unary_rpc_method_handler(
                     servicer.ListItems,
-                    request_deserializer=deephaven_dot_proto_dot_notebook__pb2.ListItemsRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_notebook__pb2.ListItemsResponse.SerializeToString,
+                    request_deserializer=deephaven_dot_proto_dot_storage__pb2.ListItemsRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_storage__pb2.ListItemsResponse.SerializeToString,
             ),
             'FetchFile': grpc.unary_unary_rpc_method_handler(
                     servicer.FetchFile,
-                    request_deserializer=deephaven_dot_proto_dot_notebook__pb2.FetchFileRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_notebook__pb2.FetchFileResponse.SerializeToString,
+                    request_deserializer=deephaven_dot_proto_dot_storage__pb2.FetchFileRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_storage__pb2.FetchFileResponse.SerializeToString,
             ),
             'SaveFile': grpc.unary_unary_rpc_method_handler(
                     servicer.SaveFile,
-                    request_deserializer=deephaven_dot_proto_dot_notebook__pb2.SaveFileRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_notebook__pb2.SaveFileResponse.SerializeToString,
+                    request_deserializer=deephaven_dot_proto_dot_storage__pb2.SaveFileRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_storage__pb2.SaveFileResponse.SerializeToString,
             ),
             'MoveItem': grpc.unary_unary_rpc_method_handler(
                     servicer.MoveItem,
-                    request_deserializer=deephaven_dot_proto_dot_notebook__pb2.MoveItemRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_notebook__pb2.MoveItemResponse.SerializeToString,
+                    request_deserializer=deephaven_dot_proto_dot_storage__pb2.MoveItemRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_storage__pb2.MoveItemResponse.SerializeToString,
             ),
             'CreateDirectory': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateDirectory,
-                    request_deserializer=deephaven_dot_proto_dot_notebook__pb2.CreateDirectoryRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_notebook__pb2.CreateDirectoryResponse.SerializeToString,
+                    request_deserializer=deephaven_dot_proto_dot_storage__pb2.CreateDirectoryRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_storage__pb2.CreateDirectoryResponse.SerializeToString,
             ),
             'DeleteItem': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteItem,
-                    request_deserializer=deephaven_dot_proto_dot_notebook__pb2.DeleteItemRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_notebook__pb2.DeleteItemResponse.SerializeToString,
+                    request_deserializer=deephaven_dot_proto_dot_storage__pb2.DeleteItemRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_storage__pb2.DeleteItemResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'io.deephaven.proto.backplane.grpc.NotebookService', rpc_method_handlers)
+            'io.deephaven.proto.backplane.grpc.StorageService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class NotebookService(object):
+class StorageService(object):
     """
-    Notebook/script management service
+    Shared storage management service.
     """
 
     @staticmethod
@@ -146,9 +146,9 @@ class NotebookService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.NotebookService/ListItems',
-            deephaven_dot_proto_dot_notebook__pb2.ListItemsRequest.SerializeToString,
-            deephaven_dot_proto_dot_notebook__pb2.ListItemsResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.StorageService/ListItems',
+            deephaven_dot_proto_dot_storage__pb2.ListItemsRequest.SerializeToString,
+            deephaven_dot_proto_dot_storage__pb2.ListItemsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -163,9 +163,9 @@ class NotebookService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.NotebookService/FetchFile',
-            deephaven_dot_proto_dot_notebook__pb2.FetchFileRequest.SerializeToString,
-            deephaven_dot_proto_dot_notebook__pb2.FetchFileResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.StorageService/FetchFile',
+            deephaven_dot_proto_dot_storage__pb2.FetchFileRequest.SerializeToString,
+            deephaven_dot_proto_dot_storage__pb2.FetchFileResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -180,9 +180,9 @@ class NotebookService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.NotebookService/SaveFile',
-            deephaven_dot_proto_dot_notebook__pb2.SaveFileRequest.SerializeToString,
-            deephaven_dot_proto_dot_notebook__pb2.SaveFileResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.StorageService/SaveFile',
+            deephaven_dot_proto_dot_storage__pb2.SaveFileRequest.SerializeToString,
+            deephaven_dot_proto_dot_storage__pb2.SaveFileResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -197,9 +197,9 @@ class NotebookService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.NotebookService/MoveItem',
-            deephaven_dot_proto_dot_notebook__pb2.MoveItemRequest.SerializeToString,
-            deephaven_dot_proto_dot_notebook__pb2.MoveItemResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.StorageService/MoveItem',
+            deephaven_dot_proto_dot_storage__pb2.MoveItemRequest.SerializeToString,
+            deephaven_dot_proto_dot_storage__pb2.MoveItemResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -214,9 +214,9 @@ class NotebookService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.NotebookService/CreateDirectory',
-            deephaven_dot_proto_dot_notebook__pb2.CreateDirectoryRequest.SerializeToString,
-            deephaven_dot_proto_dot_notebook__pb2.CreateDirectoryResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.StorageService/CreateDirectory',
+            deephaven_dot_proto_dot_storage__pb2.CreateDirectoryRequest.SerializeToString,
+            deephaven_dot_proto_dot_storage__pb2.CreateDirectoryResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -231,8 +231,8 @@ class NotebookService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.NotebookService/DeleteItem',
-            deephaven_dot_proto_dot_notebook__pb2.DeleteItemRequest.SerializeToString,
-            deephaven_dot_proto_dot_notebook__pb2.DeleteItemResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.StorageService/DeleteItem',
+            deephaven_dot_proto_dot_storage__pb2.DeleteItemRequest.SerializeToString,
+            deephaven_dot_proto_dot_storage__pb2.DeleteItemResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
