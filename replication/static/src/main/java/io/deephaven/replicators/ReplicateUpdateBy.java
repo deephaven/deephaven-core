@@ -104,6 +104,13 @@ public class ReplicateUpdateBy {
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
+
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/PairwiseFloatRingBuffer.java",
+                exemptions);
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/updateby/PairwiseFloatRingBufferTest.java",
+                exemptions);
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)

@@ -27,35 +27,6 @@ import java.util.Map;
  * interface, the pattern of calls will be as follows.
  *
  * <ol>
- * <li>Removes
- * <ul>
- * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #removeChunk(UpdateContext, LongChunk, Chunk, long)}</li>
- * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
- * </ul>
- * </li>
- * <li>Shifts
- * <ul>
- * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #applyShift(UpdateContext, RowSet, RowSetShiftData)}</li>
- * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
- * </ul>
- * </li>
- * <li>Modifies
- * <ul>
- * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #modifyChunk(UpdateContext, LongChunk, LongChunk, Chunk, Chunk, long)}</li>
- * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
- * </ul>
- * </li>
- * <li>Adds
- * <ul>
- * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #addChunk(UpdateContext, RowSequence, LongChunk, Chunk, long)}</li>
- * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
- * </ul>
- * </li>
- *
  * <li>Reprocess
  * <ul>
  * <li>{@link #resetForProcess(UpdateContext, RowSet, long)}</li>

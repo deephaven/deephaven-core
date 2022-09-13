@@ -6,11 +6,9 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.base.LongRingBuffer;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedDoubleChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
@@ -23,19 +21,15 @@ import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedShortUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.PairwiseDoubleRingBuffer;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
-import io.deephaven.util.QueryConstants;
-import org.apache.commons.lang3.mutable.MutableDouble;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator {
 
@@ -53,12 +47,22 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
         // position data for the chunk being currently processed
         public SizedLongChunk<? extends RowKeys> valuePositionChunk;
 
+        public PairwiseDoubleRingBuffer pairwiseSum;
+
         protected Context(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
             this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
             this.fillContext.ensureCapacity(chunkSize);
             this.outputValues = new SizedDoubleChunk<>(chunkSize);
             this.valuePositionChunk = new SizedLongChunk<>(chunkSize);
             this.timestampSsa = timestampSsa;
+            final int initialSize;
+            if (timestampColumnName == null) {
+                // we know exactly the size and will never grow when using ticks
+                initialSize = (int)(reverseTimeScaleUnits + forwardTimeScaleUnits + 1);
+            } else {
+                initialSize = 64; // too big and the log(m) operation costs but growth also costs
+            }
+            this.pairwiseSum = new PairwiseDoubleRingBuffer(initialSize, 0.0f, (a, b) -> a + b);
         }
 
         @Override
@@ -67,6 +71,7 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
             outputValues.close();
             fillContext.close();
             this.valuePositionChunk.close();
+            this.pairwiseSum.close();
         }
     }
 
@@ -117,7 +122,11 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
         double val = ctx.candidateValuesChunk.get(pos);
-        if (val == NULL_DOUBLE) {
+
+        if (val != NULL_DOUBLE) {
+            ctx.pairwiseSum.push(val);
+        } else {
+            ctx.pairwiseSum.pushEmptyValue();
             ctx.nullCount++;
         }
     }
@@ -129,6 +138,7 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
         if (val == NULL_DOUBLE) {
             ctx.nullCount--;
         }
+        ctx.pairwiseSum.pop();
     }
 
     @Override
@@ -162,20 +172,12 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
         for (int ii = 0; ii < runLength; ii++) {
             ctx.fillWindowTicks(ctx, posChunk.get(ii));
 
-            double sum = NULL_DOUBLE;
-
-            LongRingBuffer.Iterator it = ctx.windowIndices.iterator();
-            while (it.hasNext()) {
-                double v = ctx.candidateValuesChunk.get((int)it.next());
-                if (v != QueryConstants.NULL_DOUBLE) {
-                    if (sum == NULL_DOUBLE) {
-                        sum = v;
-                    } else {
-                        sum += v;
-                    }
-                }
+            if (ctx.pairwiseSum.isEmpty() || ctx.pairwiseSum.size() == ctx.nullCount) {
+                localOutputValues.set(ii, NULL_DOUBLE);
+            } else {
+                double val = ctx.pairwiseSum.evaluate();
+                localOutputValues.set(ii, val);
             }
-            localOutputValues.set(ii, sum);
         }
     }
 
@@ -188,29 +190,14 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
             LongChunk timestampChunk = timestampColumnSource.getChunk(context, inputKeys).asLongChunk();
 
             for (int ii = 0; ii < inputKeys.intSize(); ii++) {
-                long ts = timestampChunk.get(ii);
+                // the output value is computed by push/pop operations triggered by fillWindow
+                ctx.fillWindowTime(ctx, timestampChunk.get(ii));
 
-                // does this value have a valid timestamp
-                if (ts == NULL_LONG) {
+                if (ctx.pairwiseSum.isEmpty() || ctx.pairwiseSum.size() == ctx.nullCount) {
                     localOutputValues.set(ii, NULL_DOUBLE);
                 } else {
-                    // the output value is computed by push/pop operations triggered by fillWindow
-                    ctx.fillWindowTime(ctx, timestampChunk.get(ii));
-
-                    double sum = NULL_DOUBLE;
-
-                    LongRingBuffer.Iterator it = ctx.windowIndices.iterator();
-                    while (it.hasNext()) {
-                        double v = ctx.candidateValuesChunk.get((int)it.next());
-                        if (v != QueryConstants.NULL_DOUBLE) {
-                            if (sum == NULL_DOUBLE) {
-                                sum = v;
-                            } else {
-                                sum += v;
-                            }
-                        }
-                    }
-                    localOutputValues.set(ii, sum);
+                    double val = ctx.pairwiseSum.evaluate();
+                    localOutputValues.set(ii, val);
                 }
             }
         }

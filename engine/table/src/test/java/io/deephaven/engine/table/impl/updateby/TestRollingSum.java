@@ -1141,8 +1141,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
 
     final void assertWithRollingSumTicks(final @NotNull Object expected, final @NotNull Object actual, Class type, int prevTicks, int postTicks) {
-        final float deltaF = .001f;
-        final double deltaD = .001d;
+        // looking for gross errors like missing entries (NOTE: pairwise results are more accurate than true rolling)
+        final float deltaF = .02f;
+        final double deltaD = .02d;
 
         if (expected instanceof byte[]) {
             assertArrayEquals(rollingSum((byte[]) expected, prevTicks, postTicks), (long[]) actual);
@@ -1169,8 +1170,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     final void assertWithRollingSumTime(final @NotNull Object expected, final @NotNull Object actual,
                         final @NotNull long[] timestamps, Class type, long prevTime, long postTime) {
-        final float deltaF = .001f;
-        final double deltaD = .001d;
+        // looking for gross errors like missing entries (NOTE: pairwise results are more accurate than true rolling)
+        final float deltaF = .02f;
+        final double deltaD = .02d;
 
         if (expected instanceof byte[]) {
             assertArrayEquals(rollingSumTime((byte[]) expected, timestamps, prevTime, postTime), (long[]) actual);
