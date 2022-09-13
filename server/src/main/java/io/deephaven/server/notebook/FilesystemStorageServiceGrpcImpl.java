@@ -36,6 +36,7 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 
 @Singleton
@@ -70,10 +71,11 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     public void listItems(ListItemsRequest request, StreamObserver<ListItemsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             ListItemsResponse.Builder builder = ListItemsResponse.newBuilder();
-            PathMatcher matcher = request.hasFilterGlob() ? FileSystems.getDefault().getPathMatcher("glob:" + request.getFilterGlob()) : ignore -> true;
-            try (Stream<Path> list = Files.list(resolveOrThrow(request.getPath()))) {
+            PathMatcher matcher = request.hasFilterGlob() ? makeMatcher(request.getFilterGlob()) : ignore -> true;
+            Path dir = resolveOrThrow(request.getPath());
+            try (Stream<Path> list = Files.list(dir)) {
                 for (Path p : (Iterable<Path>) list::iterator) {
-                    if (!matcher.matches(p)) {
+                    if (!matcher.matches(dir.relativize(p))) {
                         continue;
                     }
                     builder.addItems(FileInfo.newBuilder()
@@ -88,6 +90,20 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             responseObserver.onNext(builder.build());
             responseObserver.onCompleted();
         });
+    }
+
+    private PathMatcher makeMatcher(String filterGlob) {
+        if (filterGlob.contains("**")) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
+        }
+        if (filterGlob.contains("/")) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only the same directory can be checked");
+        }
+        try {
+            return FileSystems.getDefault().getPathMatcher("glob:" + filterGlob);
+        } catch (PatternSyntaxException e) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, can't parse expression: " + e.getMessage());
+        }
     }
 
     @Override
