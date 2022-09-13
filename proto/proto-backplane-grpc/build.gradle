@@ -105,6 +105,9 @@ sourceSets {
       srcDir 'build/generated/source/proto/main/grpc'
       srcDir 'build/generated/source/proto/main/java'
     }
+    resources {
+      srcDir 'src/main/proto/deephaven/proto'
+    }
   }
 }
 
