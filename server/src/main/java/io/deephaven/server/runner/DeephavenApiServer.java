@@ -25,6 +25,8 @@ import io.deephaven.uri.resolver.UriResolversInstance;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
+import io.grpc.health.v1.HealthCheckResponse;
+import io.grpc.protobuf.services.HealthStatusManager;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -51,6 +53,7 @@ public class DeephavenApiServer {
     private final Map<String, AuthenticationRequestHandler> authenticationHandlers;
     private final Provider<ExecutionContext> executionContextProvider;
     private final ServerConfig serverConfig;
+    private final HealthStatusManager healthStatusManager;
 
     @Inject
     public DeephavenApiServer(
@@ -64,7 +67,8 @@ public class DeephavenApiServer {
             final SessionService sessionService,
             final Map<String, AuthenticationRequestHandler> authenticationHandlers,
             final Provider<ExecutionContext> executionContextProvider,
-            final ServerConfig serverConfig) {
+            final ServerConfig serverConfig,
+            final HealthStatusManager healthStatusManager) {
         this.server = server;
         this.ugp = ugp;
         this.logInit = logInit;
@@ -76,6 +80,7 @@ public class DeephavenApiServer {
         this.authenticationHandlers = authenticationHandlers;
         this.executionContextProvider = executionContextProvider;
         this.serverConfig = serverConfig;
+        this.healthStatusManager = healthStatusManager;
     }
 
     @VisibleForTesting
@@ -100,7 +105,12 @@ public class DeephavenApiServer {
     public DeephavenApiServer run() throws IOException, ClassNotFoundException, TimeoutException {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
-                () -> server.stopWithTimeout(10, TimeUnit.SECONDS));
+                () -> {
+                    // it's important to call healthStatusManager.enterTerminalState() in the same thread as server.stopWithTimeout().
+                    // If we add multiple `OrderingCategory.FIRST` callbacks, they'll execute in parallel and blow up.
+                    healthStatusManager.enterTerminalState();
+                    server.stopWithTimeout(10, TimeUnit.SECONDS);
+                });
 
         // Close outstanding sessions to give any gRPCs closure.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
@@ -151,6 +161,7 @@ public class DeephavenApiServer {
         log.info().append("Starting server...").endl();
         server.start();
         log.info().append("Server started on port ").append(server.getPort()).endl();
+        healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING);
         return this;
     }
 

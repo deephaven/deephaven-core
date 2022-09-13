@@ -7,4 +7,5 @@ description = 'Utility project to make x509 client cert available in grpc calls 
 dependencies {
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-core'
+    implementation 'io.grpc:grpc-services'
 }
