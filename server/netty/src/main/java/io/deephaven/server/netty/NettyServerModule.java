@@ -59,7 +59,7 @@ public interface NettyServerModule {
         Logger log = LoggerFactory.getLogger(NettyServerModule.class);
         if (serverConfig.ssl().isPresent()) {
             if (log.isInfoEnabled()) {
-                log.info().append("Using ssl configuration" ).append(serverConfig.ssl().get().toString()).endl();
+                log.info().append("Using ssl configuration").append(serverConfig.ssl().get().toString()).endl();
             }
             final SSLConfig ssl = serverConfig.ssl().get().orTrust(TrustJdk.of());
             final SSLFactory kickstart = KickstartUtils.create(ssl);
