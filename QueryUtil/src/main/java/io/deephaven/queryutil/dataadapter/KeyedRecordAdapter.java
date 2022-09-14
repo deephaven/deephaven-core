@@ -321,25 +321,25 @@ public class KeyedRecordAdapter<K, T> {
         final Object[] recordDataArrs = multiRowRecordAdapter.getTableDataArrayRetriever().createDataArrays(nKeys);
 
         // list to store the index keys for which data is retrieved
-        final TLongList recordDataKeys = new TLongArrayList(nKeys);
+        final TLongList recordDataRowKeys = new TLongArrayList(nKeys);
 
         // map of index keys to the position of the corresponding data key (in the 'dataKeys' list)
-        final MutableObject<TLongIntMap> dbIdxKeyToDataKeyPositionalIndexRef = new MutableObject<>();
+        final MutableObject<TLongIntMap> dbRowKeyToDataKeyPositionalIndexRef = new MutableObject<>();
 
-        DO_LOCKED_FUNCTION.accept((usePrev) -> retrieveDataMultipleKeys(mapKeys, recordDataArrs, recordDataKeys, dbIdxKeyToDataKeyPositionalIndexRef, usePrev),
+        DO_LOCKED_FUNCTION.accept((usePrev) -> retrieveDataMultipleKeys(mapKeys, recordDataArrs, recordDataRowKeys, dbRowKeyToDataKeyPositionalIndexRef, usePrev),
                 "KeyedRecordAdapter.getRecords()"
         );
 
-        final int nRetrievedRecords = recordDataKeys.size();
+        final int nRetrievedRecords = recordDataRowKeys.size();
 
         // Now that we have retrieved a consistent snapshot, create records for each row
-        final TLongIntMap dbIdxKeyToDataKeyPositionalIndex = dbIdxKeyToDataKeyPositionalIndexRef.getValue();
+        final TLongIntMap dbIdxKeyToDataKeyPositionalIndex = dbRowKeyToDataKeyPositionalIndexRef.getValue();
         final Map<K, T> resultsMap = new HashMap<>(nRetrievedRecords);
         final T[] recordsArr = multiRowRecordAdapter.createRecordsFromData(recordDataArrs, nRetrievedRecords);
         for (int idx = 0; idx < nRetrievedRecords; idx++) {
             // Find the data key corresponding to the DB index key from
             // which this record was retrieved. Map the data key to the record.
-            final long idxKeyForRecord = recordDataKeys.get(idx);
+            final long idxKeyForRecord = recordDataRowKeys.get(idx);
             final int dataKeyIdxForRecord = dbIdxKeyToDataKeyPositionalIndex.get(idxKeyForRecord);
             final K dataKeyForRecord = dataKeys.get(dataKeyIdxForRecord);
 
