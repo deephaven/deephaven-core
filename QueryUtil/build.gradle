@@ -16,7 +16,6 @@ dependencies {
     api 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
 
     implementation project(':log-factory')
-    implementation project(':codegen')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
