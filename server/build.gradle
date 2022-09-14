@@ -13,6 +13,7 @@ dependencies {
     implementation project(':extensions-performance')
     implementation project(':extensions-jdbc')
     implementation project(':Util');
+    implementation project(':QueryUtil');
     implementation project(':Integrations')
     implementation depCommonsLang3
     Classpaths.inheritCommonsText(project, 'implementation')
