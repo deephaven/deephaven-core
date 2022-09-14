@@ -161,7 +161,6 @@ public class KeyedRecordAdapter<K, T> {
 
             // a list of keys passed to getRecords() will be just that -- a List<K>
             dataKeysListToMapKeys = dataKeys -> {
-                Require.eq(dataKeys.size(), "dataKeys.size()", 1);
                 //noinspection unchecked
                 return (List<Object>) dataKeys;
             };

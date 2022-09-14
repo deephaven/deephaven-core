@@ -10,10 +10,7 @@ import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilde
 import io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.util.QueryConstants;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 import static io.deephaven.engine.table.impl.TstUtils.i;
@@ -238,30 +235,30 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 "KeyCol1", String.class
         );
 
-        MyRecord record = keyedRecordAdapter.getRecord("KeyA");
-        assertEquals("KeyA", record.myKeyString);
-        assertEquals("Aa", record.myString);
-        assertEquals('A', record.myChar);
-        assertEquals((byte) 0, record.myByte);
-        assertEquals((short) 1, record.myShort);
-        assertEquals(100, record.myInt);
-        assertEquals(0.1f, record.myFloat);
-        assertEquals(10_000_000_000L, record.myLong);
-        assertEquals(1.1d, record.myDouble);
+        MyRecord recordA = keyedRecordAdapter.getRecord("KeyA");
+        assertEquals("KeyA", recordA.myKeyString);
+        assertEquals("Aa", recordA.myString);
+        assertEquals('A', recordA.myChar);
+        assertEquals((byte) 0, recordA.myByte);
+        assertEquals((short) 1, recordA.myShort);
+        assertEquals(100, recordA.myInt);
+        assertEquals(0.1f, recordA.myFloat);
+        assertEquals(10_000_000_000L, recordA.myLong);
+        assertEquals(1.1d, recordA.myDouble);
 
-        record = keyedRecordAdapter.getRecord("KeyB");
-        assertEquals("KeyB", record.myKeyString);
-        assertNull(record.myString);
-        assertEquals(QueryConstants.NULL_CHAR, record.myChar);
-        assertEquals(QueryConstants.NULL_BYTE, record.myByte);
-        assertEquals(QueryConstants.NULL_SHORT, record.myShort);
-        assertEquals(QueryConstants.NULL_INT, record.myInt);
-        assertEquals(QueryConstants.NULL_FLOAT, record.myFloat);
-        assertEquals(QueryConstants.NULL_LONG, record.myLong);
-        assertEquals(QueryConstants.NULL_DOUBLE, record.myDouble);
+        MyRecord recordB = keyedRecordAdapter.getRecord("KeyB");
+        assertEquals("KeyB", recordB.myKeyString);
+        assertNull(recordB.myString);
+        assertEquals(QueryConstants.NULL_CHAR, recordB.myChar);
+        assertEquals(QueryConstants.NULL_BYTE, recordB.myByte);
+        assertEquals(QueryConstants.NULL_SHORT, recordB.myShort);
+        assertEquals(QueryConstants.NULL_INT, recordB.myInt);
+        assertEquals(QueryConstants.NULL_FLOAT, recordB.myFloat);
+        assertEquals(QueryConstants.NULL_LONG, recordB.myLong);
+        assertEquals(QueryConstants.NULL_DOUBLE, recordB.myDouble);
 
         // test single-argument composite key:
-        record = keyedRecordAdapter.getRecordCompositeKey("KeyA");
+        MyRecord record = keyedRecordAdapter.getRecordCompositeKey("KeyA");
         assertEquals("KeyA", record.myKeyString);
         assertEquals("Aa", record.myString);
         assertEquals('A', record.myChar);
@@ -282,6 +279,12 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
         } catch (IllegalArgumentException ex) {
             assertEquals("dataKey has 2 components; expected 1", ex.getMessage());
         }
+
+        // Test retrieving multiple records
+        final Map<String, MyRecord> records = keyedRecordAdapter.getRecords("KeyA", "KeyB", "MissingKey");
+        assertEquals(recordA, records.get("KeyA"));
+        assertEquals(recordB, records.get("KeyB"));
+        assertFalse("records.containsKey(\"MissingKey\")", records.containsKey("MissingKey"));
     }
 
     public void testCustomKeyedRecordAdapterWithOnePrimitiveKeyCol() {
@@ -580,6 +583,44 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
         float myFloat;
         long myLong;
         double myDouble;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            MyRecord myRecord = (MyRecord) o;
+
+            if (myKeyInt != myRecord.myKeyInt) return false;
+            if (myChar != myRecord.myChar) return false;
+            if (myByte != myRecord.myByte) return false;
+            if (myShort != myRecord.myShort) return false;
+            if (myInt != myRecord.myInt) return false;
+            if (Float.compare(myRecord.myFloat, myFloat) != 0) return false;
+            if (myLong != myRecord.myLong) return false;
+            if (Double.compare(myRecord.myDouble, myDouble) != 0) return false;
+            if (!Objects.equals(myKeyString, myRecord.myKeyString))
+                return false;
+            return Objects.equals(myString, myRecord.myString);
+        }
+
+        @Override
+        public int hashCode() {
+            int result;
+            long temp;
+            result = myKeyString != null ? myKeyString.hashCode() : 0;
+            result = 31 * result + myKeyInt;
+            result = 31 * result + (myString != null ? myString.hashCode() : 0);
+            result = 31 * result + (int) myChar;
+            result = 31 * result + (int) myByte;
+            result = 31 * result + (int) myShort;
+            result = 31 * result + myInt;
+            result = 31 * result + (myFloat != +0.0f ? Float.floatToIntBits(myFloat) : 0);
+            result = 31 * result + (int) (myLong ^ (myLong >>> 32));
+            temp = Double.doubleToLongBits(myDouble);
+            result = 31 * result + (int) (temp ^ (temp >>> 32));
+            return result;
+        }
     }
 
 }
