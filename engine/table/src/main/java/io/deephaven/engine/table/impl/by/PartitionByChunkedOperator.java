@@ -591,9 +591,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                 if (setCallSite) {
                     QueryPerformanceRecorder.clearCallsite();
                 }
-                initialized = true;
             }
         }
+        initialized = true;
     }
 
     @Override
