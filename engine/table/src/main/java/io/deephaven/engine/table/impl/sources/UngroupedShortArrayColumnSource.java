@@ -61,11 +61,6 @@ public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }

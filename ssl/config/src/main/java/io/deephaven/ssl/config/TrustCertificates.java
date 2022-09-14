@@ -17,7 +17,7 @@ import java.util.List;
 @Immutable
 @BuildableStyle
 @JsonDeserialize(as = ImmutableTrustCertificates.class)
-public abstract class TrustCertificates implements Trust {
+public abstract class TrustCertificates extends TrustBase {
 
     public static TrustCertificates of(String... path) {
         return ImmutableTrustCertificates.builder().addPath(path).build();

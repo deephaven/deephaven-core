@@ -24,29 +24,31 @@ public class ApplicationInjector {
 
     private static final Logger log = LoggerFactory.getLogger(ApplicationInjector.class);
 
-    private final AppMode appMode;
     private final Provider<ScriptSession> scriptSessionProvider;
     private final ApplicationTicketResolver ticketResolver;
     private final ApplicationState.Listener applicationListener;
 
     @Inject
-    public ApplicationInjector(final AppMode appMode,
+    public ApplicationInjector(
             final Provider<ScriptSession> scriptSessionProvider,
             final ApplicationTicketResolver ticketResolver,
             final ApplicationState.Listener applicationListener) {
-        this.appMode = appMode;
         this.scriptSessionProvider = Objects.requireNonNull(scriptSessionProvider);
         this.ticketResolver = ticketResolver;
         this.applicationListener = applicationListener;
     }
 
     public void run() throws IOException, ClassNotFoundException {
-        if (!ApplicationConfig.isApplicationModeEnabled()) {
+        for (ApplicationState.Factory factory : ApplicationState.Factory.loadFromServiceFactory()) {
+            loadApplicationFactory(factory);
+        }
+
+        if (!ApplicationConfig.isCustomApplicationModeEnabled()) {
             return;
         }
 
-        final Path applicationDir = ApplicationConfig.applicationDir();
-        log.info().append("Finding application(s) in '").append(applicationDir.toString()).append("'...").endl();
+        final Path applicationDir = ApplicationConfig.customApplicationDir();
+        log.info().append("Finding custom application(s) in '").append(applicationDir.toString()).append("'...").endl();
 
         List<ApplicationConfig> configs;
         try {
@@ -54,21 +56,18 @@ public class ApplicationInjector {
         } catch (final NoSuchFileException ignored) {
             configs = Collections.emptyList();
         } catch (final RuntimeException error) {
-            log.error().append("Failed to read application config(s): ").append(error).endl();
+            log.error().append("Failed to read custom application config(s): ").append(error).endl();
             throw error;
         }
 
         if (configs.isEmpty()) {
-            log.warn().append("No application(s) found...").endl();
-            if (appMode != AppMode.HYBRID) {
-                log.warn().append("No console sessions allowed...").endl();
-            }
+            log.warn().append("No custom application(s) found...").endl();
             return;
         }
 
         for (ApplicationConfig config : configs) {
             if (!config.isEnabled()) {
-                log.info().append("Skipping disabled application: ").append(config.toString()).endl();
+                log.info().append("Skipping disabled custom application: ").append(config.toString()).endl();
                 continue;
             }
             loadApplication(applicationDir, config);
@@ -79,14 +78,26 @@ public class ApplicationInjector {
         // Note: if we need to be more specific about which application we are starting, we can print out the path of
         // the application.
         log.info().append("Starting application '").append(config.toString()).append('\'').endl();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final ApplicationState app = ApplicationFactory.create(applicationDir, config,
-                    scriptSessionProvider.get(), applicationListener);
 
-            int numExports = app.listFields().size();
-            log.info().append("\tfound ").append(numExports).append(" exports").endl();
-
-            ticketResolver.onApplicationLoad(app);
+        final ApplicationState app;
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final SafeCloseable ignored2 = scriptSessionProvider.get().getExecutionContext().open()) {
+            app = ApplicationFactory.create(applicationDir, config, scriptSessionProvider.get(), applicationListener);
         }
+        int numExports = app.listFields().size();
+        log.info().append("\tfound ").append(numExports).append(" exports").endl();
+        ticketResolver.onApplicationLoad(app);
+    }
+
+    private void loadApplicationFactory(ApplicationState.Factory factory) {
+        log.info().append("Starting ApplicationState.Factory '").append(factory.toString()).append('\'').endl();
+        final ApplicationState app;
+        try (final SafeCloseable ignored1 = LivenessScopeStack.open();
+                final SafeCloseable ignored2 = scriptSessionProvider.get().getExecutionContext().open()) {
+            app = factory.create(applicationListener);
+        }
+        int numExports = app.listFields().size();
+        log.info().append("\tfound ").append(numExports).append(" exports").endl();
+        ticketResolver.onApplicationLoad(app);
     }
 }

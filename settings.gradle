@@ -20,7 +20,8 @@ String[] mods = [
         'server',
         'table-api',
         'qst',
-        'go'
+        'go',
+        'authentication',
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
@@ -53,6 +54,7 @@ include 'combined-javadoc'
 
 include 'grpc-java:grpc-servlet-jakarta'
 include 'grpc-java:grpc-servlet-websocket-jakarta'
+include 'grpc-java:grpc-mtls'
 
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
@@ -232,6 +234,9 @@ project(':plugin-figure').projectDir = file('plugin/figure')
 include(':plugin-partitionedtable')
 project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
 
+include(':plugin-gc-app')
+project(':plugin-gc-app').projectDir = file('plugin/gc-app')
+
 include(':envoy')
 
 include(':grpc-proxy')
@@ -321,6 +326,8 @@ project(':hotspot').projectDir = file('hotspot')
 include(':hotspot-impl')
 project(':hotspot-impl').projectDir = file('hotspot-impl')
 
+include ':authentication'
+
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")
@@ -371,3 +378,4 @@ if (isCiServer) {
         }
     }
 }
+

@@ -10,7 +10,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-class LogBufferOutputStream extends OutputStream {
+public class LogBufferOutputStream extends OutputStream {
 
     private final LogBuffer sink;
     private final LogLevel level;

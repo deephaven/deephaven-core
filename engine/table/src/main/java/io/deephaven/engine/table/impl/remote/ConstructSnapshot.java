@@ -752,9 +752,9 @@ public class ConstructSnapshot {
      * Make a {@link SnapshotControl} from individual function objects.
      *
      * @param usePreviousValues The {@link UsePreviousValues} to use
-     * 
+     *
      * @param snapshotConsistent The {@link SnapshotConsistent} to use
-     * 
+     *
      * @param snapshotCompletedConsistently The {@link SnapshotCompletedConsistently} to use, or null to use * {@code
      * snapshotConsistent}
      */
@@ -1341,19 +1341,19 @@ public class ConstructSnapshot {
                 final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
-                acd.data =
-                        getSnapshotDataAsChunkList(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
-                acd.type = columnSource.getType();
-                acd.componentType = columnSource.getComponentType();
-                acd.chunkType = columnSource.getChunkType();
+                final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
+                acd.data = getSnapshotDataAsChunkList(sourceToUse, columnIsEmpty ? null : sharedContext, rows, usePrev);
+                acd.type = sourceToUse.getType();
+                acd.componentType = sourceToUse.getComponentType();
+                acd.chunkType = sourceToUse.getChunkType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
                 mcd.rowsModified = RowSetFactory.empty();
-                mcd.data = getSnapshotDataAsChunkList(columnSource, null, RowSetFactory.empty(), usePrev);
+                mcd.data = getSnapshotDataAsChunkList(sourceToUse, null, RowSetFactory.empty(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
-                mcd.chunkType = columnSource.getChunkType();
+                mcd.chunkType = sourceToUse.getChunkType();
             }
         }
 
@@ -1436,7 +1436,6 @@ public class ConstructSnapshot {
 
     private static <T> ArrayList<Chunk<Values>> getSnapshotDataAsChunkList(final ColumnSource<T> columnSource,
             final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
-        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
         long offset = 0;
         final long size = rowSet.size();
         final ArrayList<Chunk<Values>> result = new ArrayList<>();
@@ -1447,20 +1446,20 @@ public class ConstructSnapshot {
 
         final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
 
-        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(maxChunkSize, sharedContext);
+        try (final ColumnSource.FillContext context = columnSource.makeFillContext(maxChunkSize, sharedContext);
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             int chunkSize = maxChunkSize;
             while (it.hasMore()) {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
-                final ChunkType chunkType = sourceToUse.getChunkType();
+                final ChunkType chunkType = columnSource.getChunkType();
 
                 // create a new chunk
                 WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
 
                 if (usePrev) {
-                    sourceToUse.fillPrevChunk(context, currentChunk, reducedRowSet);
+                    columnSource.fillPrevChunk(context, currentChunk, reducedRowSet);
                 } else {
-                    sourceToUse.fillChunk(context, currentChunk, reducedRowSet);
+                    columnSource.fillChunk(context, currentChunk, reducedRowSet);
                 }
 
                 // add the chunk to the current list
@@ -1474,6 +1473,11 @@ public class ConstructSnapshot {
                     chunkSize = maxChunkSize;
                 } else {
                     chunkSize = (int) (size - offset);
+                }
+
+                if (sharedContext != null) {
+                    // a shared context is good for only one chunk of rows
+                    sharedContext.reset();
                 }
             }
         }

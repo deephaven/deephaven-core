@@ -112,11 +112,6 @@ public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Floa
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }

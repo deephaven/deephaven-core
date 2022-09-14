@@ -65,7 +65,7 @@ void DateTime::streamIrisRepresentation(std::ostream &s) const {
   size_t oneBillion = 1000000000;
   time_t timeSecs = nanos_ / oneBillion;
   auto nanos = nanos_ % oneBillion;
-  struct tm tm;
+  struct tm tm = {};
   gmtime_r(&timeSecs, &tm);
   char dateBuffer[32];  // ample
   char nanosBuffer[32];  // ample

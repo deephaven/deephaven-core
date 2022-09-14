@@ -20,9 +20,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.api.util.NameValidator;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.security.*;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -198,38 +195,12 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @NotNull
     private ColumnSource<?> getViewColumnSource(boolean lazy) {
-        final boolean preventsParallelization = preventsParallelization();
         final boolean isStateless = isStateless();
-
-        final SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source, so explicitly create
-            // that.
-            AccessControlContext context;
-            try {
-                final URL urlSource = new URL("file:/groovy/shell");
-                final CodeSource codeSource = new CodeSource(urlSource, (java.security.cert.Certificate[]) null);
-                final PermissionCollection perms = Policy.getPolicy().getPermissions(codeSource);
-                context = new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(codeSource, perms)});
-            } catch (MalformedURLException e) {
-                throw new RuntimeException("Invalid file path in groovy url source", e);
-            }
-
-            return AccessController.doPrivileged((PrivilegedAction<ColumnSource<?>>) () -> {
-                final Formula formula = getFormula(lazy, columnSources, params);
-                // noinspection unchecked,rawtypes
-                return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
-                        preventsParallelization, isStateless);
-            }, context);
-        } else {
-            final Formula formula = getFormula(lazy, columnSources, params);
-            // noinspection unchecked,rawtypes
-            return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
-                    preventsParallelization, isStateless);
-        }
+        final Formula formula = getFormula(lazy, columnSources, params);
+        // noinspection unchecked,rawtypes
+        return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
+                isStateless);
     }
-
-    public abstract boolean preventsParallelization();
 
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,

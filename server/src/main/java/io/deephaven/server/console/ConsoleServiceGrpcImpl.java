@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
+import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -185,12 +186,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void getHeapInfo(GetHeapInfoRequest request, StreamObserver<GetHeapInfoResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
+            final Sample sample = new Sample();
+            runtimeMemory.read(sample);
             final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
-                    .setTotalMemory(runtimeMemory.totalMemory())
-                    .setFreeMemory(runtimeMemory.freeMemory())
+                    .setTotalMemory(sample.totalMemory)
+                    .setFreeMemory(sample.freeMemory)
                     .setMaxMemory(runtimeMemory.maxMemory())
                     .build();
-
             responseObserver.onNext(infoResponse);
             responseObserver.onCompleted();
         });

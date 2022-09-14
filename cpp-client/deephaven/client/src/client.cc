@@ -218,6 +218,8 @@ AggregateCombo AggregateCombo::create(std::vector<Aggregate> vec) {
 }
 
 AggregateCombo::AggregateCombo(std::shared_ptr<impl::AggregateComboImpl> impl) : impl_(std::move(impl)) {}
+AggregateCombo::AggregateCombo(AggregateCombo &&other) noexcept = default;
+AggregateCombo &AggregateCombo::operator=(AggregateCombo &&other) noexcept = default;
 AggregateCombo::~AggregateCombo() = default;
 
 TableHandle::TableHandle() = default;
@@ -522,8 +524,8 @@ std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::getFlightStreamR
 }
 
 std::shared_ptr<SubscriptionHandle> TableHandle::subscribe(
-    std::shared_ptr<TickingCallback> callback, bool wantImmer) {
-  return impl_->subscribe(std::move(callback), wantImmer);
+    std::shared_ptr<TickingCallback> callback) {
+  return impl_->subscribe(std::move(callback));
 }
 
 void TableHandle::unsubscribe(std::shared_ptr<SubscriptionHandle> callback) {

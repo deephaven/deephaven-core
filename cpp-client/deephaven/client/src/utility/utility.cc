@@ -110,6 +110,13 @@ std::ostream &operator<<(std::ostream &s, const DebugInfo &o) {
   return streamf(s, "%o@%o:%o args=(%o))", o.func_, o.file_, o.line_, o.args_);
 }
 
+namespace internal {
+void trueOrThrowHelper(const DebugInfo &debugInfo) {
+  auto message = stringf("Assertion failed: %o", debugInfo);
+  throw std::runtime_error(message);
+}
+}  // namespace internal
+
 void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status) {
   if (status.ok()) {
     return;

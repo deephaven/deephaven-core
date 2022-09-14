@@ -56,7 +56,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final boolean flattenedResult;
     private final boolean alreadyFlattenedSources;
     private final BitSet dependencyBitSet;
-    private final boolean canUseThreads;
     private final boolean canParallelizeThisColumn;
     private final boolean isSystemic;
     private final boolean resultTypeIsLivenessReferent;
@@ -86,14 +85,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.flattenedResult = flattenedResult;
         this.alreadyFlattenedSources = alreadyFlattenedSources;
 
-        // We can't use threads at all if we have column that uses a Python query scope, because we are likely operating
-        // under the GIL which will cause a deadlock
-        canUseThreads = !sc.getDataView().preventsParallelism();
-
         // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
-        canParallelizeThisColumn = canUseThreads && !isRedirected
-                && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws) && sc.isStateless();
+        canParallelizeThisColumn = !isRedirected
+                && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(ws) && sc.isStateless();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
         // applied systemically.
@@ -145,7 +140,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         final boolean hasShifts = upstream.shifted().nonempty();
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
-                                (resultTypeIsTable || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
+                                ((resultTypeIsTable && totalSize > 0)
+                                        || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
                             final long divisionSize = resultTypeIsTable ? 1
                                     : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                             (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
@@ -204,7 +200,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
 
-        copyPreviousValues(upstream);
+        prepareSourcesForParallelPopulation(upstream);
 
         final boolean checkTableOperations =
                 UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
@@ -537,13 +533,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    void copyPreviousValues(TableUpdate upstream) {
+    void prepareSourcesForParallelPopulation(TableUpdate upstream) {
         // we do not permit in-column parallelization with redirected results, so do not need to worry about how this
         // interacts with the previous clearing of the redirection index that has occurred at the start of applyUpdate
-        try (final WritableRowSet changedRows =
-                upstream.added().union(upstream.getModifiedPreShift())) {
+        try (final WritableRowSet changedRows = upstream.added().union(upstream.getModifiedPreShift())) {
             changedRows.insert(upstream.removed());
-            ((WritableSourceWithEnsurePrevious) (writableSource)).ensurePrevious(changedRows);
+            ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
+                    .prepareForParallelPopulation(changedRows);
         }
     }
 
@@ -572,6 +568,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public boolean allowCrossColumnParallelization() {
-        return canUseThreads && inner.allowCrossColumnParallelization();
+        return inner.allowCrossColumnParallelization();
     }
 }

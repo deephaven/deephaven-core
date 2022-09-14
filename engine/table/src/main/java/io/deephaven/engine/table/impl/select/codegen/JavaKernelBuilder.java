@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select.codegen;
 
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.context.QueryScopeParam;
@@ -20,9 +20,6 @@ import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -217,7 +214,7 @@ public class JavaKernelBuilder {
                 null);
         g.replace("ARGS", makeCommaSeparatedList(args));
         g.replace("FORMULA_STRING", ta.wrapWithCastIfNecessary(cookedFormulaString));
-        final String joinedFormulaString = CompilerTools.createEscapedJoinedString(cookedFormulaString);
+        final String joinedFormulaString = QueryCompiler.createEscapedJoinedString(cookedFormulaString);
         g.replace("JOINED_FORMULA_STRING", joinedFormulaString);
         g.replace("EXCEPTION_TYPE", FormulaEvaluationException.class.getCanonicalName());
         return g.freeze();
@@ -266,10 +263,8 @@ public class JavaKernelBuilder {
         try (final QueryPerformanceNugget nugget =
                 QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () -> CompilerTools
-                    .compile(className, classBody, CompilerTools.FORMULA_PREFIX));
-        } catch (PrivilegedActionException pae) {
-            throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
+            final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
+            return compiler.compile(className, classBody, QueryCompiler.FORMULA_PREFIX);
         }
     }
 

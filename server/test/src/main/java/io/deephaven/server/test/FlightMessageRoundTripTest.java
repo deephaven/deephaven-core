@@ -4,11 +4,18 @@
 package io.deephaven.server.test;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
-import io.deephaven.barrage.flatbuf.*;
+import io.deephaven.auth.AuthenticationRequestHandler;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -18,9 +25,7 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.proto.backplane.grpc.HandshakeRequest;
-import io.deephaven.proto.backplane.grpc.HandshakeResponse;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
+import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.server.arrow.FlightServiceGrpcBinding;
@@ -32,10 +37,13 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.deephaven.auth.AuthContext;
 import io.grpc.ServerInterceptor;
+import io.grpc.Status;
 import org.apache.arrow.flight.*;
+import org.apache.arrow.flight.auth.ClientAuthHandler;
+import org.apache.arrow.flight.auth2.Auth2Constants;
+import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
@@ -43,6 +51,7 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
@@ -54,7 +63,12 @@ import org.junit.rules.ExternalResource;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -69,6 +83,8 @@ import static org.junit.Assert.*;
  * is to verify that we can round trip
  */
 public abstract class FlightMessageRoundTripTest {
+    private static final String ANONYMOUS = "Anonymous";
+
     @Module
     public static class FlightTestModule {
         @IntoSet
@@ -131,22 +147,29 @@ public abstract class FlightMessageRoundTripTest {
         AbstractScriptSession<?> scriptSession();
 
         GrpcServer server();
+
+        AuthTestModule.BasicAuthTestImpl basicAuthHandler();
+
+        Map<String, AuthenticationRequestHandler> authRequestHandlers();
+
+        ExecutionContext executionContext();
     }
 
     private GrpcServer server;
 
-    private ManagedChannel channel;
     private FlightClient client;
 
-    SessionService sessionService;
-    private UUID sessionToken;
+    protected SessionService sessionService;
+
     private SessionState currentSession;
     private AbstractScriptSession<?> scriptSession;
     private SafeCloseable executionContext;
+    private Location serverLocation;
+    private TestComponent component;
 
     @Before
     public void setup() throws IOException {
-        TestComponent component = component();
+        component = component();
 
         server = component.server();
         server.start();
@@ -154,16 +177,16 @@ public abstract class FlightMessageRoundTripTest {
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
-        executionContext = scriptSession.getExecutionContext().open();
+        executionContext = component.executionContext().open();
 
-        client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort))
+        serverLocation = Location.forGrpcInsecure("localhost", actualPort);
+        currentSession = sessionService.newSession(new AuthContext.SuperUser());
+        client = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
                     @Override
                     public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
-                        final UUID currSession = sessionToken;
-                        if (currSession != null) {
-                            outgoingHeaders.insert(SessionServiceGrpcImpl.DEEPHAVEN_SESSION_ID, currSession.toString());
-                        }
+                        String token = currentSession.getExpiration().token.toString();
+                        outgoingHeaders.insert("Authorization", Auth2Constants.BEARER_PREFIX + token);
                     }
 
                     @Override
@@ -172,18 +195,6 @@ public abstract class FlightMessageRoundTripTest {
                     @Override
                     public void onCallCompleted(CallStatus status) {}
                 }).build();
-        channel = ManagedChannelBuilder.forTarget("localhost:" + actualPort)
-                .usePlaintext()
-                .build();
-        SessionServiceGrpc.SessionServiceBlockingStub sessionServiceClient =
-                SessionServiceGrpc.newBlockingStub(channel);
-
-        HandshakeResponse response =
-                sessionServiceClient.newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build());
-        assertNotNull(response.getSessionToken());
-        sessionToken = UUID.fromString(response.getSessionToken().toStringUtf8());
-
-        currentSession = sessionService.getSessionForToken(sessionToken);
     }
 
     protected abstract TestComponent component();
@@ -194,27 +205,25 @@ public abstract class FlightMessageRoundTripTest {
         scriptSession.release();
         executionContext.close();
 
-        channel.shutdown();
-        try {
-            client.close();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
-
+        closeClient();
         server.stopWithTimeout(1, TimeUnit.MINUTES);
 
         try {
-            channel.awaitTermination(1, TimeUnit.MINUTES);
             server.join();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } finally {
-            channel.shutdownNow();
-            channel = null;
-
             server = null;
+        }
+    }
+
+    private void closeClient() {
+        try {
+            client.close();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
         }
     }
 
@@ -235,6 +244,206 @@ public abstract class FlightMessageRoundTripTest {
             }
         }
     };
+
+    private void fullyReadStream(Ticket ticket, boolean expectError) {
+        try (final FlightStream stream = client.getStream(ticket)) {
+            // noinspection StatementWithEmptyBody
+            while (stream.next());
+            if (expectError) {
+                fail("expected error");
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    @Test
+    public void testLoginHandshakeBasicAuth() {
+        closeClient();
+        client = FlightClient.builder().location(serverLocation)
+                .allocator(new RootAllocator())
+                .build();
+
+        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+
+        // do get cannot be invoked by unauthenticated user
+        final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
+        fullyReadStream(ticket, true);
+
+        // now login
+        component.basicAuthHandler().validLogins.put("HANDSHAKE", "BASIC_AUTH");
+        client.authenticateBasic("HANDSHAKE", "BASIC_AUTH");
+
+        // now we should see the scope variable
+        fullyReadStream(ticket, false);
+    }
+
+    @Test
+    public void testLoginHeaderBasicAuth() {
+        closeClient();
+        client = FlightClient.builder().location(serverLocation)
+                .allocator(new RootAllocator())
+                .build();
+
+        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+
+        // do get cannot be invoked by unauthenticated user
+        final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
+        fullyReadStream(ticket, true);
+
+        // now login
+        component.basicAuthHandler().validLogins.put("HANDSHAKE", "BASIC_AUTH");
+        final Optional<CredentialCallOption> authOpt = client.authenticateBasicToken("HANDSHAKE", "BASIC_AUTH");
+
+        final CredentialCallOption auth = authOpt.orElseGet(() -> {
+            throw Status.UNAUTHENTICATED.asRuntimeException();
+        });
+
+        // now we should see the scope variable
+        fullyReadStream(ticket, false);
+    }
+
+    @Test
+    public void testLoginHeaderCustomBearer() {
+        closeClient();
+        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+
+        // add the bearer token override
+        final String bearerToken = UUID.randomUUID().toString();
+        component.authRequestHandlers().put(Auth2Constants.BEARER_PREFIX.trim(), new AuthenticationRequestHandler() {
+            @Override
+            public String getAuthType() {
+                return Auth2Constants.BEARER_PREFIX.trim();
+            }
+
+            @Override
+            public Optional<AuthContext> login(long protocolVersion, ByteBuffer payload,
+                    HandshakeResponseListener listener) {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<AuthContext> login(String payload, MetadataResponseListener listener) {
+                if (payload.equals(bearerToken)) {
+                    return Optional.of(new AuthContext.SuperUser());
+                }
+                return Optional.empty();
+            }
+
+            @Override
+            public void initialize(String targetUrl) {
+                // do nothing
+            }
+        });
+
+        final MutableBoolean tokenChanged = new MutableBoolean();
+        client = FlightClient.builder().location(serverLocation)
+                .allocator(new RootAllocator())
+                .intercept(info -> new FlightClientMiddleware() {
+                    String currToken = Auth2Constants.BEARER_PREFIX + bearerToken;
+
+                    @Override
+                    public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
+                        outgoingHeaders.insert(Auth2Constants.AUTHORIZATION_HEADER, currToken);
+                    }
+
+                    @Override
+                    public void onHeadersReceived(CallHeaders incomingHeaders) {
+                        String newToken = incomingHeaders.get(Auth2Constants.AUTHORIZATION_HEADER);
+                        if (newToken != null) {
+                            tokenChanged.setTrue();
+                            currToken = newToken;
+                        }
+                    }
+
+                    @Override
+                    public void onCallCompleted(CallStatus status) {}
+                }).build();
+
+        // We will authenticate just prior to the do get request, so we should see the test table.
+        final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
+        fullyReadStream(ticket, false);
+        Assert.eqTrue(tokenChanged.booleanValue(), "tokenChanged"); // assert we were sent a session token
+    }
+
+    @Test
+    public void testLoginHandshakeAnonymous() {
+        closeClient();
+        client = FlightClient.builder().location(serverLocation)
+                .allocator(new RootAllocator())
+                .build();
+
+        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+
+        // do get cannot be invoked by unauthenticated user
+        final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
+        fullyReadStream(ticket, false);
+
+        // install the auth handler
+        component.authRequestHandlers().put(ANONYMOUS, new AnonymousRequestHandler());
+
+        client.authenticate(new ClientAuthHandler() {
+            byte[] callToken = new byte[0];
+
+            @Override
+            public void authenticate(ClientAuthSender outgoing, Iterator<byte[]> incoming) {
+                WrappedAuthenticationRequest request = WrappedAuthenticationRequest.newBuilder()
+                        .setType(ANONYMOUS)
+                        .setPayload(ByteString.EMPTY)
+                        .build();
+                outgoing.send(request.toByteArray());
+
+                callToken = incoming.next();
+            }
+
+            @Override
+            public byte[] getCallToken() {
+                return callToken;
+            }
+        });
+
+        // now we should see the scope variable
+        fullyReadStream(ticket, false);
+    }
+
+    @Test
+    public void testLoginHeaderAnonymous() {
+        final String ANONYMOUS = "Anonymous";
+
+        closeClient();
+        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+
+        // install the auth handler
+        component.authRequestHandlers().put(ANONYMOUS, new AnonymousRequestHandler());
+
+        final MutableBoolean tokenChanged = new MutableBoolean();
+        client = FlightClient.builder().location(serverLocation)
+                .allocator(new RootAllocator())
+                .intercept(info -> new FlightClientMiddleware() {
+                    String currToken = ANONYMOUS;
+
+                    @Override
+                    public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
+                        outgoingHeaders.insert(Auth2Constants.AUTHORIZATION_HEADER, currToken);
+                    }
+
+                    @Override
+                    public void onHeadersReceived(CallHeaders incomingHeaders) {
+                        String newToken = incomingHeaders.get(Auth2Constants.AUTHORIZATION_HEADER);
+                        if (newToken != null) {
+                            tokenChanged.setTrue();
+                            currToken = newToken;
+                        }
+                    }
+
+                    @Override
+                    public void onCallCompleted(CallStatus status) {}
+                }).build();
+
+        // We will authenticate just prior to the do get request, so we should see the test table.
+        final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
+        fullyReadStream(ticket, false);
+        Assert.eqTrue(tokenChanged.booleanValue(), "tokenChanged"); // assert we were sent a session token
+    }
 
     @Test
     public void testSimpleEmptyTableDoGet() throws Exception {
@@ -619,5 +828,35 @@ public abstract class FlightMessageRoundTripTest {
         assertEquals(deephavenTable.getDefinition(), uploadedTable.getDefinition());
         assertEquals(0, (long) TableTools
                 .diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
+    }
+
+    private static class AnonymousRequestHandler implements AuthenticationRequestHandler {
+        @Override
+        public String getAuthType() {
+            return ANONYMOUS;
+        }
+
+        @Override
+        public Optional<AuthContext> login(long protocolVersion, ByteBuffer payload,
+                AuthenticationRequestHandler.HandshakeResponseListener listener) {
+            if (!payload.hasRemaining()) {
+                return Optional.of(new AuthContext.Anonymous());
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<AuthContext> login(String payload,
+                AuthenticationRequestHandler.MetadataResponseListener listener) {
+            if (payload.isEmpty()) {
+                return Optional.of(new AuthContext.Anonymous());
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public void initialize(String targetUrl) {
+            // do nothing
+        }
     }
 }

@@ -9,7 +9,6 @@ import io.deephaven.engine.table.impl.locations.impl.NonexistentTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +31,7 @@ public final class ParquetTableLocationFactory implements TableLocationFactory<T
             @NotNull final ParquetTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
         final File parquetFile = locationKey.getFile();
-        if (Utils.fileExistsPrivileged(parquetFile)) {
+        if (parquetFile.exists()) {
             return new ParquetTableLocation(tableKey, locationKey, readInstructions);
         } else {
             return new NonexistentTableLocation(tableKey, locationKey);

@@ -47,6 +47,8 @@ type TableServiceClient interface {
 	UpdateView(ctx context.Context, in *SelectOrUpdateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Select the given columns from the given table.
 	Select(ctx context.Context, in *SelectOrUpdateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Returns the result of an updateBy table operation.
+	UpdateBy(ctx context.Context, in *UpdateByRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns a new table definition with the unique tuples of the specified columns
 	SelectDistinct(ctx context.Context, in *SelectDistinctRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Filter parent table with structured filters.
@@ -218,6 +220,15 @@ func (c *tableServiceClient) UpdateView(ctx context.Context, in *SelectOrUpdateR
 func (c *tableServiceClient) Select(ctx context.Context, in *SelectOrUpdateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/Select", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tableServiceClient) UpdateBy(ctx context.Context, in *UpdateByRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/UpdateBy", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -496,6 +507,8 @@ type TableServiceServer interface {
 	UpdateView(context.Context, *SelectOrUpdateRequest) (*ExportedTableCreationResponse, error)
 	// Select the given columns from the given table.
 	Select(context.Context, *SelectOrUpdateRequest) (*ExportedTableCreationResponse, error)
+	// Returns the result of an updateBy table operation.
+	UpdateBy(context.Context, *UpdateByRequest) (*ExportedTableCreationResponse, error)
 	// Returns a new table definition with the unique tuples of the specified columns
 	SelectDistinct(context.Context, *SelectDistinctRequest) (*ExportedTableCreationResponse, error)
 	// Filter parent table with structured filters.
@@ -597,6 +610,9 @@ func (UnimplementedTableServiceServer) UpdateView(context.Context, *SelectOrUpda
 }
 func (UnimplementedTableServiceServer) Select(context.Context, *SelectOrUpdateRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Select not implemented")
+}
+func (UnimplementedTableServiceServer) UpdateBy(context.Context, *UpdateByRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBy not implemented")
 }
 func (UnimplementedTableServiceServer) SelectDistinct(context.Context, *SelectDistinctRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SelectDistinct not implemented")
@@ -889,6 +905,24 @@ func _TableService_Select_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TableServiceServer).Select(ctx, req.(*SelectOrUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TableService_UpdateBy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateByRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).UpdateBy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/UpdateBy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).UpdateBy(ctx, req.(*UpdateByRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1349,6 +1383,10 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Select",
 			Handler:    _TableService_Select_Handler,
+		},
+		{
+			MethodName: "UpdateBy",
+			Handler:    _TableService_UpdateBy_Handler,
 		},
 		{
 			MethodName: "SelectDistinct",

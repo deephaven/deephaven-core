@@ -58,11 +58,12 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         List<Boolean> columnGrouping = new ArrayList<>();
         for (ColumnDefinition<?> cDef : getDefinition().getColumns()) {
             columnNames.add(cDef.getName());
-            columnDataTypes.add(cDef.getDataType().getName());
+            final Class<?> dataType = cDef.getDataType();
+            final String dataTypeName = dataType.getCanonicalName();
+            columnDataTypes.add(dataTypeName == null ? dataType.getName() : dataTypeName);
             columnTypes.add(cDef.getColumnType().name());
             columnPartitioning.add(cDef.isPartitioning());
             columnGrouping.add(cDef.isGrouping());
-
         }
         final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning", "IsGrouping"};
         final Object[] resultValues = {
@@ -178,7 +179,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     @Override
-    @FinalDefault
     default IntegerColumnIterator integerColumnIterator(@NotNull final String columnName) {
         return new IntegerColumnIterator(this, columnName);
     }

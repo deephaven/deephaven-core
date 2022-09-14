@@ -3,7 +3,7 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-description 'Engine Context: QueryScope, QueryLibrary and CompilerTools via ExecutionContext'
+description 'Engine Context: QueryScope, QueryLibrary and QueryCompiler via ExecutionContext'
 
 configurations {
     testCompile.extendsFrom junit

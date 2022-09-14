@@ -2,13 +2,15 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 
+import jpy
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
+from deephaven.html import to_html
 from deephaven.pandas import to_pandas
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
@@ -622,11 +624,41 @@ class TableTestCase(BaseTestCase):
         inner_func("param str")
 
     def test_nested_scopes(self):
+        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        context = (_JExecutionContext.newBuilder()
+                   .captureQueryCompiler()
+                   .captureQueryLibrary()
+                   .captureQueryScope()
+                   .build())
+
         def inner_func(p) -> str:
+            openContext = context.open()
             t = empty_table(1).update("X = p * 10")
+            openContext.close()
             return t.to_string().split()[2]
 
         t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+        self.assertIn("100", t.to_string())
+
+    def test_nested_scope_ticking(self):
+        import jpy
+        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        j_context = (_JExecutionContext.newBuilder()
+                     .captureQueryCompiler()
+                     .captureQueryLibrary()
+                     .captureQueryScope()
+                     .build())
+
+        def inner_func(p) -> str:
+            open_ctx = j_context.open()
+            t = empty_table(1).update("X = p * 10")
+            open_ctx.close()
+            return t.to_string().split()[2]
+
+        with ugp.shared_lock():
+            t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
+
         self.assertIn("100", t.to_string())
 
     def test_scope_comprehensions(self):
@@ -689,9 +721,24 @@ class TableTestCase(BaseTestCase):
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
 
         for i in range(2, 5):
-            x.v = i
-            self.wait_ticking_table_update(rt, row_count=i, timeout=5)
+            with ugp.exclusive_lock():
+                x.v = i
+                self.wait_ticking_table_update(rt, row_count=rt.size + 1, timeout=5)
         self.verify_table_data(rt, list(range(1, 5)))
+
+    def test_long_number_conversion(self):
+        long_value = 2 ** 32 + 5
+        t = empty_table(1)
+        result = t.update("X = long_value").to_string(1)
+        self.assertEqual(long_value, int(result.split()[2]))
+
+    def test_python_field_access(self):
+        t = empty_table(10)
+        t2 = t.update(formulas=["SYM = `AAPL-` + (String)foo.name", "PRICE = i * 1000"]).where(
+            "PRICE > (int)foo.price + 100")
+        html_output = to_html(t2)
+        self.assertIn("AAPL-GOOG", html_output)
+        self.assertIn("2000", html_output)
 
 
 def global_fn() -> str:
@@ -700,6 +747,15 @@ def global_fn() -> str:
 
 global_int = 1001
 a_number = 10001
+
+
+class EmptyCls:
+    ...
+
+
+foo = EmptyCls()
+foo.name = "GOOG"
+foo.price = 1000
 
 if __name__ == "__main__":
     unittest.main()

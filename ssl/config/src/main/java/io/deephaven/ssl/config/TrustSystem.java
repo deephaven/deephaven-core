@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @Immutable
 @SimpleStyle
 @JsonDeserialize(as = ImmutableTrustSystem.class)
-public abstract class TrustSystem implements Trust {
+public abstract class TrustSystem extends TrustBase {
 
     public static TrustSystem of() {
         return ImmutableTrustSystem.of();

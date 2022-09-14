@@ -5,13 +5,13 @@ Client programs that create tables using
 `Arrow Flight RPC <https://arrow.apache.org/docs/cpp/flight.html>`__
 typically follow the below recipe:
 
-1. Get a :cpp:class:`FlightWrapper <deephaven::client::highlevel::FlightWrapper>` class via
-   :cpp:func:`TableHandleManager::createFlightWrapper <deephaven::client::highlevel::TableHandleManager::createFlightWrapper>`
+1. Get a :cpp:class:`FlightWrapper <deephaven::client::FlightWrapper>` class via
+   :cpp:func:`TableHandleManager::createFlightWrapper <deephaven::client::TableHandleManager::createFlightWrapper>`
 2. For calls like Arrow ``DoPut`` that take an ``arrow::Flight::FlightCallOptions``, endow that object with
    Deephaven authentication headers via
-   :cpp:func:`FlightWrapper::addAuthHeaders <deephaven::client::highlevel::FlightWrapper::addAuthHeaders()>`
+   :cpp:func:`FlightWrapper::addAuthHeaders <deephaven::client::FlightWrapper::addAuthHeaders()>`
 3. Get a pointer to the ``arrow::flight::FlightClient`` from
-   :cpp:func:`FlightWrapper::flightClient <deephaven::client::highlevel::FlightWrapper::flightClient()>`
+   :cpp:func:`FlightWrapper::flightClient <deephaven::client::FlightWrapper::flightClient()>`
 4. Then perform the operations as described in
    `Arrow Flight RPC <https://arrow.apache.org/docs/cpp/flight.html>`__   
 
@@ -23,10 +23,10 @@ Consider the following program from ``cpp-examples/create_table_with_arrow_fligh
   #include "deephaven/client/highlevel/client.h"
   #include "deephaven/client/utility/table_maker.h"
 
-  using deephaven::client::highlevel::NumCol;
-  using deephaven::client::highlevel::Client;
-  using deephaven::client::highlevel::TableHandle;
-  using deephaven::client::highlevel::TableHandleManager;
+  using deephaven::client::NumCol;
+  using deephaven::client::Client;
+  using deephaven::client::TableHandle;
+  using deephaven::client::TableHandleManager;
   using deephaven::client::utility::flight::statusOrDie;
   using deephaven::client::utility::flight::valueOrDie;
   using deephaven::client::utility::TableMaker;

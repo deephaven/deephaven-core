@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 @Immutable
 @BuildableStyle
 @JsonDeserialize(as = ImmutableTrustStore.class)
-public abstract class TrustStore implements Trust {
+public abstract class TrustStore extends TrustBase {
     public static TrustStore of(String path, String password) {
         return ImmutableTrustStore.builder().path(path).password(password).build();
     }

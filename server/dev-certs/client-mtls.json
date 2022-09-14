@@ -1,0 +1,17 @@
+{
+  "trust": {
+    "type": "certs",
+    "path": "server/dev-certs/ca.crt"
+  },
+  "identity": {
+    "type": "privatekey",
+    "certChainPath": "server/dev-certs/client.chain.crt",
+    "privateKeyPath": "server/dev-certs/client.key"
+  },
+  "protocols": {
+    "type": "modern"
+  },
+  "ciphers": {
+    "type": "modern"
+  }
+}

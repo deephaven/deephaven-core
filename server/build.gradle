@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation project(':authentication')
     implementation project(':engine-table')
     implementation project(':extensions-csv')
     implementation project(':extensions-parquet-table')
@@ -56,6 +57,8 @@ dependencies {
     if ('true' == project.findProperty('extensions.classgraph.enabled')) {
         runtimeOnly project(':extensions-classgraph')
     }
+    testImplementation project(':extensions-classgraph')
+
     if ('true' == project.findProperty('extensions.suanshu.enabled')) {
         runtimeOnly project(':extensions-suanshu')
     }
@@ -69,12 +72,15 @@ dependencies {
 
     runtimeOnly project(':plugin-figure')
     runtimeOnly project(':plugin-partitionedtable')
+    runtimeOnly project(':plugin-gc-app')
 
     Classpaths.inheritGrpcPlatform(project, 'api')
 
     api('io.grpc:grpc-services') {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
+
+    implementation project(':grpc-java:grpc-mtls')
 
     testImplementation 'io.grpc:grpc-testing'
 

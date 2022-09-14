@@ -7,29 +7,92 @@
 using deephaven::client::utility::stringf;
 
 namespace deephaven::client::container {
+namespace {
+class SequentialRowSequence final : public RowSequence {
+public:
+  static std::shared_ptr<SequentialRowSequence> create(uint64_t begin, uint64_t end);
+
+  SequentialRowSequence(uint64_t begin, uint64_t end) : begin_(begin), end_(end) {}
+
+  std::shared_ptr<RowSequence> take(size_t size) const final;
+  std::shared_ptr<RowSequence> drop(size_t size) const final;
+  void forEachChunk(const std::function<void(uint64_t, uint64_t)> &f) const final;
+
+  size_t size() const final {
+    return end_ - begin_;
+  }
+
+private:
+  uint64_t begin_ = 0;
+  uint64_t end_ = 0;
+};
+}  // namespace
+
 std::shared_ptr<RowSequence> RowSequence::createEmpty() {
   return RowSequenceBuilder().build();
 }
 
 std::shared_ptr<RowSequence> RowSequence::createSequential(uint64_t begin, uint64_t end) {
-  RowSequenceBuilder builder;
-  builder.addRange(begin, end);
-  return builder.build();
+  return SequentialRowSequence::create(begin, end);
 }
 
 RowSequence::~RowSequence() = default;
+
+RowSequenceIterator RowSequence::getRowSequenceIterator() const {
+  return RowSequenceIterator(drop(0));
+}
 
 std::ostream &operator<<(std::ostream &s, const RowSequence &o) {
   s << '[';
   auto iter = o.getRowSequenceIterator();
   const char *sep = "";
   uint64_t item;
-  while (iter->tryGetNext(&item)) {
+  while (iter.tryGetNext(&item)) {
     s << sep << item;
     sep = ", ";
   }
   s << ']';
   return s;
+}
+
+RowSequenceIterator::RowSequenceIterator(std::shared_ptr<RowSequence> rowSequence) :
+  residual_(std::move(rowSequence)) {}
+RowSequenceIterator::RowSequenceIterator(RowSequenceIterator &&other) noexcept = default;
+RowSequenceIterator::~RowSequenceIterator() = default;
+
+bool RowSequenceIterator::tryGetNext(uint64_t *result) {
+  while (true) {
+    if (rangeIndex_ == ranges_.size()) {
+      rangeIndex_ = 0;
+      refillRanges();
+      if (ranges_.empty()) {
+        return false;
+      }
+      continue;
+    }
+
+    const auto &range = ranges_[rangeIndex_];
+    auto rangeSize = range.second - range.first;
+    if (offset_ == rangeSize) {
+      ++rangeIndex_;
+      offset_ = 0;
+      continue;
+    }
+
+    *result = range.first + offset_;
+    ++offset_;
+    return true;
+  }
+}
+
+void RowSequenceIterator::refillRanges() {
+  auto thisChunk = residual_->take(chunkSize);
+  residual_ = residual_->drop(chunkSize);
+  ranges_.clear();
+  auto addRange = [this](uint64_t beginKey, uint64_t endKey) {
+    ranges_.emplace_back(beginKey, endKey);
+  };
+  thisChunk->forEachChunk(addRange);
 }
 
 namespace {
@@ -40,12 +103,11 @@ public:
   MyRowSequence(std::shared_ptr<ranges_t> ranges, ranges_t::const_iterator beginp,
       size_t entryOffset, size_t size);
   ~MyRowSequence() final = default;
-  std::shared_ptr<RowSequenceIterator> getRowSequenceIterator() const final;
 
   std::shared_ptr<RowSequence> take(size_t size) const final;
   std::shared_ptr<RowSequence> drop(size_t size) const final;
 
-  void forEachChunk(const std::function<void(uint64_t firstKey, uint64_t lastKey)> &f) const final;
+  void forEachChunk(const std::function<void(uint64_t beginKey, uint64_t endKey)> &f) const final;
 
   size_t size() const final {
     return size_;
@@ -57,30 +119,15 @@ private:
   size_t entryOffset_ = 0;
   size_t size_ = 0;
 };
-
-class MyRowSequenceIterator final : public RowSequenceIterator {
-  typedef std::map<uint64_t, uint64_t> ranges_t;
-public:
-  MyRowSequenceIterator(std::shared_ptr<ranges_t> ranges, ranges_t::const_iterator currentp,
-      size_t currentOffset, size_t size);
-  ~MyRowSequenceIterator() final = default;
-  bool tryGetNext(uint64_t *result) final;
-
-private:
-  std::shared_ptr<ranges_t> ranges_;
-  ranges_t::const_iterator current_;
-  size_t currentOffset_ = 0;
-  size_t size_ = 0;
-};
 } // namespace
 
-RowSequenceIterator::~RowSequenceIterator() = default;
 RowSequenceBuilder::RowSequenceBuilder() = default;
 RowSequenceBuilder::~RowSequenceBuilder() = default;
 
 void RowSequenceBuilder::addRange(uint64_t begin, uint64_t end) {
   if (begin > end) {
-    throw std::runtime_error(stringf("Malformed range [%o,%o)", begin, end));
+    auto message = stringf("Malformed range [%o,%o)", begin, end);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
   if (begin == end) {
@@ -180,10 +227,6 @@ MyRowSequence::MyRowSequence(std::shared_ptr<ranges_t> ranges, ranges_t::const_i
     size_t entryOffset, size_t size) : ranges_(std::move(ranges)), beginp_(beginp),
     entryOffset_(entryOffset), size_(size) {}
 
-std::shared_ptr<RowSequenceIterator> MyRowSequence::getRowSequenceIterator() const {
-  return std::make_shared<MyRowSequenceIterator>(ranges_, beginp_, entryOffset_, size_);
-}
-
 std::shared_ptr<RowSequence> MyRowSequence::take(size_t size) const {
   auto newSize = std::min(size, size_);
   return std::make_shared<MyRowSequence>(ranges_, beginp_, entryOffset_, newSize);
@@ -232,24 +275,22 @@ void MyRowSequence::forEachChunk(const std::function<void(uint64_t beginKey, uin
   }
 }
 
-MyRowSequenceIterator::MyRowSequenceIterator(std::shared_ptr<ranges_t> ranges,
-    ranges_t::const_iterator current, size_t currentOffset, size_t size) :
-    ranges_(std::move(ranges)), current_(current), currentOffset_(currentOffset), size_(size) {}
+std::shared_ptr<SequentialRowSequence> SequentialRowSequence::create(uint64_t begin, uint64_t end) {
+  return std::make_shared<SequentialRowSequence>(begin, end);
+}
 
-bool MyRowSequenceIterator::tryGetNext(uint64_t *result) {
-  while (size_ != 0) {
-    auto entrySize = current_->second - current_->first;
-    if (currentOffset_ < entrySize) {
-      *result = current_->first + currentOffset_;
-      ++currentOffset_;
-      --size_;
-      return true;
-    }
-    currentOffset_ = 0;
-    ++current_;
-  }
-  return false;
+std::shared_ptr<RowSequence> SequentialRowSequence::take(size_t size) const {
+  auto sizeToUse = std::min(size, this->size());
+  return create(begin_, begin_ + sizeToUse);
+}
+
+std::shared_ptr<RowSequence> SequentialRowSequence::drop(size_t size) const {
+  auto sizeToUse = std::min(size, this->size());
+  return create(begin_ + sizeToUse, end_);
+}
+
+void SequentialRowSequence::forEachChunk(const std::function<void(uint64_t, uint64_t)> &f) const {
+  f(begin_, end_);
 }
 }  // namespace
 }  // namespace deephaven::client::container
-

@@ -16,7 +16,7 @@ import java.util.List;
 @Immutable
 @BuildableStyle
 @JsonDeserialize(as = ImmutableTrustList.class)
-public abstract class TrustList implements Trust {
+public abstract class TrustList extends TrustBase {
 
     public static TrustList of(Trust... elements) {
         return ImmutableTrustList.builder().addValues(elements).build();
@@ -31,6 +31,22 @@ public abstract class TrustList implements Trust {
     @Override
     public final <T> T walk(Visitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public final boolean contains(Trust trust) {
+        return values().stream().anyMatch(t -> t.contains(trust));
+    }
+
+    @Override
+    public final Trust or(Trust other) {
+        if (contains(other)) {
+            return this;
+        }
+        if (other.contains(this)) {
+            return other;
+        }
+        return ImmutableTrustList.builder().addAllValues(values()).addValues(other).build();
     }
 
     @Check

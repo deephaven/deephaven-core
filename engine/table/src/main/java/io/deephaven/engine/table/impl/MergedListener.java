@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -14,7 +15,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
@@ -117,6 +117,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     private void propagateErrorInternal(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+        forceReferenceCountToZero();
+        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
         propagateErrorDownstream(error, entry);
         try {
             if (systemicResult()) {

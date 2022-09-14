@@ -16,7 +16,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.WritableSourceWithEnsurePrevious;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
@@ -39,7 +39,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DByteArraySource}.
  */
-public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSource<Byte> implements ImmutableColumnSourceGetDefaults.ForByte, WritableColumnSource<Byte>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious {
+public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSource<Byte> implements ImmutableColumnSourceGetDefaults.ForByte, WritableColumnSource<Byte>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
     private byte[] data;
 
     // region constructor
@@ -235,7 +235,7 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
     }
 
     @Override
-    public void ensurePrevious(RowSet rowSet) {
+    public void prepareForParallelPopulation(RowSet rowSet) {
         // we don't track previous values, so we don't care to do any work
     }
 

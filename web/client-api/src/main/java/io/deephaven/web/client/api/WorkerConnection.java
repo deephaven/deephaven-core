@@ -104,6 +104,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -648,6 +649,46 @@ public class WorkerConnection {
         info.failureHandled(throwable.toString());
     }
 
+    public Promise<JsVariableDefinition> getVariableDefinition(String name, String type) {
+        LazyPromise<JsVariableDefinition> promise = new LazyPromise<>();
+
+        final class Listener implements Consumer<JsVariableChanges> {
+            final JsRunnable subscription;
+
+            Listener() {
+                subscription = subscribeToFieldUpdates(this::accept);
+            }
+
+            @Override
+            public void accept(JsVariableChanges changes) {
+                JsVariableDefinition foundField = changes.getCreated()
+                        .find((field, p1, p2) -> field.getTitle().equals(name) && field.getType().equals(type));
+
+                if (foundField == null) {
+                    foundField = changes.getUpdated().find((field, p1, p2) -> field.getTitle().equals(name)
+                            && field.getType().equals(type));
+                }
+
+                if (foundField != null) {
+                    subscription.run();
+                    promise.succeed(foundField);
+                }
+            }
+        }
+
+        Listener listener = new Listener();
+
+        return promise
+                .timeout(10_000)
+                .asPromise()
+                .then(Promise::resolve, fail -> {
+                    listener.subscription.run();
+                    // noinspection unchecked, rawtypes
+                    return (Promise<JsVariableDefinition>) (Promise) Promise
+                            .reject(fail);
+                });
+    }
+
     public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns) {
         return whenServerReady("get a table").then(serve -> {
             JsLog.debug("innerGetTable", varDef.getTitle(), " started");
@@ -691,6 +732,32 @@ public class WorkerConnection {
                         "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
             }
             return getWidget(definition);
+        }
+    }
+
+    public Promise<?> getJsObject(JsPropertyMap<Object> definitionObject) {
+        if (definitionObject instanceof JsVariableDefinition) {
+            return getObject((JsVariableDefinition) definitionObject);
+        }
+
+        if (!definitionObject.has("type")) {
+            throw new IllegalArgumentException("no type field; could not getObject");
+        }
+        String type = definitionObject.getAsAny("type").asString();
+
+        boolean hasName = definitionObject.has("name");
+        boolean hasId = definitionObject.has("id");
+        if (hasName && hasId) {
+            throw new IllegalArgumentException("has both name and id field; could not getObject");
+        } else if (hasName) {
+            String name = definitionObject.getAsAny("name").asString();
+            return getVariableDefinition(name, type)
+                    .then(this::getObject);
+        } else if (hasId) {
+            String id = definitionObject.getAsAny("id").asString();
+            return getObject(new JsVariableDefinition(type, null, id, null));
+        } else {
+            throw new IllegalArgumentException("no name/id field; could not construct getObject");
         }
     }
 

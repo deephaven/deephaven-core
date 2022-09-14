@@ -133,11 +133,6 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return alternateColumnSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return alternateColumnSource.isStateless();
     }

@@ -11,6 +11,7 @@ import io.grpc.internal.ReadableBuffer;
 import io.grpc.internal.SerializingExecutor;
 import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.StatsTraceContext;
+import io.grpc.internal.TransportFrameUtil;
 import io.grpc.internal.TransportTracer;
 import io.grpc.internal.WritableBuffer;
 import jakarta.websocket.Session;
@@ -223,7 +224,7 @@ public class WebsocketStreamImpl extends AbstractServerStream {
             // Trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The
             // trailer response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the size in a 4 byte int
 
-            byte[][] serializedTrailers = InternalMetadata.serialize(trailers);
+            byte[][] serializedTrailers = TransportFrameUtil.toHttp2Headers(trailers);
             // Total up the size of the payload: 5 bytes for the prefix, and each trailer needs a colon+space delimiter,
             // and to end with \r\n
             int trailerLength = Arrays.stream(serializedTrailers).mapToInt(arr -> arr.length + 2).sum();

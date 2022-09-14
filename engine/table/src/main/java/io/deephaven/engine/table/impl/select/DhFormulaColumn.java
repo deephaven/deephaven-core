@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -43,7 +43,6 @@ import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.*;
@@ -344,7 +343,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         g.replace("ARGS", makeCommaSeparatedList(args));
         g.replace("FORMULA_STRING", ta.wrapWithCastIfNecessary(formulaString));
         g.replace("COLUMN_NAME", StringEscapeUtils.escapeJava(columnName));
-        final String joinedFormulaString = CompilerTools.createEscapedJoinedString(formulaString);
+        final String joinedFormulaString = QueryCompiler.createEscapedJoinedString(formulaString);
         g.replace("JOINED_FORMULA_STRING", joinedFormulaString);
         g.replace("EXCEPTION_TYPE", EVALUATION_EXCEPTION_CLASSNAME);
         return g.freeze();
@@ -765,13 +764,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         addParamClass.accept(p.type);
                         return null;
                     });
-            return AccessController
-                    .doPrivileged(
-                            (PrivilegedExceptionAction<Class<?>>) () -> CompilerTools.compile(className, classBody,
-                                    CompilerTools.FORMULA_PREFIX,
-                                    QueryScopeParamTypeUtil.expandParameterClasses(paramClasses)));
-        } catch (PrivilegedActionException pae) {
-            throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
+            final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
+            return compiler.compile(className, classBody, QueryCompiler.FORMULA_PREFIX,
+                    QueryScopeParamTypeUtil.expandParameterClasses(paramClasses));
         }
     }
 
@@ -830,35 +825,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         return TypeUtils.isBoxedType(type);
     }
 
-    /**
-     * Is this parameter possibly a Python type?
-     *
-     * Immutable types are not Python, known Python wrappers are Python, and anything else from a PythonScope is Python.
-     *
-     * @return true if this query scope parameter may be a Python type
-     */
-    private static boolean isPythonType(QueryScopeParam<?> param) {
-        if (isImmutableType(param)) {
-            return false;
-        }
-
-        // we want to catch PyObjects, and CallableWrappers even if they were hand inserted into a scope
-        final Object value = param.getValue();
-        if (value instanceof PyObject || value instanceof PythonScopeJpyImpl.CallableWrapper
-                || value instanceof PyListWrapper || value instanceof PyDictWrapper) {
-            return true;
-        }
-
-        // beyond the immutable types, we must assume that anything coming from Python is python
-        return ExecutionContext.getContext().getQueryScope() instanceof PythonScope;
-    }
-
     private boolean isUsedColumnStateless(String columnName) {
         return columnSources.get(columnName).isStateless();
-    }
-
-    private boolean usedColumnUsesPython(String columnName) {
-        return columnSources.get(columnName).preventsParallelism();
     }
 
     @Override
@@ -868,14 +836,4 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 && usedColumnArrays.stream().allMatch(this::isUsedColumnStateless);
     }
 
-    /**
-     * Does this formula column use Python (which would cause us to hang the GIL if we evaluate it off thread?)
-     *
-     * @return true if this column has the potential to hang the gil
-     */
-    public boolean preventsParallelization() {
-        return Arrays.stream(params).anyMatch(DhFormulaColumn::isPythonType)
-                || usedColumns.stream().anyMatch(this::usedColumnUsesPython)
-                || usedColumnArrays.stream().anyMatch(this::usedColumnUsesPython);
-    }
 }

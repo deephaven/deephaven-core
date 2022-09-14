@@ -16,6 +16,7 @@ class ClassicTableState final {
   typedef deephaven::client::column::ColumnSource ColumnSource;
   typedef deephaven::client::column::MutableColumnSource MutableColumnSource;
   typedef deephaven::client::container::RowSequence RowSequence;
+  typedef deephaven::client::table::Schema Schema;
   typedef deephaven::client::table::Table Table;
   typedef deephaven::client::utility::ColumnDefinitions ColumnDefinitions;
 
@@ -43,6 +44,7 @@ public:
 private:
   UInt64Chunk modifyKeysHelper(const RowSequence &rowsToModifyKeySpace);
 
+  std::shared_ptr<Schema> schema_;
   std::vector<std::shared_ptr<MutableColumnSource>> columns_;
   std::shared_ptr<std::map<uint64_t, uint64_t>> redirection_;
   /**

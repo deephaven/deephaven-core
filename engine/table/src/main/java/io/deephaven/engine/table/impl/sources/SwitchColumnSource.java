@@ -299,11 +299,6 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return currentSource.preventsParallelism() || (!prevInvalid() && prevSource.preventsParallelism());
-    }
-
-    @Override
     public boolean isStateless() {
         return currentSource.isStateless() && (prevInvalid() || prevSource.isStateless());
     }

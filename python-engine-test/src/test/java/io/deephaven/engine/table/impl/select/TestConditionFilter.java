@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.context.QueryScope;
@@ -48,11 +48,11 @@ public class TestConditionFilter extends PythonTest {
         }
     }
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestConditionFilter.class, "CompilerTools.logEnabled", false);
+    private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TestConditionFilter.class, "QueryCompiler.logEnabled", false);
 
     private final Table testDataTable;
-    private boolean compilerToolsLogEnabledInitial = false;
+    private boolean queryCompilerLogEnabledInitial = false;
 
     public TestConditionFilter() {
         testDataTable = getTestDataTable();
@@ -67,12 +67,12 @@ public class TestConditionFilter extends PythonTest {
             ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(),
                     PythonMatchFilterTest.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
-        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
+        queryCompilerLogEnabledInitial = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
     }
 
     @After
     public void tearDown() throws Exception {
-        CompilerTools.setLogEnabled(compilerToolsLogEnabledInitial);
+        QueryCompiler.setLogEnabled(queryCompilerLogEnabledInitial);
     }
 
     @Test

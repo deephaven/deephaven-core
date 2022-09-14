@@ -33,8 +33,7 @@ public:
   SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticketBytes,
       std::shared_ptr<ColumnDefinitions> colDefs,
       std::promise<std::shared_ptr<SubscriptionHandle>> promise,
-      std::shared_ptr <TickingCallback> callback,
-      bool wantImmer);
+      std::shared_ptr <TickingCallback> callback);
   void invoke() final;
 
 private:
@@ -45,7 +44,6 @@ private:
   std::shared_ptr<ColumnDefinitions> colDefs_;
   std::promise<std::shared_ptr<SubscriptionHandle>> promise_;
   std::shared_ptr<TickingCallback> callback_;
-  bool wantImmer_ = false;
 };
 
 // A simple extension to arrow::Buffer that owns its DetachedBuffer storage
@@ -64,13 +62,12 @@ std::shared_ptr<SubscriptionHandle> startSubscribeThread(
     Executor *flightExecutor,
     std::shared_ptr<ColumnDefinitions> columnDefinitions,
     const Ticket &ticket,
-    std::shared_ptr<TickingCallback> callback,
-    bool wantImmer) {
+    std::shared_ptr<TickingCallback> callback) {
   std::promise<std::shared_ptr<SubscriptionHandle>> promise;
   auto future = promise.get_future();
   std::vector<int8_t> ticketBytes(ticket.ticket().begin(), ticket.ticket().end());
   auto ss = std::make_shared<SubscribeState>(std::move(server), std::move(ticketBytes),
-      std::move(columnDefinitions), std::move(promise), std::move(callback), wantImmer);
+      std::move(columnDefinitions), std::move(promise), std::move(callback));
   flightExecutor->invoke(std::move(ss));
   return future.get();
 }
@@ -78,9 +75,9 @@ std::shared_ptr<SubscriptionHandle> startSubscribeThread(
 namespace {
 SubscribeState::SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticketBytes,
     std::shared_ptr<ColumnDefinitions> colDefs, std::promise<std::shared_ptr<SubscriptionHandle>> promise,
-    std::shared_ptr<TickingCallback> callback, bool wantImmer) :
+    std::shared_ptr<TickingCallback> callback) :
     server_(std::move(server)), ticketBytes_(std::move(ticketBytes)), colDefs_(std::move(colDefs)),
-    promise_(std::move(promise)), callback_(std::move(callback)), wantImmer_(wantImmer) {}
+    promise_(std::move(promise)), callback_(std::move(callback)) {}
 
 void SubscribeState::invoke() {
   try {
@@ -152,7 +149,7 @@ std::shared_ptr<SubscriptionHandle> SubscribeState::invokeHelper() {
 
   // Run forever (until error or cancellation)
   auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(colDefs_),
-      std::move(callback_), wantImmer_);
+      std::move(callback_));
   return std::make_shared<CancelWrapper>(std::move(processor));
 }
 

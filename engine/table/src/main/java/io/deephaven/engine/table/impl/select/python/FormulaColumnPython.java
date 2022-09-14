@@ -58,11 +58,6 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public boolean preventsParallelization() {
-        return true;
-    }
-
-    @Override
     protected final FormulaSourceDescriptor getSourceDescriptor() {
         return new FormulaSourceDescriptor(
                 returnedType,

@@ -18,7 +18,6 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.qst.column.Column;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -760,16 +759,6 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
         try (final Stream<ColumnSource<T>> sources = sourceLookup.currSources()) {
             return sources.allMatch(ColumnSource::isImmutable);
-        }
-    }
-
-    @Override
-    public boolean preventsParallelism() {
-        if (!unionSourceManager.isUsingComponentsSafe()) {
-            return true;
-        }
-        try (final Stream<ColumnSource<T>> sources = sourceLookup.currSources()) {
-            return sources.anyMatch(ColumnSource::preventsParallelism);
         }
     }
 

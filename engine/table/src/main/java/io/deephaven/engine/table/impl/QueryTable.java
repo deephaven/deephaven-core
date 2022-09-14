@@ -20,6 +20,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.rowset.*;
@@ -1266,7 +1267,10 @@ public class QueryTable extends BaseTable {
 
                     final QueryTable resultTable;
                     final LivenessScope liveResultCapture = isRefreshing() ? new LivenessScope() : null;
-                    try (final SafeCloseable ignored = liveResultCapture != null ? liveResultCapture::release : null) {
+                    try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null;
+                            final SafeCloseable ignored2 = ExecutionContext.getDefaultContext().open()) {
+                        // we open the default context here to ensure that the update processing happens in the default
+                        // context whether it is processed in parallel or not
                         try (final RowSet emptyRowSet = RowSetFactory.empty();
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {

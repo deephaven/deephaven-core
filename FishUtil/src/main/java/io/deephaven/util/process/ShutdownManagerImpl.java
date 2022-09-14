@@ -15,8 +15,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,10 +63,7 @@ public class ShutdownManagerImpl implements ShutdownManager {
 
     @Override
     public void addShutdownHookToRuntime() {
-        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-            Runtime.getRuntime().addShutdownHook(new Thread(this::maybeInvokeTasks));
-            return null;
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(this::maybeInvokeTasks));
     }
 
     @Override

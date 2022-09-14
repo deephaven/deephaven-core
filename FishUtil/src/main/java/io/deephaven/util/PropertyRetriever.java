@@ -9,11 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 
 /**
  * Class to assist with retrieving properties such as passwords from environment variables, files, and properties.
@@ -34,7 +30,7 @@ public class PropertyRetriever {
      * <li>If both a property file and property name are provided and exist in the Configuration instance, an exception
      * will be thrown.</li>
      * </ul>
-     * 
+     *
      * @param configuration the Configuration instance to check
      * @param propertyMeaning a user-friendly property meaning, included in thrown exceptions
      * @param environmentVariable an optional environment variable to check for the value
@@ -94,48 +90,36 @@ public class PropertyRetriever {
         return environmentVariable != null ? System.getenv(environmentVariable) : null;
     }
 
-    private static String getPropertyFromFileOrProperty(final Configuration configuration,
-            final String propertyMeaning,
-            final String fileProperty,
-            final String propertyName) {
-        try {
-            // We need permission to read the property and access the file, so this needs to be privileged.
-            return AccessController.doPrivileged((PrivilegedExceptionAction<String>) () -> {
-                if (fileProperty != null && configuration.hasProperty(fileProperty)) {
-                    if (propertyName != null && configuration.hasProperty(propertyName)) {
-                        throw new IllegalArgumentException("Conflicting properties for " + propertyMeaning + " - both "
-                                + fileProperty + " and " + propertyName + " are set.");
-                    }
-                    final String propertyFilename = configuration.getProperty(fileProperty);
-                    final File propertyFile = new File(propertyFilename);
-                    try {
-                        return new String(Files.readAllBytes(propertyFile.toPath()), Charset.forName("UTF-8")).trim();
-                    } catch (IOException e) {
-                        try (InputStream resourceAsStream =
-                                PropertyRetriever.class.getResourceAsStream("/" + propertyFilename)) {
-                            if (resourceAsStream == null) {
-                                throw new ConfigurationException("Unable to open file " + propertyFilename
-                                        + " specified by " + fileProperty + " for " + propertyMeaning);
-                            }
-                            final BufferedReader bufferedReader =
-                                    new BufferedReader(new InputStreamReader(resourceAsStream));
-                            return bufferedReader.readLine();
-                        } catch (IOException e2) {
-                            throw new UncheckedIOException(
-                                    "Can not read property file " + propertyFilename + " for " + propertyMeaning, e2);
-                        }
-                    }
-                } else if (propertyName != null && configuration.hasProperty(propertyName)) {
-                    return configuration.getProperty(propertyName);
-                }
-                return null;
-            });
-        } catch (final PrivilegedActionException pae) {
-            if (pae.getException() instanceof UncheckedIOException) {
-                throw (UncheckedIOException) pae.getException();
-            } else {
-                throw new RuntimeException(pae.getException());
+    private static String getPropertyFromFileOrProperty(
+            final Configuration configuration, final String propertyMeaning,
+            final String fileProperty, final String propertyName) {
+        if (fileProperty != null && configuration.hasProperty(fileProperty)) {
+            if (propertyName != null && configuration.hasProperty(propertyName)) {
+                throw new IllegalArgumentException("Conflicting properties for " + propertyMeaning + " - both "
+                        + fileProperty + " and " + propertyName + " are set.");
             }
+            final String propertyFilename = configuration.getProperty(fileProperty);
+            final File propertyFile = new File(propertyFilename);
+            try {
+                return Files.readString(propertyFile.toPath()).trim();
+            } catch (IOException e) {
+                try (InputStream resourceAsStream =
+                        PropertyRetriever.class.getResourceAsStream("/" + propertyFilename)) {
+                    if (resourceAsStream == null) {
+                        throw new ConfigurationException("Unable to open file " + propertyFilename
+                                + " specified by " + fileProperty + " for " + propertyMeaning);
+                    }
+                    final BufferedReader bufferedReader =
+                            new BufferedReader(new InputStreamReader(resourceAsStream));
+                    return bufferedReader.readLine();
+                } catch (IOException e2) {
+                    throw new UncheckedIOException(
+                            "Can not read property file " + propertyFilename + " for " + propertyMeaning, e2);
+                }
+            }
+        } else if (propertyName != null && configuration.hasProperty(propertyName)) {
+            return configuration.getProperty(propertyName);
         }
+        return null;
     }
 }

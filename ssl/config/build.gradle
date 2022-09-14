@@ -25,3 +25,7 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+project.tasks.named('quick').configure {
+    dependsOn test
+}

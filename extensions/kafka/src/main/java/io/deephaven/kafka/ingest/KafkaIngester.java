@@ -157,7 +157,7 @@ public class KafkaIngester {
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
      *        resource allocation until first call to {@link KafkaStreamConsumer#accept(Object)} or
-     *        {@link KafkaStreamConsumer#acceptFailure(Exception)} if appropriate.
+     *        {@link KafkaStreamConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
      */
@@ -186,7 +186,7 @@ public class KafkaIngester {
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
      *        resource allocation until first call to {@link KafkaStreamConsumer#accept(Object)} or
-     *        {@link KafkaStreamConsumer#acceptFailure(Exception)} if appropriate.
+     *        {@link KafkaStreamConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
      */
@@ -330,7 +330,7 @@ public class KafkaIngester {
 
             try {
                 streamConsumer.accept(partitionRecords);
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex).endl();
                 if (messagesWithErr > MAX_ERRS) {

@@ -37,6 +37,9 @@ public interface JettyServerModule {
         serverBuilder.maxInboundMessageSize(maxMessageSize);
 
         serverBuilder.directExecutor();
+
+        serverBuilder.intercept(new JettyCertInterceptor());
+
         return serverBuilder.buildServletAdapter();
     }
 }
