@@ -106,8 +106,8 @@ public class DeephavenApiServer {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
                 () -> {
-                    // it's important to call healthStatusManager.enterTerminalState() in the same thread as server.stopWithTimeout().
-                    // If we add multiple `OrderingCategory.FIRST` callbacks, they'll execute in parallel and blow up.
+                    // healthStatusManager.enterTerminalState() must be called before server.stopWithTimeout().
+                    // If we add multiple `OrderingCategory.FIRST` callbacks, they'll execute in the wrong order.
                     healthStatusManager.enterTerminalState();
                     server.stopWithTimeout(10, TimeUnit.SECONDS);
                 });
