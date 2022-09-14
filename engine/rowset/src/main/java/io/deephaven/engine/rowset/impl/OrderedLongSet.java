@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
@@ -487,6 +488,13 @@ public interface OrderedLongSet {
                 appendRange(start + shiftAmount, last + shiftAmount);
                 return true;
             });
+        }
+
+        default void appendOrderedRowKeysChunk(LongChunk<OrderedRowKeys> chunk, int offset, int length) {
+            LongChunkIterator it = new LongChunkIterator(chunk, offset, length);
+            while (it.hasNext()) {
+                appendKey(it.nextLong());
+            }
         }
 
         @Override
