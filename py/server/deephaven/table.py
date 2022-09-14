@@ -70,7 +70,9 @@ def _query_scope_ctx():
     caller_frame = outer_frames[i + 1].frame
     function = outer_frames[i + 1].function
     if len(outer_frames) > i + 2 or function != "<module>":
-        scope_dict = caller_frame.f_globals.copy()
+        # create the query scope in the reverse order of Python scope rules - LEGB
+        scope_dict = caller_frame.f_builtins.copy()
+        scope_dict.update(caller_frame.f_globals)
         scope_dict.update(caller_frame.f_locals)
         try:
             _j_py_script_session.pushScope(scope_dict)

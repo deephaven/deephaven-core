@@ -573,7 +573,7 @@ class TableTestCase(BaseTestCase):
             else:
                 self.assertIn(s, t_data)
 
-    def test_update_LEG_closure(self):
+    def test_update_LEGB_closure(self):
         nonlocal_str = "nonlocal str"
         closure_str = "closure str"
 
@@ -586,7 +586,7 @@ class TableTestCase(BaseTestCase):
             a_number = 20002
 
             local_int = 101
-            with self.subTest("LEG"):
+            with self.subTest("LEGB"):
                 t = empty_table(1)
                 formulas = ["Col1 = local_fn()",
                             "Col2 = global_fn()",
@@ -595,10 +595,11 @@ class TableTestCase(BaseTestCase):
                             "Col5 = local_int",
                             "Col6 = global_int",
                             "Col7 = a_number",
+                            "Col8 = max(8, 88, 888)"
                             ]
 
                 rt = t.update(formulas)
-                column_data = ["local str", "global str", "nonlocal str", arg, 101, 1001, 20002]
+                column_data = ["local str", "global str", "nonlocal str", arg, 101, 1001, 20002, 888]
                 self.verify_table_data(rt, column_data)
 
             with self.subTest("Closure"):
