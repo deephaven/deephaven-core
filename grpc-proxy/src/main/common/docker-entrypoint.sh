@@ -5,7 +5,7 @@ set -o nounset
 TLS_DIR="${TLS_DIR:-/etc/deephaven/certs}"
 TLS_CRT="${TLS_CRT:-$TLS_DIR/tls.crt}"
 TLS_KEY="${TLS_KEY:-$TLS_DIR/tls.key}"
-TLS_CA="${TLS_CA:-$TLD_DIR/ca.crt}"
+TLS_CA="${TLS_CA:-$TLS_DIR/ca.crt}"
 
 PROXY_TLS_PORT="${PROXY_TLS_PORT:-8443}"
 PROXY_DEBUG_PORT="${PROXY_DEBUG_PORT:-8080}"
