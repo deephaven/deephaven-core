@@ -8,6 +8,7 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.grpc.MTlsCertificate;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.log.LogModule;
@@ -33,14 +34,12 @@ import java.util.Set;
 @Module(includes = LogModule.class)
 public interface NettyServerModule {
 
-
     @Binds
     ServerConfig bindsServerConfig(NettyConfig serverConfig);
 
     @Provides
     static GrpcServer serverBuilder(
             NettyConfig serverConfig,
-
             Set<BindableService> services,
             Set<ServerInterceptor> interceptors) {
         final NettyServerBuilder serverBuilder;
