@@ -46,7 +46,7 @@ public class KeyedRecordAdapter<K, T> {
      * Consumer that obtains lock before calling code
      */
     @NotNull
-    private static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> DO_LOCKED_FUNCTION = GetDataLockType.getDoLockedConsumer(GetDataLockType.SNAPSHOT);
+    protected static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> DO_LOCKED_FUNCTION = GetDataLockType.getDoLockedConsumer(GetDataLockType.SNAPSHOT);
 
     /**
      * The ToMapListener that tracks the DH index for each key. Table data is never
@@ -79,7 +79,7 @@ public class KeyedRecordAdapter<K, T> {
      * first be converted from a {@code List<?>} to an {@code Object[]}.
      */
     @NotNull
-    private final Function<List<?>, List<Object>> dataKeysListToMapKeys;
+    protected final Function<List<?>, List<Object>> dataKeysListToMapKeys;
 
     /**
      * The keys by which records are identified.
@@ -88,10 +88,10 @@ public class KeyedRecordAdapter<K, T> {
     private final String[] keyColumns;
 
     @NotNull
-    private final SingleRowRecordAdapter<T> singleRowRecordAdapter;
+    protected final SingleRowRecordAdapter<T> singleRowRecordAdapter;
 
     @NotNull
-    private final MultiRowRecordAdapter<T> multiRowRecordAdapter;
+    protected final MultiRowRecordAdapter<T> multiRowRecordAdapter;
 
     /**
      * Consumer to update a record with key data (e.g. populating the record fields that correspond to the
@@ -101,6 +101,12 @@ public class KeyedRecordAdapter<K, T> {
      */
     @Nullable
     private final BiConsumer<T, K> recordKeyDataUpdater;
+
+    /**
+     * Whether this KeyedRecordAdapter has just one key column (as opposed to multiple key columns).
+     */
+    protected final boolean isSingleKeyCol;
+    protected final List<Class<?>> keyColumnTypesList;
 
     /**
      * Create a KeyedRecordAdapter that translates rows of {@code sourceTable} into instances of type {@code T} using the
@@ -116,7 +122,7 @@ public class KeyedRecordAdapter<K, T> {
         }
 
         this.keyColumns = keyColumns;
-        final boolean isSingleKeyCol = keyColumns.length == 1;
+        isSingleKeyCol = keyColumns.length == 1;
 
         final ColumnSource<?>[] keyColumnSources = Arrays.stream(keyColumns).map(sourceTable::getColumnSource).toArray(ColumnSource[]::new);
 
@@ -148,6 +154,9 @@ public class KeyedRecordAdapter<K, T> {
 
         singleRowRecordAdapter = recordAdapterDescriptorNoKeys.createSingleRowRecordAdapter(sourceTable);
         multiRowRecordAdapter = recordAdapterDescriptorNoKeys.createMultiRowRecordAdapter(sourceTable);
+
+        final Class<?>[] keyColumnTypes = Arrays.stream(keyColumnSources).map(ColumnSource::getType).toArray(Class[]::new);
+        keyColumnTypesList = Collections.unmodifiableList(Arrays.asList(keyColumnTypes));
 
         // Set the dataKeyToMapKey, dataKeysListToMapKeys, and updateRecordWithKeyData lambdas depending on
         // whether the key is a simple key from a single column or a composite key from multiple columns:
@@ -197,7 +206,6 @@ public class KeyedRecordAdapter<K, T> {
                 return mapKeys;
             };
 
-            final Class<?>[] keyColumnTypes = Arrays.stream(keyColumnSources).map(ColumnSource::getType).toArray(Class[]::new);
 
             final List<BiConsumer<T, List<?>>> keyDataUpdaters = new ArrayList<>(keyColumns.length);
             for (int i = 0; i < keyColumns.length; i++) {
@@ -366,7 +374,7 @@ public class KeyedRecordAdapter<K, T> {
      *                                     It is not needed but is checked against {@link ToMapListener.RowSetForKeysResult#usePrev} for consistency.
      * @return {@code true} If the operation succeeds and {@code recordDataArrs}, {@code recordDataKeys}, and {@code dbIdxKeyToDataKeyPositionRef} have been populated.
      */
-    private boolean retrieveDataMultipleKeys(
+    protected final boolean retrieveDataMultipleKeys(
             @NotNull final List<Object> mapKeys,
             @NotNull final Object[] recordDataArrs,
             @NotNull final TLongList recordDataKeys,
@@ -460,4 +468,7 @@ public class KeyedRecordAdapter<K, T> {
         return result.getValue();
     }
 
+    public boolean isSingleKeyCol() {
+        return isSingleKeyCol;
+    }
 }

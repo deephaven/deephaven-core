@@ -5,8 +5,12 @@
 """ This package is a place for Deephaven experimental features. """
 
 import jpy
+
 from deephaven import DHError
 from deephaven.table import Table
+from .keyed_record_adapter import KeyedRecordAdapter
+from .keyed_record_adapter import make_record_adapter
+from .keyed_record_adapter import make_record_adapter_with_constructor
 
 _JWindowCheck = jpy.get_type("io.deephaven.engine.util.WindowCheck")
 
