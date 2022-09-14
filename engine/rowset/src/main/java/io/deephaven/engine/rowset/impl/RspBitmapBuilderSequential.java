@@ -7,7 +7,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.rsp.DisposableRspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
@@ -129,48 +128,58 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         }
 
         if (rb != null) {
-            // flush to the rb before adding
-            if (pendingStart != -1) {
-                flushPendingRange();
-            }
-            if (pendingContainerKey != -1) {
-                flushPendingContainer();
-            }
-
-            // explore shortcuts before adding key singly
-            if (length == 1) {
-                rb.appendUnsafeNoWriteCheck(chunk.get(offset));
-                return;
-            }
-
-            final int lastOffsetInclusive = offset + length - 1;
-            final long first = chunk.get(offset);
-            final long last = chunk.get(lastOffsetInclusive);
-            if (last - first + 1 == length) {
-                rb.addRangeUnsafeNoWriteCheck(first, last);
-                return;
-            }
-
-            rb.addValuesUnsafeNoWriteCheck(chunk, offset, length);
+            appendKeyChunkRb(chunk, offset, length);
         } else {
-            // explore shortcuts before adding key singly
-            if (length == 1) {
-                appendKey(chunk.get(offset));
-                return;
-            }
+            appendKeyChunk(chunk, offset, length);
+        }
+    }
 
-            final int lastOffsetInclusive = offset + length - 1;
-            final long first = chunk.get(offset);
-            final long last = chunk.get(lastOffsetInclusive);
-            if (last - first + 1 == length) {
-                appendRange(first, last);
-                return;
-            }
+    private void appendKeyChunkRb(LongChunk<OrderedRowKeys> chunk, int offset, int length) {
+        // flush to the rb before appending
+        if (pendingStart != -1) {
+            flushPendingRange();
+        }
+        if (pendingContainerKey != -1) {
+            flushPendingContainer();
+        }
 
-            final LongChunkIterator it = new LongChunkIterator(chunk, offset, length);
-            while (it.hasNext()) {
-                appendKey(it.nextLong());
-            }
+        // single key?
+        if (length == 1) {
+            rb.appendUnsafeNoWriteCheck(chunk.get(offset));
+            return;
+        }
+
+        // single range?
+        final int lastOffsetInclusive = offset + length - 1;
+        final long first = chunk.get(offset);
+        final long last = chunk.get(lastOffsetInclusive);
+        if (last - first + 1 == length) {
+            rb.appendRangeUnsafeNoWriteCheck(first, last);
+            return;
+        }
+
+        rb.addValuesUnsafeNoWriteCheck(chunk, offset, length);
+    }
+
+    private void appendKeyChunk(LongChunk<OrderedRowKeys> chunk, int offset, int length) {
+        // single key?
+        if (length == 1) {
+            appendKey(chunk.get(offset));
+            return;
+        }
+
+        // single range?
+        final int lastOffsetInclusive = offset + length - 1;
+        final long first = chunk.get(offset);
+        final long last = chunk.get(lastOffsetInclusive);
+        if (last - first + 1 == length) {
+            appendRange(first, last);
+            return;
+        }
+
+        final LongChunkIterator it = new LongChunkIterator(chunk, offset, length);
+        while (it.hasNext()) {
+            appendKey(it.nextLong());
         }
     }
 
