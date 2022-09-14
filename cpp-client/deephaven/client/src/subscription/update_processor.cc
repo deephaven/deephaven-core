@@ -19,7 +19,6 @@
 #include "deephaven/client/ticking.h"
 #include "deephaven/flatbuf/Barrage_generated.h"
 
-using deephaven::client::ClassicTickingUpdate;
 using deephaven::client::chunk::ChunkFiller;
 using deephaven::client::chunk::ChunkMaker;
 using deephaven::client::chunk::UInt64Chunk;
@@ -74,43 +73,130 @@ std::optional<ExtractedMetadata> extractMetadata(
 std::shared_ptr<UpdateProcessor> UpdateProcessor::startThread(
     std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs,
-    std::shared_ptr<TickingCallback> callback,
-    bool wantImmer) {
+    std::shared_ptr<TickingCallback> callback) {
   auto result = std::make_shared<UpdateProcessor>(std::move(fsr),
       std::move(colDefs), std::move(callback));
-  std::thread t(&UpdateProcessor::runForever, result, wantImmer);
+  std::thread t(&UpdateProcessor::runForever, result);
   t.detach();
   return result;
 }
 
 UpdateProcessor::UpdateProcessor(std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs, std::shared_ptr<TickingCallback> callback) :
-    fsr_(std::move(fsr)), colDefs_(std::move(colDefs)), callback_(std::move(callback)) {}
+    fsr_(std::move(fsr)), colDefs_(std::move(colDefs)), callback_(std::move(callback)),
+    cancelled_(false) {}
 
 UpdateProcessor::~UpdateProcessor() = default;
 
 void UpdateProcessor::cancel() {
+  cancelled_ = true;
   fsr_->Cancel();
 }
 
-void UpdateProcessor::runForever(const std::shared_ptr<UpdateProcessor> &self, bool wantImmer) {
+void UpdateProcessor::runForever(const std::shared_ptr<UpdateProcessor> &self) {
   std::cerr << "UpdateProcessor is starting.\n";
   std::exception_ptr eptr;
   try {
-    if (wantImmer) {
-      self->immerRunForeverHelper();
-    } else {
-      self->classicRunForeverHelper();
-    }
+    self->runForeverHelper();
   } catch (...) {
-    eptr = std::current_exception();
-    self->callback_->onFailure(eptr);
+    // If the thread was been cancelled via explicit user action, then swallow all errors.
+    if (!self->cancelled_) {
+      eptr = std::current_exception();
+      self->callback_->onFailure(eptr);
+    }
   }
-  std::cerr << "UpdateProcessor is exiting.\n";
 }
 
-void UpdateProcessor::classicRunForeverHelper() {
-  ClassicTableState state(*colDefs_);
+std::pair<std::shared_ptr<RowSequence>, std::shared_ptr<Table>> processRemoves(
+    const std::shared_ptr<Table> &beforeRemoves, ImmerTableState *state,
+    const ExtractedMetadata &md) {
+  if (md.removedRows_->empty()) {
+    auto empty = RowSequence::createEmpty();
+    auto afterRemoves = beforeRemoves;
+    return {std::move(empty), std::move(afterRemoves)};
+  }
+
+  auto removedRowsIndexSpace = state->erase(*md.removedRows_);
+  auto afterRemoves = state->snapshot();
+  return {std::move(removedRowsIndexSpace), std::move(afterRemoves)};
+}
+
+std::pair<std::shared_ptr<RowSequence>, std::shared_ptr<Table>> processAdds(
+    const std::shared_ptr<Table> &beforeAdds, ImmerTableState *state,
+    const ExtractedMetadata &md, size_t numCols,
+    arrow::flight::FlightStreamReader *fsr, arrow::flight::FlightStreamChunk *flightStreamChunk) {
+  if (md.numAdds_ == 0) {
+    auto empty = RowSequence::createEmpty();
+    auto afterAdds = beforeAdds;
+    return {std::move(empty), std::move(afterAdds)};
+  }
+
+  auto addedRowsIndexSpace = state->addKeys(*md.addedRows_);
+
+  // Copy everything.
+  auto rowsRemaining = addedRowsIndexSpace->take(addedRowsIndexSpace->size());
+
+  auto processAddBatch = [state, &rowsRemaining](
+      const std::vector<std::shared_ptr<arrow::Array>> &data) {
+    if (data.empty()) {
+      return;
+    }
+    auto size = data[0]->length();
+    auto rowsToAddThisTime = rowsRemaining->take(size);
+    rowsRemaining = rowsRemaining->drop(size);
+    state->addData(data, *rowsToAddThisTime);
+  };
+  BatchParser::parseBatches(numCols, md.numAdds_, false, fsr, flightStreamChunk,
+      processAddBatch);
+
+  if (md.numMods_ != 0) {
+    // Currently the FlightStreamReader is pointing to the last add record. We need to advance
+    // it so it points to the first mod record.
+    okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->Next(flightStreamChunk)));
+  }
+  auto afterAdds = state->snapshot();
+  return {std::move(addedRowsIndexSpace), std::move(afterAdds)};
+}
+
+std::pair<std::vector<std::shared_ptr<RowSequence>>, std::shared_ptr<Table>> processModifies(
+    const std::shared_ptr<Table> &beforeModifies, ImmerTableState *state,
+    const ExtractedMetadata &md, size_t numCols, arrow::flight::FlightStreamReader *fsr,
+    arrow::flight::FlightStreamChunk *flightStreamChunk) {
+  if (md.numMods_ == 0) {
+    auto afterModifies = beforeModifies;
+    return {{}, std::move(afterModifies)};
+  }
+  auto modifiedRowsIndexSpace = state->modifyKeys(md.modifiedRows_);
+  // Local copy of modifiedRowsIndexSpace
+  auto keysRemaining = makeReservedVector<std::shared_ptr<RowSequence>>(numCols);
+  for (const auto &keys: modifiedRowsIndexSpace) {
+    keysRemaining.push_back(keys->take(keys->size()));
+  }
+
+  std::vector<std::shared_ptr<RowSequence>> keysToModifyThisTime(numCols);
+
+  auto processModifyBatch = [state, &keysRemaining, &keysToModifyThisTime, numCols](
+      const std::vector<std::shared_ptr<arrow::Array>> &data) {
+    if (data.size() != numCols) {
+      auto message = stringf("Expected % cols, got %o", numCols, data.size());
+      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    }
+    for (size_t i = 0; i < data.size(); ++i) {
+      const auto &src = data[i];
+      auto &krm = keysRemaining[i];
+      keysToModifyThisTime[i] = krm->take(src->length());
+      krm = krm->drop(src->length());
+    }
+    state->modifyData(data, keysToModifyThisTime);
+  };
+
+  BatchParser::parseBatches(numCols, md.numMods_, true, fsr, flightStreamChunk, processModifyBatch);
+  auto afterModifies = state->snapshot();
+  return {std::move(modifiedRowsIndexSpace), std::move(afterModifies)};
+}
+
+void UpdateProcessor::runForeverHelper() {
+  ImmerTableState state(colDefs_);
 
   // In this loop we process Arrow Flight messages until error or cancellation.
   arrow::flight::FlightStreamChunk flightStreamChunk;
@@ -130,183 +216,27 @@ void UpdateProcessor::classicRunForeverHelper() {
     // 3. adds
     // 4. modifies
 
+    auto prev = state.snapshot();
+
     // 1. Removes
-    auto removedRowsKeySpace = std::move(md.removedRows_);
-    auto removedRowsIndexSpace = state.erase(*removedRowsKeySpace);
+    auto [removes, afterRemoves] = processRemoves(prev, &state, md);
 
     // 2. Shifts
     state.applyShifts(*md.shiftStartIndex_, *md.shiftEndIndex_, *md.shiftDestIndex_);
 
     // 3. Adds
-    auto addedRowsKeySpace = RowSequence::createEmpty();
-    auto addedRowsIndexSpace = UInt64Chunk::create(0);
-    if (md.numAdds_ != 0) {
-      addedRowsKeySpace = std::move(md.addedRows_);
-      addedRowsIndexSpace = state.addKeys(*addedRowsKeySpace);
-
-      // Copy everything.
-      auto rowsRemaining = addedRowsIndexSpace.take(addedRowsIndexSpace.size());
-
-      auto processAddBatch = [&state, &rowsRemaining](
-          const std::vector<std::shared_ptr<arrow::Array>> &data) {
-        if (data.empty()) {
-          return;
-        }
-        auto size = data[0]->length();
-        auto rowsToAddThisTime = rowsRemaining.take(size);
-        rowsRemaining = rowsRemaining.drop(size);
-        state.addData(data, rowsToAddThisTime);
-      };
-      BatchParser::parseBatches(*colDefs_, md.numAdds_, false, fsr_.get(), &flightStreamChunk,
-          processAddBatch);
-
-      if (md.numMods_ != 0) {
-        // Currently the FlightStreamReader is pointing to the last add record. We need to advance
-        // it so it points to the first mod record.
-        okOrThrow(DEEPHAVEN_EXPR_MSG(fsr_->Next(&flightStreamChunk)));
-      }
-    }
-
-    auto ncols = colDefs_->vec().size();
+    auto [adds, afterAdds] = processAdds(afterRemoves, &state, md, colDefs_->size(), fsr_.get(),
+        &flightStreamChunk);
 
     // 4. Modifies
-    auto modifiedRowsKeySpace = std::move(md.modifiedRows_);
-    auto modifiedRowsIndexSpace = state.modifyKeys(modifiedRowsKeySpace);
-    if (md.numMods_ != 0) {
-      // Local copy of modifiedRowsIndexSpace
-      auto keysRemaining = makeReservedVector<UInt64Chunk>(ncols);
-      for (const auto &keys : modifiedRowsIndexSpace) {
-        keysRemaining.push_back(keys.take(keys.size()));
-      }
+    auto [modifies, afterModifies] = processModifies(afterAdds, &state, md, colDefs_->size(),
+        fsr_.get(), &flightStreamChunk);
 
-      std::vector<UInt64Chunk> keysToModifyThisTime(ncols);
-
-      auto processModifyBatch = [&state, &keysRemaining, &keysToModifyThisTime, ncols](
-          const std::vector<std::shared_ptr<arrow::Array>> &data) {
-        if (data.size() != ncols) {
-          throw std::runtime_error(stringf("data.size() != ncols (%o != %o)", data.size(), ncols));
-        }
-        for (size_t i = 0; i < data.size(); ++i) {
-          const auto &src = data[i];
-          auto &krm = keysRemaining[i];
-          keysToModifyThisTime[i] = krm.take(src->length());
-          krm = krm.drop(src->length());
-        }
-        state.modifyData(data, keysToModifyThisTime);
-      };
-
-      BatchParser::parseBatches(*colDefs_, md.numMods_, true, fsr_.get(), &flightStreamChunk,
-          processModifyBatch);
-    }
-
-    auto currentTableKeySpace = state.snapshot();
-    auto currentTableIndexSpace = state.snapshotUnwrapped();
-
-    ClassicTickingUpdate update(std::move(removedRowsKeySpace), std::move(removedRowsIndexSpace),
-        std::move(addedRowsKeySpace), std::move(addedRowsIndexSpace),
-        std::move(modifiedRowsKeySpace), std::move(modifiedRowsIndexSpace),
-        std::move(currentTableKeySpace), std::move(currentTableIndexSpace));
-    callback_->onTick(update);
-  }
-}
-
-void UpdateProcessor::immerRunForeverHelper() {
-  ImmerTableState state(*colDefs_);
-
-  // In this loop we process Arrow Flight messages until error or cancellation.
-  arrow::flight::FlightStreamChunk flightStreamChunk;
-  while (true) {
-    okOrThrow(DEEPHAVEN_EXPR_MSG(fsr_->Next(&flightStreamChunk)));
-
-    // Parse all the metadata out of the Barrage message before we advance the cursor past it.
-    auto mdo = extractMetadata(flightStreamChunk);
-    if (!mdo.has_value()) {
-      continue;
-    }
-    auto &md = *mdo;
-
-    // Correct order to process all this info is:
-    // 1. removes
-    // 2. shifts
-    // 3. adds
-    // 4. modifies
-
-    // 1. Removes
-    auto beforeRemoves = state.snapshot();
-    auto removedRowsKeySpace = std::move(md.removedRows_);
-    auto removedRowsIndexSpace = state.erase(*removedRowsKeySpace);
-
-    // 2. Shifts
-    state.applyShifts(*md.shiftStartIndex_, *md.shiftEndIndex_, *md.shiftDestIndex_);
-
-    // 3. Adds
-    auto addedRowsKeySpace = RowSequence::createEmpty();
-    auto addedRowsIndexSpace = RowSequence::createEmpty();
-    if (md.numAdds_ != 0) {
-      addedRowsKeySpace = std::move(md.addedRows_);
-      addedRowsIndexSpace = state.addKeys(*addedRowsKeySpace);
-
-      // Copy everything.
-      auto rowsRemaining = addedRowsIndexSpace->take(addedRowsIndexSpace->size());
-
-      auto processAddBatch = [&state, &rowsRemaining](
-          const std::vector<std::shared_ptr<arrow::Array>> &data) {
-        if (data.empty()) {
-          return;
-        }
-        auto size = data[0]->length();
-        auto rowsToAddThisTime = rowsRemaining->take(size);
-        rowsRemaining = rowsRemaining->drop(size);
-        state.addData(data, *rowsToAddThisTime);
-      };
-      BatchParser::parseBatches(*colDefs_, md.numAdds_, false, fsr_.get(), &flightStreamChunk,
-          processAddBatch);
-
-      if (md.numMods_ != 0) {
-        // Currently the FlightStreamReader is pointing to the last add record. We need to advance
-        // it so it points to the first mod record.
-        okOrThrow(DEEPHAVEN_EXPR_MSG(fsr_->Next(&flightStreamChunk)));
-      }
-    }
-
-    auto beforeModifies = state.snapshot();
-
-    auto ncols = colDefs_->vec().size();
-
-    // 4. Modifies
-    auto modifiedRowsKeySpace = std::move(md.modifiedRows_);
-    auto modifiedRowsIndexSpace = state.modifyKeys(modifiedRowsKeySpace);
-    if (md.numMods_ != 0) {
-      // Local copy of modifiedRowsIndexSpace
-      auto keysRemaining = makeReservedVector<std::shared_ptr<RowSequence>>(ncols);
-      for (const auto &keys : modifiedRowsIndexSpace) {
-        keysRemaining.push_back(keys->take(keys->size()));
-      }
-
-      std::vector<std::shared_ptr<RowSequence>> keysToModifyThisTime(ncols);
-
-      auto processModifyBatch = [&state, &keysRemaining, &keysToModifyThisTime, ncols](
-          const std::vector<std::shared_ptr<arrow::Array>> &data) {
-        if (data.size() != ncols) {
-          throw std::runtime_error(stringf("data.size() != ncols (%o != %o)", data.size(), ncols));
-        }
-        for (size_t i = 0; i < data.size(); ++i) {
-          const auto &src = data[i];
-          auto &krm = keysRemaining[i];
-          keysToModifyThisTime[i] = krm->take(src->length());
-          krm = krm->drop(src->length());
-        }
-        state.modifyData(data, keysToModifyThisTime);
-      };
-
-      BatchParser::parseBatches(*colDefs_, md.numMods_, true, fsr_.get(), &flightStreamChunk,
-          processModifyBatch);
-    }
-
-    auto current = state.snapshot();
-    ImmerTickingUpdate update(std::move(beforeRemoves), std::move(beforeModifies),
-        std::move(current), std::move(removedRowsIndexSpace), std::move(modifiedRowsIndexSpace),
-        std::move(addedRowsIndexSpace));
+    // These are convenience copies of the user which might
+    TickingUpdate update(std::move(prev),
+        std::move(removes), std::move(afterRemoves),
+        std::move(adds), std::move(afterAdds),
+        std::move(modifies), std::move(afterModifies));
     callback_->onTick(std::move(update));
   }
 }

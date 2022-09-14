@@ -340,7 +340,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::asOfJoin(AsOfJoinTablesRequest
 }
 
 std::shared_ptr<SubscriptionHandle> TableHandleImpl::subscribe(
-    std::shared_ptr<TickingCallback> callback, bool wantImmer) {
+    std::shared_ptr<TickingCallback> callback) {
   // On the flight executor thread, we invoke DoExchange (waiting for a successful response).
   // We wait for that response here. That makes the first part of this call synchronous. If there
   // is an error in the DoExchange invocation, the caller will get an exception here. The
@@ -348,7 +348,7 @@ std::shared_ptr<SubscriptionHandle> TableHandleImpl::subscribe(
   // parsing of all the replies) is done on a newly-created thread dedicated to that job.
   auto colDefs = lazyState_->getColumnDefinitions();
   auto handle = startSubscribeThread(managerImpl_->server(), managerImpl_->flightExecutor().get(),
-      colDefs, ticket_, std::move(callback), wantImmer);
+      colDefs, ticket_, std::move(callback));
 
   subscriptions_.insert(handle);
   return handle;

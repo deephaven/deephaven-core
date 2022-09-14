@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Context;
@@ -390,8 +390,9 @@ public class ConditionFilter extends AbstractConditionFilter {
                 addParamClass.accept(QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
             }
 
-            filterKernelClass = CompilerTools.compile("GeneratedFilterKernel", this.classBody = classBody.toString(),
-                    CompilerTools.FORMULA_PREFIX, QueryScopeParamTypeUtil.expandParameterClasses(paramClasses));
+            filterKernelClass = ExecutionContext.getContext().getQueryCompiler()
+                    .compile("GeneratedFilterKernel", this.classBody = classBody.toString(),
+                            QueryCompiler.FORMULA_PREFIX, QueryScopeParamTypeUtil.expandParameterClasses(paramClasses));
         } finally {
             nugget.done();
         }

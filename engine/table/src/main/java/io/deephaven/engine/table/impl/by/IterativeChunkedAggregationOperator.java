@@ -303,8 +303,9 @@ public interface IterativeChunkedAggregationOperator {
      * Reset any per-step internal state. Note that the arguments to this method should not be mutated in any way.
      *
      * @param upstream The upstream ShiftAwareListener.Update
+     * @param startingDestinationsCount The number of used destinations at the beginning of this step
      */
-    default void resetForStep(@NotNull final TableUpdate upstream) {}
+    default void resetForStep(@NotNull TableUpdate upstream, int startingDestinationsCount) {}
 
     /**
      * Perform any internal state keeping needed for destinations that were added (went from 0 keys to &gt; 0), removed

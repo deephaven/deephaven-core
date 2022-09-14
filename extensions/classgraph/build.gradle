@@ -9,7 +9,7 @@ dependencies {
 
   compileOnly 'javax.inject:javax.inject:1'
 
-  api 'io.github.classgraph:classgraph:4.8.103'
+  api 'io.github.classgraph:classgraph:4.8.149'
 
   Classpaths.inheritAutoService(project)
 }

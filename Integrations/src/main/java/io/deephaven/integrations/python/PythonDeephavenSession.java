@@ -7,7 +7,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -92,11 +91,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                     .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         }
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
-
-        /*
-         * We redirect the standard Python sys.stdout and sys.stderr streams to our log object.
-         */
-        PythonLogAdapter.interceptOutputStreams(evaluator);
 
         publishInitial();
 

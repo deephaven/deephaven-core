@@ -2,6 +2,7 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/subscription/shift_processor.h"
+#include "deephaven/client/utility/utility.h"
 
 namespace deephaven::client::subscription {
 void ShiftProcessor::applyShiftData(const RowSequence &firstIndex, const RowSequence &lastIndex,
@@ -24,9 +25,10 @@ void ShiftProcessor::applyShiftData(const RowSequence &firstIndex, const RowSequ
   };
   {
     uint64_t first, last, dest;
-    while (startIter->tryGetNext(&first)) {
-      if (!endIter->tryGetNext(&last) || !destIter->tryGetNext(&dest)) {
-        throw std::runtime_error("Sequences not of same size");
+    while (startIter.tryGetNext(&first)) {
+      if (!endIter.tryGetNext(&last) || !destIter.tryGetNext(&dest)) {
+        const char *message = "Sequences not of same size";
+        throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
       }
       if (dest >= first) {
         positiveShifts.emplace_back(first, last, dest);

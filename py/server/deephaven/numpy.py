@@ -84,15 +84,6 @@ def _columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np
 
 def _make_input_column(col: str, np_array: np.ndarray, dtype: DType) -> InputColumn:
     """ Creates a InputColumn with the given column name and the numpy array. """
-    if dtype == dtypes.bool_:
-        bytes_ = np_array.astype(dtype=np.int8)
-        j_bytes = dtypes.array(dtypes.byte, bytes_)
-        np_array = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
-
-    if dtype == dtypes.DateTime:
-        longs = jpy.array('long', np_array.astype('datetime64[ns]').astype('int64'))
-        np_array = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(longs)
-
     return InputColumn(name=_to_column_name(col), data_type=dtype, input_data=np_array)
 
 

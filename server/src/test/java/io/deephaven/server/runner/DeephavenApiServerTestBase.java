@@ -3,12 +3,17 @@
  */
 package io.deephaven.server.runner;
 
+import dagger.BindsInstance;
+import dagger.Component;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.server.console.NoConsoleSessionModule;
+import io.deephaven.server.log.LogModule;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -17,17 +22,52 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Manages a single instance of {@link DeephavenApiServer}.
  */
 public abstract class DeephavenApiServerTestBase {
+    @Singleton
+    @Component(modules = {
+            DeephavenApiServerModule.class,
+            LogModule.class,
+            NoConsoleSessionModule.class,
+            ServerBuilderInProcessModule.class,
+            ExecutionContextUnitTestModule.class,
+    })
+    public interface TestComponent {
+
+        DeephavenApiServer getServer();
+
+        ManagedChannelBuilder<?> channelBuilder();
+
+        @Component.Builder
+        interface Builder {
+
+            @BindsInstance
+            Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
+
+            @BindsInstance
+            Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
+
+            @BindsInstance
+            Builder withOut(@Named("out") PrintStream out);
+
+            @BindsInstance
+            Builder withErr(@Named("err") PrintStream err);
+
+            TestComponent build();
+        }
+    }
 
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-    private DeephavenApiServerInProcessGroovyComponent serverComponent;
+    private TestComponent serverComponent;
     private LogBuffer logBuffer;
     private DeephavenApiServer server;
     private SafeCloseable scopeCloseable;
@@ -40,8 +80,7 @@ public abstract class DeephavenApiServerTestBase {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
-        serverComponent = DaggerDeephavenApiServerInProcessGroovyComponent
-                .builder()
+        serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
                 .withSchedulerPoolSize(4)
                 .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())
                 .withOut(System.out)

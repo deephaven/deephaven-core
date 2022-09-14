@@ -6,7 +6,9 @@ package io.deephaven.server.console;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -138,7 +140,11 @@ public class ScopeTicketResolver extends TicketResolverBase {
                 .require(resultExport)
                 .submit(() -> {
                     final ScriptSession gss = scriptSessionProvider.get();
-                    gss.setVariable(varName, resultExport.get());
+                    T value = resultExport.get();
+                    if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
+                        gss.manage((LivenessReferent) value);
+                    }
+                    gss.setVariable(varName, value);
                 });
 
         return resultBuilder;

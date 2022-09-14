@@ -39,11 +39,13 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -150,17 +152,22 @@ public final class ServletAdapter {
         StatsTraceContext statsTraceCtx =
                 StatsTraceContext.newServerContext(streamTracerFactories, method, headers);
 
+        Attributes.Builder attrBuilder = attributes.toBuilder()
+                .set(
+                        Grpc.TRANSPORT_ATTR_REMOTE_ADDR,
+                        new InetSocketAddress(req.getRemoteHost(), req.getRemotePort()))
+                .set(
+                        Grpc.TRANSPORT_ATTR_LOCAL_ADDR,
+                        new InetSocketAddress(req.getLocalAddr(), req.getLocalPort()));
+        X509Certificate[] mTlsCert = (X509Certificate[]) req.getAttribute("jakarta.servlet.request.X509Certificate");
+        if (mTlsCert != null) {
+            attrBuilder.set(GrpcServlet.MTLS_CERTIFICATE_KEY, Arrays.asList(mTlsCert));
+        }
         ServletServerStream stream = new ServletServerStream(
                 asyncCtx,
                 statsTraceCtx,
                 maxInboundMessageSize,
-                attributes.toBuilder()
-                        .set(
-                                Grpc.TRANSPORT_ATTR_REMOTE_ADDR,
-                                new InetSocketAddress(req.getRemoteHost(), req.getRemotePort()))
-                        .set(
-                                Grpc.TRANSPORT_ATTR_LOCAL_ADDR,
-                                new InetSocketAddress(req.getLocalAddr(), req.getLocalPort()))
+                attrBuilder
                         .build(),
                 getAuthority(req),
                 logId);
@@ -273,6 +280,7 @@ public final class ServletAdapter {
         final AsyncContext asyncCtx;
         final ServletInputStream input;
         final InternalLogId logId;
+        private final AtomicBoolean closed = new AtomicBoolean(false);
 
         GrpcReadListener(
                 ServletServerStream stream,
@@ -315,6 +323,11 @@ public final class ServletAdapter {
         @Override
         public void onAllDataRead() {
             logger.log(FINE, "[{0}] onAllDataRead", logId);
+            if (!closed.compareAndSet(false, true)) {
+                // https://github.com/eclipse/jetty.project/issues/8405
+                logger.log(FINE, "[{0}] onAllDataRead already called, skipping this one", logId);
+                return;
+            }
             stream.transportState().runOnTransportThread(
                     () -> stream.transportState().inboundDataReceived(ReadableBuffers.empty(), true));
         }

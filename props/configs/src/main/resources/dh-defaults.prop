@@ -1,4 +1,4 @@
-CompilerTools.logEnabledDefault=false
+QueryCompiler.logEnabledDefault=false
 UpdatePerformanceTracker.reportingMode=LISTENER_ONLY
 UpdatePerformanceTracker.reportIntervalMillis=60000
 measurement.per_thread_cpu=false

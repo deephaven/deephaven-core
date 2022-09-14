@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <arrow/flight/client.h>
 #include "deephaven/client/ticking.h"
@@ -17,8 +18,7 @@ public:
   static std::shared_ptr<UpdateProcessor> startThread(
       std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
       std::shared_ptr<ColumnDefinitions> colDefs,
-      std::shared_ptr<TickingCallback> callback,
-      bool wantImmer);
+      std::shared_ptr<TickingCallback> callback);
 
   UpdateProcessor(std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs, std::shared_ptr<TickingCallback> callback);
@@ -27,13 +27,13 @@ public:
   void cancel();
 
 private:
-  static void runForever(const std::shared_ptr <UpdateProcessor> &self, bool wantImmer);
-  void classicRunForeverHelper();
-  void immerRunForeverHelper();
+  static void runForever(const std::shared_ptr <UpdateProcessor> &self);
+  void runForeverHelper();
 
 public:
   std::unique_ptr<arrow::flight::FlightStreamReader> fsr_;
   std::shared_ptr<ColumnDefinitions> colDefs_;
   std::shared_ptr<TickingCallback> callback_;
+  std::atomic<bool> cancelled_;
 };
 }  // namespace deephaven::client::subscription

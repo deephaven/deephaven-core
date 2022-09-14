@@ -3,7 +3,7 @@ include=
 
 measurement.per_thread_cpu=false
 
-CompilerTools.logEnabledDefault=false
+QueryCompiler.logEnabledDefault=false
 UpdatePerformanceTracker.reportingMode=NONE
 UpdatePerformanceTracker.reportIntervalMillis=60000
 

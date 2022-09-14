@@ -145,6 +145,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     public void run() {
         super.run();
         synchronized (pendingChanges) {
+            if (pendingProcessed < 0) {
+                return;
+            }
             processedSequence = pendingProcessed;
             pendingProcessed = -1L;
             pendingChanges.notifyAll();

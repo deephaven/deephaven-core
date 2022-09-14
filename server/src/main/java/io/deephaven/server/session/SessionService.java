@@ -5,17 +5,21 @@ package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
+import io.deephaven.auth.AuthenticationException;
+import io.deephaven.auth.AuthenticationRequestHandler;
+import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +31,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -58,12 +63,20 @@ public class SessionService {
 
     private final List<TerminationNotificationListener> terminationListeners = new CopyOnWriteArrayList<>();
 
+    private final BasicAuthMarshaller basicAuthMarshaller;
+    private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
+
     @Inject()
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
-            @Named("session.tokenExpireMs") final long tokenExpireMs) {
+            @Named("session.tokenExpireMs") final long tokenExpireMs,
+            final Optional<BasicAuthMarshaller> basicAuthMarshaller,
+            Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.scheduler = scheduler;
         this.sessionFactory = sessionFactory;
         this.tokenExpireMs = tokenExpireMs;
+        this.basicAuthMarshaller = basicAuthMarshaller.orElse(null);
+        this.authRequestHandlers = authRequestHandlers;
 
         if (tokenExpireMs < MIN_COOKIE_EXPIRE_MS) {
             throw new IllegalArgumentException("session.tokenExpireMs is set too low. It is configured to "
@@ -168,10 +181,16 @@ public class SessionService {
 
         synchronized (session) {
             expiration = session.getExpiration();
-            if (expiration != null
-                    && expiration.deadline.getMillis() - tokenExpireMs + tokenRotateMs > now.getMillis()) {
-                // current token is not old enough to rotate
-                return expiration;
+            if (!initialToken) {
+                if (expiration == null) {
+                    // current token is expired; we should not rotate
+                    return null;
+                }
+
+                if (expiration.deadline.getMillis() - tokenExpireMs + tokenRotateMs > now.getMillis()) {
+                    // current token is not old enough to rotate
+                    return expiration;
+                }
             }
 
             do {
@@ -206,6 +225,42 @@ public class SessionService {
     }
 
     /**
+     * Lookup a session by token. Creates a new session if it's a basic auth and it passes.
+     *
+     * @param token the Authentication header to service
+     * @return the session or null if the session is invalid
+     */
+    public SessionState getSessionForAuthToken(final String token) throws AuthenticationException {
+        if (token.startsWith(Auth2Constants.BEARER_PREFIX)) {
+            final String authToken = token.substring(Auth2Constants.BEARER_PREFIX.length());
+            try {
+                UUID uuid = UuidCreator.fromString(authToken);
+                SessionState session = getSessionForToken(uuid);
+                if (session != null) {
+                    return session;
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        Optional<AuthContext> context = Optional.empty();
+        if (token.startsWith(Auth2Constants.BASIC_PREFIX) && basicAuthMarshaller != null) {
+            final String payload = token.substring(Auth2Constants.BASIC_PREFIX.length());
+            context = basicAuthMarshaller.login(payload, SessionServiceGrpcImpl::insertCallHeader);
+        } else {
+            int offset = token.indexOf(' ');
+            final String key = token.substring(0, offset < 0 ? token.length() : offset);
+            final String payload = offset < 0 ? "" : token.substring(offset + 1);
+            AuthenticationRequestHandler handler = authRequestHandlers.get(key);
+            if (handler != null) {
+                context = handler.login(payload, SessionServiceGrpcImpl::insertCallHeader);
+            }
+        }
+
+        return context.map(this::newSession).orElse(null);
+    }
+
+    /**
      * Lookup a session by token.
      *
      * @param token the session secret to look for
@@ -231,7 +286,7 @@ public class SessionService {
     public SessionState getCurrentSession() {
         final SessionState session = getOptionalSession();
         if (session == null) {
-            throw new StatusRuntimeException(Status.UNAUTHENTICATED);
+            throw Status.UNAUTHENTICATED.asRuntimeException();
         }
         return session;
     }
@@ -282,8 +337,12 @@ public class SessionService {
         }
 
         /**
-         * Returns the UUID cookie in byte[] friendly format.
+         * Returns the bearer token in byte[] friendly format.
          */
+        public ByteString getBearerTokenAsByteString() {
+            return ByteString.copyFromUtf8(Auth2Constants.BEARER_PREFIX + UuidCreator.toString(token));
+        }
+
         public ByteString getTokenAsByteString() {
             return ByteString.copyFromUtf8(UuidCreator.toString(token));
         }

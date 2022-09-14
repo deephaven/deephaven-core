@@ -94,8 +94,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
         sourceColumns = localSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         prevSources = localPrev.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
-        usesPython = Arrays.stream(sourceColumns).anyMatch(ColumnSource::preventsParallelism);
-
         return getColumns();
     }
 
@@ -175,7 +173,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, rowSequence, destination);
             }
-        }, usesPython, false);
+        }, false);
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {

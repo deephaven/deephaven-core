@@ -5,7 +5,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
@@ -48,8 +48,8 @@ import org.junit.experimental.categories.Category;
 @Category(OutOfBandTest.class)
 public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestTableTools.class, "CompilerTools.logEnabled", false);
+    private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TestTableTools.class, "QueryCompiler.logEnabled", false);
 
     private UpdateErrorReporter oldReporter;
 
@@ -68,7 +68,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         super.setUp();
 
         oldCheckUgp = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
-        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
+        oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
@@ -97,7 +97,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         LivenessScopeStack.pop(scope);
         scope.release();
         executionContext.close();
-        CompilerTools.setLogEnabled(oldLogEnabled);
+        QueryCompiler.setLogEnabled(oldLogEnabled);
         UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckUgp);
         AsyncClientErrorNotifier.setReporter(oldReporter);
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);

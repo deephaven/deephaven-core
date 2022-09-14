@@ -2,19 +2,19 @@ The Fluent Interface
 ====================
 
 The Deephaven client has numerous methods that take expressions (e.g.
-:cpp:func:`TableHandle::select <deephaven::client::highlevel::TableHandle::select>` or
-:cpp:func:`TableHandle::view <deephaven::client::highlevel::TableHandle::view>`),
+:cpp:func:`TableHandle::select <deephaven::client::TableHandle::select>` or
+:cpp:func:`TableHandle::view <deephaven::client::TableHandle::view>`),
 boolean conditions (e.g.
-:cpp:func:`TableHandle::where <deephaven::client::highlevel::TableHandle::where>`),
+:cpp:func:`TableHandle::where <deephaven::client::TableHandle::where>`),
 column names (e.g.
-:cpp:func:`TableHandle::sort <deephaven::client::highlevel::TableHandle::sort>`),
+:cpp:func:`TableHandle::sort <deephaven::client::TableHandle::sort>`),
 and so on.  These methods generally come in two flavors: a string version and a more
 structured *typed* version. The reason both flavors exist
 is because the string versions are convenient and simple to use for small programs, whereas the
 typed versions are typically more maintainable in larger programs.
 
 Consider these two ways of doing a
-:cpp:func:`TableHandle::where <deephaven::client::highlevel::TableHandle::where>`,
+:cpp:func:`TableHandle::where <deephaven::client::TableHandle::where>`,
 using literal strings versus using the "fluent" syntax.
 
 .. code:: c++
@@ -97,17 +97,17 @@ a programming language. Rather than formally describing the syntax here, we inst
 informal description.
 
 There are basically four kinds of expressions in the system:
-:cpp:class:`NumericExpression <deephaven::client::highlevel::NumericExpression>`,
-:cpp:class:`StringExpression <deephaven::client::highlevel::StringExpression>`,
-:cpp:class:`DateTimeExpression <deephaven::client::highlevel::DateTimeExpression>`, and
-:cpp:class:`BooleanExpression <deephaven::client::highlevel::BooleanExpression>`.
+:cpp:class:`NumericExpression <deephaven::client::NumericExpression>`,
+:cpp:class:`StringExpression <deephaven::client::StringExpression>`,
+:cpp:class:`DateTimeExpression <deephaven::client::DateTimeExpression>`, and
+:cpp:class:`BooleanExpression <deephaven::client::BooleanExpression>`.
 These model the four types of expressions we want to represent in the system.
 
 In typical usage, client programs do not explicitly declare variables of these types. Instead,
 these objects are created as anonymous temporaries (as the intermediate results of overloaded
 operators) which are then consumed by other operators or by Deephaven methods like
-:cpp:func:`TableHandle::select <deephaven::client::highlevel::TableHandle::select>` or
-:cpp:func:`TableHandle::where <deephaven::client::highlevel::TableHandle::where>`.
+:cpp:func:`TableHandle::select <deephaven::client::TableHandle::select>` or
+:cpp:func:`TableHandle::where <deephaven::client::TableHandle::where>`.
 
 Local vs Remote Evaluation
 --------------------------
@@ -162,9 +162,9 @@ Consider the following examples:
   var t4a = t0.select((100 + myFunc(x) + close).as("Result"));
 
 A binary operator with at least one
-:cpp:class:`NumericExpression <deephaven::client::highlevel::NumericExpression>`
+:cpp:class:`NumericExpression <deephaven::client::NumericExpression>`
 yields a
-:cpp:class:`NumericExpression <deephaven::client::highlevel::NumericExpression>`.
+:cpp:class:`NumericExpression <deephaven::client::NumericExpression>`.
 Because binary operators like left-to-right associativity, mathematically equivalent
 but differently-ordered expressions get sent to the server as a different tree:
 
@@ -205,10 +205,10 @@ whatever expression ``e`` is passed into it:
 NumericExpression
 ^^^^^^^^^^^^^^^^^
 
-:cpp:class:`NumericExpression <deephaven::client::highlevel::NumericExpression>`
+:cpp:class:`NumericExpression <deephaven::client::NumericExpression>`
 objects are either ``Numeric terminals`` or the result of an operator applied to
 some combination of `Numeric terminals` and
-:cpp:class:`NumericExpression <deephaven::client::highlevel::NumericExpression>` objects.
+:cpp:class:`NumericExpression <deephaven::client::NumericExpression>` objects.
 
 ``Numeric terminals`` are:
 
@@ -216,17 +216,17 @@ some combination of `Numeric terminals` and
 * Client-side numeric variables such as `int x`` or ``double x``
 * Client-side numeric expressions such as ``x * 2 + 5``
 * Numeric columns, which are typically obtained from a call like
-  :cpp:func:`getCols <deephaven::client::highlevel::TableHandle::getCols>`.
+  :cpp:func:`getCols <deephaven::client::TableHandle::getCols>`.
 
 The operators are the the usual unary arithmetic operators ``+``, ``-``, ``~``, and
 the usual binary operators ``+``, ``-``, ``*``, ``/``, ``%``, ``&``, ``|``, ``^``.
 
 In this example, the table ``t1`` contains two columns: the ``Ticker`` column and a ``Result``
 columns which holds the product ``Price * Volume + 12``. Notice that in a
-:cpp:func:`TableHandle::select <deephaven::client::highlevel::TableHandle::select>`
+:cpp:func:`TableHandle::select <deephaven::client::TableHandle::select>`
 statement, when we are creating a new column that is the result of a calculation, we need to give that new column
 a name (using the
-:cpp:func:`Expression::as <deephaven::client::highlevel::Expression::as>`
+:cpp:func:`Expression::as <deephaven::client::Expression::as>`
 method).
 In general, the fluent syntax ``expr.as("X")``
 corresponds to Deephaven Code Studio expression ``X = expr``.
@@ -245,10 +245,10 @@ corresponds to Deephaven Code Studio expression ``X = expr``.
 StringExpression
 ^^^^^^^^^^^^^^^^
 
-:cpp:class:`StringExpression <deephaven::client::highlevel::StringExpression>`
+:cpp:class:`StringExpression <deephaven::client::StringExpression>`
 objects are either ``String terminals``
 or the result of the `+` operator applied to some combination of ``String terminals`` and
-:cpp:class:`StringExpression <deephaven::client::highlevel::StringExpression>` objects.
+:cpp:class:`StringExpression <deephaven::client::StringExpression>` objects.
 
 ``String terminals`` are:
 
@@ -256,7 +256,7 @@ or the result of the `+` operator applied to some combination of ``String termin
 * Client-side string variables such as ``string x``.
 * Client-side string expressions such as ``x + "QQQ"``
 * String columns, which are typically obtained from a call like
-  :cpp:func:`getCols <deephaven::client::highlevel::TableHandle::getCols>`.
+  :cpp:func:`getCols <deephaven::client::TableHandle::getCols>`.
 
 Example:
 
@@ -265,11 +265,11 @@ Example:
   auto t2 = t0.select(ticker, (ticker + "XYZ").as("Result"));
   auto t2_literal = t0.select("Ticker", "Result = Ticker + `XYZ`");
 
-:cpp:class:`StringExpression <deephaven::client::highlevel::StringExpression>`
+:cpp:class:`StringExpression <deephaven::client::StringExpression>`
 provides four additional methods that work on
-:cpp:class:`StringExpression <deephaven::client::highlevel::StringExpression>`
+:cpp:class:`StringExpression <deephaven::client::StringExpression>`
 objects. These operations have the semantics described in the Deephaven documentation, and they yield
-:cpp:class:`BooleanExpression <deephaven::client::highlevel::BooleanExpression>`
+:cpp:class:`BooleanExpression <deephaven::client::BooleanExpression>`
 (described in the :ref:`BooleanExpression` subsection). For example:
 
 .. code:: c++
@@ -285,12 +285,12 @@ DateTimeExpression
 `DateTime terminals` are:
 
 * C++ string literals, variables or string expressions in Deephaven
-  :cpp:class:`StringExpression <deephaven::client::highlevel::DateTime>`
+  :cpp:class:`StringExpression <deephaven::client::DateTime>`
   format, e.g. ``"2020-03-01T09:45:00.123456 NY"``.
 * Client-side variables/expressions of type
-  :cpp:class:`StringExpression <deephaven::client::highlevel::DateTime>`
+  :cpp:class:`StringExpression <deephaven::client::DateTime>`
 
-:cpp:class:`StringExpression <deephaven::client::highlevel::DateTime>`
+:cpp:class:`StringExpression <deephaven::client::DateTime>`
 is the standard Deephaven Date/Time type, representing nanoseconds since January 1, 1970 UTC.
 
 .. _BooleanExpression:
@@ -298,11 +298,11 @@ is the standard Deephaven Date/Time type, representing nanoseconds since January
 BooleanExpression
 ^^^^^^^^^^^^^^^^^
 
-:cpp:class:`BooleanExpression <deephaven::client::highlevel::BooleanExpression>`
+:cpp:class:`BooleanExpression <deephaven::client::BooleanExpression>`
 objets can be used to represent expressions involving boolean-valued columns (e.g.
 ``!boolCol1 || boolCol2``) but more commonly, they are used to represent the result of
 relational operators applied to other expression types.
-:cpp:class:`BooleanExpression <deephaven::client::highlevel::BooleanExpression>` objects
+:cpp:class:`BooleanExpression <deephaven::client::BooleanExpression>` objects
 support the unary ``!``, as well as the binary operators ``&&`` and ``||`` and their cousins
 ``&`` and ``|``.
 
@@ -333,7 +333,7 @@ This example creates two boolean-valued columns and does simplistic filtering on
   auto t3 = t.where(a && b);
 
 More commonly,
-:cpp:class:`BooleanExpression <deephaven::client::highlevel::BooleanExpression>`  
+:cpp:class:`BooleanExpression <deephaven::client::BooleanExpression>`  
 are created as the result of relational operators on other expressions. For example we might say
 
 .. code:: c++
@@ -348,17 +348,17 @@ are created as the result of relational operators on other expressions. For exam
   auto result = temp.where(a > 15);
 
 Here ``a > 15`` applies the ``>`` operator to two
-:cpp:class:`NumericExpression <deephaven::client::highlevel::NumericExpression>` objects
+:cpp:class:`NumericExpression <deephaven::client::NumericExpression>` objects
 yielding a
-:cpp:class:`BooleanExpression <deephaven::client::highlevel::BooleanExpression>`  
+:cpp:class:`BooleanExpression <deephaven::client::BooleanExpression>`  
 suitable for passing to the
-:cpp:func:`TableHandle <deephaven::client::highlevel::TableHandle::where>`  
+:cpp:func:`TableHandle <deephaven::client::TableHandle::where>`  
 method and being evaluated on the server. The library supports the usual relational
 operators (``<``, ``<=``, ``==``, ``>=``, ``>``, ``!=``) on
-:cpp:class:`NumericExpression <deephaven::client::highlevel::NumericExpression>`,
-:cpp:class:`StringExpression <deephaven::client::highlevel::StringExpression>`, and
-:cpp:class:`DateTimeExpression <deephaven::client::highlevel::DateTimeExpression>`; meanwhile
-:cpp:class:`BooleanExpression <deephaven::client::highlevel::BooleanExpression>`
+:cpp:class:`NumericExpression <deephaven::client::NumericExpression>`,
+:cpp:class:`StringExpression <deephaven::client::StringExpression>`, and
+:cpp:class:`DateTimeExpression <deephaven::client::DateTimeExpression>`; meanwhile
+:cpp:class:`BooleanExpression <deephaven::client::BooleanExpression>`
 itself supports only ``==`` and ``!=``.
 
 Column Terminals
@@ -368,7 +368,7 @@ A Column Terminal is used to represent a database column symbolically, so it can
 fluent invocation such as ``t.where(a > 5)``. 
 To do this, the program needs to know the name of
 the database column (in this example, "A") as well as its type (in this example,
-:cpp:class:`NumCol <deephaven::client::highlevel::NumCol>`).
+:cpp:class:`NumCol <deephaven::client::NumCol>`).
 
 .. code:: c++
 
@@ -376,13 +376,13 @@ the database column (in this example, "A") as well as its type (in this example,
 
 The Column Terminal types are:
 
-* :cpp:class:`NumCol <deephaven::client::highlevel::NumCol>`
-* :cpp:class:`StrCol <deephaven::client::highlevel::StrCol>`
-* :cpp:class:`DateTimeCol <deephaven::client::highlevel::DateTimeCol>`
-* :cpp:class:`BoolCol <deephaven::client::highlevel::BoolCol>`
+* :cpp:class:`NumCol <deephaven::client::NumCol>`
+* :cpp:class:`StrCol <deephaven::client::StrCol>`
+* :cpp:class:`DateTimeCol <deephaven::client::DateTimeCol>`
+* :cpp:class:`BoolCol <deephaven::client::BoolCol>`
 
 Note that the single fluent type
-:cpp:class:`NumCol <deephaven::client::highlevel::NumCol>`
+:cpp:class:`NumCol <deephaven::client::NumCol>`
 stands in for all the
 numeric types (``short``, ``int``, ``double``, and so on). This does *not* mean that the server represents
 all these types as the same thing, or that there is some kind of loss of precision involved. Rather
@@ -399,15 +399,15 @@ The syntax for creating a single Column Terminal is
   auto col = table.getXXX(name);
 
 where ``getXXX`` is one of `
-:cpp:func:`getNumCol <deephaven::client::highlevel::TableHandle::getNumCol>`,
-:cpp:func:`getStrCol <deephaven::client::highlevel::TableHandle::getStrCol>`,
-:cpp:func:`getDateTimeCol <deephaven::client::highlevel::TableHandle::getDateTimeCol>`,
+:cpp:func:`getNumCol <deephaven::client::TableHandle::getNumCol>`,
+:cpp:func:`getStrCol <deephaven::client::TableHandle::getStrCol>`,
+:cpp:func:`getDateTimeCol <deephaven::client::TableHandle::getDateTimeCol>`,
 or     
-:cpp:func:`getBoolCol <deephaven::client::highlevel::TableHandle::getBoolCol>`,
+:cpp:func:`getBoolCol <deephaven::client::TableHandle::getBoolCol>`,
 and ``name`` is the name of the column.
 
 To conveniently bind more than one column at a time, the program can use
-:cpp:func:`getCols <deephaven::client::highlevel::TableHandle::getCols>`.
+:cpp:func:`getCols <deephaven::client::TableHandle::getCols>`.
 
 For example this statement binds three columns at once:
 
@@ -420,12 +420,12 @@ SelectColumns
 ^^^^^^^^^^^^^
 
 A
-:cpp:class:`SelectColumn <deephaven::client::highlevel::SelectColumn>`
+:cpp:class:`SelectColumn <deephaven::client::SelectColumn>`
 is an object suitable to be passed to a
-:cpp:func:`select <deephaven::client::highlevel::TableHandle::select>`,
-:cpp:func:`update <deephaven::client::highlevel::TableHandle::update>`,
-:cpp:func:`view <deephaven::client::highlevel::TableHandle::view>`, or
-:cpp:func:`updateView <deephaven::client::highlevel::TableHandle::updateView>`
+:cpp:func:`select <deephaven::client::TableHandle::select>`,
+:cpp:func:`update <deephaven::client::TableHandle::update>`,
+:cpp:func:`view <deephaven::client::TableHandle::view>`, or
+:cpp:func:`updateView <deephaven::client::TableHandle::updateView>`
 method. It either needs to either refer to an already-existing column,
 or it is an expression bound to a column name, which will cause a new column
 to be created. Examples:

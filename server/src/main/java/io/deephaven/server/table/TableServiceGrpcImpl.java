@@ -40,12 +40,15 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ops.GrpcTableOperation;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -54,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
@@ -267,6 +271,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
+    public void updateBy(UpdateByRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_BY, request, responseObserver);
+    }
+
+    @Override
     public void batch(final BatchTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
@@ -285,6 +294,20 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
             // step 4: submit the batched operations
             final AtomicInteger remaining = new AtomicInteger(exportBuilders.size());
+            final AtomicReference<StatusRuntimeException> firstFailure = new AtomicReference<>();
+
+            final Runnable onOneResolved = () -> {
+                if (remaining.decrementAndGet() == 0) {
+                    safelyExecuteLocked(responseObserver, () -> {
+                        final StatusRuntimeException failure = firstFailure.get();
+                        if (failure != null) {
+                            responseObserver.onError(failure);
+                        } else {
+                            responseObserver.onCompleted();
+                        }
+                    });
+                }
+            };
 
             for (int i = 0; i < exportBuilders.size(); ++i) {
                 final BatchExportBuilder<?> exportBuilder = exportBuilders.get(i);
@@ -297,25 +320,29 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     resultId = ExportTicketHelper.tableReference(exportId);
                 }
 
-                exportBuilder.exportBuilder.onError((result, errorContext, dependentId) -> {
+                exportBuilder.exportBuilder.onError((result, errorContext, cause, dependentId) -> {
+                    String errorInfo = errorContext;
+                    if (dependentId != null) {
+                        errorInfo += " dependency: " + dependentId;
+                    }
+                    if (cause instanceof StatusRuntimeException) {
+                        errorInfo += " cause: " + cause.getMessage();
+                        firstFailure.compareAndSet(null, (StatusRuntimeException) cause);
+                    }
+                    final String finalErrorInfo = errorInfo;
                     safelyExecuteLocked(responseObserver,
                             () -> responseObserver.onNext(ExportedTableCreationResponse.newBuilder()
                                     .setResultId(resultId)
                                     .setSuccess(false)
-                                    .setErrorInfo(errorContext + " dependency: " + dependentId)
+                                    .setErrorInfo(finalErrorInfo)
                                     .build()));
-
-                    if (remaining.decrementAndGet() == 0) {
-                        safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
-                    }
+                    onOneResolved.run();
                 }).submit(() -> {
                     final Table table = exportBuilder.doExport();
 
                     safelyExecuteLocked(responseObserver,
                             () -> responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, table)));
-                    if (remaining.decrementAndGet() == 0) {
-                        safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
-                    }
+                    onOneResolved.run();
 
                     return table;
                 });

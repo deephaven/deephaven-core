@@ -57,11 +57,10 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
             public TableSpec apply(TableSpec spec, String[] formulas) {
                 return spec.lazyUpdate(formulas);
             }
-        }
+        },
     }
 
     private final UpdateOrSelect method;
-
 
     public UpdateOrSelectSessionTest(UpdateOrSelect method) {
         this.method = Objects.requireNonNull(method);
@@ -99,6 +98,12 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
     }
 
     @Test
+    public void allowSpecificFunctions() throws TableHandle.TableHandleException, InterruptedException {
+        // This test isn't meant to be exhaustive
+        allow(TableSpec.empty(1).view("Seconds=(long)1659095381"), "Nanos = secondsToNanos(Seconds)");
+    }
+
+    @Test
     public void disallowCustomFunctions() throws InterruptedException {
         disallow(TableSpec.empty(1), String.format("X = %s.myFunction()", UpdateOrSelectSessionTest.class.getName()));
     }
@@ -109,24 +114,40 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
     }
 
     @Test
-    public void allowPreviousColumn() throws TableHandle.TableHandleException, InterruptedException {
-        allow(TableSpec.empty(1), "X = 12", "Y = X + 1");
+    public void allowPreviousColumnName() throws TableHandle.TableHandleException, InterruptedException {
+        allow(TableSpec.empty(1).view("X = 12"), "X");
+    }
+
+    @Test
+    public void allowPreviousColumnAssignment() throws TableHandle.TableHandleException, InterruptedException {
+        allow(TableSpec.empty(1).view("X = 12"), "Y = X");
+    }
+
+    @Test
+    public void allowPreviousColumnAssignmentInline() throws TableHandle.TableHandleException, InterruptedException {
+        allow(TableSpec.empty(1), "X = 12", "Y = X");
     }
 
     @Test
     public void disallowFutureColumn() throws InterruptedException {
-        disallow(TableSpec.empty(1), "Y = X + 1", "X = 12");
+        disallow(TableSpec.empty(1), "Y = X", "X = 12");
     }
 
     @Test
     public void allowReassignmentColumn() throws TableHandle.TableHandleException, InterruptedException {
-        allow(TableSpec.empty(1), "X = 12", "Y = X + 1", "X = 42");
+        allow(TableSpec.empty(1), "X = 12", "Y = X", "X = 42");
     }
 
     @Test
     public void disallowNonExistentColumn() throws InterruptedException {
-        disallow(TableSpec.empty(1), "X = 12", "Y = Z + 1");
+        disallow(TableSpec.empty(1), "Y = Z");
     }
+
+    @Test
+    public void allowValue() throws TableHandle.TableHandleException, InterruptedException {
+        allow(TableSpec.empty(1), "X = 12");
+    }
+
 
     private void allow(TableSpec parent, String... formulas)
             throws InterruptedException, TableHandle.TableHandleException {

@@ -7,8 +7,9 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.arrow.ArrowModule;
-import io.deephaven.server.auth.AuthContextModule;
+import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.session.SessionModule;
+import io.deephaven.server.test.AuthTestModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
 
 import javax.inject.Singleton;
@@ -28,9 +29,10 @@ public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
             FlightTestModule.class,
             ArrowModule.class,
             SessionModule.class,
-            AuthContextModule.class,
+            AuthTestModule.class,
             NettyServerModule.class,
-            NettyTestConfig.class
+            NettyTestConfig.class,
+            ExecutionContextUnitTestModule.class,
     })
     public interface NettyTestComponent extends TestComponent {
     }

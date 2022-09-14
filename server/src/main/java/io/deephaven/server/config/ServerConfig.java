@@ -8,6 +8,7 @@ import io.deephaven.server.runner.Main;
 import io.deephaven.ssl.config.SSLConfig;
 import org.immutables.value.Value.Default;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -31,6 +32,8 @@ public interface ServerConfig {
     String SCHEDULER_POOL_SIZE = "scheduler.poolSize";
 
     String GRPC_MAX_INBOUND_MESSAGE_SIZE = "grpc.maxInboundMessageSize";
+
+    String PROXY_HINT = "proxy.hint";
 
     /**
      * Parses the configuration values into the appropriate builder methods.
@@ -60,9 +63,14 @@ public interface ServerConfig {
      * <td>{@value GRPC_MAX_INBOUND_MESSAGE_SIZE}</td>
      * <td>{@link Builder#maxInboundMessageSize(int)}</td>
      * </tr>
+     * <tr>
+     * <td>{@value PROXY_HINT}</td>
+     * <td>{@link Builder#proxyHint(Boolean)}</td>
+     * </tr>
      * </table>
      *
-     * Also parses {@link Main#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)}.
+     * Also parses {@link Main#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)} and
+     * {@link Main#parseOutboundSSLConfig(Configuration)} into {@link Builder#outboundSsl(SSLConfig)}.
      *
      * @param builder the builder
      * @param config the configuration
@@ -76,6 +84,7 @@ public interface ServerConfig {
         int httpPort = config.getIntegerWithDefault(HTTP_PORT, -1);
         int schedulerPoolSize = config.getIntegerWithDefault(SCHEDULER_POOL_SIZE, -1);
         int maxInboundMessageSize = config.getIntegerWithDefault(GRPC_MAX_INBOUND_MESSAGE_SIZE, -1);
+        String proxyHint = config.getStringWithDefault(PROXY_HINT, null);
         if (httpSessionExpireMs > -1) {
             builder.tokenExpire(Duration.ofMillis(httpSessionExpireMs));
         }
@@ -91,7 +100,11 @@ public interface ServerConfig {
         if (maxInboundMessageSize != -1) {
             builder.maxInboundMessageSize(maxInboundMessageSize);
         }
+        if (proxyHint != null) {
+            builder.proxyHint(Boolean.parseBoolean(proxyHint));
+        }
         Main.parseSSLConfig(config).ifPresent(builder::ssl);
+        Main.parseOutboundSSLConfig(config).ifPresent(builder::outboundSsl);
         return builder;
     }
 
@@ -110,6 +123,11 @@ public interface ServerConfig {
      * The optional SSL configuration.
      */
     Optional<SSLConfig> ssl();
+
+    /**
+     * The optional outbound SSL configuration.
+     */
+    Optional<SSLConfig> outboundSsl();
 
     /**
      * The token expiration. Defaults to {@value DEFAULT_TOKEN_EXPIRE_MIN} minutes.
@@ -135,6 +153,13 @@ public interface ServerConfig {
         return DEFAULT_MAX_INBOUND_MESSAGE_SIZE_MiB * 1024 * 1024;
     }
 
+    /**
+     * A hint that the server is running behind a proxy. This may allow consumers of the configuration to make more
+     * appropriate default choices.
+     */
+    @Nullable
+    Boolean proxyHint();
+
     interface Builder<T, B extends Builder<T, B>> {
         B host(String host);
 
@@ -142,11 +167,15 @@ public interface ServerConfig {
 
         B ssl(SSLConfig ssl);
 
+        B outboundSsl(SSLConfig outboundSsl);
+
         B tokenExpire(Duration duration);
 
         B schedulerPoolSize(int schedulerPoolSize);
 
         B maxInboundMessageSize(int maxInboundMessageSize);
+
+        B proxyHint(Boolean proxyHint);
 
         T build();
     }

@@ -53,7 +53,7 @@ void doit(const TableHandleManager &manager) {
     okOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder.AddField(priceField)));
   }
 
-  // 4. Add "Volume" column (type: int) to schema
+  // 4. Add "Volume" column (type: int32) to schema
   {
     auto volumeMetadata = std::make_shared<arrow::KeyValueMetadata>();
     okOrThrow(DEEPHAVEN_EXPR_MSG(volumeMetadata->Set("deephaven:type", "int")));

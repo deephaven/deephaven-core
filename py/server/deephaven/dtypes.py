@@ -18,6 +18,7 @@ from deephaven import DHError
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+_JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
 
 _j_name_type_map: Dict[str, DType] = {}
 
@@ -163,6 +164,15 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
         else:
             if isinstance(seq, str) and dtype == char:
                 return array(char, seq, remap=ord)
+
+        if isinstance(seq, np.ndarray):
+            if dtype == bool_:
+                bytes_ = seq.astype(dtype=np.int8)
+                j_bytes = array(byte, bytes_)
+                seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
+            if dtype == DateTime:
+                longs = jpy.array('long', seq.astype('datetime64[ns]').astype('int64'))
+                seq = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(longs)
 
         return jpy.array(dtype.j_type, seq)
     except Exception as e:

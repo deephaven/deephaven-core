@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.engine.table.impl.locations.local.PrivilegedFileAccessUtil;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,7 +30,6 @@ public final class ParquetSingleFileLayout implements TableLocationKeyFinder<Par
 
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        PrivilegedFileAccessUtil.doFilesystemAction(
-                () -> locationKeyObserver.accept(new ParquetTableLocationKey(parquetFile, 0, null)));
+        locationKeyObserver.accept(new ParquetTableLocationKey(parquetFile, 0, null));
     }
 }

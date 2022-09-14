@@ -108,4 +108,8 @@ public class QueryLibrary {
     public void updateVersionString() {
         versionString = UuidCreator.toString(UuidCreator.getRandomBased());
     }
+
+    public void updateVersionString(String version) {
+        versionString = version;
+    }
 }

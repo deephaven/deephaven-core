@@ -137,11 +137,6 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return alternateColumnSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return alternateColumnSource.isStateless();
     }

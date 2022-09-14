@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
-README = (HERE / "README.md").read_text()
+README = (HERE / "README_PyPi.md").read_text()
 
 
 # Versions should comply with PEP440.  For a discussion on single-sourcing

@@ -100,18 +100,8 @@ public interface DefaultChunkSource<ATTR extends Any> extends ChunkSource<ATTR> 
                 }
 
                 @Override
-                public GetContext makeGetContext(int chunkCapacity) {
-                    return chunkSource.makeGetContext(chunkCapacity);
-                }
-
-                @Override
                 public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
                     return chunkSource.makeFillContext(chunkCapacity, sharedContext);
-                }
-
-                @Override
-                public FillContext makeFillContext(int chunkCapacity) {
-                    return chunkSource.makeFillContext(chunkCapacity);
                 }
             };
         }

@@ -112,11 +112,6 @@ public class UngroupedByteVectorColumnSource extends UngroupedColumnSource<Byte>
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }
