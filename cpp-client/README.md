@@ -49,7 +49,7 @@ C++ compiler and tool suite (cmake etc).
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
    export PFX=$HOME/dhcpp/local  # This should reflect your selection in the previous point.
-   export CMAKE_PREFIX_PATH=${PFX}/abseil:${PFX}/cares:${PFX}/flatbuffers:${PFX}/gflags:${PFX}/protobuf:${PFX}/re2:${PFX}/zlib:${PFX}/grpc:${PFX}/arrow:${PFX}/deephaven
+   export CMAKE_PREFIX_PATH=${PFX}/abseil:${PFX}/boost:${PFX}/cares:${PFX}/flatbuffers:${PFX}/gflags:${PFX}/immer:${PFX}/protobuf:${PFX}/re2:${PFX}/zlib:${PFX}/grpc:${PFX}/arrow:${PFX}/deephaven
    export NCPUS=$(getconf _NPROCESSORS_ONLN)
    cmake -DCMAKE_INSTALL_PREFIX=${PFX}/deephaven .. && make -j$NCPUS install
    ```
