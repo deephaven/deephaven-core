@@ -3,12 +3,9 @@
  */
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.util.LongChunkIterator;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.impl.singlerange.*;
-import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
+import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.annotations.TestUseOnly;
 
 public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential {
