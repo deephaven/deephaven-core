@@ -1,11 +1,15 @@
 FROM deephaven/nginx-noroot-base:local-build
 
+# In order to run without root, we start as root, install sudo w/ sudo rules, then switch to nginx user (id 101)
 USER 0
 
-RUN printf '#!/bin/sh\nexit 0' > /usr/sbin/policy-rc.d && \
+# We want to install sudo, and start the sudo service (update policy-rc.d to exit 0, instead of 101)
+RUN ls -la /usr/sbin/policy-rc.d ; \
+    printf '#!/bin/sh\nexit 0' > /usr/sbin/policy-rc.d && \
     apt update -y && \
     apt install sudo -y && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    printf '#!/bin/sh\nexit 101' > /usr/sbin/policy-rc.d
 
 COPY licenses/ /
 COPY --chown=nginx nginx/default.conf /etc/nginx/conf.d/
