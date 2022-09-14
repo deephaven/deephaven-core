@@ -31,8 +31,9 @@ public class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGenerate
                     colSources[2].getType().getCanonicalName());
         }
         if (!io.deephaven.time.DateTime.class.isAssignableFrom(colSources[3].getType())) {
-            throw new IllegalArgumentException("Column 3: Expected type io.deephaven.time.DateTime, instead found type " +
-                    colSources[3].getType().getCanonicalName());
+            throw new IllegalArgumentException(
+                    "Column 3: Expected type io.deephaven.time.DateTime, instead found type " +
+                            colSources[3].getType().getCanonicalName());
         }
     }
 
@@ -67,8 +68,7 @@ public class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGenerate
                 contextHolder.getGetContext(0),
                 (byte[]) dataArrs[0],
                 arrIdx,
-                usePrev
-        );
+                usePrev);
 
         ChunkToArrayUtil.populateArrFromChunk(
                 columnSources[1],
@@ -77,8 +77,7 @@ public class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGenerate
                 contextHolder.getGetContext(1),
                 (long[]) dataArrs[1],
                 arrIdx,
-                usePrev
-        );
+                usePrev);
 
         ChunkToArrayUtil.populateObjArrFromChunk(
                 columnSources[2],
@@ -87,8 +86,7 @@ public class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGenerate
                 contextHolder.getGetContext(2),
                 (String[]) dataArrs[2],
                 arrIdx,
-                usePrev
-        );
+                usePrev);
 
         ChunkToArrayUtil.populateObjArrFromChunk(
                 columnSources[3],
@@ -97,8 +95,7 @@ public class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGenerate
                 contextHolder.getGetContext(3),
                 (DateTime[]) dataArrs[3],
                 arrIdx,
-                usePrev
-        );
+                usePrev);
     }
 
 }

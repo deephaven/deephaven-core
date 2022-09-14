@@ -28,13 +28,13 @@ public interface MultiRowRecordAdapter<T> {
      * Populates the {@code recordsArray} with records built from the data in the parallel {@code dataArrays}.
      *
      * @param recordsArray The array to populate with records
-     * @param dataArrays   The array of data to store in the records
+     * @param dataArrays The array of data to store in the records
      */
     void populateRecords(T[] recordsArray, Object[] dataArrays);
 
     /**
      * @param recordDataArrs The arrays of data from each column
-     * @param nRecords       The number of records (length of each array in recordDataArrs)
+     * @param nRecords The number of records (length of each array in recordDataArrs)
      */
     T[] createRecordsFromData(final Object[] recordDataArrs, final int nRecords);
 

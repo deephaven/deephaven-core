@@ -22,13 +22,14 @@ public class SingleRowRecordAdapter<T> {
     private final ColumnSource<?>[] recordColumnSources;
 
     /**
-     * An array of column adapters (parallel to the array of {@link #recordColumnSources})
-     * used to update a record of type {@code T} with values directly from the {@link #recordColumnSources}.
+     * An array of column adapters (parallel to the array of {@link #recordColumnSources}) used to update a record of
+     * type {@code T} with values directly from the {@link #recordColumnSources}.
      */
     @NotNull
     private final ColSourceToRecordAdapter<T, ?>[] rowToRecordAdapters;
 
-    private SingleRowRecordAdapter(@NotNull Table sourceTable, @NotNull RecordAdapterDescriptor<T> rowRecordAdapterDescriptor) {
+    private SingleRowRecordAdapter(@NotNull Table sourceTable,
+            @NotNull RecordAdapterDescriptor<T> rowRecordAdapterDescriptor) {
         this.rowRecordAdapterDescriptor = rowRecordAdapterDescriptor;
 
         final Map<String, RecordUpdater<T, ?>> columnAdapters = rowRecordAdapterDescriptor.getColumnAdapters();
@@ -44,10 +45,10 @@ public class SingleRowRecordAdapter<T> {
 
         final int nCols = recordColumnSources.length;
 
-        //noinspection unchecked
+        // noinspection unchecked
         final RecordUpdater<T, ?>[] recordUpdaters = columnAdapters.values().toArray(new RecordUpdater[0]);
 
-        //noinspection unchecked
+        // noinspection unchecked
         rowToRecordAdapters = new ColSourceToRecordAdapter[nCols];
         for (int i = 0; i < nCols; i++) {
             final RecordUpdater<T, ?> recordUpdater = recordUpdaters[i];
@@ -55,14 +56,15 @@ public class SingleRowRecordAdapter<T> {
         }
     }
 
-    public static <T> SingleRowRecordAdapter<T> create(@NotNull Table sourceTable, RecordAdapterDescriptor<T> rowRecordAdapterDescriptor) {
+    public static <T> SingleRowRecordAdapter<T> create(@NotNull Table sourceTable,
+            RecordAdapterDescriptor<T> rowRecordAdapterDescriptor) {
         return new SingleRowRecordAdapter<>(sourceTable, rowRecordAdapterDescriptor);
     }
 
     /**
      * Create a record of type {@code T} from the data in the table at index {@code k}.
      *
-     * @param k       The index key from which to retrieve data.
+     * @param k The index key from which to retrieve data.
      * @param usePrev Whether to use prev values.
      * @return A record containing the data at {@code k}.
      */
@@ -81,8 +83,7 @@ public class SingleRowRecordAdapter<T> {
                 (ColumnSource<C>) recordColumnSources[colIdx],
                 k,
                 usePrev,
-                record
-        );
+                record);
     }
 
 }

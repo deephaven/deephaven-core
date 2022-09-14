@@ -33,7 +33,7 @@ public interface ArrayToRecordsAdapter<T> {
      * Updates {@code records} with the data from array {@code arr}.
      *
      * @param records An array of records to update
-     * @param arr     An array of data to update te records with
+     * @param arr An array of data to update te records with
      */
     void updateRecordsFromArr(int nRecords, T[] records, Object arr);
 
@@ -119,7 +119,7 @@ public interface ArrayToRecordsAdapter<T> {
 
     static <T, C> ArrayToRecordsAdapter<T> getObjArrayAdapter(RecordUpdater<T, C> colAdapter) {
         return (nRecords, records, arr) -> {
-            //noinspection unchecked
+            // noinspection unchecked
             C[] arr2 = ((C[]) arr);
             for (int idx = 0; idx < nRecords; idx++) {
                 final C colValue = arr2[idx];

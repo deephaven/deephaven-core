@@ -157,7 +157,7 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
         }
 
         final Pair<RowSet, TLongIntMap> result;
-        if(useBaselineMap) {
+        if (useBaselineMap) {
             Assert.eq(map, "map", baselineMap, "baselineMap");
             synchronized (baselineMap) {
                 result = getRowSetForKeys0(dataKeys, map);

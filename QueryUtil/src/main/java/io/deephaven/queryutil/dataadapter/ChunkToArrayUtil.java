@@ -16,9 +16,9 @@ public class ChunkToArrayUtil {
             final ChunkSource.GetContext context,
             final T[] arr,
             final int arrOffset,
-            final boolean usePrev
-    ) {
-        final ObjectChunk<T, ?> chunk = ChunkRetrievalUtil.getObjChunkForKeys(columnSource, rowSequence, context, usePrev);
+            final boolean usePrev) {
+        final ObjectChunk<T, ?> chunk =
+                ChunkRetrievalUtil.getObjChunkForKeys(columnSource, rowSequence, context, usePrev);
         chunk.copyToTypedArray(0, arr, arrOffset, len);
     }
 
@@ -29,8 +29,7 @@ public class ChunkToArrayUtil {
             final ChunkSource.GetContext context,
             final char[] arr,
             final int arrOffset,
-            final boolean usePrev
-    ) {
+            final boolean usePrev) {
         final CharChunk<?> chunk = ChunkRetrievalUtil.getCharChunkForKeys(columnSource, rowSequence, context, usePrev);
         chunk.copyToTypedArray(0, arr, arrOffset, len);
     }
@@ -42,8 +41,7 @@ public class ChunkToArrayUtil {
             final ChunkSource.GetContext context,
             final byte[] arr,
             final int arrOffset,
-            final boolean usePrev
-    ) {
+            final boolean usePrev) {
         final ByteChunk<?> chunk = ChunkRetrievalUtil.getByteChunkForKeys(columnSource, rowSequence, context, usePrev);
         chunk.copyToTypedArray(0, arr, arrOffset, len);
     }
@@ -55,9 +53,9 @@ public class ChunkToArrayUtil {
             final ChunkSource.GetContext context,
             final short[] arr,
             final int arrOffset,
-            final boolean usePrev
-    ) {
-        final ShortChunk<?> chunk = ChunkRetrievalUtil.getShortChunkForKeys(columnSource, rowSequence, context, usePrev);
+            final boolean usePrev) {
+        final ShortChunk<?> chunk =
+                ChunkRetrievalUtil.getShortChunkForKeys(columnSource, rowSequence, context, usePrev);
         chunk.copyToTypedArray(0, arr, arrOffset, len);
     }
 
@@ -68,8 +66,7 @@ public class ChunkToArrayUtil {
             final ChunkSource.GetContext context,
             final int[] arr,
             final int arrOffset,
-            final boolean usePrev
-    ) {
+            final boolean usePrev) {
         final IntChunk<?> chunk = ChunkRetrievalUtil.getIntChunkForKeys(columnSource, rowSequence, context, usePrev);
         chunk.copyToTypedArray(0, arr, arrOffset, len);
     }
@@ -81,9 +78,9 @@ public class ChunkToArrayUtil {
             final ChunkSource.GetContext context,
             final float[] arr,
             final int arrOffset,
-            final boolean usePrev
-    ) {
-        final FloatChunk<?> chunk = ChunkRetrievalUtil.getFloatChunkForKeys(columnSource, rowSequence, context, usePrev);
+            final boolean usePrev) {
+        final FloatChunk<?> chunk =
+                ChunkRetrievalUtil.getFloatChunkForKeys(columnSource, rowSequence, context, usePrev);
         chunk.copyToTypedArray(0, arr, arrOffset, len);
     }
 
@@ -94,8 +91,7 @@ public class ChunkToArrayUtil {
             final ChunkSource.GetContext context,
             final long[] arr,
             final int arrOffset,
-            final boolean usePrev
-    ) {
+            final boolean usePrev) {
         final LongChunk<?> chunk = ChunkRetrievalUtil.getLongChunkForKeys(columnSource, rowSequence, context, usePrev);
         chunk.copyToTypedArray(0, arr, arrOffset, len);
     }
@@ -107,12 +103,11 @@ public class ChunkToArrayUtil {
             final ChunkSource.GetContext context,
             final double[] arr,
             final int arrOffset,
-            final boolean usePrev
-    ) {
-        final DoubleChunk<?> chunk = ChunkRetrievalUtil.getDoubleChunkForKeys(columnSource, rowSequence, context, usePrev);
+            final boolean usePrev) {
+        final DoubleChunk<?> chunk =
+                ChunkRetrievalUtil.getDoubleChunkForKeys(columnSource, rowSequence, context, usePrev);
         chunk.copyToTypedArray(0, arr, arrOffset, len);
     }
 
-    private ChunkToArrayUtil() {
-    }
+    private ChunkToArrayUtil() {}
 }

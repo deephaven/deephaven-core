@@ -24,11 +24,11 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
 
 
     /**
-     * Create a KeyedRecordAdapter that translates rows of {@code sourceTable} into instances of type {@code T} using the
-     * provided {@code recordAdapterDescriptor}, keyed by the given {@code keyColumns}.
+     * Create a KeyedRecordAdapter that translates rows of {@code sourceTable} into instances of type {@code T} using
+     * the provided {@code recordAdapterDescriptor}, keyed by the given {@code keyColumns}.
      *
      * @param sourceTable The table whose data will be used to create records.
-     * @param keyColumns  The key columns to use when retrieving data
+     * @param keyColumns The key columns to use when retrieving data
      */
     public PyKeyedRecordAdapter(@NotNull Table sourceTable, @NotNull String[] keyColumns, String[] dataColumns) {
         super(sourceTable, new RecordAdapterDescriptor<>() {
@@ -64,8 +64,8 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
     }
 
     /**
-     * Retrieves data corresponding to the {@code dataKeys} and returns a {@code RecordRetrievalResult} that
-     * can be used from Python to create the appropriate result objects.
+     * Retrieves data corresponding to the {@code dataKeys} and returns a {@code RecordRetrievalResult} that can be used
+     * from Python to create the appropriate result objects.
      *
      * @param dataKeys The keys to retrieve data for.
      * @return The {@code RecordRetrievalResult} with table data corresponding to the rows for the {@code dataKeys}.
@@ -80,7 +80,8 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
         } else {
             // Each of the dataKeys should be an array -- convert each key array to a list,
             // then wrap those lists in a list.
-            dataKeysList = Arrays.stream(dataKeys).map(o -> Arrays.asList((Object[]) o)).collect(Collectors.toUnmodifiableList());
+            dataKeysList = Arrays.stream(dataKeys).map(o -> Arrays.asList((Object[]) o))
+                    .collect(Collectors.toUnmodifiableList());
         }
 
         // Convert data keys (object or List<?>) to map keys (object or tuple)
@@ -95,11 +96,13 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
         // map of index keys to the position of the corresponding data key (in the 'dataKeys' list)
         final MutableObject<TLongIntMap> dbRowKeyToDataKeyPositionalIndexRef = new MutableObject<>();
 
-        DO_LOCKED_FUNCTION.accept((usePrev) -> retrieveDataMultipleKeys(mapKeys, recordDataArrs, recordDataRowKeys, dbRowKeyToDataKeyPositionalIndexRef, usePrev),
-                "KeyedRecordAdapter.getRecords()"
-        );
+        DO_LOCKED_FUNCTION.accept(
+                (usePrev) -> retrieveDataMultipleKeys(mapKeys, recordDataArrs, recordDataRowKeys,
+                        dbRowKeyToDataKeyPositionalIndexRef, usePrev),
+                "KeyedRecordAdapter.getRecords()");
 
-        return new RecordRetrievalResult(recordDataRowKeys.toArray(), dbRowKeyToDataKeyPositionalIndexRef.getValue(), recordDataArrs);
+        return new RecordRetrievalResult(recordDataRowKeys.toArray(), dbRowKeyToDataKeyPositionalIndexRef.getValue(),
+                recordDataArrs);
     }
 
     public static class RecordRetrievalResult {
@@ -116,7 +119,8 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
         @NotNull
         public final Object[] recordDataArrs;
 
-        public RecordRetrievalResult(@NotNull long[] recordDataRowKeys, @NotNull TLongIntMap rowKeyToDataKeyPositionalIndex, @NotNull Object[] recordDataArrs) {
+        public RecordRetrievalResult(@NotNull long[] recordDataRowKeys,
+                @NotNull TLongIntMap rowKeyToDataKeyPositionalIndex, @NotNull Object[] recordDataArrs) {
             this.recordDataRowKeys = recordDataRowKeys;
             this.rowKeyToDataKeyPositionalIndex = rowKeyToDataKeyPositionalIndex;
             this.recordDataArrs = recordDataArrs;

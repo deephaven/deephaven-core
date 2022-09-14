@@ -15,16 +15,18 @@ import java.util.function.Consumer;
 public class MyTradeHolder {
 
     /**
-     * Object that describes how to map rows of a table with columns "Price", "Size", and "Timestamp"
-     * into instances of {@link MyTradeHolder}.
+     * Object that describes how to map rows of a table with columns "Price", "Size", and "Timestamp" into instances of
+     * {@link MyTradeHolder}.
      */
-    public static final RecordAdapterDescriptor<MyTradeHolder> myTradeHolderRecordAdapterDescriptor = RecordAdapterDescriptorBuilder
-            .create(MyTradeHolder::new)
-            .addColumnAdapter("Sym", RecordUpdaters.getStringUpdater(MyTradeHolder::setSym))
-            .addColumnAdapter("Price", RecordUpdaters.getDoubleUpdater(MyTradeHolder::setPrice))
-            .addColumnAdapter("Size", RecordUpdaters.getIntUpdater(MyTradeHolder::setSize))
-            .addColumnAdapter("Timestamp", RecordUpdaters.getReferenceTypeUpdater(DateTime.class, MyTradeHolder::setTimestamp))
-            .build();
+    public static final RecordAdapterDescriptor<MyTradeHolder> myTradeHolderRecordAdapterDescriptor =
+            RecordAdapterDescriptorBuilder
+                    .create(MyTradeHolder::new)
+                    .addColumnAdapter("Sym", RecordUpdaters.getStringUpdater(MyTradeHolder::setSym))
+                    .addColumnAdapter("Price", RecordUpdaters.getDoubleUpdater(MyTradeHolder::setPrice))
+                    .addColumnAdapter("Size", RecordUpdaters.getIntUpdater(MyTradeHolder::setSize))
+                    .addColumnAdapter("Timestamp",
+                            RecordUpdaters.getReferenceTypeUpdater(DateTime.class, MyTradeHolder::setTimestamp))
+                    .build();
 
     private String sym;
     private DateTime timestamp;
@@ -32,12 +34,12 @@ public class MyTradeHolder {
     private int size;
 
     private static void example(Table tradesTable) {
-        final KeyedRecordAdapter<String, MyTradeHolder> keyedRecordAdapter = KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
-                tradesTable,
-                myTradeHolderRecordAdapterDescriptor,
-                "USym",
-                String.class
-        );
+        final KeyedRecordAdapter<String, MyTradeHolder> keyedRecordAdapter =
+                KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
+                        tradesTable,
+                        myTradeHolderRecordAdapterDescriptor,
+                        "USym",
+                        String.class);
 
         // Get the last AAPL trade:
         final MyTradeHolder lastAaplTrade = keyedRecordAdapter.getRecord("AAPL");

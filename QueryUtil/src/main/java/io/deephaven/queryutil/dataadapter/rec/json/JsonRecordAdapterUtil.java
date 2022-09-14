@@ -30,8 +30,7 @@ public class JsonRecordAdapterUtil {
             Instant.class,
             LocalDate.class,
             LocalTime.class,
-            LocalDateTime.class
-    )));
+            LocalDateTime.class)));
 
     /**
      * Creates a RecordAdapterDescriptor for a record adapter that stores the {@code columns} in a HashMap.
@@ -43,7 +42,8 @@ public class JsonRecordAdapterUtil {
     public static RecordAdapterDescriptor<ObjectNode> createJsonRecordAdapterDescriptor(
             @NotNull final Table sourceTable,
             @NotNull final List<String> columns) {
-        final RecordAdapterDescriptorBuilder<ObjectNode> descriptorBuilder = RecordAdapterDescriptorBuilder.create(() -> new ObjectNode(JsonNodeFactory.instance));
+        final RecordAdapterDescriptorBuilder<ObjectNode> descriptorBuilder =
+                RecordAdapterDescriptorBuilder.create(() -> new ObjectNode(JsonNodeFactory.instance));
 
         for (String colName : columns) {
             final ColumnSource<?> colSource = sourceTable.getColumnSource(colName);
@@ -76,59 +76,79 @@ public class JsonRecordAdapterUtil {
     }
 
     private static RecordUpdater<ObjectNode, ?> getObjectNodeUpdater(@NotNull final String colName,
-                                                                     @NotNull final Class<?> colType) {
+            @NotNull final Class<?> colType) {
         final RecordUpdater<ObjectNode, ?> updater;
 
-        final boolean isConvertibleToString = CharSequence.class.isAssignableFrom(colType) || CONVERTIBLE_TO_STRING_CLASSES.contains(colType);
+        final boolean isConvertibleToString =
+                CharSequence.class.isAssignableFrom(colType) || CONVERTIBLE_TO_STRING_CLASSES.contains(colType);
 
         if (isConvertibleToString) {
             updater = getReferenceTypeUpdater(colType, (record, v) -> {
-                if (v == null) record.putNull(colName);
-                else record.put(colName, v.toString());
+                if (v == null)
+                    record.putNull(colName);
+                else
+                    record.put(colName, v.toString());
             });
         } else if (!colType.isPrimitive()) {
             // Other reference type are unsupported
-            throw new IllegalArgumentException("Could not update ObjectNode with column \"" + colName + "\", type: " + colType.getCanonicalName());
+            throw new IllegalArgumentException(
+                    "Could not update ObjectNode with column \"" + colName + "\", type: " + colType.getCanonicalName());
         } else if (boolean.class.equals(colType)) {
             updater = getBooleanUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v)) record.putNull(colName);
-                else record.put(colName, v);
+                if (io.deephaven.function.Basic.isNull(v))
+                    record.putNull(colName);
+                else
+                    record.put(colName, v);
             });
         } else if (char.class.equals(colType)) {
             updater = getCharUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v)) record.putNull(colName);
-                    // char must be treated as string
-                else record.put(colName, Character.toString(v));
+                if (io.deephaven.function.Basic.isNull(v))
+                    record.putNull(colName);
+                // char must be treated as string
+                else
+                    record.put(colName, Character.toString(v));
             });
         } else if (byte.class.equals(colType)) {
             updater = getByteUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v)) record.putNull(colName);
-                else record.put(colName, v);
+                if (io.deephaven.function.Basic.isNull(v))
+                    record.putNull(colName);
+                else
+                    record.put(colName, v);
             });
         } else if (short.class.equals(colType)) {
             updater = getShortUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v)) record.putNull(colName);
-                else record.put(colName, v);
+                if (io.deephaven.function.Basic.isNull(v))
+                    record.putNull(colName);
+                else
+                    record.put(colName, v);
             });
         } else if (int.class.equals(colType)) {
             updater = getIntUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v)) record.putNull(colName);
-                else record.put(colName, v);
+                if (io.deephaven.function.Basic.isNull(v))
+                    record.putNull(colName);
+                else
+                    record.put(colName, v);
             });
         } else if (float.class.equals(colType)) {
             updater = getFloatUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v)) record.putNull(colName);
-                else record.put(colName, v);
+                if (io.deephaven.function.Basic.isNull(v))
+                    record.putNull(colName);
+                else
+                    record.put(colName, v);
             });
         } else if (long.class.equals(colType)) {
             updater = getLongUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v)) record.putNull(colName);
-                else record.put(colName, v);
+                if (io.deephaven.function.Basic.isNull(v))
+                    record.putNull(colName);
+                else
+                    record.put(colName, v);
             });
         } else if (double.class.equals(colType)) {
             updater = getDoubleUpdater((record, v) -> {
-                if (io.deephaven.function.Basic.isNull(v)) record.putNull(colName);
-                else record.put(colName, v);
+                if (io.deephaven.function.Basic.isNull(v))
+                    record.putNull(colName);
+                else
+                    record.put(colName, v);
             });
         } else {
             throw Assert.statementNeverExecuted();
@@ -136,6 +156,5 @@ public class JsonRecordAdapterUtil {
         return updater;
     }
 
-    private JsonRecordAdapterUtil() {
-    }
+    private JsonRecordAdapterUtil() {}
 }

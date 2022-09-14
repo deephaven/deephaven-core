@@ -134,11 +134,11 @@ public class ChunkRetrievalUtil {
             final ColumnSource<T> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context, boolean usePrev) {
-        return Objects.requireNonNull(usePrev ? columnSource.getPrevChunk(context, rowSequence) : columnSource.getChunk(context, rowSequence));
+        return Objects.requireNonNull(usePrev ? columnSource.getPrevChunk(context, rowSequence)
+                : columnSource.getChunk(context, rowSequence));
     }
 
 
-    private ChunkRetrievalUtil() {
-    }
+    private ChunkRetrievalUtil() {}
 
 }

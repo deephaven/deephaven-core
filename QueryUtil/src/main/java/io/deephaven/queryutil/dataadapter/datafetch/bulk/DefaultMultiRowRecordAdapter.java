@@ -20,8 +20,8 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
 
     /**
      * An array of array-to-record adapters (parallel to the array of {@link TableDataArrayRetriever#getColumnSources()
-     * tableDataArrayRetriever colum sources}) used to update a record of type {@code T} with values from arrays of
-     * data retrieved from the column sources via the TableDataArrayRetriever.
+     * tableDataArrayRetriever colum sources}) used to update a record of type {@code T} with values from arrays of data
+     * retrieved from the column sources via the TableDataArrayRetriever.
      */
     @SuppressWarnings("rawtypes")
     private final ArrayToRecordsAdapter[] arrayToRecordAdapters;
@@ -36,7 +36,7 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
 
         final Map<String, RecordUpdater<T, ?>> columnAdapters = descriptor.getColumnAdapters();
 
-        //noinspection rawtypes
+        // noinspection rawtypes
         final ColumnSource[] columnSources = new ColumnSource[nCols];
         arrayToRecordAdapters = new ArrayToRecordsAdapter[nCols];
 
@@ -54,7 +54,8 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
             final Class<?> colType = columnSources[ii].getType();
             final boolean recordAdapterMatchesData = expectedType.isAssignableFrom(colType);
             if (!recordAdapterMatchesData) {
-                throw new IllegalArgumentException("Type mismatch for column " + ii + " (" + colName + "): RecordUpdater expected type " + expectedType.getCanonicalName() +
+                throw new IllegalArgumentException("Type mismatch for column " + ii + " (" + colName
+                        + "): RecordUpdater expected type " + expectedType.getCanonicalName() +
                         " but column has type " + colType);
             }
 
@@ -67,7 +68,7 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
         // Populate the records with the data, one column at a time.
         for (int ii = 0; ii < nCols; ii++) {
             Object arr = recordDataArrs[ii];
-            //noinspection unchecked
+            // noinspection unchecked
             arrayToRecordAdapters[ii].updateRecordsFromArr(results.length, results, arr);
         }
     }
@@ -79,7 +80,7 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
 
     @NotNull
     public T[] createEmptyRecordsArr(final int nRecords) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (T[]) Array.newInstance(recordType, nRecords);
     }
 }

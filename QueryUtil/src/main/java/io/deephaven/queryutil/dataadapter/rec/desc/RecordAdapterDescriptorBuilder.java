@@ -18,8 +18,10 @@ public class RecordAdapterDescriptorBuilder<T> {
     private final Map<String, RecordUpdater<T, ?>> colNameToAdapterMap = new LinkedHashMap<>();
     private final Supplier<T> emptyRecordSupplier;
 
-    private BiFunction<Table, RecordAdapterDescriptor<T>, SingleRowRecordAdapter<T>> singleRowAdapterSupplier = SingleRowRecordAdapter::create;
-    private BiFunction<Table, RecordAdapterDescriptor<T>, MultiRowRecordAdapter<T>> multiRowAdapterSupplier = DefaultMultiRowRecordAdapter::create;
+    private BiFunction<Table, RecordAdapterDescriptor<T>, SingleRowRecordAdapter<T>> singleRowAdapterSupplier =
+            SingleRowRecordAdapter::create;
+    private BiFunction<Table, RecordAdapterDescriptor<T>, MultiRowRecordAdapter<T>> multiRowAdapterSupplier =
+            DefaultMultiRowRecordAdapter::create;
 
     private RecordAdapterDescriptorBuilder(Supplier<T> emptyRecordSupplier) {
         this.emptyRecordSupplier = emptyRecordSupplier;
@@ -29,7 +31,7 @@ public class RecordAdapterDescriptorBuilder<T> {
      * Create a builder for records of type {@code T}.
      *
      * @param emptyRecordSupplier A supplier of empty records
-     * @param <T>                 The record data type
+     * @param <T> The record data type
      * @return A RecordAdapterDescriptor builder that can populate empty records of type {@code T} with data
      */
     public static <T> RecordAdapterDescriptorBuilder<T> create(Supplier<T> emptyRecordSupplier) {
@@ -41,7 +43,7 @@ public class RecordAdapterDescriptorBuilder<T> {
      * {@link #colNameToAdapterMap column adapters} as the given {@code base}.
      *
      * @param base The base RecordAdapterDescriptor to copy
-     * @param <T>  The record data type
+     * @param <T> The record data type
      * @return A RecordAdapterDescriptor builder that can populate empty records of type {@code T} with data
      */
     public static <T> RecordAdapterDescriptorBuilder<T> create(RecordAdapterDescriptor<T> base) {
@@ -53,16 +55,18 @@ public class RecordAdapterDescriptorBuilder<T> {
     }
 
     /**
-     * Add an adapter that maps data from a column named {@code colName} into a record of type {@code T}. The input
-     * type {@code C} to the adapter must match the data type for {@code colName} in the table with which the
-     * record adapter will be used.
+     * Add an adapter that maps data from a column named {@code colName} into a record of type {@code T}. The input type
+     * {@code C} to the adapter must match the data type for {@code colName} in the table with which the record adapter
+     * will be used.
      *
      * @param colName The name of the column to map into records
-     * @param adapter An adapter that updates a record of type {@code T} with a value of type {@code C} (or the corresponding primitive type, if {@code C} is a boxed  type).
-     * @param <C>     The data type in the column corresponding to {@code colName}
+     * @param adapter An adapter that updates a record of type {@code T} with a value of type {@code C} (or the
+     *        corresponding primitive type, if {@code C} is a boxed type).
+     * @param <C> The data type in the column corresponding to {@code colName}
      * @return This builder.
      */
-    public <C> RecordAdapterDescriptorBuilder<T> addColumnAdapter(final String colName, final RecordUpdater<T, C> adapter) {
+    public <C> RecordAdapterDescriptorBuilder<T> addColumnAdapter(final String colName,
+            final RecordUpdater<T, C> adapter) {
         colNameToAdapterMap.put(colName, adapter);
         return this;
     }
@@ -71,11 +75,13 @@ public class RecordAdapterDescriptorBuilder<T> {
         return colNameToAdapterMap.remove(colName);
     }
 
-    public void setSingleRowAdapterSupplier(@NotNull BiFunction<Table, RecordAdapterDescriptor<T>, SingleRowRecordAdapter<T>> singleRowAdapterSupplier) {
+    public void setSingleRowAdapterSupplier(
+            @NotNull BiFunction<Table, RecordAdapterDescriptor<T>, SingleRowRecordAdapter<T>> singleRowAdapterSupplier) {
         this.singleRowAdapterSupplier = singleRowAdapterSupplier;
     }
 
-    public void setMultiRowAdapterSupplier(@NotNull BiFunction<Table, RecordAdapterDescriptor<T>, MultiRowRecordAdapter<T>> multiRowAdapterSupplier) {
+    public void setMultiRowAdapterSupplier(
+            @NotNull BiFunction<Table, RecordAdapterDescriptor<T>, MultiRowRecordAdapter<T>> multiRowAdapterSupplier) {
         this.multiRowAdapterSupplier = multiRowAdapterSupplier;
     }
 
@@ -96,9 +102,9 @@ public class RecordAdapterDescriptorBuilder<T> {
         private final BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier;
 
         private RecordAdapterDescriptorImpl(Map<String, RecordUpdater<R, ?>> colNameToAdapterMap,
-                                            Supplier<R> emptyRecordSupplier,
-                                            BiFunction<Table, RecordAdapterDescriptor<R>, SingleRowRecordAdapter<R>> singleRowAdapterSupplier,
-                                            BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier) {
+                Supplier<R> emptyRecordSupplier,
+                BiFunction<Table, RecordAdapterDescriptor<R>, SingleRowRecordAdapter<R>> singleRowAdapterSupplier,
+                BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier) {
             this.colNameToAdapterMap = colNameToAdapterMap;
             this.emptyRecordSupplier = emptyRecordSupplier;
             this.singleRowAdapterSupplier = singleRowAdapterSupplier;

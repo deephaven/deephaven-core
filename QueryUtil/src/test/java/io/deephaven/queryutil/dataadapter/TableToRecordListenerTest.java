@@ -43,9 +43,9 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                 TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L, 40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d)
-        );
+                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
+                        40_000_000_000L),
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
         TableTools.show(source);
 
         Queue<ObjectNode> addedUpdated = new ConcurrentLinkedDeque<>();
@@ -57,24 +57,26 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
 
         final boolean processInitialData = true;
 
-        tableToRecordListener = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> new TableToRecordListener<>(
-                "desc",
-                source,
-                JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol", "DoubleCol")),
-                addedUpdated::add,
-                removed::add,
-                processInitialData,
-                async,
-                !async ? null : nUpdatesProcessed -> {
-                    try {
-                        l.lock();
-                        nProcessedRecords.setValue(nUpdatesProcessed);
-                        recordsProcessedCondition.signal();
-                    } finally {
-                        l.unlock();
-                    }
-                }
-        ));
+        tableToRecordListener = UpdateGraphProcessor.DEFAULT.sharedLock()
+                .computeLocked(() -> new TableToRecordListener<>(
+                        "desc",
+                        source,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                                Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
+                                        "IntCol", "FloatCol", "LongCol", "DoubleCol")),
+                        addedUpdated::add,
+                        removed::add,
+                        processInitialData,
+                        async,
+                        !async ? null : nUpdatesProcessed -> {
+                            try {
+                                l.lock();
+                                nProcessedRecords.setValue(nUpdatesProcessed);
+                                recordsProcessedCondition.signal();
+                            } finally {
+                                l.unlock();
+                            }
+                        }));
 
         Runnable awaitRecordProcessing;
         if (!async) {
@@ -175,8 +177,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                     TableTools.intCol("IntCol", 900),
                     TableTools.floatCol("FloatCol", 0.9f),
                     TableTools.longCol("LongCol", 90_000_000_000L),
-                    TableTools.doubleCol("DoubleCol", 9.9d)
-            );
+                    TableTools.doubleCol("DoubleCol", 9.9d));
             TableTools.show(source);
             source.notifyListeners(i(), i(), i(4));
         });
@@ -254,8 +255,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                     TableTools.intCol("IntCol", 300),
                     TableTools.floatCol("FloatCol", 0.3f),
                     TableTools.longCol("LongCol", 30_000_000_000L),
-                    TableTools.doubleCol("DoubleCol", 3.3d)
-            );
+                    TableTools.doubleCol("DoubleCol", 3.3d));
             TableTools.show(source);
             source.notifyListeners(i(7), i(), i());
         });

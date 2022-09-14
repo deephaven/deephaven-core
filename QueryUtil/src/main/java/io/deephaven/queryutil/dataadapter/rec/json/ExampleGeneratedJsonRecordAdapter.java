@@ -13,8 +13,7 @@ public class ExampleGeneratedJsonRecordAdapter extends BaseJsonRecordAdapter {
                 "ByteCol",
                 "LongCol",
                 "StrCol",
-                "TimeCol"
-        );
+                "TimeCol");
     }
 
     @Override
@@ -31,8 +30,7 @@ public class ExampleGeneratedJsonRecordAdapter extends BaseJsonRecordAdapter {
             } else {
                 recordsArray[ii].put(
                         colName0,
-                        val
-                );
+                        val);
             }
         }
 
@@ -45,8 +43,7 @@ public class ExampleGeneratedJsonRecordAdapter extends BaseJsonRecordAdapter {
             } else {
                 recordsArray[ii].put(
                         colName1,
-                        val
-                );
+                        val);
             }
         }
 
@@ -59,8 +56,7 @@ public class ExampleGeneratedJsonRecordAdapter extends BaseJsonRecordAdapter {
             } else {
                 recordsArray[ii].put(
                         colName2,
-                        val
-                );
+                        val);
             }
         }
 
@@ -74,8 +70,7 @@ public class ExampleGeneratedJsonRecordAdapter extends BaseJsonRecordAdapter {
                 String mappedVal = Character.toString(val);
                 recordsArray[ii].put(
                         colName3,
-                        mappedVal
-                );
+                        mappedVal);
             }
         }
     }

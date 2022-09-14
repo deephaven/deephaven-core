@@ -6,9 +6,8 @@ import io.deephaven.engine.table.ColumnSource;
 
 /**
  * @param <COL_TYPE> The data type of the column.
- * @param <ARR_TYPE> An array that can store values of a column of {@code COL_TYPE}. This is not checked. For
- *                   primitive columns, {@code COL_TYPE} is a boxed type but {@code ARR_TYPE} must be an array
- *                   of the primitive type.
+ * @param <ARR_TYPE> An array that can store values of a column of {@code COL_TYPE}. This is not checked. For primitive
+ *        columns, {@code COL_TYPE} is a boxed type but {@code ARR_TYPE} must be an array of the primitive type.
  */
 @Deprecated
 public interface ChunkedArrPopulator<COL_TYPE, ARR_TYPE> {
@@ -41,6 +40,5 @@ public interface ChunkedArrPopulator<COL_TYPE, ARR_TYPE> {
             final ChunkSource.GetContext context,
             final ARR_TYPE arr,
             final int arrOffset,
-            final boolean usePrev
-    );
+            final boolean usePrev);
 }

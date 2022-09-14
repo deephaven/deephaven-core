@@ -46,9 +46,10 @@ public class SimpleTableDataArrayRetriever extends AbstractTableDataArrayRetriev
         return recordDataArrs;
     }
 
-    protected void populateArrsForRowSequence(boolean usePrev, Object[] dataArrs, int arrIdx, ContextHolder contextHolder, RowSequence rowSequence, int rowSequenceSize) {
+    protected void populateArrsForRowSequence(boolean usePrev, Object[] dataArrs, int arrIdx,
+            ContextHolder contextHolder, RowSequence rowSequence, int rowSequenceSize) {
         for (int i = 0; i < nCols; i++) {
-            //noinspection unchecked
+            // noinspection unchecked
             chunkToArrPopulators[i].populateArrFromChunk(
                     columnSources[i],
                     rowSequence,
@@ -56,8 +57,7 @@ public class SimpleTableDataArrayRetriever extends AbstractTableDataArrayRetriev
                     contextHolder.getGetContext(i),
                     dataArrs[i],
                     arrIdx,
-                    usePrev
-            );
+                    usePrev);
         }
     }
 

@@ -45,14 +45,15 @@ public abstract class AbstractTableDataArrayRetriever implements TableDataArrayR
         return Collections.unmodifiableList(Arrays.<ColumnSource<?>>asList(columnSources));
     }
 
-    public void fillDataArrays(final boolean usePrev, final RowSet tableIndex, final Object[] dataArrs, final LongConsumer keyConsumer) {
+    public void fillDataArrays(final boolean usePrev, final RowSet tableIndex, final Object[] dataArrs,
+            final LongConsumer keyConsumer) {
         final int size = tableIndex.intSize();
 
         final int chunkSize = Math.min(MAX_CHUNK_SIZE, size);
 
         int arrIdx = 0;
         try (final ContextHolder contextHolder = new ContextHolder(chunkSize, columnSources)) {
-            for (final RowSequence.Iterator iter = tableIndex.getRowSequenceIterator(); iter.hasMore(); ) {
+            for (final RowSequence.Iterator iter = tableIndex.getRowSequenceIterator(); iter.hasMore();) {
                 final RowSequence rowSequence = iter.getNextRowSequenceWithLength(chunkSize);
                 final int rowSequenceSize = rowSequence.intSize();
 
@@ -72,12 +73,14 @@ public abstract class AbstractTableDataArrayRetriever implements TableDataArrayR
     /**
      * Populates the data arrays with data for the given index keys ({@code orderedKeys}).
      *
-     * @param usePrev            Whether to use prev values ({@code true} while LTM is updating)
-     * @param dataArrs           The arrays to populate with data
-     * @param arrIdx             The starting array index to populate {@code dataArrs}
-     * @param contextHolder      The context holder for managing {@link io.deephaven.engine.table.ChunkSource.GetContext GetContexts}
-     * @param rowSequence        The index keys for which to retrieve data
+     * @param usePrev Whether to use prev values ({@code true} while LTM is updating)
+     * @param dataArrs The arrays to populate with data
+     * @param arrIdx The starting array index to populate {@code dataArrs}
+     * @param contextHolder The context holder for managing {@link io.deephaven.engine.table.ChunkSource.GetContext
+     *        GetContexts}
+     * @param rowSequence The index keys for which to retrieve data
      * @param rowSequenceSize The number of rows for which to retrieve data
      */
-    protected abstract void populateArrsForRowSequence(boolean usePrev, Object[] dataArrs, int arrIdx, ContextHolder contextHolder, RowSequence rowSequence, int rowSequenceSize);
+    protected abstract void populateArrsForRowSequence(boolean usePrev, Object[] dataArrs, int arrIdx,
+            ContextHolder contextHolder, RowSequence rowSequence, int rowSequenceSize);
 }

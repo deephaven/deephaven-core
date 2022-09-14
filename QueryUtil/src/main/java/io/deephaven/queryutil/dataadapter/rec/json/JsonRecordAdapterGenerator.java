@@ -63,15 +63,16 @@ public class JsonRecordAdapterGenerator {
     public Class<? extends BaseJsonRecordAdapter> generate() {
         final String classBody = generateClassBody().build();
         final String desc = "JsonRecordAdapter[" + String.join(", ", colTypeNames);
-        //noinspection unchecked
+        // noinspection unchecked
         return (Class<? extends BaseJsonRecordAdapter>) compile(desc, classBody);
     }
 
     private Class<?> compile(final String desc, final String classBody) {
-        try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget(JsonRecordAdapterGenerator.class.getName() + "Compile: " + desc)) {
+        try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance()
+                .getNugget(JsonRecordAdapterGenerator.class.getName() + "Compile: " + desc)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () ->
-                    CompilerTools.compile(COMPILED_CLASS_NAME, classBody, CompilerTools.FORMULA_PREFIX));
+            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () -> CompilerTools
+                    .compile(COMPILED_CLASS_NAME, classBody, CompilerTools.FORMULA_PREFIX));
         } catch (PrivilegedActionException pae) {
             throw new UncheckedDeephavenException("Compilation error for: " + desc, pae.getException());
         }
@@ -83,9 +84,7 @@ public class JsonRecordAdapterGenerator {
                 "public class $CLASSNAME$ extends [[BASE_JSON_RECORD_ADAPTER_CANONICAL]]", CodeGenerator.block(
                         "",
                         generateConstructor(), "",
-                        generatePopulateRecords(), ""
-                )
-        );
+                        generatePopulateRecords(), ""));
 
         g.replace("BASE_JSON_RECORD_ADAPTER_CANONICAL", BaseJsonRecordAdapter.class.getCanonicalName());
 
@@ -109,16 +108,15 @@ public class JsonRecordAdapterGenerator {
 
     private CodeGenerator generateConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$(Table sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor)", CodeGenerator.block(
+                "public $CLASSNAME$(Table sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor)",
+                CodeGenerator.block(
                         "super(",
                         "sourceTable,",
                         "descriptor,",
                         CodeGenerator.repeated("columnName", "\"[[COL_NAME]]\"[[TRAILING_COMMA]]"),
-                        ");"
-                )
-        );
+                        ");"));
 
-        for (int i = 0; i < colNames.length; ) {
+        for (int i = 0; i < colNames.length;) {
             String colName = colNames[i];
             final CodeGenerator listEntry = g.instantiateNewRepeated("columnName");
             listEntry.replace("COL_NAME", colName);
@@ -143,20 +141,16 @@ public class JsonRecordAdapterGenerator {
                                 "for (ii = 0; ii < nRecords; ii++)", CodeGenerator.block(
                                         "final [[TYPE]] val = col[[IDX]][ii];",
                                         "if ([[VAL_NULL_CHECK]])", CodeGenerator.block(
-                                                "recordsArray[ii].putNull(colName[[IDX]]);"
-                                        ), CodeGenerator.samelineBlock("else",
-                                                CodeGenerator.optional("__mapped1", "final [[MAPPED_TYPE]] mappedVal = [[MAPPER_CODE]];"),
+                                                "recordsArray[ii].putNull(colName[[IDX]]);"),
+                                        CodeGenerator.samelineBlock("else",
+                                                CodeGenerator.optional("__mapped1",
+                                                        "final [[MAPPED_TYPE]] mappedVal = [[MAPPER_CODE]];"),
                                                 "recordsArray[ii].put(",
                                                 "colName[[IDX]],",
                                                 CodeGenerator.optional("__mapped2", "mappedVal"),
                                                 CodeGenerator.optional("__unmapped", "val"),
-                                                ");"
-                                        )
-                                ),
-                                ""
-                        )
-                )
-        );
+                                                ");")),
+                                "")));
 
         for (int colIdx = 0; colIdx < colTypeNames.length; colIdx++) {
             final Class<?> colType = colTypes[colIdx];
@@ -196,7 +190,8 @@ public class JsonRecordAdapterGenerator {
             return new Pair<>("String", "val.toString()");
         } else if (!isString && !colType.isPrimitive()) {
             // Other reference type are unsupported
-            throw new IllegalArgumentException("Could not update ObjectNode with column of type: " + colType.getCanonicalName());
+            throw new IllegalArgumentException(
+                    "Could not update ObjectNode with column of type: " + colType.getCanonicalName());
         } else if (char.class.equals(colType)) {
             return new Pair<>("String", "Character.toString(val)");
         } else {

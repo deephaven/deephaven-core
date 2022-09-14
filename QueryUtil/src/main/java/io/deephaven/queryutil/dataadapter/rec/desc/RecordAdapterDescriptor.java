@@ -32,15 +32,15 @@ public interface RecordAdapterDescriptor<T> {
             @NotNull final Table sourceTable,
             @NotNull final List<String> columns) {
         final int nCols = columns.size();
-        final RecordAdapterDescriptorBuilder<Map<String, Object>> descriptorBuilder = RecordAdapterDescriptorBuilder.create(() -> new HashMap<>(nCols));
+        final RecordAdapterDescriptorBuilder<Map<String, Object>> descriptorBuilder =
+                RecordAdapterDescriptorBuilder.create(() -> new HashMap<>(nCols));
 
         for (String colName : columns) {
             final ColumnSource<?> colSource = sourceTable.getColumnSource(colName);
             final Class<?> colType = colSource.getType();
             final RecordUpdater<Map<String, Object>, ?> updater = getObjectUpdater(
                     colType,
-                    (map, val) -> map.put(colName, val)
-            );
+                    (map, val) -> map.put(colName, val));
 
             descriptorBuilder.addColumnAdapter(colName, updater);
         }
@@ -48,8 +48,8 @@ public interface RecordAdapterDescriptor<T> {
     }
 
     /**
-     * Returns a map of each column name to the RecordUpdater used to
-     * populate a record of type {@code T} with data from that column.
+     * Returns a map of each column name to the RecordUpdater used to populate a record of type {@code T} with data from
+     * that column.
      *
      * @return The map of column names to record updaters.
      */

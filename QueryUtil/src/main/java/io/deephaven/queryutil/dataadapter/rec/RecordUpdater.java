@@ -8,8 +8,8 @@ package io.deephaven.queryutil.dataadapter.rec;
 public interface RecordUpdater<R, C> {
 
     /**
-     * Returns the source type {@code C} for this record updater (i.e. the data type that is taken as an input
-     * to update a field of the record of type {@code R}).
+     * Returns the source type {@code C} for this record updater (i.e. the data type that is taken as an input to update
+     * a field of the record of type {@code R}).
      *
      * @return The supported source type of this record updater.
      */

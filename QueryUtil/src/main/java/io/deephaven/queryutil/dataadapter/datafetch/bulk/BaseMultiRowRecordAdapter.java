@@ -12,16 +12,16 @@ import io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterGenerator;
  * Adapter to convert multiple rows of table data into instances of {@code T}.
  * <p>
  * The {@link DefaultMultiRowRecordAdapter} implementation will work for all datatypes. More efficient implementations
- * can be created manually (like {@link ExampleGeneratedMultiRowDataArrayRetriever}) or
- * generated (as {@link JsonRecordAdapterGenerator} does for JSON {@code ObjectNode} records).
+ * can be created manually (like {@link ExampleGeneratedMultiRowDataArrayRetriever}) or generated (as
+ * {@link JsonRecordAdapterGenerator} does for JSON {@code ObjectNode} records).
  *
  * @param <T> The record data type.
  */
 public abstract class BaseMultiRowRecordAdapter<T> implements MultiRowRecordAdapter<T> {
 
     /**
-     * The runtime type of new records (determined from
-     * {@link RecordAdapterDescriptor#getEmptyRecord() descriptor.getEmptyRecord()}).
+     * The runtime type of new records (determined from {@link RecordAdapterDescriptor#getEmptyRecord()
+     * descriptor.getEmptyRecord()}).
      */
     protected final Class<T> recordType;
 
@@ -33,15 +33,16 @@ public abstract class BaseMultiRowRecordAdapter<T> implements MultiRowRecordAdap
     protected final TableDataArrayRetriever tableDataArrayRetriever;
 
     public BaseMultiRowRecordAdapter(final Table sourceTable, final RecordAdapterDescriptor<T> descriptor) {
-        //noinspection unchecked
+        // noinspection unchecked
         this(
-                TableDataArrayRetriever.makeDefault(descriptor.getColumnAdapters().keySet().stream().map(sourceTable::getColumnSource).toArray(ColumnSource[]::new)),
+                TableDataArrayRetriever.makeDefault(descriptor.getColumnAdapters().keySet().stream()
+                        .map(sourceTable::getColumnSource).toArray(ColumnSource[]::new)),
                 descriptor.getColumnAdapters().size(),
-                (Class<T>) descriptor.getEmptyRecord().getClass()
-        );
+                (Class<T>) descriptor.getEmptyRecord().getClass());
     }
 
-    public BaseMultiRowRecordAdapter(final TableDataArrayRetriever tableDataArrayRetriever, final int nCols, Class<T> recordType) {
+    public BaseMultiRowRecordAdapter(final TableDataArrayRetriever tableDataArrayRetriever, final int nCols,
+            Class<T> recordType) {
         this.nCols = nCols;
         this.tableDataArrayRetriever = tableDataArrayRetriever;
         this.recordType = recordType;

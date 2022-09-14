@@ -55,10 +55,11 @@ public class TableDataRetrieverGenerator {
     }
 
     private Class<?> compile(final String desc, final String classBody) {
-        try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget(TableDataRetrieverGenerator.class.getName() + "Compile: " + desc)) {
+        try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance()
+                .getNugget(TableDataRetrieverGenerator.class.getName() + "Compile: " + desc)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () ->
-                    CompilerTools.compile(COMPILED_CLASS_NAME, classBody, CompilerTools.FORMULA_PREFIX));
+            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () -> CompilerTools
+                    .compile(COMPILED_CLASS_NAME, classBody, CompilerTools.FORMULA_PREFIX));
         } catch (PrivilegedActionException pae) {
             throw new UncheckedDeephavenException("Compilation error for: " + desc, pae.getException());
         }
@@ -71,11 +72,10 @@ public class TableDataRetrieverGenerator {
                 "public class $CLASSNAME$ extends [[ABSTRACT_MULTIROW_RECORD_ADAPTER_CANONICAL]]", CodeGenerator.block(
                         generateConstructor(), "",
                         generateCreateDataArrays(), "",
-                        generatePopulateArrsForRowSequence(), ""
-                )
-        );
+                        generatePopulateArrsForRowSequence(), ""));
 
-        g.replace("ABSTRACT_MULTIROW_RECORD_ADAPTER_CANONICAL", AbstractGeneratedTableDataArrayRetriever.class.getCanonicalName());
+        g.replace("ABSTRACT_MULTIROW_RECORD_ADAPTER_CANONICAL",
+                AbstractGeneratedTableDataArrayRetriever.class.getCanonicalName());
 
         return g.freeze();
     }
@@ -99,12 +99,11 @@ public class TableDataRetrieverGenerator {
         final CodeGenerator g = CodeGenerator.create(
                 "public $CLASSNAME$(final ColumnSource<?>[] colSources)", CodeGenerator.block(
                         "super(colSources);",
-                        CodeGenerator.repeated("validateColumnArg", "if ( ![[TYPE]].class.isAssignableFrom(colSources[[[IDX]]].getType()) )", CodeGenerator.block(
-                                "throw new IllegalArgumentException(\"Column [[IDX]]: Expected type [[TYPE]], instead found type \" +",
-                                "colSources[[[IDX]]].getType().getCanonicalName());"
-                        ))
-                )
-        );
+                        CodeGenerator.repeated("validateColumnArg",
+                                "if ( ![[TYPE]].class.isAssignableFrom(colSources[[[IDX]]].getType()) )",
+                                CodeGenerator.block(
+                                        "throw new IllegalArgumentException(\"Column [[IDX]]: Expected type [[TYPE]], instead found type \" +",
+                                        "colSources[[[IDX]]].getType().getCanonicalName());"))));
 
         for (int colIdx = 0; colIdx < colTypeNames.length; colIdx++) {
             final String typeName = colTypeNames[colIdx];
@@ -126,9 +125,7 @@ public class TableDataRetrieverGenerator {
                         "",
                         CodeGenerator.repeated("arrInitializer", "dataArrs[[[IDX]]] = new [[TYPE]][len];"),
                         "",
-                        "return dataArrs;"
-                )
-        );
+                        "return dataArrs;"));
 
         for (int colIdx = 0; colIdx < colTypeNames.length; colIdx++) {
             final String typeName = colTypeNames[colIdx];
@@ -162,17 +159,15 @@ public class TableDataRetrieverGenerator {
                                 "([[TYPE]][]) dataArrs[[[IDX]]],",
                                 "arrIdx,",
                                 "usePrev",
-                                ");"
-                        )
-                )
-        );
+                                ");")));
 
         for (int colIdx = 0; colIdx < colTypeNames.length; colIdx++) {
             final String typeName = colTypeNames[colIdx];
             final CodeGenerator arrPopulator = g.instantiateNewRepeated("dataArrayPopulator");
             arrPopulator.replace("IDX", String.valueOf(colIdx));
             arrPopulator.replace("TYPE", typeName);
-            arrPopulator.replace("METHOD_NAME", colIsPrimitive[colIdx] ? "populateArrFromChunk" : "populateObjArrFromChunk");
+            arrPopulator.replace("METHOD_NAME",
+                    colIsPrimitive[colIdx] ? "populateArrFromChunk" : "populateObjArrFromChunk");
             arrPopulator.freeze();
         }
 

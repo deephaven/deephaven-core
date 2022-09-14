@@ -13,19 +13,21 @@ public class RecordUpdaters {
 
     /**
      * Creates a {@code RecordUpdater} that updates a record with an object retrieved from a column. If {@code colType}
-     * is a primitive type, then the returned RecordUpdater will box the primitive value (with proper conversion of
-     * DB nulls) before calling the provided {@code recordUpdater}.
+     * is a primitive type, then the returned RecordUpdater will box the primitive value (with proper conversion of DB
+     * nulls) before calling the provided {@code recordUpdater}.
      * <p>
      * Use the type-specific methods such as {@link #getIntUpdater} to avoid boxing. Use
-     * {@link #getReferenceTypeUpdater} to capture the column type as the type of the second
-     * argument to the {@code recordUpdater}.
+     * {@link #getReferenceTypeUpdater} to capture the column type as the type of the second argument to the
+     * {@code recordUpdater}.
      *
-     * @param colType       The column's data type.
+     * @param colType The column's data type.
      * @param recordUpdater An updater to populate an instance of {@code R} with an object from a column.
-     * @param <R>           The record type.
-     * @return An updater that passes objects (with DB null-safe boxing, if necessary) to the given {@code recordUpdater}.
+     * @param <R> The record type.
+     * @return An updater that passes objects (with DB null-safe boxing, if necessary) to the given
+     *         {@code recordUpdater}.
      */
-    public static <R> RecordUpdater<R, ?> getObjectUpdater(final Class<?> colType, final BiConsumer<R, Object> recordUpdater) {
+    public static <R> RecordUpdater<R, ?> getObjectUpdater(final Class<?> colType,
+            final BiConsumer<R, Object> recordUpdater) {
         final RecordUpdater<R, ?> updater;
         if (!colType.isPrimitive()) {
             updater = getReferenceTypeUpdater(colType, recordUpdater::accept);
@@ -171,6 +173,5 @@ public class RecordUpdaters {
         };
     }
 
-    private RecordUpdaters() {
-    }
+    private RecordUpdaters() {}
 }

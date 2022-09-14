@@ -26,8 +26,9 @@ public enum GetDataLockType {
     SNAPSHOT;
 
     /**
-     * Returns a {@code ThrowingConsumer} that takes a {@link QueryDataRetrievalOperation}, acquires a {@link UpdateGraphProcessor} lock
-     * based on the specified {@code lockType}, then executes the {@code FitDataPopulator} with the appropriate value for usePrev.
+     * Returns a {@code ThrowingConsumer} that takes a {@link QueryDataRetrievalOperation}, acquires a
+     * {@link UpdateGraphProcessor} lock based on the specified {@code lockType}, then executes the
+     * {@code FitDataPopulator} with the appropriate value for usePrev.
      *
      * @param lockType The way of acquiring the {@code UpdateGraphProcessor} lock.
      * @return A function that runs a {@link }
@@ -39,13 +40,17 @@ public enum GetDataLockType {
             case LTM_LOCK_ALREADY_HELD:
                 return (queryDataRetrievalOperation, description) -> queryDataRetrievalOperation.retrieveData(false);
             case LTM_LOCK:
-                return (queryDataRetrievalOperation, description) -> UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
+                return (queryDataRetrievalOperation, description) -> UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                        .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
             case LTM_READ_LOCK:
-                return (queryDataRetrievalOperation, description) -> UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
+                return (queryDataRetrievalOperation, description) -> UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
             case SNAPSHOT:
-                return (queryDataRetrievalOperation, description) -> ConstructSnapshot.callDataSnapshotFunction(description,
+                return (queryDataRetrievalOperation, description) -> ConstructSnapshot.callDataSnapshotFunction(
+                        description,
                         ConstructSnapshot.makeSnapshotControl(false,
-                                // TODO: should this next boolean ('refreshing') be true or false? or depend on the table?
+                                // TODO: should this next boolean ('refreshing') be true or false? or depend on the
+                                // table?
                                 false),
                         (usePrev, beforeClockValue) -> queryDataRetrievalOperation.retrieveData(usePrev));
             default:

@@ -32,16 +32,17 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L, 40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d)
-        );
+                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
+                        40_000_000_000L),
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
         TableTools.show(source);
 
-        final KeyedRecordAdapter<List<?>, Map<String, Object>> keyedRecordAdapter = KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                source,
-                Arrays.asList("StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol", "DoubleCol"),
-                "KeyCol1", "KeyCol2"
-        );
+        final KeyedRecordAdapter<List<?>, Map<String, Object>> keyedRecordAdapter =
+                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
+                        source,
+                        Arrays.asList("StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol",
+                                "DoubleCol"),
+                        "KeyCol1", "KeyCol2");
 
         Map<String, Object> record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
         assertEquals("Aa", record.get("StringCol"));
@@ -89,16 +90,18 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L, 40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d)
-        );
+                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
+                        40_000_000_000L),
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
         TableTools.show(source);
 
-        final KeyedRecordAdapter<List<?>, ObjectNode> keyedRecordAdapter = KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                source,
-                JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol", "DoubleCol")),
-                "KeyCol1", "KeyCol2"
-        );
+        final KeyedRecordAdapter<List<?>, ObjectNode> keyedRecordAdapter =
+                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
+                        source,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                                Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
+                                        "IntCol", "FloatCol", "LongCol", "DoubleCol")),
+                        "KeyCol1", "KeyCol2");
 
         ObjectNode record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
         assertEquals("KeyA", record.get("KeyCol1").textValue());
@@ -150,26 +153,34 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L, 40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d)
-        );
+                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
+                        40_000_000_000L),
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
         TableTools.show(source);
 
 
-        final KeyedRecordAdapter<List<?>, MyRecord> keyedRecordAdapter = KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                source,
-                RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                        .addColumnAdapter("StringCol", RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
-                        .addColumnAdapter("CharCol", RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
-                        .addColumnAdapter("ByteCol", RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
-                        .addColumnAdapter("ShortCol", RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
-                        .addColumnAdapter("IntCol", RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
-                        .addColumnAdapter("FloatCol", RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
-                        .addColumnAdapter("LongCol", RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
-                        .addColumnAdapter("DoubleCol", RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
-                        .build(),
-                "KeyCol1", "KeyCol2"
-        );
+        final KeyedRecordAdapter<List<?>, MyRecord> keyedRecordAdapter =
+                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
+                        source,
+                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
+                                .addColumnAdapter("StringCol",
+                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
+                                .addColumnAdapter("CharCol",
+                                        RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
+                                .addColumnAdapter("ByteCol",
+                                        RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
+                                .addColumnAdapter("ShortCol",
+                                        RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
+                                .addColumnAdapter("IntCol",
+                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
+                                .addColumnAdapter("FloatCol",
+                                        RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
+                                .addColumnAdapter("LongCol",
+                                        RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
+                                .addColumnAdapter("DoubleCol",
+                                        RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
+                                .build(),
+                        "KeyCol1", "KeyCol2");
 
         MyRecord record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
         assertEquals("Aa", record.myString);
@@ -214,26 +225,34 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT),
                 TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE)
-        );
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE));
         TableTools.show(source);
 
 
-        final KeyedRecordAdapter<String, MyRecord> keyedRecordAdapter = KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
-                source,
-                RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                        .addColumnAdapter("StringCol", RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
-                        .addColumnAdapter("CharCol", RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
-                        .addColumnAdapter("ByteCol", RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
-                        .addColumnAdapter("ShortCol", RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
-                        .addColumnAdapter("IntCol", RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
-                        .addColumnAdapter("FloatCol", RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
-                        .addColumnAdapter("LongCol", RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
-                        .addColumnAdapter("DoubleCol", RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
-                        .addColumnAdapter("KeyCol1", RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myKeyString = s))
-                        .build(),
-                "KeyCol1", String.class
-        );
+        final KeyedRecordAdapter<String, MyRecord> keyedRecordAdapter =
+                KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
+                        source,
+                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
+                                .addColumnAdapter("StringCol",
+                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
+                                .addColumnAdapter("CharCol",
+                                        RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
+                                .addColumnAdapter("ByteCol",
+                                        RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
+                                .addColumnAdapter("ShortCol",
+                                        RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
+                                .addColumnAdapter("IntCol",
+                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
+                                .addColumnAdapter("FloatCol",
+                                        RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
+                                .addColumnAdapter("LongCol",
+                                        RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
+                                .addColumnAdapter("DoubleCol",
+                                        RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
+                                .addColumnAdapter("KeyCol1",
+                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myKeyString = s))
+                                .build(),
+                        "KeyCol1", String.class);
 
         MyRecord recordA = keyedRecordAdapter.getRecord("KeyA");
         assertEquals("KeyA", recordA.myKeyString);
@@ -298,26 +317,34 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT),
                 TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE)
-        );
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE));
         TableTools.show(source);
 
 
-        final KeyedRecordAdapter<Integer, MyRecord> keyedRecordAdapter = KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
-                source,
-                RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                        .addColumnAdapter("StringCol", RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
-                        .addColumnAdapter("CharCol", RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
-                        .addColumnAdapter("ByteCol", RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
-                        .addColumnAdapter("ShortCol", RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
-                        .addColumnAdapter("IntCol", RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
-                        .addColumnAdapter("FloatCol", RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
-                        .addColumnAdapter("LongCol", RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
-                        .addColumnAdapter("DoubleCol", RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
-                        .addColumnAdapter("KeyCol1", RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myKeyInt = s))
-                        .build(),
-                "KeyCol1", Integer.class
-        );
+        final KeyedRecordAdapter<Integer, MyRecord> keyedRecordAdapter =
+                KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
+                        source,
+                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
+                                .addColumnAdapter("StringCol",
+                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
+                                .addColumnAdapter("CharCol",
+                                        RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
+                                .addColumnAdapter("ByteCol",
+                                        RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
+                                .addColumnAdapter("ShortCol",
+                                        RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
+                                .addColumnAdapter("IntCol",
+                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
+                                .addColumnAdapter("FloatCol",
+                                        RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
+                                .addColumnAdapter("LongCol",
+                                        RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
+                                .addColumnAdapter("DoubleCol",
+                                        RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
+                                .addColumnAdapter("KeyCol1",
+                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myKeyInt = s))
+                                .build(),
+                        "KeyCol1", Integer.class);
 
         MyRecord record = keyedRecordAdapter.getRecord(0);
         assertEquals(0, record.myKeyInt);
@@ -376,28 +403,38 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L, 40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d)
-        );
+                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
+                        40_000_000_000L),
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
         TableTools.show(source);
 
 
-        final KeyedRecordAdapter<List<?>, MyRecord> keyedRecordAdapter = KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                source,
-                RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                        .addColumnAdapter("StringCol", RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
-                        .addColumnAdapter("CharCol", RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
-                        .addColumnAdapter("ByteCol", RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
-                        .addColumnAdapter("ShortCol", RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
-                        .addColumnAdapter("IntCol", RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
-                        .addColumnAdapter("FloatCol", RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
-                        .addColumnAdapter("LongCol", RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
-                        .addColumnAdapter("DoubleCol", RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
-                        .addColumnAdapter("KeyCol1", RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myKeyString = s))
-                        .addColumnAdapter("KeyCol2", RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myKeyInt = s))
-                        .build(),
-                "KeyCol1", "KeyCol2"
-        );
+        final KeyedRecordAdapter<List<?>, MyRecord> keyedRecordAdapter =
+                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
+                        source,
+                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
+                                .addColumnAdapter("StringCol",
+                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myString = s))
+                                .addColumnAdapter("CharCol",
+                                        RecordUpdaters.getCharUpdater((myRecord, s) -> myRecord.myChar = s))
+                                .addColumnAdapter("ByteCol",
+                                        RecordUpdaters.getByteUpdater((myRecord, s) -> myRecord.myByte = s))
+                                .addColumnAdapter("ShortCol",
+                                        RecordUpdaters.getShortUpdater((myRecord, s) -> myRecord.myShort = s))
+                                .addColumnAdapter("IntCol",
+                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myInt = s))
+                                .addColumnAdapter("FloatCol",
+                                        RecordUpdaters.getFloatUpdater((myRecord, s) -> myRecord.myFloat = s))
+                                .addColumnAdapter("LongCol",
+                                        RecordUpdaters.getLongUpdater((myRecord, s) -> myRecord.myLong = s))
+                                .addColumnAdapter("DoubleCol",
+                                        RecordUpdaters.getDoubleUpdater((myRecord, s) -> myRecord.myDouble = s))
+                                .addColumnAdapter("KeyCol1",
+                                        RecordUpdaters.getStringUpdater((myRecord, s) -> myRecord.myKeyString = s))
+                                .addColumnAdapter("KeyCol2",
+                                        RecordUpdaters.getIntUpdater((myRecord, s) -> myRecord.myKeyInt = s))
+                                .build(),
+                        "KeyCol1", "KeyCol2");
 
         MyRecord record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
         assertEquals("KeyA", record.myKeyString);
@@ -446,16 +483,17 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L, 40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d)
-        );
+                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
+                        40_000_000_000L),
+                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
         TableTools.show(source);
 
-        final KeyedRecordAdapter<List<?>, Map<String, Object>> keyedRecordAdapter = KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                source,
-                Arrays.asList("StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol", "DoubleCol"),
-                "KeyCol1", "KeyCol2"
-        );
+        final KeyedRecordAdapter<List<?>, Map<String, Object>> keyedRecordAdapter =
+                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
+                        source,
+                        Arrays.asList("StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol",
+                                "DoubleCol"),
+                        "KeyCol1", "KeyCol2");
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(4).copy().toTracking(),
@@ -468,8 +506,7 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                     TableTools.intCol("IntCol", 200),
                     TableTools.floatCol("FloatCol", 0.2f),
                     TableTools.longCol("LongCol", 20_000_000_000L),
-                    TableTools.doubleCol("DoubleCol", 2.2d)
-            );
+                    TableTools.doubleCol("DoubleCol", 2.2d));
             TableTools.show(source);
             source.notifyListeners(i(), i(), i(4));
         });
@@ -492,8 +529,7 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
         Map<List<?>, Map<String, Object>> records = keyedRecordAdapter.getRecords(
                 Arrays.asList("KeyB", 0),
                 Arrays.asList("KeyZZZ", 99999),
-                Arrays.asList("KeyA", 1)
-        );
+                Arrays.asList("KeyA", 1));
 
         assertEquals(2, records.size());
 
@@ -543,8 +579,7 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 Arrays.asList("KeyA", 0),
                 Arrays.asList("KeyB", 0),
                 Arrays.asList("KeyA", 1),
-                Arrays.asList("KeyB", 1)
-        );
+                Arrays.asList("KeyB", 1));
 
         assertEquals(4, recordsDuringLTMpreRemove.size());
         assertNotNull(recordsDuringLTMpreRemove.get(Arrays.asList("KeyA", 0)));
@@ -561,8 +596,7 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                 Arrays.asList("KeyA", 0),
                 Arrays.asList("KeyB", 0),
                 Arrays.asList("KeyA", 1),
-                Arrays.asList("KeyB", 1)
-        );
+                Arrays.asList("KeyB", 1));
 
         assertEquals(3, recordsAfterLTM.size());
         assertEquals(recordB, recordsAfterLTM.get(Arrays.asList("KeyB", 0)));
@@ -586,19 +620,29 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             MyRecord myRecord = (MyRecord) o;
 
-            if (myKeyInt != myRecord.myKeyInt) return false;
-            if (myChar != myRecord.myChar) return false;
-            if (myByte != myRecord.myByte) return false;
-            if (myShort != myRecord.myShort) return false;
-            if (myInt != myRecord.myInt) return false;
-            if (Float.compare(myRecord.myFloat, myFloat) != 0) return false;
-            if (myLong != myRecord.myLong) return false;
-            if (Double.compare(myRecord.myDouble, myDouble) != 0) return false;
+            if (myKeyInt != myRecord.myKeyInt)
+                return false;
+            if (myChar != myRecord.myChar)
+                return false;
+            if (myByte != myRecord.myByte)
+                return false;
+            if (myShort != myRecord.myShort)
+                return false;
+            if (myInt != myRecord.myInt)
+                return false;
+            if (Float.compare(myRecord.myFloat, myFloat) != 0)
+                return false;
+            if (myLong != myRecord.myLong)
+                return false;
+            if (Double.compare(myRecord.myDouble, myDouble) != 0)
+                return false;
             if (!Objects.equals(myKeyString, myRecord.myKeyString))
                 return false;
             return Objects.equals(myString, myRecord.myString);
