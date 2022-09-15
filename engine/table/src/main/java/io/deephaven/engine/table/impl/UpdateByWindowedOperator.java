@@ -1,11 +1,10 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.base.LongRingBuffer;
+import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.*;
@@ -43,17 +42,6 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
 
         public int nullCount = 0;
 
-        public LongSegmentedSortedArray getTimestampSsa() {
-            return timestampSsa;
-        }
-
-        public RowSetBuilderSequential getModifiedBuilder() {
-            if (modifiedBuilder == null) {
-                modifiedBuilder = RowSetFactory.builderSequential();
-            }
-            return modifiedBuilder;
-        }
-
         // store a local copy of the source rowset (may not be needed)
         public RowSet sourceRowSet = null;
 
@@ -76,6 +64,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         // for use with a ticking window
         protected RowSet affectedRowPositions;
         protected RowSet influencerPositions;
+
         protected long currentInfluencerPosOrTimestamp;
         protected int currentInfluencerIndex;
 
@@ -264,6 +253,17 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             return influencerRows;
         }
 
+        public LongSegmentedSortedArray getTimestampSsa() {
+            return timestampSsa;
+        }
+
+        public RowSetBuilderSequential getModifiedBuilder() {
+            if (modifiedBuilder == null) {
+                modifiedBuilder = RowSetFactory.builderSequential();
+            }
+            return modifiedBuilder;
+        }
+
         public abstract void loadInfluencerValueChunk();
 
         public void fillWindowTicks(UpdateWindowedContext context, long currentPos) {
@@ -413,7 +413,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             @NotNull final RowSet updateRowSet) {
         final UpdateWindowedContext ctx = (UpdateWindowedContext) context;
 
-        // pre=load all the influencer values this update will need
+        // load all the influencer values this update will need
         ctx.loadInfluencerValueChunk();
 
         // load all the influencer keys
@@ -427,6 +427,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             ctx.influencerPositions.fillRowKeyChunk(ctx.influencerPosChunk.get());
             ctx.currentInfluencerPosOrTimestamp = ctx.influencerPositions.firstRowKey();
         } else {
+            // load all the influencer timestamp data
             ctx.influencerTimestampChunk = new SizedLongChunk<>(ctx.influencerRows.intSize());
             try (final ChunkSource.FillContext fillContext =
                     timestampColumnSource.makeFillContext(ctx.influencerRows.intSize())) {

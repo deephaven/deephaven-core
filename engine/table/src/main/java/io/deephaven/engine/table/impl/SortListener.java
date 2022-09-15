@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.LongRingBuffer;
+import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
