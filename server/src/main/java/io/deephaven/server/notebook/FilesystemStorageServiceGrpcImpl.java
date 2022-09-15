@@ -21,6 +21,7 @@ import io.deephaven.proto.backplane.grpc.MoveItemResponse;
 import io.deephaven.proto.backplane.grpc.SaveFileRequest;
 import io.deephaven.proto.backplane.grpc.SaveFileResponse;
 import io.deephaven.proto.backplane.grpc.StorageServiceGrpc;
+import io.deephaven.server.session.SessionService;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
@@ -48,9 +49,11 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                     .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
 
     private final Path root = Paths.get(STORAGE_PATH).normalize();
+    private final SessionService sessionService;
 
     @Inject
-    public FilesystemStorageServiceGrpcImpl() {
+    public FilesystemStorageServiceGrpcImpl(SessionService sessionService) {
+        this.sessionService = sessionService;
         try {
             Files.createDirectories(root);
         } catch (IOException e) {
@@ -58,22 +61,19 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         }
     }
 
-    private Optional<Path> resolve(String relativePath) {
+    private Path resolveOrThrow(String relativePath) {
         Path resolved = root.resolve(relativePath).normalize();
         if (resolved.startsWith(root)) {
-            return Optional.of(resolved);
+            return resolved;
         }
-        return Optional.empty();
-    }
-
-    private Path resolveOrThrow(String relativePath) {
-        return resolve(relativePath).orElseThrow(
-                () -> GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + relativePath));
+        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + relativePath);
     }
 
     @Override
     public void listItems(ListItemsRequest request, StreamObserver<ListItemsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            sessionService.getCurrentSession();
+
             ListItemsResponse.Builder builder = ListItemsResponse.newBuilder();
             PathMatcher matcher = request.hasFilterGlob() ? makeMatcher(request.getFilterGlob()) : ignore -> true;
             Path dir = resolveOrThrow(request.getPath());
@@ -82,10 +82,11 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                     if (!matcher.matches(dir.relativize(p))) {
                         continue;
                     }
+                    boolean isDirectory = Files.isDirectory(p);
                     builder.addItems(FileInfo.newBuilder()
                             .setPath(p.getFileName().toString())
-                            .setSize(Files.isDirectory(p) ? 0 : Files.size(p))
-                            .setKind(Files.isDirectory(p) ? FileKind.DIRECTORY : FileKind.FILE)
+                            .setSize(isDirectory ? 0 : Files.size(p))
+                            .setKind(isDirectory ? FileKind.DIRECTORY : FileKind.FILE)
                             .build());
                 }
             } catch (NoSuchFileException noSuchFileException) {
@@ -96,7 +97,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         });
     }
 
-    private PathMatcher makeMatcher(String filterGlob) {
+    private static PathMatcher makeMatcher(String filterGlob) {
         if (filterGlob.contains("**")) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
         }
@@ -115,6 +116,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     @Override
     public void fetchFile(FetchFileRequest request, StreamObserver<FetchFileResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            sessionService.getCurrentSession();
+
             final byte[] bytes;
             try {
                 bytes = Files.readAllBytes(resolveOrThrow(request.getPath()));
@@ -130,6 +133,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     @Override
     public void saveFile(SaveFileRequest request, StreamObserver<SaveFileResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            sessionService.getCurrentSession();
+
             Path path = resolveOrThrow(request.getPath());
             StandardOpenOption option =
                     request.getNewFile() ? StandardOpenOption.CREATE_NEW : StandardOpenOption.CREATE;
@@ -148,6 +153,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     @Override
     public void moveItem(MoveItemRequest request, StreamObserver<MoveItemResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            sessionService.getCurrentSession();
+
             Path source = resolveOrThrow(request.getOldPath());
             Path target = resolveOrThrow(request.getNewPath());
 
@@ -168,6 +175,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     public void createDirectory(CreateDirectoryRequest request,
             StreamObserver<CreateDirectoryResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            sessionService.getCurrentSession();
+
             Path dir = resolveOrThrow(request.getPath());
             try {
                 Files.createDirectory(dir);
@@ -186,6 +195,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     @Override
     public void deleteItem(DeleteItemRequest request, StreamObserver<DeleteItemResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            sessionService.getCurrentSession();
+
             Path path = resolveOrThrow(request.getPath());
             try {
                 Files.delete(path);
