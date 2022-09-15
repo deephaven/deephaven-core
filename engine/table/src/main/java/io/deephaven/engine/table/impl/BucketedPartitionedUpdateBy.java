@@ -54,12 +54,12 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
     }
 
     protected BucketedPartitionedUpdateBy(@NotNull final String description,
-                                          @NotNull final UpdateByOperator[] operators,
-                                          @NotNull final QueryTable source,
-                                          @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-                                          @NotNull final Collection<? extends ColumnName> byColumns,
-                                          @NotNull final UpdateByRedirectionContext redirContext,
-                                          @NotNull final UpdateByControl control) {
+            @NotNull final UpdateByOperator[] operators,
+            @NotNull final QueryTable source,
+            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @NotNull final Collection<? extends ColumnName> byColumns,
+            @NotNull final UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateByControl control) {
         super(operators, source, redirContext, control);
 
         // create a source-listener that will listen to the source updates and apply the shifts to the output columns
@@ -86,13 +86,15 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
                         }
                     }
                     super.onUpdate(upstream);
-                }});
+                }
+            });
 
             recorders = new LinkedList<>();
             listener = newListener(description);
 
             // create a listener and recorder for the source table as first entry
-            BucketedPartitionedUpdateByListenerRecorder recorder = new BucketedPartitionedUpdateByListenerRecorder(description, source, resultTable);
+            BucketedPartitionedUpdateByListenerRecorder recorder =
+                    new BucketedPartitionedUpdateByListenerRecorder(description, source, resultTable);
             recorder.setMergedListener(listener);
             source.listenForUpdates(recorder);
 
@@ -115,9 +117,9 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
         final PartitionedTable pt = sourceListenerTable.partitionedAggBy(List.of(), true, null, byColumns);
         final PartitionedTable transformed = pt.transform(t -> {
             // create the table
-            Table newTable =  ZeroKeyUpdateBy.compute(
+            Table newTable = ZeroKeyUpdateBy.compute(
                     description,
-                    (QueryTable)t,
+                    (QueryTable) t,
                     operators,
                     resultSources,
                     redirContext,
@@ -125,7 +127,8 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
                     false);
 
             if (listener != null) {
-                BucketedPartitionedUpdateByListenerRecorder recorder = new BucketedPartitionedUpdateByListenerRecorder(description, newTable, resultTable);
+                BucketedPartitionedUpdateByListenerRecorder recorder =
+                        new BucketedPartitionedUpdateByListenerRecorder(description, newTable, resultTable);
                 recorder.setMergedListener(listener);
                 newTable.listenForUpdates(recorder);
 
@@ -149,10 +152,12 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
 
         private final ModifiedColumnSet.Transformer modifiedColumnsTransformer;
 
-        BucketedPartitionedUpdateByListenerRecorder(@NotNull String description, @NotNull final Table constituent,  @NotNull final Table dependent) {
+        BucketedPartitionedUpdateByListenerRecorder(@NotNull String description, @NotNull final Table constituent,
+                @NotNull final Table dependent) {
             super(description, constituent, dependent);
-            modifiedColumnsTransformer = ((QueryTable) constituent).newModifiedColumnSetTransformer((QueryTable)dependent, constituent.getDefinition().getColumnNamesArray());
-       }
+            modifiedColumnsTransformer = ((QueryTable) constituent).newModifiedColumnSetTransformer(
+                    (QueryTable) dependent, constituent.getDefinition().getColumnNamesArray());
+        }
     }
 
     /**
@@ -184,7 +189,7 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
             ListenerRecorder sourceRecorder = recorders.peekFirst();
             downstream.added = sourceRecorder.getAdded().copy();
             downstream.removed = sourceRecorder.getRemoved().copy();
-            downstream.shifted  = sourceRecorder.getShifted();
+            downstream.shifted = sourceRecorder.getShifted();
 
             // union the modifies from all the tables (including source)
             downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();

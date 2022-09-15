@@ -35,10 +35,10 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
          * @return the smallest key that participated in any part of the update.
          */
         long smallestAffectedKey(@NotNull final RowSet added,
-                                        @NotNull final RowSet modified,
-                                        @NotNull final RowSet removed,
-                                        @NotNull final RowSetShiftData shifted,
-                                        @NotNull final RowSet affectedIndex) {
+                @NotNull final RowSet modified,
+                @NotNull final RowSet removed,
+                @NotNull final RowSetShiftData shifted,
+                @NotNull final RowSet affectedIndex) {
 
             long smallestModifiedKey = Long.MAX_VALUE;
             if (removed.isNonempty()) {
@@ -58,7 +58,8 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
                 boolean modShiftFound = !modified.isEmpty();
                 boolean affectedFound = false;
                 try (final RowSequence.Iterator it = affectedIndex.getRowSequenceIterator()) {
-                    for (int shiftIdx = 0; shiftIdx < shifted.size() && (!modShiftFound || !affectedFound); shiftIdx++) {
+                    for (int shiftIdx = 0; shiftIdx < shifted.size()
+                            && (!modShiftFound || !affectedFound); shiftIdx++) {
                         final long shiftStart = shifted.getBeginRange(shiftIdx);
                         final long shiftEnd = shifted.getEndRange(shiftIdx);
                         final long shiftDelta = shifted.getShiftDelta(shiftIdx);
@@ -97,14 +98,17 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
             return smallestModifiedKey;
         }
 
-        public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source, final boolean initialStep) {
-            Assert.assertion(affectedRows==null, "affectedRows should be null when determineAffectedRows() is called");
+        public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source,
+                final boolean initialStep) {
+            Assert.assertion(affectedRows == null,
+                    "affectedRows should be null when determineAffectedRows() is called");
             if (initialStep) {
                 affectedRows = source.copy();
                 return affectedRows;
             }
 
-            long smallestModifiedKey = smallestAffectedKey(upstream.added(), upstream.modified(), upstream.removed(), upstream.shifted(), source);
+            long smallestModifiedKey = smallestAffectedKey(upstream.added(), upstream.modified(), upstream.removed(),
+                    upstream.shifted(), source);
 
             affectedRows = smallestModifiedKey == Long.MAX_VALUE
                     ? RowSetFactory.empty()
@@ -121,7 +125,7 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
         }
 
         public RowSetBuilderSequential getModifiedBuilder() {
-            if(modifiedBuilder == null) {
+            if (modifiedBuilder == null) {
                 modifiedBuilder = RowSetFactory.builderSequential();
             }
             return modifiedBuilder;
@@ -130,31 +134,30 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
         @Override
         public void close() {
             try (final RowSet ignored = affectedRows;
-                 final RowSet ignored2 = newModified) {
+                    final RowSet ignored2 = newModified) {
             }
         }
     }
 
     @Override
     public void initializeFor(@NotNull final UpdateContext context,
-                              @NotNull final RowSet updateRowSet) {
-    }
+            @NotNull final RowSet updateRowSet) {}
 
     @Override
     public void finishFor(@NotNull final UpdateContext context) {
-        UpdateCumulativeContext ctx = (UpdateCumulativeContext)context;
+        UpdateCumulativeContext ctx = (UpdateCumulativeContext) context;
         ctx.newModified = ctx.getModifiedBuilder().build();
     }
 
     @NotNull
     final public RowSet getAdditionalModifications(@NotNull final UpdateContext context) {
-        UpdateCumulativeContext ctx = (UpdateCumulativeContext)context;
+        UpdateCumulativeContext ctx = (UpdateCumulativeContext) context;
         return ctx.newModified;
     }
 
     @Override
     final public boolean anyModified(@NotNull final UpdateContext context) {
-        UpdateCumulativeContext ctx = (UpdateCumulativeContext)context;
+        UpdateCumulativeContext ctx = (UpdateCumulativeContext) context;
         return ctx.newModified != null && ctx.newModified.isNonempty();
     }
 

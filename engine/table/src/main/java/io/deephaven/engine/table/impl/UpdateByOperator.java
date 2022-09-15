@@ -72,7 +72,7 @@ public interface UpdateByOperator {
          * @param source the rowset of the parent table (affected rows will be a subset)
          */
         RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source,
-                                           final boolean initialStep);
+                final boolean initialStep);
 
         /**
          * Return the affected rows computed by the {@Code determineAffectedRows()}
@@ -209,8 +209,8 @@ public interface UpdateByOperator {
     boolean requiresValues(@NotNull final UpdateContext context);
 
     /**
-     * Set the chunk size to be used for operations. This is used during the processing phase
-     * when the chunks allocated during the normal processing phase may not be large enough.
+     * Set the chunk size to be used for operations. This is used during the processing phase when the chunks allocated
+     * during the normal processing phase may not be large enough.
      *
      * @param context the context object
      * @param chunkSize the new chunk size
@@ -231,16 +231,17 @@ public interface UpdateByOperator {
      * @param context the context object
      * @param inputKeys the keys contained in the chunk
      * @param keyChunk a {@link LongChunk} containing the keys if requested by {@link #requiresKeys()} or null.
-     * @param posChunk a {@link LongChunk} containing the positions if requested by {@link #requiresPositions()} or null.
+     * @param posChunk a {@link LongChunk} containing the positions if requested by {@link #requiresPositions()} or
+     *        null.
      * @param valuesChunk the current chunk of working values.
      * @param postUpdateSourceIndex the resulting source index af
      */
     void processChunk(@NotNull final UpdateContext context,
-                      @NotNull final RowSequence inputKeys,
-                      @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                      @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                      @Nullable final Chunk<Values> valuesChunk,
-                      @NotNull final RowSet postUpdateSourceIndex);
+            @NotNull final RowSequence inputKeys,
+            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+            @Nullable final LongChunk<OrderedRowKeys> posChunk,
+            @Nullable final Chunk<Values> valuesChunk,
+            @NotNull final RowSet postUpdateSourceIndex);
 
     /**
      * Reset the operator to the state at the `firstModifiedKey` for non-bucketed operation. This is invoked immediately
@@ -253,6 +254,6 @@ public interface UpdateByOperator {
      * @param firstUnmodifiedKey the first unmodified key after which we will reprocess rows.
      */
     void resetForProcess(@NotNull final UpdateContext context,
-                         @NotNull final RowSet sourceIndex,
-                         final long firstUnmodifiedKey);
+            @NotNull final RowSet sourceIndex,
+            final long firstUnmodifiedKey);
 }

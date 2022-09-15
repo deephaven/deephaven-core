@@ -8,11 +8,11 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.SafeCloseable;
 
-import java.util.BitSet;
 import java.util.NoSuchElementException;
 
 /***
@@ -24,7 +24,10 @@ import java.util.NoSuchElementException;
 public class PairwiseDoubleRingBuffer implements SafeCloseable {
     // use a sized double chunk for underlying storage
     private WritableDoubleChunk<Values> storageChunk;
-    private final BitSet dirtyBits;
+//    private final BitSet dirtyBits;
+    private final TIntArrayList dirtyIndices;
+    private boolean allDirty;
+
     private final DoubleFunction pairwiseFunction;
     private final double emptyVal;
 
@@ -59,21 +62,55 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         this.capacity = Integer.highestOneBit(initialSize) * 2;
         this.chunkSize = capacity * 2;
         this.storageChunk = WritableDoubleChunk.makeWritableChunk(chunkSize);
-        this.dirtyBits = new BitSet(chunkSize);
+//        this.dirtyBits = new BitSet(chunkSize);
+        this.dirtyIndices = new TIntArrayList(chunkSize);
         this.pairwiseFunction = pairwiseFunction;
         this.emptyVal = emptyVal;
 
         this.storageChunk.fillWithValue(0, chunkSize, emptyVal);
         this.head = this.tail = this.capacity;
+        this.allDirty = false;
+    }
+
+    private void evaluateRangeFast(int start, int end) {
+        // everything in this range needs recomputed
+        for (int left = start & 0xFFFFFFFE; left < end; left += 2) {
+            final int right = left + 1;
+            final int parent = left / 2;
+
+            // load the data values
+            final double leftVal = storageChunk.get(left);
+            final double rightVal = storageChunk.get(right);
+
+            // compute & stpre
+            final double computeVal = pairwiseFunction.apply(leftVal, rightVal);
+            storageChunk.set(parent, computeVal);
+
+            // mark the parent dirty
+            dirtyIndices.add(parent);
+        }
     }
 
     public double evaluate() {
+        // if all dirty, recompute all values
+        if (allDirty) {
+            if (head < tail) {
+                evaluateRangeFast(head, tail);
+            } else {
+                evaluateRangeFast(head, chunkSize);
+                evaluateRangeFast(capacity, tail);
+            }
+        } else {
+            // sort so consecutive values are adjacent
+            dirtyIndices.sort();
+        }
+
         // work through all the dirty bits from high to low until none remain
-        int bit = chunkSize;
-        while (!dirtyBits.isEmpty()) {
-            int nextSetBit = dirtyBits.previousSetBit(bit);
-            final int left = nextSetBit & 0xFFFFFFFE; // clear the final bit to force evenness
+        int dirtyIndex = 0;
+        while (dirtyIndex < dirtyIndices.size()) {
+            final int left = dirtyIndices.get(dirtyIndex) & 0xFFFFFFFE; // clear the final bit to force evenness
             final int right = left + 1;
+
             // this isn't the typical parent = (n-1)/2 because the tree is right-shifted by one
             final int parent = left / 2;
 
@@ -82,20 +119,25 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
             final double rightVal = storageChunk.get(right);
             final double parentVal = storageChunk.get(parent);
 
-            dirtyBits.clear(left, right + 1); // clear() excludes `toIndex` so add one to clear `right` as well
-
             final double computeVal = pairwiseFunction.apply(leftVal, rightVal);
             if (parentVal != computeVal) {
                 storageChunk.set(parent, computeVal);
                 // mark the parent dirty (if not the last)
                 if (parent > 1) {
-                    dirtyBits.set(parent);
+                    dirtyIndices.add(parent);
                 }
-            } else {
-                final int x = 5;
             }
-            bit = left;
+            // how far should we advance
+            final int nextIndex = dirtyIndex + 1;
+            if (nextIndex < dirtyIndices.size() && dirtyIndices.get(nextIndex) == right) {
+                dirtyIndex += 2;
+            } else {
+                dirtyIndex++;
+            }
         }
+        allDirty = false;
+        dirtyIndices.clear();
+
         // final value is in index 1
         return storageChunk.get(1);
     }
@@ -134,8 +176,8 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         // TODO: investigate moving precomputed results also.  Since we are re-ordering the data values, would be
         // tricky to maintain order but a recursive function could probably do it efficiently.  For now, make life easy
         // by setting all input dirty so the tree is recomputed on next `evaluate()`
-        dirtyBits.clear();
-        dirtyBits.set(head, tail, true);
+        this.dirtyIndices.clear();
+        allDirty = true;
     }
 
     public void push(double val) {
@@ -144,7 +186,10 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         }
         // add the new data
         storageChunk.set(tail, val);
-        dirtyBits.set(tail);
+        if (!allDirty) {
+            dirtyIndices.add(tail);
+        }
+
         // move the tail
         tail = ((tail + 1) % capacity) + capacity;
     }
@@ -159,7 +204,10 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         }
         double val = storageChunk.get(head);
         storageChunk.set(head, emptyVal);
-        dirtyBits.set(head);
+        if (!allDirty) {
+            dirtyIndices.add(head);
+        }
+
         // move the head
         head = ((head + 1) % capacity) + capacity;
         return val;

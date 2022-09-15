@@ -29,8 +29,10 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
         return of(TimeScale.ofTime(timestampCol, prevWindowDuration));
     }
 
-    public static RollingSumSpec ofTime(final String timestampCol, Duration prevWindowDuration, Duration fwdWindowDuration) {
-        return of(TimeScale.ofTime(timestampCol, prevWindowDuration), TimeScale.ofTime(timestampCol, fwdWindowDuration));
+    public static RollingSumSpec ofTime(final String timestampCol, Duration prevWindowDuration,
+            Duration fwdWindowDuration) {
+        return of(TimeScale.ofTime(timestampCol, prevWindowDuration),
+                TimeScale.ofTime(timestampCol, fwdWindowDuration));
     }
 
     // general use contructors
@@ -43,48 +45,51 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
         return ImmutableRollingSumSpec.builder().prevTimeScale(prevTimeScale).fwdTimeScale(fwdTimeScale).build();
     }
 
-//    public static RollingSumSpec of(TimeScale prevTimeScale) {
-//        return ImmutableWindowedOpSpec.builder().prevTimeScale(prevTimeScale).build();
-//    }
-//
-//    public static RollingSumSpec of(OperationControl control, TimeScale prevTimeScale, TimeScale fwdTimeScale) {
-//        return ImmutableWindowedOpSpec.builder().control(control).prevTimeScale(prevTimeScale).fwdTimeScale(fwdTimeScale).build();
-//    }
-//
-//    public static RollingSumSpec ofTime(final OperationControl control,
-//                                            final String timestampCol,
-//                                            long prevWindowTimeScaleNanos) {
-//        return of(control, TimeScale.ofTime(timestampCol, prevWindowTimeScaleNanos));
-//    }
-//
-//    public static RollingSumSpec ofTime(final OperationControl control,
-//                                            final String timestampCol,
-//                                            long prevWindowTimeScaleNanos,
-//                                            long fwdWindowTimeScaleNanos) {
-//        return of(control, TimeScale.ofTime(timestampCol, prevWindowTimeScaleNanos), TimeScale.ofTime(timestampCol, fwdWindowTimeScaleNanos));
-//    }
-//
-//    public static RollingSumSpec ofTime(final OperationControl control,
-//                                            final String timestampCol,
-//                                            Duration prevWindowDuration) {
-//        return of(control, TimeScale.ofTime(timestampCol, prevWindowDuration));
-//    }
-//
-//
-//    public static RollingSumSpec ofTime(final OperationControl control,
-//                                            final String timestampCol,
-//                                            Duration prevWindowDuration,
-//                                            Duration fwdWindowDuration) {
-//        return of(control, TimeScale.ofTime(timestampCol, prevWindowDuration), TimeScale.ofTime(timestampCol, fwdWindowDuration));
-//    }
-//
-//    public static RollingSumSpec ofTicks(OperationControl control, long prevTickWindow) {
-//        return of(control, TimeScale.ofTicks(prevTickWindow));
-//    }
-//
-//    public static RollingSumSpec ofTicks(OperationControl control, long prevTickWindow, long fwdTickWindow) {
-//        return of(control, TimeScale.ofTicks(prevTickWindow), TimeScale.ofTicks(fwdTickWindow));
-//    }
+    // public static RollingSumSpec of(TimeScale prevTimeScale) {
+    // return ImmutableWindowedOpSpec.builder().prevTimeScale(prevTimeScale).build();
+    // }
+    //
+    // public static RollingSumSpec of(OperationControl control, TimeScale prevTimeScale, TimeScale fwdTimeScale) {
+    // return
+    // ImmutableWindowedOpSpec.builder().control(control).prevTimeScale(prevTimeScale).fwdTimeScale(fwdTimeScale).build();
+    // }
+    //
+    // public static RollingSumSpec ofTime(final OperationControl control,
+    // final String timestampCol,
+    // long prevWindowTimeScaleNanos) {
+    // return of(control, TimeScale.ofTime(timestampCol, prevWindowTimeScaleNanos));
+    // }
+    //
+    // public static RollingSumSpec ofTime(final OperationControl control,
+    // final String timestampCol,
+    // long prevWindowTimeScaleNanos,
+    // long fwdWindowTimeScaleNanos) {
+    // return of(control, TimeScale.ofTime(timestampCol, prevWindowTimeScaleNanos), TimeScale.ofTime(timestampCol,
+    // fwdWindowTimeScaleNanos));
+    // }
+    //
+    // public static RollingSumSpec ofTime(final OperationControl control,
+    // final String timestampCol,
+    // Duration prevWindowDuration) {
+    // return of(control, TimeScale.ofTime(timestampCol, prevWindowDuration));
+    // }
+    //
+    //
+    // public static RollingSumSpec ofTime(final OperationControl control,
+    // final String timestampCol,
+    // Duration prevWindowDuration,
+    // Duration fwdWindowDuration) {
+    // return of(control, TimeScale.ofTime(timestampCol, prevWindowDuration), TimeScale.ofTime(timestampCol,
+    // fwdWindowDuration));
+    // }
+    //
+    // public static RollingSumSpec ofTicks(OperationControl control, long prevTickWindow) {
+    // return of(control, TimeScale.ofTicks(prevTickWindow));
+    // }
+    //
+    // public static RollingSumSpec ofTicks(OperationControl control, long prevTickWindow, long fwdTickWindow) {
+    // return of(control, TimeScale.ofTicks(prevTickWindow), TimeScale.ofTicks(fwdTickWindow));
+    // }
 
 
     public abstract Optional<OperationControl> control();
@@ -104,16 +109,16 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
     @Override
     public final boolean applicableTo(Class<?> inputType) {
         return
-                // is primitive numeric?
-                inputType.equals(double.class) || inputType.equals(float.class)
-                        || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
-                        || inputType.equals(byte.class)
+        // is primitive numeric?
+        inputType.equals(double.class) || inputType.equals(float.class)
+                || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
+                || inputType.equals(byte.class)
 
-                        // is boxed numeric?
-                        || Number.class.isAssignableFrom(inputType)
+                // is boxed numeric?
+                || Number.class.isAssignableFrom(inputType)
 
-                        // is boolean?
-                        || inputType == boolean.class || inputType == Boolean.class;
+                // is boolean?
+                || inputType == boolean.class || inputType == Boolean.class;
     }
 
     @Override

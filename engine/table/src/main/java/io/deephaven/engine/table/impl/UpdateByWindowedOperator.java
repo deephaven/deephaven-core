@@ -57,9 +57,9 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         // store a local copy of the source rowset (may not be needed)
         public RowSet sourceRowSet = null;
 
-        // there are two sets of rows we will be tracking.  `affected` rows need to be recomputed because of this
+        // there are two sets of rows we will be tracking. `affected` rows need to be recomputed because of this
         // update and `influencer` rows contain the data that will be used to compute the new values for the `affected`
-        // items.  Because the windows are user-configurable, there may be no overlap between these two sets and we
+        // items. Because the windows are user-configurable, there may be no overlap between these two sets and we
         // don't need values for the `affected` rows at all
         protected RowSet affectedRows;
         protected RowSet influencerRows;
@@ -83,19 +83,21 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         protected LongRingBuffer windowPosOrTimestamp = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
         public LongRingBuffer windowIndices = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
 
-        private WritableRowSet computeAffectedRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos, long fwdNanos) {
+        private WritableRowSet computeAffectedRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
+                long fwdNanos) {
             // swap fwd/rev to get the affected windows
             return computeInfluencerRowsTime(sourceSet, subset, fwdNanos, revNanos);
         }
 
-        private WritableRowSet computeInfluencerRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos, long fwdNanos) {
+        private WritableRowSet computeInfluencerRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
+                long fwdNanos) {
             if (sourceSet.size() == subset.size()) {
                 return sourceSet.copy();
             }
 
             int chunkSize = (int) Math.min(subset.size(), 4096);
             try (final RowSequence.Iterator it = subset.getRowSequenceIterator();
-                 final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(chunkSize)) {
+                    final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(chunkSize)) {
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 LongSegmentedSortedArray.Iterator ssaIt = timestampSsa.iterator(false, false);
                 while (it.hasMore() && ssaIt.hasNext()) {
@@ -103,7 +105,8 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
                     LongChunk<? extends Values> timestamps = timestampColumnSource.getChunk(context, rs).asLongChunk();
 
                     for (int ii = 0; ii < rs.intSize(); ii++) {
-                        // if the timestamp of the row is null, it won't belong to any set and we can ignore it completely
+                        // if the timestamp of the row is null, it won't belong to any set and we can ignore it
+                        // completely
                         final long ts = timestamps.get(ii);
                         if (ts != NULL_LONG) {
                             // look at every row timestamp, compute the head and tail in nanos
@@ -119,7 +122,8 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
                                 }
                             }
 
-                            Assert.assertion(ssaIt.hasNext() && ssaIt.nextValue() >= head, "SSA Iterator outside of window");
+                            Assert.assertion(ssaIt.hasNext() && ssaIt.nextValue() >= head,
+                                    "SSA Iterator outside of window");
 
                             // step through the SSA and collect keys until outside of the window
                             while (ssaIt.hasNext() && ssaIt.nextValue() <= tail) {
@@ -138,12 +142,14 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             }
         }
 
-        private WritableRowSet computeAffectedRowsTicks(final RowSet sourceSet, final RowSet subset, long revTicks, long fwdTicks) {
+        private WritableRowSet computeAffectedRowsTicks(final RowSet sourceSet, final RowSet subset, long revTicks,
+                long fwdTicks) {
             // swap fwd/rev to get the influencer windows
             return computeInfluencerRowsTicks(sourceSet, subset, fwdTicks, revTicks);
         }
 
-        private WritableRowSet computeInfluencerRowsTicks(final RowSet sourceSet, final RowSet subset, long revTicks, long fwdTicks) {
+        private WritableRowSet computeInfluencerRowsTicks(final RowSet sourceSet, final RowSet subset, long revTicks,
+                long fwdTicks) {
             if (sourceSet.size() == subset.size()) {
                 return sourceSet.copy();
             }
@@ -162,23 +168,23 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
                 });
 
                 try (final RowSet positions = builder.build()) {
-                     return sourceSet.subSetForPositions(positions);
+                    return sourceSet.subSetForPositions(positions);
                 }
             }
         }
 
         /***
-         * This function is only correct if the proper {@code source} rowset is provided.  If using buckets, then the
-         * provided rowset must be limited to the rows in the current bucket
-         * only
+         * This function is only correct if the proper {@code source} rowset is provided. If using buckets, then the
+         * provided rowset must be limited to the rows in the current bucket only
          *
          * @param upstream the update
          * @param source the rowset of the parent table (affected rows will be a subset)
          * @param initialStep whether this is the initial step of building the table
          */
         public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source,
-                                            final boolean initialStep) {
-            Assert.assertion(affectedRows==null, "affectedRows should be null when determineAffectedRows() is called");
+                final boolean initialStep) {
+            Assert.assertion(affectedRows == null,
+                    "affectedRows should be null when determineAffectedRows() is called");
 
             if (initialStep) {
                 // all rows are affected initially
@@ -220,9 +226,11 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
 
             if (upstream.removed().isNonempty()) {
                 try (final RowSet prev = source.copyPrev();
-                     final WritableRowSet affectedByRemoves = timestampColumnName == null
-                         ? computeAffectedRowsTicks(prev, upstream.removed(), reverseTimeScaleUnits, forwardTimeScaleUnits)
-                         : computeAffectedRowsTime(prev, upstream.removed(), reverseTimeScaleUnits, forwardTimeScaleUnits)) {
+                        final WritableRowSet affectedByRemoves = timestampColumnName == null
+                                ? computeAffectedRowsTicks(prev, upstream.removed(), reverseTimeScaleUnits,
+                                        forwardTimeScaleUnits)
+                                : computeAffectedRowsTime(prev, upstream.removed(), reverseTimeScaleUnits,
+                                        forwardTimeScaleUnits)) {
                     // apply shifts to get back to pos-shift space
                     upstream.shifted().apply(affectedByRemoves);
                     // retain only the rows that still exist in the source
@@ -236,12 +244,14 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             // now get influencer rows for the affected
 
             if (timestampColumnName == null) {
-                influencerRows = computeInfluencerRowsTicks(source, affectedRows, reverseTimeScaleUnits, forwardTimeScaleUnits);
+                influencerRows =
+                        computeInfluencerRowsTicks(source, affectedRows, reverseTimeScaleUnits, forwardTimeScaleUnits);
                 // generate position data rowsets for efficiently computed position offsets
                 affectedRowPositions = source.invert(affectedRows);
                 influencerPositions = source.invert(influencerRows);
             } else {
-                influencerRows = computeInfluencerRowsTime(source, affectedRows, reverseTimeScaleUnits, forwardTimeScaleUnits);
+                influencerRows =
+                        computeInfluencerRowsTime(source, affectedRows, reverseTimeScaleUnits, forwardTimeScaleUnits);
             }
             return affectedRows;
         }
@@ -263,7 +273,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
 
             // pop out all values from the current window that are not in the new window
             while (!windowPosOrTimestamp.isEmpty() && windowPosOrTimestamp.front() < head) {
-                pop(context, windowKeys.remove(), (int)windowIndices.remove());
+                pop(context, windowKeys.remove(), (int) windowIndices.remove());
                 windowPosOrTimestamp.remove();
             }
 
@@ -273,7 +283,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             }
 
             // skip values until they match the window
-            while(currentInfluencerPosOrTimestamp < head) {
+            while (currentInfluencerPosOrTimestamp < head) {
                 currentInfluencerIndex++;
 
                 if (currentInfluencerIndex < influencerPosChunk.get().size()) {
@@ -286,7 +296,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             }
 
             // push matching values
-            while(currentInfluencerPosOrTimestamp <= tail) {
+            while (currentInfluencerPosOrTimestamp <= tail) {
                 push(context, currentInfluencerKey, currentInfluencerIndex);
                 windowKeys.add(currentInfluencerKey);
                 windowPosOrTimestamp.add(currentInfluencerPosOrTimestamp);
@@ -310,7 +320,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
 
             // pop out all values from the current window that are not in the new window
             while (!windowPosOrTimestamp.isEmpty() && windowPosOrTimestamp.front() < head) {
-                pop(context, windowKeys.remove(), (int)windowIndices.remove());
+                pop(context, windowKeys.remove(), (int) windowIndices.remove());
                 windowPosOrTimestamp.remove();
             }
 
@@ -320,7 +330,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             }
 
             // skip values until they match the window
-            while(currentInfluencerPosOrTimestamp < head) {
+            while (currentInfluencerPosOrTimestamp < head) {
                 currentInfluencerIndex++;
 
                 if (currentInfluencerIndex < influencerTimestampChunk.get().size()) {
@@ -333,7 +343,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             }
 
             // push matching values
-            while(currentInfluencerPosOrTimestamp <= tail) {
+            while (currentInfluencerPosOrTimestamp <= tail) {
                 push(context, currentInfluencerKey, currentInfluencerIndex);
                 windowKeys.add(currentInfluencerKey);
                 windowPosOrTimestamp.add(currentInfluencerPosOrTimestamp);
@@ -353,13 +363,13 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         @Override
         public void close() {
             try (final SizedLongChunk<RowKeys> ignoredChk1 = influencerKeyChunk;
-                 final SizedLongChunk<RowKeys> ignoredChk2 = influencerPosChunk;
-                 final SizedLongChunk<? extends Values> ignoredChk3 = influencerTimestampChunk;
-                 final RowSet ignoredRs1 = affectedRows;
-                 final RowSet ignoredRs2 = influencerRows;
-                 final RowSet ignoredRs3 = affectedRowPositions;
-                 final RowSet ignoredRs4 = influencerPositions;
-                 final RowSet ignoredRs5 = newModified) {
+                    final SizedLongChunk<RowKeys> ignoredChk2 = influencerPosChunk;
+                    final SizedLongChunk<? extends Values> ignoredChk3 = influencerTimestampChunk;
+                    final RowSet ignoredRs1 = affectedRows;
+                    final RowSet ignoredRs2 = influencerRows;
+                    final RowSet ignoredRs3 = affectedRowPositions;
+                    final RowSet ignoredRs4 = influencerPositions;
+                    final RowSet ignoredRs5 = newModified) {
             }
         }
     }
@@ -370,34 +380,37 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this operation
      * @param control the control parameters for operation
-     * @param timestampColumnName   the optional time stamp column for windowing (uses ticks if not provided)
+     * @param timestampColumnName the optional time stamp column for windowing (uses ticks if not provided)
      * @param redirContext the row redirection context to use for the operation
      */
     public UpdateByWindowedOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @NotNull final OperationControl control,
-                                    @Nullable final String timestampColumnName,
-                                    @Nullable final ColumnSource<?> timestampColumnSource,
-                                    final long reverseTimeScaleUnits,
-                                    final long forwardTimeScaleUnits,
-                                    @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            @Nullable final ColumnSource<?> timestampColumnSource,
+            final long reverseTimeScaleUnits,
+            final long forwardTimeScaleUnits,
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
         this.control = control;
         this.timestampColumnName = timestampColumnName;
-        this.timestampColumnSource = timestampColumnSource == null ? null : ReinterpretUtils.maybeConvertToPrimitive(timestampColumnSource);
+        this.timestampColumnSource =
+                timestampColumnSource == null ? null : ReinterpretUtils.maybeConvertToPrimitive(timestampColumnSource);
         this.reverseTimeScaleUnits = reverseTimeScaleUnits;
         this.forwardTimeScaleUnits = forwardTimeScaleUnits;
         this.redirContext = redirContext;
     }
 
     public abstract void push(UpdateContext context, long key, int pos);
+
     public abstract void pop(UpdateContext context, long key, int pos);
+
     public abstract void reset(UpdateContext context);
 
     @Override
     public void initializeFor(@NotNull final UpdateContext context,
-                              @NotNull final RowSet updateRowSet) {
+            @NotNull final RowSet updateRowSet) {
         final UpdateWindowedContext ctx = (UpdateWindowedContext) context;
 
         // pre=load all the influencer values this update will need
@@ -415,8 +428,10 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
             ctx.currentInfluencerPosOrTimestamp = ctx.influencerPositions.firstRowKey();
         } else {
             ctx.influencerTimestampChunk = new SizedLongChunk<>(ctx.influencerRows.intSize());
-            try (final ChunkSource.FillContext fillContext = timestampColumnSource.makeFillContext(ctx.influencerRows.intSize())) {
-                timestampColumnSource.fillChunk(fillContext, (WritableChunk<? super Values>) ctx.influencerTimestampChunk.get(), ctx.influencerRows);
+            try (final ChunkSource.FillContext fillContext =
+                    timestampColumnSource.makeFillContext(ctx.influencerRows.intSize())) {
+                timestampColumnSource.fillChunk(fillContext,
+                        (WritableChunk<? super Values>) ctx.influencerTimestampChunk.get(), ctx.influencerRows);
             }
             ctx.currentInfluencerPosOrTimestamp = ctx.influencerTimestampChunk.get().get(0);
         }
@@ -425,19 +440,19 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
 
     @Override
     public void finishFor(@NotNull final UpdateContext context) {
-        UpdateWindowedContext ctx = (UpdateWindowedContext)context;
+        UpdateWindowedContext ctx = (UpdateWindowedContext) context;
         ctx.newModified = ctx.getModifiedBuilder().build();
     }
 
     @NotNull
     final public RowSet getAdditionalModifications(@NotNull final UpdateContext context) {
-        UpdateWindowedContext ctx = (UpdateWindowedContext)context;
+        UpdateWindowedContext ctx = (UpdateWindowedContext) context;
         return ctx.newModified;
     }
 
     @Override
     final public boolean anyModified(@NotNull final UpdateContext context) {
-        UpdateWindowedContext ctx = (UpdateWindowedContext)context;
+        UpdateWindowedContext ctx = (UpdateWindowedContext) context;
         return ctx.newModified != null && ctx.newModified.isNonempty();
     }
 
@@ -456,7 +471,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     @NotNull
     @Override
     public String[] getOutputColumnNames() {
-        return new String[] { pair.leftColumn };
+        return new String[] {pair.leftColumn};
     }
 
     @Override

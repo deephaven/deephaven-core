@@ -108,7 +108,7 @@ public abstract class UpdateBy {
         }
 
         private boolean shiftRedirectedKey(@NotNull final RowSet.SearchIterator iterator, final long delta,
-                                           final long key) {
+                final long key) {
             final long inner = rowRedirection.remove(key);
             if (inner != NULL_ROW_KEY) {
                 rowRedirection.put(key + delta, inner);

@@ -103,12 +103,12 @@ public class TestRollingSum extends BaseUpdateByTest {
         Duration postTime = Duration.ZERO;
 
         final Table summed =
-                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
-                ));
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
+                        "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        DateTime[] ts = (DateTime[])t.getColumn("ts").getDirect();
+        DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
         long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = ts[i].getNanos();
@@ -139,12 +139,12 @@ public class TestRollingSum extends BaseUpdateByTest {
         Duration postTime = Duration.ofMinutes(10);
 
         final Table summed =
-                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
-                ));
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
+                        "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        DateTime[] ts = (DateTime[])t.getColumn("ts").getDirect();
+        DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
         long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = ts[i].getNanos();
@@ -175,12 +175,12 @@ public class TestRollingSum extends BaseUpdateByTest {
         Duration postTime = Duration.ofMinutes(10);
 
         final Table summed =
-                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
-                ));
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
+                        "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        DateTime[] ts = (DateTime[])t.getColumn("ts").getDirect();
+        DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
         long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = ts[i].getNanos();
@@ -236,9 +236,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         int postTicks = 10;
 
         final Table summed =
-                t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
-                ), "Sym");
+                t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks, "byteCol", "shortCol", "intCol",
+                        "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
 
         final PartitionedTable preOp = t.partitionBy("Sym");
@@ -277,9 +277,9 @@ public class TestRollingSum extends BaseUpdateByTest {
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Table summed =
-                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol", "longCol", "floatCol",
-                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"
-                ), "Sym");
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
+                        "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
 
         final PartitionedTable preOp = t.partitionBy("Sym");
@@ -288,13 +288,14 @@ public class TestRollingSum extends BaseUpdateByTest {
         String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
-            DateTime[] ts = (DateTime[])source.getColumn("ts").getDirect();
+            DateTime[] ts = (DateTime[]) source.getColumn("ts").getDirect();
             long[] timestamps = new long[source.intSize()];
             for (int i = 0; i < source.intSize(); i++) {
                 timestamps[i] = ts[i].getNanos();
             }
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingSumTime(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(), timestamps,
+                assertWithRollingSumTime(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
+                        timestamps,
                         actual.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
             });
             return source;
@@ -1084,7 +1085,8 @@ public class TestRollingSum extends BaseUpdateByTest {
         return result;
     }
 
-    private Object[] rollingSumTime(Object[] values, long[] timestamps, final boolean isBD, long prevNanos, long postNanos) {
+    private Object[] rollingSumTime(Object[] values, long[] timestamps, final boolean isBD, long prevNanos,
+            long postNanos) {
         if (values == null) {
             return null;
         }
@@ -1140,7 +1142,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
 
-    final void assertWithRollingSumTicks(final @NotNull Object expected, final @NotNull Object actual, Class type, int prevTicks, int postTicks) {
+    final void assertWithRollingSumTicks(final @NotNull Object expected, final @NotNull Object actual, Class type,
+            int prevTicks, int postTicks) {
         // looking for gross errors like missing entries (NOTE: pairwise results are more accurate than true rolling)
         final float deltaF = .02f;
         final double deltaD = .02d;
@@ -1169,7 +1172,7 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     final void assertWithRollingSumTime(final @NotNull Object expected, final @NotNull Object actual,
-                        final @NotNull long[] timestamps, Class type, long prevTime, long postTime) {
+            final @NotNull long[] timestamps, Class type, long prevTime, long postTime) {
         // looking for gross errors like missing entries (NOTE: pairwise results are more accurate than true rolling)
         final float deltaF = .02f;
         final double deltaD = .02d;
@@ -1183,16 +1186,20 @@ public class TestRollingSum extends BaseUpdateByTest {
         } else if (expected instanceof long[]) {
             assertArrayEquals(rollingSumTime((long[]) expected, timestamps, prevTime, postTime), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(rollingSumTime((float[]) expected, timestamps, prevTime, postTime), (float[]) actual, deltaF);
+            assertArrayEquals(rollingSumTime((float[]) expected, timestamps, prevTime, postTime), (float[]) actual,
+                    deltaF);
         } else if (expected instanceof double[]) {
-            assertArrayEquals(rollingSumTime((double[]) expected, timestamps, prevTime, postTime), (double[]) actual, deltaD);
+            assertArrayEquals(rollingSumTime((double[]) expected, timestamps, prevTime, postTime), (double[]) actual,
+                    deltaD);
         } else if (expected instanceof Boolean[]) {
             assertArrayEquals(rollingSumTime((Boolean[]) expected, timestamps, prevTime, postTime), (long[]) actual);
         } else {
             if (type == BigDecimal.class) {
-                assertArrayEquals(rollingSumTime((Object[]) expected, timestamps, true, prevTime, postTime), (Object[]) actual);
+                assertArrayEquals(rollingSumTime((Object[]) expected, timestamps, true, prevTime, postTime),
+                        (Object[]) actual);
             } else if (type == BigInteger.class) {
-                assertArrayEquals(rollingSumTime((Object[]) expected, timestamps, false, prevTime, postTime), (Object[]) actual);
+                assertArrayEquals(rollingSumTime((Object[]) expected, timestamps, false, prevTime, postTime),
+                        (Object[]) actual);
             }
         }
     }

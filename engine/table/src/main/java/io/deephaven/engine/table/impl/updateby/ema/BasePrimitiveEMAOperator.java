@@ -66,7 +66,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @NotNull
     @Override
-    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
+    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize,
+            final LongSegmentedSortedArray timestampSsa) {
         return new EmaContext(timeScaleUnits, chunkSize, timestampSsa);
     }
 
@@ -78,8 +79,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     protected void doProcessChunk(@NotNull final Context context,
-                                  @NotNull final RowSequence inputKeys,
-                                  @NotNull final Chunk<Values> workingChunk) {
+            @NotNull final RowSequence inputKeys,
+            @NotNull final Chunk<Values> workingChunk) {
         final EmaContext ctx = (EmaContext) context;
         if (timeRecorder == null) {
             computeWithTicks(ctx, workingChunk, 0, inputKeys.intSize());
@@ -91,8 +92,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     public void resetForProcess(@NotNull final UpdateByOperator.UpdateContext context,
-                                @NotNull final RowSet sourceIndex,
-                                final long firstUnmodifiedKey) {
+            @NotNull final RowSet sourceIndex,
+            final long firstUnmodifiedKey) {
         super.resetForProcess(context, sourceIndex, firstUnmodifiedKey);
 
         if (timeRecorder == null) {
@@ -106,7 +107,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             ctx.lastStamp = NULL_LONG;
         } else {
             // If it hasn't been reset to null, then it's possible that the value at that position was null, in
-            // which case  we must have ignored it, and so we have to actually keep looking backwards until we find
+            // which case we must have ignored it, and so we have to actually keep looking backwards until we find
             // something not null.
             ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
         }

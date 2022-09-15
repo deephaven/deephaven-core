@@ -457,7 +457,8 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public PartitionedTable partitionBy(final boolean dropKeys, @NotNull final Collection<? extends ColumnName> columns) {
+    public PartitionedTable partitionBy(final boolean dropKeys,
+            @NotNull final Collection<? extends ColumnName> columns) {
         if (isStream()) {
             throw streamUnsupported("partitionBy");
         }
@@ -479,7 +480,8 @@ public class QueryTable extends BaseTable {
 
     @Override
     public PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
-            final boolean preserveEmpty, @Nullable final Table initialGroups, @NotNull final Collection<? extends ColumnName> columns) {
+            final boolean preserveEmpty, @Nullable final Table initialGroups,
+            @NotNull final Collection<? extends ColumnName> columns) {
         if (isStream()) {
             throw streamUnsupported("partitionedAggBy");
         }

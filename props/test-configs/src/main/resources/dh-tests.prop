@@ -105,3 +105,5 @@ BarrageStreamGenerator.batchSize=4
 
 #BarrageTable.debug=true
 #BarrageMessageProducer.debug=true
+
+ReleaseTracker.captureStackTraces=true

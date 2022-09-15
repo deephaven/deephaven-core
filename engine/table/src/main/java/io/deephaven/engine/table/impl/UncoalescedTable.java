@@ -386,7 +386,7 @@ public abstract class UncoalescedTable extends BaseTable {
     @Override
     @ConcurrentMethod
     public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-                                             Table initialGroups, String... keyColumnNames) {
+            Table initialGroups, String... keyColumnNames) {
         return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, keyColumnNames);
     }
 

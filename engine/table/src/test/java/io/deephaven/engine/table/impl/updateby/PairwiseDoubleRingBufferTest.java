@@ -39,11 +39,6 @@ public class PairwiseDoubleRingBufferTest extends TestCase {
         }
     }
 
-    private void assertFull(PairwiseDoubleRingBuffer rb) {
-        assertFalse(rb.isEmpty());
-        assertEquals(rb.capacity(), rb.size());
-    }
-
     private void assertNotEmpty(PairwiseDoubleRingBuffer rb, int expectedSize, double expectedHead) {
         assertFalse(rb.isEmpty());
         assertEquals(expectedSize, rb.size());
@@ -84,6 +79,16 @@ public class PairwiseDoubleRingBufferTest extends TestCase {
 
         assertEmpty(rb);
 
+        // move the head and tail off zero
+        for (double i = 0; i < 1000; i++) {
+            rb.push(i);
+        }
+        for (double i = 0; i < 1000; i++) {
+            rb.pop();
+        }
+
+        assertEmpty(rb);
+
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
@@ -94,8 +99,6 @@ public class PairwiseDoubleRingBufferTest extends TestCase {
         assertEquals(rb.front(2), C);
         assertEquals(rb.back(),C);
         assertEquals(rb.peekBack(NULL_DOUBLE),C);
-
-        assertFull(rb);
 
         assertRemove(rb, 3, A);
         assertRemove(rb, 2, B);
@@ -133,7 +136,6 @@ public class PairwiseDoubleRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertFull(rb);
 
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
@@ -275,7 +277,6 @@ public class PairwiseDoubleRingBufferTest extends TestCase {
                 rb.pop();
             }
 
-
             for (double i = 0; i < 10_000; i++)
                 rb.push(i);
 
@@ -290,7 +291,6 @@ public class PairwiseDoubleRingBufferTest extends TestCase {
 
     public void testEvaluateMinLargeAmounts() {
         try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, Double.MAX_VALUE, Double::min)) {
-
             for (double i = 0; i < 10_000; i++)
                 rb.push(i);
 
@@ -340,6 +340,23 @@ public class PairwiseDoubleRingBufferTest extends TestCase {
 
                 assertEquals(runningSum, rb.evaluate());
             }
+        }
+    }
+
+    public void testEvaluationEdgeCase() {
+        try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, -Double.MAX_VALUE, Double::max)) {
+            // move the head and tail off zero
+            for (double i = 0; i < 500; i++) {
+                rb.push(i);
+            }
+            for (double i = 0; i < 500; i++) {
+                rb.pop();
+            }
+
+            for (double i = 0; i < 100; i++) {
+                rb.push(i);
+            }
+            assertEquals((double)99, rb.evaluate()); // last value added is max
         }
     }
 }

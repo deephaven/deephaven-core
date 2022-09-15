@@ -41,7 +41,8 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, timeRecorder, timestampColumnName, timeScaleUnits, valueSource, redirContext);
+        super(pair, affectingColumns, control, timeRecorder, timestampColumnName, timeScaleUnits, valueSource,
+                redirContext);
         // region constructor
         // endregion constructor
     }

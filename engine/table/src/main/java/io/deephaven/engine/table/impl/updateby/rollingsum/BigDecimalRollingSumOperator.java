@@ -54,7 +54,8 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
 
     @NotNull
     @Override
-    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
+    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize,
+            final LongSegmentedSortedArray timestampSsa) {
         return new Context(chunkSize, timestampSsa);
     }
 
@@ -67,24 +68,26 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
 
 
     public BigDecimalRollingSumOperator(@NotNull final MatchPair pair,
-                                        @NotNull final String[] affectingColumns,
-                                        @NotNull final OperationControl control,
-                                        @Nullable final String timestampColumnName,
-                                        @Nullable final ColumnSource<?> timestampColumnSource,
-                                        final long reverseTimeScaleUnits,
-                                        final long forwardTimeScaleUnits,
-                                        @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
-                                        @NotNull final ColumnSource<Object> valueSource
-                                        // region extra-constructor-args
-                                        // endregion extra-constructor-args
-                                        , @NotNull final MathContext mathContext) {
-        super(pair, affectingColumns, control, timestampColumnName, timestampColumnSource, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, valueSource, BigDecimal.class);
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            @Nullable final ColumnSource<?> timestampColumnSource,
+            final long reverseTimeScaleUnits,
+            final long forwardTimeScaleUnits,
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+            @NotNull final ColumnSource<Object> valueSource
+            // region extra-constructor-args
+            // endregion extra-constructor-args
+            , @NotNull final MathContext mathContext) {
+        super(pair, affectingColumns, control, timestampColumnName, timestampColumnSource, reverseTimeScaleUnits,
+                forwardTimeScaleUnits, redirContext, valueSource, BigDecimal.class);
         this.mathContext = mathContext;
-        if(redirContext.isRedirected()) {
+        if (redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new ObjectArraySource<BigDecimal>(BigDecimal.class);
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(redirContext.getRowRedirection(), maybeInnerSource, 0);
+            this.outputSource =
+                    new WritableRedirectedColumnSource(redirContext.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -99,7 +102,7 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
     @Override
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        BigDecimal val = (BigDecimal)ctx.candidateValuesChunk.get(pos);
+        BigDecimal val = (BigDecimal) ctx.candidateValuesChunk.get(pos);
 
         // increase the running sum
         if (val != null) {
@@ -116,7 +119,7 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
     @Override
     public void pop(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
-        BigDecimal val = (BigDecimal)ctx.candidateValuesChunk.get(pos);
+        BigDecimal val = (BigDecimal) ctx.candidateValuesChunk.get(pos);
 
         // reduce the running sum
         if (val != null) {
@@ -134,10 +137,10 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
 
     @Override
     public void doProcessChunk(@NotNull final BaseWindowedObjectUpdateByOperator<BigDecimal>.Context context,
-                               @NotNull final RowSequence inputKeys,
-                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                               @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                               @NotNull final Chunk<Values> workingChunk) {
+            @NotNull final RowSequence inputKeys,
+            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+            @Nullable final LongChunk<OrderedRowKeys> posChunk,
+            @NotNull final Chunk<Values> workingChunk) {
         final Context ctx = (Context) context;
 
         if (timestampColumnName == null) {
@@ -146,13 +149,13 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
             computeTime(ctx, inputKeys);
         }
 
-        //noinspection unchecked
+        // noinspection unchecked
         outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
     }
 
     private void computeTicks(@NotNull final Context ctx,
-                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                              final int runLength) {
+            @Nullable final LongChunk<OrderedRowKeys> posChunk,
+            final int runLength) {
 
         final WritableObjectChunk<BigDecimal, Values> localOutputValues = ctx.outputValues.get();
         for (int ii = 0; ii < runLength; ii++) {
@@ -163,12 +166,13 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
     }
 
     private void computeTime(@NotNull final Context ctx,
-                             @NotNull final RowSequence inputKeys) {
+            @NotNull final RowSequence inputKeys) {
 
         final WritableObjectChunk<BigDecimal, Values> localOutputValues = ctx.outputValues.get();
         // get the timestamp values for this chunk
         try (final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(inputKeys.intSize())) {
-            LongChunk<? extends Values> timestampChunk = timestampColumnSource.getChunk(context, inputKeys).asLongChunk();
+            LongChunk<? extends Values> timestampChunk =
+                    timestampColumnSource.getChunk(context, inputKeys).asLongChunk();
 
             for (int ii = 0; ii < inputKeys.intSize(); ii++) {
                 // the output value is computed by push/pop operations triggered by fillWindow
@@ -187,15 +191,15 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if(redirContext.isRedirected()) {
+        if (redirContext.isRedirected()) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }
 
     @Override
     public void applyOutputShift(@NotNull final UpdateContext context,
-                                 @NotNull final RowSet subIndexToShift,
-                                 final long delta) {
-        ((ObjectSparseArraySource<BigDecimal>)outputSource).shift(subIndexToShift, delta);
+            @NotNull final RowSet subIndexToShift,
+            final long delta) {
+        ((ObjectSparseArraySource<BigDecimal>) outputSource).shift(subIndexToShift, delta);
     }
 }

@@ -593,7 +593,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     @ConcurrentMethod
     default PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
-             final boolean preserveEmpty, @Nullable final Table initialGroups, String... keyColumnNames) {
+            final boolean preserveEmpty, @Nullable final Table initialGroups, String... keyColumnNames) {
         return partitionedAggBy(aggregations, preserveEmpty, initialGroups, ColumnName.from(keyColumnNames));
     }
 

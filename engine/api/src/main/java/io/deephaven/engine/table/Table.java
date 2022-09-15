@@ -934,7 +934,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-                                      Table initialGroups, @NotNull Collection<? extends ColumnName> keyColumnNames);
+            Table initialGroups, @NotNull Collection<? extends ColumnName> keyColumnNames);
 
     /**
      * Convenience method that performs an {@link #aggBy} and wraps the result in a {@link PartitionedTable}. If
