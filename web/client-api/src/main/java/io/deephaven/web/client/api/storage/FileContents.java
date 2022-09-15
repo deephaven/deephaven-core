@@ -12,10 +12,12 @@ public class FileContents {
     public static FileContents blob(Blob blob) {
         return new FileContents(blob);
     }
+
     @JsMethod(namespace = "dh.storage.FileContents")
     public static FileContents text(String... text) {
         return new FileContents(new Blob(JsArray.from(text)));
     }
+
     @JsMethod(namespace = "dh.storage.FileContents")
     public static FileContents arrayBuffers(ArrayBuffer... buffers) {
         return new FileContents(new Blob(JsArray.from(buffers)));

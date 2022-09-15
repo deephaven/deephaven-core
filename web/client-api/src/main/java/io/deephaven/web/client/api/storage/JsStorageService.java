@@ -48,7 +48,8 @@ public class JsStorageService {
         req.setPath(path);
         req.setFilterGlob(glob);
         return Callbacks.<ListItemsResponse, Object>grpcUnaryPromise(c -> client().listItems(req, metadata(), c::apply))
-                .then(response -> Promise.resolve(response.getItemsList().map((item, i, arr) -> ItemDetails.fromProto(item))));
+                .then(response -> Promise
+                        .resolve(response.getItemsList().map((item, i, arr) -> ItemDetails.fromProto(item))));
     }
 
     @JsMethod
@@ -63,8 +64,9 @@ public class JsStorageService {
     public Promise<Void> deleteItem(String path) {
         DeleteItemRequest req = new DeleteItemRequest();
         req.setPath(path);
-        return Callbacks.<DeleteItemResponse, Object>grpcUnaryPromise(c -> client().deleteItem(req, metadata(), c::apply))
-                .then(response -> Promise.resolve((Void)null));
+        return Callbacks
+                .<DeleteItemResponse, Object>grpcUnaryPromise(c -> client().deleteItem(req, metadata(), c::apply))
+                .then(response -> Promise.resolve((Void) null));
     }
 
     @JsMethod
@@ -73,8 +75,9 @@ public class JsStorageService {
             SaveFileRequest req = new SaveFileRequest();
             req.setContents(new Uint8Array(ab));
             req.setPath(path);
-            return Callbacks.<SaveFileResponse, Object>grpcUnaryPromise(c -> client().saveFile(req, metadata(), c::apply))
-                    .then(response -> Promise.resolve((Void)null));
+            return Callbacks
+                    .<SaveFileResponse, Object>grpcUnaryPromise(c -> client().saveFile(req, metadata(), c::apply))
+                    .then(response -> Promise.resolve((Void) null));
         });
     }
 
@@ -84,14 +87,16 @@ public class JsStorageService {
         req.setOldPath(oldPath);
         req.setNewPath(newPath);
         return Callbacks.<MoveItemResponse, Object>grpcUnaryPromise(c -> client().moveItem(req, metadata(), c::apply))
-                .then(response -> Promise.resolve((Void)null));
+                .then(response -> Promise.resolve((Void) null));
     }
 
     @JsMethod
     public Promise<Void> createDirectory(String path) {
         CreateDirectoryRequest req = new CreateDirectoryRequest();
         req.setPath(path);
-        return Callbacks.<CreateDirectoryResponse, Object>grpcUnaryPromise(c -> client().createDirectory(req, metadata(), c::apply))
-                .then(response -> Promise.resolve((Void)null));
+        return Callbacks
+                .<CreateDirectoryResponse, Object>grpcUnaryPromise(
+                        c -> client().createDirectory(req, metadata(), c::apply))
+                .then(response -> Promise.resolve((Void) null));
     }
 }

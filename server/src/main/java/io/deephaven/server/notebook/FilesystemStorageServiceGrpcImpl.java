@@ -43,8 +43,9 @@ import java.util.stream.Stream;
 public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.StorageServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(FilesystemStorageServiceGrpcImpl.class);
 
-    private static final String STORAGE_PATH = Configuration.getInstance().getStringWithDefault("storage.path", "<workspace>/storage")
-            .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
+    private static final String STORAGE_PATH =
+            Configuration.getInstance().getStringWithDefault("storage.path", "<workspace>/storage")
+                    .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
 
     private final Path root = Paths.get(STORAGE_PATH).normalize();
 
@@ -64,9 +65,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         }
         return Optional.empty();
     }
+
     private Path resolveOrThrow(String relativePath) {
-        return resolve(relativePath).orElseThrow(() -> GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + relativePath));
+        return resolve(relativePath).orElseThrow(
+                () -> GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + relativePath));
     }
+
     @Override
     public void listItems(ListItemsRequest request, StreamObserver<ListItemsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
@@ -97,12 +101,14 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
         }
         if (filterGlob.contains("/")) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only the same directory can be checked");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Bad glob, only the same directory can be checked");
         }
         try {
             return FileSystems.getDefault().getPathMatcher("glob:" + filterGlob);
         } catch (PatternSyntaxException e) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, can't parse expression: " + e.getMessage());
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Bad glob, can't parse expression: " + e.getMessage());
         }
     }
 
@@ -125,7 +131,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     public void saveFile(SaveFileRequest request, StreamObserver<SaveFileResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             Path path = resolveOrThrow(request.getPath());
-            StandardOpenOption option = request.getNewFile() ? StandardOpenOption.CREATE_NEW : StandardOpenOption.CREATE;
+            StandardOpenOption option =
+                    request.getNewFile() ? StandardOpenOption.CREATE_NEW : StandardOpenOption.CREATE;
             try {
                 Files.write(path, request.getContents().toByteArray(), option);
             } catch (FileAlreadyExistsException alreadyExistsException) {
@@ -149,7 +156,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             } catch (NoSuchFileException noSuchFileException) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File does not exist, cannot rename");
             } catch (FileAlreadyExistsException alreadyExistsException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File already exists, cannot rename to replace");
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "File already exists, cannot rename to replace");
             }
             responseObserver.onNext(MoveItemResponse.getDefaultInstance());
             responseObserver.onCompleted();
@@ -157,15 +165,18 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     }
 
     @Override
-    public void createDirectory(CreateDirectoryRequest request, StreamObserver<CreateDirectoryResponse> responseObserver) {
+    public void createDirectory(CreateDirectoryRequest request,
+            StreamObserver<CreateDirectoryResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             Path dir = resolveOrThrow(request.getPath());
             try {
                 Files.createDirectory(dir);
             } catch (FileAlreadyExistsException fileAlreadyExistsException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Something already exists with that name");
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Something already exists with that name");
             } catch (NoSuchFileException noSuchFileException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Can't create directory, parent directory doesn't exist");
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Can't create directory, parent directory doesn't exist");
             }
             responseObserver.onNext(CreateDirectoryResponse.getDefaultInstance());
             responseObserver.onCompleted();

@@ -35,18 +35,22 @@ public class ItemDetails {
     public String getFilename() {
         return path.substring(path.lastIndexOf('/'));
     }
+
     @JsProperty
     public String getBasename() {
         return path.substring(0, path.lastIndexOf('/'));
     }
+
     @JsProperty
     public String getPath() {
         return path;
     }
+
     @JsProperty
     public String getKind() {
         return kind == Storage_pb.FileKind.getDIRECTORY() ? "directory" : "file";
     }
+
     @JsProperty
     public Double getSize() {
         return size == null ? null : Double.parseDouble(size);

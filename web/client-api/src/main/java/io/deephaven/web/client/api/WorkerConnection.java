@@ -927,6 +927,7 @@ public class WorkerConnection {
     public PartitionedTableServiceClient partitionedTableServiceClient() {
         return partitionedTableServiceClient;
     }
+
     public StorageServiceClient storageServiceClient() {
         return storageServiceClient;
     }
