@@ -936,7 +936,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                     downstream.removed =
                             nullToEmpty(extractAndClearBuilderRandom(removedBuildersBackingChunk, backingChunkOffset));
                     downstream.modified = stepValuesModified
-                            ? nullToEmpty(extractAndClearBuilderRandom(modifiedBuildersBackingChunk, backingChunkOffset))
+                            ? nullToEmpty(
+                                    extractAndClearBuilderRandom(modifiedBuildersBackingChunk, backingChunkOffset))
                             : RowSetFactory.empty();
                     downstream.shifted =
                             extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
