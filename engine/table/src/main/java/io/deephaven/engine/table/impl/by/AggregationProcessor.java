@@ -42,11 +42,7 @@ import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ReverseLookup;
@@ -141,7 +137,7 @@ import static io.deephaven.engine.table.impl.RollupAttributeCopier.DEFAULT_INSTA
 import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
 import static io.deephaven.engine.table.impl.RollupInfo.ROLLUP_COLUMN;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_INTERNAL_COLUMN_SUFFIX;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NAN_COUNT_COLUMN_ID;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NI_COUNT_COLUMN_ID;
@@ -187,8 +183,9 @@ public class AggregationProcessor implements AggregationContextFactory {
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forAggregation(
+            @NotNull final TableDefinition inputDefinition,
             @NotNull final Collection<? extends Aggregation> aggregations) {
-        return new AggregationProcessor(aggregations, Type.NORMAL);
+        return new AggregationProcessor(inputDefinition, aggregations, Type.NORMAL);
     }
 
     /**
@@ -201,6 +198,7 @@ public class AggregationProcessor implements AggregationContextFactory {
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forRollupBase(
+            @NotNull final TableDefinition inputDefinition,
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includeConstituents) {
         if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
@@ -211,7 +209,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         baseAggregations.add(includeConstituents
                 ? Partition.of(ROLLUP_COLUMN)
                 : NullColumns.of(ROLLUP_COLUMN, Object.class));
-        return new AggregationProcessor(baseAggregations, Type.ROLLUP_BASE);
+        return new AggregationProcessor(inputDefinition, baseAggregations, Type.ROLLUP_BASE);
     }
 
     /**
@@ -224,6 +222,7 @@ public class AggregationProcessor implements AggregationContextFactory {
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forRollupReaggregated(
+            @NotNull final TableDefinition inputDefinition,
             @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Map<String, Class<?>> nullColumns) {
         if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
@@ -233,7 +232,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         reaggregations.add(NullColumns.from(nullColumns));
         reaggregations.addAll(aggregations);
         reaggregations.add(Partition.of(ROLLUP_COLUMN));
-        return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
+        return new AggregationProcessor(inputDefinition, reaggregations, Type.ROLLUP_REAGGREGATED);
     }
 
     /**
@@ -242,12 +241,14 @@ public class AggregationProcessor implements AggregationContextFactory {
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forSelectDistinct() {
-        return new AggregationProcessor(Collections.emptyList(), Type.SELECT_DISTINCT);
+        return new AggregationProcessor(TableDefinition.EMPTY, Collections.emptyList(), Type.SELECT_DISTINCT);
     }
 
     private AggregationProcessor(
+            @NotNull final TableDefinition inputDefinition,
             @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Type type) {
+        this.inputDefinition = inputDefinition;
         this.aggregations = aggregations;
         this.type = type;
         final String duplicationErrorMessage = (type.isRollup
@@ -279,11 +280,11 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final String... groupByColumnNames) {
         switch (type) {
             case NORMAL:
-                return new NormalConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
+                return new NormalConverter(table, requireStateChangeRecorder, groupByColumnNames).build(requireStateChangeRecorder);
             case ROLLUP_BASE:
-                return new RollupBaseConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
+                return new RollupBaseConverter(table, requireStateChangeRecorder, groupByColumnNames).build(requireStateChangeRecorder);
             case ROLLUP_REAGGREGATED:
-                return new RollupReaggregatedConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
+                return new RollupReaggregatedConverter(table, requireStateChangeRecorder, groupByColumnNames).build(requireStateChangeRecorder);
             case SELECT_DISTINCT:
                 return makeEmptyAggregationContext(requireStateChangeRecorder);
             default:
@@ -320,7 +321,6 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         private Converter(
                 @NotNull final Table table,
-                final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
             this.table = (QueryTable) table.coalesce();
             this.requireStateChangeRecorder = requireStateChangeRecorder;
@@ -329,9 +329,9 @@ public class AggregationProcessor implements AggregationContextFactory {
             isStream = this.table.isStream();
         }
 
-        AggregationContext build() {
+        AggregationContext build(final boolean requireStateChangeRecorder) {
             walkAllAggregations();
-            return makeAggregationContext();
+            return makeAggregationContext(requireStateChangeRecorder);
         }
 
         final void walkAllAggregations() {
@@ -341,7 +341,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @NotNull
-        final AggregationContext makeAggregationContext() {
+        final AggregationContext makeAggregationContext(final boolean requireStateChangeRecorder) {
             if (requireStateChangeRecorder && operators.stream().noneMatch(op -> op instanceof StateChangeRecorder)) {
                 addNoInputOperator(new CountAggregationOperator(null));
             }
@@ -656,7 +656,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
-            super(table, requireStateChangeRecorder, groupByColumnNames);
+            super(table, groupByColumnNames);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -913,16 +913,16 @@ public class AggregationProcessor implements AggregationContextFactory {
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
-            super(table, requireStateChangeRecorder, groupByColumnNames);
+            super(table, groupByColumnNames);
         }
 
         @Override
-        AggregationContext build() {
+        AggregationContext build(final boolean requireStateChangeRecorder) {
             walkAllAggregations();
             if (!partitionFound) {
                 transformers.add(new NoKeyLeafRollupAttributeSetter());
             }
-            return makeAggregationContext();
+            return makeAggregationContext(requireStateChangeRecorder);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1054,7 +1054,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
-            super(table, requireStateChangeRecorder, groupByColumnNames);
+            super(table, groupByColumnNames);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1079,7 +1079,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
 
             final List<String> columnsToDrop = table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
-                    .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).collect(Collectors.toList());
+                    .filter(cn -> cn.endsWith(ROLLUP_INTERNAL_COLUMN_SUFFIX)).collect(Collectors.toList());
             final QueryTable adjustedTable = columnsToDrop.isEmpty()
                     ? table
                     : maybeCopyRlAttribute(table, table.dropColumns(columnsToDrop));
@@ -1186,7 +1186,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 TriFunction<ColumnSource<SegmentedSortedMultiSet<?>>, ColumnSource<?>, String, IterativeChunkedAggregationOperator> operatorFactory) {
             for (final Pair pair : resultPairs) {
                 final String resultName = pair.output().name();
-                final String ssmName = resultName + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final String ssmName = resultName + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                 final ColumnSource<SegmentedSortedMultiSet<?>> ssmSource = table.getColumnSource(ssmName);
                 final ColumnSource<?> priorResultSource = table.getColumnSource(resultName);
                 final IterativeChunkedAggregationOperator operator = operatorFactory.apply(
@@ -1222,23 +1222,24 @@ public class AggregationProcessor implements AggregationContextFactory {
             for (final Pair pair : resultPairs) {
                 final String resultName = pair.output().name();
 
-                final String runningSumName = resultName + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final String runningSumName = resultName + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                 final Class<?> runningSumType = table.getColumnSource(runningSumName).getType();
 
-                final String nonNullCountName = resultName + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final String nonNullCountName =
+                        resultName + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                 final LongChunkedSumOperator nonNullCountOp = addAndGetLongSumOperator(nonNullCountName);
 
-                final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
 
                 if (table.hasColumns(nanCountName)) {
                     final DoubleChunkedSumOperator runningSumOp = addAndGetDoubleSumOperator(runningSumName);
 
                     final LongChunkedSumOperator nanCountOp = addAndGetLongSumOperator(nanCountName);
 
-                    final String piCountName = resultName + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final String piCountName = resultName + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                     final LongChunkedSumOperator piCountOp = addAndGetLongSumOperator(piCountName);
 
-                    final String niCountName = resultName + ROLLUP_NI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final String niCountName = resultName + ROLLUP_NI_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                     final LongChunkedSumOperator niCountOp = addAndGetLongSumOperator(niCountName);
 
                     final Class<?> resultType = table.getColumnSource(resultName).getType();
@@ -1271,15 +1272,17 @@ public class AggregationProcessor implements AggregationContextFactory {
             for (final Pair pair : resultPairs) {
                 final String resultName = pair.output().name();
 
-                final String runningSumName = resultName + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final String runningSumName = resultName + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                 final Class<?> runningSumType = table.getColumnSource(runningSumName).getType();
 
-                final String runningSum2Name = resultName + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final String runningSum2Name =
+                        resultName + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
 
-                final String nonNullCountName = resultName + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final String nonNullCountName =
+                        resultName + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                 final LongChunkedSumOperator nonNullCountOp = addAndGetLongSumOperator(nonNullCountName);
 
-                final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
 
                 if (table.hasColumns(nanCountName)) {
                     final DoubleChunkedSumOperator runningSumOp = addAndGetDoubleSumOperator(runningSumName);
@@ -1287,10 +1290,10 @@ public class AggregationProcessor implements AggregationContextFactory {
 
                     final LongChunkedSumOperator nanCountOp = addAndGetLongSumOperator(nanCountName);
 
-                    final String piCountName = resultName + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final String piCountName = resultName + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                     final LongChunkedSumOperator piCountOp = addAndGetLongSumOperator(piCountName);
 
-                    final String niCountName = resultName + ROLLUP_NI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final String niCountName = resultName + ROLLUP_NI_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX;
                     final LongChunkedSumOperator niCountOp = addAndGetLongSumOperator(niCountName);
 
                     addOperator(new FloatChunkedReVarOperator(resultName, isStd, runningSumOp, runningSum2Op,
@@ -1896,7 +1899,7 @@ public class AggregationProcessor implements AggregationContextFactory {
     // -----------------------------------------------------------------------------------------------------------------
 
     private static String makeRedirectionName(final int columnIdentifier) {
-        return ROW_REDIRECTION_PREFIX + columnIdentifier + ROLLUP_COLUMN_SUFFIX;
+        return ROW_REDIRECTION_PREFIX + columnIdentifier + ROLLUP_INTERNAL_COLUMN_SUFFIX;
     }
 
     private static QueryTable maybeCopyRlAttribute(@NotNull final Table parent, @NotNull final Table child) {

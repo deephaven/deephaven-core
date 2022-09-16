@@ -2124,7 +2124,7 @@ public class ChunkedOperatorAggregationHelper {
             listener.manage(swapListener); // See note on keyed version
         }
 
-        ac.setReverseLookupFunction(key -> SmartKey.EMPTY.equals(key) ? 0 : -1);
+        ac.setReverseLookupFunction(key -> key.length == 0 ? 0 : -1);
 
         return ac.transformResult(result);
     }

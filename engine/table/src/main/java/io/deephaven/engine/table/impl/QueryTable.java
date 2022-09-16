@@ -82,7 +82,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.MatchPair.matchString;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_CONSTITUENT_COLUMN_SUFFIX;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_INTERNAL_COLUMN_SUFFIX;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
@@ -519,6 +520,21 @@ public class QueryTable extends BaseTable {
         final MemoizedOperationKey rollupKey =
                 MemoizedOperationKey.rollup(aggregations, groupByColumns, includeConstituents);
         return memoizeResult(rollupKey, () -> {
+            final QueryTable source;
+            final List<String> extraNullColumnNames;
+            if (includeConstituents) {
+                final List<String> aggOutputColumnNames = AggregationPairs.outputsOf(aggregations)
+                        .map(ColumnName::name)
+                        .collect(Collectors.toList());
+                final List<String> constituentColumnNames = definition.getColumnStream()
+                        .map(cd -> cd.getName() + ROLLUP_CONSTITUENT_COLUMN_SUFFIX)
+                        .collect(Collectors.toList());
+                source =
+                extraNullColumnNames = constituentColumnNames;
+            } else {
+                source = QueryTable.this;
+                extraNullColumnNames = List.of();
+            }
             final QueryTable baseLevel = aggNoMemo(
                     AggregationProcessor.forRollupBase(aggregations, includeConstituents), false, null, groupByColumns);
 
@@ -538,7 +554,7 @@ public class QueryTable extends BaseTable {
 
             final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
                     .map(ColumnDefinition::getName)
-                    .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
+                    .filter(cn -> cn.endsWith(ROLLUP_INTERNAL_COLUMN_SUFFIX)).toArray(String[]::new);
             final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop);
             final Object reverseLookup =
                     Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
