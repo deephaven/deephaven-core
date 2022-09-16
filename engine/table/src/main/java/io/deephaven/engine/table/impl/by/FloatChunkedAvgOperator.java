@@ -148,8 +148,8 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
         if (exposeInternalColumns) {
             final Map<String, ColumnSource<?>> results = new LinkedHashMap<>();
             results.put(name, resultColumn);
-            results.put(name + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX, runningSum);
-            results.put(name + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_INTERNAL_COLUMN_SUFFIX, nonNullCounter.getColumnSource());
+            results.put(name + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, runningSum);
+            results.put(name + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, nonNullCounter.getColumnSource());
             results.putAll(fpInternalColumnSources(name));
             return results;
         } else {

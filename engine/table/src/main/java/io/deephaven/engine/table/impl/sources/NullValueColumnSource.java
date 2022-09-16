@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -46,7 +47,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
                 p -> new NullValueColumnSource<T2>(clazz, elementType));
     }
 
-    public static LinkedHashMap<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
+    public static Map<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
         return definition.getColumnStream().collect(Collectors.toMap(
                 ColumnDefinition::getName,
                 c -> getInstance(c.getDataType(), c.getComponentType()),
