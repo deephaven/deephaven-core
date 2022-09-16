@@ -218,9 +218,7 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
     }
 
     @Override
-    public void applyOutputShift(@NotNull final UpdateContext context,
-                                 @NotNull final RowSet subIndexToShift,
-                                 final long delta) {
+    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
         ((DoubleSparseArraySource)outputSource).shift(subIndexToShift, delta);
     }
 }

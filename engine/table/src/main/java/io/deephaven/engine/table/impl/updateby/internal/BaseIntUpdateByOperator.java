@@ -155,9 +155,7 @@ public abstract class BaseIntUpdateByOperator extends UpdateByCumulativeOperator
     // region Shifts
 
     @Override
-    public void applyOutputShift(@NotNull final UpdateContext context,
-                                 @NotNull final RowSet subIndexToShift,
-                                 final long delta) {
+    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
         ((IntegerSparseArraySource)outputSource).shift(subIndexToShift, delta);
     }
 

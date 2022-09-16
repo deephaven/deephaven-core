@@ -5,6 +5,7 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
+import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -36,6 +37,7 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
      */
     public static Table compute(@NotNull final String description,
             @NotNull final QueryTable source,
+            @NotNull final UpdateByWindow[] windows,
             @NotNull final UpdateByOperator[] ops,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
@@ -43,6 +45,7 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
             @NotNull final UpdateByControl control) {
 
         final BucketedPartitionedUpdateBy updateBy = new BucketedPartitionedUpdateBy(description,
+                windows,
                 ops,
                 source,
                 resultSources,
@@ -54,13 +57,14 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
     }
 
     protected BucketedPartitionedUpdateBy(@NotNull final String description,
+            @NotNull final UpdateByWindow[] windows,
             @NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByRedirectionContext redirContext,
             @NotNull final UpdateByControl control) {
-        super(operators, source, redirContext, control);
+        super(windows, operators, source, redirContext, control);
 
         // create a source-listener that will listen to the source updates and apply the shifts to the output columns
         final QueryTable sourceListenerTable = new QueryTable(source.getRowSet(), source.getColumnSourceMap());
@@ -120,6 +124,7 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
             Table newTable = ZeroKeyUpdateBy.compute(
                     description,
                     (QueryTable) t,
+                    windows,
                     operators,
                     resultSources,
                     redirContext,

@@ -24,7 +24,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     protected final OperationControl control;
     protected final String timestampColumnName;
-    protected final ColumnSource<?> timestampColumnSource;
 
     protected final long reverseTimeScaleUnits;
     protected final long forwardTimeScaleUnits;
@@ -36,9 +35,6 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
 
     public abstract class UpdateWindowedContext implements UpdateContext {
         protected LongSegmentedSortedArray timestampSsa;
-
-        protected RowSetBuilderSequential modifiedBuilder;
-        protected RowSet newModified;
 
         public int nullCount = 0;
 
@@ -72,178 +68,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         protected LongRingBuffer windowPosOrTimestamp = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
         public LongRingBuffer windowIndices = new LongRingBuffer(WINDOW_CHUNK_SIZE, true);
 
-        private WritableRowSet computeAffectedRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
-                long fwdNanos) {
-            // swap fwd/rev to get the affected windows
-            return computeInfluencerRowsTime(sourceSet, subset, fwdNanos, revNanos);
-        }
 
-        private WritableRowSet computeInfluencerRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
-                long fwdNanos) {
-            if (sourceSet.size() == subset.size()) {
-                return sourceSet.copy();
-            }
-
-            int chunkSize = (int) Math.min(subset.size(), 4096);
-            try (final RowSequence.Iterator it = subset.getRowSequenceIterator();
-                    final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(chunkSize)) {
-                final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                LongSegmentedSortedArray.Iterator ssaIt = timestampSsa.iterator(false, false);
-                while (it.hasMore() && ssaIt.hasNext()) {
-                    final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
-                    LongChunk<? extends Values> timestamps = timestampColumnSource.getChunk(context, rs).asLongChunk();
-
-                    for (int ii = 0; ii < rs.intSize(); ii++) {
-                        // if the timestamp of the row is null, it won't belong to any set and we can ignore it
-                        // completely
-                        final long ts = timestamps.get(ii);
-                        if (ts != NULL_LONG) {
-                            // look at every row timestamp, compute the head and tail in nanos
-                            final long head = ts - revNanos;
-                            final long tail = ts + fwdNanos;
-
-                            // advance the iterator to the beginning of the window
-                            if (ssaIt.nextValue() < head) {
-                                ssaIt.advanceToBeforeFirst(head);
-                                if (!ssaIt.hasNext()) {
-                                    // SSA is exhausted
-                                    break;
-                                }
-                            }
-
-                            Assert.assertion(ssaIt.hasNext() && ssaIt.nextValue() >= head,
-                                    "SSA Iterator outside of window");
-
-                            // step through the SSA and collect keys until outside of the window
-                            while (ssaIt.hasNext() && ssaIt.nextValue() <= tail) {
-                                builder.appendKey(ssaIt.nextKey());
-                                ssaIt.next();
-                            }
-
-                            if (!ssaIt.hasNext()) {
-                                // SSA is exhausted
-                                break;
-                            }
-                        }
-                    }
-                }
-                return builder.build();
-            }
-        }
-
-        private WritableRowSet computeAffectedRowsTicks(final RowSet sourceSet, final RowSet subset, long revTicks,
-                long fwdTicks) {
-            // swap fwd/rev to get the influencer windows
-            return computeInfluencerRowsTicks(sourceSet, subset, fwdTicks, revTicks);
-        }
-
-        private WritableRowSet computeInfluencerRowsTicks(final RowSet sourceSet, final RowSet subset, long revTicks,
-                long fwdTicks) {
-            if (sourceSet.size() == subset.size()) {
-                return sourceSet.copy();
-            }
-
-            long maxPos = sourceSet.size() - 1;
-
-            try (final RowSet inverted = sourceSet.invert(subset)) {
-                final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                final MutableLong minPos = new MutableLong(0L);
-
-                inverted.forAllRowKeyRanges((s, e) -> {
-                    long sPos = Math.max(s - revTicks, minPos.longValue());
-                    long ePos = Math.min(e + fwdTicks, maxPos);
-                    builder.appendRange(sPos, ePos);
-                    minPos.setValue(ePos + 1);
-                });
-
-                try (final RowSet positions = builder.build()) {
-                    return sourceSet.subSetForPositions(positions);
-                }
-            }
-        }
-
-        /***
-         * This function is only correct if the proper {@code source} rowset is provided. If using buckets, then the
-         * provided rowset must be limited to the rows in the current bucket only
-         *
-         * @param upstream the update
-         * @param source the rowset of the parent table (affected rows will be a subset)
-         * @param initialStep whether this is the initial step of building the table
-         */
-        public RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source,
-                final boolean initialStep) {
-            Assert.assertion(affectedRows == null,
-                    "affectedRows should be null when determineAffectedRows() is called");
-
-            if (initialStep) {
-                // all rows are affected initially
-                affectedRows = source.copy();
-                influencerRows = source.copy();
-
-                // no need to invert, just create a flat rowset
-                if (timestampColumnName == null) {
-                    affectedRowPositions = RowSetFactory.flat(source.size());
-                    influencerPositions = RowSetFactory.flat(source.size());
-                }
-                return affectedRows;
-            }
-
-            if (source.isEmpty()) {
-                affectedRows = RowSetFactory.empty();
-                influencerRows = RowSetFactory.empty();
-                if (timestampColumnName == null) {
-                    affectedRowPositions = RowSetFactory.empty();
-                    influencerPositions = RowSetFactory.empty();
-                }
-                return affectedRows;
-            }
-
-            // changed rows are mods+adds
-            WritableRowSet changed = upstream.added().copy();
-            changed.insert(upstream.modified());
-
-            WritableRowSet tmpAffected;
-
-            // compute the affected rows from these changes
-            if (timestampColumnName == null) {
-                tmpAffected = computeAffectedRowsTicks(source, changed, reverseTimeScaleUnits, forwardTimeScaleUnits);
-            } else {
-                tmpAffected = computeAffectedRowsTime(source, changed, reverseTimeScaleUnits, forwardTimeScaleUnits);
-            }
-
-            // add affected rows from any removes
-
-            if (upstream.removed().isNonempty()) {
-                try (final RowSet prev = source.copyPrev();
-                        final WritableRowSet affectedByRemoves = timestampColumnName == null
-                                ? computeAffectedRowsTicks(prev, upstream.removed(), reverseTimeScaleUnits,
-                                        forwardTimeScaleUnits)
-                                : computeAffectedRowsTime(prev, upstream.removed(), reverseTimeScaleUnits,
-                                        forwardTimeScaleUnits)) {
-                    // apply shifts to get back to pos-shift space
-                    upstream.shifted().apply(affectedByRemoves);
-                    // retain only the rows that still exist in the source
-                    affectedByRemoves.retain(source);
-                    tmpAffected.insert(affectedByRemoves);
-                }
-            }
-
-            affectedRows = tmpAffected;
-
-            // now get influencer rows for the affected
-
-            if (timestampColumnName == null) {
-                influencerRows =
-                        computeInfluencerRowsTicks(source, affectedRows, reverseTimeScaleUnits, forwardTimeScaleUnits);
-                // generate position data rowsets for efficiently computed position offsets
-                affectedRowPositions = source.invert(affectedRows);
-                influencerPositions = source.invert(influencerRows);
-            } else {
-                influencerRows =
-                        computeInfluencerRowsTime(source, affectedRows, reverseTimeScaleUnits, forwardTimeScaleUnits);
-            }
-            return affectedRows;
-        }
 
         public RowSet getAffectedRows() {
             return affectedRows;
@@ -478,6 +303,26 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
     @Override
     public String getTimestampColumnName() {
         return this.timestampColumnName;
+    }
+
+    /**
+     * Get the value of the backward-looking window (might be nanos or ticks).
+     *
+     * @return the name of the input column
+     */
+    @Override
+    public long getPrevWindowUnits() {
+        return reverseTimeScaleUnits;
+    }
+
+    /**
+     * Get the value of the forward-looking window (might be nanos or ticks).
+     *
+     * @return the name of the input column
+     */
+    @Override
+    public long getFwdWindowUnits() {
+        return forwardTimeScaleUnits;
     }
 
     @Override

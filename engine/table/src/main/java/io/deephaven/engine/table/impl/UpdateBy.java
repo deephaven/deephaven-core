@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByOperation;
@@ -13,6 +14,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
+import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
 import io.deephaven.engine.table.impl.util.InverseRowRedirectionImpl;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -30,6 +32,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 public abstract class UpdateBy {
     protected final ChunkSource.WithPrev<Values>[] inputSources;
     protected final int[] inputSourceSlots;
+    protected final UpdateByWindow[] windows;
     protected final UpdateByOperator[] operators;
     protected final QueryTable source;
 
@@ -123,7 +126,8 @@ public abstract class UpdateBy {
         }
     }
 
-    protected UpdateBy(@NotNull final UpdateByOperator[] operators,
+    protected UpdateBy(@NotNull final UpdateByWindow[] windows,
+            @NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
             @NotNull final UpdateByRedirectionContext redirContext,
             UpdateByControl control) {
@@ -135,6 +139,7 @@ public abstract class UpdateBy {
         }
 
         this.source = source;
+        this.windows = windows;
         this.operators = operators;
         // noinspection unchecked
         this.inputSources = new ChunkSource.WithPrev[operators.length];
@@ -209,6 +214,19 @@ public abstract class UpdateBy {
                 new UpdateByOperatorFactory(source, pairs, ctx, control);
         final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
+        // build the windows for these operators
+        TIntObjectHashMap<UpdateByWindow> windowMap = new TIntObjectHashMap<>();
+        ops.forEach(op -> {
+            UpdateByWindow newWindow = UpdateByWindow.createFromOperator(op);
+            final int hash = newWindow.hashCode();
+            // add this if not found
+            if (!windowMap.containsKey(hash)) {
+                windowMap.put(hash, newWindow);
+            }
+            windowMap.get(hash).addOperator(op);
+        });
+
+
         final StringBuilder descriptionBuilder = new StringBuilder("updateBy(ops={")
                 .append(updateByOperatorFactory.describe(clauses))
                 .append("}");
@@ -231,12 +249,14 @@ public abstract class UpdateBy {
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
         resultSources.putAll(opResultSources);
 
+        final UpdateByWindow[] windowArr = windowMap.valueCollection().toArray(UpdateByOperator.ZERO_LENGTH_WINDOW_ARRAY);
         final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
             Table ret = ZeroKeyUpdateBy.compute(
                     descriptionBuilder.toString(),
                     source,
+                    windowArr,
                     opArr,
                     resultSources,
                     ctx,
@@ -270,6 +290,7 @@ public abstract class UpdateBy {
         Table ret = BucketedPartitionedUpdateBy.compute(
                 descriptionBuilder.toString(),
                 source,
+                windowArr,
                 opArr,
                 resultSources,
                 byColumns,

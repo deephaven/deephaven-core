@@ -144,9 +144,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
     // region Shifts
 
     @Override
-    public void applyOutputShift(@NotNull final UpdateContext context,
-                                 @NotNull final RowSet subRowSetToShift,
-                                 final long delta) {
+    public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         ((DoubleSparseArraySource)outputSource).shift(subRowSetToShift, delta);
     }
 

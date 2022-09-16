@@ -190,8 +190,7 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
     }
 
     @Override
-    public void applyOutputShift(@NotNull final UpdateContext context,
-                                 @NotNull final RowSet subIndexToShift,
+    public void applyOutputShift(@NotNull final RowSet subIndexToShift,
                                  final long delta) {
         ((ObjectSparseArraySource<BigInteger>)outputSource).shift(subIndexToShift, delta);
     }

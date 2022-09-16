@@ -139,9 +139,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
     // region Shifts
 
     @Override
-    public void applyOutputShift(@NotNull final UpdateContext context,
-                                 @NotNull final RowSet subRowSetToShift,
-                                 final long delta) {
+    public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         ((FloatSparseArraySource)outputSource).shift(subRowSetToShift, delta);
     }
 

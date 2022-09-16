@@ -151,9 +151,7 @@ public class ReplicateUpdateBy {
         lines = replaceRegion(lines, "Shifts",
                 Collections.singletonList(
                         "    @Override\n" +
-                                "    public void applyOutputShift(@NotNull final UpdateContext context,\n" +
-                                "                                 @NotNull final RowSet subIndexToShift,\n" +
-                                "                                 final long delta) {\n" +
+                                "    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {\n" +
                                 "        if (outputSource instanceof BooleanSparseArraySource.ReinterpretedAsByte) {\n"
                                 +
                                 "            ((BooleanSparseArraySource.ReinterpretedAsByte)outputSource).shift(subIndexToShift, delta);\n"

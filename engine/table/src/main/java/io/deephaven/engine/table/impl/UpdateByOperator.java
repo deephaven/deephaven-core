@@ -14,6 +14,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
+import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +30,6 @@ import java.util.Map;
  * <ol>
  * <li>Reprocess
  * <ul>
- * <li>{@link #resetForProcess(UpdateContext, RowSet, long)}</li>
  * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
  * <li>{@link #reprocessChunkBucketed(UpdateContext, RowSequence, Chunk, LongChunk, IntChunk, IntChunk, IntChunk)}</li>
  * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
@@ -44,6 +44,7 @@ import java.util.Map;
  * </p>
  */
 public interface UpdateByOperator {
+    UpdateByWindow[] ZERO_LENGTH_WINDOW_ARRAY = new UpdateByWindow[0];
     UpdateByOperator[] ZERO_LENGTH_OP_ARRAY = new UpdateByOperator[0];
 
     /**
@@ -65,26 +66,6 @@ public interface UpdateByOperator {
      * updates.
      */
     interface UpdateContext extends SafeCloseable {
-        /**
-         * Determine all the rows affected by the {@link TableUpdate} that need to be reprocessed
-         *
-         * @param upstream the update
-         * @param source the rowset of the parent table (affected rows will be a subset)
-         */
-        RowSet determineAffectedRows(@NotNull final TableUpdate upstream, @NotNull final TrackingRowSet source,
-                final boolean initialStep);
-
-        /**
-         * Return the affected rows computed by the {@Code determineAffectedRows()}
-         */
-        RowSet getAffectedRows();
-
-        /**
-         * Return the influencer rows computed by the {@Code determineAffectedRows()}
-         */
-        RowSet getInfluencerRows();
-
-        LongSegmentedSortedArray getTimestampSsa();
     }
 
     /**
@@ -102,6 +83,20 @@ public interface UpdateByOperator {
      */
     @Nullable
     String getTimestampColumnName();
+
+    /**
+     * Get the value of the backward-looking window (might be nanos or ticks).
+     *
+     * @return the name of the input column
+     */
+    long getPrevWindowUnits();
+
+    /**
+     * Get the value of the forward-looking window (might be nanos or ticks).
+     *
+     * @return the name of the input column
+     */
+    long getFwdWindowUnits();
 
     /**
      * Get an array of column names that, when modified, affect the result of this computation.
@@ -221,9 +216,7 @@ public interface UpdateByOperator {
      * Apply a shift to the operation.
      *
      */
-    void applyOutputShift(@NotNull final UpdateContext context,
-            @NotNull final RowSet subIndexToShift,
-            final long delta);
+    void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta);
 
     /**
      * Process a chunk of data for an updateBy table.
