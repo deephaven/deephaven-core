@@ -86,6 +86,8 @@ class SessionServiceServicer(object):
         """
         Handshake between client and server to create a new session. The response includes a metadata header name and the
         token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
+
+        Deprecated: Please use Flight's Handshake or http authorization headers instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
