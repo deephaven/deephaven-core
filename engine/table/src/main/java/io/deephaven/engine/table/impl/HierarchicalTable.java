@@ -307,7 +307,8 @@ public class HierarchicalTable extends QueryTable {
      *
      * @return A new Hierarchical table. The table itself is a view of the root of the hierarchy.
      */
-    static @NotNull HierarchicalTable createFrom(@NotNull QueryTable rootTable, @NotNull HierarchicalTableInfo info) {
+    @NotNull
+    static HierarchicalTable createFrom(@NotNull QueryTable rootTable, @NotNull HierarchicalTableInfo info) {
         final Mutable<HierarchicalTable> resultHolder = new MutableObject<>();
 
         // Create a copy of the root partitionBy table as a HierarchicalTable, and wire it up for listeners.
