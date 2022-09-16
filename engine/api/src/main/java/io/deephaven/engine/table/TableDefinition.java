@@ -25,8 +25,6 @@ import java.util.stream.Stream;
  */
 public class TableDefinition implements LogOutputAppendable {
 
-    public static TableDefinition EMPTY = new TableDefinition(List.of());
-
     private static final OpenAddressedCanonicalizationCache INTERNED_DEFINITIONS =
             new OpenAddressedCanonicalizationCache();
 
