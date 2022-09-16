@@ -271,7 +271,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         if(exposeInternal) {
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             columns.put(name, externalResult);
-            columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
+            columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_INTERNAL_COLUMN_SUFFIX, ssms.getUnderlyingSource());
             return columns;
         }
 
