@@ -43,7 +43,11 @@ public interface RowSetBuilderSequential extends TLongProcedure, LongRangeConsum
     }
 
     default void appendOrderedRowKeysChunk(final LongChunk<OrderedRowKeys> chunk) {
-        appendKeys(new LongChunkIterator(chunk));
+        appendOrderedRowKeysChunk(chunk, 0, chunk.size());
+    }
+
+    default void appendOrderedRowKeysChunk(final LongChunk<OrderedRowKeys> chunk, int offset, int length) {
+        appendKeys(new LongChunkIterator(chunk, offset, length));
     }
 
     default void appendRanges(final LongRangeIterator it) {
