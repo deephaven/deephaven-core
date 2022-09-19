@@ -15,6 +15,7 @@ from typing import Union, Sequence, List, Any, Optional, Callable
 import jpy
 
 from deephaven import DHError, dtypes
+from deephaven._jpy import strict_cast
 from deephaven._wrapper import JObjectWrapper
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
@@ -47,15 +48,17 @@ _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-_JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
-    "io.deephaven.engine.util.AbstractScriptSession$UnsynchronizedScriptSessionQueryScope")
+_JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
 
 
 def _j_py_script_session() -> _JPythonScriptSession:
-    _j_script_session = jpy.cast(
-        _JExecutionContext.getContext().getQueryScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
-    return jpy.cast(_j_script_session, _JPythonScriptSession)
+    j_execution_context = _JExecutionContext.getContext()
+    j_query_scope = j_execution_context.getQueryScope()
+    if not j_query_scope:
+        raise DHError("ExecutionContext does not have QueryScope")
+    j_script_session_query_scope = strict_cast(j_query_scope, _JScriptSessionQueryScope)
+    return strict_cast(j_script_session_query_scope.scriptSession(), _JPythonScriptSession)
 
 
 @contextlib.contextmanager

@@ -14,10 +14,12 @@ from tests.testbase import BaseTestCase
 
 class LineStyleTestCase(BaseTestCase):
     def setUp(self):
+        BaseTestCase.setUp(self)
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
+        BaseTestCase.tearDown(self)
 
     def test_default_line_style(self):
         line_style = LineStyle()

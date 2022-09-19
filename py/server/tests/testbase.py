@@ -12,8 +12,10 @@ from deephaven import DHError
 from deephaven.ugp import exclusive_lock
 from deephaven.table import Table
 
-_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+from test_helper import py_dh_session
 
+_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+_JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 
 def table_equals(table_a: Table, table_b: Table) -> bool:
     try:
@@ -21,6 +23,18 @@ def table_equals(table_a: Table, table_b: Table) -> bool:
     except Exception as e:
         raise DHError(e, "table equality test failed.") from e
 
+
+# TODO(deephaven-core#2867): Wrap ExecutionContext in Python
+# Jianfeng to remove this and introduce into deephaven execution_context module for users' convenience
+@contextlib.contextmanager
+def make_user_exec_ctx():
+    j_execution_context = _JExecutionContext.makeExecutionContext(False).open()
+    try:
+        yield
+    except Exception as e:
+        raise DHError(e, "exception raised in the enclosed code block.") from e
+    finally:
+        j_execution_context.close()
 
 class BaseTestCase(unittest.TestCase):
     @classmethod
@@ -32,10 +46,10 @@ class BaseTestCase(unittest.TestCase):
         ...
 
     def setUp(self) -> None:
-        ...
+        self._execution_context = py_dh_session.getExecutionContext().open()
 
     def tearDown(self) -> None:
-        ...
+        self._execution_context.close()
 
     def wait_ticking_table_update(self, table: Table, row_count: int, timeout: int):
         """Waits for a ticking table to grow to the specified size or times out.

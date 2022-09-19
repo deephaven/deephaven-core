@@ -21,10 +21,12 @@ def partitioned_transform_func(t: Table, ot: Table) -> Table:
 
 class UgpTestCase(BaseTestCase):
     def setUp(self) -> None:
+        BaseTestCase.setUp(self)
         ugp.auto_locking = False
 
     def tearDown(self):
         ugp.auto_locking = False
+        BaseTestCase.tearDown(self)
 
     def test_ugp_context_manager(self):
         with self.assertRaises(DHError) as cm:
@@ -207,14 +209,6 @@ class UgpTestCase(BaseTestCase):
             test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         pt = test_table.partition_by(by="Y")
 
-        _ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-        _context = _ExecutionContext.newBuilder() \
-                .captureQueryCompiler()           \
-                .captureQueryLibrary()            \
-                .emptyQueryScope()                \
-                .build()                          \
-                .open()
-
         with self.subTest("Merge"):
             ugp.auto_locking = False
             with self.assertRaises(DHError) as cm:
@@ -242,7 +236,6 @@ class UgpTestCase(BaseTestCase):
             ugp.auto_locking = True
             pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
 
-        _context.close()
 
     def test_auto_locking_table_factory(self):
         with ugp.shared_lock():

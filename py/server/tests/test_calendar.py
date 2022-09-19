@@ -12,6 +12,7 @@ from tests.testbase import BaseTestCase
 
 class CalendarTestCase(BaseTestCase):
     def setUp(self) -> None:
+        BaseTestCase.setUp(self)
         self.test_calendar = BusinessCalendar("USNYSE")
         self.b_day1 = "2022-01-03"
         self.b_day = "2022-03-08"

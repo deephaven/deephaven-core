@@ -18,17 +18,8 @@ public class ExecutionContext {
         return new Builder();
     }
 
-    public static ExecutionContext makeSystemicExecutionContext() {
-        final ExecutionContext context = getContext();
-        if (context.isSystemic) {
-            return context;
-        }
-        return ExecutionContext.newBuilder()
-                .captureQueryScope()
-                .captureQueryLibrary()
-                .captureQueryCompiler()
-                .markSystemic()
-                .build();
+    public static ExecutionContext makeExecutionContext(boolean isSystemic) {
+        return getContext().withSystemic(isSystemic);
     }
 
     @VisibleForTesting
@@ -107,6 +98,20 @@ public class ExecutionContext {
         this.queryLibrary = queryLibrary;
         this.queryScope = queryScope;
         this.queryCompiler = queryCompiler;
+    }
+
+    /**
+     * Returns, or creates, an execution context with the given value for {@code isSystemic} and existing values for the
+     * other members.
+     *
+     * @param isSystemic if the context should be systemic
+     * @return the execution context
+     */
+    public ExecutionContext withSystemic(boolean isSystemic) {
+        if (isSystemic == this.isSystemic) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, queryLibrary, queryScope, queryCompiler);
     }
 
     /**

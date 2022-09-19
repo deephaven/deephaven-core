@@ -13,6 +13,7 @@ from tests.testbase import BaseTestCase
 
 class PartitionedTableProxyTestCase(BaseTestCase):
     def setUp(self):
+        BaseTestCase.setUp(self)
         self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c"])
         self.pt_proxy = self.partitioned_table.proxy()
@@ -20,6 +21,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
     def tearDown(self):
         self.partitioned_table = None
         self.test_table = None
+        BaseTestCase.tearDown(self)
 
     def test_target(self):
         self.assertEqual(self.partitioned_table, self.pt_proxy.target)
