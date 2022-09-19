@@ -46,7 +46,6 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Inject
     public FlightServiceGrpcImpl(
             @Nullable final ScheduledExecutorService executorService,
@@ -119,7 +118,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             respondWithAuthTokenBin(session);
         }
 
-        private Optional<AuthContext> login(String type, long version, ByteString payload, AuthenticationRequestHandler.HandshakeResponseListener listener) throws AuthenticationException {
+        private Optional<AuthContext> login(String type, long version, ByteString payload,
+                AuthenticationRequestHandler.HandshakeResponseListener listener) throws AuthenticationException {
             AuthenticationRequestHandler handler = authRequestHandlers.get(type);
             if (handler == null) {
                 return Optional.empty();

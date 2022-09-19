@@ -7,7 +7,6 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
-import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
@@ -31,7 +30,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -65,8 +63,7 @@ public class SessionService {
 
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
 
-    @Inject()
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @Inject
     public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
             @Named("session.tokenExpireMs") final long tokenExpireMs,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {

@@ -40,8 +40,13 @@ service SessionService {
   /*
    * Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
    * token that should replace the existing token for subsequent requests.
+   *
+   * Deprecated: Please use Flight's Handshake with an empty payload.
    */
-  rpc RefreshSessionToken(HandshakeRequest) returns (HandshakeResponse) {}
+  rpc RefreshSessionToken(HandshakeRequest) returns (HandshakeResponse) {
+    option deprecated = true;
+  }
+
 
   /*
    * Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all

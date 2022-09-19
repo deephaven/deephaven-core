@@ -29,8 +29,12 @@ type SessionServiceClient interface {
 	//
 	// Deprecated: Please use Flight's Handshake or http authorization headers instead.
 	NewSession(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
 	// token that should replace the existing token for subsequent requests.
+	//
+	// Deprecated: Please use Flight's Handshake with an empty payload.
 	RefreshSessionToken(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
 	// Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
 	// unreleased exports will be automatically released.
@@ -72,6 +76,7 @@ func (c *sessionServiceClient) NewSession(ctx context.Context, in *HandshakeRequ
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *sessionServiceClient) RefreshSessionToken(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error) {
 	out := new(HandshakeResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.SessionService/RefreshSessionToken", in, out, opts...)
@@ -160,8 +165,12 @@ type SessionServiceServer interface {
 	//
 	// Deprecated: Please use Flight's Handshake or http authorization headers instead.
 	NewSession(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
 	// token that should replace the existing token for subsequent requests.
+	//
+	// Deprecated: Please use Flight's Handshake with an empty payload.
 	RefreshSessionToken(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
 	// Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
 	// unreleased exports will be automatically released.

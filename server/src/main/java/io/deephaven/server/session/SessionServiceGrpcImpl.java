@@ -5,6 +5,7 @@ package io.deephaven.server.session;
 
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -37,7 +38,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -65,14 +65,10 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     @Override
     public void newSession(final HandshakeRequest request, final StreamObserver<HandshakeResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            // TODO: once client APIs are updated to use flight auth, then newSession can be deprecated or removed
-            final SessionState session;
-            try {
-                session = service.getSessionForAuthToken(request.getPayload().toString(StandardCharsets.US_ASCII));
-            } catch (AuthenticationException e) {
-                throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Authentication error");
-            }
+            // TODO: once jsapi is updated to use flight auth, then newSession can be deprecated or removed
+            final AuthContext authContext = new AuthContext.SuperUser();
 
+            final SessionState session = service.newSession(authContext);
             responseObserver.onNext(HandshakeResponse.newBuilder()
                     .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
                     .setSessionToken(session.getExpiration().getBearerTokenAsByteString())

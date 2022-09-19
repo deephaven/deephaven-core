@@ -97,6 +97,8 @@ class SessionServiceServicer(object):
         """
         Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
         token that should replace the existing token for subsequent requests.
+
+        Deprecated: Please use Flight's Handshake with an empty payload.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

@@ -46,8 +46,10 @@ public class AuthContextModule {
                     final AuthenticationRequestHandler authHandler = (AuthenticationRequestHandler) instance;
                     AuthenticationRequestHandler existing = authHandlerMap.put(authHandler.getAuthType(), authHandler);
                     if (existing != null) {
-                        log.error().append("Multiple handlers registered for authentication type ").append(existing.getAuthType()).end();
-                        throw new UncheckedDeephavenException("Multiple authentication handlers registered for type " + existing.getAuthType());
+                        log.error().append("Multiple handlers registered for authentication type ")
+                                .append(existing.getAuthType()).end();
+                        throw new UncheckedDeephavenException(
+                                "Multiple authentication handlers registered for type " + existing.getAuthType());
                     }
                 } else {
                     log.error().append("Provided auth handler does not implement an auth interface: ")
