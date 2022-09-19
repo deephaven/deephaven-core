@@ -55,8 +55,6 @@ _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDee
 def _j_py_script_session() -> _JPythonScriptSession:
     j_execution_context = _JExecutionContext.getContext()
     j_query_scope = j_execution_context.getQueryScope()
-    if not j_query_scope:
-        raise DHError("ExecutionContext does not have QueryScope")
     j_script_session_query_scope = strict_cast(j_query_scope, _JScriptSessionQueryScope)
     return strict_cast(j_script_session_query_scope.scriptSession(), _JPythonScriptSession)
 

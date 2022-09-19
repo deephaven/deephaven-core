@@ -34,14 +34,14 @@ class PartitionedTransformer:
 
 class PartitionedTableTestCase(BaseTestCase):
     def setUp(self):
-        BaseTestCase.setUp(self)
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c", "e"])
 
     def tearDown(self):
         self.partitioned_table = None
         self.test_table = None
-        BaseTestCase.tearDown(self)
+        super().tearDown()
 
     def test_table(self):
         self.assertIsNotNone(self.partitioned_table.table)

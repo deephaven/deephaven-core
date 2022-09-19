@@ -8,6 +8,7 @@ import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class ExecutionContext {
@@ -95,9 +96,9 @@ public class ExecutionContext {
             final QueryScope queryScope,
             final QueryCompiler queryCompiler) {
         this.isSystemic = isSystemic;
-        this.queryLibrary = queryLibrary;
-        this.queryScope = queryScope;
-        this.queryCompiler = queryCompiler;
+        this.queryLibrary = Objects.requireNonNull(queryLibrary);
+        this.queryScope = Objects.requireNonNull(queryScope);
+        this.queryCompiler = Objects.requireNonNull(queryCompiler);
     }
 
     /**

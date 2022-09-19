@@ -26,7 +26,7 @@ class CustomClass:
 
 class PandasTestCase(BaseTestCase):
     def setUp(self):
-        BaseTestCase.setUp(self)
+        super().setUp()
         j_array_list1 = j_array_list([1, -1])
         j_array_list2 = j_array_list([2, -2])
         input_cols = [
@@ -50,7 +50,7 @@ class PandasTestCase(BaseTestCase):
 
     def tearDown(self) -> None:
         self.test_table = None
-        BaseTestCase.tearDown(self)
+        super().tearDown()
 
     def test_to_pandas(self):
         df = to_pandas(self.test_table)

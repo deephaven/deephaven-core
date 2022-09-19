@@ -18,12 +18,12 @@ from tests.testbase import BaseTestCase, make_user_exec_ctx
 
 class TableTestCase(BaseTestCase):
     def setUp(self):
-        BaseTestCase.setUp(self)
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
-        BaseTestCase.tearDown(self)
+        super().tearDown()
 
     def test_repr(self):
         regex = r"deephaven\.table\.Table\(io\.deephaven\.engine\.table\.Table\(objectRef=0x.+\{.+\}\)\)"

@@ -13,12 +13,12 @@ from tests.testbase import BaseTestCase
 
 class FontTestCase(BaseTestCase):
     def setUp(self):
-        BaseTestCase.setUp(self)
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
-        BaseTestCase.tearDown(self)
+        super().tearDown()
 
     def test_font_family_names(self):
         self.assertIn("Serif", font_family_names())

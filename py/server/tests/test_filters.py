@@ -11,12 +11,12 @@ from tests.testbase import BaseTestCase
 
 class FilterTestCase(BaseTestCase):
     def setUp(self):
-        BaseTestCase.setUp(self)
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
-        BaseTestCase.tearDown(self)
+        super().tearDown()
 
     def test_regex_filter(self):
         new_test_table = self.test_table.update("X = String.valueOf(d)")

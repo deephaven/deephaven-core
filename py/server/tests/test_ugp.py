@@ -21,12 +21,12 @@ def partitioned_transform_func(t: Table, ot: Table) -> Table:
 
 class UgpTestCase(BaseTestCase):
     def setUp(self) -> None:
-        BaseTestCase.setUp(self)
+        super().setUp()
         ugp.auto_locking = False
 
     def tearDown(self):
         ugp.auto_locking = False
-        BaseTestCase.tearDown(self)
+        super().tearDown()
 
     def test_ugp_context_manager(self):
         with self.assertRaises(DHError) as cm:

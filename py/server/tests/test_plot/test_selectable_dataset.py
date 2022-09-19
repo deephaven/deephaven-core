@@ -11,12 +11,12 @@ from tests.testbase import BaseTestCase
 
 class SelectableDatasetTestCase(BaseTestCase):
     def setUp(self):
-        BaseTestCase.setUp(self)
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
-        BaseTestCase.tearDown(self)
+        super().tearDown()
 
     def test_one_click(self):
         sds = one_click(self.test_table, by=['a', 'b'])

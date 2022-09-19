@@ -12,7 +12,7 @@ from tests.testbase import BaseTestCase
 
 class CalendarTestCase(BaseTestCase):
     def setUp(self) -> None:
-        BaseTestCase.setUp(self)
+        super().setUp()
         self.test_calendar = BusinessCalendar("USNYSE")
         self.b_day1 = "2022-01-03"
         self.b_day = "2022-03-08"
@@ -24,7 +24,7 @@ class CalendarTestCase(BaseTestCase):
         self.last_b_day_week = "2022-03-11"
 
     def tearDown(self) -> None:
-        BaseTestCase.tearDown(self)
+        super().tearDown()
 
     def test_calendar(self):
         with self.subTest(msg="calendarNames() test"):
