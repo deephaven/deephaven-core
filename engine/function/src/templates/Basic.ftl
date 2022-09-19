@@ -684,6 +684,68 @@ public class Basic {
         return NULL_LONG;
     }
 
+    /**
+     * Returns elements either from trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return trueCase value if condition is true, falseCase value if condition is false, and null if condition is null.
+     */
+    public static <T> T ifelseObj(Boolean condition, T trueCase, T falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        return condition ? trueCase : falseCase;
+    }
+
+    /**
+     * Returns elements either from trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return trueCase value if condition is true, falseCase value if condition is false, and null if condition is null.
+     *         if any of the inputs is null, null is returned.
+     */
+    public static <T> T[] ifelseObj(BooleanVector condition, ObjectVector<T> trueCase, ObjectVector<T> falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+        final int n_t = trueCase.intSize("trueCase");
+        final int n_f = falseCase.intSize("falseCase");
+
+        if (n_c != n_t && n_c != n_f) {
+            throw new IllegalArgumentException("Inconsistent input sizes: condition=" + n_c + " trueCase=" + n_t + " falseCase=" + n_f);
+        }
+
+        @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(trueCase.getComponentType(), n_c);
+
+        for(int i=0; i<n_c; i++) {
+            result[i] = condition.get(i) == null ? null : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements either from trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.  null is treated as an array of null values.
+     * @param falseCase value returned when condition is false.  null is treated as an array of null values.
+     * @return trueCase value if condition is true, falseCase value if condition is false, and null if condition is null.
+     */
+    public static <T> T[] ifelseObj(Boolean[] condition, T[] trueCase, T[] falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        return ifelseObj(new BooleanVectorDirect(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
+    }
 
     <#list primitiveTypes as pt>
     <#if !pt.valueType.isBoolean >
@@ -1400,6 +1462,69 @@ public class Basic {
         }
 
         return NULL_LONG;
+    }
+
+    /**
+     * Returns elements either from trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return trueCase value if condition is true, falseCase value if condition is false, and null if condition is null.
+     */
+    public static ${pt.primitive} ifelse(Boolean condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+        if (condition == null) {
+            return ${pt.null};
+        }
+
+        return condition ? trueCase : falseCase;
+    }
+
+    /**
+     * Returns elements either from trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return trueCase value if condition is true, falseCase value if condition is false, and null if condition is null.
+     *         if any of the inputs is null, null is returned.
+     */
+    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.dbArray} trueCase, ${pt.dbArray} falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+        final int n_t = trueCase.intSize("trueCase");
+        final int n_f = falseCase.intSize("falseCase");
+
+        if (n_c != n_t && n_c != n_f) {
+            throw new IllegalArgumentException("Inconsistent input sizes: condition=" + n_c + " trueCase=" + n_t + " falseCase=" + n_f);
+        }
+
+        @SuppressWarnings("unchecked") final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
+
+        for(int i=0; i<n_c; i++) {
+            result[i] = condition.get(i) == null ? ${pt.null} : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements either from trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.  null is treated as an array of null values.
+     * @param falseCase value returned when condition is false.  null is treated as an array of null values.
+     * @return trueCase value if condition is true, falseCase value if condition is false, and null if condition is null.
+     */
+    public static ${pt.primitive}[] ifelse(Boolean[] condition, ${pt.primitive}[] trueCase, ${pt.primitive}[] falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        return ifelse(new BooleanVectorDirect(condition), new ${pt.dbArrayDirect}(trueCase), new ${pt.dbArrayDirect}(falseCase));
     }
 
     public static ${pt.primitive}[] forwardFill(${pt.primitive}... values){
