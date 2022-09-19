@@ -8,7 +8,6 @@ instruments for working with Deephaven refreshing and static data. """
 from __future__ import annotations
 
 import contextlib
-import functools
 import inspect
 from enum import Enum, auto
 from typing import Union, Sequence, List, Any, Optional, Callable
@@ -53,7 +52,6 @@ _JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
 
 
-@functools.lru_cache(maxsize=None)
 def _j_py_script_session() -> _JPythonScriptSession:
     _j_script_session = jpy.cast(
         _JExecutionContext.getContext().getQueryScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
