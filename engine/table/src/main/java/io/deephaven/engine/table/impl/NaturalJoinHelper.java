@@ -258,7 +258,7 @@ class NaturalJoinHelper {
                     final StaticHashedNaturalJoinStateManager jsm = USE_TYPED_STATE_MANAGER
                             ? TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
                                     bucketingContext.leftSources, bucketingContext.originalLeftSources,
-                                    control.tableSizeForRightBuild(leftTable),
+                                    control.tableSizeForRightBuild(rightTable),
                                     control.getMaximumLoadFactor(), control.getTargetLoadFactor())
                             : new StaticChunkedNaturalJoinStateManager(bucketingContext.leftSources,
                                     control.tableSizeForRightBuild(rightTable), bucketingContext.originalLeftSources);
