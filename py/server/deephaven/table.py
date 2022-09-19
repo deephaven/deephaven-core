@@ -8,6 +8,7 @@ instruments for working with Deephaven refreshing and static data. """
 from __future__ import annotations
 
 import contextlib
+import functools
 import inspect
 from enum import Enum, auto
 from typing import Union, Sequence, List, Any, Optional, Callable
@@ -47,12 +48,16 @@ _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-_JQueryScope = jpy.get_type("io.deephaven.engine.context.QueryScope")
 _JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
     "io.deephaven.engine.util.AbstractScriptSession$UnsynchronizedScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
-_j_script_session = jpy.cast(_JExecutionContext.getContext().getQueryScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
-_j_py_script_session = jpy.cast(_j_script_session, _JPythonScriptSession)
+
+
+@functools.lru_cache(maxsize=None)
+def _j_py_script_session() -> _JPythonScriptSession:
+    _j_script_session = jpy.cast(
+        _JExecutionContext.getContext().getQueryScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
+    return jpy.cast(_j_script_session, _JPythonScriptSession)
 
 
 @contextlib.contextmanager
@@ -72,11 +77,12 @@ def _query_scope_ctx():
     if len(outer_frames) > i + 2 or function != "<module>":
         scope_dict = caller_frame.f_globals.copy()
         scope_dict.update(caller_frame.f_locals)
+        j_py_script_session = _j_py_script_session()
         try:
-            _j_py_script_session.pushScope(scope_dict)
+            j_py_script_session.pushScope(scope_dict)
             yield
         finally:
-            _j_py_script_session.popScope()
+            j_py_script_session.popScope()
     else:
         # in the __main__ module, use the default main global scope
         yield
