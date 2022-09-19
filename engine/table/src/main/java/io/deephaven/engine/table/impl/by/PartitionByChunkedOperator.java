@@ -476,7 +476,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             if (removedRowSetBuilder == null) {
                 preShiftKeys = tableRowSet.copy();
             } else {
-                // dummy builder to prevent allow a subsequent call to build()`
+                // dummy builder to allow a subsequent call to build()`
                 class PrecomputedRowSetBuilder implements RowSetBuilderRandom {
                     WritableRowSet rowSet;
 
