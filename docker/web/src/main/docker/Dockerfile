@@ -4,11 +4,12 @@ FROM deephaven/nginx-noroot-base:local-build
 USER 0
 
 # We want to install sudo, and start the sudo service (update policy-rc.d to exit 0, instead of 101)
-RUN ls -la /usr/sbin/policy-rc.d ; \
-    printf '#!/bin/sh\nexit 0' > /usr/sbin/policy-rc.d && \
-    apt update -y && \
-    apt install sudo -y && \
-    rm -rf /var/lib/apt/lists/* && \
+RUN set -eux ; \
+    ls -la /usr/sbin/policy-rc.d ; \
+    printf '#!/bin/sh\nexit 0' > /usr/sbin/policy-rc.d ; \
+    apt update -y ; \
+    apt install sudo -y ; \
+    rm -rf /var/lib/apt/lists/* ; \
     printf '#!/bin/sh\nexit 101' > /usr/sbin/policy-rc.d
 
 COPY licenses/ /
