@@ -724,13 +724,13 @@ public class Basic {
             throw new IllegalArgumentException("Inconsistent input sizes: condition=" + n_c + " trueCase=" + n_t + " falseCase=" + n_f);
         }
 
-        if(!trueCase.getComponentType().equals(falseCase.getComponentType())) {
-            throw new IllegalArgumentException("Input vectors are of different types. trueCase=" + trueCase.getComponentType() + " falseCase=" + falseCase.getComponentType());
+        if (!trueCase.getComponentType().equals(falseCase.getComponentType())) {
+            throw new IllegalArgumentException("Input vectors have different element types. trueCase=" + trueCase.getComponentType() + " falseCase=" + falseCase.getComponentType());
         }
 
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(trueCase.getComponentType(), n_c);
 
-        for(int i=0; i < n_c; i++) {
+        for (int i=0; i < n_c; i++) {
             result[i] = condition.get(i) == null ? null : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
         }
 
@@ -1515,7 +1515,7 @@ public class Basic {
 
         final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
 
-        for(int i=0; i < n_c; i++) {
+        for (int i=0; i < n_c; i++) {
             result[i] = condition.get(i) == null ? ${pt.null} : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
         }
 
