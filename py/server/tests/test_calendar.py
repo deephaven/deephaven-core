@@ -23,6 +23,9 @@ class CalendarTestCase(BaseTestCase):
         self.last_b_day_month = "2022-03-31"
         self.last_b_day_week = "2022-03-11"
 
+    def tearDown(self) -> None:
+        BaseTestCase.tearDown(self)
+
     def test_calendar(self):
         with self.subTest(msg="calendarNames() test"):
             cal_names = calendar_names()
