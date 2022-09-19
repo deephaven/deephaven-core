@@ -29,6 +29,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ConstituentDependency;
+import io.deephaven.engine.table.impl.PrecomputedRowSetBuilderRandom;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -476,39 +477,11 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             if (removedRowSetBuilder == null) {
                 preShiftKeys = tableRowSet.copy();
             } else {
-                // dummy builder to allow a subsequent call to build()`
-                class PrecomputedRowSetBuilder implements RowSetBuilderRandom {
-                    WritableRowSet rowSet;
-
-                    public PrecomputedRowSetBuilder(final WritableRowSet rowSet) {
-                        this.rowSet = rowSet;
-                    }
-
-                    @Override
-                    public WritableRowSet build() {
-                        // make sure to release our reference to the rowset after `build()` is called
-                        WritableRowSet tmp = rowSet;
-                        rowSet = null;
-                        return tmp;
-                    }
-
-                    @Override
-                    public void addKey(long rowKey) {
-                        throw (new UnsupportedOperationException("PrecomputedRowSetBuilder cannot be modified)"));
-                    }
-
-                    @Override
-                    public void addRange(long firstRowKey, long lastRowKey) {
-                        throw (new UnsupportedOperationException("PrecomputedRowSetBuilder cannot be modified"));
-                    }
-                }
-
                 final WritableRowSet rs = removedRowSetBuilder.build();
                 preShiftKeys = tableRowSet.minus(rs);
 
-                // we want to keep the builder in `removedRowSetBuilders` ready for a call to `build()` so replace it
-                // with our new builder type
-                RowSetBuilderRandom newBuilder = new PrecomputedRowSetBuilder(rs);
+                // no future modifications are expected, replace the exhausted builder with a dummy for compatibility
+                RowSetBuilderRandom newBuilder = PrecomputedRowSetBuilderRandom.createFromRowSet(rs);
                 removedBuilders.set(destination, newBuilder);
             }
             shiftDataBuilders.set(destination, builder = new RowSetShiftData.SmartCoalescingBuilder(preShiftKeys));
