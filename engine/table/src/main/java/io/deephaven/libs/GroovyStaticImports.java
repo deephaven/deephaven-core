@@ -16,6 +16,7 @@ import io.deephaven.function.Numeric;
 import io.deephaven.function.Parse;
 import io.deephaven.function.Random;
 import io.deephaven.function.Sort;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.BooleanVector;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.CharVector;
@@ -1835,6 +1836,24 @@ public class GroovyStaticImports {
     public static <T> T lastObj( T[] values ) {return Basic.lastObj( values );}
     /** @see io.deephaven.function.Basic#lastObj(io.deephaven.vector.ObjectVector) */
     public static <T> T lastObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.lastObj( values );}
+    /** @see io.deephaven.function.Basic#len(T[]) */
+    public static <T> long len( T[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(byte[]) */
+    public static  long len( byte[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(char[]) */
+    public static  long len( char[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(double[]) */
+    public static  long len( double[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(float[]) */
+    public static  long len( float[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(int[]) */
+    public static  long len( int[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(long[]) */
+    public static  long len( long[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(short[]) */
+    public static  long len( short[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(io.deephaven.util.datastructures.LongSizedDataStructure) */
+    public static  long len( io.deephaven.util.datastructures.LongSizedDataStructure values ) {return Basic.len( values );}
     /** @see io.deephaven.function.Numeric#log(byte) */
     public static  double log( byte value ) {return Numeric.log( value );}
     /** @see io.deephaven.function.Numeric#log(double) */
