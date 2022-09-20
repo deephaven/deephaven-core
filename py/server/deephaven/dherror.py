@@ -23,6 +23,11 @@ class DHError(Exception):
     """
 
     def __init__(self, cause=None, message=""):
+        if isinstance(cause, str) and message == "":
+            # Saves a lot of debugging headache when library code incorrectly creates something like:
+            # raise DHError("My error message here")
+            message = cause
+            cause = None
         self._message = message
         self._traceback = traceback.format_exc()
         self._cause = cause

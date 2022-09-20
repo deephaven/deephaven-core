@@ -12,6 +12,7 @@ from tests.testbase import BaseTestCase
 
 class UpdateByTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.static_table = read_csv("tests/data/test_table.csv").update("Timestamp=currentTime()")
         with ugp.exclusive_lock():
             self.ticking_table = time_table("00:00:00.001").update(
@@ -20,6 +21,7 @@ class UpdateByTestCase(BaseTestCase):
     def tearDown(self) -> None:
         self.static_table = None
         self.ticking_table = None
+        super().tearDown()
 
     def test_ema(self):
         op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
