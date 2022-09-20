@@ -295,8 +295,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 try {
                     session = service.getSessionForAuthToken(token);
                 } catch (AuthenticationException e) {
-                    log.error().append("Failed to authenticate: ").append(e).endl();
-                    throw Status.UNAUTHENTICATED.asRuntimeException();
+                    call.close(Status.UNAUTHENTICATED, new Metadata());
+                    return new ServerCall.Listener<>() {};
                 }
             }
             final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session);
