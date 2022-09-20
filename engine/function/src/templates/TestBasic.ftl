@@ -79,14 +79,14 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testObjLen() {
-        assertEquals(0, len((ObjectVector)null));
+        assertEquals(NULL_LONG, len((ObjectVector)null));
         assertEquals(3, len(new ObjectVectorDirect<Integer>(40, 50, 60)));
         assertEquals(0, len(new ObjectVectorDirect<Integer>()));
         assertEquals(1, len(new ObjectVectorDirect<Integer>(new Integer[]{null})));
         assertEquals(3, len(new ObjectVectorDirect<Integer>(5, null, 15)));
         assertEquals(4, len(new ObjectVectorDirect<Integer>(5, null, 15, NULL_INT)));
 
-        assertEquals(0, len((Integer[])null));
+        assertEquals(NULL_LONG, len((Integer[])null));
         assertEquals(3, len(new Integer[]{40, 50, 60}));
         assertEquals(0, len(new Integer[]{}));
         assertEquals(1, len(new Integer[]{null}));
@@ -340,13 +340,13 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(0, len(new Boolean[]{}));
         assertEquals(1, len(new Boolean[]{QueryConstants.NULL_BOOLEAN}));
         assertEquals(3, len(new Boolean[]{true, QueryConstants.NULL_BOOLEAN, true}));
-        assertEquals(0, len((Boolean[])null));
+        assertEquals(NULL_LONG, len((Boolean[])null));
 
         assertEquals(3, len(new ObjectVectorDirect<>(new Boolean[]{true, false, true})));
         assertEquals(0, len(new ObjectVectorDirect<>()));
         assertEquals(1, len(new ObjectVectorDirect<>(QueryConstants.NULL_BOOLEAN)));
         assertEquals(3, len(new ObjectVectorDirect<>(new Boolean[]{true, QueryConstants.NULL_BOOLEAN, true})));
-        assertEquals(0, len((ObjectVector)null));
+        assertEquals(NULL_LONG, len((ObjectVector)null));
     }
 
     public void testBooleanCount(){
@@ -541,13 +541,13 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Len() {
-        assertEquals(0, len((${pt.primitive}[])null));
+        assertEquals(NULL_LONG, len((${pt.primitive}[])null));
         assertEquals(3, len(new ${pt.primitive}[]{40,50,60}));
         assertEquals(0, len(new ${pt.primitive}[]{}));
         assertEquals(1, len(new ${pt.primitive}[]{${pt.null}}));
         assertEquals(3, len(new ${pt.primitive}[]{5, ${pt.null},15}));
 
-        assertEquals(0, len((${pt.dbArray})null));
+        assertEquals(NULL_LONG, len((${pt.dbArray})null));
         assertEquals(3, len(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
         assertEquals(0, len(new ${pt.dbArrayDirect}()));
         assertEquals(1, len(new ${pt.dbArrayDirect}(${pt.null})));

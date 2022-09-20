@@ -136,11 +136,11 @@ public class Basic {
      * Returns the length of the input.
      *
      * @param values values.
-     * @return length of the input or zero for null inputs.
+     * @return length of the input or the Deephaven null constant for null inputs.
      */
     static public <T> long len(T[] values) {
         if (values == null) {
-            return 0;
+            return NULL_LONG;
         }
 
         return values.length;
@@ -150,12 +150,12 @@ public class Basic {
      * Returns the length of the input.
      *
      * @param values values.
-     * @return length of the input or zero for null inputs.
+     * @return length of the input or the Deephaven null constant for null inputs.
      */
     @SuppressWarnings("rawtypes")
     static public long len(LongSizedDataStructure values) {
-        if(values == null){
-            return 0;
+        if (values == null){
+            return NULL_LONG;
         }
 
         return values.size();
@@ -883,11 +883,11 @@ public class Basic {
      * Returns the length of the input.
      *
      * @param values values.
-     * @return length of the input or zero for null inputs.
+     * @return length of the input or the Deephaven null constant for null inputs.
      */
     static public long len(${pt.primitive}[] values) {
         if (values == null) {
-            return 0;
+            return NULL_LONG;
         }
 
         return values.length;
