@@ -312,7 +312,7 @@ public final class GroupByChunkedOperator
             initialDestinations.forAllRowKeys(destination -> {
                 // build the rowset and store it
                 final WritableRowSet rowSet = addedBuilders.getUnsafe(destination).build();
-                rowSets.set(destination, rowSet);
+                rowSets.set(destination, live ? rowSet.toTracking() : rowSet);
 
                 // clear the builder slots
                 addedBuilders.set(destination, null);
