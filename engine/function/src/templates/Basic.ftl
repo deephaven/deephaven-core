@@ -5,6 +5,7 @@
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.array.*;
 import gnu.trove.set.*;
@@ -129,6 +130,35 @@ public class Basic {
         }
 
         return result;
+    }
+
+    /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or zero for null inputs.
+     */
+    static public <T> long len(T[] values) {
+        if (values == null) {
+            return 0;
+        }
+
+        return values.length;
+    }
+
+    /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or zero for null inputs.
+     */
+    @SuppressWarnings("rawtypes")
+    static public long len(LongSizedDataStructure values) {
+        if(values == null){
+            return 0;
+        }
+
+        return values.size();
     }
 
     /**
@@ -847,6 +877,20 @@ public class Basic {
         }
 
         return result;
+    }
+
+    /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or zero for null inputs.
+     */
+    static public long len(${pt.primitive}[] values) {
+        if (values == null) {
+            return 0;
+        }
+
+        return values.length;
     }
 
     /**

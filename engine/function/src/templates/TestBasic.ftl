@@ -78,6 +78,22 @@ public class TestBasic extends BaseArrayTestCase {
         assertFalse(inRange(Integer.valueOf(4), Integer.valueOf(1), Integer.valueOf(3)));
     }
 
+    public void testObjLen() {
+        assertEquals(0, len((ObjectVector)null));
+        assertEquals(3, len(new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(0, len(new ObjectVectorDirect<Integer>()));
+        assertEquals(1, len(new ObjectVectorDirect<Integer>(new Integer[]{null})));
+        assertEquals(3, len(new ObjectVectorDirect<Integer>(5, null, 15)));
+        assertEquals(4, len(new ObjectVectorDirect<Integer>(5, null, 15, NULL_INT)));
+
+        assertEquals(0, len((Integer[])null));
+        assertEquals(3, len(new Integer[]{40, 50, 60}));
+        assertEquals(0, len(new Integer[]{}));
+        assertEquals(1, len(new Integer[]{null}));
+        assertEquals(3, len(new Integer[]{5, null, 15}));
+        assertEquals(4, len(new Integer[]{5, null, 15, NULL_INT}));
+    }
+
     public void testObjCount() {
         assertEquals(NULL_LONG, countObj((ObjectVector)null));
         assertEquals(3, countObj(new ObjectVectorDirect<Integer>(40, 50, 60)));
@@ -319,6 +335,20 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new Boolean[]{true, false, false}, replaceIfNull(new Boolean[]{Boolean.TRUE, null, Boolean.FALSE}, false));
     }
 
+    public void testBooleanLen() {
+        assertEquals(3, len(new Boolean[]{true, false, true}));
+        assertEquals(0, len(new Boolean[]{}));
+        assertEquals(1, len(new Boolean[]{QueryConstants.NULL_BOOLEAN}));
+        assertEquals(3, len(new Boolean[]{true, QueryConstants.NULL_BOOLEAN, true}));
+        assertEquals(0, len((Boolean[])null));
+
+        assertEquals(3, len(new ObjectVectorDirect<>(new Boolean[]{true, false, true})));
+        assertEquals(0, len(new ObjectVectorDirect<>()));
+        assertEquals(1, len(new ObjectVectorDirect<>(QueryConstants.NULL_BOOLEAN)));
+        assertEquals(3, len(new ObjectVectorDirect<>(new Boolean[]{true, QueryConstants.NULL_BOOLEAN, true})));
+        assertEquals(0, len((ObjectVector)null));
+    }
+
     public void testBooleanCount(){
         assertEquals(3,countObj(new Boolean[]{true, false, true}));
         assertEquals(0,countObj(new Boolean[]{}));
@@ -508,6 +538,20 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNull(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.null}, (${pt.primitive}) 11}), (${pt.primitive}) 7));
 
         assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNull(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.null}, (${pt.primitive}) 11}, (${pt.primitive}) 7));
+    }
+
+    public void test${pt.boxed}Len() {
+        assertEquals(0, len((${pt.primitive}[])null));
+        assertEquals(3, len(new ${pt.primitive}[]{40,50,60}));
+        assertEquals(0, len(new ${pt.primitive}[]{}));
+        assertEquals(1, len(new ${pt.primitive}[]{${pt.null}}));
+        assertEquals(3, len(new ${pt.primitive}[]{5, ${pt.null},15}));
+
+        assertEquals(0, len((${pt.dbArray})null));
+        assertEquals(3, len(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
+        assertEquals(0, len(new ${pt.dbArrayDirect}()));
+        assertEquals(1, len(new ${pt.dbArrayDirect}(${pt.null})));
+        assertEquals(3, len(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, ${pt.null},15})));
     }
 
     public void test${pt.boxed}Count(){
