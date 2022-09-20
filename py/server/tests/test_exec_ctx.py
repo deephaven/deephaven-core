@@ -7,7 +7,7 @@ import unittest
 
 from deephaven import DHError
 from deephaven import empty_table
-from deephaven.execution_context import get_exec_ctx, set_exec_ctx
+from deephaven.execution_context import get_exec_ctx, set_exec_ctx, make_user_exec_ctx
 
 
 class ExecCtxTestCase(unittest.TestCase):
@@ -61,6 +61,31 @@ class ExecCtxTestCase(unittest.TestCase):
         self.assertTrue(thread_results)
         for i, rlt in thread_results.items():
             self.assertIn(str(i * i), rlt)
+
+    def test_freeze_vars(self):
+        to_keep = "Foo"
+        to_drop = 2
+
+        def inner_func():
+            nonlocal to_keep
+            nonlocal to_drop
+            user_exec_ctx = make_user_exec_ctx(freeze_vars=['to_keep'])
+            with self.assertRaises(DHError):
+                with user_exec_ctx:
+                    t = empty_table(1).update("X = to_drop")
+
+            with user_exec_ctx:
+                t = empty_table(1).update("X = to_keep")
+                self.assertIn("Foo", t.to_string())
+
+                to_keep = "Bar"
+                t1 = empty_table(1).update("X = to_keep")
+                self.assertNotIn("Bar", t1.to_string())
+
+            return 0
+
+        with make_user_exec_ctx():
+            t = empty_table(1).update("X = inner_func()")
 
 
 if __name__ == '__main__':

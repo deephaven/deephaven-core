@@ -238,7 +238,6 @@ class UgpTestCase(BaseTestCase):
             with make_user_exec_ctx():
                 pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
 
-
     def test_auto_locking_table_factory(self):
         with ugp.shared_lock():
             test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
