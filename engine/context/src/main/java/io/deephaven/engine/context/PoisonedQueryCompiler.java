@@ -20,7 +20,7 @@ public class PoisonedQueryCompiler extends QueryCompiler {
 
     private <T> T fail() {
         logger.error().append(
-                "No ExecutionContext provided; cannot use QueryCompiler; please refer to documentation on ExecutionContext for how to use it.")
+                "No ExecutionContext provided; cannot use QueryCompiler; If this is being run in a thread, did you specify an ExecutionContext for the thread?  Please refer to the documentation on ExecutionContext for details.")
                 .endl();
         throw new NoExecutionContextRegisteredException();
     }
