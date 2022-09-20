@@ -626,22 +626,22 @@ class TableTestCase(BaseTestCase):
         inner_func("param str")
 
     def test_nested_scopes(self):
-        with make_user_exec_ctx():
-            def inner_func(p) -> str:
-                t = empty_table(1).update("X = p * 10")
-                return t.to_string().split()[2]
+        def inner_func(p) -> str:
+            t = empty_table(1).update("X = p * 10")
+            return t.to_string().split()[2]
 
+        with make_user_exec_ctx():
             t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+
         self.assertIn("100", t.to_string())
 
     def test_nested_scope_ticking(self):
-        with make_user_exec_ctx():
-            def inner_func(p) -> str:
-                t = empty_table(1).update("X = p * 10")
-                return t.to_string().split()[2]
+        def inner_func(p) -> str:
+            t = empty_table(1).update("X = p * 10")
+            return t.to_string().split()[2]
 
-            with ugp.shared_lock():
-                t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
+        with make_user_exec_ctx(), ugp.shared_lock():
+            t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
 
         self.wait_ticking_table_update(t, row_count=5, timeout=10)
         self.assertIn("100", t.to_string())
