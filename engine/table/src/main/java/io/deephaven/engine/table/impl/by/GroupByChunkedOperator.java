@@ -4,21 +4,19 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -41,6 +39,7 @@ public final class GroupByChunkedOperator
     private final boolean registeredWithHelper;
     private final boolean live;
     private final ObjectArraySource<WritableRowSet> rowSets;
+    private ObjectArraySource<RowSetBuilderSequential> addedBuilders;
     private final String[] inputColumnNames;
     private final Map<String, AggregateColumnSource<?, ?>> resultColumns;
     private final ModifiedColumnSet resultInputsModifiedColumnSet;
@@ -48,6 +47,7 @@ public final class GroupByChunkedOperator
     private boolean stepValuesModified;
     private boolean someKeyHasAddsOrRemoves;
     private boolean someKeyHasModifies;
+    private boolean initialized;
 
     GroupByChunkedOperator(@NotNull final QueryTable inputTable, final boolean registeredWithHelper,
             @NotNull final MatchPair... resultColumnPairs) {
@@ -55,6 +55,7 @@ public final class GroupByChunkedOperator
         this.registeredWithHelper = registeredWithHelper;
         live = inputTable.isRefreshing();
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
+        addedBuilders = new ObjectArraySource<>(RowSetBuilderSequential.class);
         resultColumns = Arrays.stream(resultColumnPairs).collect(Collectors.toMap(MatchPair::leftColumn,
                 matchPair -> AggregateColumnSource
                         .make(inputTable.getColumnSource(matchPair.rightColumn()), rowSets),
@@ -65,6 +66,7 @@ public final class GroupByChunkedOperator
         } else {
             resultInputsModifiedColumnSet = null;
         }
+        initialized = false;
     }
 
     @Override
@@ -214,20 +216,30 @@ public final class GroupByChunkedOperator
 
     private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
-        final WritableRowSet rowSet = rowSetForSlot(destination);
-        final boolean wasEmpty = rowSet.isEmpty();
-        rowSet.insert(indices, start, length);
-        if (wasEmpty && rowSet.isNonempty()) {
-            onReincarnated(destination);
+        if (!initialized) {
+            final RowSetBuilderSequential builder = builderForSlot(destination);
+            builder.appendOrderedRowKeysChunk(indices, start, length);
+        } else {
+            final WritableRowSet rowSet = rowSetForSlot(destination);
+            final boolean wasEmpty = rowSet.isEmpty();
+            rowSet.insert(indices, start, length);
+            if (wasEmpty && rowSet.isNonempty()) {
+                onReincarnated(destination);
+            }
         }
     }
 
     private void addRowsToSlot(@NotNull final RowSet addRowSet, final long destination) {
-        final WritableRowSet rowSet = rowSetForSlot(destination);
-        final boolean wasEmpty = rowSet.isEmpty();
-        rowSet.insert(addRowSet);
-        if (wasEmpty && rowSet.isNonempty()) {
-            onReincarnated(destination);
+        if (!initialized) {
+            final RowSetBuilderSequential builder = builderForSlot(destination);
+            builder.appendRowSequence(addRowSet);
+        } else {
+            final WritableRowSet rowSet = rowSetForSlot(destination);
+            final boolean wasEmpty = rowSet.isEmpty();
+            rowSet.insert(addRowSet);
+            if (wasEmpty && rowSet.isNonempty()) {
+                onReincarnated(destination);
+            }
         }
     }
 
@@ -258,9 +270,22 @@ public final class GroupByChunkedOperator
         return rowSet;
     }
 
+    private RowSetBuilderSequential builderForSlot(final long destination) {
+        RowSetBuilderSequential builder = addedBuilders.getUnsafe(destination);
+        if (builder == null) {
+            final RowSetBuilderSequential newBuilder = RowSetFactory.builderSequential();
+            addedBuilders.set(destination, builder = newBuilder);
+        }
+        return builder;
+    }
+
+
     @Override
     public void ensureCapacity(final long tableSize) {
         rowSets.ensureCapacity(tableSize);
+        if (!initialized) {
+            addedBuilders.ensureCapacity(tableSize);
+        }
     }
 
     @Override
@@ -276,6 +301,26 @@ public final class GroupByChunkedOperator
         // NB: These are usually (always, as of now) instances of AggregateColumnSource, meaning
         // startTrackingPrevValues() is a no-op.
         resultColumns.values().forEach(ColumnSource::startTrackingPrevValues);
+    }
+
+    @Override
+    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+        Assert.neqTrue(initialized, "initialized");
+        final RowSet initialDestinations = resultTable.getRowSet();
+        if (initialDestinations.isNonempty()) {
+            // turn all the builders into rowsets
+            initialDestinations.forAllRowKeys(destination -> {
+                // build the rowset and store it
+                final WritableRowSet rowSet = addedBuilders.getUnsafe(destination).build();
+                rowSets.set(destination, rowSet);
+
+                // clear the builder slots
+                addedBuilders.set(destination, null);
+            });
+            // free the storage from the builders
+            addedBuilders = null;
+        }
+        initialized = true;
     }
 
     @Override
