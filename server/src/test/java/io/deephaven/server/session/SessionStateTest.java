@@ -1322,6 +1322,23 @@ public class SessionStateTest {
         Assert.eq(sre.getStatus(), "sre.getStatus()", Status.DATA_LOSS, "Status.DATA_LOSS");
     }
 
+    @Test
+    public void testDestroyedExportObjectDependencyFailsNotThrows() {
+        final SessionState.ExportObject<?> failedExport;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            failedExport = SessionState.wrapAsFailedExport(new RuntimeException());
+        }
+        Assert.eqFalse(failedExport.tryIncrementReferenceCount(), "failedExport.tryIncrementReferenceCount()");
+        final MutableBoolean errored = new MutableBoolean();
+        final SessionState.ExportObject<?> result =
+                session.newExport(nextExportId++)
+                        .onErrorHandler(err -> errored.setTrue())
+                        .require(failedExport)
+                        .submit(failedExport::get);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eq(result.getState(), "result.getState()", DEPENDENCY_FAILED);
+    }
+
     private static long getExportId(final ExportNotification notification) {
         return ticketToExportId(notification.getTicket(), "test");
     }
