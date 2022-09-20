@@ -20,7 +20,9 @@ public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
     public interface NettyTestConfig {
         @Provides
         static NettyConfig providesNettyConfig() {
-            return NettyConfig.defaultConfig();
+            return NettyConfig.builder()
+                    .port(0)
+                    .build();
         }
     }
 
