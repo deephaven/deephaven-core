@@ -596,7 +596,7 @@ public class SessionState {
 
             this.parents = parents;
             dependentCount = parents.size();
-            parents.stream().filter(Objects::nonNull).forEach(this::manage);
+            parents.stream().filter(Objects::nonNull).forEach(this::tryManage);
 
             if (log.isDebugEnabled()) {
                 final Exception e = new RuntimeException();
@@ -767,7 +767,7 @@ public class SessionState {
             if (state == ExportNotification.State.EXPORTED || isExportStateTerminal(state)) {
                 children.forEach(child -> child.onResolveOne(this));
                 children = Collections.emptyList();
-                parents.stream().filter(Objects::nonNull).forEach(this::unmanage);
+                parents.stream().filter(Objects::nonNull).forEach(this::tryUnmanage);
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
