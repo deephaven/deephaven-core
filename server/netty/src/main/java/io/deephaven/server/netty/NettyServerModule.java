@@ -18,6 +18,7 @@ import io.grpc.Server;
 import io.grpc.ServerInterceptor;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import nl.altindag.ssl.SSLFactory;
@@ -45,6 +46,8 @@ public interface NettyServerModule {
         } else {
             serverBuilder = NettyServerBuilder.forPort(serverConfig.port());
         }
+        serverBuilder.withOption(ChannelOption.SO_REUSEADDR, true);
+
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
         serverBuilder.intercept(MTlsCertificate.DEFAULT_INTERCEPTOR);
