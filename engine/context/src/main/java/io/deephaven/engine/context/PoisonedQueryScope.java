@@ -17,7 +17,7 @@ public class PoisonedQueryScope extends QueryScope {
 
     private <T> T fail() {
         logger.error().append(
-                "No ExecutionContext provided; cannot use QueryCompiler; If this is being run in a thread, did you specify an ExecutionContext for the thread?  Please refer to the documentation on ExecutionContext for details.")
+                "No ExecutionContext provided, cannot use QueryScope. If this is being run in a thread, did you specify an ExecutionContext for the thread? Please refer to the documentation on ExecutionContext for details.")
                 .endl();
         throw new NoExecutionContextRegisteredException();
     }
