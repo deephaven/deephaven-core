@@ -26,10 +26,12 @@ class CustomClass:
 
 class TableFactoryTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
+        super().tearDown()
 
     def test_empty_table(self):
         t = empty_table(10)

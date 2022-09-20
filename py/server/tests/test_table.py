@@ -13,15 +13,17 @@ from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, la
 from deephaven.html import to_html
 from deephaven.pandas import to_pandas
 from deephaven.table import Table
-from tests.testbase import BaseTestCase
+from tests.testbase import BaseTestCase, make_user_exec_ctx
 
 
 class TableTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
+        super().tearDown()
 
     def test_repr(self):
         regex = r"deephaven\.table\.Table\(io\.deephaven\.engine\.table\.Table\(objectRef=0x.+\{.+\}\)\)"
@@ -624,41 +626,24 @@ class TableTestCase(BaseTestCase):
         inner_func("param str")
 
     def test_nested_scopes(self):
-        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-        context = (_JExecutionContext.newBuilder()
-                   .captureQueryCompiler()
-                   .captureQueryLibrary()
-                   .captureQueryScope()
-                   .build())
-
         def inner_func(p) -> str:
-            openContext = context.open()
             t = empty_table(1).update("X = p * 10")
-            openContext.close()
             return t.to_string().split()[2]
 
-        t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+        with make_user_exec_ctx():
+            t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+
         self.assertIn("100", t.to_string())
 
     def test_nested_scope_ticking(self):
-        import jpy
-        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-        j_context = (_JExecutionContext.newBuilder()
-                     .captureQueryCompiler()
-                     .captureQueryLibrary()
-                     .captureQueryScope()
-                     .build())
-
         def inner_func(p) -> str:
-            open_ctx = j_context.open()
             t = empty_table(1).update("X = p * 10")
-            open_ctx.close()
             return t.to_string().split()[2]
 
-        with ugp.shared_lock():
+        with make_user_exec_ctx(), ugp.shared_lock():
             t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
-        self.wait_ticking_table_update(t, row_count=5, timeout=10)
 
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
         self.assertIn("100", t.to_string())
 
     def test_scope_comprehensions(self):
