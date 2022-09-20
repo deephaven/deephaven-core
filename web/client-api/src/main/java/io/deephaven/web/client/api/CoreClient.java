@@ -53,7 +53,7 @@ public class CoreClient extends QueryConnectable<CoreClient> {
     }
 
     public Promise<Void> login(LoginCredentials credentials) {
-        return Promise.resolve((Void) null);
+        return connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void)null));
     }
 
     public Promise<Void> relogin(String token) {
