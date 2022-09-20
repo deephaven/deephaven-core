@@ -13,7 +13,9 @@ public class PoisonedQueryLibrary extends QueryLibrary {
     private PoisonedQueryLibrary() {}
 
     private <T> T fail() {
-        logger.error().append("No ExecutionContext provided; cannot use QueryLibrary").endl();
+        logger.error().append(
+                "No ExecutionContext provided; cannot use QueryLibrary; please refer to documentation on ExecutionContext for how to use it.")
+                .endl();
         throw new NoExecutionContextRegisteredException();
     }
 

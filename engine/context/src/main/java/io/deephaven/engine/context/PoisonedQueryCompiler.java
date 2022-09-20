@@ -19,7 +19,9 @@ public class PoisonedQueryCompiler extends QueryCompiler {
     private PoisonedQueryCompiler() {}
 
     private <T> T fail() {
-        logger.error().append("No ExecutionContext provided; cannot use QueryCompiler").endl();
+        logger.error().append(
+                "No ExecutionContext provided; cannot use QueryCompiler; please refer to documentation on ExecutionContext for how to use it.")
+                .endl();
         throw new NoExecutionContextRegisteredException();
     }
 

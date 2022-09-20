@@ -5,12 +5,13 @@
 import unittest
 
 from deephaven.agg import partition
+from deephaven.execution_context import make_user_exec_ctx
 from deephaven.table import Table, PartitionedTable
 
 from deephaven.filters import Filter
 
 from deephaven import read_csv, DHError, new_table, ugp, time_table
-from tests.testbase import BaseTestCase, make_user_exec_ctx
+from tests.testbase import BaseTestCase
 
 
 def transform_func(t: Table) -> Table:

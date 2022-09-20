@@ -1,8 +1,6 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
-import jpy
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
@@ -10,10 +8,11 @@ from typing import List, Any
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
+from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
 from deephaven.pandas import to_pandas
 from deephaven.table import Table
-from tests.testbase import BaseTestCase, make_user_exec_ctx
+from tests.testbase import BaseTestCase
 
 
 class TableTestCase(BaseTestCase):
