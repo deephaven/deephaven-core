@@ -262,6 +262,43 @@ public class TestBasic extends BaseArrayTestCase {
         assertTrue(inObj(1000000L, 1000000L, 2000000L, 3000000L));
     }
 
+    public void testObjIfelseScalar() {
+        final Integer i1 = Integer.valueOf(1);
+        final Integer i2 = Integer.valueOf(2);
+        assertEquals(null, ifelseObj(null, i1, i2));
+        assertEquals(i1, ifelseObj(true, i1, i2));
+        assertEquals(i2, ifelseObj(false, i1, i2));
+    }
+
+    public void testObjIfelseVec() {
+        final BooleanVector bv = new BooleanVectorDirect(new Boolean[]{null, true, false});
+        final ObjectVector<Integer> iv1 = new ObjectVectorDirect<Integer>(new Integer[]{1, 2, 3});
+        final ObjectVector<Integer> iv2 = new ObjectVectorDirect<Integer>(new Integer[]{11, 12, 13});
+        assertEquals(new Integer[]{null, 2, 13}, ifelseObj(bv, iv1, iv2));
+        assertEquals(null, ifelseObj((BooleanVector) null, iv1, iv2));
+        assertEquals(null, ifelseObj(bv, null, iv2));
+        assertEquals(null, ifelseObj(bv, iv1, null));
+
+        try {
+            ifelseObj(new BooleanVectorDirect(new Boolean[]{null, true, false, false}), iv1, iv2);
+            fail("Should have raised an IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+        }
+    }
+
+    public void testObjIfelseArray() {
+        assertEquals(new Integer[]{null, 2, 13}, ifelseObj(new Boolean[]{null, true, false}, new Integer[]{1, 2, 3}, new Integer[]{11, 12, 13}));
+        assertEquals(null, ifelseObj((Boolean[]) null, new Integer[]{1, 2, 3}, new Integer[]{11, 12, 13}));
+        assertEquals(null, ifelseObj(new Boolean[]{null, true, false}, null, new Integer[]{11, 12, 13}));
+        assertEquals(null, ifelseObj(new Boolean[]{null, true, false}, new Integer[]{1, 2, 3}, null));
+
+        try {
+            ifelseObj(new Boolean[]{null, true, false, false}, new Integer[]{1, 2, 3}, new Integer[]{11, 12, 13});
+            fail("Should have raised an IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+        }
+    }
+
 
     //////////////////////////// boolean ////////////////////////////
 
@@ -657,6 +694,41 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(4, firstIndexOf((${pt.primitive})60, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0})));
         assertEquals(NULL_LONG, firstIndexOf((${pt.primitive})1, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0})));
         assertEquals(NULL_LONG, firstIndexOf((${pt.primitive})40, (${pt.dbArray}) null));
+    }
+
+    public void test${pt.boxed}IfelseScalar() {
+        assertEquals(${pt.null}, ifelse(null, (${pt.primitive})1, (${pt.primitive})2));
+        assertEquals((${pt.primitive})1, ifelse(true, (${pt.primitive})1, (${pt.primitive})2));
+        assertEquals((${pt.primitive})2, ifelse(false, (${pt.primitive})1, (${pt.primitive})2));
+    }
+
+    public void test${pt.boxed}IfelseVec() {
+        final BooleanVector bv = new BooleanVectorDirect(new Boolean[]{null, true, false});
+        final ${pt.dbArray} iv1 = new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1, 2, 3});
+        final ${pt.dbArray} iv2 = new ${pt.dbArrayDirect}(new ${pt.primitive}[]{11, 12, 13});
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 13}, ifelse(bv, iv1, iv2));
+        assertEquals(null, ifelse((BooleanVector) null, iv1, iv2));
+        assertEquals(null, ifelse(bv, null, iv2));
+        assertEquals(null, ifelse(bv, iv1, null));
+
+        try {
+            ifelse(new BooleanVectorDirect(new Boolean[]{null, true, false, false}), iv1, iv2);
+            fail("Should have raised an IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+        }
+    }
+
+    public void test${pt.boxed}IfelseArray() {
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 13}, ifelse(new Boolean[]{null, true, false}, new ${pt.primitive}[]{1, 2, 3}, new ${pt.primitive}[]{11, 12, 13}));
+        assertEquals(null, ifelse((Boolean[]) null, new ${pt.primitive}[]{1, 2, 3}, new ${pt.primitive}[]{11, 12, 13}));
+        assertEquals(null, ifelse(new Boolean[]{null, true, false}, null, new ${pt.primitive}[]{11, 12, 13}));
+        assertEquals(null, ifelse(new Boolean[]{null, true, false}, new ${pt.primitive}[]{1, 2, 3}, null));
+
+        try {
+            ifelse(new Boolean[]{null, true, false, false}, new ${pt.primitive}[]{1, 2, 3}, new ${pt.primitive}[]{11, 12, 13});
+            fail("Should have raised an IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+        }
     }
 
     </#if>
