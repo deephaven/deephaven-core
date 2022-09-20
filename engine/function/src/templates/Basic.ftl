@@ -154,7 +154,7 @@ public class Basic {
      */
     @SuppressWarnings("rawtypes")
     static public long len(LongSizedDataStructure values) {
-        if (values == null){
+        if (values == null) {
             return NULL_LONG;
         }
 
