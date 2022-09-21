@@ -7,6 +7,7 @@ critical for applications to correctly launch deferred query evaluations, such a
 from __future__ import annotations
 
 from typing import Sequence, Union
+from contextlib import ContextDecorator
 
 import jpy
 
@@ -17,7 +18,7 @@ from deephaven.jcompat import to_sequence
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 
 
-class ExecutionContext(JObjectWrapper):
+class ExecutionContext(JObjectWrapper, ContextDecorator):
     """An ExecutionContext represents a specific combination of query library, query compiler, and query scope under
     which a query is evaluated.
 
