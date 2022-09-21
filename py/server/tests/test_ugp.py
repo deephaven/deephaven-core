@@ -8,7 +8,7 @@ import unittest
 from deephaven import time_table, DHError, merge, merge_sorted
 from deephaven import ugp
 from deephaven.table import Table
-from tests.testbase import BaseTestCase
+from tests.testbase import BaseTestCase, make_user_exec_ctx
 
 
 def transform_func(t: Table) -> Table:
@@ -220,21 +220,23 @@ class UgpTestCase(BaseTestCase):
 
         with self.subTest("Transform"):
             ugp.auto_locking = False
-            with self.assertRaises(DHError) as cm:
+            with make_user_exec_ctx(), self.assertRaises(DHError) as cm:
                 pt1 = pt.transform(transform_func)
             self.assertRegex(str(cm.exception), r"IllegalStateException")
 
             ugp.auto_locking = True
-            pt1 = pt.transform(transform_func)
+            with make_user_exec_ctx():
+                pt1 = pt.transform(transform_func)
 
         with self.subTest("Partitioned Transform"):
             ugp.auto_locking = False
-            with self.assertRaises(DHError) as cm:
+            with make_user_exec_ctx(), self.assertRaises(DHError) as cm:
                 pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
             self.assertRegex(str(cm.exception), r"IllegalStateException")
 
             ugp.auto_locking = True
-            pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
+            with make_user_exec_ctx():
+                pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
 
 
     def test_auto_locking_table_factory(self):
