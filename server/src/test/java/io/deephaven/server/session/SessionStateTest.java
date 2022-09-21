@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
@@ -438,10 +439,12 @@ public class SessionStateTest {
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
 
         final MutableBoolean errored = new MutableBoolean();
-        expectException(LivenessStateException.class, () -> session.newExport(nextExportId++)
+        final SessionState.ExportObject<?> e2 = session.newExport(nextExportId++)
                 .require(e1)
                 .onErrorHandler(err -> errored.setTrue())
-                .submit(() -> Assert.gt(e1.get().refCount, "e1.get().refCount", 0)));
+                .submit((Callable<Object>) Assert::statementNeverExecuted);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
     }
 
     @Test
@@ -1320,6 +1323,23 @@ public class SessionStateTest {
 
         final StatusRuntimeException sre = (StatusRuntimeException) caughtErr.getValue();
         Assert.eq(sre.getStatus(), "sre.getStatus()", Status.DATA_LOSS, "Status.DATA_LOSS");
+    }
+
+    @Test
+    public void testDestroyedExportObjectDependencyFailsNotThrows() {
+        final SessionState.ExportObject<?> failedExport;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            failedExport = SessionState.wrapAsFailedExport(new RuntimeException());
+        }
+        Assert.eqFalse(failedExport.tryIncrementReferenceCount(), "failedExport.tryIncrementReferenceCount()");
+        final MutableBoolean errored = new MutableBoolean();
+        final SessionState.ExportObject<?> result =
+                session.newExport(nextExportId++)
+                        .onErrorHandler(err -> errored.setTrue())
+                        .require(failedExport)
+                        .submit(failedExport::get);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eq(result.getState(), "result.getState()", DEPENDENCY_FAILED);
     }
 
     private static long getExportId(final ExportNotification notification) {
