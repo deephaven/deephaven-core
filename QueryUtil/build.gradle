@@ -12,7 +12,6 @@ dependencies {
     api project(':engine-api')
     api project(':engine-table')
     api project(':engine-function')
-    api project(':engine-context')
 
     api 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
 

@@ -97,7 +97,7 @@ class KraTestCase(BaseTestCase):
             ["Price", "Size", "Exch"]
         )
 
-        records = keyed_record_adapter.get_records([0, 1])
+        records = keyed_record_adapter.get_records([0, NULL_LONG])
 
         self.assertEquals(dict, type(records))
         self.assertEquals(2, len(records))
@@ -148,7 +148,7 @@ class KraTestCase(BaseTestCase):
         records = keyed_record_adapter.get_records([
             ["AAPL", 0],
             ["AAPL", 1],
-            ["AAPL", 2],
+            ["AAPL", NULL_INT],
         ])
 
         self.assertEquals(list, type(records))
@@ -166,9 +166,13 @@ class KraTestCase(BaseTestCase):
         self.assertEquals(1_000, aapl_trade.size)
         self.assertEquals(1, aapl_trade.exch)
 
-        self.assertEquals(None, records[2])
+        null_trade = records[2]
+        self.assertEquals(None, null_trade.sym)
+        self.assertEquals(None, null_trade.price)
+        self.assertEquals(None, null_trade.size)
+        self.assertEquals(None, null_trade.exch)
 
-    def testCustomKeyedRecordAdapterWithCompositeKeyCol(self):
+    def testCustomKeyedRecordAdapterWithStrStrKeyCols(self):
         # source = Table(_JTstTools.testRefreshingTable(
         #     _JTstTools.i(2, 4).copy().toTracking(),
         #     _JTableTools.intCol("Sym", 'AAPL', 'AAPL', None),

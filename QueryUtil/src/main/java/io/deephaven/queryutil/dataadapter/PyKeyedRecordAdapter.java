@@ -3,9 +3,11 @@ package io.deephaven.queryutil.dataadapter;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.TLongIntMap;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +30,7 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
      * the provided {@code recordAdapterDescriptor}, keyed by the given {@code keyColumns}.
      *
      * @param sourceTable The table whose data will be used to create records.
-     * @param keyColumns The key columns to use when retrieving data
+     * @param keyColumns  The key columns to use when retrieving data
      */
     public PyKeyedRecordAdapter(@NotNull Table sourceTable, @NotNull String[] keyColumns, String[] dataColumns) {
         super(sourceTable, new RecordAdapterDescriptor<>() {
@@ -71,8 +73,6 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
      * @return The {@code RecordRetrievalResult} with table data corresponding to the rows for the {@code dataKeys}.
      */
     public RecordRetrievalResult getRecordsForPython(final Object[] dataKeys) {
-        final int nKeys = dataKeys.length;
-
         final List<?> dataKeysList;
         if (isSingleKeyCol) {
             // Each of the dataKeys is an individual key value -- just wrap them in a list.
@@ -83,6 +83,36 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
             dataKeysList = Arrays.stream(dataKeys).map(o -> Arrays.asList((Object[]) o))
                     .collect(Collectors.toUnmodifiableList());
         }
+        return getRecordsForPython0(dataKeysList);
+    }
+
+    public RecordRetrievalResult getRecordsForPython(final short[] dataKeys) {
+        Require.eqTrue(isSingleKeyCol, "isSingleKeyCol");
+        return getRecordsForPython0(Arrays.asList(TypeUtils.box(dataKeys)));
+    }
+
+    public RecordRetrievalResult getRecordsForPython(final int[] dataKeys) {
+        Require.eqTrue(isSingleKeyCol, "isSingleKeyCol");
+        return getRecordsForPython0(Arrays.asList(TypeUtils.box(dataKeys)));
+    }
+
+    public RecordRetrievalResult getRecordsForPython(final float[] dataKeys) {
+        Require.eqTrue(isSingleKeyCol, "isSingleKeyCol");
+        return getRecordsForPython0(Arrays.asList(TypeUtils.box(dataKeys)));
+    }
+
+    public RecordRetrievalResult getRecordsForPython(final long[] dataKeys) {
+        Require.eqTrue(isSingleKeyCol, "isSingleKeyCol");
+        return getRecordsForPython0(Arrays.asList(TypeUtils.box(dataKeys)));
+    }
+
+    public RecordRetrievalResult getRecordsForPython(final double[] dataKeys) {
+        Require.eqTrue(isSingleKeyCol, "isSingleKeyCol");
+        return getRecordsForPython0(Arrays.asList(TypeUtils.box(dataKeys)));
+    }
+
+    private RecordRetrievalResult getRecordsForPython0(final List<?> dataKeysList) {
+        final int nKeys = dataKeysList.size();
 
         // Convert data keys (object or List<?>) to map keys (object or tuple)
         final List<Object> mapKeys = dataKeysListToMapKeys.apply(dataKeysList);
@@ -120,7 +150,7 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
         public final Object[] recordDataArrs;
 
         public RecordRetrievalResult(@NotNull long[] recordDataRowKeys,
-                @NotNull TLongIntMap rowKeyToDataKeyPositionalIndex, @NotNull Object[] recordDataArrs) {
+                                     @NotNull TLongIntMap rowKeyToDataKeyPositionalIndex, @NotNull Object[] recordDataArrs) {
             this.recordDataRowKeys = recordDataRowKeys;
             this.rowKeyToDataKeyPositionalIndex = rowKeyToDataKeyPositionalIndex;
             this.recordDataArrs = recordDataArrs;

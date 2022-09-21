@@ -1,23 +1,28 @@
 import typing
 
 import jpy
+import numpy
 
+from deephaven import numpy as dhnp, dtypes
+from deephaven.dtypes import DType
 from deephaven.table import Table
 
 K = typing.TypeVar('K')
 T = typing.TypeVar('T')
 
 j_object = jpy.get_type('java.lang.Object')
+j_pykeyedrecordadapter = jpy.get_type('io.deephaven.queryutil.dataadapter.PyKeyedRecordAdapter')
 
 
 class KeyedRecordAdapter(typing.Generic[K, T]):
-    j_object_type = jpy.get_type('io.deephaven.queryutil.dataadapter.PyKeyedRecordAdapter')
+    j_object_type = j_pykeyedrecordadapter
 
     record_adapter_type: type
     j_kra: jpy.JType
     table: Table
 
     is_single_key_col: bool
+    key_dtypes: typing.Union[DType, typing.List[DType]]
 
     @property
     def j_object(self):
@@ -41,7 +46,13 @@ class KeyedRecordAdapter(typing.Generic[K, T]):
         self.j_kra = self.j_object_type(table.j_table, key_cols, data_cols)
         self.is_single_key_col = self.j_kra.isSingleKeyCol()
 
-    def get_records(self, data_keys: typing.List[K]) -> [typing.Dict[K, T], typing.List[T]]:
+        # Build a list of the DTypes corresponding to the key columns
+        if self.is_single_key_col:
+            self.key_dtypes = self.table.columns_dict()[key_cols[0]].data_type
+        else:
+            self.key_dtypes = [self.table.columns_dict()[col_name].data_type for col_name in key_cols]
+
+    def get_records(self, data_keys: [typing.List[K], numpy.ndarray]) -> [typing.Dict[K, T], typing.List[T]]:
         """
 
         :param data_keys:
@@ -49,22 +60,28 @@ class KeyedRecordAdapter(typing.Generic[K, T]):
         (in the same order as the provided keys) if the keys are composite values.
         """
 
-        # TODO: Need to handle primitives better, e.g. convert python int list to java int[]/long[] as appropriate.
-
         if self.is_single_key_col:
-            # TODO: convert these to the appropriate Java type for the key column. Ultimately must be boxed.
-            data_keys_arg = data_keys
+            key_dtype: DType = self.key_dtypes
+            data_keys_data = self._convert_keys_seq_for_java(data_keys, key_dtype)
+
+            # Convert to a Java array whose type corresponds to the key column's type in the source table
+            data_keys_java_arg = dtypes.array(key_dtype, data_keys_data)
         else:
             # Key should be a list of lists (i.e. each data_key is a list of key components)
             # Convert each data_key list to a Java array, then wrap each of those arrays into
             # another array, and pass that as the arg.
             # TODO: Primitive elements of a composite_data_key need to be converted to the correct Java type corresponding to the column.
-            data_keys_arg = list(
-                map(lambda composite_data_key: jpy.array('java.lang.Object', composite_data_key), data_keys))
+            data_keys_java_arg = jpy.array('java.lang.Object', len(data_keys))
+            for ii, composite_key in enumerate(data_keys):
+                composite_key_array = jpy.array('java.lang.Object', len(composite_key))
+                # Cast each key component to the appropriate type, then wrap them in an array.
+                for jj, key_cmpnt in enumerate(composite_key):
+                    # TODO: cannot just cast these; need to really *convert* them
+                    composite_key_array[jj] = jpy.cast(key_cmpnt, self.key_dtypes[jj].j_type)
 
-            data_keys_arg = jpy.array(j_object, data_keys_arg)
+                data_keys_java_arg[ii] = composite_key_array
 
-        results = self.j_kra.getRecordsForPython(data_keys_arg)
+        results = self.j_kra.getRecordsForPython(data_keys_java_arg)
 
         # Now that we have retrieved a consistent snapshot, create records for each row.
 
@@ -127,6 +144,13 @@ class KeyedRecordAdapter(typing.Generic[K, T]):
                     results_list.append(None)
 
             return results_list
+
+    def _convert_keys_seq_for_java(self, data_keys: typing.Sequence, key_dtype: DType) -> typing.Sequence:
+        if type(data_keys) is numpy.ndarray:
+            # Some types (e.g. bool/DateTime) have special handling for numpy:
+            return dhnp._np_to_dh_seq(key_dtype, data_keys)
+        else:
+            return data_keys
 
 
 def make_record_adapter_with_constructor(table: Table,

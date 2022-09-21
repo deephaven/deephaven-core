@@ -308,16 +308,16 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
 
     public void testCustomKeyedRecordAdapterWithOnePrimitiveKeyCol() {
         final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4).copy().toTracking(),
-                TableTools.intCol("KeyCol1", 0, 1),
-                TableTools.col("StringCol", "Aa", null),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE));
+                i(2, 4, 6).copy().toTracking(),
+                TableTools.intCol("KeyCol1", 0, 1, QueryConstants.NULL_INT),
+                TableTools.col("StringCol", "Aa", "Bb", null),
+                TableTools.charCol("CharCol", 'A', 'B', QueryConstants.NULL_CHAR),
+                TableTools.byteCol("ByteCol", (byte) 0, (byte) 0, QueryConstants.NULL_BYTE),
+                TableTools.shortCol("ShortCol", (short) 1, (short) 1, QueryConstants.NULL_SHORT),
+                TableTools.intCol("IntCol", 100, 0, QueryConstants.NULL_INT),
+                TableTools.floatCol("FloatCol", 0.1f, 0, QueryConstants.NULL_FLOAT),
+                TableTools.longCol("LongCol", 10_000_000_000L, 0, QueryConstants.NULL_LONG),
+                TableTools.doubleCol("DoubleCol", 1.1d, 0, QueryConstants.NULL_DOUBLE));
         TableTools.show(source);
 
 
@@ -346,30 +346,42 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
                                 .build(),
                         "KeyCol1", Integer.class);
 
-        MyRecord record = keyedRecordAdapter.getRecord(0);
-        assertEquals(0, record.myKeyInt);
-        assertEquals("Aa", record.myString);
-        assertEquals('A', record.myChar);
-        assertEquals((byte) 0, record.myByte);
-        assertEquals((short) 1, record.myShort);
-        assertEquals(100, record.myInt);
-        assertEquals(0.1f, record.myFloat);
-        assertEquals(10_000_000_000L, record.myLong);
-        assertEquals(1.1d, record.myDouble);
+        MyRecord record0 = keyedRecordAdapter.getRecord(0);
+        assertEquals(0, record0.myKeyInt);
+        assertEquals("Aa", record0.myString);
+        assertEquals('A', record0.myChar);
+        assertEquals((byte) 0, record0.myByte);
+        assertEquals((short) 1, record0.myShort);
+        assertEquals(100, record0.myInt);
+        assertEquals(0.1f, record0.myFloat);
+        assertEquals(10_000_000_000L, record0.myLong);
+        assertEquals(1.1d, record0.myDouble);
 
-        record = keyedRecordAdapter.getRecord(1);
-        assertEquals(1, record.myKeyInt);
-        assertNull(record.myString);
-        assertEquals(QueryConstants.NULL_CHAR, record.myChar);
-        assertEquals(QueryConstants.NULL_BYTE, record.myByte);
-        assertEquals(QueryConstants.NULL_SHORT, record.myShort);
-        assertEquals(QueryConstants.NULL_INT, record.myInt);
-        assertEquals(QueryConstants.NULL_FLOAT, record.myFloat);
-        assertEquals(QueryConstants.NULL_LONG, record.myLong);
-        assertEquals(QueryConstants.NULL_DOUBLE, record.myDouble);
+        MyRecord record1 = keyedRecordAdapter.getRecord(1);
+        assertEquals(1, record1.myKeyInt);
+        assertEquals("Bb", record1.myString);
+        assertEquals('B', record1.myChar);
+        assertEquals((byte) 0, record1.myByte);
+        assertEquals((short) 1, record1.myShort);
+        assertEquals(0, record1.myInt);
+        assertEquals(0f, record1.myFloat);
+        assertEquals(0L, record1.myLong);
+        assertEquals(0d, record1.myDouble);
+
+        // test null key
+        MyRecord recordNull = keyedRecordAdapter.getRecord(null);
+        assertEquals(QueryConstants.NULL_INT, recordNull.myKeyInt);
+        assertNull(recordNull.myString);
+        assertEquals(QueryConstants.NULL_CHAR, recordNull.myChar);
+        assertEquals(QueryConstants.NULL_BYTE, recordNull.myByte);
+        assertEquals(QueryConstants.NULL_SHORT, recordNull.myShort);
+        assertEquals(QueryConstants.NULL_INT, recordNull.myInt);
+        assertEquals(QueryConstants.NULL_FLOAT, recordNull.myFloat);
+        assertEquals(QueryConstants.NULL_LONG, recordNull.myLong);
+        assertEquals(QueryConstants.NULL_DOUBLE, recordNull.myDouble);
 
         // test single-argument composite key:
-        record = keyedRecordAdapter.getRecordCompositeKey(0);
+        MyRecord record = keyedRecordAdapter.getRecordCompositeKey(0);
         assertEquals(0, record.myKeyInt);
         assertEquals("Aa", record.myString);
         assertEquals('A', record.myChar);
@@ -390,6 +402,12 @@ public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.Refre
         } catch (IllegalArgumentException ex) {
             assertEquals("dataKey has 2 components; expected 1", ex.getMessage());
         }
+
+        // Test retrieving multiple records
+        final Map<Integer, MyRecord> records = keyedRecordAdapter.getRecords(0, 1, null);
+        assertEquals(record0, records.get(0));
+        assertEquals(record1, records.get(1));
+        assertEquals(recordNull, records.get(null));
     }
 
     public void testCustomKeyedRecordAdapterWithTwoKeyCols() {

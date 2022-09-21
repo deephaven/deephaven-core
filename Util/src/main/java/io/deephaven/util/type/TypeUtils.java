@@ -8,14 +8,16 @@ import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import java.lang.reflect.*;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -342,8 +344,8 @@ public class TypeUtils {
 
     public static boolean isConvertibleToPrimitive(Class<?> type) {
         final Class<?> unboxedType = TypeUtils.getUnboxedType(type);
-        return unboxedType != null && unboxedType != boolean.class; // TODO: isConvertibleToPrimitive(Boolean.class) ==
-                                                                    // false ???
+        // (Note: Booleans must be boxed because primitive boolean does not support null.)
+        return unboxedType != null && unboxedType != boolean.class;
     }
 
     public static boolean isBoxedType(Class<?> exprType) {
@@ -586,11 +588,11 @@ public class TypeUtils {
      * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
      * be decoded from base64. Returns null if the String fails to parse.
      *
-     * @param string the String to parse
+     * @param string     the String to parse
      * @param typeString the Canonical Name of the class type
      * @return an object parsed from the String
      * @throws RuntimeException if the string fails to parse
-     * @throws IOException if an IO error occurs during conversion
+     * @throws IOException      if an IO error occurs during conversion
      */
     public static Optional<Object> fromString(String string, String typeString) throws IOException {
         final Class<?> type;
@@ -608,10 +610,10 @@ public class TypeUtils {
      * be decoded from base64. Returns null if the String fails to parse.
      *
      * @param string the String to parse
-     * @param type the type of the object
+     * @param type   the type of the object
      * @return an object parsed from the String
      * @throws RuntimeException if the string fails to parse
-     * @throws IOException if an IO error occurs during conversion
+     * @throws IOException      if an IO error occurs during conversion
      */
     public static Object fromString(String string, Class<?> type) throws IOException {
         final Class<?> boxedType = getBoxedType(type);
@@ -660,7 +662,7 @@ public class TypeUtils {
      */
     public static String encode64Serializable(Serializable serializable) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                ObjectOutputStream os = new ObjectOutputStream(bos)) {
+             ObjectOutputStream os = new ObjectOutputStream(bos)) {
             os.writeObject(serializable);
             return Base64.getEncoder().encodeToString(bos.toByteArray());
         }
@@ -671,12 +673,12 @@ public class TypeUtils {
      *
      * @param string the base64 encoded String
      * @return the encoded Object
-     * @throws IOException if the string cannot be decoded
+     * @throws IOException            if the string cannot be decoded
      * @throws ClassNotFoundException if the Object type is unknown
      */
     public static Object decode64Serializable(String string) throws IOException, ClassNotFoundException {
         try (ObjectInputStream is =
-                new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
+                     new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
             return is.readObject();
         }
     }
@@ -689,7 +691,7 @@ public class TypeUtils {
             return (Class<?>) paramType;
         } else if (paramType instanceof ParameterizedType) {
             return (Class<?>) // We are asking the parameterized type for it's raw type, which is always Class
-            ((ParameterizedType) paramType).getRawType();
+                    ((ParameterizedType) paramType).getRawType();
         } else if (paramType instanceof WildcardType) {
             final Type[] upper = ((WildcardType) paramType).getUpperBounds();
             return getErasedType(upper[0]);
@@ -909,5 +911,159 @@ public class TypeUtils {
 
     public static short unbox(Short value) {
         return (value == null ? NULL_SHORT : value);
+    }
+
+    public static Byte[] box(byte[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Byte[] boxed = new Byte[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Character[] box(char[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Character[] boxed = new Character[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Double[] box(double[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Double[] boxed = new Double[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Float[] box(float[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Float[] boxed = new Float[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Integer[] box(int[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Integer[] boxed = new Integer[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Long[] box(long[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Long[] boxed = new Long[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Short[] box(short[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Short[] boxed = new Short[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static byte[] unbox(Byte[] values) {
+        if (values == null) {
+            return null;
+        }
+        final byte[] unboxed = new byte[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static char[] unbox(Character[] values) {
+        if (values == null) {
+            return null;
+        }
+        final char[] unboxed = new char[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static double[] unbox(Double[] values) {
+        if (values == null) {
+            return null;
+        }
+        final double[] unboxed = new double[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static float[] unbox(Float[] values) {
+        if (values == null) {
+            return null;
+        }
+        final float[] unboxed = new float[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static int[] unbox(Integer[] values) {
+        if (values == null) {
+            return null;
+        }
+        final int[] unboxed = new int[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static long[] unbox(Long[] values) {
+        if (values == null) {
+            return null;
+        }
+        final long[] unboxed = new long[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static short[] unbox(Short[] values) {
+        if (values == null) {
+            return null;
+        }
+        final short[] unboxed = new short[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
     }
 }

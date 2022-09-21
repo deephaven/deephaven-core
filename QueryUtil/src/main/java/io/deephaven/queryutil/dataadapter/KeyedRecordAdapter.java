@@ -105,6 +105,7 @@ public class KeyedRecordAdapter<K, T> {
      */
     protected final boolean isSingleKeyCol;
     protected final List<Class<?>> keyColumnTypesList;
+    private final RecordAdapterDescriptor<T> rowRecordAdapterDescriptor;
 
     /**
      * Create a KeyedRecordAdapter that translates rows of {@code sourceTable} into instances of type {@code T} using
@@ -122,6 +123,8 @@ public class KeyedRecordAdapter<K, T> {
         }
 
         this.keyColumns = keyColumns;
+        this.rowRecordAdapterDescriptor = rowRecordAdapterDescriptor;
+
         isSingleKeyCol = keyColumns.length == 1;
 
         final ColumnSource<?>[] keyColumnSources =
@@ -477,18 +480,19 @@ public class KeyedRecordAdapter<K, T> {
     }
 
     private T singleRecordLockedRetriever(final Object mapKey) {
-        final MutableObject<T> result = new MutableObject<>();
+        final T result = rowRecordAdapterDescriptor.getEmptyRecord();
         DO_LOCKED_FUNCTION.accept(
                 usePrev -> {
-                    result.setValue(toMapListener.get(
+                    toMapListener.get(
                             mapKey,
-                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, false),
-                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, true)));
+                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, false, result),
+                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, true, result));
                     return true;
                 }, "KeyedRecordAdapter.getRecord()");
-        return result.getValue();
+        return result;
     }
 
+    @SuppressWarnings("unused")
     public boolean isSingleKeyCol() {
         return isSingleKeyCol;
     }
