@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import org.jetbrains.annotations.NotNull;
@@ -432,10 +433,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @NotNull
     private SelectColumn[] toSelectColumns(Collection<? extends Selectable> columns) {
         final SelectColumn[] selectColumns = SelectColumn.from(columns);
-        Map<String, ColumnDefinition<?>> targetColumnMap = target.constituentDefinition().getColumnNameMap();
-        for (SelectColumn column : selectColumns) {
-            column.initDef(targetColumnMap);
-        }
+        SelectAndViewAnalyzer.initializeSelectColumns(
+                target.constituentDefinition().getColumnNameMap(), selectColumns);
         return selectColumns;
     }
 

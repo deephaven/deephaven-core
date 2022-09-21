@@ -851,6 +851,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 newExecutionContextNugget(table, src -> src.select("K = queryScopeVar", "indices", "intCol")),
                 newExecutionContextNugget(table, src -> src.view("K = queryScopeVar", "indices", "intCol")),
                 newExecutionContextNugget(table, src -> src.where("intCol > queryScopeFilter")),
+                newExecutionContextNugget(table, src -> src.update("X = 0", "Y = X")),
         };
 
         for (int i = 0; i < 100; i++) {
