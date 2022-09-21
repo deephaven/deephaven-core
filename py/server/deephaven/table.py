@@ -58,7 +58,7 @@ def _j_py_script_session() -> _JPythonScriptSession:
     try:
         j_script_session_query_scope = strict_cast(j_query_scope, _JScriptSessionQueryScope)
         return strict_cast(j_script_session_query_scope.scriptSession(), _JPythonScriptSession)
-    except Exception as e:
+    except DHError:
         return None
 
 
