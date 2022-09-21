@@ -50,7 +50,7 @@ class ExecutionContext(JObjectWrapper):
 
 def make_user_exec_ctx(freeze_vars: Union[str, Sequence[str]] = None) -> ExecutionContext:
     """Makes a new ExecutionContext based off the current thread's ExecutionContext. The optional parameter
-    freeze_vars should be a list of names in the current query scope. If it is provided, the result ExecutionContext
+    freeze_vars should be a list of names in the current query scope. If it is provided, the resulting ExecutionContext
     will include a new query scope that is made up of only these names together with their current values. Future
     changes to the values of these names will not be visible in the new ExecutionContext.
 
