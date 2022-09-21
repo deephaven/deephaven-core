@@ -153,7 +153,6 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 right_proxy = self.test_table.drop_columns(["b", "d"]).partition_by("c").proxy()
                 joined_pt_proxy = pt_proxy.natural_join(right_proxy, on="a", joins="e")
             self.assertIn("join keys found in multiple constituents", str(cm.exception))
-            print(cm.exception)
 
             with self.assertRaises(DHError) as cm:
                 pt_proxy = self.test_table.drop_columns(["d", "e"]).partition_by("c").proxy(sanity_check_joins=False)

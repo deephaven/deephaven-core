@@ -7,8 +7,9 @@ import unittest
 
 from deephaven import time_table, DHError, merge, merge_sorted
 from deephaven import ugp
+from deephaven.execution_context import make_user_exec_ctx
 from deephaven.table import Table
-from tests.testbase import BaseTestCase, make_user_exec_ctx
+from tests.testbase import BaseTestCase
 
 
 def transform_func(t: Table) -> Table:
@@ -237,7 +238,6 @@ class UgpTestCase(BaseTestCase):
             ugp.auto_locking = True
             with make_user_exec_ctx():
                 pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
-
 
     def test_auto_locking_table_factory(self):
         with ugp.shared_lock():

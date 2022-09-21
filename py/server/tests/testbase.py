@@ -8,6 +8,7 @@ import unittest
 
 import jpy
 from deephaven import DHError
+from deephaven.execution_context import make_user_exec_ctx
 
 from deephaven.ugp import exclusive_lock
 from deephaven.table import Table
@@ -17,24 +18,13 @@ from test_helper import py_dh_session
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 
+
 def table_equals(table_a: Table, table_b: Table) -> bool:
     try:
         return False if _JTableTools.diff(table_a.j_table, table_b.j_table, 1) else True
     except Exception as e:
         raise DHError(e, "table equality test failed.") from e
 
-
-# TODO(deephaven-core#2867): Wrap ExecutionContext in Python
-# Jianfeng to remove this and introduce into deephaven execution_context module for users' convenience
-@contextlib.contextmanager
-def make_user_exec_ctx():
-    j_execution_context = _JExecutionContext.makeExecutionContext(False).open()
-    try:
-        yield
-    except Exception as e:
-        raise DHError(e, "exception raised in the enclosed code block.") from e
-    finally:
-        j_execution_context.close()
 
 class BaseTestCase(unittest.TestCase):
     @classmethod
@@ -46,7 +36,7 @@ class BaseTestCase(unittest.TestCase):
         ...
 
     def setUp(self) -> None:
-        self._execution_context = py_dh_session.getExecutionContext().open()
+        self._execution_context = make_user_exec_ctx().j_exec_ctx.open()
 
     def tearDown(self) -> None:
         self._execution_context.close()
