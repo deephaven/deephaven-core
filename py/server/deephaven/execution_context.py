@@ -88,11 +88,3 @@ def get_exec_ctx() -> ExecutionContext:
     """
     return ExecutionContext(j_exec_ctx=_JExecutionContext.getContext())
 
-
-def set_exec_ctx(exec_ctx: ExecutionContext) -> None:
-    """Sets the current thread's ExecutionContext.
-
-    Args:
-        exec_ctx (ExecutionContext): the ExecutionContext to be installed on the current thread
-    """
-    _JExecutionContext.setContext(exec_ctx.j_exec_ctx)

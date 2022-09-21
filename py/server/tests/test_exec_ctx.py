@@ -7,7 +7,7 @@ import unittest
 
 from deephaven import DHError
 from deephaven import empty_table
-from deephaven.execution_context import get_exec_ctx, set_exec_ctx, make_user_exec_ctx
+from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
 
 
 class ExecCtxTestCase(unittest.TestCase):
@@ -25,9 +25,6 @@ class ExecCtxTestCase(unittest.TestCase):
 
             with self.assertRaises(DHError):
                 t3 = t.update("Y = p * p * p")
-
-            set_exec_ctx(main_exec_ctx)
-            t3 = t.update("Y = p * p * p")
 
         threads = []
         for i in range(4):

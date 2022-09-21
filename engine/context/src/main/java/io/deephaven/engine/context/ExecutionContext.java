@@ -75,7 +75,7 @@ public class ExecutionContext {
     /**
      * Installs the executionContext to be used for the current thread.
      */
-    public static void setContext(final ExecutionContext context) {
+    static void setContext(final ExecutionContext context) {
         currentContext.set(context);
     }
 
