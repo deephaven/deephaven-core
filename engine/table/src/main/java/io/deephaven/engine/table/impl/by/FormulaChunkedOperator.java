@@ -36,7 +36,7 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
 /**
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#applyToAllBy}.
  */
-class FormulaChunkedOperator implements StateChangeRecorder, IterativeChunkedAggregationOperator {
+class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     private final GroupByChunkedOperator groupBy;
     private final boolean delegateToBy;
@@ -99,16 +99,6 @@ class FormulaChunkedOperator implements StateChangeRecorder, IterativeChunkedAgg
             // noinspection unchecked
             resultColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(0, formulaColumn.getReturnedType());
         }
-    }
-
-    @Override
-    public void startRecording(LongConsumer reincarnatedDestinationCallback, LongConsumer emptiedDestinationCallback) {
-        groupBy.startRecording(reincarnatedDestinationCallback, emptiedDestinationCallback);
-    }
-
-    @Override
-    public void finishRecording() {
-        groupBy.finishRecording();
     }
 
     @Override
