@@ -24,12 +24,10 @@ class ExecutionContext(JObjectWrapper):
     A default, systemic ExecutionContext is created when a Deephaven script session is initialized, and it is used to
     evaluate queries submitted through this script session. However, to be able to evaluate a query in a deferred
     manner, such as in a different thread from the script session thread, an application must explicitly obtain or
-    build a ExecutionContext and either (1) install it on the thread or (2) use it as a context manager to enclose
-    the query in the body of the with statement.
+    build a ExecutionContext and use it as a context manager to enclose the query in the body of the with statement.
 
     Note that, a ExecutionContext can be shared among many threads. The most typical use pattern would be to obtain
-    the script session's systemic ExecutionContext and set it on a thread explicitly created by the user or simply
-    use it to wrap a query run in that thread.
+    the script session's systemic ExecutionContext and use it to wrap a query run in a thread created by the user.
     """
     j_object_type = _JExecutionContext
 
