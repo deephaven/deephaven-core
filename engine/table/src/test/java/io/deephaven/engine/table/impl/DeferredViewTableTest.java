@@ -20,13 +20,11 @@ public class DeferredViewTableTest {
     public void testDeferredViewTableCanUseIntermediateColumns() {
         final TableDefinition resultDef = TableDefinition.of(
                 ColumnDefinition.fromGenericType("X", int.class),
-                ColumnDefinition.fromGenericType("Y", int.class)
-        );
+                ColumnDefinition.fromGenericType("Y", int.class));
         final Table sourceTable = TableTools.emptyTable(10);
         final SelectColumn[] viewColumns = SelectColumn.from(
                 Selectable.parse("X = ii"),
-                Selectable.parse("Y = 2 * X")
-        );
+                Selectable.parse("Y = 2 * X"));
 
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
@@ -34,8 +32,7 @@ public class DeferredViewTableTest {
                 new DeferredViewTable.SimpleTableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 viewColumns,
-                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY
-        );
+                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
 
         final Table resultTable = deferredTable.coalesce();
         final Table expectedTable = sourceTable.update(viewColumns);
