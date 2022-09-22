@@ -241,7 +241,7 @@ jobs:
             BASE=deephaven/all-ai-base:local-build
             SERVER=server-all-ai
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
+          tags: ${{ steps.docker_meta_server_all_ai.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
