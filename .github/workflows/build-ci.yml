@@ -511,7 +511,6 @@ jobs:
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
-          ./docker/registry/nginx-base/build/crane/retag.sh
           ./docker/registry/nginx-noroot-base/build/crane/retag.sh
 
   web-plugin-packager:
