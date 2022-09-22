@@ -53,7 +53,6 @@ public final class GroupByChunkedOperator
     private boolean stepValuesModified;
     private boolean someKeyHasAddsOrRemoves;
     private boolean someKeyHasModifies;
-    private boolean groupKeyModified;
     private boolean initialized;
 
     GroupByChunkedOperator(@NotNull final QueryTable inputTable, final boolean registeredWithHelper,
@@ -428,7 +427,6 @@ public final class GroupByChunkedOperator
                 && upstream.modifiedColumnSet().containsAny(resultInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
         someKeyHasModifies = false;
-        groupKeyModified = anyKeysModified;
         stepDestinationsModified = new ChunkedOperatorAggregationHelper.BitmapRandomBuilder(startingDestinationsCount);
     }
 
@@ -479,7 +477,8 @@ public final class GroupByChunkedOperator
     public void propagateUpdates(@NotNull final TableUpdate downstream, @NotNull final RowSet newDestinations) {
         // get the rowset for the updated items
         try (final WritableRowSet stepDestinations = stepDestinationsModified.build()) {
-            // add the new destinations as well
+
+            // add the new destinations so a rowset will get created if it doesn't exist
             stepDestinations.insert(newDestinations);
 
             // use the builders to modify the rowsets
