@@ -270,7 +270,7 @@ class AggregationContext {
      *
      * @param upstream The upstream {@link TableUpdateImpl}
      * @param startingDestinationsCount The number of used destinations at the beginning of this step
-     * @param anyKeysModified Whether any grouping keys modified as a result of this update
+     * @param anyKeysModified Whether any grouping keys were modified during this update
      */
     void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount,
             boolean anyKeysModified) {
@@ -287,11 +287,9 @@ class AggregationContext {
      * @param downstream The downstream {@link TableUpdate} (which does <em>not</em> have its {@link ModifiedColumnSet}
      *        finalized yet)
      * @param newDestinations New destinations added on this update
-     * @param anyKeysModified Whether any grouping keys were modified during this update
      */
     void propagateChangesToOperators(@NotNull final TableUpdate downstream,
-            @NotNull final RowSet newDestinations,
-            final boolean anyKeysModified) {
+            @NotNull final RowSet newDestinations) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.propagateUpdates(downstream, newDestinations);
         }

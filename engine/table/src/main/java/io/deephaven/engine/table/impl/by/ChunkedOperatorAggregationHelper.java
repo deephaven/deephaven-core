@@ -678,7 +678,7 @@ public class ChunkedOperatorAggregationHelper {
                     downstream.modified().writableCast().remove(downstream.removed());
                 }
 
-                ac.propagateChangesToOperators(downstream, newStates, keysModified);
+                ac.propagateChangesToOperators(downstream, newStates);
             }
 
             extractDownstreamModifiedColumnSet(downstream, resultModifiedColumnSet, modifiedOperators,
@@ -2096,7 +2096,7 @@ public class ChunkedOperatorAggregationHelper {
                                 final int newStatesCreated = Math.max(statesCreated, newResultSize);
                                 try (final RowSet newStates =
                                         makeNewStatesRowSet(statesCreated, newStatesCreated - 1)) {
-                                    ac.propagateChangesToOperators(downstream, newStates, false);
+                                    ac.propagateChangesToOperators(downstream, newStates);
                                 }
                                 statesCreated = newStatesCreated;
 
