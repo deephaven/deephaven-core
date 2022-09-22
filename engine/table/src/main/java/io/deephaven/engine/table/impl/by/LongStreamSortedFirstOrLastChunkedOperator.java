@@ -58,8 +58,8 @@ public class LongStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount, boolean anyKeysModified) {
-        super.resetForStep(upstream, startingDestinationsCount, anyKeysModified);
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+        super.resetForStep(upstream, startingDestinationsCount);
         if (isCombo) {
             changedDestinationsBuilder = RowSetFactory.builderRandom();
         }

@@ -267,15 +267,12 @@ class AggregationContext {
     /**
      * Allow all operators to reset any per-step internal state. Note that the arguments to this method should not be
      * mutated in any way.
-     *
-     * @param upstream The upstream {@link TableUpdateImpl}
+     *  @param upstream The upstream {@link TableUpdateImpl}
      * @param startingDestinationsCount The number of used destinations at the beginning of this step
-     * @param anyKeysModified Whether any grouping keys were modified during this update
      */
-    void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount,
-            boolean anyKeysModified) {
+    void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
-            operator.resetForStep(upstream, startingDestinationsCount, anyKeysModified);
+            operator.resetForStep(upstream, startingDestinationsCount);
         }
     }
 

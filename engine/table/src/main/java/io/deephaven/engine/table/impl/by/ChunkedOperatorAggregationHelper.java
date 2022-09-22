@@ -563,7 +563,7 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                 @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
             final int firstStateToAdd = outputPosition.intValue();
-            ac.resetOperatorsForStep(upstream, firstStateToAdd, keysModified);
+            ac.resetOperatorsForStep(upstream, firstStateToAdd);
 
             if (upstream.removed().isNonempty()) {
                 doRemoves(upstream.removed());
@@ -1984,7 +1984,7 @@ public class ChunkedOperatorAggregationHelper {
                         }
 
                         private void processNoKeyUpdate(@NotNull final TableUpdate upstream) {
-                            ac.resetOperatorsForStep(upstream, 1, false);
+                            ac.resetOperatorsForStep(upstream, 1);
 
                             final ModifiedColumnSet upstreamModifiedColumnSet =
                                     upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY

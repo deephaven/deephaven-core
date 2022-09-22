@@ -297,10 +297,9 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount,
-            boolean anyKeysModified) {
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         if (delegateToBy) {
-            groupBy.resetForStep(upstream, startingDestinationsCount, anyKeysModified);
+            groupBy.resetForStep(upstream, startingDestinationsCount);
         }
         updateUpstreamModifiedColumnSet =
                 upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet();

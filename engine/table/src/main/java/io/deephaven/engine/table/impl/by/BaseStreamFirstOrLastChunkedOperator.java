@@ -95,8 +95,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator
 
     @Override
     @OverridingMethodsMustInvokeSuper
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount,
-            boolean anyKeysModified) {
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         if ((redirections = cachedRedirections.get()) == null) {
             cachedRedirections = new SoftReference<>(redirections = new LongArraySource());
             ensureCapacity(startingDestinationsCount);

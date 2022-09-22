@@ -222,6 +222,9 @@ public final class GroupByChunkedOperator
 
     private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
+        if (length == 0) {
+            return;
+        }
         if (!initialized) {
             // during initialization, all rows are guaranteed to be in-order
             accumulateToBuilderSequential(addedBuilders, indices, start, length, destination);
@@ -234,6 +237,9 @@ public final class GroupByChunkedOperator
     }
 
     private void addRowsToSlot(@NotNull final RowSet addRowSet, final long destination) {
+        if (addRowSet.isEmpty()) {
+            return;
+        }
         if (!initialized) {
             // during initialization, all rows are guaranteed to be in-order
             accumulateToBuilderSequential(addedBuilders, addRowSet, destination);
@@ -244,6 +250,9 @@ public final class GroupByChunkedOperator
 
     private void removeChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
+        if (length == 0) {
+            return;
+        }
         accumulateToBuilderRandom(removedBuilders, indices, start, length, destination);
         stepDestinationsModified.addKey(destination);
     }
@@ -421,8 +430,7 @@ public final class GroupByChunkedOperator
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount,
-            boolean anyKeysModified) {
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         stepValuesModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty()
                 && upstream.modifiedColumnSet().containsAny(resultInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
@@ -477,7 +485,6 @@ public final class GroupByChunkedOperator
     public void propagateUpdates(@NotNull final TableUpdate downstream, @NotNull final RowSet newDestinations) {
         // get the rowset for the updated items
         try (final WritableRowSet stepDestinations = stepDestinationsModified.build()) {
-
             // add the new destinations so a rowset will get created if it doesn't exist
             stepDestinations.insert(newDestinations);
 
