@@ -5,6 +5,7 @@ package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.deephaven.annotations.BuildableStyle;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 /**
@@ -26,6 +27,7 @@ public abstract class TrustStore extends TrustBase {
     /**
      * The trust storce password.
      */
+    @Value.Redacted
     public abstract String password();
 
     @Override
