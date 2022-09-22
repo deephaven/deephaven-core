@@ -267,7 +267,8 @@ class AggregationContext {
     /**
      * Allow all operators to reset any per-step internal state. Note that the arguments to this method should not be
      * mutated in any way.
-     *  @param upstream The upstream {@link TableUpdateImpl}
+     * 
+     * @param upstream The upstream {@link TableUpdateImpl}
      * @param startingDestinationsCount The number of used destinations at the beginning of this step
      */
     void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
