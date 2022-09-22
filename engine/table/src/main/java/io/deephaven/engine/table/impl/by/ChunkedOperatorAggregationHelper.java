@@ -219,7 +219,7 @@ public class ChunkedOperatorAggregationHelper {
 
         // Construct the result table
         final QueryTable result = new QueryTable(resultRowSet, resultColumnSourceMap);
-        ac.propagateInitialStateToOperators(result);
+        ac.propagateInitialStateToOperators(result, outputPosition.intValue());
 
         if (input.isRefreshing()) {
             assert keyColumnsCopied != null;
@@ -563,7 +563,7 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                 @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
             final int firstStateToAdd = outputPosition.intValue();
-            ac.resetOperatorsForStep(upstream, firstStateToAdd);
+            ac.resetOperatorsForStep(upstream, firstStateToAdd, keysModified);
 
             if (upstream.removed().isNonempty()) {
                 doRemoves(upstream.removed());
@@ -678,7 +678,7 @@ public class ChunkedOperatorAggregationHelper {
                     downstream.modified().writableCast().remove(downstream.removed());
                 }
 
-                ac.propagateChangesToOperators(downstream, newStates);
+                ac.propagateChangesToOperators(downstream, newStates, keysModified);
             }
 
             extractDownstreamModifiedColumnSet(downstream, resultModifiedColumnSet, modifiedOperators,
@@ -1593,7 +1593,7 @@ public class ChunkedOperatorAggregationHelper {
 
         final QueryTable result = new QueryTable(RowSetFactory.flat(responsiveGroups).toTracking(),
                 resultColumnSourceMap);
-        ac.propagateInitialStateToOperators(result);
+        ac.propagateInitialStateToOperators(result, responsiveGroups);
 
         final ReverseLookupListener rll = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(result, keyName);
         ac.setReverseLookupFunction(k -> (int) rll.get(k));
@@ -1957,7 +1957,8 @@ public class ChunkedOperatorAggregationHelper {
 
         final QueryTable result = new QueryTable(RowSetFactory.flat(initialResultSize).toTracking(),
                 resultColumnSourceMap);
-        ac.propagateInitialStateToOperators(result);
+        // always will create one result for zerokey
+        ac.propagateInitialStateToOperators(result, 1);
 
         if (table.isRefreshing()) {
             ac.startTrackingPrevValues();
@@ -1983,7 +1984,7 @@ public class ChunkedOperatorAggregationHelper {
                         }
 
                         private void processNoKeyUpdate(@NotNull final TableUpdate upstream) {
-                            ac.resetOperatorsForStep(upstream, 1);
+                            ac.resetOperatorsForStep(upstream, 1, false);
 
                             final ModifiedColumnSet upstreamModifiedColumnSet =
                                     upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY
@@ -2095,7 +2096,7 @@ public class ChunkedOperatorAggregationHelper {
                                 final int newStatesCreated = Math.max(statesCreated, newResultSize);
                                 try (final RowSet newStates =
                                         makeNewStatesRowSet(statesCreated, newStatesCreated - 1)) {
-                                    ac.propagateChangesToOperators(downstream, newStates);
+                                    ac.propagateChangesToOperators(downstream, newStates, false);
                                 }
                                 statesCreated = newStatesCreated;
 
@@ -2412,7 +2413,7 @@ public class ChunkedOperatorAggregationHelper {
      * We also know that we will only modify the rows that existed when we start, so that we can clamp the maximum key
      * for the builder to the maximum output position without loss of fidelity.
      */
-    private static class BitmapRandomBuilder implements RowSetBuilderRandom {
+    public static class BitmapRandomBuilder implements RowSetBuilderRandom {
 
         /**
          * An upper bound on {@code lastUsed}. That is, the highest bit index that may be used in {@code bitset}.
@@ -2434,7 +2435,7 @@ public class ChunkedOperatorAggregationHelper {
          */
         long[] bitset;
 
-        private BitmapRandomBuilder(int maxKey) {
+        public BitmapRandomBuilder(int maxKey) {
             this.maxKey = maxKey;
         }
 

@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
@@ -247,9 +246,9 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
         if (delegateToBy) {
-            groupBy.propagateInitialState(resultTable);
+            groupBy.propagateInitialState(resultTable, startingDestinationsCount);
         }
 
         final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();
@@ -298,9 +297,10 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount,
+            boolean anyKeysModified) {
         if (delegateToBy) {
-            groupBy.resetForStep(upstream, startingDestinationsCount);
+            groupBy.resetForStep(upstream, startingDestinationsCount, anyKeysModified);
         }
         updateUpstreamModifiedColumnSet =
                 upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet();

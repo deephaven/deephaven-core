@@ -234,10 +234,11 @@ class AggregationContext {
      * initialization.
      *
      * @param resultTable The result {@link QueryTable} after initialization
+     * @param maxDestination The maximum destination slot created during initialization
      */
-    void propagateInitialStateToOperators(@NotNull final QueryTable resultTable) {
+    void propagateInitialStateToOperators(@NotNull final QueryTable resultTable, final int maxDestination) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
-            operator.propagateInitialState(resultTable);
+            operator.propagateInitialState(resultTable, maxDestination);
         }
     }
 
@@ -269,10 +270,12 @@ class AggregationContext {
      *
      * @param upstream The upstream {@link TableUpdateImpl}
      * @param startingDestinationsCount The number of used destinations at the beginning of this step
+     * @param anyKeysModified Whether any grouping keys modified as a result of this update
      */
-    void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount,
+            boolean anyKeysModified) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
-            operator.resetForStep(upstream, startingDestinationsCount);
+            operator.resetForStep(upstream, startingDestinationsCount, anyKeysModified);
         }
     }
 
@@ -280,13 +283,15 @@ class AggregationContext {
      * Allow all operators to perform any internal state keeping needed for destinations that were added (went from 0
      * keys to &gt 0), removed (went from &gt 0 keys to 0), or modified (keys added or removed, or keys modified) by
      * this iteration. Note that the arguments to this method should not be mutated in any way.
-     *
+     * 
      * @param downstream The downstream {@link TableUpdate} (which does <em>not</em> have its {@link ModifiedColumnSet}
      *        finalized yet)
      * @param newDestinations New destinations added on this update
+     * @param anyKeysModified Whether any grouping keys were modified during this update
      */
     void propagateChangesToOperators(@NotNull final TableUpdate downstream,
-            @NotNull final RowSet newDestinations) {
+            @NotNull final RowSet newDestinations,
+            final boolean anyKeysModified) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.propagateUpdates(downstream, newDestinations);
         }

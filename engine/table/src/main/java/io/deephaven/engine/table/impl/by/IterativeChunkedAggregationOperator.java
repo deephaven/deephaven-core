@@ -275,8 +275,9 @@ public interface IterativeChunkedAggregationOperator {
      * Perform any internal state keeping needed for destinations that were added during initialization.
      *
      * @param resultTable The result {@link QueryTable} after initialization
+     * @param startingDestinationsCount The number of used destinations at the beginning of this step
      */
-    default void propagateInitialState(@NotNull final QueryTable resultTable) {}
+    default void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {}
 
     /**
      * Called after initialization; when the operator's result columns must have previous tracking enabled.
@@ -301,17 +302,18 @@ public interface IterativeChunkedAggregationOperator {
 
     /**
      * Reset any per-step internal state. Note that the arguments to this method should not be mutated in any way.
-     *
+     * 
      * @param upstream The upstream ShiftAwareListener.Update
      * @param startingDestinationsCount The number of used destinations at the beginning of this step
+     * @param anyKeysModified Whether any grouping keys modified as a result of this update
      */
-    default void resetForStep(@NotNull TableUpdate upstream, int startingDestinationsCount) {}
+    default void resetForStep(@NotNull TableUpdate upstream, int startingDestinationsCount, boolean anyKeysModified) {}
 
     /**
      * Perform any internal state keeping needed for destinations that were added (went from 0 keys to &gt; 0), removed
      * (went from &gt; 0 keys to 0), or modified (keys added or removed, or keys modified) by this iteration. Note that
      * the arguments to this method should not be mutated in any way.
-     *
+     * 
      * @param downstream The downstream TableUpdate (which does <em>not</em> have its {@link ModifiedColumnSet}
      *        finalized yet)
      * @param newDestinations New destinations added on this update

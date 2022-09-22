@@ -58,8 +58,8 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
-        super.resetForStep(upstream, startingDestinationsCount);
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount, boolean anyKeysModified) {
+        super.resetForStep(upstream, startingDestinationsCount, anyKeysModified);
         if (isCombo) {
             changedDestinationsBuilder = RowSetFactory.builderRandom();
         }
@@ -138,7 +138,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     }
 
     @Override
-    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
         copyStreamToResult(resultTable.getRowSet());
         redirections = null;
     }
