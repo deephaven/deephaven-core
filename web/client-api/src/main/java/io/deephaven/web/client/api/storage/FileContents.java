@@ -25,7 +25,7 @@ public class FileContents {
     }
 
     private final Blob data;
-    private String etag;//only writable internally
+    private String etag;// only writable internally
 
     public FileContents(Blob data) {
         this.data = data;

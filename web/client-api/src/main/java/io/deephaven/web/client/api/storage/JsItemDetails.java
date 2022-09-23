@@ -19,7 +19,8 @@ public class JsItemDetails {
 
     @JsMethod(namespace = "dh.storage.ItemDetails")
     public static JsItemDetails directory(String... pathParts) {
-        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getDIRECTORY(), null, null);
+        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getDIRECTORY(), null,
+                null);
     }
 
     public JsItemDetails(String path, int kind, String size, String etag) {
