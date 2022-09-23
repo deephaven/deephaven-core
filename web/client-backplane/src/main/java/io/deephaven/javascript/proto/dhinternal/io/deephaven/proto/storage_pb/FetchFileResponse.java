@@ -108,6 +108,9 @@ public class FetchFileResponse {
         FetchFileResponse.ToObjectReturnType.GetContentsUnionType getContents();
 
         @JsProperty
+        String getEtag();
+
+        @JsProperty
         void setContents(FetchFileResponse.ToObjectReturnType.GetContentsUnionType contents);
 
         @JsOverlay
@@ -121,6 +124,9 @@ public class FetchFileResponse {
             setContents(
                     Js.<FetchFileResponse.ToObjectReturnType.GetContentsUnionType>uncheckedCast(contents));
         }
+
+        @JsProperty
+        void setEtag(String etag);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -162,6 +168,9 @@ public class FetchFileResponse {
         FetchFileResponse.ToObjectReturnType0.GetContentsUnionType getContents();
 
         @JsProperty
+        String getEtag();
+
+        @JsProperty
         void setContents(FetchFileResponse.ToObjectReturnType0.GetContentsUnionType contents);
 
         @JsOverlay
@@ -175,6 +184,9 @@ public class FetchFileResponse {
             setContents(
                     Js.<FetchFileResponse.ToObjectReturnType0.GetContentsUnionType>uncheckedCast(contents));
         }
+
+        @JsProperty
+        void setEtag(String etag);
     }
 
     public static native FetchFileResponse deserializeBinary(Uint8Array bytes);
@@ -193,6 +205,8 @@ public class FetchFileResponse {
 
     public native Uint8Array getContents_asU8();
 
+    public native String getEtag();
+
     public native Uint8Array serializeBinary();
 
     public native void setContents(FetchFileResponse.SetContentsValueUnionType value);
@@ -206,6 +220,8 @@ public class FetchFileResponse {
     public final void setContents(Uint8Array value) {
         setContents(Js.<FetchFileResponse.SetContentsValueUnionType>uncheckedCast(value));
     }
+
+    public native void setEtag(String value);
 
     public native FetchFileResponse.ToObjectReturnType0 toObject();
 

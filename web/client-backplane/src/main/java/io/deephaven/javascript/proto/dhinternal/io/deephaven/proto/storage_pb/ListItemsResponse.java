@@ -24,7 +24,7 @@ public class ListItemsResponse {
             }
 
             @JsProperty
-            double getKind();
+            String getEtag();
 
             @JsProperty
             String getPath();
@@ -33,13 +33,19 @@ public class ListItemsResponse {
             String getSize();
 
             @JsProperty
-            void setKind(double kind);
+            double getType();
+
+            @JsProperty
+            void setEtag(String etag);
 
             @JsProperty
             void setPath(String path);
 
             @JsProperty
             void setSize(String size);
+
+            @JsProperty
+            void setType(double type);
         }
 
         @JsOverlay
@@ -71,7 +77,7 @@ public class ListItemsResponse {
             }
 
             @JsProperty
-            double getKind();
+            String getEtag();
 
             @JsProperty
             String getPath();
@@ -80,13 +86,19 @@ public class ListItemsResponse {
             String getSize();
 
             @JsProperty
-            void setKind(double kind);
+            double getType();
+
+            @JsProperty
+            void setEtag(String etag);
 
             @JsProperty
             void setPath(String path);
 
             @JsProperty
             void setSize(String size);
+
+            @JsProperty
+            void setType(double type);
         }
 
         @JsOverlay
@@ -119,24 +131,24 @@ public class ListItemsResponse {
     public static native ListItemsResponse.ToObjectReturnType toObject(
             boolean includeInstance, ListItemsResponse msg);
 
-    public native FileInfo addItems();
+    public native ItemInfo addItems();
 
-    public native FileInfo addItems(FileInfo value, double index);
+    public native ItemInfo addItems(ItemInfo value, double index);
 
-    public native FileInfo addItems(FileInfo value);
+    public native ItemInfo addItems(ItemInfo value);
 
     public native void clearItemsList();
 
-    public native JsArray<FileInfo> getItemsList();
+    public native JsArray<ItemInfo> getItemsList();
 
     public native Uint8Array serializeBinary();
 
     @JsOverlay
-    public final void setItemsList(FileInfo[] value) {
-        setItemsList(Js.<JsArray<FileInfo>>uncheckedCast(value));
+    public final void setItemsList(ItemInfo[] value) {
+        setItemsList(Js.<JsArray<ItemInfo>>uncheckedCast(value));
     }
 
-    public native void setItemsList(JsArray<FileInfo> value);
+    public native void setItemsList(JsArray<ItemInfo> value);
 
     public native ListItemsResponse.ToObjectReturnType0 toObject();
 

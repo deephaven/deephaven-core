@@ -2,7 +2,7 @@ package io.deephaven.web.client.api.storage;
 
 import elemental2.core.JsArray;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Storage_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FileInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ItemInfo;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
@@ -13,12 +13,12 @@ public class JsItemDetails {
 
     @JsMethod(namespace = "dh.storage.ItemDetails")
     public static JsItemDetails file(String... pathParts) {
-        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.FileKind.getFILE(), null);
+        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getFILE(), null);
     }
 
     @JsMethod(namespace = "dh.storage.ItemDetails")
     public static JsItemDetails directory(String... pathParts) {
-        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.FileKind.getDIRECTORY(), null);
+        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getDIRECTORY(), null);
     }
 
     public JsItemDetails(String path, int kind, String size) {
@@ -27,8 +27,8 @@ public class JsItemDetails {
         this.size = size;
     }
 
-    public static JsItemDetails fromProto(FileInfo item) {
-        return new JsItemDetails(item.getPath(), item.getKind(), item.getSize());
+    public static JsItemDetails fromProto(ItemInfo item) {
+        return new JsItemDetails(item.getPath(), item.getType(), item.getSize());
     }
 
     @JsProperty
@@ -48,7 +48,7 @@ public class JsItemDetails {
 
     @JsProperty
     public String getType() {
-        return type == Storage_pb.FileKind.getDIRECTORY() ? "directory" : "file";
+        return type == Storage_pb.ItemType.getDIRECTORY() ? "directory" : "file";
     }
 
     @JsProperty

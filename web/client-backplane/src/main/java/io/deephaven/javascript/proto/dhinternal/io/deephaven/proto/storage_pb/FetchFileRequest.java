@@ -21,7 +21,13 @@ public class FetchFileRequest {
         }
 
         @JsProperty
+        String getEtag();
+
+        @JsProperty
         String getPath();
+
+        @JsProperty
+        void setEtag(String etag);
 
         @JsProperty
         void setPath(String path);
@@ -35,7 +41,13 @@ public class FetchFileRequest {
         }
 
         @JsProperty
+        String getEtag();
+
+        @JsProperty
         String getPath();
+
+        @JsProperty
+        void setEtag(String etag);
 
         @JsProperty
         void setPath(String path);
@@ -51,9 +63,17 @@ public class FetchFileRequest {
     public static native FetchFileRequest.ToObjectReturnType toObject(
             boolean includeInstance, FetchFileRequest msg);
 
+    public native void clearEtag();
+
+    public native String getEtag();
+
     public native String getPath();
 
+    public native boolean hasEtag();
+
     public native Uint8Array serializeBinary();
+
+    public native void setEtag(String value);
 
     public native void setPath(String value);
 

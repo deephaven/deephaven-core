@@ -1,6 +1,6 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto;
 
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FileKindMap;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ItemTypeMap;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
@@ -9,5 +9,5 @@ import jsinterop.annotations.JsType;
         name = "dhinternal.io.deephaven.proto.storage_pb",
         namespace = JsPackage.GLOBAL)
 public class Storage_pb {
-    public static FileKindMap FileKind;
+    public static ItemTypeMap ItemType;
 }

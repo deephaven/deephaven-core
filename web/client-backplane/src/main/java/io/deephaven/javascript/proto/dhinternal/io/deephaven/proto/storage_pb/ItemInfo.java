@@ -10,18 +10,18 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.storage_pb.FileInfo",
+        name = "dhinternal.io.deephaven.proto.storage_pb.ItemInfo",
         namespace = JsPackage.GLOBAL)
-public class FileInfo {
+public class ItemInfo {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsOverlay
-        static FileInfo.ToObjectReturnType create() {
+        static ItemInfo.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        double getKind();
+        String getEtag();
 
         @JsProperty
         String getPath();
@@ -30,24 +30,30 @@ public class FileInfo {
         String getSize();
 
         @JsProperty
-        void setKind(double kind);
+        double getType();
+
+        @JsProperty
+        void setEtag(String etag);
 
         @JsProperty
         void setPath(String path);
 
         @JsProperty
         void setSize(String size);
+
+        @JsProperty
+        void setType(double type);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsOverlay
-        static FileInfo.ToObjectReturnType0 create() {
+        static ItemInfo.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        double getKind();
+        String getEtag();
 
         @JsProperty
         String getPath();
@@ -56,38 +62,52 @@ public class FileInfo {
         String getSize();
 
         @JsProperty
-        void setKind(double kind);
+        double getType();
+
+        @JsProperty
+        void setEtag(String etag);
 
         @JsProperty
         void setPath(String path);
 
         @JsProperty
         void setSize(String size);
+
+        @JsProperty
+        void setType(double type);
     }
 
-    public static native FileInfo deserializeBinary(Uint8Array bytes);
+    public static native ItemInfo deserializeBinary(Uint8Array bytes);
 
-    public static native FileInfo deserializeBinaryFromReader(FileInfo message, Object reader);
+    public static native ItemInfo deserializeBinaryFromReader(ItemInfo message, Object reader);
 
-    public static native void serializeBinaryToWriter(FileInfo message, Object writer);
+    public static native void serializeBinaryToWriter(ItemInfo message, Object writer);
 
-    public static native FileInfo.ToObjectReturnType toObject(boolean includeInstance, FileInfo msg);
+    public static native ItemInfo.ToObjectReturnType toObject(boolean includeInstance, ItemInfo msg);
 
-    public native int getKind();
+    public native void clearEtag();
+
+    public native String getEtag();
 
     public native String getPath();
 
     public native String getSize();
 
+    public native int getType();
+
+    public native boolean hasEtag();
+
     public native Uint8Array serializeBinary();
 
-    public native void setKind(int value);
+    public native void setEtag(String value);
 
     public native void setPath(String value);
 
     public native void setSize(String value);
 
-    public native FileInfo.ToObjectReturnType0 toObject();
+    public native void setType(int value);
 
-    public native FileInfo.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ItemInfo.ToObjectReturnType0 toObject();
+
+    public native ItemInfo.ToObjectReturnType0 toObject(boolean includeInstance);
 }

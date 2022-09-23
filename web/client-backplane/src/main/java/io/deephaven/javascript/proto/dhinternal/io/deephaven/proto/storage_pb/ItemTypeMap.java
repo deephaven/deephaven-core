@@ -9,11 +9,11 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.storage_pb.FileKindMap",
+        name = "dhinternal.io.deephaven.proto.storage_pb.ItemTypeMap",
         namespace = JsPackage.GLOBAL)
-public interface FileKindMap {
+public interface ItemTypeMap {
     @JsOverlay
-    static FileKindMap create() {
+    static ItemTypeMap create() {
         return Js.uncheckedCast(JsPropertyMap.of());
     }
 
