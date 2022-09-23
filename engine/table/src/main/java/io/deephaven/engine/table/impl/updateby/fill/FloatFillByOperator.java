@@ -5,24 +5,32 @@
  */
 package io.deephaven.engine.table.impl.updateby.fill;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatFillByOperator extends BaseFloatUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
+
+    protected class Context extends BaseFloatUpdateByOperator.Context {
+        public FloatChunk<Values> floatValueChunk;
+
+        protected Context(int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            floatValueChunk = valuesChunk.asFloatChunk();
+        }
+    }
 
     public FloatFillByOperator(@NotNull final MatchPair fillPair,
                               @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
@@ -34,28 +42,21 @@ public class FloatFillByOperator extends BaseFloatUpdateByOperator {
         // endregion constructor
     }
 
-    // region extra-methods
-    // endregion extra-methods
+    @NotNull
+    @Override
+    public UpdateContext makeUpdateContext(int chunkSize) {
+        return new Context(chunkSize);
+    }
 
     @Override
-    protected void doProcessChunk(@NotNull final Context ctx,
-                                  @NotNull final RowSequence inputKeys,
-                                  @NotNull final Chunk<Values> workingChunk) {
-        accumulate(workingChunk.asFloatChunk(), ctx, 0, workingChunk.size());
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
+    public void push(UpdateContext context, long key, int pos) {
+        final Context ctx = (Context) context;
 
-    private void accumulate(@NotNull final FloatChunk<Values> asFloats,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableFloatChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final float currentVal = asFloats.get(ii);
-            if(currentVal != NULL_FLOAT) {
-                ctx.curVal = currentVal;
-            }
-            localOutputValues.set(ii, ctx.curVal);
+        if(ctx.curVal == NULL_FLOAT) {
+            ctx.curVal = ctx.floatValueChunk.get(pos);
         }
     }
+
+    // region extra-methods
+    // endregion extra-methods
 }

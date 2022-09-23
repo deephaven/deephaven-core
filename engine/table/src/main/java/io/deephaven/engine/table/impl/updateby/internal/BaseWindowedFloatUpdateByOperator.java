@@ -3,110 +3,117 @@ package io.deephaven.engine.table.impl.updateby.internal;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedFloatChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
+import io.deephaven.engine.table.impl.sources.FloatArraySource;
+import io.deephaven.engine.table.impl.sources.FloatSparseArraySource;
+import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+
 public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowedOperator {
-    protected final ColumnSource<Float> valueSource;
+    protected final WritableColumnSource<Float> outputSource;
+    protected final WritableColumnSource<Float> maybeInnerSource;
 
     // region extra-fields
     // endregion extra-fields
 
     protected class Context extends UpdateWindowedContext {
-        public WritableFloatChunk<Values> candidateValuesChunk;
+        public final ChunkSink.FillFromContext fillContext;
+        public final SizedFloatChunk<Values> outputValues;
+
+        protected Context(final int chunkSize) {
+            this.fillContext = outputSource.makeFillFromContext(chunkSize);
+            this.outputValues = new SizedFloatChunk<>(chunkSize);
+        }
+
+        public void storeWorkingChunk(@NotNull final Chunk<Values> valuesChunk) {}
 
         @Override
         public void close() {
-            super.close();
-            if (candidateValuesChunk != null) {
-                candidateValuesChunk.close();
-                candidateValuesChunk = null;
-            }
-        }
-
-        @Override
-        public void loadInfluencerValueChunk() {
-            int size = influencerRows.intSize();
-            // fill the window values chunk
-            if (candidateValuesChunk == null) {
-                candidateValuesChunk = WritableFloatChunk.makeWritableChunk(size);
-            }
-            try (ChunkSource.FillContext fc = valueSource.makeFillContext(size)){
-                valueSource.fillChunk(fc, candidateValuesChunk, influencerRows);
-            }
+            outputValues.close();
+            fillContext.close();
         }
     }
 
     public BaseWindowedFloatUpdateByOperator(@NotNull final MatchPair pair,
-                                             @NotNull final String[] affectingColumns,
-                                             @NotNull final OperationControl control,
-                                             @Nullable final String timestampColumnName,
-                                             @Nullable final ColumnSource<?> timestampColumnSource,
-                                             final long reverseTimeScaleUnits,
-                                             final long forwardTimeScaleUnits,
-                                             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
-                                             @NotNull final ColumnSource<Float> valueSource
-                                             // region extra-constructor-args
-                                             // endregion extra-constructor-args
-                                    ) {
-        super(pair, affectingColumns, control, timestampColumnName, timestampColumnSource, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
-        this.valueSource = valueSource;
+                                            @NotNull final String[] affectingColumns,
+                                            @NotNull final OperationControl control,
+                                            @Nullable final String timestampColumnName,
+                                            final long reverseTimeScaleUnits,
+                                            final long forwardTimeScaleUnits,
+                                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                            // region extra-constructor-args
+                                            // endregion extra-constructor-args
+    ) {
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
+        if(this.redirContext.isRedirected()) {
+            // region create-dense
+            this.maybeInnerSource = new FloatArraySource();
+            // endregion create-dense
+            this.outputSource = new WritableRedirectedColumnSource(this.redirContext.getRowRedirection(), maybeInnerSource, 0);
+        } else {
+            this.maybeInnerSource = null;
+            // region create-sparse
+            this.outputSource = new FloatSparseArraySource();
+            // endregion create-sparse
+        }
+
         // region constructor
         // endregion constructor
     }
 
+    //*** for floating point operators, we want a computed result */
+    public abstract float result(UpdateContext context);
+
     // region extra-methods
     // endregion extra-methods
 
+    @NotNull
     @Override
-    public boolean requiresValues(@NotNull final UpdateContext context) {
-        // windowed operators don't need current values supplied to them, they only care about windowed values which
-        // may or may not intersect with the column values
-        return false;
+    public UpdateContext makeUpdateContext(int chunkSize) {
+        return new Context(chunkSize);
     }
 
-    // region Addition
-    /**
-     * Add a chunk of values to the operator.
-     *
-     * @param ctx the context object
-     * @param inputKeys the input keys for the chunk
-     * @param workingChunk the chunk of values
-     */
-    protected abstract void doProcessChunk(@NotNull final Context ctx,
-                                           @NotNull final RowSequence inputKeys,
-                                           @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                           @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                                           @NotNull final Chunk<Values> workingChunk);
-
-    // endregion
-
-    // region Reprocessing
-
-    public void resetForProcess(@NotNull final UpdateContext context,
-                                @NotNull final RowSet sourceRowSet,
-                                long firstUnmodifiedKey) {
-        final Context ctx = (Context) context;
-        ctx.sourceRowSet = sourceRowSet;
+    @Override
+    public void startTrackingPrev() {
+        outputSource.startTrackingPrevValues();
+        if (redirContext.isRedirected()) {
+            maybeInnerSource.startTrackingPrevValues();
+        }
     }
+
+    // region Shifts
+
+    @Override
+    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
+        ((FloatSparseArraySource)outputSource).shift(subIndexToShift, delta);
+    }
+
+    // endregion Shifts
+
+    // region Processing
 
     @Override
     public void processChunk(@NotNull final UpdateContext updateContext,
                              @NotNull final RowSequence inputKeys,
                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                             @NotNull final Chunk<Values> valuesChunk,
-                             @NotNull final RowSet postUpdateSourceIndex) {
+                             @Nullable final Chunk<Values> valuesChunk,
+                             @Nullable final LongChunk<Values> timestampValuesChunk) {
         final Context ctx = (Context) updateContext;
-        doProcessChunk(ctx, inputKeys, keyChunk, posChunk, valuesChunk);
-        ctx.getModifiedBuilder().appendRowSequence(inputKeys);
+        ctx.storeWorkingChunk(valuesChunk);
+        for (int ii = 0; ii < valuesChunk.size(); ii++) {
+            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
+            ctx.outputValues.get().set(ii, result(ctx));
+        }
+        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues.get(), inputKeys);
     }
 
     // endregion

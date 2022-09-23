@@ -151,7 +151,8 @@ public class ReplicateUpdateBy {
         lines = replaceRegion(lines, "Shifts",
                 Collections.singletonList(
                         "    @Override\n" +
-                                "    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {\n" +
+                                "    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {\n"
+                                +
                                 "        if (outputSource instanceof BooleanSparseArraySource.ReinterpretedAsByte) {\n"
                                 +
                                 "            ((BooleanSparseArraySource.ReinterpretedAsByte)outputSource).shift(subIndexToShift, delta);\n"
@@ -179,8 +180,7 @@ public class ReplicateUpdateBy {
                 "            this.maybeInnerSource = makeDenseSource();"));
         lines = replaceRegion(lines, "create-sparse", Collections.singletonList(
                 "            this.outputSource = makeSparseSource();"));
-        lines = replaceRegion(lines, "create-bucket", Collections.singletonList(
-                "                this.bucketLastVal = makeDenseSource();"));
+
         FileUtils.writeLines(objectFile, lines);
     }
 

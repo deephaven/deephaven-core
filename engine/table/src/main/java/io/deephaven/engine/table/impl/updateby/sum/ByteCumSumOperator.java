@@ -6,25 +6,31 @@
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.*;
 
 public class ByteCumSumOperator extends BaseLongUpdateByOperator {
     // region extra-fields
     final byte nullValue;
     // endregion extra-fields
+
+    protected class Context extends BaseLongUpdateByOperator.Context {
+        public ByteChunk<Values> byteValueChunk;
+
+        protected Context(int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            byteValueChunk = valuesChunk.asByteChunk();
+        }
+    }
 
     public ByteCumSumOperator(@NotNull final MatchPair pair,
                                @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
@@ -38,33 +44,23 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
         // endregion constructor
     }
 
+    @NotNull
     @Override
-    protected void doProcessChunk(@NotNull final Context ctx,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk) {
-//        ctx.curVal = groupPosition == singletonGroup ? singletonVal : NULL_LONG;
-        accumulate(workingChunk.asByteChunk(), ctx, 0, workingChunk.size());
-//        singletonGroup = groupPosition;
-//        singletonVal = ctx.curVal;
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
+    public UpdateContext makeUpdateContext(int chunkSize) {
+        return new Context(chunkSize);
     }
 
-    private void accumulate(@NotNull final ByteChunk<Values> asBytes,
-                    @NotNull final Context ctx,
-                    final int runStart,
-                    final int runLength) {
-        final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final byte currentVal = asBytes.get(ii);
-            final boolean isCurrentNull = currentVal == NULL_BYTE;
-            if(ctx.curVal == NULL_LONG) {
-                ctx.curVal = isCurrentNull ? NULL_LONG : currentVal;
-            } else {
-                if(!isCurrentNull) {
-                    ctx.curVal += currentVal;
-                }
-            }
-            localOutputValues.set(ii, ctx.curVal);
+    @Override
+    public void push(UpdateContext context, long key, int pos) {
+        final Context ctx = (Context) context;
+
+        // read the value from the values chunk
+        final byte currentVal = ctx.byteValueChunk.get(pos);
+
+        if(ctx.curVal == NULL_LONG) {
+            ctx.curVal = currentVal == NULL_BYTE ? NULL_LONG : currentVal;
+        } else if (currentVal != NULL_BYTE) {
+            ctx.curVal += currentVal;
         }
     }
 }

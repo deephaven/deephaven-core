@@ -2,42 +2,49 @@ package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
     protected final ColumnSource<T> valueSource;
 
     protected final OperationControl control;
-    protected final LongRecordingUpdateByOperator timeRecorder;
     protected final String timestampColumnName;
     protected final double timeScaleUnits;
+    protected final BigDecimal alpha;
+    protected final BigDecimal oneMinusAlpha;
 
-    class EmaContext extends Context {
-        BigDecimal alpha = BigDecimal.valueOf(Math.exp(-1 / timeScaleUnits));
-        BigDecimal oneMinusAlpha =
-                timeRecorder == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault()) : null;
+
+    class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
+        public LongChunk<Values> timestampValueChunk;
+        public ObjectChunk<T, Values> objectValueChunk;
+
         long lastStamp = NULL_LONG;
 
-        EmaContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
-            super(chunkSize, timestampSsa);
+        Context(final int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            objectValueChunk = valuesChunk.asObjectChunk();
         }
     }
 
@@ -47,8 +54,6 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
      * @param control defines how to handle {@code null} input values.
-     * @param timeRecorder an optional recorder for a timestamp column. If this is null, it will be assumed time is
-     *        measured in integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *        in ticks, otherwise it is measured in nanoseconds
      * @param valueSource the input column source. Used when determining reset positions for reprocessing
@@ -56,107 +61,63 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     public BigNumberEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
-            @Nullable final LongRecordingUpdateByOperator timeRecorder,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
             @NotNull ColumnSource<T> valueSource,
-            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
-    // region extra-constructor-args
-    // endregion extra-constructor-args
-    ) {
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
         super(pair, affectingColumns, redirContext, BigDecimal.class);
+
         this.control = control;
-        this.timeRecorder = timeRecorder;
         this.timestampColumnName = timestampColumnName;
-        this.timeScaleUnits = timeScaleUnits;
+        this.timeScaleUnits = (double) timeScaleUnits;
         this.valueSource = valueSource;
-        // region constructor
-        // endregion constructor
+
+        alpha = BigDecimal.valueOf(Math.exp(-1.0 / (double) timeScaleUnits));
+        oneMinusAlpha =
+                timestampColumnName == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault()) : null;
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
-        return new EmaContext(chunkSize, timestampSsa);
+    public UpdateContext makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     @Override
-    protected void doProcessChunk(@NotNull final Context updateContext,
-            @NotNull final RowSequence inputKeys,
-            @NotNull final Chunk<Values> workingChunk) {
-        final ObjectChunk<T, Values> asObjects = workingChunk.asObjectChunk();
-        final EmaContext ctx = (EmaContext) updateContext;
+    public void initializeUpdate(@NotNull final UpdateContext updateContext,
+            @NotNull final long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
+        super.initializeUpdate(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
 
-        if (timeRecorder == null) {
-            computeWithTicks(ctx, asObjects, 0, inputKeys.intSize());
-        } else {
-            computeWithTime(ctx, asObjects, 0, inputKeys.intSize());
-        }
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
-
-
-    @Override
-    public void resetForProcess(@NotNull final UpdateContext context,
-            @NotNull final RowSet sourceIndex,
-            final long firstUnmodifiedKey) {
-        super.resetForProcess(context, sourceIndex, firstUnmodifiedKey);
-
-        if (timeRecorder == null) {
-            return;
-        }
-
-        final EmaContext ctx = (EmaContext) context;
-
+        final Context ctx = (Context) updateContext;
         // If we set the last state to null, then we know it was a reset state and the timestamp must also
         // have been reset.
         if (ctx.curVal == null || (firstUnmodifiedKey == NULL_ROW_KEY)) {
             ctx.lastStamp = NULL_LONG;
         } else {
-            // If it hasn't been reset to null, then it's possible that the value at that position was null, in
-            // which case we must have ignored it, and so we have to actually keep looking backwards until we find
-            // something not null.
-            ctx.lastStamp = locateFirstValidPreviousTimestamp(sourceIndex, firstUnmodifiedKey);
+            // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)
+            ctx.lastStamp = firstUnmodifiedTimestamp;
         }
     }
 
-    private long locateFirstValidPreviousTimestamp(@NotNull final RowSet indexToSearch,
-            final long firstUnmodifiedKey) {
-        long potentialResetTimestamp = timeRecorder.getCurrentLong(firstUnmodifiedKey);
-        if (potentialResetTimestamp != NULL_LONG && isValueValid(firstUnmodifiedKey)) {
-            return potentialResetTimestamp;
+    @Override
+    public void processChunk(@NotNull final UpdateContext updateContext,
+            @NotNull final RowSequence inputKeys,
+            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
+            @Nullable final LongChunk<OrderedRowKeys> posChunk,
+            @Nullable final Chunk<Values> valuesChunk,
+            @Nullable final LongChunk<Values> timestampValuesChunk) {
+        Assert.notEquals(valuesChunk, "valuesChunk must not be null for a cumulative operator", null);
+        final Context ctx = (Context) updateContext;
+        ctx.storeValuesChunk(valuesChunk);
+        ctx.timestampValueChunk = timestampValuesChunk;
+        for (int ii = 0; ii < valuesChunk.size(); ii++) {
+            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
+            ctx.outputValues.set(ii, ctx.curVal);
         }
-
-        try (final RowSet.SearchIterator rIt = indexToSearch.reverseIterator()) {
-            if (rIt.advance(firstUnmodifiedKey)) {
-                while (rIt.hasNext()) {
-                    final long nextKey = rIt.nextLong();
-                    potentialResetTimestamp = timeRecorder.getCurrentLong(nextKey);
-                    if (potentialResetTimestamp != NULL_LONG && isValueValid(nextKey)) {
-                        return potentialResetTimestamp;
-                    }
-                }
-            }
-        }
-
-        return NULL_LONG;
+        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues, inputKeys);
     }
 
-    private boolean isValueValid(final long atKey) {
-        return valueSource.get(atKey) != null;
-    }
-
-    abstract void computeWithTicks(final EmaContext ctx,
-            final ObjectChunk<T, Values> valueChunk,
-            final int chunkStart,
-            final int chunkEnd);
-
-    abstract void computeWithTime(final EmaContext ctx,
-            final ObjectChunk<T, Values> valueChunk,
-            final int chunkStart,
-            final int chunkEnd);
-
-    void handleBadData(@NotNull final EmaContext ctx,
+    void handleBadData(@NotNull final Context ctx,
             final boolean isNull,
             final boolean isNullTime) {
         boolean doReset = false;
@@ -180,7 +141,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         }
     }
 
-    void handleBadTime(@NotNull final EmaContext ctx, final long dt) {
+    void handleBadTime(@NotNull final Context ctx, final long dt) {
         boolean doReset = false;
         if (dt == 0) {
             if (control.onZeroDeltaTimeOrDefault() == BadDataBehavior.THROW) {
@@ -198,5 +159,10 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             ctx.curVal = null;
             ctx.lastStamp = NULL_LONG;
         }
+    }
+
+    @Override
+    public boolean isValueValid(long atKey) {
+        return valueSource.get(atKey) != null;
     }
 }

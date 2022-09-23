@@ -37,7 +37,6 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
      */
     public static Table compute(@NotNull final String description,
             @NotNull final QueryTable source,
-            @NotNull final UpdateByWindow[] windows,
             @NotNull final UpdateByOperator[] ops,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
@@ -45,7 +44,6 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
             @NotNull final UpdateByControl control) {
 
         final BucketedPartitionedUpdateBy updateBy = new BucketedPartitionedUpdateBy(description,
-                windows,
                 ops,
                 source,
                 resultSources,
@@ -57,14 +55,13 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
     }
 
     protected BucketedPartitionedUpdateBy(@NotNull final String description,
-            @NotNull final UpdateByWindow[] windows,
             @NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByRedirectionContext redirContext,
             @NotNull final UpdateByControl control) {
-        super(windows, operators, source, redirContext, control);
+        super(operators, source, redirContext, control);
 
         // create a source-listener that will listen to the source updates and apply the shifts to the output columns
         final QueryTable sourceListenerTable = new QueryTable(source.getRowSet(), source.getColumnSourceMap());
@@ -83,7 +80,7 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
                             upstream.shifted().apply((begin, end, delta) -> {
                                 try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
                                     for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                                        operators[opIdx].applyOutputShift(null, subRowSet, delta);
+                                        operators[opIdx].applyOutputShift(subRowSet, delta);
                                     }
                                 }
                             });
@@ -124,7 +121,6 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
             Table newTable = ZeroKeyUpdateBy.compute(
                     description,
                     (QueryTable) t,
-                    windows,
                     operators,
                     resultSources,
                     redirContext,

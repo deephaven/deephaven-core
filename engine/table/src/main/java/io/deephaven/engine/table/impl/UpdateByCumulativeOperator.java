@@ -1,104 +1,95 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedByteUpdateByOperator;
-import io.deephaven.tablelogger.Row;
+import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedLongChunk;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.MatchPair;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
+    protected final MatchPair pair;
+    protected final String[] affectingColumns;
 
-    public abstract class UpdateCumulativeContext implements UpdateContext {
-        protected LongSegmentedSortedArray timestampSsa;
+    protected final UpdateBy.UpdateByRedirectionContext redirContext;
 
-        protected RowSetBuilderSequential modifiedBuilder;
-        protected RowSet newModified;
+    // these will be used by the timestamp-aware operators (EMA for example)
+    protected OperationControl control;
+    protected long timeScaleUnits;
+    protected String timestampColumnName;
 
-        public LongSegmentedSortedArray getTimestampSsa() {
-            return timestampSsa;
+    protected class Context implements UpdateContext {
+        public long curTimestamp;
+
+        protected Context(final int chunkSize) {
+            curTimestamp = NULL_LONG;
         }
 
-        public RowSetBuilderSequential getModifiedBuilder() {
-            if (modifiedBuilder == null) {
-                modifiedBuilder = RowSetFactory.builderSequential();
-            }
-            return modifiedBuilder;
-        }
 
         @Override
-        public void close() {
-            try (final RowSet ignored = affectedRows;
-                    final RowSet ignored2 = newModified) {
-            }
-        }
+        public void close() {}
+    }
+
+    public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
+        this.pair = pair;
+        this.affectingColumns = affectingColumns;
+        this.redirContext = redirContext;
+
+        this.timeScaleUnits = 0L;
+        this.timestampColumnName = null;
+    }
+
+    abstract public void initializeUpdate(@NotNull final UpdateContext context, final long firstUnmodifiedKey,
+            long firstUnmodifiedTimestamp);
+
+    public boolean isValueValid(long atKey) {
+        throw new UnsupportedOperationException("isValueValid() must be overriden by time-aware cumulative operators");
     }
 
     @Override
-    public void initializeFor(@NotNull final UpdateContext context,
-            @NotNull final RowSet updateRowSet) {}
+    public void finishUpdate(@NotNull final UpdateContext context) {}
 
-    @Override
-    public void finishFor(@NotNull final UpdateContext context) {
-        UpdateCumulativeContext ctx = (UpdateCumulativeContext) context;
-        ctx.newModified = ctx.getModifiedBuilder().build();
-    }
-
-    @NotNull
-    final public RowSet getAdditionalModifications(@NotNull final UpdateContext context) {
-        UpdateCumulativeContext ctx = (UpdateCumulativeContext) context;
-        return ctx.newModified;
-    }
-
-    @Override
-    final public boolean anyModified(@NotNull final UpdateContext context) {
-        UpdateCumulativeContext ctx = (UpdateCumulativeContext) context;
-        return ctx.newModified != null && ctx.newModified.isNonempty();
-    }
-
-    /*** nearly all cumulative operators will not reference a timestamp column, exceptions are Ema */
     @Override
     public String getTimestampColumnName() {
-        return null;
+        return timestampColumnName;
     }
 
-    /**
-     * Get the value of the backward-looking window (might be nanos or ticks).
-     *
-     * @return the name of the input column
-     */
     @Override
     public long getPrevWindowUnits() {
-        return 0L;
+        return timeScaleUnits;
     }
 
-    /**
-     * Get the value of the forward-looking window (might be nanos or ticks).
-     *
-     * @return the name of the input column
-     */
+    /** cumulative operators do not have a forward-looking window */
     @Override
     public long getFwdWindowUnits() {
         return 0L;
     }
 
-    /*** cumulative operators do not need keys */
+    @NotNull
     @Override
-    public boolean requiresKeys() {
-        return false;
+    public String getInputColumnName() {
+        return pair.rightColumn;
     }
 
-    /*** cumulative operators do not need position data */
+    @NotNull
     @Override
-    public boolean requiresPositions() {
-        return false;
+    public String[] getAffectingColumnNames() {
+        return affectingColumns;
     }
 
-    /*** cumulative operators always need values */
+    @NotNull
     @Override
-    public boolean requiresValues(@NotNull final UpdateContext context) {
-        return true;
+    public String[] getOutputColumnNames() {
+        return new String[] {pair.leftColumn};
+    }
+
+    @Override
+    public void pop(UpdateContext context) {
+        throw new UnsupportedOperationException("Cumulative operators should never call pop()");
     }
 }

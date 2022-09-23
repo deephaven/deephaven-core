@@ -9,7 +9,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
-import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -39,7 +38,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
      *
      * @param description the operation description
      * @param source the source table
-     * @param windows the unique windows for this updateBy call
      * @param ops the operations to perform
      * @param resultSources the result sources
      * @param redirContext the row redirection shared context
@@ -48,14 +46,13 @@ class ZeroKeyUpdateBy extends UpdateBy {
      */
     public static Table compute(@NotNull final String description,
             @NotNull final QueryTable source,
-            @NotNull final UpdateByWindow[] windows,
             @NotNull final UpdateByOperator[] ops,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final UpdateByRedirectionContext redirContext,
             @NotNull final UpdateByControl control,
             final boolean applyShifts) {
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
-        final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(windows, ops, source, redirContext, control, applyShifts);
+        final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(ops, source, redirContext, control, applyShifts);
         updateBy.doInitialAdditions();
 
         if (source.isRefreshing()) {
@@ -67,13 +64,12 @@ class ZeroKeyUpdateBy extends UpdateBy {
         return result;
     }
 
-    protected ZeroKeyUpdateBy(@NotNull final UpdateByWindow[] windows,
-            @NotNull final UpdateByOperator[] operators,
+    protected ZeroKeyUpdateBy(@NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
             @NotNull final UpdateByRedirectionContext redirContext,
             @NotNull final UpdateByControl control,
             final boolean applyShifts) {
-        super(windows, operators, source, redirContext, control);
+        super(operators, source, redirContext, control);
 
         // do we need a timestamp SSA?
         this.timestampColumnName = Arrays.stream(operators)
@@ -117,9 +113,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
         if (restampRemovals.isNonempty()) {
             final int size = (int) Math.min(restampRemovals.size(), 4096);
             try (final RowSequence.Iterator it = restampRemovals.getRowSequenceIterator();
-                 final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
-                 final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
-                 final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+                    final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
+                    final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
+                    final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
 
                 MutableLong lastTimestamp = new MutableLong(NULL_LONG);
                 while (it.hasMore()) {
@@ -168,16 +164,17 @@ class ZeroKeyUpdateBy extends UpdateBy {
         if (restampAdditions.isNonempty()) {
             final int size = (int) Math.min(restampAdditions.size(), 4096);
             try (final RowSequence.Iterator it = restampAdditions.getRowSequenceIterator();
-                 final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
-                 final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
-                 final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+                    final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
+                    final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
+                    final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
                 MutableLong lastTimestamp = new MutableLong(NULL_LONG);
 
                 while (it.hasMore()) {
                     RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
 
                     // get the chunks for values and keys
-                    LongChunk<? extends Values> valuesChunk = timestampColumnSource.getChunk(context, chunkRs).asLongChunk();
+                    LongChunk<? extends Values> valuesChunk =
+                            timestampColumnSource.getChunk(context, chunkRs).asLongChunk();
                     LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
 
                     // push only non-null values/keys into the Ssa
@@ -188,9 +185,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
         }
     }
 
-    /** helper function to fill a LongChunk while skipping values that are NULL_LONG.  Used to populate an SSA from
-     * a source containing null values
-     * */
+    /**
+     * helper function to fill a LongChunk while skipping values that are NULL_LONG. Used to populate an SSA from a
+     * source containing null values
+     */
     private void fillChunkWithNonNull(LongChunk<OrderedRowKeys> keysChunk, LongChunk<? extends Values> valuesChunk,
             WritableLongChunk<OrderedRowKeys> ssaKeys, WritableLongChunk<? extends Values> ssaValues,
             MutableLong lastTimestamp) {
@@ -242,9 +240,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
         /** The expected size of chunks to the various update stages */
         int chunkSize;
 
-        /** An indicator of if each slot has been populated with data or not for this phase. */
-        boolean[] inputChunkPopulated;
-
         /** A {@link SharedContext} to be used while creating other contexts */
         SharedContext sharedContext = SharedContext.makeSharedContext();
 
@@ -272,20 +267,30 @@ class ZeroKeyUpdateBy extends UpdateBy {
             for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                 // create a context for each window
                 windowContexts[winIdx] = windows[winIdx].makeWindowContext(
-                        timestampColumnSource,
-                        timestampSsa);
-
-                // compute the affected/influenced operators and rowset within this window
-                windowAffected[winIdx] = windowContexts[winIdx].computeAffectedAndMakeContexts(upstream,
                         source.getRowSet(),
-                        inputModifiedColumnSets,
+                        inputSources,
+                        timestampColumnSource,
+                        timestampSsa,
                         chunkSize,
                         isInitializeStep);
+
+                // compute the affected/influenced operators and rowset within this window
+                windowAffected[winIdx] = windowContexts[winIdx].computeAffectedRowsAndOperators(upstream,
+                        inputModifiedColumnSets[winIdx]);
             }
         }
 
         public SharedContext getSharedContext() {
             return sharedContext;
+        }
+
+        public boolean anyModified() {
+            for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                if (windowContexts[winIdx].anyModified()) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override
@@ -303,11 +308,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
             }
         }
 
-        /**
-         * Locate the smallest key that requires reprocessing and then replay the table from that point
-         */
         private void processRows() {
-            // this could be parallelized since the windows probably won't overlap
+            // this might be parallelized if there are multiple windows
             for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                 if (windowAffected[winIdx]) {
                     // this will internally call initialize() and finish() for each operator
@@ -331,13 +333,12 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 @NotNull final QueryTable result) {
             super(description, source, false);
             this.result = result;
-            this.inputModifiedColumnSets = new ModifiedColumnSet[operators.length];
-            this.outputModifiedColumnSets = new ModifiedColumnSet[operators.length];
+            this.inputModifiedColumnSets = new ModifiedColumnSet[windows.length];
+            this.outputModifiedColumnSets = new ModifiedColumnSet[windows.length];
 
-            for (int ii = 0; ii < operators.length; ii++) {
-                final String[] outputColumnNames = operators[ii].getOutputColumnNames();
-                inputModifiedColumnSets[ii] = source.newModifiedColumnSet(operators[ii].getAffectingColumnNames());
-                outputModifiedColumnSets[ii] = result.newModifiedColumnSet(outputColumnNames);
+            for (int ii = 0; ii < windows.length; ii++) {
+                inputModifiedColumnSets[ii] = source.newModifiedColumnSet(windows[ii].getAffectingColumnNames());
+                outputModifiedColumnSets[ii] = result.newModifiedColumnSet(windows[ii].getOutputColumnNames());
             }
 
             this.transformer =
@@ -352,8 +353,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
             }
 
             try (final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
-
-
                 if (applyShifts) {
                     if (redirContext.isRedirected()) {
                         redirContext.processUpdateForRedirection(upstream, source.getRowSet());
@@ -366,7 +365,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                                 upstream.shifted().apply((begin, end, delta) -> {
                                     try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
                                         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                                            operators[opIdx].applyOutputShift(ctx.opContext[opIdx], subRowSet, delta);
+                                            operators[opIdx].applyOutputShift(subRowSet, delta);
                                         }
                                     }
                                 });
@@ -387,7 +386,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                 downstream.modifiedColumnSet.clear();
 
-                if (upstream.modified().isNonempty() || ctx.anyModified()) {
+                final boolean windowsModified = ctx.anyModified();
+
+                if (upstream.modified().isNonempty() || windowsModified) {
                     WritableRowSet modifiedRowSet = RowSetFactory.empty();
                     downstream.modified = modifiedRowSet;
                     if (upstream.modified().isNonempty()) {
@@ -396,16 +397,16 @@ class ZeroKeyUpdateBy extends UpdateBy {
                         modifiedRowSet.insert(upstream.modified());
                     }
 
-                    for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                        if (ctx.opAffected[opIdx]) {
-                            if (operators[opIdx].anyModified(ctx.opContext[opIdx])) {
-                                modifiedRowSet
-                                        .insert(operators[opIdx].getAdditionalModifications(ctx.opContext[opIdx]));
+                    // retrieve the modified rowsets from the windows
+                    for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                        if (ctx.windowAffected[winIdx]) {
+                            if (ctx.windowContexts[winIdx].anyModified()) {
+                                modifiedRowSet.insert(ctx.windowContexts[winIdx].getAdditionalModifications());
                             }
                         }
                     }
 
-                    if (ctx.anyModified()) {
+                    if (windowsModified) {
                         modifiedRowSet.remove(upstream.added());
                     }
                 } else {
@@ -413,9 +414,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 }
 
                 // set the modified columns if any operators made changes (add/rem/modify)
-                for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                    if (ctx.opAffected[opIdx]) {
-                        downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[opIdx]);
+                for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                    if (ctx.windowAffected[winIdx]) {
+                        // TODO: need to add only the affected column sets from the window, not all
+                        downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[winIdx]);
                     }
                 }
 

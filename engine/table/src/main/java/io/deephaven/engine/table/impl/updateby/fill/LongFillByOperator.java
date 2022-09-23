@@ -12,18 +12,13 @@ import io.deephaven.time.DateTime;
 import java.time.Instant;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -31,6 +26,19 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     // region extra-fields
     private final Class<?> type;
     // endregion extra-fields
+
+    protected class Context extends BaseLongUpdateByOperator.Context {
+        public LongChunk<Values> longValueChunk;
+
+        protected Context(int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            longValueChunk = valuesChunk.asLongChunk();
+        }
+    }
 
     public LongFillByOperator(@NotNull final MatchPair fillPair,
                               @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
@@ -42,6 +50,21 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
         // region constructor
         this.type = type;
         // endregion constructor
+    }
+
+    @NotNull
+    @Override
+    public UpdateContext makeUpdateContext(int chunkSize) {
+        return new Context(chunkSize);
+    }
+
+    @Override
+    public void push(UpdateContext context, long key, int pos) {
+        final Context ctx = (Context) context;
+
+        if(ctx.curVal == NULL_LONG) {
+            ctx.curVal = ctx.longValueChunk.get(pos);
+        }
     }
 
     // region extra-methods
@@ -57,26 +80,4 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
         return Collections.singletonMap(pair.leftColumn, actualOutput);
     }
     // endregion extra-methods
-
-    @Override
-    protected void doProcessChunk(@NotNull final Context ctx,
-                                  @NotNull final RowSequence inputKeys,
-                                  @NotNull final Chunk<Values> workingChunk) {
-        accumulate(workingChunk.asLongChunk(), ctx, 0, workingChunk.size());
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
-
-    private void accumulate(@NotNull final LongChunk<Values> asLongs,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final long currentVal = asLongs.get(ii);
-            if(currentVal != NULL_LONG) {
-                ctx.curVal = currentVal;
-            }
-            localOutputValues.set(ii, ctx.curVal);
-        }
-    }
 }

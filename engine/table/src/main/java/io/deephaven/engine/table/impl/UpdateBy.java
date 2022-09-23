@@ -1,5 +1,7 @@
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
@@ -30,7 +32,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  * The core of the {@link Table#updateBy(UpdateByControl, Collection, Collection)} operation.
  */
 public abstract class UpdateBy {
-    protected final ChunkSource.WithPrev<Values>[] inputSources;
+    protected final ChunkSource<Values>[] inputSources;
     protected final int[] inputSourceSlots;
     protected final UpdateByWindow[] windows;
     protected final UpdateByOperator[] operators;
@@ -126,8 +128,7 @@ public abstract class UpdateBy {
         }
     }
 
-    protected UpdateBy(@NotNull final UpdateByWindow[] windows,
-            @NotNull final UpdateByOperator[] operators,
+    protected UpdateBy(@NotNull final UpdateByOperator[] operators,
             @NotNull final QueryTable source,
             @NotNull final UpdateByRedirectionContext redirContext,
             UpdateByControl control) {
@@ -139,13 +140,14 @@ public abstract class UpdateBy {
         }
 
         this.source = source;
-        this.windows = windows;
         this.operators = operators;
-        // noinspection unchecked
-        this.inputSources = new ChunkSource.WithPrev[operators.length];
 
+        // the next bit is complicated but the goal is simple. We don't want to have duplicate input column sources, so
+        // we will store each one only once in inputSources and setup some mapping from the opIdx to the input column.
+        // noinspection unchecked
+        inputSources = new ChunkSource[operators.length];
+        inputSourceSlots = new int[operators.length];
         final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
-        this.inputSourceSlots = new int[operators.length];
         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
             final ColumnSource<?> input = source.getColumnSource(operators[opIdx].getInputColumnName());
             final int maybeExistingSlot = sourceToSlotMap.get(input);
@@ -157,6 +159,36 @@ public abstract class UpdateBy {
                 inputSourceSlots[opIdx] = maybeExistingSlot;
             }
         }
+
+        // now we want to divide the operators into similar windows for efficient processing
+        TIntObjectHashMap<UpdateByWindow> windowHashToObjectMap = new TIntObjectHashMap<>();
+        TIntObjectHashMap<TIntArrayList> windowHashToOperatorIndicesMap = new TIntObjectHashMap<>();
+
+        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+            UpdateByWindow newWindow = UpdateByWindow.createFromOperator(operators[opIdx]);
+            final int hash = newWindow.hashCode();
+
+            // add this if not found
+            if (!windowHashToObjectMap.containsKey(hash)) {
+                windowHashToObjectMap.put(hash, newWindow);
+                windowHashToOperatorIndicesMap.put(hash, new TIntArrayList());
+            }
+            windowHashToOperatorIndicesMap.get(hash).add(opIdx);
+        }
+
+        // store the operator information into the windows
+        windowHashToObjectMap.valueCollection().forEach(window -> {
+            final int hash = window.hashCode();
+            final int[] opIndices = windowHashToOperatorIndicesMap.get(hash).toArray();
+
+            final UpdateByOperator[] ops =
+                    Arrays.stream(opIndices).mapToObj(idx -> operators[idx]).toArray(UpdateByOperator[]::new);
+            final int[] opInputSourceSlots = Arrays.stream(opIndices).map(idx -> inputSourceSlots[idx]).toArray();
+
+            window.setOperators(ops, opInputSourceSlots);
+        });
+
+        this.windows = windowHashToObjectMap.valueCollection().toArray(UpdateByOperator.ZERO_LENGTH_WINDOW_ARRAY);
     }
 
     // region UpdateBy implementation
@@ -214,19 +246,6 @@ public abstract class UpdateBy {
                 new UpdateByOperatorFactory(source, pairs, ctx, control);
         final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
-        // build the windows for these operators
-        TIntObjectHashMap<UpdateByWindow> windowMap = new TIntObjectHashMap<>();
-        ops.forEach(op -> {
-            UpdateByWindow newWindow = UpdateByWindow.createFromOperator(op);
-            final int hash = newWindow.hashCode();
-            // add this if not found
-            if (!windowMap.containsKey(hash)) {
-                windowMap.put(hash, newWindow);
-            }
-            windowMap.get(hash).addOperator(op);
-        });
-
-
         final StringBuilder descriptionBuilder = new StringBuilder("updateBy(ops={")
                 .append(updateByOperatorFactory.describe(clauses))
                 .append("}");
@@ -245,18 +264,17 @@ public abstract class UpdateBy {
                     String.join(", ", problems) + "}");
         }
 
+        final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
+
         // noinspection rawtypes
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
         resultSources.putAll(opResultSources);
 
-        final UpdateByWindow[] windowArr = windowMap.valueCollection().toArray(UpdateByOperator.ZERO_LENGTH_WINDOW_ARRAY);
-        final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
             Table ret = ZeroKeyUpdateBy.compute(
                     descriptionBuilder.toString(),
                     source,
-                    windowArr,
                     opArr,
                     resultSources,
                     ctx,
@@ -290,7 +308,6 @@ public abstract class UpdateBy {
         Table ret = BucketedPartitionedUpdateBy.compute(
                 descriptionBuilder.toString(),
                 source,
-                windowArr,
                 opArr,
                 resultSources,
                 byColumns,

@@ -1,19 +1,15 @@
 package io.deephaven.engine.table.impl.updateby.minmax;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseShortUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static io.deephaven.util.QueryConstants.*;
 
 public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
     private final boolean isMax;
@@ -21,45 +17,53 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
 
-    public ShortCumMinMaxOperator(@NotNull final MatchPair inputPair,
+    protected class Context extends BaseShortUpdateByOperator.Context {
+        public ShortChunk<Values> shortValueChunk;
+
+        protected Context(int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            shortValueChunk = valuesChunk.asShortChunk();
+        }
+    }
+
+    public ShortCumMinMaxOperator(@NotNull final MatchPair pair,
                                   final boolean isMax,
                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
-                                  // region extra-constructor-args
-                                  // endregion extra-constructor-args
-                                  ) {
-        super(inputPair, new String[] { inputPair.rightColumn }, redirContext);
+                                // region extra-constructor-args
+                                // endregion extra-constructor-args
+    ) {
+        super(pair, new String[] { pair.rightColumn }, redirContext);
         this.isMax = isMax;
-        // region constructorÏ
+        // region constructor
         // endregion constructor
     }
 
-    // region extra-methods
-    // endregion extra-methods
+    @NotNull
+    @Override
+    public UpdateContext makeUpdateContext(int chunkSize) {
+        return new Context(chunkSize);
+    }
 
     @Override
-    protected void doProcessChunk(@NotNull final Context ctx,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk) {
-        accumulate(workingChunk.asShortChunk(), ctx, 0, workingChunk.size());
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
+    public void push(UpdateContext context, long key, int pos) {
+        final Context ctx = (Context) context;
 
-    private void accumulate(@NotNull final ShortChunk<Values> asShorts,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableShortChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final short currentVal = asShorts.get(ii);
-            if(ctx.curVal == NULL_SHORT) {
+        // read the value from the values chunk
+        final short currentVal = ctx.shortValueChunk.get(pos);
+
+        if (ctx.curVal == NULL_SHORT) {
+            ctx.curVal = currentVal;
+        } else if (currentVal != NULL_SHORT) {
+            if ((isMax && currentVal > ctx.curVal) ||
+                    (!isMax && currentVal < ctx.curVal)) {
                 ctx.curVal = currentVal;
-            } else if(currentVal != NULL_SHORT) {
-                if((isMax && currentVal > ctx.curVal) ||
-                   (!isMax && currentVal < ctx.curVal)  ) {
-                    ctx.curVal = currentVal;
-                }
             }
-            localOutputValues.set(ii, ctx.curVal);
         }
     }
+    // region extra-methods
+    // endregion extra-methods
 }

@@ -57,7 +57,6 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
         this.capacity = Integer.highestOneBit(initialSize) * 2;
         this.chunkSize = capacity * 2;
         this.storageChunk = WritableFloatChunk.makeWritableChunk(chunkSize);
-//        this.dirtyBits = new BitSet(chunkSize);
         this.dirtyIndices = new TIntArrayList(chunkSize);
         this.pairwiseFunction = pairwiseFunction;
         this.emptyVal = emptyVal;
@@ -276,6 +275,12 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
 
     public int remaining() {
         return capacity() - size();
+    }
+
+    public void clear() {
+        head = tail = 0;
+        dirtyIndices.clear();
+        allDirty = false;
     }
 
     @Override

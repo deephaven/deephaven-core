@@ -10,8 +10,10 @@ import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;
 import io.deephaven.engine.table.WritableColumnSource;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.engine.rowset.*;
@@ -20,9 +22,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,36 +29,33 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperator {
     protected final WritableColumnSource<Byte> outputSource;
     protected final WritableColumnSource<Byte> maybeInnerSource;
 
-    protected final MatchPair pair;
-    protected final String[] affectingColumns;
-
-    private UpdateBy.UpdateByRedirectionContext redirContext;
-
     // region extra-fields
     final byte nullValue;
     // endregion extra-fields
 
-    protected class Context extends UpdateCumulativeContext {
-        public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
-        public final SizedByteChunk<Values> outputValues;
+    protected class Context extends UpdateByCumulativeOperator.Context {
+        public final ChunkSink.FillFromContext fillContext;
+        public final WritableByteChunk<Values> outputValues;
 
-        public byte curVal = nullValue;
+        public byte curVal = NULL_BYTE;
 
-        protected Context(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
-            this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
-            this.fillContext.ensureCapacity(chunkSize);
-            this.outputValues = new SizedByteChunk<>(chunkSize);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+            this.fillContext = outputSource.makeFillFromContext(chunkSize);
+            this.outputValues = WritableByteChunk.makeWritableChunk(chunkSize);
         }
+
+        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
 
         @Override
         public void close() {
             super.close();
-
             outputValues.close();
             fillContext.close();
         }
@@ -79,9 +75,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
                                     ) {
-        this.pair = pair;
-        this.affectingColumns = affectingColumns;
-        this.redirContext = redirContext;
+        super(pair, affectingColumns, redirContext);
         if(this.redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = makeDenseSource();
@@ -97,6 +91,12 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
         // region constructor
         this.nullValue = getNullValue();
         // endregion constructor
+    }
+
+    @Override
+    public void reset(UpdateContext context) {
+        final Context ctx = (Context)context;
+        ctx.curVal = NULL_BYTE;
     }
 
     // region extra-methods
@@ -115,39 +115,21 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
     // endregion extra-methods
 
     @Override
-    public void setChunkSize(@NotNull final UpdateContext context, final int chunkSize) {
-        ((Context)context).outputValues.ensureCapacity(chunkSize);
-        ((Context)context).fillContext.ensureCapacity(chunkSize);
-    }
+    public void initializeUpdate(@NotNull UpdateContext context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
+        Context ctx = (Context) context;
+        if (firstUnmodifiedKey != NULL_ROW_KEY) {
+            ctx.curVal = outputSource.getByte(firstUnmodifiedKey);
+        } else {
+            reset(ctx);
+        }
 
-    @NotNull
-    @Override
-    public String getInputColumnName() {
-        return pair.rightColumn;
-    }
-
-    @NotNull
-    @Override
-    public String[] getAffectingColumnNames() {
-        return affectingColumns;
-    }
-
-    @NotNull
-    @Override
-    public String[] getOutputColumnNames() {
-        return new String[] { pair.leftColumn };
-    }
-
-    @NotNull
-    @Override
-    public Map<String, ColumnSource<?>> getOutputColumns() {
-        return Collections.singletonMap(pair.leftColumn, outputSource);
-    }
-
-    @NotNull
-    @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, final LongSegmentedSortedArray timestampSsa) {
-        return new Context(chunkSize, timestampSsa);
+        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
+        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
+        // need to do anything with capacity.
+        if(redirContext.isRedirected()) {
+            // The redirection index does not use the 0th index for some reason.
+            outputSource.ensureCapacity(redirContext.requiredCapacity());
+        }
     }
 
     @Override
@@ -157,19 +139,6 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
             maybeInnerSource.startTrackingPrevValues();
         }
     }
-
-    /**
-     * Perform the processing for a chunk of values by the operator.
-     *
-     * @param ctx the context object
-     * @param inputKeys the input keys for the chunk
-     * @param workingChunk the chunk of values
-     */
-    protected abstract void doProcessChunk(@NotNull final Context ctx,
-                                           @NotNull final RowSequence inputKeys,
-                                           @NotNull final Chunk<Values> workingChunk);
-
-    // endregion
 
     // region Shifts
     @Override
@@ -182,35 +151,28 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
     }
     // endregion Shifts
 
-    // region Reprocessing
-
-    public void resetForProcess(@NotNull final UpdateContext context,
-                                @NotNull final RowSet sourceIndex,
-                                long firstUnmodifiedKey) {
-
-        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
-        // need to do anything with capacity.
-        if(redirContext.isRedirected()) {
-            // The redirection index does not use the 0th index for some reason.
-            outputSource.ensureCapacity(redirContext.requiredCapacity());
-        }
-
-        final Context ctx = (Context) context;
-        ctx.curVal = firstUnmodifiedKey == NULL_ROW_KEY ? nullValue : outputSource.getByte(firstUnmodifiedKey);
-    }
-
+    // region Processing
     @Override
     public void processChunk(@NotNull final UpdateContext updateContext,
                              @NotNull final RowSequence inputKeys,
                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                             @NotNull final Chunk<Values> valuesChunk,
-                             @NotNull final RowSet postUpdateSourceIndex) {
+                             @Nullable final Chunk<Values> valuesChunk,
+                             @Nullable final LongChunk<Values> timestampValuesChunk) {
+        Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
         final Context ctx = (Context) updateContext;
-        doProcessChunk(ctx, inputKeys, valuesChunk);
-        ctx.getModifiedBuilder().appendRowSequence(inputKeys);
+        ctx.storeValuesChunk(valuesChunk);
+        for (int ii = 0; ii < valuesChunk.size(); ii++) {
+            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
+            ctx.outputValues.set(ii, ctx.curVal);
+        }
+        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues, inputKeys);
     }
-
     // endregion
+
+    @NotNull
+    @Override
+    public Map<String, ColumnSource<?>> getOutputColumns() {
+        return Collections.singletonMap(pair.leftColumn, outputSource);
+    }
 }

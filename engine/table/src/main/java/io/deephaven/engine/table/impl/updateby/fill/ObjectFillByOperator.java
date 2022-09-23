@@ -5,23 +5,31 @@
  */
 package io.deephaven.engine.table.impl.updateby.fill;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 
 public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     // region extra-fields
     // endregion extra-fields
+
+    protected class Context extends BaseObjectUpdateByOperator<T>.Context {
+        public ObjectChunk<T, Values> ObjectValueChunk;
+
+        protected Context(int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            ObjectValueChunk = valuesChunk.asObjectChunk();
+        }
+    }
 
     public ObjectFillByOperator(@NotNull final MatchPair fillPair,
                               @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
@@ -34,28 +42,21 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
         // endregion constructor
     }
 
-    // region extra-methods
-    // endregion extra-methods
+    @NotNull
+    @Override
+    public UpdateContext makeUpdateContext(int chunkSize) {
+        return new Context(chunkSize);
+    }
 
     @Override
-    protected void doProcessChunk(@NotNull final Context ctx,
-                                  @NotNull final RowSequence inputKeys,
-                                  @NotNull final Chunk<Values> workingChunk) {
-        accumulate(workingChunk.asObjectChunk(), ctx, 0, workingChunk.size());
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
+    public void push(UpdateContext context, long key, int pos) {
+        final Context ctx = (Context) context;
 
-    private void accumulate(@NotNull final ObjectChunk<T, Values> asObjects,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableObjectChunk<T, Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final T currentVal = asObjects.get(ii);
-            if(currentVal != null) {
-                ctx.curVal = currentVal;
-            }
-            localOutputValues.set(ii, ctx.curVal);
+        if(ctx.curVal == null) {
+            ctx.curVal = ctx.ObjectValueChunk.get(pos);
         }
     }
+
+    // region extra-methods
+    // endregion extra-methods
 }
