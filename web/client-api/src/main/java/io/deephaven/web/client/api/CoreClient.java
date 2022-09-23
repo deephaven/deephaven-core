@@ -10,16 +10,14 @@ public class CoreClient extends QueryConnectable<CoreClient> {
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
             EVENT_RECONNECT_AUTH_FAILED = "reconnectauthfailed",
-            EVENT_CONFIG_ADDED = "configadded",
-            EVENT_CONFIG_REMOVED = "configremoved",
-            EVENT_CONFIG_UPDATED = "configupdated",
             EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated";
 
     public static final String LOGIN_TYPE_PASSWORD = "password",
             LOGIN_TYPE_SAML = "saml",
             LOGIN_TYPE_REFRESH = "refresh",
             LOGIN_TYPE_PSK = "psk",
-            LOGIN_TYPE_OIDC = "oidc";
+            LOGIN_TYPE_OIDC = "oidc",
+            LOGIN_TYPE_ANONYMOUS = "anonymous";
 
     private final JsLazy<Promise<String[][]>> serverAuthConfigValues;
     private final JsLazy<Promise<String[][]>> serverConfigValues;
