@@ -11,63 +11,90 @@ option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/stora
 
 /*
  * Shared storage management service.
+ *
+ * Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
+ *
+ * Paths will be "/" delimited and should not start with a leading slash.
 */
 service StorageService {
+  // Lists the files and directories present in a given directory. Will return an error
   rpc ListItems(ListItemsRequest) returns (ListItemsResponse) {}
+  // Reads the file at the given path. Client can optionally specify an etag, asking the server
+  // not to send the file if it hasn't changed.
   rpc FetchFile(FetchFileRequest) returns (FetchFileResponse) {}
-  // Can create new files or modify existing
+  // Can create new files or modify existing with client provided contents.
   rpc SaveFile(SaveFileRequest) returns (SaveFileResponse) {}
+  // Moves a file from one path to another.
   rpc MoveItem(MoveItemRequest) returns (MoveItemResponse) {}
+  // Creates a directory at the given path.
   rpc CreateDirectory(CreateDirectoryRequest) returns (CreateDirectoryResponse) {}
+  // Deletes the file or directory at the given path. Directories must be empty to be deleted.
   rpc DeleteItem(DeleteItemRequest) returns (DeleteItemResponse) {}
 }
 
 message ListItemsRequest {
-  string path = 1;// the path to the directory to list. empty to list top level
-  optional string filter_glob = 2;// A pattern to filter for, with "*" as a wildcard
+  // The path to the directory to list. empty to list top level
+  string path = 1;
+  // A pattern to filter for, with "*" as a wildcard
+  optional string filter_glob = 4;
 }
 
-enum FileKind {
-  UNKNOWN = 0;// Should not be used, exists only to indicate that this was unset
+enum ItemType {
+  UNKNOWN = 0;// Should not be used, exists only to indicate that this was left unset
   DIRECTORY = 1;
   FILE = 2;
 }
 
-message FileInfo {
+message ItemInfo {
+  // The path to the item that this message describes.
   string path = 1;
-  FileKind kind = 2;
+  // The type of this item, either file or directory.
+  ItemType type = 2;
+  // If this message represents a file, this is the size of the file.
   sint64 size = 3 [jstype=JS_STRING];
+  // Opaque string value representing a hash of the contents of this file, if available.
+  optional string etag = 4;
 }
 
 message ListItemsResponse {
-  repeated FileInfo items = 1;
+  // List of items found in the specified directory.
+  repeated ItemInfo items = 1;
 }
-
-//message ByteRange {
-//  sint64 start = 1 [jstype=JS_STRING];
-//  sint64 end = 2 [jstype=JS_STRING];
-//}
-
 
 message FetchFileRequest {
+  // The path to the file to read
   string path = 1;
-//  ByteRange range = 2;//helpful? do we need this to save too, or have a truncate/append?
+  // If present, tells the server to not send a result if the etag matches the current file's content.
+  optional string etag = 2;
 }
 message FetchFileResponse {
+  // Contains the contents of the file, unless the returned etag matches the requested etag.
   bytes contents = 1;
+  // Represents the current etag of the requested file. If an etag was in the request and this matches,
+  // contents should be ignored, and the existing client copy of the file is already correct. In all
+  // other cases, this etag can be used in future requests to see if the file's contents are different.
+  string etag = 2;
 }
 
 message SaveFileRequest {
-  // True to force new file creation and prevent overwriting an existing file
+  // True to force new file creation and prevent overwriting an existing file, false to allow overwriting
+  // an existing file or creating a new one.
   bool new_file = 1;
+  // The path to the file to write contents to
   string path = 2;
+
+  // The contents to use when creating then file, or to use to replace the file.
   bytes contents = 3;
 }
 message SaveFileResponse {
 }
 
+// Requests to move a file to a new path, which may be in a different directory. Presently it is not
+// permitted to overwrite an existing file in this way.
 message MoveItemRequest {
+  // The path where the file currently exists
   string old_path = 1;
+  // The path where the file should be moved to
   string new_path = 2;
 }
 
@@ -75,6 +102,7 @@ message MoveItemResponse {
 }
 
 message CreateDirectoryRequest {
+  // The path to the directory to create
   string path = 1;
 }
 
@@ -83,6 +111,7 @@ message CreateDirectoryResponse {
 }
 
 message DeleteItemRequest {
+  // The path to the item to delete.
   string path = 1;
 }
 message DeleteItemResponse {

@@ -22,12 +22,18 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StorageServiceClient interface {
+	// Lists the files and directories present in a given directory. Will return an error
 	ListItems(ctx context.Context, in *ListItemsRequest, opts ...grpc.CallOption) (*ListItemsResponse, error)
+	// Reads the file at the given path. Client can optionally specify an etag, asking the server
+	// not to send the file if it hasn't changed.
 	FetchFile(ctx context.Context, in *FetchFileRequest, opts ...grpc.CallOption) (*FetchFileResponse, error)
-	// Can create new files or modify existing
+	// Can create new files or modify existing with client provided contents.
 	SaveFile(ctx context.Context, in *SaveFileRequest, opts ...grpc.CallOption) (*SaveFileResponse, error)
+	// Moves a file from one path to another.
 	MoveItem(ctx context.Context, in *MoveItemRequest, opts ...grpc.CallOption) (*MoveItemResponse, error)
+	// Creates a directory at the given path.
 	CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error)
+	// Deletes the file or directory at the given path. Directories must be empty to be deleted.
 	DeleteItem(ctx context.Context, in *DeleteItemRequest, opts ...grpc.CallOption) (*DeleteItemResponse, error)
 }
 
@@ -97,12 +103,18 @@ func (c *storageServiceClient) DeleteItem(ctx context.Context, in *DeleteItemReq
 // All implementations must embed UnimplementedStorageServiceServer
 // for forward compatibility
 type StorageServiceServer interface {
+	// Lists the files and directories present in a given directory. Will return an error
 	ListItems(context.Context, *ListItemsRequest) (*ListItemsResponse, error)
+	// Reads the file at the given path. Client can optionally specify an etag, asking the server
+	// not to send the file if it hasn't changed.
 	FetchFile(context.Context, *FetchFileRequest) (*FetchFileResponse, error)
-	// Can create new files or modify existing
+	// Can create new files or modify existing with client provided contents.
 	SaveFile(context.Context, *SaveFileRequest) (*SaveFileResponse, error)
+	// Moves a file from one path to another.
 	MoveItem(context.Context, *MoveItemRequest) (*MoveItemResponse, error)
+	// Creates a directory at the given path.
 	CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error)
+	// Deletes the file or directory at the given path. Directories must be empty to be deleted.
 	DeleteItem(context.Context, *DeleteItemRequest) (*DeleteItemResponse, error)
 	mustEmbedUnimplementedStorageServiceServer()
 }

@@ -8,6 +8,10 @@ from pydeephaven.proto import storage_pb2 as deephaven_dot_proto_dot_storage__pb
 class StorageServiceStub(object):
     """
     Shared storage management service.
+
+    Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
+
+    Paths will be "/" delimited and should not start with a leading slash.
     """
 
     def __init__(self, channel):
@@ -51,41 +55,51 @@ class StorageServiceStub(object):
 class StorageServiceServicer(object):
     """
     Shared storage management service.
+
+    Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
+
+    Paths will be "/" delimited and should not start with a leading slash.
     """
 
     def ListItems(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Lists the files and directories present in a given directory. Will return an error
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def FetchFile(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Reads the file at the given path. Client can optionally specify an etag, asking the server
+        not to send the file if it hasn't changed.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SaveFile(self, request, context):
-        """Can create new files or modify existing
+        """Can create new files or modify existing with client provided contents.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def MoveItem(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Moves a file from one path to another.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def CreateDirectory(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Creates a directory at the given path.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def DeleteItem(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Deletes the file or directory at the given path. Directories must be empty to be deleted.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -133,6 +147,10 @@ def add_StorageServiceServicer_to_server(servicer, server):
 class StorageService(object):
     """
     Shared storage management service.
+
+    Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
+
+    Paths will be "/" delimited and should not start with a leading slash.
     """
 
     @staticmethod
