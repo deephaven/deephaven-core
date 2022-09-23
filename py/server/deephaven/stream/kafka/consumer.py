@@ -199,7 +199,8 @@ def consume_to_partitioned_table(
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
             for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
             column name and type
-        table_type (TableType): a TableType enum, default is TableType.stream()
+        table_type (TableType): a TableType enum, specifying the type of the expected result's constituent tables,
+            default is TableType.stream()
 
     Returns:
         a Deephaven live partitioned table that will update based on Kafka messages consumed for the given topic
