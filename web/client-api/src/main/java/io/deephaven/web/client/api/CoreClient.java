@@ -19,16 +19,11 @@ public class CoreClient extends QueryConnectable<CoreClient> {
             LOGIN_TYPE_OIDC = "oidc",
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
-    private final JsLazy<Promise<String[][]>> serverAuthConfigValues;
-    private final JsLazy<Promise<String[][]>> serverConfigValues;
     private final String serverUrl;
 
     public CoreClient(String serverUrl) {
         super(AuthTokenPromiseSupplier.oneShot(null));
         this.serverUrl = serverUrl;
-
-        serverAuthConfigValues = JsLazy.of(() -> Promise.resolve((String[][]) null));
-        serverConfigValues = JsLazy.of(() -> Promise.resolve((String[][]) null));
     }
 
     @Override
@@ -47,7 +42,7 @@ public class CoreClient extends QueryConnectable<CoreClient> {
     }
 
     public Promise<String[][]> getAuthConfigValues() {
-        return serverAuthConfigValues.get();
+        return Promise.resolve(new String[0][]);
     }
 
     public Promise<Void> login(LoginCredentials credentials) {
@@ -59,23 +54,12 @@ public class CoreClient extends QueryConnectable<CoreClient> {
     }
 
     public Promise<String[][]> getServerConfigValues() {
-        return serverConfigValues.get();
+        return Promise.resolve(new String[0][]);
     }
 
     public Promise<UserInfo> getUserInfo() {
         return Promise.resolve(new UserInfo());
     }
-
-    // // either directly exposed here, or offer two "scope" objects, one for IdeSession and one for Application...
-    // public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
-    //
-    // }
-    // private Promise<JsVariableDefinition> getVariableDefinition(String name, String type) {
-    //
-    // }
-    // public Promise<Object> getObject(Object definitionObject) {
-    //
-    // }
 
     public JsStorageService getStorageService() {
         return new JsStorageService(connection.get());
