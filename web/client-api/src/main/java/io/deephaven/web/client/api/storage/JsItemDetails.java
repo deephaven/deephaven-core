@@ -10,25 +10,27 @@ public class JsItemDetails {
     private final String path;
     private final int type;
     private final String size;
+    private final String etag;
 
     @JsMethod(namespace = "dh.storage.ItemDetails")
     public static JsItemDetails file(String... pathParts) {
-        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getFILE(), null);
+        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getFILE(), null, null);
     }
 
     @JsMethod(namespace = "dh.storage.ItemDetails")
     public static JsItemDetails directory(String... pathParts) {
-        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getDIRECTORY(), null);
+        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getDIRECTORY(), null, null);
     }
 
-    public JsItemDetails(String path, int kind, String size) {
+    public JsItemDetails(String path, int kind, String size, String etag) {
         this.path = path;
         this.type = kind;
         this.size = size;
+        this.etag = etag;
     }
 
     public static JsItemDetails fromProto(ItemInfo item) {
-        return new JsItemDetails(item.getPath(), item.getType(), item.getSize());
+        return new JsItemDetails(item.getPath(), item.getType(), item.getSize(), item.getEtag());
     }
 
     @JsProperty
@@ -58,6 +60,6 @@ public class JsItemDetails {
 
     @JsProperty
     public String getEtag() {
-        return null;
+        return etag;
     }
 }

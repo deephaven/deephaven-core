@@ -199,6 +199,8 @@ public class FetchFileResponse {
     public static native FetchFileResponse.ToObjectReturnType toObject(
             boolean includeInstance, FetchFileResponse msg);
 
+    public native void clearEtag();
+
     public native FetchFileResponse.GetContentsUnionType getContents();
 
     public native String getContents_asB64();
@@ -206,6 +208,8 @@ public class FetchFileResponse {
     public native Uint8Array getContents_asU8();
 
     public native String getEtag();
+
+    public native boolean hasEtag();
 
     public native Uint8Array serializeBinary();
 

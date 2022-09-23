@@ -73,7 +73,7 @@ message FetchFileResponse {
   // Represents the current etag of the requested file. If an etag was in the request and this matches,
   // contents should be ignored, and the existing client copy of the file is already correct. In all
   // other cases, this etag can be used in future requests to see if the file's contents are different.
-  string etag = 2;
+  optional string etag = 2;
 }
 
 message SaveFileRequest {

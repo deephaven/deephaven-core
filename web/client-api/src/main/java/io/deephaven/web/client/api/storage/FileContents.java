@@ -5,6 +5,7 @@ import elemental2.core.JsArray;
 import elemental2.dom.Blob;
 import elemental2.promise.Promise;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsProperty;
 
 public class FileContents {
 
@@ -24,6 +25,7 @@ public class FileContents {
     }
 
     private final Blob data;
+    private String etag;//only writable internally
 
     public FileContents(Blob data) {
         this.data = data;
@@ -37,5 +39,14 @@ public class FileContents {
     @JsMethod
     public Promise<ArrayBuffer> arrayBuffer() {
         return data.arrayBuffer();
+    }
+
+    @JsProperty
+    public String getEtag() {
+        return etag;
+    }
+
+    public void setEtag(String etag) {
+        this.etag = etag;
     }
 }

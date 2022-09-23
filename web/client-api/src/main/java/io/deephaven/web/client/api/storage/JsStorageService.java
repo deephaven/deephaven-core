@@ -53,11 +53,20 @@ public class JsStorageService {
     }
 
     @JsMethod
-    public Promise<FileContents> loadFile(String path) {
+    public Promise<FileContents> loadFile(String path, @JsOptional String etag) {
         FetchFileRequest req = new FetchFileRequest();
         req.setPath(path);
+        if (etag != null) {
+            req.setEtag(etag);
+        }
         return Callbacks.<FetchFileResponse, Object>grpcUnaryPromise(c -> client().fetchFile(req, metadata(), c::apply))
-                .then(response -> Promise.resolve(FileContents.arrayBuffers(response.serializeBinary().buffer)));
+                .then(response -> {
+                    FileContents contents = FileContents.arrayBuffers(response.getContents().asUint8Array().buffer);
+                    if (response.hasEtag()) {
+                        contents.setEtag(response.getEtag());
+                    }
+                    return Promise.resolve(contents);
+                });
     }
 
     @JsMethod
