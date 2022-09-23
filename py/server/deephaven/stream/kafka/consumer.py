@@ -203,7 +203,9 @@ def consume_to_partitioned_table(
             default is TableType.stream()
 
     Returns:
-        a Deephaven live partitioned table that will update based on Kafka messages consumed for the given topic
+        a Deephaven live partitioned table that will update based on Kafka messages consumed for the given topic,
+        the keys of this partitioned table are the partition numbers of the topic, and its constituents are tables per
+        topic partition.
 
     Raises:
         DHError
