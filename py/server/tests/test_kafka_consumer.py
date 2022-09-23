@@ -5,7 +5,7 @@
 import os
 import unittest
 
-from deephaven import kafka_consumer as ck
+from deephaven import kafka_consumer as ck, ugp
 from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 from tests.testbase import BaseTestCase
 from deephaven import dtypes
@@ -210,6 +210,43 @@ class KafkaConsumerTestCase(BaseTestCase):
         _ = TableType.append()
         _ = TableType.stream()
         _ = TableType.ring(4096)
+
+    def test_json_spec_partitioned_table(self):
+        pt = ck.consume_to_partitioned_table(
+            {'bootstrap.servers': 'redpanda:29092'},
+            'orders',
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=ck.json_spec(
+                [('Symbol', dtypes.string),
+                 ('Side', dtypes.string),
+                 ('Price', dtypes.double),
+                 ('Qty', dtypes.int_),
+                 ('Tstamp', dtypes.DateTime)],
+                mapping={
+                    'jsymbol': 'Symbol',
+                    'jside': 'Side',
+                    'jprice': 'Price',
+                    'jqty': 'Qty',
+                    'jts': 'Tstamp'
+                }
+            ),
+            table_type=TableType.append()
+        )
+
+        cols = pt.constituent_table_columns
+        self.assertEqual(8, len(cols))
+        self._assert_common_cols(cols)
+
+        self.assertEqual("Symbol", cols[3].name)
+        self.assertEqual(dtypes.string, cols[3].data_type)
+        self.assertEqual("Side", cols[4].name)
+        self.assertEqual(dtypes.string, cols[4].data_type)
+        self.assertEqual("Price", cols[5].name)
+        self.assertEqual(dtypes.double, cols[5].data_type)
+        self.assertEqual("Qty", cols[6].name)
+        self.assertEqual(dtypes.int_, cols[6].data_type)
+        self.assertEqual("Tstamp", cols[7].name)
+        self.assertEqual(dtypes.DateTime, cols[7].data_type)
 
 
 if __name__ == "__main__":
