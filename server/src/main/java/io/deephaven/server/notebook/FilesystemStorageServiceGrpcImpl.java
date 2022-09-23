@@ -62,10 +62,10 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
 
     /**
      * Non-cryptographic hash, not resistant to adversarial collisions, but should suffice for quickly checking for
-     * edits to files. By design, hashes might not be stable from one startup to the next, but will at least efficiently
-     * guard against client's needing to load the same file again rapidly.
+     * edits to files. We're circumventing the "change the seed each startup", as these hashes should be very low risk,
+     * and this ensures that clients will have a stable cache across server restarts.
      */
-    private static final HashFunction HASH_FUNCTION = Hashing.goodFastHash(128);
+    private static final HashFunction HASH_FUNCTION = Hashing.murmur3_128(0);
 
     private final Path root = Paths.get(STORAGE_PATH).normalize();
     private final SessionService sessionService;
