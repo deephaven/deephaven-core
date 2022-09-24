@@ -718,7 +718,7 @@ class NaturalJoinHelper {
         }
 
         @Override
-        public void accept(long updatedSlot, long originalRightValue, byte flag) {
+        public void accept(int updatedSlot, long originalRightValue, byte flag) {
             final RowSet leftIndices = jsm.getLeftIndex(updatedSlot);
             if (leftIndices == null || leftIndices.isEmpty()) {
                 return;

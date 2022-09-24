@@ -168,17 +168,17 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    public long getRightIndex(long slot) {
+    public long getRightIndex(int slot) {
         return rightRowKey.getUnsafe(slot);
     }
 
     @Override
-    public RowSet getLeftIndex(long slot) {
+    public RowSet getLeftIndex(int slot) {
         return leftRowSet.getUnsafe(slot);
     }
 
     @Override
-    public String keyString(long slot) {
+    public String keyString(int slot) {
         throw new UnsupportedOperationException();
     }
 
