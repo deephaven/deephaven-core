@@ -100,27 +100,6 @@ public class NaturalJoinModifiedSlotTracker {
     }
 
 
-    /**
-     * Add a slot in the overflow table.
-     *
-     * @param overflow the slot to add (0...n in the overflow table).
-     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification
-     *        (otherwise ignored)
-     *
-     * @return the cookie for future access
-     */
-    long addOverflow(final long cookie, final long overflow, final long originalRightValue, byte flags) {
-        final long slot = IncrementalChunkedNaturalJoinStateManager.overflowToSlot(overflow);
-        if (originalRightValue < 0) {
-            flags |= FLAG_RIGHT_ADD;
-        }
-        if (!isValidCookie(cookie)) {
-            return doAddition(slot, originalRightValue, flags);
-        } else {
-            return updateFlags(cookie, flags);
-        }
-    }
-
     private long doAddition(final long slot, final long originalRightValue, byte flags) {
         if (pointer == allocated) {
             allocated += CHUNK_SIZE;
@@ -141,9 +120,6 @@ public class NaturalJoinModifiedSlotTracker {
 
     /**
      * For each main and overflow value, call slotConsumer.
-     *
-     * Main values are represented as values >= 0. Overflow values are represented as negative values according to
-     * {@link IncrementalChunkedNaturalJoinStateManager#overflowToSlot(long)}.
      *
      * @param slotConsumer the consumer of our values
      */

@@ -42,6 +42,8 @@ import org.jetbrains.annotations.NotNull;
 import static io.deephaven.util.SafeCloseable.closeArray;
 
 // region class visibility
+@Deprecated
+@SuppressWarnings("unused") // This class is still used as a replication source for some join types
 // endregion class visibility
 class IncrementalChunkedNaturalJoinStateManager
     // region extensions
@@ -501,7 +503,8 @@ class IncrementalChunkedNaturalJoinStateManager
     private void addModifiedOverflow(NaturalJoinModifiedSlotTracker modifiedSlotTracker, long overflowLocation, byte flag) {
         if (modifiedSlotTracker != null) {
             final long originalIndex = overflowRightIndexSource.getUnsafe(overflowLocation);
-            overflowModifiedTrackerCookieSource.set(overflowLocation, modifiedSlotTracker.addOverflow(overflowModifiedTrackerCookieSource.getUnsafe(overflowLocation), overflowLocation, originalIndex, flag));
+            final long slot = overflowToSlot(overflowLocation);
+            overflowModifiedTrackerCookieSource.set(overflowLocation, modifiedSlotTracker.addMain(overflowModifiedTrackerCookieSource.getUnsafe(overflowLocation), slot, originalIndex, flag));
         }
     }
 

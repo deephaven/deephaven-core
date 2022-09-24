@@ -117,19 +117,17 @@ public class TypedHasherFactory {
                     .includeOriginalSources(true)
                     .supportRehash(false);
 
-            final TypeName longArraySource = TypeName.get(LongArraySource.class);
-            final ParameterSpec leftHashSlots = ParameterSpec.builder(longArraySource, "leftHashSlots").build();
-            final ParameterSpec hashSlotOffset = ParameterSpec.builder(int.class, "hashSlotOffset").build();
-
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
                     false, true, TypedNaturalJoinFactory::staticBuildLeftFound,
                     TypedNaturalJoinFactory::staticBuildLeftInsert,
-                    leftHashSlots, hashSlotOffset));
+                    ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "leftHashSlots").build(),
+                    ParameterSpec.builder(long.class, "hashSlotOffset").build()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", "rightRowKey",
                     false, TypedNaturalJoinFactory::staticProbeDecorateLeftFound,
                     TypedNaturalJoinFactory::staticProbeDecorateLeftMissing,
-                    ParameterSpec.builder(longArraySource, "leftRedirections").build(), hashSlotOffset));
+                    ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
+                    ParameterSpec.builder(long.class, "redirectionOffset").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, TypedNaturalJoinFactory::staticBuildRightFound,

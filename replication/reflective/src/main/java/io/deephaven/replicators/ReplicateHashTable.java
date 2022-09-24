@@ -74,17 +74,6 @@ public class ReplicateHashTable {
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         final boolean allowMissingDestinations = false;
 
-        // Incremental NJ -> Right-Incremental NJ
-        doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/RightIncrementalChunkedNaturalJoinStateManager.java",
-                allowMissingDestinations, Arrays.asList("rehash", "allowUpdateWriteThroughState", "dumpTable"));
-        // Incremental NJ -> Static NJ
-        doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/StaticChunkedNaturalJoinStateManager.java",
-                allowMissingDestinations, Arrays.asList("rehash", "allowUpdateWriteThroughState", "dumpTable", "prev"));
-
         // Incremental NJ -> Static AJ
         doReplicate(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",

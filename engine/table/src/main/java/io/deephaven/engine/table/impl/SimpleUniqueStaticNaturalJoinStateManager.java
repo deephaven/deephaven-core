@@ -16,6 +16,8 @@ import io.deephaven.engine.rowset.RowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
+
 /**
  * A static natural join manager that only maintains a single array source for the right indices.
  *
