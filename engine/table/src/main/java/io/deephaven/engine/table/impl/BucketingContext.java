@@ -83,7 +83,7 @@ class BucketingContext implements SafeCloseable {
                     maximumUniqueValue = BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
                     minimumUniqueValue = BooleanUtils.NULL_BOOLEAN_AS_BYTE;
                     uniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Byte,
-                            StaticNaturalJoinStateManager.CHUNK_SIZE, -BooleanUtils.NULL_BOOLEAN_AS_BYTE);
+                            JoinControl.CHUNK_SIZE, -BooleanUtils.NULL_BOOLEAN_AS_BYTE);
                 }
             } else if (leftType == String.class) {
                 if (control.considerSymbolTables(leftTable, rightTable, useLeftGrouping, useRightGrouping,
@@ -126,7 +126,7 @@ class BucketingContext implements SafeCloseable {
                             maximumUniqueValue = symbolTableCombiner.getMaximumIdentifier();
                             minimumUniqueValue = 0;
                             uniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Int,
-                                    StaticNaturalJoinStateManager.CHUNK_SIZE, 0);
+                                    JoinControl.CHUNK_SIZE, 0);
                         }
                     }
                 }
@@ -136,7 +136,7 @@ class BucketingContext implements SafeCloseable {
                     maximumUniqueValue = Byte.MAX_VALUE;
                     minimumUniqueValue = Byte.MIN_VALUE;
                     uniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Byte,
-                            StaticNaturalJoinStateManager.CHUNK_SIZE, -Byte.MIN_VALUE);
+                            JoinControl.CHUNK_SIZE, -Byte.MIN_VALUE);
                 }
             } else if (leftType == char.class) {
                 if (leftSources.length == 1) {
@@ -144,7 +144,7 @@ class BucketingContext implements SafeCloseable {
                     maximumUniqueValue = Character.MAX_VALUE;
                     minimumUniqueValue = Character.MIN_VALUE;
                     uniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Char,
-                            StaticNaturalJoinStateManager.CHUNK_SIZE, -Character.MIN_VALUE);
+                            JoinControl.CHUNK_SIZE, -Character.MIN_VALUE);
                 }
             } else if (leftType == short.class) {
                 if (leftSources.length == 1) {
@@ -152,7 +152,7 @@ class BucketingContext implements SafeCloseable {
                     maximumUniqueValue = Short.MAX_VALUE;
                     minimumUniqueValue = Short.MIN_VALUE;
                     uniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Short,
-                            StaticNaturalJoinStateManager.CHUNK_SIZE, -Short.MIN_VALUE);
+                            JoinControl.CHUNK_SIZE, -Short.MIN_VALUE);
                 }
             }
         }

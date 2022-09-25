@@ -17,12 +17,20 @@ public class JoinControl {
         Contiguous, Sparse, Hash
     }
 
+    public static final int CHUNK_SIZE = 1 << 12;
+    private static final int MINIMUM_INITIAL_HASH_SIZE = CHUNK_SIZE;
+    public static final long MAX_TABLE_SIZE = 1L << 30;
+    private static final double DEFAULT_MAX_LOAD_FACTOR = 0.75;
+    private static final double DEFAULT_TARGET_LOAD_FACTOR = 0.70;
+
     int initialBuildSize() {
-        return IncrementalChunkedNaturalJoinStateManager.CHUNK_SIZE;
+        return MINIMUM_INITIAL_HASH_SIZE;
     }
 
-    int tableSize(long groupingSize) {
-        return StaticChunkedNaturalJoinStateManager.hashTableSize(groupingSize);
+    int tableSize(final long initialCapacity) {
+        return Math.toIntExact(
+                Math.max(MINIMUM_INITIAL_HASH_SIZE,
+                        Math.min(MAX_TABLE_SIZE, Long.highestOneBit(initialCapacity) * 2)));
     }
 
     int tableSizeForRightBuild(Table rightTable) {
@@ -34,11 +42,11 @@ public class JoinControl {
     }
 
     double getMaximumLoadFactor() {
-        return IncrementalChunkedNaturalJoinStateManager.DEFAULT_MAX_LOAD_FACTOR;
+        return DEFAULT_MAX_LOAD_FACTOR;
     }
 
     double getTargetLoadFactor() {
-        return IncrementalChunkedNaturalJoinStateManager.DEFAULT_TARGET_LOAD_FACTOR;
+        return DEFAULT_TARGET_LOAD_FACTOR;
     }
 
     static boolean useGrouping(Table leftTable, ColumnSource<?>[] leftSources) {

@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl.join;
+package io.deephaven.engine.table.impl.asofjoin;
 
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.QueryTable;

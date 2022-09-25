@@ -16,12 +16,12 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import java.lang.Object;
 import java.lang.Override;
 import java.util.Arrays;
-import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 
 final class StaticAsOfJoinHasherLong extends StaticAsOfJoinStateManagerTypedBase {
     private final ImmutableLongArraySource mainKeySource0;
@@ -94,7 +94,7 @@ final class StaticAsOfJoinHasherLong extends StaticAsOfJoinStateManagerTypedBase
     }
 
     protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource hashSlots, MutableInt hashSlotOffset,
+            IntegerArraySource hashSlots, MutableLong hashSlotOffset,
             RowSetBuilderRandom foundBuilder) {
         final LongChunk<Values> keyChunk0 = sourceKeyChunks[0].asLongChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -108,7 +108,7 @@ final class StaticAsOfJoinHasherLong extends StaticAsOfJoinStateManagerTypedBase
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long indexKey = rowKeyChunk.get(chunkPosition);
                     if (addLeftIndex(tableLocation, indexKey) && hashSlots != null) {
-                        hashSlots.set(hashSlotOffset.getAndIncrement(), (long)tableLocation);
+                        hashSlots.set(hashSlotOffset.getAndIncrement(), tableLocation);
                         foundBuilder.addKey(indexKey);
                     }
                     break;

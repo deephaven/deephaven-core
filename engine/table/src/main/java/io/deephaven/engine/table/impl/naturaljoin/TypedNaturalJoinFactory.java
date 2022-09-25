@@ -19,12 +19,12 @@ import org.jetbrains.annotations.NotNull;
 public class TypedNaturalJoinFactory {
     public static void staticBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.addStatement("leftHashSlots.set(hashSlotOffset++, (long)tableLocation)");
+        builder.addStatement("leftHashSlots.set(hashSlotOffset++, tableLocation)");
     }
 
     public static void staticBuildLeftInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("mainRightRowKey.set(tableLocation, NO_RIGHT_STATE_VALUE)");
-        builder.addStatement("leftHashSlots.set(hashSlotOffset++, (long)tableLocation)");
+        builder.addStatement("leftHashSlots.set(hashSlotOffset++, tableLocation)");
     }
 
     public static void staticBuildRightFound(HasherConfig<?> hasherConfig, boolean alternate,
@@ -46,11 +46,11 @@ public class TypedNaturalJoinFactory {
         builder.addStatement(
                 "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))");
         builder.endControlFlow();
-        builder.addStatement("leftRedirections.set(hashSlotOffset++, rightRowKey)");
+        builder.addStatement("leftRedirections.set(redirectionOffset++, rightRowKey)");
     }
 
     public static void staticProbeDecorateLeftMissing(CodeBlock.Builder builder) {
-        builder.addStatement("leftRedirections.set(hashSlotOffset++, $T.NULL_ROW_KEY)", RowSet.class);
+        builder.addStatement("leftRedirections.set(redirectionOffset++, $T.NULL_ROW_KEY)", RowSet.class);
     }
 
     public static void staticProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,

@@ -16,7 +16,6 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
 public abstract class StaticNaturalJoinStateManager {
-    static final int CHUNK_SIZE = 4096;
     public static final long DUPLICATE_RIGHT_VALUE = -2;
     public static final long NO_RIGHT_ENTRY_VALUE = RowSequence.NULL_ROW_KEY;
 
