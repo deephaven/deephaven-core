@@ -1305,7 +1305,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "table agg_by operation failed.") from e
 
     def partitioned_agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]],
-                           by: Union[str, Sequence[str]] = None, preserve_empty: bool = True,
+                           by: Union[str, Sequence[str]] = None, preserve_empty: bool = False,
                            initial_groups: Table = None) -> PartitionedTable:
         """The partitioned_agg_by method is a convenience method that performs an agg_by operation on this table and
         wraps the result in a PartitionedTable. If the argument 'aggs' does not include a partition aggregation
@@ -1316,14 +1316,14 @@ class Table(JObjectWrapper):
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
             by (Union[str, Sequence[str]]): the group-by column name(s), default is None
             preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
-                a result of updates. Each aggregation operator defines its own value for empty groups. Default is True.
+                a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
             initial_groups (Table): a table whose distinct combinations of values for the group-by column name(s)
                 should be used to create an initial set of aggregation groups. All other columns are ignored. This is
                 useful in combination with preserve_empty == True to ensure that particular groups appear in the result
                 table, or with preserve_empty == False to control the encounter order for a collection of groups and
                 thus their relative order in the result. Changes to this table are not expected or handled; if this
                 table is a refreshing table, only its contents at instantiation time will be used. Default is None,
-                the result will be the same as if a table is provided but no rows was supplied.
+                the result will be the same as if a table is provided but no rows were supplied.
 
         Returns:
             a PartitionedTable

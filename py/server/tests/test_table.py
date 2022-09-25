@@ -446,15 +446,16 @@ class TableTestCase(BaseTestCase):
 
         with self.subTest("initial-groups, preserve_empty=True"):
             init_groups = test_table.update("grp_id=i")
-            result_pt1 = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id", initial_groups=init_groups)
+            result_pt1 = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id", preserve_empty=True,
+                                                       initial_groups=init_groups)
             self.assertGreaterEqual(result_pt1.table.size, 10)
             self.assertTrue(any([ct.size == 0 for ct in result_pt1.constituent_tables]))
             self.assertTrue(any([ct.size == 5 for ct in result_pt1.constituent_tables]))
 
         with self.subTest("initial-groups, preserve_empty=False, used to control constituent table order (reversed)"):
             reversed_init_groups = test_table.update("grp_id=i").reverse()
-            result_pt2 = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id", initial_groups=reversed_init_groups,
-                                                       preserve_empty=False)
+            result_pt2 = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id", initial_groups=reversed_init_groups)
+
             self.assertEqual(result_pt2.table.size, 2)
             self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
 
