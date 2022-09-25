@@ -106,7 +106,7 @@ public class NaturalJoinModifiedSlotTracker {
             modifiedSlots.ensureCapacity(allocated);
             originalRightValues.ensureCapacity(allocated);
         }
-        modifiedSlots.set(pointer, ((long)slot << FLAG_SHIFT) | flags);
+        modifiedSlots.set(pointer, ((long) slot << FLAG_SHIFT) | flags);
         originalRightValues.set(pointer, originalRightValue);
         return getCookieFromPointer(pointer++);
     }
@@ -144,7 +144,7 @@ public class NaturalJoinModifiedSlotTracker {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);
             final byte flag = (byte) (existingSlotAndFlag & FLAG_MASK);
-            final long newSlotAndFlag = ((long)newTableLocation << FLAG_SHIFT) | flag;
+            final long newSlotAndFlag = ((long) newTableLocation << FLAG_SHIFT) | flag;
             modifiedSlots.set(pointer, newSlotAndFlag);
         }
     }
@@ -160,7 +160,7 @@ public class NaturalJoinModifiedSlotTracker {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);
             final byte flag = (byte) (existingSlotAndFlag & FLAG_MASK);
-            final long newSlotAndFlag = ((long)tableLocation << FLAG_SHIFT) | flag;
+            final long newSlotAndFlag = ((long) tableLocation << FLAG_SHIFT) | flag;
             modifiedSlots.set(pointer, newSlotAndFlag);
         }
     }

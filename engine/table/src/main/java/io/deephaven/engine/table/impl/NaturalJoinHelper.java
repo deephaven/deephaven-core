@@ -90,10 +90,10 @@ class NaturalJoinHelper {
                     final int tableSize = control.tableSizeForRightBuild(rightTable);
 
                     final BothIncrementalNaturalJoinStateManager jsm =
-                                    TypedHasherFactory.make(IncrementalNaturalJoinStateManagerTypedBase.class,
-                                            bucketingContext.leftSources, bucketingContext.originalLeftSources,
-                                            tableSize, control.getMaximumLoadFactor(),
-                                            control.getTargetLoadFactor());
+                            TypedHasherFactory.make(IncrementalNaturalJoinStateManagerTypedBase.class,
+                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
+                                    tableSize, control.getMaximumLoadFactor(),
+                                    control.getTargetLoadFactor());
                     jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
 
                     try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
