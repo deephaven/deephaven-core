@@ -20,6 +20,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.Sa
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.WorkerConnection;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
@@ -31,6 +32,7 @@ import jsinterop.annotations.JsType;
 public class JsStorageService {
     private final WorkerConnection connection;
 
+    @JsIgnore
     public JsStorageService(WorkerConnection connection) {
         this.connection = connection;
     }

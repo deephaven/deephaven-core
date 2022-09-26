@@ -1,30 +1,20 @@
 package io.deephaven.web.client.api.storage;
 
-import elemental2.core.JsArray;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Storage_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ItemInfo;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
-@JsType(namespace = "dn.storage", name = "ItemDetails")
+/**
+ * Storage service metadata about files and folders.
+ */
+@JsType(namespace = "dh.storage", name = "ItemDetails")
 public class JsItemDetails {
     private final String path;
     private final int type;
     private final String size;
     private final String etag;
-
-    @JsMethod(namespace = "dh.storage.ItemDetails")
-    public static JsItemDetails file(String... pathParts) {
-        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getFILE(), null, null);
-    }
-
-    @JsMethod(namespace = "dh.storage.ItemDetails")
-    public static JsItemDetails directory(String... pathParts) {
-        return new JsItemDetails(JsArray.asJsArray(pathParts).join("/"), Storage_pb.ItemType.getDIRECTORY(), null,
-                null);
-    }
 
     @JsIgnore
     public JsItemDetails(String path, int kind, String size, String etag) {
