@@ -3,9 +3,12 @@ package io.deephaven.web.client.api.storage;
 import elemental2.core.JsArray;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Storage_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ItemInfo;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 
+@JsType(namespace = "dn.storage", name = "ItemDetails")
 public class JsItemDetails {
     private final String path;
     private final int type;
@@ -23,6 +26,7 @@ public class JsItemDetails {
                 null);
     }
 
+    @JsIgnore
     public JsItemDetails(String path, int kind, String size, String etag) {
         this.path = path;
         this.type = kind;
@@ -30,6 +34,7 @@ public class JsItemDetails {
         this.etag = etag;
     }
 
+    @JsIgnore
     public static JsItemDetails fromProto(ItemInfo item) {
         return new JsItemDetails(item.getPath(), item.getType(), item.getSize(), item.getEtag());
     }
