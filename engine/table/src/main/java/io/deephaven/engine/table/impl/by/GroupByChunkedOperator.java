@@ -9,7 +9,6 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.BitmapRandomBuilder;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.liveness.LivenessReferent;

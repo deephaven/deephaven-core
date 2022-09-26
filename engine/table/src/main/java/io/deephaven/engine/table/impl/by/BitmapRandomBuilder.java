@@ -1,4 +1,4 @@
-package io.deephaven.engine.rowset.impl;
+package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
