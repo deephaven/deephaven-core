@@ -58,7 +58,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        final ExecutionContext executionContext = ExecutionContext.makeSystemicExecutionContext();
+        final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
         final ThreadFactory threadFactory = runnable -> {
             Thread thread = new Thread(() -> {
                 try (final SafeCloseable ignored = executionContext.open()) {

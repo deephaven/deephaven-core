@@ -9,6 +9,7 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -42,9 +43,8 @@ public class DeferredViewTable extends RedefinableTable {
         this.deferredViewColumns =
                 deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
         final TableDefinition parentDefinition = tableReference.getDefinition();
-        for (final SelectColumn sc : this.deferredViewColumns) {
-            sc.initDef(parentDefinition.getColumnNameMap());
-        }
+        SelectAndViewAnalyzer.initializeSelectColumns(
+                parentDefinition.getColumnNameMap(), this.deferredViewColumns);
         this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
         for (final WhereFilter sf : this.deferredFilters) {
             sf.init(parentDefinition);

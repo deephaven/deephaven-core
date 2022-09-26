@@ -15,6 +15,7 @@ from typing import Union, Sequence, List, Any, Optional, Callable
 import jpy
 
 from deephaven import DHError, dtypes
+from deephaven._jpy import strict_cast
 from deephaven._wrapper import JObjectWrapper
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
@@ -47,12 +48,18 @@ _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-_JQueryScope = jpy.get_type("io.deephaven.engine.context.QueryScope")
-_JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
-    "io.deephaven.engine.util.AbstractScriptSession$UnsynchronizedScriptSessionQueryScope")
+_JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
-_j_script_session = jpy.cast(_JExecutionContext.getContext().getQueryScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
-_j_py_script_session = jpy.cast(_j_script_session, _JPythonScriptSession)
+
+
+def _j_py_script_session() -> _JPythonScriptSession:
+    j_execution_context = _JExecutionContext.getContext()
+    j_query_scope = j_execution_context.getQueryScope()
+    try:
+        j_script_session_query_scope = strict_cast(j_query_scope, _JScriptSessionQueryScope)
+        return strict_cast(j_script_session_query_scope.scriptSession(), _JPythonScriptSession)
+    except DHError:
+        return None
 
 
 @contextlib.contextmanager
@@ -69,14 +76,15 @@ def _query_scope_ctx():
     # combine the immediate caller's globals and locals into a single dict and use it as the query scope
     caller_frame = outer_frames[i + 1].frame
     function = outer_frames[i + 1].function
-    if len(outer_frames) > i + 2 or function != "<module>":
+    j_py_script_session = _j_py_script_session()
+    if j_py_script_session and (len(outer_frames) > i + 2 or function != "<module>"):
         scope_dict = caller_frame.f_globals.copy()
         scope_dict.update(caller_frame.f_locals)
         try:
-            _j_py_script_session.pushScope(scope_dict)
+            j_py_script_session.pushScope(scope_dict)
             yield
         finally:
-            _j_py_script_session.popScope()
+            j_py_script_session.popScope()
     else:
         # in the __main__ module, use the default main global scope
         yield

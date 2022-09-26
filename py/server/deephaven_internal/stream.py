@@ -89,3 +89,7 @@ class TeeStream(io.TextIOBase):
         self.close_func()
         if self.should_write_to_orig_stream:
             self._stream.close()
+
+    def __del__(self):
+        # Do nothing, override superclass which would call close()
+        pass

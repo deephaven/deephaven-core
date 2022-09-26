@@ -7,6 +7,7 @@ import unittest
 
 from deephaven import time_table, DHError, merge, merge_sorted
 from deephaven import ugp
+from deephaven.execution_context import make_user_exec_ctx
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -21,10 +22,12 @@ def partitioned_transform_func(t: Table, ot: Table) -> Table:
 
 class UgpTestCase(BaseTestCase):
     def setUp(self) -> None:
+        super().setUp()
         ugp.auto_locking = False
 
     def tearDown(self):
         ugp.auto_locking = False
+        super().tearDown()
 
     def test_ugp_context_manager(self):
         with self.assertRaises(DHError) as cm:
@@ -207,14 +210,6 @@ class UgpTestCase(BaseTestCase):
             test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         pt = test_table.partition_by(by="Y")
 
-        _ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-        _context = _ExecutionContext.newBuilder() \
-                .captureQueryCompiler()           \
-                .captureQueryLibrary()            \
-                .emptyQueryScope()                \
-                .build()                          \
-                .open()
-
         with self.subTest("Merge"):
             ugp.auto_locking = False
             with self.assertRaises(DHError) as cm:
@@ -226,23 +221,23 @@ class UgpTestCase(BaseTestCase):
 
         with self.subTest("Transform"):
             ugp.auto_locking = False
-            with self.assertRaises(DHError) as cm:
+            with make_user_exec_ctx(), self.assertRaises(DHError) as cm:
                 pt1 = pt.transform(transform_func)
             self.assertRegex(str(cm.exception), r"IllegalStateException")
 
             ugp.auto_locking = True
-            pt1 = pt.transform(transform_func)
+            with make_user_exec_ctx():
+                pt1 = pt.transform(transform_func)
 
         with self.subTest("Partitioned Transform"):
             ugp.auto_locking = False
-            with self.assertRaises(DHError) as cm:
+            with make_user_exec_ctx(), self.assertRaises(DHError) as cm:
                 pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
             self.assertRegex(str(cm.exception), r"IllegalStateException")
 
             ugp.auto_locking = True
-            pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
-
-        _context.close()
+            with make_user_exec_ctx():
+                pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
 
     def test_auto_locking_table_factory(self):
         with ugp.shared_lock():

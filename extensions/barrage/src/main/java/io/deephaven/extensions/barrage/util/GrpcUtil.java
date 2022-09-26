@@ -41,9 +41,9 @@ public class GrpcUtil {
             } else {
                 log.error().append(err).endl();
             }
-            response.onError(err);
+            safelyError(response, err);
         } catch (final RuntimeException | IOException err) {
-            response.onError(securelyWrapError(log, err));
+            safelyError(response, securelyWrapError(log, err));
         }
     }
 

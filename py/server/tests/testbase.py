@@ -8,11 +8,15 @@ import unittest
 
 import jpy
 from deephaven import DHError
+from deephaven.execution_context import make_user_exec_ctx
 
 from deephaven.ugp import exclusive_lock
 from deephaven.table import Table
 
+from test_helper import py_dh_session
+
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+_JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 
 
 def table_equals(table_a: Table, table_b: Table) -> bool:
@@ -32,10 +36,10 @@ class BaseTestCase(unittest.TestCase):
         ...
 
     def setUp(self) -> None:
-        ...
+        self._execution_context = make_user_exec_ctx().j_exec_ctx.open()
 
     def tearDown(self) -> None:
-        ...
+        self._execution_context.close()
 
     def wait_ticking_table_update(self, table: Table, row_count: int, timeout: int):
         """Waits for a ticking table to grow to the specified size or times out.

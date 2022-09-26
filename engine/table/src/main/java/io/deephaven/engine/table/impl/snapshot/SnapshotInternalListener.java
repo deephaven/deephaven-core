@@ -48,7 +48,9 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.resultLeftColumns = resultLeftColumns;
         this.resultRightColumns = resultRightColumns;
         this.resultRowSet = resultRowSet;
-        manage(snapshotTable);
+        if (snapshotTable.isRefreshing()) {
+            manage(snapshotTable);
+        }
         triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(triggerTable);
         snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
     }
