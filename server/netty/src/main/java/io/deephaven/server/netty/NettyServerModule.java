@@ -9,6 +9,7 @@ import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.grpc.MTlsCertificate;
 import io.deephaven.server.config.ServerConfig;
+import io.deephaven.server.plugin.type.JsTypesNoOpModule;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
@@ -28,7 +29,7 @@ import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
 import java.util.Set;
 
-@Module
+@Module(includes = {JsTypesNoOpModule.class})
 public interface NettyServerModule {
 
     @Binds

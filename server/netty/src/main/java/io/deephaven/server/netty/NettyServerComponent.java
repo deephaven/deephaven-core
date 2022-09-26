@@ -12,7 +12,6 @@ import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
-import io.deephaven.server.plugin.type.JsTypesNoOpModule;
 import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
 import io.deephaven.server.runner.DeephavenApiServerModule;
@@ -31,7 +30,6 @@ import javax.inject.Singleton;
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         SessionToExecutionStateModule.class,
-        JsTypesNoOpModule.class
 })
 public interface NettyServerComponent extends DeephavenApiServerComponent {
     @Component.Builder

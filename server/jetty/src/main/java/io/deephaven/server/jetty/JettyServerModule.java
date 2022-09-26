@@ -8,6 +8,7 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.jetty.jsplugin.JsPlugins;
+import io.deephaven.server.jetty.jsplugin.JsPluginsModule;
 import io.deephaven.server.runner.GrpcServer;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
@@ -20,7 +21,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Set;
 
-@Module
+@Module(includes = {JsPluginsModule.class})
 public interface JettyServerModule {
 
     @Binds
@@ -45,15 +46,5 @@ public interface JettyServerModule {
         serverBuilder.intercept(new JettyCertInterceptor());
 
         return serverBuilder.buildServletAdapter();
-    }
-
-    @Provides
-    @Singleton
-    static JsPlugins providesJsPlugins() {
-        try {
-            return JsPlugins.create();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 }
