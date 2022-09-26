@@ -2,6 +2,7 @@ package io.deephaven.web.client.api.storage;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import elemental2.dom.Blob;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.CreateDirectoryRequest;
@@ -24,7 +25,7 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 
 /**
- * Remote service to read and write files on the server.
+ * Remote service to read and write files on the server. Paths use "/" as a separator, and should not start with "/".
  */
 @JsType(namespace = "dh.storage", name = "StorageService")
 public class JsStorageService {
@@ -42,6 +43,12 @@ public class JsStorageService {
         return connection.metadata();
     }
 
+    /**
+     * Lists items in a given directory, with an optional filter glob to only list files that match. The empty or "root" path should be specified as the empty string.
+     * @param path the path of the directory to list
+     * @param glob optional glob to filter the contents of the directory
+     * @return a promise containing the any items that are present in the given directory that match the glob, or an error.
+     */
     @JsMethod
     public Promise<JsArray<JsItemDetails>> listItems(String path, @JsOptional String glob) {
         ListItemsRequest req = new ListItemsRequest();
@@ -52,6 +59,12 @@ public class JsStorageService {
                         .resolve(response.getItemsList().map((item, i, arr) -> JsItemDetails.fromProto(item))));
     }
 
+    /**
+     * Downloads a file at the given path, unless an etag is provided that matches the file's current contents.
+     * @param path the path of the file to fetch
+     * @param etag an etag from the last time the client saw this file
+     * @return a promise containing details about the file's contents, or an error.
+     */
     @JsMethod
     public Promise<FileContents> loadFile(String path, @JsOptional String etag) {
         FetchFileRequest req = new FetchFileRequest();
@@ -61,14 +74,19 @@ public class JsStorageService {
         }
         return Callbacks.<FetchFileResponse, Object>grpcUnaryPromise(c -> client().fetchFile(req, metadata(), c::apply))
                 .then(response -> {
-                    FileContents contents = FileContents.arrayBuffers(response.getContents_asU8().slice().buffer);
-                    if (response.hasEtag()) {
-                        contents.setEtag(response.getEtag());
+                    if (response.hasEtag() && response.getEtag().equals(etag)) {
+                        return Promise.resolve(new FileContents(etag));
                     }
-                    return Promise.resolve(contents);
+                    Blob contents = new Blob(JsArray.of(Blob.ConstructorBlobPartsArrayUnionType.of(response.getContents_asU8().slice().buffer)));
+                    return Promise.resolve(new FileContents(contents, response.getEtag()));
                 });
     }
 
+    /**
+     * Deletes the item at the given path. Directories must be empty to be deleted.
+     * @param path the path of the item to delete
+     * @return a promise with no value on success, or an error.
+     */
     @JsMethod
     public Promise<Void> deleteItem(String path) {
         DeleteItemRequest req = new DeleteItemRequest();
@@ -78,27 +96,65 @@ public class JsStorageService {
                 .then(response -> Promise.resolve((Void) null));
     }
 
+    /**
+     * Saves the provided contents to the given path, creating a file or replacing an existing one. The
+     * optional newFile parameter can be passed to indicate that an existing file must not be overwritten, only a new file created.
+     *
+     * Note that directories must be empty to be overwritten.
+
+     * @param path the path of the file to write
+     * @param contents the contents to write to that path
+     * @param newFile true to force a new file to be created, false to allow an existing file to be overwritten
+     * @return a promise with no value on success, or an error.
+     */
     @JsMethod
-    public Promise<Void> saveFile(String path, FileContents contents) {
+    public Promise<Void> saveFile(String path, FileContents contents, @JsOptional Boolean newFile) {
         return contents.arrayBuffer().then(ab -> {
             SaveFileRequest req = new SaveFileRequest();
             req.setContents(new Uint8Array(ab));
             req.setPath(path);
+
+            if (newFile != null) {
+                req.setNewFile(newFile);
+            }
+
             return Callbacks
                     .<SaveFileResponse, Object>grpcUnaryPromise(c -> client().saveFile(req, metadata(), c::apply))
                     .then(response -> Promise.resolve((Void) null));
         });
     }
 
+    /**
+     * Moves (and/or renames) an item from its old path to its new path. The optional newFile parameter can be passed to enforce that
+     * an existing item must not be overwritten.
+     *
+     * Note that directories must be empty to be overwritten.
+     *
+     * @param oldPath the path of the existing item
+     * @param newPath the new path to move the item to
+     * @param newFile true to forbid an existing file be created, false to allow an existing file to be overwritten
+     * @return a promise with no value on success, or an error.
+     */
     @JsMethod
-    public Promise<Void> moveItem(String oldPath, String newPath) {
+    public Promise<Void> moveItem(String oldPath, String newPath, @JsOptional Boolean newFile) {
         MoveItemRequest req = new MoveItemRequest();
         req.setOldPath(oldPath);
         req.setNewPath(newPath);
+
+        if (newFile != null) {
+            req.setNewFile(newFile);
+        }
+
         return Callbacks.<MoveItemResponse, Object>grpcUnaryPromise(c -> client().moveItem(req, metadata(), c::apply))
                 .then(response -> Promise.resolve((Void) null));
     }
 
+    /**
+     * Creates a new directory at the specified path.
+     *
+     * @param path the path of the directory to create
+     * @return a promise with no value on success, or an error.
+     */
     @JsMethod
     public Promise<Void> createDirectory(String path) {
         CreateDirectoryRequest req = new CreateDirectoryRequest();
