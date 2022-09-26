@@ -61,7 +61,7 @@ public class JsStorageService {
         }
         return Callbacks.<FetchFileResponse, Object>grpcUnaryPromise(c -> client().fetchFile(req, metadata(), c::apply))
                 .then(response -> {
-                    FileContents contents = FileContents.arrayBuffers(response.getContents().asUint8Array().buffer);
+                    FileContents contents = FileContents.arrayBuffers(response.getContents_asU8().slice().buffer);
                     if (response.hasEtag()) {
                         contents.setEtag(response.getEtag());
                     }
