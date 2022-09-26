@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.BitmapRandomBuilder;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -48,7 +49,7 @@ public final class GroupByChunkedOperator
     private final Map<String, AggregateColumnSource<?, ?>> resultColumns;
     private final ModifiedColumnSet resultInputsModifiedColumnSet;
 
-    private ChunkedOperatorAggregationHelper.BitmapRandomBuilder stepDestinationsModified;
+    private RowSetBuilderRandom stepDestinationsModified;
 
     private boolean stepValuesModified;
     private boolean someKeyHasAddsOrRemoves;
@@ -435,7 +436,7 @@ public final class GroupByChunkedOperator
                 && upstream.modifiedColumnSet().containsAny(resultInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
         someKeyHasModifies = false;
-        stepDestinationsModified = new ChunkedOperatorAggregationHelper.BitmapRandomBuilder(startingDestinationsCount);
+        stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
     }
 
     @Override
@@ -488,63 +489,65 @@ public final class GroupByChunkedOperator
             // add the new destinations so a rowset will get created if it doesn't exist
             stepDestinations.insert(newDestinations);
 
+            if (stepDestinations.isEmpty()) {
+                return;
+            }
+
             // use the builders to modify the rowsets
-            if (stepDestinations.isNonempty()) {
-                try (final ResettableWritableObjectChunk<WritableRowSet, Values> rowSetResettableChunk =
-                        ResettableWritableObjectChunk.makeResettableChunk();
-                        final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersResettableChunk =
-                                ResettableWritableObjectChunk.makeResettableChunk();
-                        final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersResettableChunk =
-                                ResettableWritableObjectChunk.makeResettableChunk();
-                        final RowSequence.Iterator destinationsIterator =
-                                stepDestinations.getRowSequenceIterator()) {
+            try (final ResettableWritableObjectChunk<WritableRowSet, Values> rowSetResettableChunk =
+                         ResettableWritableObjectChunk.makeResettableChunk();
+                 final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersResettableChunk =
+                         ResettableWritableObjectChunk.makeResettableChunk();
+                 final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersResettableChunk =
+                         ResettableWritableObjectChunk.makeResettableChunk();
+                 final RowSequence.Iterator destinationsIterator =
+                         stepDestinations.getRowSequenceIterator()) {
 
-                    // noinspection unchecked
-                    final WritableObjectChunk<WritableRowSet, Values> rowSetBackingChunk =
-                            rowSetResettableChunk.asWritableObjectChunk();
-                    // noinspection unchecked
-                    final WritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersBackingChunk =
-                            addedBuildersResettableChunk.asWritableObjectChunk();
-                    // noinspection unchecked
-                    final WritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersBackingChunk =
-                            removedBuildersResettableChunk.asWritableObjectChunk();
+                // noinspection unchecked
+                final WritableObjectChunk<WritableRowSet, Values> rowSetBackingChunk =
+                        rowSetResettableChunk.asWritableObjectChunk();
+                // noinspection unchecked
+                final WritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersBackingChunk =
+                        addedBuildersResettableChunk.asWritableObjectChunk();
+                // noinspection unchecked
+                final WritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersBackingChunk =
+                        removedBuildersResettableChunk.asWritableObjectChunk();
 
-                    while (destinationsIterator.hasMore()) {
-                        final long firstSliceDestination = destinationsIterator.peekNextKey();
-                        final long firstBackingChunkDestination =
-                                rowSets.resetWritableChunkToBackingStore(rowSetResettableChunk, firstSliceDestination);
-                        addedBuilders.resetWritableChunkToBackingStore(addedBuildersResettableChunk,
-                                firstSliceDestination);
-                        removedBuilders.resetWritableChunkToBackingStore(removedBuildersResettableChunk,
-                                firstSliceDestination);
+                while (destinationsIterator.hasMore()) {
+                    final long firstSliceDestination = destinationsIterator.peekNextKey();
+                    final long firstBackingChunkDestination =
+                            rowSets.resetWritableChunkToBackingStore(rowSetResettableChunk, firstSliceDestination);
+                    addedBuilders.resetWritableChunkToBackingStore(addedBuildersResettableChunk,
+                            firstSliceDestination);
+                    removedBuilders.resetWritableChunkToBackingStore(removedBuildersResettableChunk,
+                            firstSliceDestination);
 
-                        final long lastBackingChunkDestination =
-                                firstBackingChunkDestination + rowSetBackingChunk.size() - 1;
-                        final RowSequence initialDestinationsSlice =
-                                destinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
+                    final long lastBackingChunkDestination =
+                            firstBackingChunkDestination + rowSetBackingChunk.size() - 1;
+                    final RowSequence initialDestinationsSlice =
+                            destinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
-                        initialDestinationsSlice.forAllRowKeys((final long destination) -> {
-                            final int backingChunkOffset =
-                                    Math.toIntExact(destination - firstBackingChunkDestination);
-                            final WritableRowSet workingRowSet = rowSetBackingChunk.get(backingChunkOffset);
-                            if (workingRowSet == null) {
-                                // use the addRowSet as the new rowset
-                                final WritableRowSet addRowSet = nullToEmpty(
-                                        extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset));
-                                rowSetBackingChunk.set(backingChunkOffset, live ? addRowSet.toTracking() : addRowSet);
-                            } else {
-                                try (final WritableRowSet addRowSet =
-                                        nullToEmpty(extractAndClearBuilderRandom(addedBuildersBackingChunk,
-                                                backingChunkOffset));
-                                        final WritableRowSet removeRowSet =
-                                                nullToEmpty(extractAndClearBuilderRandom(removedBuildersBackingChunk,
-                                                        backingChunkOffset))) {
-                                    workingRowSet.remove(removeRowSet);
-                                    workingRowSet.insert(addRowSet);
-                                }
+                    initialDestinationsSlice.forAllRowKeys((final long destination) -> {
+                        final int backingChunkOffset =
+                                Math.toIntExact(destination - firstBackingChunkDestination);
+                        final WritableRowSet workingRowSet = rowSetBackingChunk.get(backingChunkOffset);
+                        if (workingRowSet == null) {
+                            // use the addRowSet as the new rowset
+                            final WritableRowSet addRowSet = nullToEmpty(
+                                    extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset));
+                            rowSetBackingChunk.set(backingChunkOffset, live ? addRowSet.toTracking() : addRowSet);
+                        } else {
+                            try (final WritableRowSet addRowSet =
+                                         nullToEmpty(extractAndClearBuilderRandom(addedBuildersBackingChunk,
+                                                 backingChunkOffset));
+                                 final WritableRowSet removeRowSet =
+                                         nullToEmpty(extractAndClearBuilderRandom(removedBuildersBackingChunk,
+                                                 backingChunkOffset))) {
+                                workingRowSet.remove(removeRowSet);
+                                workingRowSet.insert(addRowSet);
                             }
-                        });
-                    }
+                        }
+                    });
                 }
             }
             stepDestinationsModified = null;

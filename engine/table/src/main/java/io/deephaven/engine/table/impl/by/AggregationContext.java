@@ -234,11 +234,11 @@ class AggregationContext {
      * initialization.
      *
      * @param resultTable The result {@link QueryTable} after initialization
-     * @param maxDestination The maximum destination slot created during initialization
+     * @param startingDestinationsCount The number of used destinations at the beginning of this step
      */
-    void propagateInitialStateToOperators(@NotNull final QueryTable resultTable, final int maxDestination) {
+    void propagateInitialStateToOperators(@NotNull final QueryTable resultTable, final int startingDestinationsCount) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
-            operator.propagateInitialState(resultTable, maxDestination);
+            operator.propagateInitialState(resultTable, startingDestinationsCount);
         }
     }
 
