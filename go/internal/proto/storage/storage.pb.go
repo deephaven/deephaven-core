@@ -79,8 +79,8 @@ type ListItemsRequest struct {
 
 	// The path to the directory to list. empty to list top level
 	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	// A pattern to filter for, with "*" as a wildcard, ? to make the previous character optional, and {} to hold a
-	// comma-separated list of possible matches. The format follows Java's FileSystem.getPathMatcher (see
+	// A pattern to filter for, with "?" to match any one character, "*" to match any number of characters, and "{}"s
+	// to hold a comma-separated list of possible matches. The format follows Java's FileSystem.getPathMatcher (see
 	// https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-),
 	// except without allowing subdirectories with / or **.
 	FilterGlob *string `protobuf:"bytes,4,opt,name=filter_glob,json=filterGlob,proto3,oneof" json:"filter_glob,omitempty"`
