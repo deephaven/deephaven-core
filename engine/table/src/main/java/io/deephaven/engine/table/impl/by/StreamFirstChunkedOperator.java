@@ -149,7 +149,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     }
 
     @Override
-    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
         copyStreamToResult(resultTable.getRowSet());
         redirections = null;
         Assert.eq(resultTable.size(), "resultTable.size()", nextDestination, "nextDestination");

@@ -75,7 +75,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
     }
 
     @Override
-    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
         copyStreamToResult(resultTable.getRowSet());
         redirections = null;
     }

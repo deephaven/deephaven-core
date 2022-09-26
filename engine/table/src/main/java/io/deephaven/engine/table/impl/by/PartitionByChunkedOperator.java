@@ -529,7 +529,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     public void startTrackingPrevValues() {}
 
     @Override
-    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
         Assert.neqTrue(initialized, "initialized");
         final RowSet initialDestinations = resultTable.getRowSet();
         if (initialDestinations.isNonempty()) {
