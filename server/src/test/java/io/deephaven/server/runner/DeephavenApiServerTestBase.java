@@ -5,7 +5,6 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -14,6 +13,7 @@ import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
+import io.deephaven.server.plugin.type.JsTypesNoOpModule;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -38,6 +38,7 @@ public abstract class DeephavenApiServerTestBase {
             NoConsoleSessionModule.class,
             ServerBuilderInProcessModule.class,
             ExecutionContextUnitTestModule.class,
+            JsTypesNoOpModule.class,
     })
     public interface TestComponent {
 

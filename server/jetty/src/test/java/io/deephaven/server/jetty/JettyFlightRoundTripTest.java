@@ -7,6 +7,7 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.plugin.type.JsTypesNoOpModule;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.session.SessionModule;
 import io.deephaven.server.test.AuthTestModule;
@@ -33,6 +34,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
             JettyServerModule.class,
             JettyTestConfig.class,
             ExecutionContextUnitTestModule.class,
+            JsTypesNoOpModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }
