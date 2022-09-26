@@ -15,29 +15,28 @@ import java.nio.file.Path;
 public interface JsType extends Plugin {
 
     /**
-     * The name of the plugin. Should match the name from package.json.
+     * The name of the plugin.
      *
      * @return the name
      */
     String name();
 
     /**
-     * The version of the plugin. Should match the version from package.json.
+     * The version of the plugin.
      *
      * @return the version
      */
     String version();
 
     /**
-     * Writes out the contents of package.json into {@code out}.
+     * The main js file; the relative path with respect to {@link #copyTo(Path)} destination.
      *
-     * @param out the output stream
-     * @throws IOException if an I/O exception occurs
+     * @return the main entrypoint.
      */
-    void writeJsonPackageContentsTo(OutputStream out) throws IOException;
+    String main();
 
     /**
-     * Copy all files, including package.json, into the directory {@code destination}.
+     * Copy all distribution files into the directory {@code destination}.
      *
      * <p>
      * Note: this is only be called during the {@link JsTypeRegistration#register(JsType)} phase.

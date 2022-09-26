@@ -9,12 +9,13 @@ import dagger.multibindings.IntoSet;
 import io.deephaven.plugin.Registration;
 
 /**
- * Binds {@link JsTypePackageJsonSystemPropertyRegistration} into the set of {@link Registration}.
+ * Binds {@link JsTypeDistributionFromPackageJsonSystemPropertyRegistration} into the set of {@link Registration}.
  */
 @Module
 public interface JsTypesModule {
 
     @Binds
     @IntoSet
-    Registration bindsPackageJsonSystemPropertyRegistration(JsTypePackageJsonSystemPropertyRegistration registration);
+    Registration bindsPackageJsonSystemPropertyRegistration(
+            JsTypeDistributionFromPackageJsonSystemPropertyRegistration registration);
 }

@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.jetty.jsplugin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.deephaven.plugin.type.JsType;
 import io.deephaven.plugin.type.JsTypeRegistration;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -12,10 +13,12 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -83,16 +86,15 @@ public final class JsPlugins implements JsTypeRegistration {
     private void writeManifest() throws IOException {
         // note: would this be better as a custom servlet instead? (this current way is certainly easy...)
         try (final OutputStream out = new BufferedOutputStream(Files.newOutputStream(path.resolve("manifest.json")))) {
-            out.write("{\"plugins\":[".getBytes(StandardCharsets.UTF_8));
-            boolean isFirst = true;
+            final List<Map<String, String>> pluginsList = new ArrayList<>(plugins.size());
             for (JsType value : plugins.values()) {
-                if (!isFirst) {
-                    out.write(',');
-                }
-                value.writeJsonPackageContentsTo(out);
-                isFirst = false;
+                final Map<String, String> p = new LinkedHashMap<>(3);
+                p.put("name", value.name());
+                p.put("version", value.version());
+                p.put("main", value.main());
+                pluginsList.add(p);
             }
-            out.write("]}".getBytes(StandardCharsets.UTF_8));
+            new ObjectMapper().writeValue(out, Collections.singletonMap("plugins", pluginsList));
             out.flush();
         }
     }

@@ -29,8 +29,8 @@ class RegistrationAdapter(Registration.Callback):
         if isinstance(plugin, ObjectType):
             self._callback.registerObjectType(plugin.name, ObjectTypeAdapter(plugin))
         elif isinstance(plugin, JsType):
-            with plugin.path() as path:
-                self._callback.registerJsType(str(path))
+            with plugin.distribution_path() as distribution_path:
+                self._callback.registerJsType(str(distribution_path), plugin.name, plugin.version, plugin.main)
         else:
             raise NotImplementedError
 

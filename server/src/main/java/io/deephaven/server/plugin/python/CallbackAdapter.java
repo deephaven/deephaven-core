@@ -4,10 +4,10 @@
 package io.deephaven.server.plugin.python;
 
 import io.deephaven.plugin.Registration.Callback;
-import io.deephaven.server.plugin.type.JsTypePackageJson;
+import io.deephaven.server.plugin.type.JsTypeDistribution;
 import org.jpy.PyObject;
 
-import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
 class CallbackAdapter {
@@ -24,7 +24,7 @@ class CallbackAdapter {
     }
 
     @SuppressWarnings("unused")
-    public void registerJsType(String path) throws IOException {
-        callback.register(JsTypePackageJson.of(path));
+    public void registerJsType(String path, String name, String version, String main) {
+        callback.register(new JsTypeDistribution(Path.of(path), name, version, main));
     }
 }

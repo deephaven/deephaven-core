@@ -53,7 +53,7 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         'jpy>=0.11.0',
-        'deephaven-plugin',
+        'deephaven-plugin>=0.3.0.dev2',
         'numpy',
         'pandas',
         'numba'
