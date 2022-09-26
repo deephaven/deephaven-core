@@ -8,19 +8,19 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import java.util.Arrays;
 
 /**
- * The output RowSet of an aggregation is fairly special. It is always from zero to the number of output rows, and
- * while modifying states we randomly add rows to it, potentially touching the same state many times. The normal
- * index random builder does not guarantee those values are de-duplicated and requires O(lg n) operations for each
- * insertion and building the RowSet.
+ * The output RowSet of an aggregation is fairly special. It is always from zero to the number of output rows, and while
+ * modifying states we randomly add rows to it, potentially touching the same state many times. The normal index random
+ * builder does not guarantee those values are de-duplicated and requires O(lg n) operations for each insertion and
+ * building the RowSet.
  * <p>
- * This version is O(1) for updating a modified slot, then linear in the number of output positions (not the number
- * of result values) to build the RowSet. The memory usage is 1 bit per output position, vs. the standard builder is
- * 128 bits per used value (though with the possibility of collapsing adjacent ranges when they are modified
- * back-to-back). For random access patterns, this version will be more efficient; for friendly patterns the default
- * random builder is likely more efficient.
+ * This version is O(1) for updating a modified slot, then linear in the number of output positions (not the number of
+ * result values) to build the RowSet. The memory usage is 1 bit per output position, vs. the standard builder is 128
+ * bits per used value (though with the possibility of collapsing adjacent ranges when they are modified back-to-back).
+ * For random access patterns, this version will be more efficient; for friendly patterns the default random builder is
+ * likely more efficient.
  * <p>
- * We also know that we will only modify the rows that existed when we start, so that we can clamp the maximum key
- * for the builder to the maximum output position without loss of fidelity.
+ * We also know that we will only modify the rows that existed when we start, so that we can clamp the maximum key for
+ * the builder to the maximum output position without loss of fidelity.
  */
 public class BitmapRandomBuilder implements RowSetBuilderRandom {
 

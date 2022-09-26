@@ -495,13 +495,13 @@ public final class GroupByChunkedOperator
 
             // use the builders to modify the rowsets
             try (final ResettableWritableObjectChunk<WritableRowSet, Values> rowSetResettableChunk =
-                         ResettableWritableObjectChunk.makeResettableChunk();
-                 final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersResettableChunk =
-                         ResettableWritableObjectChunk.makeResettableChunk();
-                 final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersResettableChunk =
-                         ResettableWritableObjectChunk.makeResettableChunk();
-                 final RowSequence.Iterator destinationsIterator =
-                         stepDestinations.getRowSequenceIterator()) {
+                    ResettableWritableObjectChunk.makeResettableChunk();
+                    final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedBuildersResettableChunk =
+                            ResettableWritableObjectChunk.makeResettableChunk();
+                    final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedBuildersResettableChunk =
+                            ResettableWritableObjectChunk.makeResettableChunk();
+                    final RowSequence.Iterator destinationsIterator =
+                            stepDestinations.getRowSequenceIterator()) {
 
                 // noinspection unchecked
                 final WritableObjectChunk<WritableRowSet, Values> rowSetBackingChunk =
@@ -538,11 +538,11 @@ public final class GroupByChunkedOperator
                             rowSetBackingChunk.set(backingChunkOffset, live ? addRowSet.toTracking() : addRowSet);
                         } else {
                             try (final WritableRowSet addRowSet =
-                                         nullToEmpty(extractAndClearBuilderRandom(addedBuildersBackingChunk,
-                                                 backingChunkOffset));
-                                 final WritableRowSet removeRowSet =
-                                         nullToEmpty(extractAndClearBuilderRandom(removedBuildersBackingChunk,
-                                                 backingChunkOffset))) {
+                                    nullToEmpty(extractAndClearBuilderRandom(addedBuildersBackingChunk,
+                                            backingChunkOffset));
+                                    final WritableRowSet removeRowSet =
+                                            nullToEmpty(extractAndClearBuilderRandom(removedBuildersBackingChunk,
+                                                    backingChunkOffset))) {
                                 workingRowSet.remove(removeRowSet);
                                 workingRowSet.insert(addRowSet);
                             }
