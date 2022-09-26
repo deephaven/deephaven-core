@@ -14,7 +14,7 @@ services:
   web:
     image: ghcr.io/deephaven/web:${VERSION:-latest}
     expose:
-      - '80'
+      - '8080'
     volumes:
       - ./data:/data
       - web-tmp:/tmp
