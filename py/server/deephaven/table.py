@@ -1282,14 +1282,25 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
-    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None) -> Table:
+    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
+               preserve_empty: bool = False, initial_groups: Table = None) -> Table:
         """The agg_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregations specified.
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
-
+            by (Union[str, Sequence[str]]): the group-by column name(s), if not provided, all rows from this table are
+                grouped into a single group of rows before the aggregations are applied to the result, default is None.
+            preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
+                a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
+            initial_groups (Table): a table whose distinct combinations of values for the group-by column name(s)
+                should be used to create an initial set of aggregation groups. All other columns are ignored. This is
+                useful in combination with preserve_empty == True to ensure that particular groups appear in the result
+                table, or with preserve_empty == False to control the encounter order for a collection of groups and
+                thus their relative order in the result. Changes to this table are not expected or handled; if this
+                table is a refreshing table, only its contents at instantiation time will be used. Default is None,
+                the result will be the same as if a table is provided but no rows were supplied. When it is provided,
+                the 'by' argument must be provided to explicitly specify the grouping columns.
         Returns:
             a new table
 
@@ -1299,8 +1310,16 @@ class Table(JObjectWrapper):
         try:
             aggs = to_sequence(aggs)
             by = to_sequence(by)
+            if not by and initial_groups:
+                raise ValueError("missing group-by column names when initial_groups is provided.")
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
+            if not by:
+                return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
+            else:
+                j_column_name_list = j_array_list([_JColumnName.of(col) for col in by])
+                initial_groups = unwrap(initial_groups)
+                return Table(
+                    j_table=self.j_table.aggBy(j_agg_list, preserve_empty, initial_groups, j_column_name_list))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
 
