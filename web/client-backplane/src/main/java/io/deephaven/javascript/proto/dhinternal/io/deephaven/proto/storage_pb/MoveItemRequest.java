@@ -27,6 +27,12 @@ public class MoveItemRequest {
         String getOldPath();
 
         @JsProperty
+        boolean isNewFile();
+
+        @JsProperty
+        void setNewFile(boolean newFile);
+
+        @JsProperty
         void setNewPath(String newPath);
 
         @JsProperty
@@ -47,6 +53,12 @@ public class MoveItemRequest {
         String getOldPath();
 
         @JsProperty
+        boolean isNewFile();
+
+        @JsProperty
+        void setNewFile(boolean newFile);
+
+        @JsProperty
         void setNewPath(String newPath);
 
         @JsProperty
@@ -63,11 +75,15 @@ public class MoveItemRequest {
     public static native MoveItemRequest.ToObjectReturnType toObject(
             boolean includeInstance, MoveItemRequest msg);
 
+    public native boolean getNewFile();
+
     public native String getNewPath();
 
     public native String getOldPath();
 
     public native Uint8Array serializeBinary();
+
+    public native void setNewFile(boolean value);
 
     public native void setNewPath(String value);
 
