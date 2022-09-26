@@ -12,9 +12,9 @@ import jsinterop.annotations.JsType;
 import java.util.Objects;
 
 /**
- * Represents a file's contents loaded from the server. If an etag was specified when loading, client should first
- * test if the etag of this instance matches - if so, the contents will be empty, and the client's existing contents
- * should be used.
+ * Represents a file's contents loaded from the server. If an etag was specified when loading, client should first test
+ * if the etag of this instance matches - if so, the contents will be empty, and the client's existing contents should
+ * be used.
  */
 @JsType(namespace = "dh.storage")
 public class FileContents {

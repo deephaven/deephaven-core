@@ -44,10 +44,13 @@ public class JsStorageService {
     }
 
     /**
-     * Lists items in a given directory, with an optional filter glob to only list files that match. The empty or "root" path should be specified as the empty string.
+     * Lists items in a given directory, with an optional filter glob to only list files that match. The empty or "root"
+     * path should be specified as the empty string.
+     *
      * @param path the path of the directory to list
      * @param glob optional glob to filter the contents of the directory
-     * @return a promise containing the any items that are present in the given directory that match the glob, or an error.
+     * @return a promise containing the any items that are present in the given directory that match the glob, or an
+     *         error.
      */
     @JsMethod
     public Promise<JsArray<JsItemDetails>> listItems(String path, @JsOptional String glob) {
@@ -61,6 +64,7 @@ public class JsStorageService {
 
     /**
      * Downloads a file at the given path, unless an etag is provided that matches the file's current contents.
+     *
      * @param path the path of the file to fetch
      * @param etag an etag from the last time the client saw this file
      * @return a promise containing details about the file's contents, or an error.
@@ -77,13 +81,15 @@ public class JsStorageService {
                     if (response.hasEtag() && response.getEtag().equals(etag)) {
                         return Promise.resolve(new FileContents(etag));
                     }
-                    Blob contents = new Blob(JsArray.of(Blob.ConstructorBlobPartsArrayUnionType.of(response.getContents_asU8().slice().buffer)));
+                    Blob contents = new Blob(JsArray.of(
+                            Blob.ConstructorBlobPartsArrayUnionType.of(response.getContents_asU8().slice().buffer)));
                     return Promise.resolve(new FileContents(contents, response.getEtag()));
                 });
     }
 
     /**
      * Deletes the item at the given path. Directories must be empty to be deleted.
+     *
      * @param path the path of the item to delete
      * @return a promise with no value on success, or an error.
      */
@@ -97,11 +103,11 @@ public class JsStorageService {
     }
 
     /**
-     * Saves the provided contents to the given path, creating a file or replacing an existing one. The
-     * optional newFile parameter can be passed to indicate that an existing file must not be overwritten, only a new file created.
+     * Saves the provided contents to the given path, creating a file or replacing an existing one. The optional newFile
+     * parameter can be passed to indicate that an existing file must not be overwritten, only a new file created.
      *
      * Note that directories must be empty to be overwritten.
-
+     *
      * @param path the path of the file to write
      * @param contents the contents to write to that path
      * @param newFile true to force a new file to be created, false to allow an existing file to be overwritten
@@ -125,8 +131,8 @@ public class JsStorageService {
     }
 
     /**
-     * Moves (and/or renames) an item from its old path to its new path. The optional newFile parameter can be passed to enforce that
-     * an existing item must not be overwritten.
+     * Moves (and/or renames) an item from its old path to its new path. The optional newFile parameter can be passed to
+     * enforce that an existing item must not be overwritten.
      *
      * Note that directories must be empty to be overwritten.
      *

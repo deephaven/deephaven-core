@@ -203,7 +203,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             Path source = resolveOrThrow(request.getOldPath());
             Path target = resolveOrThrow(request.getNewPath());
 
-            StandardCopyOption[] options = request.getNewFile() ? new StandardCopyOption[0] : new StandardCopyOption[] { StandardCopyOption.REPLACE_EXISTING };
+            StandardCopyOption[] options = request.getNewFile() ? new StandardCopyOption[0]
+                    : new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING};
 
             try {
                 Files.move(source, target, options);
