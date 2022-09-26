@@ -62,7 +62,7 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
      *
      * @return if the GC application is enabled
      */
-    private static boolean enabled() {
+    public static boolean enabled() {
         // Note: this is off-by-default until the Web UI has been updated to better handle on-by-default applications.
         return "true".equalsIgnoreCase(System.getProperty(ENABLED));
     }

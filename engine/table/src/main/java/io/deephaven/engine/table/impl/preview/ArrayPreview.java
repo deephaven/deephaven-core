@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.preview;
 
 import io.deephaven.vector.Vector;
 import io.deephaven.vector.VectorFactory;
+import org.jetbrains.annotations.NotNull;
 import org.jpy.PyListWrapper;
 
 /**
@@ -28,7 +29,13 @@ public class ArrayPreview implements PreviewType {
         if (!array.getClass().isArray()) {
             throw new IllegalArgumentException("Input must be an array, instead input class is " + array.getClass());
         }
-        return new ArrayPreview(VectorFactory.forElementType(array.getClass().getComponentType()).vectorWrap(array)
+        final Class<?> componentType = array.getClass().getComponentType();
+        // we do not support boolean[] as a wrapped Vector
+        if (componentType == boolean.class) {
+            return new ArrayPreview(convertToString((boolean[]) array));
+        }
+        return new ArrayPreview(VectorFactory.forElementType(componentType)
+                .vectorWrap(array)
                 .toString(ARRAY_SIZE_CUTOFF));
     }
 
@@ -47,5 +54,29 @@ public class ArrayPreview implements PreviewType {
     @Override
     public String toString() {
         return displayString;
+    }
+
+    /**
+     * Helper method for generating a string preview of a {@code boolean[]}.
+     *
+     * @param array The boolean array to convert to a String
+     * @return The String representation of array
+     */
+    private static String convertToString(@NotNull final boolean[] array) {
+        if (array.length == 0) {
+            return "[]";
+        }
+        final StringBuilder builder = new StringBuilder("[");
+        final int displaySize = Math.min(array.length, ARRAY_SIZE_CUTOFF);
+        builder.append(array[0] ? "true" : "false");
+        for (int ei = 1; ei < displaySize; ++ei) {
+            builder.append(',').append(array[ei] ? "true" : "false");
+        }
+        if (displaySize == array.length) {
+            builder.append(']');
+        } else {
+            builder.append(", ...]");
+        }
+        return builder.toString();
     }
 }

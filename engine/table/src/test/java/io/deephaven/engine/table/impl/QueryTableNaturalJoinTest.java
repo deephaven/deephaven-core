@@ -172,29 +172,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
-    public void testNaturalJoinIncrementalOverflow() {
-        if (NaturalJoinHelper.USE_TYPED_STATE_MANAGER) {
-            // the typed state manager does not do overflow, there must be enough space in the open addressed hash table
-            // to contain all of our entries
-            return;
-        }
-        setExpectError(false);
-
-        final int maxSteps = 5;
-        final int[] leftSizes = new int[] {10000};
-        final int[] rightSizes = new int[] {10000};
-        for (long seed = 0; seed < 5; seed++) {
-            for (int leftSize : leftSizes) {
-                for (int rightSize : rightSizes) {
-                    for (JoinIncrement joinIncrement : new JoinIncrement[] {leftRightConcurrentStepShift}) {
-                        testNaturalJoinIncremental(false, false, leftSize, rightSize, joinIncrement, seed, maxSteps,
-                                QueryTableJoinTest.HIGH_LOAD_FACTOR_CONTROL);
-                    }
-                }
-            }
-        }
-    }
-
     public void testNaturalJoinLeftIncrementalRightStatic() {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {leftStepShift, leftStep}) {
             final int sz = 5;

@@ -6,6 +6,7 @@ package io.deephaven.server.console;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -96,22 +97,23 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     private <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final String scopeName, final String logId) {
-        // if we are not attached to a session, check the scope for a variable right now
+        // fetch the variable from the scope right now
         final T export = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
             final ScriptSession gss = scriptSessionProvider.get();
-            // noinspection unchecked
-            T scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
-            if (scopeVar == null) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
+            T scopeVar = null;
+            try {
+                // noinspection unchecked
+                scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
+            } catch (QueryScope.MissingVariableException ignored) {
             }
             return scopeVar;
         });
 
         if (export == null) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
+            return SessionState.wrapAsFailedExport(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'"));
         }
+
         return SessionState.wrapAsExport(export);
     }
 

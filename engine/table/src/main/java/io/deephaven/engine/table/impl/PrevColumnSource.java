@@ -129,11 +129,6 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public final ChunkType getChunkType() {
-        return originalSource.getChunkType();
-    }
-
-    @Override
     public final GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
         return originalSource.makeGetContext(chunkCapacity, sharedContext);
     }
@@ -165,11 +160,6 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     public final void fillPrevChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean preventsParallelism() {
-        return originalSource.preventsParallelism();
     }
 
     @Override

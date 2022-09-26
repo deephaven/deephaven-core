@@ -12,50 +12,23 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.security.*;
-
 import static io.deephaven.util.QueryConstants.*;
 
 public class ViewColumnSource<T> extends AbstractColumnSource<T> {
     private final Formula formula;
-    // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source, so explicitly create that.
-    private static URL groovyShellUrl;
-    static {
-        try {
-            groovyShellUrl = new URL("file:/groovy/shell");
-        } catch (MalformedURLException ignored) {
-            groovyShellUrl = null;
-            // It should not be possible for this to get malformed.
-        }
-    }
 
-    private static final CodeSource codeSource =
-            new CodeSource(groovyShellUrl, (java.security.cert.Certificate[]) null);
-    // The permission collection should not be static, because the class loader might take place before the
-    // custom policy object is assigned.
-    private final PermissionCollection perms = Policy.getPolicy().getPermissions(codeSource);
-    private final AccessControlContext context =
-            AccessController.doPrivileged((PrivilegedAction<AccessControlContext>) () -> new AccessControlContext(
-                    new ProtectionDomain[] {new ProtectionDomain(
-                            new CodeSource(groovyShellUrl, (java.security.cert.Certificate[]) null), perms)}));
-
-    private final boolean preventsParallelization;
     private final boolean isStateless;
 
-    public ViewColumnSource(Class<T> type, Formula formula, boolean preventsParallelization, boolean isStateless) {
+    public ViewColumnSource(Class<T> type, Formula formula, boolean isStateless) {
         super(type);
         this.formula = formula;
-        this.preventsParallelization = preventsParallelization;
         this.isStateless = isStateless;
     }
 
-    public ViewColumnSource(Class<T> type, Class elementType, Formula formula, boolean preventsParallelization,
+    public ViewColumnSource(Class<T> type, Class elementType, Formula formula,
             boolean isStateless) {
         super(type, elementType);
         this.formula = formula;
-        this.preventsParallelization = preventsParallelization;
         this.isStateless = isStateless;
     }
 
@@ -69,16 +42,8 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         if (rowKey < 0) {
             return null;
         }
-        final SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            return AccessController.doPrivileged((PrivilegedAction<T>) () -> {
-                // noinspection unchecked
-                return (T) formula.get(rowKey);
-            }, context);
-        } else {
-            // noinspection unchecked
-            return (T) formula.get(rowKey);
-        }
+        // noinspection unchecked
+        return (T) formula.get(rowKey);
     }
 
     @Override
@@ -286,10 +251,6 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         public void close() {
             underlyingFillContext.close();
         }
-    }
-
-    public boolean preventsParallelism() {
-        return preventsParallelization;
     }
 
     @Override

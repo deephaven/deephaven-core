@@ -38,12 +38,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -205,30 +203,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private void evaluateCommand(String command) {
-        final SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source, so explicitly create
-            // that.
-            AccessControlContext context;
-            try {
-                final URL urlSource = new URL("file:/groovy/shell");
-                final CodeSource codeSource = new CodeSource(urlSource, (java.security.cert.Certificate[]) null);
-                final PermissionCollection perms = Policy.getPolicy().getPermissions(codeSource);
-                context = AccessController
-                        .doPrivileged((PrivilegedAction<AccessControlContext>) () -> new AccessControlContext(
-                                new ProtectionDomain[] {new ProtectionDomain(
-                                        new CodeSource(urlSource, (java.security.cert.Certificate[]) null), perms)}));
-            } catch (MalformedURLException e) {
-                throw new RuntimeException("Groovy shell URL somehow invalid.", e);
-            }
-
-            AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-                groovyShell.evaluate(command);
-                return null;
-            }, context);
-        } else {
-            groovyShell.evaluate(command);
-        }
+        groovyShell.evaluate(command);
     }
 
     @Override

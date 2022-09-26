@@ -112,11 +112,6 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }

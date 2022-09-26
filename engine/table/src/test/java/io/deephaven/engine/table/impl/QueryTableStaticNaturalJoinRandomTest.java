@@ -256,29 +256,6 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
     }
 
     // let's force some collisions by making our table small
-    public void testNaturalJoinRandomStaticOverflow() {
-        // we can not make our table small with the typed state manager, as it does not support overflow
-        if (NaturalJoinHelper.USE_TYPED_STATE_MANAGER) {
-            return;
-        }
-
-        for (int leftSize = 10_000; leftSize <= 100_000; leftSize *= 10) {
-            for (int rightSize = 10_000; rightSize <= 100_000; rightSize *= 10) {
-                for (int seed = 0; seed < 2; ++seed) {
-                    for (Class dataType : Arrays.asList(String.class, int.class, ArrayTuple.class)) {
-                        System.out.println("Seed = " + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize
-                                + ", type=" + dataType);
-                        testNaturalJoinRandomStatic(seed, leftSize, rightSize, dataType, false, false,
-                                QueryTableJoinTest.SMALL_LEFT_CONTROL);
-                        testNaturalJoinRandomStatic(seed, leftSize, rightSize, dataType, false, false,
-                                QueryTableJoinTest.SMALL_RIGHT_CONTROL);
-                    }
-                }
-            }
-        }
-    }
-
-    // let's force some collisions by making our table small
     public void testNaturalJoinRandomStaticRedirectionBuild() {
         for (int leftSize = 10_000; leftSize <= 10_000; leftSize *= 10) {
             for (int rightSize = 10_000; rightSize <= 10_000; rightSize *= 10) {

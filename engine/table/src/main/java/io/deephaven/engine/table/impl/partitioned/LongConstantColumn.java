@@ -56,7 +56,7 @@ class LongConstantColumn implements SelectColumn {
     @NotNull
     @Override
     public ColumnSource<?> getDataView() {
-        return new ViewColumnSource<>(long.class, new OutputFormula(), false, true);
+        return new ViewColumnSource<>(long.class, new OutputFormula(), true);
     }
 
     @Override

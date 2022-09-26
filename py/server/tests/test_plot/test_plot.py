@@ -16,10 +16,12 @@ from tests.testbase import BaseTestCase
 
 class PlotTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
+        super().tearDown()
 
     def test_plot_style(self):
         figure = Figure()

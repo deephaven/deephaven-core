@@ -2,6 +2,8 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/container/row_sequence.h"
+
+#include <optional>
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::utility::stringf;

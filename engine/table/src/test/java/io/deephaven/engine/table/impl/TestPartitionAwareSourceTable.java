@@ -425,8 +425,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     will(returnValue(columnDefinition.getDataType()));
                     allowing(columnSource).getComponentType();
                     will(returnValue(columnDefinition.getComponentType()));
-                    allowing(columnSource).preventsParallelism();
-                    will(returnValue(false));
                     allowing(columnSource).isStateless();
                     will(returnValue(true));
                 }

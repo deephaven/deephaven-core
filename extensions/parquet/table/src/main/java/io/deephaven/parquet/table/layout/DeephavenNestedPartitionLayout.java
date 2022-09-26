@@ -6,7 +6,6 @@ package io.deephaven.parquet.table.layout;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;
-import io.deephaven.engine.table.impl.locations.local.PrivilegedFileAccessUtil;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
@@ -27,11 +26,11 @@ import java.util.function.Predicate;
 /**
  * {@link TableLocationKeyFinder} that will traverse a directory hierarchy laid out in Deephaven's "nested-partitioned"
  * format, e.g.
- * 
+ *
  * <pre>
  * tableRootDirectory/internalPartitionValue/columnPartitionValue/tableName/...
  * </pre>
- * 
+ *
  * , producing {@link FileTableLocationKey}'s with two partitions, for keys {@value INTERNAL_PARTITION_KEY} and the
  * specified {@code columnPartitionKey}.
  */
@@ -88,37 +87,35 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends FileTableLocati
     @Override
     public final void findKeys(@NotNull final Consumer<TLK> locationKeyObserver) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
-        PrivilegedFileAccessUtil.doFilesystemAction(() -> {
-            try (final DirectoryStream<Path> internalPartitionStream =
-                    Files.newDirectoryStream(tableRootDirectory.toPath(), Files::isDirectory)) {
-                for (final Path internalPartition : internalPartitionStream) {
-                    final String internalPartitionValue = internalPartition.getFileName().toString();
-                    if (internalPartitionValueFilter != null
-                            && !internalPartitionValueFilter.test(internalPartitionValue)) {
-                        continue;
-                    }
-                    boolean needToUpdateInternalPartitionValue = true;
-                    try (final DirectoryStream<Path> columnPartitionStream =
-                            Files.newDirectoryStream(internalPartition, Files::isDirectory)) {
-                        for (final Path columnPartition : columnPartitionStream) {
-                            partitions.put(columnPartitionKey, columnPartition.getFileName().toString());
-                            if (needToUpdateInternalPartitionValue) {
-                                // Partition order dictates comparison priority, so we need to insert the internal
-                                // partition after the column partition.
-                                partitions.put(INTERNAL_PARTITION_KEY, internalPartitionValue);
-                                needToUpdateInternalPartitionValue = false;
-                            }
-                            locationKeyObserver.accept(makeKey(columnPartition.resolve(tableName), partitions));
+        try (final DirectoryStream<Path> internalPartitionStream =
+                Files.newDirectoryStream(tableRootDirectory.toPath(), Files::isDirectory)) {
+            for (final Path internalPartition : internalPartitionStream) {
+                final String internalPartitionValue = internalPartition.getFileName().toString();
+                if (internalPartitionValueFilter != null
+                        && !internalPartitionValueFilter.test(internalPartitionValue)) {
+                    continue;
+                }
+                boolean needToUpdateInternalPartitionValue = true;
+                try (final DirectoryStream<Path> columnPartitionStream =
+                        Files.newDirectoryStream(internalPartition, Files::isDirectory)) {
+                    for (final Path columnPartition : columnPartitionStream) {
+                        partitions.put(columnPartitionKey, columnPartition.getFileName().toString());
+                        if (needToUpdateInternalPartitionValue) {
+                            // Partition order dictates comparison priority, so we need to insert the internal
+                            // partition after the column partition.
+                            partitions.put(INTERNAL_PARTITION_KEY, internalPartitionValue);
+                            needToUpdateInternalPartitionValue = false;
                         }
+                        locationKeyObserver.accept(makeKey(columnPartition.resolve(tableName), partitions));
                     }
                 }
-            } catch (final NoSuchFileException | FileNotFoundException ignored) {
-                // If we found nothing at all, then there's nothing to be done at this level.
-            } catch (final IOException e) {
-                throw new TableDataException(
-                        "Error finding locations for " + tableName + " under " + tableRootDirectory, e);
             }
-        });
+        } catch (final NoSuchFileException | FileNotFoundException ignored) {
+            // If we found nothing at all, then there's nothing to be done at this level.
+        } catch (final IOException e) {
+            throw new TableDataException(
+                    "Error finding locations for " + tableName + " under " + tableRootDirectory, e);
+        }
     }
 
     protected abstract TLK makeKey(@NotNull final Path tableLeafDirectory,

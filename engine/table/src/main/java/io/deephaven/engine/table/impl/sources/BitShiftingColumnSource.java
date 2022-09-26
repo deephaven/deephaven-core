@@ -496,11 +496,6 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
     }
 
     @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
-    }
-
-    @Override
     public boolean isStateless() {
         return innerSource.isStateless();
     }

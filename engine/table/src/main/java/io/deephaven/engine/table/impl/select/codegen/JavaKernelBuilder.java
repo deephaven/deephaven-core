@@ -20,9 +20,6 @@ import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -267,10 +264,7 @@ public class JavaKernelBuilder {
                 QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
             final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () -> compiler.compile(className,
-                    classBody, QueryCompiler.FORMULA_PREFIX));
-        } catch (PrivilegedActionException pae) {
-            throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
+            return compiler.compile(className, classBody, QueryCompiler.FORMULA_PREFIX);
         }
     }
 

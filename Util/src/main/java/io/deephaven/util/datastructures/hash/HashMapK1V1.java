@@ -88,8 +88,7 @@ public abstract class HashMapK1V1 extends HashMapBase {
         // In units of buckets
         final int numBuckets = length / (1 * 2);
 
-        final int hash1 = gnu.trove.impl.HashFunctions.hash(target) & 0x7fffffff;
-        final int bucketProbe = hash1 % numBuckets;
+        final int bucketProbe = probe1(target, numBuckets);
         // In units of longs again
         int probe = bucketProbe * (1 * 2);
 
@@ -114,7 +113,7 @@ public abstract class HashMapK1V1 extends HashMapBase {
         }
 
         // Offset is also in units of longs
-        final int offset = (1 + (hash1 % (numBuckets - 2))) * (1 * 2);
+        final int offset = (1 + probe2(target, numBuckets - 2)) * (1 * 2);
         final int probeStart = probe;
         while (true) {
             probe = (int) (((long) probe + offset) % length);

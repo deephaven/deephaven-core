@@ -462,11 +462,6 @@ public class WindowCheck {
         }
 
         @Override
-        public boolean preventsParallelism() {
-            return timeStampSource.preventsParallelism();
-        }
-
-        @Override
         public boolean isStateless() {
             return timeStampSource.isStateless();
         }

@@ -11,7 +11,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -33,12 +32,12 @@ import io.deephaven.engine.table.impl.updateby.hashing.TypedUpdateByFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.security.spec.ECField;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -119,19 +118,17 @@ public class TypedHasherFactory {
                     .includeOriginalSources(true)
                     .supportRehash(false);
 
-            final TypeName longArraySource = TypeName.get(LongArraySource.class);
-            final ParameterSpec leftHashSlots = ParameterSpec.builder(longArraySource, "leftHashSlots").build();
-            final ParameterSpec hashSlotOffset = ParameterSpec.builder(int.class, "hashSlotOffset").build();
-
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
                     false, true, TypedNaturalJoinFactory::staticBuildLeftFound,
                     TypedNaturalJoinFactory::staticBuildLeftInsert,
-                    leftHashSlots, hashSlotOffset));
+                    ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "leftHashSlots").build(),
+                    ParameterSpec.builder(long.class, "hashSlotOffset").build()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", "rightRowKey",
                     false, TypedNaturalJoinFactory::staticProbeDecorateLeftFound,
                     TypedNaturalJoinFactory::staticProbeDecorateLeftMissing,
-                    ParameterSpec.builder(longArraySource, "leftRedirections").build(), hashSlotOffset));
+                    ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
+                    ParameterSpec.builder(long.class, "redirectionOffset").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, TypedNaturalJoinFactory::staticBuildRightFound,
@@ -262,18 +259,15 @@ public class TypedHasherFactory {
                     .alwaysMoveMain(true)
                     .rehashFullSetup(TypedAsOfJoinFactory::staticRehashSetup);
 
-            final TypeName longArraySource = TypeName.get(LongArraySource.class);
-            final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
-            final ParameterSpec hashSlotOffset = ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build();
-            final ParameterSpec foundBuilder = ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build();
-
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
                     true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
                     TypedAsOfJoinFactory::staticBuildLeftInsert));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null,
-                    true, TypedAsOfJoinFactory::staticProbeDecorateLeftFound,
-                    null, hashSlots, hashSlotOffset, foundBuilder));
+            builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null, true,
+                    TypedAsOfJoinFactory::staticProbeDecorateLeftFound, null,
+                    ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "hashSlots").build(),
+                    ParameterSpec.builder(MutableLong.class, "hashSlotOffset").build(),
+                    ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, TypedAsOfJoinFactory::staticBuildRightFound,
@@ -283,8 +277,8 @@ public class TypedHasherFactory {
                     true, TypedAsOfJoinFactory::staticProbeDecorateRightFound, null));
 
         } else if (baseClass.equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
-            final TypeName longArraySource = TypeName.get(LongArraySource.class);
-            final ParameterSpec hashSlots = ParameterSpec.builder(longArraySource, "hashSlots").build();
+            final ParameterSpec hashSlots = ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "hashSlots")
+                    .build();
             final ParameterSpec sequentialBuilders =
                     ParameterSpec.builder(ObjectArraySource.class, "sequentialBuilders").build();
 

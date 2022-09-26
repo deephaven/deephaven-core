@@ -24,6 +24,7 @@ class CustomClass:
 
 class NumpyTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         j_array_list1 = j_array_list([1, -1])
         j_array_list2 = j_array_list([2, -2])
         input_cols = [
@@ -65,6 +66,7 @@ class NumpyTestCase(BaseTestCase):
 
     def tearDown(self) -> None:
         self.test_table = None
+        super().tearDown()
 
     def test_to_numpy(self):
         for col in self.test_table.columns:

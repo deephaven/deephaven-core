@@ -1715,6 +1715,9 @@ public class KafkaTools {
         @ReferentialIntegrity
         private final UpdateSourceCombiner refreshCombiner;
 
+        private final WritableColumnSource<Integer> partitionColumn;
+        private final WritableColumnSource<Table> constituentColumn;
+
         private volatile long lastAddedPartitionRowKey = -1L; // NULL_ROW_KEY
 
         private StreamPartitionedTable(
@@ -1723,6 +1726,9 @@ public class KafkaTools {
             super(makeResultTable(), Set.of(PARTITION_COLUMN_NAME), true, CONSTITUENT_COLUMN_NAME,
                     constituentDefinition, true, false);
             this.refreshCombiner = refreshCombiner;
+            partitionColumn = (WritableColumnSource<Integer>) table().getColumnSource(PARTITION_COLUMN_NAME, int.class);
+            constituentColumn =
+                    (WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
             manage(refreshCombiner);
             refreshCombiner.addSource(this);
             UpdateGraphProcessor.DEFAULT.addSource(refreshCombiner);
@@ -1746,10 +1752,13 @@ public class KafkaTools {
 
         public synchronized void enqueueAdd(final int partition, @NotNull final Table partitionTable) {
             final long partitionRowKey = lastAddedPartitionRowKey + 1;
-            ((WritableColumnSource<Integer>) table().getColumnSource(PARTITION_COLUMN_NAME, Integer.class))
-                    .set(partitionRowKey, partition);
-            ((WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class))
-                    .set(partitionRowKey, partitionTable);
+
+            partitionColumn.ensureCapacity(partitionRowKey + 1);
+            partitionColumn.set(partitionRowKey, partition);
+
+            constituentColumn.ensureCapacity(partitionRowKey + 1);
+            constituentColumn.set(partitionRowKey, partitionTable);
+
             lastAddedPartitionRowKey = partitionRowKey;
         }
 

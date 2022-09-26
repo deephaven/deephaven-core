@@ -8,7 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.StaticAsOfJoinStateManager;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,18 +17,17 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
         super(keySourcesForErrorMessages);
     }
 
-    public abstract int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final LongArraySource addedSlots);
-    public abstract int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull final LongArraySource addedSlots);
+    public abstract int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull IntegerArraySource addedSlots);
+    public abstract int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull IntegerArraySource addedSlots);
 
     public abstract void probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources);
-    public abstract int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder);
+    public abstract int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, IntegerArraySource slots, RowSetBuilderRandom foundBuilder);
     public abstract void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources);
 
     public abstract int getTableSize();
-    public abstract int getOverflowSize();
-    public abstract RowSet getLeftIndex(long slot);
-    public abstract RowSet getRightIndex(long slot);
+    public abstract RowSet getLeftIndex(int slot);
+    public abstract RowSet getRightIndex(int slot);
 
-    public abstract void convertRightBuildersToIndex(LongArraySource slots, int slotCount);
-    public abstract void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource);
+    public abstract void convertRightBuildersToIndex(IntegerArraySource slots, int slotCount);
+    public abstract void convertRightGrouping(IntegerArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource);
 }

@@ -58,6 +58,7 @@ def ensure_ugp_cycles(table_update_recorder: TableUpdateRecorder, cycles: int = 
 class TableListenerTestCase(BaseTestCase):
 
     def setUp(self) -> None:
+        super().setUp()
         with exclusive_lock():
             self.test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
             source_table = time_table("00:00:00.001").update(["TS=currentTime()"])
@@ -66,6 +67,7 @@ class TableListenerTestCase(BaseTestCase):
     def tearDown(self) -> None:
         self.test_table = None
         self.test_table2 = None
+        super().tearDown()
 
     def check_update_recorder(self, table_update_recorder: TableUpdateRecorder,
                               cols: Union[str, List[str]] = None, *, has_replay: bool = False, has_added: bool = False,
