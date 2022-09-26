@@ -38,10 +38,13 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Stream;
 
 import static com.google.common.io.Files.asByteSource;
 
@@ -94,11 +97,14 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             sessionService.getCurrentSession();
 
             ListItemsResponse.Builder builder = ListItemsResponse.newBuilder();
-            DirectoryStream.Filter<Path> matcher =
-                    request.hasFilterGlob() ? checkMatcher(request.getFilterGlob()) : ignore -> true;
+            PathMatcher matcher =
+                    request.hasFilterGlob() ? createPathFilter(request.getFilterGlob()) : ignore -> true;
             Path dir = resolveOrThrow(request.getPath());
-            try (DirectoryStream<Path> list = Files.newDirectoryStream(dir, matcher)) {
-                for (Path p : list) {
+            try (Stream<Path> list = Files.list(dir)) {
+                for (Path p : (Iterable<Path>) list::iterator) {
+                    if (!matcher.matches(dir.relativize(p))) {
+                        continue;
+                    }
                     BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
                     boolean isDirectory = attrs.isDirectory();
                     ItemInfo.Builder info = ItemInfo.newBuilder().setPath(p.getFileName().toString());
@@ -119,7 +125,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         });
     }
 
-    private static DirectoryStream.Filter<Path> checkMatcher(String filterGlob) {
+    private static PathMatcher createPathFilter(String filterGlob) {
         if (filterGlob.contains("**")) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
         }
@@ -128,7 +134,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                     "Bad glob, only the same directory can be checked");
         }
         try {
-            return FileSystems.getDefault().getPathMatcher("glob:" + filterGlob)::matches;
+            return FileSystems.getDefault().getPathMatcher("glob:" + filterGlob);
         } catch (PatternSyntaxException e) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Bad glob, can't parse expression: " + e.getMessage());
@@ -161,7 +167,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             }
             final FetchFileResponse.Builder response = FetchFileResponse.newBuilder();
             response.setEtag(etag);
-            if (request.hasEtag() && !etag.equals(request.getEtag())) {
+            if (!request.hasEtag() || !etag.equals(request.getEtag())) {
                 response.setContents(ByteString.copyFrom(bytes));
             }
             responseObserver.onNext(response.build());
@@ -197,8 +203,10 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             Path source = resolveOrThrow(request.getOldPath());
             Path target = resolveOrThrow(request.getNewPath());
 
+            StandardCopyOption[] options = request.getNewFile() ? new StandardCopyOption[0] : new StandardCopyOption[] { StandardCopyOption.REPLACE_EXISTING };
+
             try {
-                Files.move(source, target);
+                Files.move(source, target, options);
             } catch (NoSuchFileException noSuchFileException) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File does not exist, cannot rename");
             } catch (FileAlreadyExistsException alreadyExistsException) {

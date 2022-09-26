@@ -35,7 +35,10 @@ service StorageService {
 message ListItemsRequest {
   // The path to the directory to list. empty to list top level
   string path = 1;
-  // A pattern to filter for, with "*" as a wildcard
+  // A pattern to filter for, with "*" as a wildcard, ? to make the previous character optional, and {} to hold a
+  // comma-separated list of possible matches. The format follows Java's FileSystem.getPathMatcher (see
+  // https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-),
+  // except without allowing subdirectories with / or **.
   optional string filter_glob = 4;
 }
 
@@ -96,6 +99,9 @@ message MoveItemRequest {
   string old_path = 1;
   // The path where the file should be moved to
   string new_path = 2;
+  // True to force new file creation and prevent overwriting an existing file, false to allow overwriting
+  // an existing file or creating a new one.
+  bool new_file = 3;
 }
 
 message MoveItemResponse {
