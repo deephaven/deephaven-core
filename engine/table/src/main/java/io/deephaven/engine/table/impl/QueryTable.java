@@ -560,17 +560,25 @@ public class QueryTable extends BaseTable {
             throw streamUnsupported("treeTable");
         }
         return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
-            // TODO (https://github.com/deephaven/deephaven-core/issues/64): 
-            // Need key initialization and preserve-empty support to be able to get the root reliably for 
-            // initially-empty parents.
-            final PartitionedTable partitionedTable = partitionBy(false, parentColumn);
-            final QueryTable rootTable = (QueryTable) partitionedTable.table().where(new MatchFilter(parentColumn, (Object) null));
-            final Table result = HierarchicalTable.createFrom((QueryTable) rootTable.copy(), new TreeTableInfo(idColumn, parentColumn));
+            final Table partitioned;
+            {
+                final ColumnDefinition parentIdColumnDefinition = definition.getColumn(parentColumn);
+                final TableDefinition parentIdOnlyTableDefinition = TableDefinition.of(parentIdColumnDefinition);
+                final Table nullParent = new QueryTable(parentIdOnlyTableDefinition, RowSetFactory.flat(1).toTracking(),
+                        NullValueColumnSource.createColumnSourceMap(parentIdOnlyTableDefinition), null, null);
+                partitioned = aggNoMemo(AggregationProcessor.forAggregation(List.of(Partition.of(CONSTITUENT))),
+                        true, nullParent, ColumnName.from(parentColumn));
+            }
+            // This is "safe" because we rely on the implementation details of aggregation and the partition operator.
+            final QueryTable rootTable = (QueryTable) partitioned.getColumnSource(CONSTITUENT.name()).get(0);
+
+            final Table result = HierarchicalTable.createFrom((QueryTable) rootTable.copy(),
+                    new TreeTableInfo(idColumn, parentColumn));
 
             // If the parent table has an RLL attached to it, we can re-use it.
             final ReverseLookup reverseLookup;
             if (hasAttribute(PREPARED_RLL_ATTRIBUTE)) {
-                reverseLookup = (ReverseLookup) getAttribute(PREPARED_RLL_ATTRIBUTE);
+                reverseLookup = (ReverseLookup) Objects.requireNonNull(getAttribute(PREPARED_RLL_ATTRIBUTE));
                 final String[] listenerCols = reverseLookup.getKeyColumns();
                 if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) {
                     final String listenerColError =
@@ -583,7 +591,7 @@ public class QueryTable extends BaseTable {
                 reverseLookup = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn);
             }
 
-            result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE, partitionedTable);
+            result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE, partitioned);
             result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
             copyAttributes(result, CopyAttributeOperation.Treetable);
