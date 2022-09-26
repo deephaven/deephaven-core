@@ -446,6 +446,7 @@ class TableTestCase(BaseTestCase):
 
         with self.subTest("with initial-groups, no-by, and preserve_empty"):
             init_groups = test_table.update("grp_id=i")
+            # can't specify 'initial-groups' without also specifying    'by'
             with self.assertRaises(DHError):
                 result_table = test_table.agg_by(self.aggs, initial_groups=init_groups)
 
