@@ -1,7 +1,8 @@
 deephaven-plugin==0.2.0
 importlib-metadata==4.12.0
+java-utilities==0.2.0
 joblib==1.2.0
-jpy==0.11.0
+jpy==0.12.0
 llvmlite==0.39.1
 numba==0.56.2
 numpy==1.21.6
