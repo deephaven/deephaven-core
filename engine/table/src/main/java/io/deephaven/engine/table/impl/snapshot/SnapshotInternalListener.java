@@ -12,7 +12,6 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
-import io.deephaven.util.SafeCloseable;
 
 import java.util.Map;
 
@@ -79,13 +78,9 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             }
         }
         if (snapshotPrevLength < snapshotSize) {
-            try (final RowSet addedRange = RowSetFactory.fromRange(snapshotPrevLength, snapshotSize - 1)) {
-                resultRowSet.insert(addedRange);
-            }
+            resultRowSet.insertRange(snapshotPrevLength, snapshotSize - 1);
         } else if (snapshotPrevLength > snapshotSize) {
-            try (RowSet removedRange = RowSetFactory.fromRange(snapshotSize, snapshotPrevLength - 1)) {
-                resultRowSet.remove(removedRange);
-            }
+            resultRowSet.removeRange(snapshotSize, snapshotPrevLength - 1);
         }
         if (notifyListeners) {
             result.notifyListeners(new TableUpdateImpl(
