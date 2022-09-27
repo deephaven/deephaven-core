@@ -15,6 +15,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
@@ -51,7 +52,7 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 
@@ -59,8 +60,9 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
 
-        if(ctx.curVal == NULL_BOOLEAN_AS_BYTE) {
-            ctx.curVal = ctx.booleanValueChunk.get(pos);
+        byte currentVal = ctx.booleanValueChunk.get(pos);
+        if(currentVal != NULL_BOOLEAN_AS_BYTE) {
+            ctx.curVal = currentVal;
         }
     }
 

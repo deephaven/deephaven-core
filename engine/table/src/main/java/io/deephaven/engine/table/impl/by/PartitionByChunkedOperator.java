@@ -140,10 +140,10 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
      * @param keyColumnNames The key columns
      */
     PartitionByChunkedOperator(@NotNull final QueryTable unadjustedParentTable,
-                               @NotNull final QueryTable parentTable,
-                               @NotNull final String resultName,
-                               @NotNull final AttributeCopier attributeCopier,
-                               @NotNull final String... keyColumnNames) {
+            @NotNull final QueryTable parentTable,
+            @NotNull final String resultName,
+            @NotNull final AttributeCopier attributeCopier,
+            @NotNull final String... keyColumnNames) {
         this.parentTable = parentTable;
         this.resultName = resultName;
         this.initialized = false;
@@ -195,9 +195,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void addChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                         @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         final AdaptiveOrderedLongSetBuilderRandom chunkDestinationsBuilder =
                 stepUpdatedDestinations == null ? null : new AdaptiveOrderedLongSetBuilderRandom();
@@ -221,7 +221,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         if (chunkDestinationsBuilder != null) {
             try (final RowSet chunkUpdatedDestinations =
-                         new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
+                    new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
                 stepUpdatedDestinations.insert(chunkUpdatedDestinations);
             }
         }
@@ -229,9 +229,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void removeChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-                            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
         final AdaptiveOrderedLongSetBuilderRandom chunkDestinationsBuilder = new AdaptiveOrderedLongSetBuilderRandom();
@@ -247,28 +247,28 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             chunkDestinationsBuilder.addKey(destination);
         }
         try (final RowSet chunkUpdatedDestinations =
-                     new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
+                new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
             stepUpdatedDestinations.insert(chunkUpdatedDestinations);
         }
     }
 
     @Override
     public void modifyChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> previousValues,
-                            final Chunk<? extends Values> newValues,
-                            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
-                            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-                            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+            final Chunk<? extends Values> newValues,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         // We have no inputs, so we should never get here.
         throw new IllegalStateException();
     }
 
     @Override
     public void shiftChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> previousValues,
-                           final Chunk<? extends Values> newValues,
-                           @NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
-                           @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
-                           @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-                           @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+            final Chunk<? extends Values> newValues,
+            @NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
         Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
@@ -284,16 +284,16 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             }
         }
         try (final RowSet chunkUpdatedDestinations =
-                     new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
+                new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
             stepUpdatedDestinations.insert(chunkUpdatedDestinations);
         }
     }
 
     @Override
     public void modifyRowKeys(final BucketedContext context,
-                              @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                              @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-                              @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (!stepValuesModified) {
             return;
         }
@@ -311,15 +311,15 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             chunkDestinationsBuilder.addKey(destination);
         }
         try (final RowSet chunkUpdatedDestinations =
-                     new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
+                new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
             stepUpdatedDestinations.insert(chunkUpdatedDestinations);
         }
     }
 
     @Override
     public boolean addChunk(final SingletonContext singletonContext, final int chunkSize,
-                            final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
+            final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         Assert.eqNull(values, "values");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
@@ -350,8 +350,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean removeChunk(final SingletonContext singletonContext, final int chunkSize,
-                               final Chunk<? extends Values> values,
-                               @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
+            final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         Assert.eqNull(values, "values");
         Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
         // noinspection unchecked
@@ -363,19 +363,19 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean modifyChunk(final SingletonContext singletonContext, final int chunkSize,
-                               final Chunk<? extends Values> previousValues, final Chunk<? extends Values> newValues,
-                               @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
-                               final long destination) {
+            final Chunk<? extends Values> previousValues, final Chunk<? extends Values> newValues,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
+            final long destination) {
         // We have no inputs, so we should never get here.
         throw new IllegalStateException();
     }
 
     @Override
     public boolean shiftChunk(final SingletonContext singletonContext, final Chunk<? extends Values> previousValues,
-                              final Chunk<? extends Values> newValues,
-                              @NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
-                              @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
-                              final long destination) {
+            final Chunk<? extends Values> newValues,
+            @NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
+            final long destination) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
         Assert.neqNull(stepUpdatedDestinations, "stepUpdatedDestinations");
@@ -387,7 +387,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean modifyRowKeys(final SingletonContext context, @NotNull final LongChunk<? extends RowKeys> rowKeys,
-                                 final long destination) {
+            final long destination) {
         if (!stepValuesModified) {
             return false;
         }
@@ -439,8 +439,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
 
     private static void accumulateToBuilderRandom(@NotNull final ObjectArraySource<RowSetBuilderRandom> rowSetColumn,
-                                                  @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd,
-                                                  final int start, final int length, final long destination) {
+            @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd,
+            final int start, final int length, final long destination) {
         final RowSetBuilderRandom builder = rowSetColumn.getUnsafe(destination);
         if (builder == NONEXISTENT_TABLE_ROW_SET_BUILDER_RANDOM) {
             return;
@@ -459,7 +459,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     private static void accumulateToBuilderRandom(@NotNull final ObjectArraySource<RowSetBuilderRandom> rowSetColumn,
-                                                  @NotNull final RowSet rowSetToAdd, final long destination) {
+            @NotNull final RowSet rowSetToAdd, final long destination) {
         final RowSetBuilderRandom builder = rowSetColumn.getUnsafe(destination);
         if (builder == NONEXISTENT_TABLE_ROW_SET_BUILDER_RANDOM) {
             return;
@@ -476,8 +476,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     private boolean appendShifts(@NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
-                                 @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
-                                 final int startPosition, final int runLength, final long destination) {
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
+            final int startPosition, final int runLength, final long destination) {
         RowSetShiftData.SmartCoalescingBuilder builder = shiftDataBuilders.getUnsafe(destination);
         if (builder == NONEXISTENT_TABLE_SHIFT_BUILDER) {
             return false;
@@ -553,11 +553,11 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             // initialization scope, and don't need to do anything special to ensure liveness.
             final boolean setCallSite = QueryPerformanceRecorder.setCallsite(callSite);
             try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
-                         ResettableWritableObjectChunk.makeResettableChunk();
-                 final ResettableWritableObjectChunk<RowSetBuilderSequential, Values> addedRowSetsResettableChunk =
-                         !initialized ? ResettableWritableObjectChunk.makeResettableChunk() : null;
-                 final RowSequence.Iterator initialDestinationsIterator =
-                         initialDestinations.getRowSequenceIterator()) {
+                    ResettableWritableObjectChunk.makeResettableChunk();
+                    final ResettableWritableObjectChunk<RowSetBuilderSequential, Values> addedRowSetsResettableChunk =
+                            !initialized ? ResettableWritableObjectChunk.makeResettableChunk() : null;
+                    final RowSequence.Iterator initialDestinationsIterator =
+                            initialDestinations.getRowSequenceIterator()) {
 
                 // noinspection unchecked
                 final WritableObjectChunk<QueryTable, Values> tablesBackingChunk =
@@ -667,11 +667,11 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             return;
         }
         try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedRowSetsResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final RowSequence.Iterator resurrectedDestinationsIterator =
-                     resurrectedDestinations.getRowSequenceIterator()) {
+                ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedRowSetsResettableChunk =
+                        ResettableWritableObjectChunk.makeResettableChunk();
+                final RowSequence.Iterator resurrectedDestinationsIterator =
+                        resurrectedDestinations.getRowSequenceIterator()) {
             // Destinations that were added can't have any removals, modifications, or shifts.
 
             // noinspection unchecked
@@ -733,16 +733,16 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         final boolean allowCreation = retainedResultTable && retainedAggregationUpdateListener;
         final boolean setCallSite = QueryPerformanceRecorder.setCallsite(callSite);
         try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<WritableRowSet, Values> addedRowSetsResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<WritableRowSet, Values> removedRowSetsResettableChunk =
-                     allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<WritableRowSet, Values> modifiedRowSetsResettableChunk =
-                     allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<RowSetShiftData.SmartCoalescingBuilder, Values> shiftDataBuildersResettableChunk =
-                     allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
-             final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
+                ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<WritableRowSet, Values> addedRowSetsResettableChunk =
+                        ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<WritableRowSet, Values> removedRowSetsResettableChunk =
+                        allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<WritableRowSet, Values> modifiedRowSetsResettableChunk =
+                        allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<RowSetShiftData.SmartCoalescingBuilder, Values> shiftDataBuildersResettableChunk =
+                        allowCreation ? null : ResettableWritableObjectChunk.makeResettableChunk();
+                final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
 
             // noinspection unchecked
             final WritableObjectChunk<QueryTable, Values> tablesBackingChunk =
@@ -822,10 +822,10 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             return;
         }
         try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedRowSetsResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final RowSequence.Iterator removedDestinationsIterator = removedDestinations.getRowSequenceIterator()) {
+                ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedRowSetsResettableChunk =
+                        ResettableWritableObjectChunk.makeResettableChunk();
+                final RowSequence.Iterator removedDestinationsIterator = removedDestinations.getRowSequenceIterator()) {
             // Destinations that were completely removed can't have any additions, modifications, or shifts.
 
             // noinspection unchecked
@@ -878,20 +878,20 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             return;
         }
         try (final ResettableWritableObjectChunk<QueryTable, Values> tablesResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedRowSetsResettableChunk =
-                     initialized ? ResettableWritableObjectChunk.makeResettableChunk() : null;
-             final ResettableWritableObjectChunk<RowSetBuilderSequential, Values> addedRowSetsSequentialResettableChunk =
-                     !initialized ? ResettableWritableObjectChunk.makeResettableChunk() : null;
+                ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> addedRowSetsResettableChunk =
+                        initialized ? ResettableWritableObjectChunk.makeResettableChunk() : null;
+                final ResettableWritableObjectChunk<RowSetBuilderSequential, Values> addedRowSetsSequentialResettableChunk =
+                        !initialized ? ResettableWritableObjectChunk.makeResettableChunk() : null;
 
-             final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedRowSetsResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> modifiedRowSetsResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final ResettableWritableObjectChunk<RowSetShiftData.SmartCoalescingBuilder, Values> shiftDataBuildersResettableChunk =
-                     ResettableWritableObjectChunk.makeResettableChunk();
-             final RowSequence.Iterator modifiedDestinationsIterator =
-                     modifiedDestinations.getRowSequenceIterator()) {
+                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> removedRowSetsResettableChunk =
+                        ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<RowSetBuilderRandom, Values> modifiedRowSetsResettableChunk =
+                        ResettableWritableObjectChunk.makeResettableChunk();
+                final ResettableWritableObjectChunk<RowSetShiftData.SmartCoalescingBuilder, Values> shiftDataBuildersResettableChunk =
+                        ResettableWritableObjectChunk.makeResettableChunk();
+                final RowSequence.Iterator modifiedDestinationsIterator =
+                        modifiedDestinations.getRowSequenceIterator()) {
 
             // noinspection unchecked
             final ObjectChunk<QueryTable, Values> tablesBackingChunk = tablesResettableChunk.asObjectChunk();

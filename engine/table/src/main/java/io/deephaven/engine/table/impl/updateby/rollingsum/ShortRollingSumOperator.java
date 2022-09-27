@@ -4,15 +4,13 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedLongUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
@@ -36,7 +34,7 @@ public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
+    public UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 

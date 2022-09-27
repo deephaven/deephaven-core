@@ -10,7 +10,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedShortChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
@@ -135,7 +134,7 @@ public abstract class BaseShortUpdateByOperator extends UpdateByCumulativeOperat
                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
                              @Nullable final Chunk<Values> valuesChunk,
-                             @Nullable final LongChunk<Values> timestampValuesChunk) {
+                             @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
         Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
         final Context ctx = (Context) updateContext;
         ctx.storeValuesChunk(valuesChunk);

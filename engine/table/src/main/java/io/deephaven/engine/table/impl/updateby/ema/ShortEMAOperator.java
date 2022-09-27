@@ -13,18 +13,25 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.*;
 
 public class ShortEMAOperator extends BasePrimitiveEMAOperator {
-    private final ColumnSource<Short> valueSource;
 
     protected class Context extends BasePrimitiveEMAOperator.Context {
+        public final ColumnSource<?> valueSource;
+
         public ShortChunk<Values> shortValueChunk;
 
-        protected Context(int chunkSize) {
+        protected Context(int chunkSize, ColumnSource<?> inputSource) {
             super(chunkSize);
+            this.valueSource = inputSource;
         }
 
         @Override
         public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             shortValueChunk = valuesChunk.asShortChunk();
+        }
+
+        @Override
+        public boolean isValueValid(long atKey) {
+            return valueSource.getShort(atKey) != NULL_SHORT;
         }
     }
 
@@ -36,28 +43,25 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
      * @param control        defines how to handle {@code null} input values.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *                       in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource the input column source.  Used when determining reset positions for reprocessing
      */
     public ShortEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
                             @NotNull final OperationControl control,
                             @Nullable final String timestampColumnName,
                             final long timeScaleUnits,
-                            @NotNull final ColumnSource<Short> valueSource,
                             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                             // region extra-constructor-args
                             // endregion extra-constructor-args
                             ) {
         super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits,redirContext);
-        this.valueSource = valueSource;
         // region constructor
         // endregion constructor
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
+        return new Context(chunkSize, inputSource);
     }
 
     @Override
@@ -101,10 +105,5 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                 }
             }
         }
-    }
-
-    @Override
-    public boolean isValueValid(long atKey) {
-        return valueSource.getShort(atKey) != NULL_SHORT;
     }
 }

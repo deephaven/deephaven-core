@@ -8,6 +8,7 @@ package io.deephaven.engine.table.impl.updateby.sum;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
@@ -44,7 +45,7 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 

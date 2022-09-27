@@ -8,19 +8,10 @@ package io.deephaven.engine.table.impl.updateby.rollingsum;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedDoubleChunk;
-import io.deephaven.chunk.sized.SizedLongChunk;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.PairwiseDoubleRingBuffer;
-import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,7 +43,7 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
+    public UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 

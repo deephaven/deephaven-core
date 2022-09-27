@@ -7,6 +7,7 @@ import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.MatchPair;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -21,13 +22,17 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
     protected long timeScaleUnits;
     protected String timestampColumnName;
 
-    protected class Context implements UpdateContext {
+    public class Context implements UpdateContext {
         public long curTimestamp;
 
         protected Context(final int chunkSize) {
             curTimestamp = NULL_LONG;
         }
 
+        public boolean isValueValid(long atKey) {
+            throw new UnsupportedOperationException(
+                    "isValueValid() must be overriden by time-aware cumulative operators");
+        }
 
         @Override
         public void close() {}
@@ -46,10 +51,6 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
 
     abstract public void initializeUpdate(@NotNull final UpdateContext context, final long firstUnmodifiedKey,
             long firstUnmodifiedTimestamp);
-
-    public boolean isValueValid(long atKey) {
-        throw new UnsupportedOperationException("isValueValid() must be overriden by time-aware cumulative operators");
-    }
 
     @Override
     public void finishUpdate(@NotNull final UpdateContext context) {}

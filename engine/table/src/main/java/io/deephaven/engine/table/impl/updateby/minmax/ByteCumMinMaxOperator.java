@@ -8,9 +8,9 @@ package io.deephaven.engine.table.impl.updateby.minmax;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,7 +49,7 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 

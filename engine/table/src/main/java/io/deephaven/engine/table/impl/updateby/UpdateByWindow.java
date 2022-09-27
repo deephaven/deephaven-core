@@ -9,6 +9,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
@@ -30,9 +31,14 @@ public class UpdateByWindow {
     protected final long fwdUnits;
 
     // store the operators for this window
-    protected UpdateByOperator[] operators;
+    protected final UpdateByOperator[] operators;
     // store the index in the {@link UpdateBy.inputSources}
-    protected int[] operatorSourceSlots;
+    protected final int[] operatorSourceSlots;
+    // individual input/output modifiedColumnSets for the operators
+    protected final ModifiedColumnSet[] operatorInputModifiedColumnSets;
+    protected final ModifiedColumnSet[] operatorOutputModifiedColumnSets;
+
+    protected boolean trackModifications;
 
     public class UpdateByWindowContext implements SafeCloseable {
         /** store a reference to the source rowset */
@@ -53,7 +59,7 @@ public class UpdateByWindow {
         final UpdateByOperator.UpdateContext[] opContext;
 
         /** An array of ColumnSources for each underlying operator */
-        final ChunkSource<Values>[] inputSource;
+        final ColumnSource<?>[] inputSources;
 
         /** An array of {@link ChunkSource.FillContext}s for each input column */
         final ChunkSource.FillContext[] inputSourceFillContexts;
@@ -80,11 +86,11 @@ public class UpdateByWindow {
         final int chunkSize;
         final boolean initialStep;
 
-        public UpdateByWindowContext(final TrackingRowSet sourceRowSet, final ChunkSource<Values>[] opInputSource,
+        public UpdateByWindowContext(final TrackingRowSet sourceRowSet, final ColumnSource<?>[] inputSources,
                 @Nullable final ColumnSource<?> timestampColumnSource,
                 @Nullable final LongSegmentedSortedArray timestampSsa, final int chunkSize, final boolean initialStep) {
             this.sourceRowSet = sourceRowSet;
-            this.inputSource = opInputSource;
+            this.inputSources = inputSources;
             this.timestampColumnSource = timestampColumnSource;
             this.timestampSsa = timestampSsa;
 
@@ -99,8 +105,7 @@ public class UpdateByWindow {
             this.initialStep = initialStep;
         }
 
-        public boolean computeAffectedRowsAndOperators(@NotNull final TableUpdate upstream,
-                @Nullable final ModifiedColumnSet inputModifiedColumnSets) {
+        public boolean computeAffectedRowsAndOperators(@NotNull final TableUpdate upstream) {
             // all rows are affected on the initial step
             if (initialStep) {
                 affectedRows = sourceRowSet.copy();
@@ -125,15 +130,14 @@ public class UpdateByWindow {
 
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 opAffected[opIdx] = allAffected
-                        || (upstream.modifiedColumnSet().nonempty() && (inputModifiedColumnSets == null
-                                || upstream.modifiedColumnSet().containsAny(inputModifiedColumnSets)));
+                        || (upstream.modifiedColumnSet().nonempty() && (operatorInputModifiedColumnSets[opIdx] == null
+                                || upstream.modifiedColumnSet().containsAny(operatorInputModifiedColumnSets[opIdx])));
                 if (opAffected[opIdx]) {
                     anyAffected = true;
                 }
             }
 
-            if (sourceRowSet.isEmpty() || !anyAffected) {
-                // no work to do for this window this cycle
+            if (!anyAffected) {
                 return false;
             }
 
@@ -222,16 +226,16 @@ public class UpdateByWindow {
             // create contexts for the affected operators
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
-                    opContext[opIdx] = operators[opIdx].makeUpdateContext(chunkSize);
-
-                    // create the fill contexts and
+                    // create the fill contexts for the input sources
                     int sourceSlot = operatorSourceSlots[opIdx];
                     if (!inputSourceChunkPopulated[sourceSlot]) {
                         inputSourceChunks[sourceSlot] =
-                                inputSource[sourceSlot].getChunkType().makeWritableChunk(chunkSize);
-                        inputSourceFillContexts[sourceSlot] = inputSource[sourceSlot].makeFillContext(chunkSize);
+                                inputSources[sourceSlot].getChunkType().makeWritableChunk(chunkSize);
+                        inputSourceFillContexts[sourceSlot] = inputSources[sourceSlot].makeFillContext(chunkSize);
                         inputSourceChunkPopulated[sourceSlot] = true;
                     }
+                    opContext[opIdx] = operators[opIdx].makeUpdateContext(chunkSize, inputSources[sourceSlot]);
+
                 }
             }
 
@@ -241,8 +245,16 @@ public class UpdateByWindow {
             return newModified != null && newModified.isNonempty();
         }
 
-        public RowSet getAdditionalModifications() {
+        public RowSet getModifiedRows() {
             return newModified;
+        }
+
+        public void updateOutputModifiedColumnSet(ModifiedColumnSet outputModifiedColumnSet) {
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
+                    outputModifiedColumnSet.setAll(operatorOutputModifiedColumnSets[opIdx]);
+                }
+            }
         }
 
         public RowSet getAffectedRows() {
@@ -254,25 +266,26 @@ public class UpdateByWindow {
         }
 
         public void processRows() {
-            modifiedBuilder = RowSetFactory.builderSequential();
+            if (trackModifications) {
+                modifiedBuilder = RowSetFactory.builderSequential();
+            }
 
-            // these could be nested and/or simplified but this is most readable
-            if (!windowed && timestampColumnName == null) {
+            if (!windowed) {
                 processRowsCumulative();
-            } else if (!windowed && timestampColumnName != null) {
-                processRowsCumulativeTimestamp();
-            } else if (windowed && timestampColumnName == null) {
+            } else if (timestampColumnName == null) {
                 processRowsWindowedTicks();
             } else {
                 processRowsWindowedTime();
             }
 
-            newModified = modifiedBuilder.build();
+            if (trackModifications) {
+                newModified = modifiedBuilder.build();
+            }
         }
 
         private void prepareValuesChunkForSource(final int srcIdx, final RowSequence rs) {
             if (!inputSourceChunkPopulated[srcIdx]) {
-                inputSource[srcIdx].fillChunk(
+                inputSources[srcIdx].fillChunk(
                         inputSourceFillContexts[srcIdx],
                         inputSourceChunks[srcIdx],
                         rs);
@@ -290,17 +303,46 @@ public class UpdateByWindow {
 
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
-                    // call the specialized version of `intializeUpdate()` for these operators
-                    // TODO: make sure the time-based cumulative oerators are starting from a valid value and timestamp
-                    ((UpdateByCumulativeOperator) operators[opIdx]).initializeUpdate(opContext[opIdx], keyBefore,
-                            NULL_LONG);
+                    UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
+                    if (cumOp.getTimestampColumnName() == null || keyBefore == -1) {
+                        cumOp.initializeUpdate(opContext[opIdx], keyBefore, NULL_LONG);
+                    } else {
+                        UpdateByCumulativeOperator.Context cumOpContext =
+                                (UpdateByCumulativeOperator.Context) opContext[opIdx];
+                        // make sure the time-based cumulative operators are starting from a valid value and timestamp
+                        long potentialResetTimestamp = timestampColumnSource.getLong(keyBefore);
+
+                        if (potentialResetTimestamp == NULL_LONG ||
+                                !cumOpContext.isValueValid(keyBefore)) {
+                            try (final RowSet.SearchIterator rIt = sourceRowSet.reverseIterator()) {
+                                if (rIt.advance(keyBefore)) {
+                                    while (rIt.hasNext()) {
+                                        final long nextKey = rIt.nextLong();
+                                        potentialResetTimestamp = timestampColumnSource.getLong(nextKey);
+                                        if (potentialResetTimestamp != NULL_LONG &&
+                                                cumOpContext.isValueValid(nextKey)) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // call the specialized version of `intializeUpdate()` for these operators
+                        cumOp.initializeUpdate(opContext[opIdx], keyBefore, potentialResetTimestamp);
+                    }
                 }
             }
 
-            try (final RowSequence.Iterator it = affectedRows.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator it = affectedRows.getRowSequenceIterator();
+                    ChunkSource.GetContext tsGetCtx =
+                            timestampColumnSource == null ? null : timestampColumnSource.makeGetContext(chunkSize)) {
                 while (it.hasMore()) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
                     Arrays.fill(inputSourceChunkPopulated, false);
+
+                    // create the timestamp chunk if needed
+                    LongChunk<? extends Values> tsChunk = timestampColumnSource == null ? null
+                            : timestampColumnSource.getChunk(tsGetCtx, rs).asLongChunk();
 
                     for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                         if (opAffected[opIdx]) {
@@ -316,11 +358,13 @@ public class UpdateByWindow {
                                     null,
                                     null,
                                     inputSourceChunks[srcIdx],
-                                    null);
+                                    tsChunk);
                         }
                     }
                     // all these rows were modified
-                    modifiedBuilder.appendRowSequence(rs);
+                    if (modifiedBuilder != null) {
+                        modifiedBuilder.appendRowSequence(rs);
+                    }
                 }
             }
 
@@ -330,16 +374,90 @@ public class UpdateByWindow {
                     operators[opIdx].finishUpdate(opContext[opIdx]);
                 }
             }
-
-        }
-
-        private void processRowsCumulativeTimestamp() {
-            // find the key before the first affected row (that has a valid timestamp) and preload
-            // that data for these operators
         }
 
         private void processRowsWindowedTicks() {
             // start loading the window for these operators using position data
+            // find the key before the first affected row and preload that data for these operators
+            final long keyBefore;
+            try (final RowSet.SearchIterator sit = sourceRowSet.searchIterator()) {
+                keyBefore = sit.binarySearchValue(
+                        (compareTo, ignored) -> Long.compare(affectedRows.firstRowKey() - 1, compareTo), 1);
+            }
+
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
+                    UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
+                    if (cumOp.getTimestampColumnName() == null || keyBefore == -1) {
+                        cumOp.initializeUpdate(opContext[opIdx], keyBefore, NULL_LONG);
+                    } else {
+                        UpdateByCumulativeOperator.Context cumOpContext =
+                                (UpdateByCumulativeOperator.Context) opContext[opIdx];
+                        // make sure the time-based cumulative operators are starting from a valid value and timestamp
+                        long potentialResetTimestamp = timestampColumnSource.getLong(keyBefore);
+
+                        if (potentialResetTimestamp == NULL_LONG ||
+                                !cumOpContext.isValueValid(keyBefore)) {
+                            try (final RowSet.SearchIterator rIt = sourceRowSet.reverseIterator()) {
+                                if (rIt.advance(keyBefore)) {
+                                    while (rIt.hasNext()) {
+                                        final long nextKey = rIt.nextLong();
+                                        potentialResetTimestamp = timestampColumnSource.getLong(nextKey);
+                                        if (potentialResetTimestamp != NULL_LONG &&
+                                                cumOpContext.isValueValid(nextKey)) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // call the specialized version of `intializeUpdate()` for these operators
+                        cumOp.initializeUpdate(opContext[opIdx], keyBefore, potentialResetTimestamp);
+                    }
+                }
+            }
+
+            try (final RowSequence.Iterator it = affectedRows.getRowSequenceIterator();
+                    ChunkSource.GetContext tsGetCtx =
+                            timestampColumnSource == null ? null : timestampColumnSource.makeGetContext(chunkSize)) {
+                while (it.hasMore()) {
+                    final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
+                    Arrays.fill(inputSourceChunkPopulated, false);
+
+                    // create the timestamp chunk if needed
+                    LongChunk<? extends Values> tsChunk = timestampColumnSource == null ? null
+                            : timestampColumnSource.getChunk(tsGetCtx, rs).asLongChunk();
+
+                    for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                        if (opAffected[opIdx]) {
+                            final int srcIdx = operatorSourceSlots[opIdx];
+
+                            // get the values this operator needs
+                            prepareValuesChunkForSource(srcIdx, rs);
+
+                            // process the chunk
+                            operators[opIdx].processChunk(
+                                    opContext[opIdx],
+                                    rs,
+                                    null,
+                                    null,
+                                    inputSourceChunks[srcIdx],
+                                    tsChunk);
+                        }
+                    }
+                    // all these rows were modified
+                    if (modifiedBuilder != null) {
+                        modifiedBuilder.appendRowSequence(rs);
+                    }
+                }
+            }
+
+            // call the generic `finishUpdate()` function for each operator
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
+                    operators[opIdx].finishUpdate(opContext[opIdx]);
+                }
+            }
         }
 
         private void processRowsWindowedTime() {
@@ -376,7 +494,7 @@ public class UpdateByWindow {
     }
 
     public UpdateByWindowContext makeWindowContext(final TrackingRowSet sourceRowSet,
-            final ChunkSource<Values>[] inputSources,
+            final ColumnSource<?>[] inputSources,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
@@ -385,29 +503,14 @@ public class UpdateByWindow {
                 isInitializeStep);
     }
 
-    public void setOperators(final UpdateByOperator[] operators, final int[] operatorSourceSlots) {
-        this.operators = operators;
-        this.operatorSourceSlots = operatorSourceSlots;
-    }
-
-
-    @NotNull
-    public String[] getAffectingColumnNames() {
-        Set<String> columns = new TreeSet<>();
-        for (UpdateByOperator operator : operators) {
-            columns.addAll(Arrays.asList(operator.getAffectingColumnNames()));
+    public void startTrackingModifications(@NotNull final QueryTable source, @NotNull final QueryTable result) {
+        trackModifications = true;
+        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+            operatorInputModifiedColumnSets[opIdx] =
+                    source.newModifiedColumnSet(operators[opIdx].getAffectingColumnNames());
+            operatorOutputModifiedColumnSets[opIdx] =
+                    result.newModifiedColumnSet(operators[opIdx].getOutputColumnNames());
         }
-        return columns.toArray(new String[0]);
-    }
-
-    @NotNull
-    public String[] getOutputColumnNames() {
-        // we can use a list since we have previously checked for duplicates
-        List<String> columns = new ArrayList<>();
-        for (UpdateByOperator operator : operators) {
-            columns.addAll(Arrays.asList(operator.getOutputColumnNames()));
-        }
-        return columns.toArray(new String[0]);
     }
 
     /**
@@ -594,18 +697,37 @@ public class UpdateByWindow {
         return NULL_LONG;
     }
 
-    private UpdateByWindow(boolean windowed, @Nullable String timestampColumnName, long prevUnits, long fwdUnits) {
+    private UpdateByWindow(UpdateByOperator[] operators, int[] operatorSourceSlots, boolean windowed,
+            @Nullable String timestampColumnName, long prevUnits, long fwdUnits) {
+        this.operators = operators;
+        this.operatorSourceSlots = operatorSourceSlots;
         this.windowed = windowed;
         this.timestampColumnName = timestampColumnName;
         this.prevUnits = prevUnits;
         this.fwdUnits = fwdUnits;
+
+        operatorInputModifiedColumnSets = new ModifiedColumnSet[operators.length];
+        operatorOutputModifiedColumnSets = new ModifiedColumnSet[operators.length];
+        trackModifications = false;
     }
 
-    public static UpdateByWindow createFromOperator(final UpdateByOperator op) {
-        return new UpdateByWindow(op instanceof UpdateByWindowedOperator,
-                op.getTimestampColumnName(),
-                op.getPrevWindowUnits(),
-                op.getPrevWindowUnits());
+    public static UpdateByWindow createFromOperatorArray(final UpdateByOperator[] operators,
+            final int[] operatorSourceSlots) {
+        // review operators to extract timestamp column (if one exists)
+        String timestampColumnName = null;
+        for (UpdateByOperator operator : operators) {
+            if (operator.getTimestampColumnName() != null) {
+                timestampColumnName = operator.getTimestampColumnName();
+                break;
+            }
+        }
+
+        return new UpdateByWindow(operators,
+                operatorSourceSlots,
+                operators[0] instanceof UpdateByWindowedOperator,
+                timestampColumnName,
+                operators[0].getPrevWindowUnits(),
+                operators[0].getPrevWindowUnits());
     }
 
     @Nullable
@@ -613,17 +735,13 @@ public class UpdateByWindow {
         return timestampColumnName;
     }
 
-    @NotNull
-    final public RowSet getAdditionalModifications(@NotNull final UpdateByWindowContext context) {
-        return context.newModified;
-    }
+    private static int hashCode(boolean windowed, @Nullable String timestampColumnName, long prevUnits, long fwdUnits) {
+        // treat all cumulative as identical, even if they rely on timestamps
+        if (!windowed) {
+            return Boolean.hashCode(windowed);
+        }
 
-    final public boolean anyModified(@NotNull final UpdateByWindowContext context) {
-        return context.newModified != null && context.newModified.isNonempty();
-    }
-
-    @Override
-    public int hashCode() {
+        // windowed are unique per timestamp column and window-size
         int hash = Boolean.hashCode(windowed);
         if (timestampColumnName != null) {
             hash = 31 * hash + timestampColumnName.hashCode();
@@ -631,5 +749,20 @@ public class UpdateByWindow {
         hash = 31 * hash + Long.hashCode(prevUnits);
         hash = 31 * hash + Long.hashCode(fwdUnits);
         return hash;
+    }
+
+    public static int hashCodeFromOperator(final UpdateByOperator op) {
+        return hashCode(op instanceof UpdateByWindowedOperator,
+                op.getTimestampColumnName(),
+                op.getPrevWindowUnits(),
+                op.getPrevWindowUnits());
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode(windowed,
+                timestampColumnName,
+                prevUnits,
+                fwdUnits);
     }
 }

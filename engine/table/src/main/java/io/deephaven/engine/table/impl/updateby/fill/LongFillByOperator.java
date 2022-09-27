@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
@@ -54,7 +55,7 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 
@@ -62,8 +63,9 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
 
-        if(ctx.curVal == NULL_LONG) {
-            ctx.curVal = ctx.longValueChunk.get(pos);
+        long currentVal = ctx.longValueChunk.get(pos);
+        if(currentVal != NULL_LONG) {
+            ctx.curVal = currentVal;
         }
     }
 

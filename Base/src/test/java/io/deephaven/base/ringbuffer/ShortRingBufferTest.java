@@ -355,18 +355,18 @@ public class ShortRingBufferTest extends TestCase {
         ShortRingBuffer rb = new ShortRingBuffer(3);
 
         for (int i = 0; i < 100; i++)
-            rb.add((short)i);
+            rb.add((short) i);
 
         for (int i = 100; i < 200; i++) {
-            rb.add((short)i);
-            assertEquals((short)(i - 100 + 1), rb.front(1));
-            assertEquals((short)(i - 100), rb.poll(SENTINEL));
+            rb.add((short) i);
+            assertEquals((short) (i - 100 + 1), rb.front(1));
+            assertEquals((short) (i - 100), rb.poll(SENTINEL));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals((short)(i - 100 + 1), rb.front(1));
-            assertEquals((short)(i - 100), rb.poll(SENTINEL));
+                assertEquals((short) (i - 100 + 1), rb.front(1));
+            assertEquals((short) (i - 100), rb.poll(SENTINEL));
         }
     }
 }

@@ -355,18 +355,18 @@ public class LongRingBufferTest extends TestCase {
         LongRingBuffer rb = new LongRingBuffer(3);
 
         for (int i = 0; i < 100; i++)
-            rb.add((long)i);
+            rb.add((long) i);
 
         for (int i = 100; i < 200; i++) {
-            rb.add((long)i);
-            assertEquals((long)(i - 100 + 1), rb.front(1));
-            assertEquals((long)(i - 100), rb.poll(SENTINEL));
+            rb.add((long) i);
+            assertEquals((long) (i - 100 + 1), rb.front(1));
+            assertEquals((long) (i - 100), rb.poll(SENTINEL));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals((long)(i - 100 + 1), rb.front(1));
-            assertEquals((long)(i - 100), rb.poll(SENTINEL));
+                assertEquals((long) (i - 100 + 1), rb.front(1));
+            assertEquals((long) (i - 100), rb.poll(SENTINEL));
         }
     }
 }

@@ -21,13 +21,12 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperator {
     protected final OperationControl control;
-    protected final String timestampColumnName;
     protected final double timeScaleUnits;
     protected final double alpha;
     protected double oneMinusAlpha;
 
     class Context extends BaseDoubleUpdateByOperator.Context {
-        public LongChunk<Values> timestampValueChunk;
+        public LongChunk<? extends Values> timestampValueChunk;
 
         long lastStamp = NULL_LONG;
 
@@ -86,8 +85,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
             @Nullable final LongChunk<OrderedRowKeys> posChunk,
             @Nullable final Chunk<Values> valuesChunk,
-            @Nullable final LongChunk<Values> timestampValuesChunk) {
-        Assert.notEquals(valuesChunk, "valuesChunk must not be null for a cumulative operator", null);
+            @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
+        Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
         final Context ctx = (Context) updateContext;
         ctx.storeValuesChunk(valuesChunk);
         ctx.timestampValueChunk = timestampValuesChunk;

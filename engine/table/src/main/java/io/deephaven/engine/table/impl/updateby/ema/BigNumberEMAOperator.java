@@ -9,6 +9,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
@@ -23,28 +24,32 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
-    protected final ColumnSource<T> valueSource;
-
     protected final OperationControl control;
-    protected final String timestampColumnName;
     protected final double timeScaleUnits;
     protected final BigDecimal alpha;
     protected final BigDecimal oneMinusAlpha;
 
 
     class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
-        public LongChunk<Values> timestampValueChunk;
+        protected final ColumnSource<?> valueSource;
+        public LongChunk<? extends Values> timestampValueChunk;
         public ObjectChunk<T, Values> objectValueChunk;
 
         long lastStamp = NULL_LONG;
 
-        Context(final int chunkSize) {
+        protected Context(int chunkSize, ColumnSource<?> inputSource) {
             super(chunkSize);
+            this.valueSource = inputSource;
         }
 
         @Override
         public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
+        }
+
+        @Override
+        public boolean isValueValid(long atKey) {
+            return valueSource.get(atKey) != null;
         }
     }
 
@@ -56,21 +61,18 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
      * @param control defines how to handle {@code null} input values.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *        in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource the input column source. Used when determining reset positions for reprocessing
      */
     public BigNumberEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @NotNull ColumnSource<T> valueSource,
             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
         super(pair, affectingColumns, redirContext, BigDecimal.class);
 
         this.control = control;
         this.timestampColumnName = timestampColumnName;
         this.timeScaleUnits = (double) timeScaleUnits;
-        this.valueSource = valueSource;
 
         alpha = BigDecimal.valueOf(Math.exp(-1.0 / (double) timeScaleUnits));
         oneMinusAlpha =
@@ -79,8 +81,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?> inputSource) {
+        return new Context(chunkSize, inputSource);
     }
 
     @Override
@@ -105,8 +107,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
             @Nullable final LongChunk<OrderedRowKeys> posChunk,
             @Nullable final Chunk<Values> valuesChunk,
-            @Nullable final LongChunk<Values> timestampValuesChunk) {
-        Assert.notEquals(valuesChunk, "valuesChunk must not be null for a cumulative operator", null);
+            @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
+        Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
         final Context ctx = (Context) updateContext;
         ctx.storeValuesChunk(valuesChunk);
         ctx.timestampValueChunk = timestampValuesChunk;
@@ -159,10 +161,5 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             ctx.curVal = null;
             ctx.lastStamp = NULL_LONG;
         }
-    }
-
-    @Override
-    public boolean isValueValid(long atKey) {
-        return valueSource.get(atKey) != null;
     }
 }

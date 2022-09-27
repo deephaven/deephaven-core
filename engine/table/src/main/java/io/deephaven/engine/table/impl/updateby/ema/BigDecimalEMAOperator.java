@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import org.jetbrains.annotations.NotNull;
@@ -23,7 +22,6 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
      *        integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *        in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource the input column source. Used when determining reset positions for reprocessing
      * @param redirContext the row redirection context to use for the EMA
      */
     public BigDecimalEMAOperator(@NotNull final MatchPair pair,
@@ -31,9 +29,8 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @NotNull final ColumnSource<BigDecimal> valueSource,
             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
-        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, valueSource, redirContext);
+        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirContext);
     }
 
     @Override

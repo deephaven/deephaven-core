@@ -165,20 +165,8 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
      * The Listener for apply to the constituent table updates
      */
     class BucketedPartitionedUpdateByListener extends MergedListener {
-        private final ModifiedColumnSet[] inputModifiedColumnSets;
-        private final ModifiedColumnSet[] outputModifiedColumnSets;
-
         public BucketedPartitionedUpdateByListener(@Nullable String description) {
             super(recorders, List.of(), description, resultTable);
-
-            this.inputModifiedColumnSets = new ModifiedColumnSet[operators.length];
-            this.outputModifiedColumnSets = new ModifiedColumnSet[operators.length];
-
-            for (int ii = 0; ii < operators.length; ii++) {
-                final String[] outputColumnNames = operators[ii].getOutputColumnNames();
-                inputModifiedColumnSets[ii] = source.newModifiedColumnSet(operators[ii].getAffectingColumnNames());
-                outputModifiedColumnSets[ii] = resultTable.newModifiedColumnSet(outputColumnNames);
-            }
         }
 
         @Override

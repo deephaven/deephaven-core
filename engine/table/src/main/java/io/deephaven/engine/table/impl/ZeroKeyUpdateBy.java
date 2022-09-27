@@ -1,6 +1,8 @@
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
@@ -116,6 +118,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
                     final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
                     final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+                TLongHashSet ssaKeySet = new TLongHashSet();
+                timestampSsa.forAllKeys(ssaKeySet::add);
 
                 MutableLong lastTimestamp = new MutableLong(NULL_LONG);
                 while (it.hasMore()) {
@@ -128,6 +132,15 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                     // push only non-null values/keys into the Ssa
                     fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
+
+                    // verify that all values to remove are actually in this SSA
+                    for (int ii = 0; ii < valuesChunk.size(); ii++) {
+                        final long ts = valuesChunk.get(ii);
+                        final long key = keysChunk.get(ii);
+                        if (!ssaKeySet.contains(key)) {
+                            System.out.println(ts + " : " + key);
+                        }
+                    }
                     timestampSsa.remove(ssaValues, ssaKeys);
                 }
             }
@@ -138,14 +151,14 @@ class ZeroKeyUpdateBy extends UpdateBy {
             final int size = Math.max(
                     upstream.modified().intSize() + Math.max(upstream.added().intSize(), upstream.removed().intSize()),
                     (int) upstream.shifted().getEffectiveSize());
-            try (final RowSet prevRowSet = source.getRowSet().copyPrev();
-                    final RowSet withoutMods = prevRowSet.minus(upstream.getModifiedPreShift());
+            try (final RowSet fullPrevRowSet = source.getRowSet().copyPrev();
+                    final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
                     final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
 
                 final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                 while (sit.hasNext()) {
                     sit.next();
-                    try (final RowSet subRowSet = withoutMods.subSetByKeyRange(sit.beginRange(), sit.endRange());
+                    try (final RowSet subRowSet = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
                             final RowSet rowSetToShift = subRowSet.minus(upstream.removed())) {
                         if (rowSetToShift.isEmpty()) {
                             continue;
@@ -154,7 +167,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                         final LongChunk<? extends Values> shiftValues =
                                 timestampColumnSource.getPrevChunk(getContext, rowSetToShift).asLongChunk();
 
-                        timestampSsa.applyShift(shiftValues, rowSetToShift.asRowKeyChunk(), sit.shiftDelta());
+                        timestampSsa.applyShiftReverse(shiftValues, rowSetToShift.asRowKeyChunk(), sit.shiftDelta());
                     }
                 }
             }
@@ -167,8 +180,10 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
                     final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
                     final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
-                MutableLong lastTimestamp = new MutableLong(NULL_LONG);
+                TLongHashSet ssaKeySet = new TLongHashSet();
+                timestampSsa.forAllKeys(ssaKeySet::add);
 
+                MutableLong lastTimestamp = new MutableLong(NULL_LONG);
                 while (it.hasMore()) {
                     RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
 
@@ -179,6 +194,15 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                     // push only non-null values/keys into the Ssa
                     fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
+
+                    // verify that the items are not already in the SSA
+                    for (int ii = 0; ii < valuesChunk.size(); ii++) {
+                        final long ts = valuesChunk.get(ii);
+                        final long key = keysChunk.get(ii);
+                        if (ssaKeySet.contains(key)) {
+                            System.out.println(ts + " : " + key);
+                        }
+                    }
                     timestampSsa.insert(ssaValues, ssaKeys);
                 }
             }
@@ -227,7 +251,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
         }
 
         // do the processing for this fake update
-        try (final UpdateContext ctx = new UpdateContext(fakeUpdate, null, true)) {
+        try (final UpdateContext ctx = new UpdateContext(fakeUpdate, true)) {
             ctx.processRows();
         }
     }
@@ -254,7 +278,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
         @SuppressWarnings("resource")
         UpdateContext(@NotNull final TableUpdate upstream,
-                @Nullable final ModifiedColumnSet[] inputModifiedColumnSets,
                 final boolean isInitializeStep) {
             final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.chunkCapacityOrDefault());
 
@@ -275,8 +298,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                         isInitializeStep);
 
                 // compute the affected/influenced operators and rowset within this window
-                windowAffected[winIdx] = windowContexts[winIdx].computeAffectedRowsAndOperators(upstream,
-                        inputModifiedColumnSets[winIdx]);
+                windowAffected[winIdx] = windowContexts[winIdx].computeAffectedRowsAndOperators(upstream);
             }
         }
 
@@ -324,8 +346,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
      */
     class ZeroKeyUpdateByListener extends InstrumentedTableUpdateListenerAdapter {
         private final QueryTable result;
-        private final ModifiedColumnSet[] inputModifiedColumnSets;
-        private final ModifiedColumnSet[] outputModifiedColumnSets;
         private final ModifiedColumnSet.Transformer transformer;
 
         public ZeroKeyUpdateByListener(@Nullable String description,
@@ -333,12 +353,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 @NotNull final QueryTable result) {
             super(description, source, false);
             this.result = result;
-            this.inputModifiedColumnSets = new ModifiedColumnSet[windows.length];
-            this.outputModifiedColumnSets = new ModifiedColumnSet[windows.length];
 
             for (int ii = 0; ii < windows.length; ii++) {
-                inputModifiedColumnSets[ii] = source.newModifiedColumnSet(windows[ii].getAffectingColumnNames());
-                outputModifiedColumnSets[ii] = result.newModifiedColumnSet(windows[ii].getOutputColumnNames());
+                windows[ii].startTrackingModifications(source, result);
             }
 
             this.transformer =
@@ -352,14 +369,13 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 processUpdateForSsa(upstream);
             }
 
-            try (final UpdateContext ctx = new UpdateContext(upstream, inputModifiedColumnSets, false)) {
+            try (final UpdateContext ctx = new UpdateContext(upstream, false)) {
                 if (applyShifts) {
                     if (redirContext.isRedirected()) {
                         redirContext.processUpdateForRedirection(upstream, source.getRowSet());
                     } else {
                         // We will not mess with shifts if we are using a redirection because we'll have applied the
-                        // shift
-                        // to the redirection index already by now.
+                        // shift to the redirection index already by now.
                         if (upstream.shifted().nonempty()) {
                             try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
                                 upstream.shifted().apply((begin, end, delta) -> {
@@ -401,7 +417,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                         if (ctx.windowAffected[winIdx]) {
                             if (ctx.windowContexts[winIdx].anyModified()) {
-                                modifiedRowSet.insert(ctx.windowContexts[winIdx].getAdditionalModifications());
+                                modifiedRowSet.insert(ctx.windowContexts[winIdx].getModifiedRows());
                             }
                         }
                     }
@@ -416,8 +432,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 // set the modified columns if any operators made changes (add/rem/modify)
                 for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                     if (ctx.windowAffected[winIdx]) {
-                        // TODO: need to add only the affected column sets from the window, not all
-                        downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[winIdx]);
+                        ctx.windowContexts[winIdx].updateOutputModifiedColumnSet(downstream.modifiedColumnSet);
                     }
                 }
 

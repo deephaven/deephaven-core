@@ -8,25 +8,37 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.updateby.prod.ShortCumProdOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
 public class FloatEMAOperator extends BasePrimitiveEMAOperator {
-    private final ColumnSource<Float> valueSource;
-
     protected class Context extends BasePrimitiveEMAOperator.Context {
+        private final ColumnSource<?> valueSource;
+
         public FloatChunk<Values> floatValueChunk;
 
-        protected Context(int chunkSize) {
+        protected Context(int chunkSize, ColumnSource<?> inputSource) {
             super(chunkSize);
+            this.valueSource = inputSource;
         }
 
         @Override
         public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             floatValueChunk = valuesChunk.asFloatChunk();
+        }
+
+        @Override
+        public boolean isValueValid(long atKey) {
+            final float value = valueSource.getFloat(atKey);
+            if(value == NULL_FLOAT) {
+                return false;
+            }
+
+            // Note that we don't care about Reset because in that case the current EMA at this key would be null
+            // and the superclass will do the right thing.
+            return !Float.isNaN(value) || control.onNanValueOrDefault() != BadDataBehavior.SKIP;
         }
     }
 
@@ -38,28 +50,25 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
      * @param control        defines how to handle {@code null} input values.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *                       in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource the input column source.  Used when determining reset positions for reprocessing
      */
     public FloatEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
                             @NotNull final OperationControl control,
                             @Nullable final String timestampColumnName,
                             final long timeScaleUnits,
-                            @NotNull final ColumnSource<Float> valueSource,
                             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
                             // region extra-constructor-args
                             // endregion extra-constructor-args
                             ) {
         super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirContext);
-        this.valueSource = valueSource;
         // region constructor
         // endregion constructor
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
+        return new Context(chunkSize, inputSource);
     }
 
     @Override
@@ -67,10 +76,13 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
         final Context ctx = (Context) context;
 
         final float input = ctx.floatValueChunk.get(pos);
+        final boolean isNull = input == NULL_FLOAT;
+        final boolean isNan = Float.isNaN(input);
+
         if (timestampColumnName == null) {
             // compute with ticks
-            if(input == NULL_FLOAT) {
-                handleBadData(ctx, true, false, false);
+            if(isNull || isNan) {
+                handleBadData(ctx, isNull, isNan, false);
             } else {
                 if(ctx.curVal == NULL_DOUBLE) {
                     ctx.curVal = input;
@@ -81,20 +93,27 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
         } else {
             // compute with time
             final long timestamp = ctx.timestampValueChunk.get(pos);
-            //noinspection ConstantConditions
-            final boolean isNull = input == NULL_FLOAT;
             final boolean isNullTime = timestamp == NULL_LONG;
-            if(isNull || isNullTime) {
-                handleBadData(ctx, isNull, false, isNullTime);
+
+
+            // Handle bad data first
+            if (isNull || isNan || isNullTime) {
+                handleBadData(ctx, isNull, isNan, isNullTime);
+            } else if (ctx.curVal == NULL_DOUBLE) {
+                // If the data looks good, and we have a null ema,  just accept the current value
+                ctx.curVal = input;
+                ctx.lastStamp = timestamp;
             } else {
-                if(ctx.curVal == NULL_DOUBLE) {
-                    ctx.curVal = input;
+                final boolean currentPoisoned = Double.isNaN(ctx.curVal);
+                if (currentPoisoned && ctx.lastStamp == NULL_LONG) {
+                    // If the current EMA was a NaN, we should accept the first good timestamp so that
+                    // we can handle reset behavior properly in the following else
                     ctx.lastStamp = timestamp;
                 } else {
                     final long dt = timestamp - ctx.lastStamp;
-                    if(dt <= 0) {
+                    if (dt <= 0) {
                         handleBadTime(ctx, dt);
-                    } else {
+                    } else if (!currentPoisoned) {
                         final double alpha = Math.exp(-dt / timeScaleUnits);
                         ctx.curVal = alpha * ctx.curVal + ((1 - alpha) * input);
                         ctx.lastStamp = timestamp;
@@ -102,17 +121,5 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                 }
             }
         }
-    }
-
-    @Override
-    public boolean isValueValid(long atKey) {
-        final float value = valueSource.getFloat(atKey);
-        if(value == NULL_FLOAT) {
-            return false;
-        }
-
-        // Note that we don't care about Reset because in that case the current EMA at this key would be null
-        // and the superclass will do the right thing.
-        return !Float.isNaN(value) || control.onNanValueOrDefault() != BadDataBehavior.SKIP;
     }
 }

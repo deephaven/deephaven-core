@@ -7,6 +7,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +40,7 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 
@@ -50,7 +51,7 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
                              @Nullable final Chunk<Values> valuesChunk,
-                             @Nullable final LongChunk<Values> timestampValuesChunk) {
+                             @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
         Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
         final Context ctx = (Context) updateContext;
         ctx.storeValuesChunk(valuesChunk);

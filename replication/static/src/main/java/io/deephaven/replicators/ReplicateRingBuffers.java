@@ -35,4 +35,5 @@ public class ReplicateRingBuffers {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.globalReplacements(lines, replacements);
         FileUtils.writeLines(objectFile, lines);
-    }}
+    }
+}

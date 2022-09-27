@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
@@ -139,10 +140,11 @@ public interface UpdateByOperator {
      * Make an {@link UpdateContext} suitable for use with non-bucketed updates.
      *
      * @param chunkSize The expected size of chunks that will be provided during the update,
+     * @param inputSource
      * @return a new context
      */
     @NotNull
-    UpdateContext makeUpdateContext(final int chunkSize);
+    UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?> inputSource);
 
     /**
      * Perform and bookkeeping required at the end of a single part of the update. This is always preceded with a call
@@ -173,5 +175,5 @@ public interface UpdateByOperator {
             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
             @Nullable final LongChunk<OrderedRowKeys> posChunk,
             @Nullable final Chunk<Values> valuesChunk,
-            @Nullable final LongChunk<Values> timestampValuesChunk);
+            @Nullable final LongChunk<? extends Values> timestampValuesChunk);
 }

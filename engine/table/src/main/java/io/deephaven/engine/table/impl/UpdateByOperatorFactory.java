@@ -226,36 +226,28 @@ public class UpdateByOperatorFactory {
 
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
-                        ema.timeScale().timestampCol(), timeScaleUnits,
-                        columnSource, redirContext);
+                        ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
-                        ema.timeScale().timestampCol(), timeScaleUnits,
-                        columnSource, redirContext);
+                        ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
-                        ema.timeScale().timestampCol(), timeScaleUnits,
-                        columnSource, redirContext);
+                        ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
-                        ema.timeScale().timestampCol(), timeScaleUnits,
-                        columnSource, redirContext);
+                        ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
-                        ema.timeScale().timestampCol(), timeScaleUnits,
-                        columnSource, redirContext);
+                        ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
-                        ema.timeScale().timestampCol(),
-                        timeScaleUnits, columnSource, redirContext);
+                        ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == BigDecimal.class) {
                 return new BigDecimalEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
-                        ema.timeScale().timestampCol(),
-                        timeScaleUnits, columnSource, redirContext);
+                        ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == BigInteger.class) {
                 return new BigIntegerEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
-                        ema.timeScale().timestampCol(),
-                        timeScaleUnits, columnSource, redirContext);
+                        ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);

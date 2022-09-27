@@ -355,18 +355,18 @@ public class IntRingBufferTest extends TestCase {
         IntRingBuffer rb = new IntRingBuffer(3);
 
         for (int i = 0; i < 100; i++)
-            rb.add((int)i);
+            rb.add((int) i);
 
         for (int i = 100; i < 200; i++) {
-            rb.add((int)i);
-            assertEquals((int)(i - 100 + 1), rb.front(1));
-            assertEquals((int)(i - 100), rb.poll(SENTINEL));
+            rb.add((int) i);
+            assertEquals((int) (i - 100 + 1), rb.front(1));
+            assertEquals((int) (i - 100), rb.poll(SENTINEL));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals((int)(i - 100 + 1), rb.front(1));
-            assertEquals((int)(i - 100), rb.poll(SENTINEL));
+                assertEquals((int) (i - 100 + 1), rb.front(1));
+            assertEquals((int) (i - 100), rb.poll(SENTINEL));
         }
     }
 }

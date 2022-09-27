@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.updateby.fill;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
@@ -39,7 +40,7 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 
@@ -47,8 +48,9 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
 
-        if(ctx.curVal == NULL_CHAR) {
-            ctx.curVal = ctx.charValueChunk.get(pos);
+        char currentVal = ctx.charValueChunk.get(pos);
+        if(currentVal != NULL_CHAR) {
+            ctx.curVal = currentVal;
         }
     }
 

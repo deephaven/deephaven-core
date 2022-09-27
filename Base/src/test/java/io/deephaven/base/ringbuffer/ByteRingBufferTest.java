@@ -355,18 +355,18 @@ public class ByteRingBufferTest extends TestCase {
         ByteRingBuffer rb = new ByteRingBuffer(3);
 
         for (int i = 0; i < 100; i++)
-            rb.add((byte)i);
+            rb.add((byte) i);
 
         for (int i = 100; i < 200; i++) {
-            rb.add((byte)i);
-            assertEquals((byte)(i - 100 + 1), rb.front(1));
-            assertEquals((byte)(i - 100), rb.poll(SENTINEL));
+            rb.add((byte) i);
+            assertEquals((byte) (i - 100 + 1), rb.front(1));
+            assertEquals((byte) (i - 100), rb.poll(SENTINEL));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals((byte)(i - 100 + 1), rb.front(1));
-            assertEquals((byte)(i - 100), rb.poll(SENTINEL));
+                assertEquals((byte) (i - 100 + 1), rb.front(1));
+            assertEquals((byte) (i - 100), rb.poll(SENTINEL));
         }
     }
 }

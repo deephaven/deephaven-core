@@ -1,14 +1,11 @@
 package io.deephaven.engine.table.impl;
 
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
@@ -20,11 +17,13 @@ import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
 import io.deephaven.engine.table.impl.util.InverseRowRedirectionImpl;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -32,7 +31,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  * The core of the {@link Table#updateBy(UpdateByControl, Collection, Collection)} operation.
  */
 public abstract class UpdateBy {
-    protected final ChunkSource<Values>[] inputSources;
+    protected final ColumnSource<?>[] inputSources;
     protected final int[] inputSourceSlots;
     protected final UpdateByWindow[] windows;
     protected final UpdateByOperator[] operators;
@@ -145,7 +144,7 @@ public abstract class UpdateBy {
         // the next bit is complicated but the goal is simple. We don't want to have duplicate input column sources, so
         // we will store each one only once in inputSources and setup some mapping from the opIdx to the input column.
         // noinspection unchecked
-        inputSources = new ChunkSource[operators.length];
+        inputSources = new ColumnSource[operators.length];
         inputSourceSlots = new int[operators.length];
         final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
@@ -161,34 +160,36 @@ public abstract class UpdateBy {
         }
 
         // now we want to divide the operators into similar windows for efficient processing
-        TIntObjectHashMap<UpdateByWindow> windowHashToObjectMap = new TIntObjectHashMap<>();
         TIntObjectHashMap<TIntArrayList> windowHashToOperatorIndicesMap = new TIntObjectHashMap<>();
 
         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            UpdateByWindow newWindow = UpdateByWindow.createFromOperator(operators[opIdx]);
-            final int hash = newWindow.hashCode();
+            // get the hash
+            final int hash = UpdateByWindow.hashCodeFromOperator(operators[opIdx]);
 
             // add this if not found
-            if (!windowHashToObjectMap.containsKey(hash)) {
-                windowHashToObjectMap.put(hash, newWindow);
+            if (!windowHashToOperatorIndicesMap.containsKey(hash)) {
                 windowHashToOperatorIndicesMap.put(hash, new TIntArrayList());
             }
             windowHashToOperatorIndicesMap.get(hash).add(opIdx);
         }
 
         // store the operator information into the windows
-        windowHashToObjectMap.valueCollection().forEach(window -> {
-            final int hash = window.hashCode();
-            final int[] opIndices = windowHashToOperatorIndicesMap.get(hash).toArray();
+        this.windows = new UpdateByWindow[windowHashToOperatorIndicesMap.size()];
+        final MutableInt winIdx = new MutableInt(0);
 
-            final UpdateByOperator[] ops =
-                    Arrays.stream(opIndices).mapToObj(idx -> operators[idx]).toArray(UpdateByOperator[]::new);
-            final int[] opInputSourceSlots = Arrays.stream(opIndices).map(idx -> inputSourceSlots[idx]).toArray();
-
-            window.setOperators(ops, opInputSourceSlots);
+        windowHashToOperatorIndicesMap.forEachEntry((final int hash, final TIntArrayList opIndices) -> {
+            final UpdateByOperator[] windowOperators =
+                    Arrays.stream(opIndices.toArray())
+                            .mapToObj(idx -> operators[idx])
+                            .toArray(UpdateByOperator[]::new);
+            final int[] windowOperatorSourceSlots =
+                    Arrays.stream(opIndices.toArray())
+                            .map(idx -> inputSourceSlots[idx])
+                            .toArray();
+            this.windows[winIdx.getAndIncrement()] =
+                    UpdateByWindow.createFromOperatorArray(windowOperators, windowOperatorSourceSlots);
+            return true;
         });
-
-        this.windows = windowHashToObjectMap.valueCollection().toArray(UpdateByOperator.ZERO_LENGTH_WINDOW_ARRAY);
     }
 
     // region UpdateBy implementation

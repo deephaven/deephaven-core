@@ -90,7 +90,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 
@@ -116,7 +116,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
                              @Nullable final LongChunk<OrderedRowKeys> keyChunk,
                              @Nullable final LongChunk<OrderedRowKeys> posChunk,
                              @Nullable final Chunk<Values> valuesChunk,
-                             @Nullable final LongChunk<Values> timestampValuesChunk) {
+                             @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
         final Context ctx = (Context) updateContext;
         for (int ii = 0; ii < valuesChunk.size(); ii++) {
             push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);

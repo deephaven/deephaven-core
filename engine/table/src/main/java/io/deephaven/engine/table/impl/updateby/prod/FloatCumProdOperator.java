@@ -3,13 +3,13 @@ package io.deephaven.engine.table.impl.updateby.prod;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
     // region extra-fields
@@ -40,7 +40,7 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 

@@ -8,6 +8,7 @@ package io.deephaven.engine.table.impl.updateby.fill;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
@@ -44,7 +45,7 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
 
@@ -52,8 +53,9 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     public void push(UpdateContext context, long key, int pos) {
         final Context ctx = (Context) context;
 
-        if(ctx.curVal == null) {
-            ctx.curVal = ctx.ObjectValueChunk.get(pos);
+        T currentVal = ctx.ObjectValueChunk.get(pos);
+        if(currentVal != null) {
+            ctx.curVal = currentVal;
         }
     }
 
