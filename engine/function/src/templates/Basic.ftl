@@ -261,12 +261,12 @@ public class Basic {
     }
 
     /**
-     * Converts a DB array to an array.
+     * Converts a Deephaven vector to an array.
      *
-     * @param values DB array
+     * @param values Deephaven vector
      * @return primitive array.
      */
-    public static <T> T[] vecObj(ObjectVector<T> values) {
+    public static <T> T[] arrayObj(ObjectVector<T> values) {
         if(values == null) {
             return null;
         }
@@ -275,13 +275,13 @@ public class Basic {
     }
 
     /**
-     * Converts an array to a DB array.
+     * Converts an array to a Deephaven vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Deephaven vector.
      */
     @SafeVarargs
-    public static <T> ObjectVector<T> arrayObj(T... values){
+    public static <T> ObjectVector<T> vecObj(T... values){
         if(values == null) {
             return null;
         }
@@ -917,7 +917,7 @@ public class Basic {
             return QueryConstants.${pt.null};
         }
 
-        return last(array(values));
+        return last(vec(values));
     }
 
     /**
@@ -945,7 +945,7 @@ public class Basic {
             return QueryConstants.${pt.null};
         }
 
-        return first(array(values));
+        return first(vec(values));
     }
 
     /**
@@ -971,16 +971,16 @@ public class Basic {
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
     static public ${pt.primitive} nth(long index, ${pt.primitive}... values){
-        return nth(index, array(values));
+        return nth(index, vec(values));
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Deephaven vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Deephaven vector
      * @return primitive array.
      */
-    public static ${pt.primitive}[] vec(${pt.dbArray} values) {
+    public static ${pt.primitive}[] array(${pt.dbArray} values) {
         if(values == null){
             return null;
         }
@@ -989,12 +989,12 @@ public class Basic {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Deephaven vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Deephaven vector.
      */
-    public static ${pt.dbArray} array(${pt.primitive}... values) {
+    public static ${pt.dbArray} vec(${pt.primitive}... values) {
         return new ${pt.dbArrayDirect}(values);
     }
 
