@@ -6,11 +6,7 @@ package io.deephaven.parquet.compress;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.compress.CodecPool;
-import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.CompressionCodecFactory;
-import org.apache.hadoop.io.compress.CompressionInputStream;
-import org.apache.hadoop.io.compress.Decompressor;
+import org.apache.hadoop.io.compress.*;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
@@ -27,7 +23,7 @@ import java.util.stream.Stream;
  * configuration or from the classpath (via service loaders), while still offering the ability to get a
  * CompressionCodecName enum value having loaded the codec in this way.
  */
-public class DeephavenCodecFactory {
+public class DeephavenCompressorAdapterFactory {
 
     // Default codecs to list in the configuration rather than rely on the classloader
     private static final Set<String> DEFAULT_CODECS = Set.of(
@@ -45,54 +41,68 @@ public class DeephavenCodecFactory {
                 }
             }).collect(Collectors.toList());
 
-    private static volatile DeephavenCodecFactory INSTANCE;
+    private static volatile DeephavenCompressorAdapterFactory INSTANCE;
 
-    public static synchronized void setInstance(DeephavenCodecFactory factory) {
+    public static synchronized void setInstance(DeephavenCompressorAdapterFactory factory) {
         if (INSTANCE != null) {
             throw new IllegalStateException("Can't assign an instance when one is already set");
         }
         INSTANCE = factory;
     }
 
-    public static DeephavenCodecFactory getInstance() {
+    public static DeephavenCompressorAdapterFactory getInstance() {
         if (INSTANCE == null) {
-            synchronized (DeephavenCodecFactory.class) {
+            synchronized (DeephavenCompressorAdapterFactory.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new DeephavenCodecFactory(CODECS);
+                    INSTANCE = new DeephavenCompressorAdapterFactory(CODECS);
                 }
             }
         }
         return INSTANCE;
     }
 
-    public static class CodecWrappingCompressor implements Compressor {
+    public static class CodecWrappingCompressorAdapter implements CompressorAdapter {
         private final CompressionCodec compressionCodec;
 
-        private CodecWrappingCompressor(CompressionCodec compressionCodec) {
+        private boolean innerCompressorPooled;
+        private Compressor innerCompressor;
+
+        private CodecWrappingCompressorAdapter(CompressionCodec compressionCodec) {
             this.compressionCodec = compressionCodec;
         }
 
         @Override
         public OutputStream compress(OutputStream os) throws IOException {
-            return compressionCodec.createOutputStream(os);
-        }
+            if (innerCompressor == null) {
+                innerCompressor = CodecPool.getCompressor(compressionCodec);
+                innerCompressorPooled = innerCompressor != null;
+                if (!innerCompressorPooled) {
+                    // Some compressors are allowed to declare they cannot be pooled. If we fail to get one
+                    // then fall back on just creating a new one to hang on to.
+                    innerCompressor = compressionCodec.createCompressor();
+                }
 
-        @Override
-        public InputStream decompress(InputStream is) throws IOException {
-            return compressionCodec.createInputStream(is);
+                if (innerCompressor == null) {
+                    return compressionCodec.createOutputStream(os);
+                }
+
+                innerCompressor.reset();
+            }
+            return compressionCodec.createOutputStream(os, innerCompressor);
         }
 
         @Override
         public CompressionCodecName getCodecName() {
             return Stream.of(CompressionCodecName.values())
                     .filter(codec -> compressionCodec.getDefaultExtension().equals(codec.getExtension()))
-                    .findAny().get();
+                    .findAny()
+                    .get();
         }
 
         @Override
         public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize)
                 throws IOException {
-            Decompressor decompressor = CodecPool.getDecompressor(compressionCodec);
+            final Decompressor decompressor = CodecPool.getDecompressor(compressionCodec);
             if (decompressor != null) {
                 // It is permitted for a decompressor to be null, otherwise we want to reset() it to
                 // be ready for a new stream.
@@ -114,6 +124,20 @@ public class DeephavenCodecFactory {
                 CodecPool.returnDecompressor(decompressor);
             }
         }
+
+        @Override
+        public void reset() {
+            if (innerCompressor != null) {
+                innerCompressor.reset();
+            }
+        }
+
+        @Override
+        public void close() {
+            if (innerCompressor != null && innerCompressorPooled) {
+                CodecPool.returnCompressor(innerCompressor);
+            }
+        }
     }
 
     private static Configuration configurationWithCodecClasses(List<Class<?>> codecClasses) {
@@ -125,27 +149,29 @@ public class DeephavenCodecFactory {
 
     private final CompressionCodecFactory compressionCodecFactory;
 
-    public DeephavenCodecFactory(List<Class<?>> codecClasses) {
+    public DeephavenCompressorAdapterFactory(List<Class<?>> codecClasses) {
         this(configurationWithCodecClasses(codecClasses));
     }
 
-    public DeephavenCodecFactory(Configuration configuration) {
+    public DeephavenCompressorAdapterFactory(Configuration configuration) {
         compressionCodecFactory = new CompressionCodecFactory(configuration);
     }
 
     /**
-     * Returns a compressor with the given codec name. Do not use this to get a "no-op" codec, instead use
-     * {@link Compressor#PASSTHRU}. Names are identified using the {@link CompressionCodecFactory} rules (roughly, the
-     * first word in the class's name).
+     * Returns a compressor with the given codec name.
      *
      * @param codecName the name of the codec to search for.
      * @return a compressor instance with a name matching the given codec.
      */
-    public Compressor getByName(String codecName) {
+    public CompressorAdapter getByName(String codecName) {
+        if (codecName.equalsIgnoreCase("UNCOMPRESSED")) {
+            return CompressorAdapter.PASSTHRU;
+        }
+
         CompressionCodec codec = compressionCodecFactory.getCodecByName(codecName);
         if (codec == null) {
             throw new IllegalArgumentException("Failed to find a compression codec with name " + codecName);
         }
-        return new CodecWrappingCompressor(codec);
+        return new CodecWrappingCompressorAdapter(codec);
     }
 }

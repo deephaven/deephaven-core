@@ -7,7 +7,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.RunLengthBitPackingHybridBufferDecoder;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.compress.Compressor;
+import io.deephaven.parquet.compress.CompressorAdapter;
 import org.apache.commons.io.IOUtils;
 import org.apache.parquet.bytes.ByteBufferInputStream;
 import org.apache.parquet.bytes.BytesInput;
@@ -48,7 +48,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     public static final int NULL_OFFSET = -1;
 
     private final SeekableChannelsProvider channelsProvider;
-    private final Compressor compressor;
+    private final CompressorAdapter compressorAdapter;
     private final Supplier<Dictionary> dictionarySupplier;
     private final PageMaterializer.Factory pageMaterializerFactory;
     private final ColumnDescriptor path;
@@ -61,7 +61,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     private int rowCount = -1;
 
     ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider,
-            Compressor compressor,
+            CompressorAdapter compressorAdapter,
             Supplier<Dictionary> dictionarySupplier,
             PageMaterializer.Factory materializerFactory,
             ColumnDescriptor path,
@@ -71,7 +71,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             PageHeader pageHeader,
             int numValues) {
         this.channelsProvider = channelsProvider;
-        this.compressor = compressor;
+        this.compressorAdapter = compressorAdapter;
         this.dictionarySupplier = dictionarySupplier;
         this.pageMaterializerFactory = materializerFactory;
         this.path = path;
@@ -143,7 +143,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 final BytesInput decompressedInput =
-                        compressor.decompress(Channels.newInputStream(file), compressedPageSize, uncompressedPageSize);
+                        compressorAdapter.decompress(Channels.newInputStream(file), compressedPageSize,
+                                uncompressedPageSize);
 
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
                 return readRowCountFromPageV1(new DataPageV1(
@@ -170,7 +171,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 BytesInput decompressedInput =
-                        compressor.decompress(Channels.newInputStream(file), compressedPageSize, uncompressedPageSize);
+                        compressorAdapter.decompress(Channels.newInputStream(file), compressedPageSize,
+                                uncompressedPageSize);
 
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
                 return readKeysFromPageV1(new DataPageV1(
@@ -190,9 +192,10 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                         Helpers.readBytes(file, dataHeaderV2.getRepetition_levels_byte_length());
                 BytesInput definitionLevels =
                         Helpers.readBytes(file, dataHeaderV2.getDefinition_levels_byte_length());
-                BytesInput data = compressor.decompress(Channels.newInputStream(file), dataSize, uncompressedPageSize
-                        - dataHeaderV2.getRepetition_levels_byte_length()
-                        - dataHeaderV2.getDefinition_levels_byte_length());
+                BytesInput data = compressorAdapter.decompress(Channels.newInputStream(file), dataSize,
+                        uncompressedPageSize
+                                - dataHeaderV2.getRepetition_levels_byte_length()
+                                - dataHeaderV2.getDefinition_levels_byte_length());
 
                 readKeysFromPageV2(new DataPageV2(
                         dataHeaderV2.getNum_rows(),
@@ -218,7 +221,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 BytesInput decompressedInput =
-                        compressor.decompress(Channels.newInputStream(file), compressedPageSize, uncompressedPageSize);
+                        compressorAdapter.decompress(Channels.newInputStream(file), compressedPageSize,
+                                uncompressedPageSize);
 
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
                 return readPageV1(new DataPageV1(
@@ -235,7 +239,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                         - dataHeaderV2.getDefinition_levels_byte_length();
                 BytesInput repetitionLevels = Helpers.readBytes(file, dataHeaderV2.getRepetition_levels_byte_length());
                 BytesInput definitionLevels = Helpers.readBytes(file, dataHeaderV2.getDefinition_levels_byte_length());
-                BytesInput data = compressor.decompress(Channels.newInputStream(file), dataSize,
+                BytesInput data = compressorAdapter.decompress(Channels.newInputStream(file), dataSize,
                         pageHeader.getUncompressed_page_size()
                                 - dataHeaderV2.getRepetition_levels_byte_length()
                                 - dataHeaderV2.getDefinition_levels_byte_length());

@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.compress;
 
+import io.deephaven.util.SafeCloseable;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
@@ -10,19 +11,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public interface Compressor {
+/**
+ * An Intermediate adapter interface between Deephaven column writing and parquet compression.
+ */
+public interface CompressorAdapter extends SafeCloseable {
     /**
-     * Compressor instance that reads and writes uncompressed data directly.
+     * An {@link CompressorAdapter} instance that reads and writes uncompressed data directly.
      */
-    Compressor PASSTHRU = new Compressor() {
+    CompressorAdapter PASSTHRU = new CompressorAdapter() {
         @Override
-        public OutputStream compress(OutputStream os) throws IOException {
+        public OutputStream compress(OutputStream os) {
             return os;
-        }
-
-        @Override
-        public InputStream decompress(InputStream is) throws IOException {
-            return is;
         }
 
         @Override
@@ -34,8 +33,15 @@ public interface Compressor {
         public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize) {
             return BytesInput.from(inputStream, compressedSize);
         }
-    };
 
+        @Override
+        public void reset() {}
+
+        @Override
+        public void close() {
+
+        }
+    };
 
     /**
      * Creates a new output stream that will take uncompressed writes, and flush data to the provided stream as
@@ -46,16 +52,6 @@ public interface Compressor {
      * @throws IOException thrown if an error occurs writing data
      */
     OutputStream compress(OutputStream os) throws IOException;
-
-    /**
-     * Returns a new input stream that when read will provide the uncompressed data, by wrapping an input stream
-     * containing the compressed data.
-     * 
-     * @param is an input stream that can be read to see compressed data
-     * @return an input stream that can be read to see uncompressed data
-     * @throws IOException thrown if an error occurs reading data
-     */
-    InputStream decompress(InputStream is) throws IOException;
 
     /**
      * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream.
@@ -72,4 +68,9 @@ public interface Compressor {
      * @return the CompressionCodecName enum value that represents this compressor.
      */
     CompressionCodecName getCodecName();
+
+    /**
+     * Reset the internal state of this {@link CompressorAdapter} so more rows can be read or written.
+     */
+    void reset();
 }
