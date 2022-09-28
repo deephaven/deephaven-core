@@ -14,82 +14,82 @@ from tests.testbase import BaseTestCase
 class LearnGatherTestCase(BaseTestCase):
     """ Test cases for deephaven.learn submodule.  """
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
+        super().setUp()
         """ Inherited method allowing initialization of test environment. """
         # Tables
-        cls.bool_table = empty_table(100).update([
+        self.bool_table = empty_table(100).update([
             "X = true",
             "Y = false",
             "Z = (i % 2 == 0) ? true : false",
         ]
         )
-        cls.byte_table = empty_table(100).update([
+        self.byte_table = empty_table(100).update([
             "X = (byte)i",
             "Y = (byte)(100 - X)",
             "Z = (byte)(-101 + X)",
         ]
         )
-        cls.short_table = empty_table(100).update([
+        self.short_table = empty_table(100).update([
             "X = (short)i",
             "Y = (short)(100 - X)",
             "Z = (short)(-101 + X)",
         ]
         )
-        cls.int_table = empty_table(100).update([
+        self.int_table = empty_table(100).update([
             "X = (int)i",
             "Y = 100 - X",
             "Z = -101 + X",
         ]
         )
-        cls.long_table = empty_table(100).update([
+        self.long_table = empty_table(100).update([
             "X = (long)i",
             "Y = 100 - X",
             "Z = -101 + X",
         ]
         )
-        cls.float_table = empty_table(100).update([
+        self.float_table = empty_table(100).update([
             "X = (float)i",
             "Y = (float)sqrt(X)",
             "Z = (float)sqrt(Y)",
         ]
         )
-        cls.double_table = empty_table(100).update([
+        self.double_table = empty_table(100).update([
             "X = (double)i",
             "Y = sqrt(X)",
             "Z = sqrt(Y)",
         ]
         )
         # NumPy arrays
-        cls.bool_array = \
+        self.bool_array = \
             np.array([[True, False, True], [True, False, False]] * 50,
                      dtype=np.bool_)
-        cls.byte_array = np.vstack((
+        self.byte_array = np.vstack((
             np.arange(0, 100, dtype=np.byte),
             np.arange(100, 0, -1, dtype=np.byte),
             np.arange(-101, -1, dtype=np.byte)
         )).T
-        cls.short_array = np.vstack((
+        self.short_array = np.vstack((
             np.arange(0, 100, dtype=np.short),
             np.arange(100, 0, -1, dtype=np.short),
             np.arange(-101, -1, dtype=np.short)
         )).T
-        cls.int_array = np.vstack((
+        self.int_array = np.vstack((
             np.arange(0, 100, dtype=np.intc),
             np.arange(100, 0, -1, dtype=np.intc),
             np.arange(-101, -1, dtype=np.intc)
         )).T
-        cls.long_array = np.vstack((
+        self.long_array = np.vstack((
             np.arange(0, 100, dtype=np.int_),
             np.arange(100, 0, -1, dtype=np.int_),
             np.arange(-101, -1, dtype=np.int_)
         )).T
-        cls.float_array = np.vstack((
+        self.float_array = np.vstack((
             np.arange(0, 100, dtype=np.single),
             np.sqrt(np.arange(0, 100, dtype=np.single)),
             np.sqrt(np.sqrt(np.arange(0, 100, dtype=np.single)))
         )).T
-        cls.double_array = np.vstack((
+        self.double_array = np.vstack((
             np.arange(0, 100, dtype=np.double),
             np.sqrt(np.arange(0, 100, dtype=np.double)),
             np.sqrt(np.sqrt(np.arange(0, 100, dtype=np.double)))
