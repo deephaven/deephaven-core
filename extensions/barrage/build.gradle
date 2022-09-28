@@ -25,6 +25,12 @@ dependencies {
     Classpaths.inheritFlatbuffer(project, 'implementation')
 
     Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
+    // TODO(deephaven-core#2923): Remove explicit constraint on commons-codec #2923
+    constraints {
+        implementation('commons-codec:commons-codec:1.15') {
+            because 'arrow-vector depends on outdated version'
+        }
+    }
     Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
 
     Classpaths.inheritImmutables(project)
