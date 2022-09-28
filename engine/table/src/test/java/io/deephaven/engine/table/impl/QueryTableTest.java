@@ -3325,11 +3325,10 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable validatorTable = validator.getResultTable();
         final TableUpdateListener validatorTableListener =
                 // NB: We specify retain=true to ensure the listener is not GC'd. It will be dropped when
-                //     the enclosing LivenessScope is released.
+                // the enclosing LivenessScope is released.
                 new InstrumentedTableUpdateListenerAdapter(validatorTable, true) {
                     @Override
-                    public void onUpdate(TableUpdate upstream) {
-                    }
+                    public void onUpdate(TableUpdate upstream) {}
 
                     @Override
                     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
