@@ -1442,8 +1442,8 @@ public class QueryTableTest extends QueryTableTestBase {
         });
         TableTools.show(snappedOfSnap);
 
-        TestCase.assertEquals(snappedOfSnap.size(), 1);
-        TestCase.assertEquals(snappedOfSnap.getColumn("B").get(0), 1);
+        TestCase.assertEquals(1, snappedOfSnap.size());
+        TestCase.assertEquals(2, snappedOfSnap.getColumn("B").get(0));
     }
 
     public void testSnapshotIncrementalDependencies() {
