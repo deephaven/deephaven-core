@@ -28,8 +28,21 @@ public class DoubleFillByOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             doubleValueChunk = valuesChunk.asDoubleChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            double currentVal = doubleValueChunk.get(pos);
+            if(currentVal != NULL_DOUBLE) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_DOUBLE;
         }
     }
 
@@ -47,16 +60,6 @@ public class DoubleFillByOperator extends BaseDoubleUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        double currentVal = ctx.doubleValueChunk.get(pos);
-        if(currentVal != NULL_DOUBLE) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

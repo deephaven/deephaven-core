@@ -27,8 +27,21 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             ObjectValueChunk = valuesChunk.asObjectChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            T currentVal = ObjectValueChunk.get(pos);
+            if(currentVal != null) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = null;
         }
     }
 
@@ -47,16 +60,6 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        T currentVal = ctx.ObjectValueChunk.get(pos);
-        if(currentVal != null) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

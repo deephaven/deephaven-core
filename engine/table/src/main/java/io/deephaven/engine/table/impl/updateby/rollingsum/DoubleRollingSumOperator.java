@@ -25,19 +25,61 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
     // endregion extra-fields
 
     protected class Context extends BaseWindowedDoubleUpdateByOperator.Context {
-        public DoubleChunk<Values> doubleInfluencerValuesChunk;
-
-        public PairwiseDoubleRingBuffer pairwiseSum;
+        protected DoubleChunk<Values> doubleInfluencerValuesChunk;
+        protected PairwiseDoubleRingBuffer doublePairwiseSum;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            this.pairwiseSum = new PairwiseDoubleRingBuffer(64, 0.0f, Double::sum);
+            doublePairwiseSum = new PairwiseDoubleRingBuffer(64, 0.0f, new PairwiseDoubleRingBuffer.DoubleFunction() {
+                @Override
+                public double apply(double a, double b) {
+                    if (a == NULL_DOUBLE) {
+                        return b;
+                    } else if (b == NULL_DOUBLE) {
+                        return  a;
+                    }
+                    return a + b;
+                }
+            });
         }
 
         @Override
         public void close() {
             super.close();
-            this.pairwiseSum.close();
+            doublePairwiseSum.close();
+        }
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            doubleInfluencerValuesChunk = valuesChunk.asDoubleChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            double val = doubleInfluencerValuesChunk.get(pos);
+
+            doublePairwiseSum.push(val);
+            if (val == NULL_DOUBLE) {
+                nullCount++;
+            }
+        }
+
+        @Override
+        public void pop() {
+            double val = doublePairwiseSum.pop();
+
+            if (val == NULL_DOUBLE) {
+                nullCount--;
+            }
+        }
+
+        @Override
+        public void writeToOutputChunk(int outIdx) {
+            if (doublePairwiseSum.size() == nullCount) {
+                outputValues.set(outIdx, NULL_DOUBLE);
+            } else {
+                outputValues.set(outIdx, doublePairwiseSum.evaluate());
+            }
         }
     }
 
@@ -63,45 +105,7 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
     }
 
     @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-        double val = ctx.doubleInfluencerValuesChunk.get(pos);
-
-        if (val != NULL_DOUBLE) {
-            ctx.pairwiseSum.push(val);
-        } else {
-            ctx.pairwiseSum.pushEmptyValue();
-            ctx.nullCount++;
-        }
-    }
-
-    @Override
-    public void pop(UpdateContext context) {
-        final Context ctx = (Context) context;
-        int pos = ctx.windowIndices.front();
-        double val = ctx.doubleInfluencerValuesChunk.get(pos);
-
-        if (val == NULL_DOUBLE) {
-            ctx.nullCount--;
-        }
-        ctx.pairwiseSum.pop();
-    }
-
-    @Override
-    public void reset(UpdateContext context) {
-        final Context ctx = (Context) context;
-        // take this opportunity to clear the pairwise structure
-        ctx.pairwiseSum.clear();
-        ctx.nullCount = 0;
-    }
-
-    @Override
-    public double result(UpdateContext context) {
-        final Context ctx = (Context) context;
-        if (ctx.pairwiseSum.size() == ctx.nullCount) {
-            return NULL_DOUBLE;
-        }
-        return ctx.pairwiseSum.evaluate();
+    public void initializeUpdate(@NotNull UpdateContext context) {
     }
 
     @NotNull

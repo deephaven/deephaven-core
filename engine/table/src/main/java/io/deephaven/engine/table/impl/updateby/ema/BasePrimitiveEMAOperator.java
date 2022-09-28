@@ -25,13 +25,24 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     protected final double alpha;
     protected double oneMinusAlpha;
 
-    class Context extends BaseDoubleUpdateByOperator.Context {
+    public abstract class Context extends BaseDoubleUpdateByOperator.Context {
         public LongChunk<? extends Values> timestampValueChunk;
 
         long lastStamp = NULL_LONG;
 
+        @Override
+        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {
+            timestampValueChunk = valuesChunk;
+        }
+
         Context(final int chunkSize) {
             super(chunkSize);
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_DOUBLE;
+            lastStamp = NULL_LONG;
         }
     }
 
@@ -79,24 +90,6 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         }
     }
 
-    @Override
-    public void processChunk(@NotNull final UpdateContext updateContext,
-            @NotNull final RowSequence inputKeys,
-            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-            @Nullable final LongChunk<OrderedRowKeys> posChunk,
-            @Nullable final Chunk<Values> valuesChunk,
-            @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
-        Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
-        final Context ctx = (Context) updateContext;
-        ctx.storeValuesChunk(valuesChunk);
-        ctx.timestampValueChunk = timestampValuesChunk;
-        for (int ii = 0; ii < valuesChunk.size(); ii++) {
-            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
-            ctx.outputValues.set(ii, ctx.curVal);
-        }
-        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues, inputKeys);
-    }
-
     void handleBadData(@NotNull final Context ctx,
             final boolean isNull,
             final boolean isNan,
@@ -125,8 +118,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         }
 
         if (doReset) {
-            ctx.curVal = NULL_DOUBLE;
-            ctx.lastStamp = NULL_LONG;
+            ctx.reset();
         }
     }
 
@@ -145,8 +137,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         }
 
         if (doReset) {
-            ctx.curVal = NULL_DOUBLE;
-            ctx.lastStamp = NULL_LONG;
+            ctx.reset();
         }
     }
 }

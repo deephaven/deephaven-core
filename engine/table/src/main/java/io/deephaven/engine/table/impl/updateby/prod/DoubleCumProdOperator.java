@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperat
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
     // region extra-fields
@@ -28,8 +29,25 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             doubleValueChunk = valuesChunk.asDoubleChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final double currentVal = doubleValueChunk.get(pos);
+
+            if (curVal == NULL_DOUBLE) {
+                curVal = currentVal;
+            } else if (currentVal != NULL_DOUBLE) {
+                curVal *= currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_DOUBLE;
         }
     }
 
@@ -49,17 +67,5 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
 
-        // read the value from the values chunk
-        final double currentVal = ctx.doubleValueChunk.get(pos);
-
-        if (ctx.curVal == NULL_DOUBLE) {
-            ctx.curVal = currentVal;
-        } else if (currentVal != NULL_DOUBLE) {
-            ctx.curVal *= currentVal;
-        }
-    }
 }

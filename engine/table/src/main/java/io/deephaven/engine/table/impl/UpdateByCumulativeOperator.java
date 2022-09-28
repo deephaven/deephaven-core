@@ -6,6 +6,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,7 +23,7 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
     protected long timeScaleUnits;
     protected String timestampColumnName;
 
-    public class Context implements UpdateContext {
+    public abstract class Context implements UpdateContext {
         public long curTimestamp;
 
         protected Context(final int chunkSize) {
@@ -31,11 +32,16 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
 
         public boolean isValueValid(long atKey) {
             throw new UnsupportedOperationException(
-                    "isValueValid() must be overriden by time-aware cumulative operators");
+                    "isValueValid() must be overridden by time-aware cumulative operators");
         }
 
         @Override
         public void close() {}
+
+        @FinalDefault
+        public void pop() {
+            throw new UnsupportedOperationException("Cumulative operators should never call pop()");
+        }
     }
 
     public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
@@ -87,10 +93,5 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
     @Override
     public String[] getOutputColumnNames() {
         return new String[] {pair.leftColumn};
-    }
-
-    @Override
-    public void pop(UpdateContext context) {
-        throw new UnsupportedOperationException("Cumulative operators should never call pop()");
     }
 }

@@ -25,13 +25,54 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             shortValueChunk = valuesChunk.asShortChunk();
         }
 
         @Override
         public boolean isValueValid(long atKey) {
             return valueSource.getShort(atKey) != NULL_SHORT;
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            final short input = shortValueChunk.get(pos);
+            if (timestampColumnName == null) {
+                // compute with ticks
+                if(input == NULL_SHORT) {
+                    handleBadData(this, true, false, false);
+                } else {
+                    if(curVal == NULL_DOUBLE) {
+                        curVal = input;
+                    } else {
+                        curVal = alpha * curVal + (oneMinusAlpha * input);
+                    }
+                }
+            } else {
+                // compute with time
+                final long timestamp = timestampValueChunk.get(pos);
+                //noinspection ConstantConditions
+                final boolean isNull = input == NULL_SHORT;
+                final boolean isNullTime = timestamp == NULL_LONG;
+                if(isNull || isNullTime) {
+                    handleBadData(this, isNull, false, isNullTime);
+                } else {
+                    if(curVal == NULL_DOUBLE) {
+                        curVal = input;
+                        lastStamp = timestamp;
+                    } else {
+                        final long dt = timestamp - lastStamp;
+                        if(dt <= 0) {
+                            handleBadTime(this, dt);
+                        } else {
+                            // alpha is dynamic, based on time
+                            final double alpha = Math.exp(-dt / timeScaleUnits);
+                            curVal = alpha * curVal + ((1 - alpha) * input);
+                            lastStamp = timestamp;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -62,48 +103,5 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize, inputSource);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        final short input = ctx.shortValueChunk.get(pos);
-        if (timestampColumnName == null) {
-            // compute with ticks
-            if(input == NULL_SHORT) {
-                handleBadData(ctx, true, false, false);
-            } else {
-                if(ctx.curVal == NULL_DOUBLE) {
-                    ctx.curVal = input;
-                } else {
-                    ctx.curVal = alpha * ctx.curVal + (oneMinusAlpha * input);
-                }
-            }
-        } else {
-            // compute with time
-            final long timestamp = ctx.timestampValueChunk.get(pos);
-            //noinspection ConstantConditions
-            final boolean isNull = input == NULL_SHORT;
-            final boolean isNullTime = timestamp == NULL_LONG;
-            if(isNull || isNullTime) {
-                handleBadData(ctx, isNull, false, isNullTime);
-            } else {
-                if(ctx.curVal == NULL_DOUBLE) {
-                    ctx.curVal = input;
-                    ctx.lastStamp = timestamp;
-                } else {
-                    final long dt = timestamp - ctx.lastStamp;
-                    if(dt <= 0) {
-                        handleBadTime(ctx, dt);
-                    } else {
-                        // alpha is dynamic, based on time
-                        final double alpha = Math.exp(-dt / timeScaleUnits);
-                        ctx.curVal = alpha * ctx.curVal + ((1 - alpha) * input);
-                        ctx.lastStamp = timestamp;
-                    }
-                }
-            }
-        }
     }
 }

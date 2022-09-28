@@ -8,7 +8,6 @@ package io.deephaven.engine.table.impl.updateby.internal;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedDoubleChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
@@ -21,29 +20,56 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowedOperator {
     protected final WritableColumnSource<Double> outputSource;
     protected final WritableColumnSource<Double> maybeInnerSource;
 
+    public double curVal = NULL_DOUBLE;
+
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends UpdateWindowedContext {
-        public final ChunkSink.FillFromContext fillContext;
-        public final SizedDoubleChunk<Values> outputValues;
+    protected abstract class Context extends UpdateByWindowedOperator.Context {
+        public final ChunkSink.FillFromContext outputFillContext;
+        public final WritableDoubleChunk<Values> outputValues;
 
         protected Context(final int chunkSize) {
-            this.fillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = new SizedDoubleChunk<>(chunkSize);
+            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            this.outputValues = WritableDoubleChunk.makeWritableChunk(chunkSize);
         }
 
         public void storeWorkingChunk(@NotNull final Chunk<Values> valuesChunk) {}
 
         @Override
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
+
+        @Override
+        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}
+
+        @Override
+        public void writeToOutputChunk(int outIdx) {
+            outputValues.set(outIdx, curVal);
+        }
+
+        @Override
+        public void writeToOutputColumn(@NotNull final RowSequence inputKeys) {
+            outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
+        }
+
+        @Override
         public void close() {
+            super.close();
             outputValues.close();
-            fillContext.close();
+            outputFillContext.close();
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_DOUBLE;
+            nullCount = 0;
         }
     }
 
@@ -74,17 +100,8 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
         // endregion constructor
     }
 
-    //*** for doubleing point operators, we want a computed result */
-    public abstract double result(UpdateContext context);
-
     // region extra-methods
     // endregion extra-methods
-
-    @NotNull
-    @Override
-    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
-        return new Context(chunkSize);
-    }
 
     @Override
     public void startTrackingPrev() {
@@ -95,31 +112,9 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
     }
 
     // region Shifts
-
     @Override
     public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
         ((DoubleSparseArraySource)outputSource).shift(subIndexToShift, delta);
     }
-
     // endregion Shifts
-
-    // region Processing
-
-    @Override
-    public void processChunk(@NotNull final UpdateContext updateContext,
-                             @NotNull final RowSequence inputKeys,
-                             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                             @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                             @Nullable final Chunk<Values> valuesChunk,
-                             @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
-        final Context ctx = (Context) updateContext;
-        ctx.storeWorkingChunk(valuesChunk);
-        for (int ii = 0; ii < valuesChunk.size(); ii++) {
-            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
-            ctx.outputValues.get().set(ii, result(ctx));
-        }
-        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues.get(), inputKeys);
-    }
-
-    // endregion
 }

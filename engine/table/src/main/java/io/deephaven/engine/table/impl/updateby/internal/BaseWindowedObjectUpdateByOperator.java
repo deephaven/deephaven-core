@@ -8,6 +8,7 @@ package io.deephaven.engine.table.impl.updateby.internal;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedObjectChunk;
 import io.deephaven.engine.rowset.*;
@@ -33,21 +34,44 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
     private final Class<T> colType;
     // endregion extra-fields
 
-    protected class Context extends UpdateWindowedContext {
-        public final ChunkSink.FillFromContext fillContext;
-        public final SizedObjectChunk<T, Values> outputValues;
+    protected abstract class Context extends UpdateByWindowedOperator.Context {
+        public final ChunkSink.FillFromContext outputFillContext;
+        public final WritableObjectChunk<T, Values> outputValues;
 
         public T curVal = null;
 
         protected Context(final int chunkSize) {
-            this.fillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = new SizedObjectChunk<>(chunkSize);
+            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            this.outputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
+        }
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
+
+        @Override
+        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}
+
+        @Override
+        public void writeToOutputChunk(int outIdx) {
+            outputValues.set(outIdx, curVal);
+        }
+
+        @Override
+        public void writeToOutputColumn(@NotNull final RowSequence inputKeys) {
+            outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
 
         @Override
         public void close() {
+            super.close();
             outputValues.close();
-            fillContext.close();
+            outputFillContext.close();
+        }
+
+        @Override
+        public void reset() {
+            curVal = null;
+            nullCount = 0;
         }
     }
 
@@ -80,22 +104,8 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
         // endregion constructor
     }
 
-    @Override
-    public void reset(UpdateContext context) {
-        final Context ctx = (Context)context;
-        ctx.curVal = null;
-        ctx.nullCount = 0;
-    }
-
     // region extra-methods
     // endregion extra-methods
-
-
-    @NotNull
-    @Override
-    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
-        return new Context(chunkSize);
-    }
 
     @Override
     public void startTrackingPrev() {
@@ -111,23 +121,6 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
         ((ObjectSparseArraySource)outputSource).shift(subIndexToShift, delta);
     }
     // endregion Shifts
-
-    // region Processing
-    @Override
-    public void processChunk(@NotNull final UpdateContext updateContext,
-                             @NotNull final RowSequence inputKeys,
-                             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                             @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                             @Nullable final Chunk<Values> valuesChunk,
-                             @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
-        final Context ctx = (Context) updateContext;
-        for (int ii = 0; ii < valuesChunk.size(); ii++) {
-            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
-            ctx.outputValues.get().set(ii, ctx.curVal);
-        }
-        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues.get(), inputKeys);
-    }
-    // endregion
 
     @NotNull
     @Override

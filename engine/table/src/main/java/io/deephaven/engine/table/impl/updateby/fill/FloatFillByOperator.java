@@ -28,8 +28,21 @@ public class FloatFillByOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             floatValueChunk = valuesChunk.asFloatChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            float currentVal = floatValueChunk.get(pos);
+            if(currentVal != NULL_FLOAT) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_FLOAT;
         }
     }
 
@@ -47,16 +60,6 @@ public class FloatFillByOperator extends BaseFloatUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        float currentVal = ctx.floatValueChunk.get(pos);
-        if(currentVal != NULL_FLOAT) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

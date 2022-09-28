@@ -5,19 +5,20 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
@@ -32,25 +33,39 @@ public abstract class BaseShortUpdateByOperator extends UpdateByCumulativeOperat
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends UpdateByCumulativeOperator.Context {
-        public final ChunkSink.FillFromContext fillContext;
+    protected abstract class Context extends UpdateByCumulativeOperator.Context {
+        public final ChunkSink.FillFromContext outputFillContext;
         public final WritableShortChunk<Values> outputValues;
 
         public short curVal = NULL_SHORT;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            this.fillContext = outputSource.makeFillFromContext(chunkSize);
+            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableShortChunk.makeWritableChunk(chunkSize);
         }
-
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
 
         @Override
         public void close() {
             super.close();
             outputValues.close();
-            fillContext.close();
+            outputFillContext.close();
+        }
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
+
+        @Override
+        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}
+
+        @Override
+        public void writeToOutputChunk(int outIdx) {
+            outputValues.set(outIdx, curVal);
+        }
+
+        @Override
+        public void writeToOutputColumn(@NotNull final RowSequence inputKeys) {
+            outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
     }
 
@@ -85,11 +100,6 @@ public abstract class BaseShortUpdateByOperator extends UpdateByCumulativeOperat
         // endregion constructor
     }
 
-    @Override
-    public void reset(UpdateContext context) {
-        final Context ctx = (Context)context;
-        ctx.curVal = NULL_SHORT;
-    }
 
     // region extra-methods
     // endregion extra-methods
@@ -100,7 +110,7 @@ public abstract class BaseShortUpdateByOperator extends UpdateByCumulativeOperat
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getShort(firstUnmodifiedKey);
         } else {
-            reset(ctx);
+            ctx.reset();
         }
 
         // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
@@ -126,25 +136,6 @@ public abstract class BaseShortUpdateByOperator extends UpdateByCumulativeOperat
         ((ShortSparseArraySource)outputSource).shift(subIndexToShift, delta);
     }
     // endregion Shifts
-
-    // region Processing
-    @Override
-    public void processChunk(@NotNull final UpdateContext updateContext,
-                             @NotNull final RowSequence inputKeys,
-                             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                             @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                             @Nullable final Chunk<Values> valuesChunk,
-                             @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
-        Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
-        final Context ctx = (Context) updateContext;
-        ctx.storeValuesChunk(valuesChunk);
-        for (int ii = 0; ii < valuesChunk.size(); ii++) {
-            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
-            ctx.outputValues.set(ii, ctx.curVal);
-        }
-        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues, inputKeys);
-    }
-    // endregion
 
     @NotNull
     @Override

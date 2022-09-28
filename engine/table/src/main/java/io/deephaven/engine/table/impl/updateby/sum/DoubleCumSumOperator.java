@@ -28,8 +28,25 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             doubleValueChunk = valuesChunk.asDoubleChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final double currentVal = doubleValueChunk.get(pos);
+
+            if (curVal == NULL_DOUBLE) {
+                curVal = currentVal;
+            } else if (currentVal != NULL_DOUBLE) {
+                curVal += currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_DOUBLE;
         }
     }
 
@@ -47,19 +64,5 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final double currentVal = ctx.doubleValueChunk.get(pos);
-
-        if (ctx.curVal == NULL_DOUBLE) {
-            ctx.curVal = currentVal;
-        } else if (currentVal != NULL_DOUBLE) {
-            ctx.curVal += currentVal;
-        }
     }
 }

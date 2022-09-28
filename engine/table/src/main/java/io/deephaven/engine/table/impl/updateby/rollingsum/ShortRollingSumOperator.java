@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.ringbuffer.ShortRingBuffer;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
@@ -12,23 +12,70 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedLongUpdateBy
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static io.deephaven.util.QueryConstants.*;
 
 public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
 
     protected class Context extends BaseWindowedLongUpdateByOperator.Context {
-        public ShortChunk<Values> shortInfluencerValuesChunk;
+        protected ShortChunk<Values> shortInfluencerValuesChunk;
+        protected ShortRingBuffer shortWindowValues;
+
 
         protected Context(int chunkSize) {
             super(chunkSize);
+            shortWindowValues = new ShortRingBuffer(512, true);
         }
 
         @Override
-        public void storeInfluencerValuesChunk(@NotNull final Chunk<Values> influencerValuesChunk) {
-            shortInfluencerValuesChunk = influencerValuesChunk.asShortChunk();
+        public void close() {
+            super.close();
+            shortWindowValues = null;
+        }
+
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            shortInfluencerValuesChunk = valuesChunk.asShortChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            short val = shortInfluencerValuesChunk.get(pos);
+            shortWindowValues.add(val);
+
+            // increase the running sum
+            if (val != NULL_SHORT) {
+                if (curVal == NULL_LONG) {
+                    curVal = val;
+                } else {
+                    curVal += val;
+                }
+            } else {
+                nullCount++;
+            }
+        }
+
+        @Override
+        public void pop() {
+            short val = shortWindowValues.remove();
+
+            // reduce the running sum
+            if (val != NULL_SHORT) {
+                curVal -= val;
+            } else {
+                nullCount--;
+            }
+        }
+
+        @Override
+        public void writeToOutputChunk(int outIdx) {
+            if (shortWindowValues.size() == nullCount) {
+                outputValues.set(outIdx, NULL_LONG);
+            } else {
+                outputValues.set(outIdx, curVal);
+            }
         }
     }
 
@@ -54,33 +101,6 @@ public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-        short val = ctx.shortInfluencerValuesChunk.get(pos);
-
-        // increase the running sum
-        if (val != NULL_SHORT) {
-            if (ctx.curVal == NULL_LONG) {
-                ctx.curVal = val;
-            } else {
-                ctx.curVal += val;
-            }
-        } else {
-            ctx.nullCount++;
-        }
-    }
-
-    @Override
-    public void pop(UpdateContext context) {
-        final Context ctx = (Context) context;
-        int pos = ctx.windowIndices.front();
-        short val = ctx.shortInfluencerValuesChunk.get(pos);
-
-        // reduce the running sum
-        if (val != NULL_SHORT) {
-            ctx.curVal -= val;
-        } else {
-            ctx.nullCount--;
-        }
+    public void initializeUpdate(@NotNull UpdateContext context) {
     }
 }

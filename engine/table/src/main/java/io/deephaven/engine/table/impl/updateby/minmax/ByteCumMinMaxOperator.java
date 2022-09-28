@@ -30,8 +30,28 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             byteValueChunk = valuesChunk.asByteChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final byte currentVal = byteValueChunk.get(pos);
+
+            if (curVal == NULL_BYTE) {
+                curVal = currentVal;
+            } else if (currentVal != NULL_BYTE) {
+                if ((isMax && currentVal > curVal) ||
+                        (!isMax && currentVal < curVal)) {
+                    curVal = currentVal;
+                }
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_BYTE;
         }
     }
 
@@ -52,23 +72,4 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final byte currentVal = ctx.byteValueChunk.get(pos);
-
-        if (ctx.curVal == NULL_BYTE) {
-            ctx.curVal = currentVal;
-        } else if (currentVal != NULL_BYTE) {
-            if ((isMax && currentVal > ctx.curVal) ||
-                    (!isMax && currentVal < ctx.curVal)) {
-                ctx.curVal = currentVal;
-            }
-        }
-    }
-    // region extra-methods
-    // endregion extra-methods
 }

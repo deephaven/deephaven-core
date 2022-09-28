@@ -257,6 +257,7 @@ public class ReplicateUpdateBy {
                 "WritableIntegerChunk", "WritableIntChunk",
                 "IntegerChunk", "IntChunk",
                 "getInteger", "getInt",
+                "IntegerRingBuffer", "IntRingBuffer",
                 "SizedIntegerChunk", "SizedIntChunk");
         if (intResult.contains("Integer")) {
             FileUtils.writeLines(new File(intResult.replaceAll("Integer", "Int")), lines);

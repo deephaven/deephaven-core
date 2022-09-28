@@ -36,8 +36,21 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             longValueChunk = valuesChunk.asLongChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            long currentVal = longValueChunk.get(pos);
+            if(currentVal != NULL_LONG) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_LONG;
         }
     }
 
@@ -57,16 +70,6 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        long currentVal = ctx.longValueChunk.get(pos);
-        if(currentVal != NULL_LONG) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

@@ -24,8 +24,24 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final T currentVal = objectValueChunk.get(pos);
+            if(curVal == null) {
+                curVal = currentVal;
+            } else if(currentVal != null) {
+                curVal = doOperation(curVal, currentVal);
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = null;
         }
     }
 
@@ -42,37 +58,5 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    // region Processing
-    @Override
-    public void processChunk(@NotNull final UpdateContext updateContext,
-                             @NotNull final RowSequence inputKeys,
-                             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                             @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                             @Nullable final Chunk<Values> valuesChunk,
-                             @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
-        Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
-        final Context ctx = (Context) updateContext;
-        ctx.storeValuesChunk(valuesChunk);
-        for (int ii = 0; ii < valuesChunk.size(); ii++) {
-            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
-            ctx.outputValues.set(ii, ctx.curVal);
-        }
-        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues, inputKeys);
-    }
-    // endregion
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final T currentVal = ctx.objectValueChunk.get(pos);
-        if(ctx.curVal == null) {
-            ctx.curVal = currentVal;
-        } else if(currentVal != null) {
-            ctx.curVal = doOperation(ctx.curVal, currentVal);
-        }
     }
 }

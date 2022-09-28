@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperato
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
     // region extra-fields
@@ -23,8 +24,25 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             floatValueChunk = valuesChunk.asFloatChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final float currentVal = floatValueChunk.get(pos);
+
+            if (curVal == NULL_FLOAT) {
+                curVal = currentVal;
+            } else if (currentVal != NULL_FLOAT) {
+                curVal *= currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_FLOAT;
         }
     }
 
@@ -44,17 +62,5 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
 
-        // read the value from the values chunk
-        final float currentVal = ctx.floatValueChunk.get(pos);
-
-        if (ctx.curVal == NULL_FLOAT) {
-            ctx.curVal = currentVal;
-        } else if (currentVal != NULL_FLOAT) {
-            ctx.curVal *= currentVal;
-        }
-    }
 }

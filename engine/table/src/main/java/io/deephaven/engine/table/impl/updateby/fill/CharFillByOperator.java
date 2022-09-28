@@ -23,8 +23,21 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             charValueChunk = valuesChunk.asCharChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            char currentVal = charValueChunk.get(pos);
+            if(currentVal != NULL_CHAR) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_CHAR;
         }
     }
 
@@ -42,16 +55,6 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        char currentVal = ctx.charValueChunk.get(pos);
-        if(currentVal != NULL_CHAR) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

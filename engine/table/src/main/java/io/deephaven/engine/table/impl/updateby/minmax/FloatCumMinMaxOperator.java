@@ -25,8 +25,28 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             floatValueChunk = valuesChunk.asFloatChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final float currentVal = floatValueChunk.get(pos);
+
+            if(curVal == NULL_FLOAT) {
+                curVal = currentVal;
+            } else if(currentVal != NULL_FLOAT) {
+                if ((isMax && currentVal > curVal) ||
+                        (!isMax && currentVal < curVal)) {
+                    curVal = currentVal;
+                }
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_FLOAT;
         }
     }
 
@@ -47,23 +67,4 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final float currentVal = ctx.floatValueChunk.get(pos);
-
-        if(ctx.curVal == NULL_FLOAT) {
-            ctx.curVal = currentVal;
-        } else if(currentVal != NULL_FLOAT) {
-            if ((isMax && currentVal > ctx.curVal) ||
-                    (!isMax && currentVal < ctx.curVal)) {
-                ctx.curVal = currentVal;
-            }
-        }
-    }
-    // region extra-methods
-    // endregion extra-methods
 }

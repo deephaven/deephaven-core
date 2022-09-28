@@ -35,8 +35,21 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             booleanValueChunk = valuesChunk.asByteChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            byte currentVal = booleanValueChunk.get(pos);
+            if(currentVal != NULL_BOOLEAN_AS_BYTE) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_BOOLEAN_AS_BYTE;
         }
     }
 
@@ -54,16 +67,6 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        byte currentVal = ctx.booleanValueChunk.get(pos);
-        if(currentVal != NULL_BOOLEAN_AS_BYTE) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

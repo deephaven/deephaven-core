@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.RingBuffer;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.*;
@@ -12,17 +13,66 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+
 public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdateByOperator<BigInteger> {
     protected class Context extends BaseWindowedObjectUpdateByOperator<BigInteger>.Context {
-        public ObjectChunk<BigInteger, Values> objectInfluencerValuesChunk;
+        protected ObjectChunk<BigInteger, Values> objectInfluencerValuesChunk;
+        protected RingBuffer<BigInteger> objectWindowValues;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
+            objectWindowValues = new RingBuffer<>(512);
         }
 
         @Override
-        public void storeInfluencerValuesChunk(@NotNull final Chunk<Values> influencerValuesChunk) {
-            objectInfluencerValuesChunk = influencerValuesChunk.asObjectChunk();
+        public void close() {
+            super.close();
+            objectWindowValues = null;
+        }
+
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            BigInteger val = objectInfluencerValuesChunk.get(pos);
+            objectWindowValues.add(val);
+
+            // increase the running sum
+            if (val != null) {
+                if (curVal == null) {
+                    curVal = val;
+                } else {
+                    curVal = curVal.add(val);
+                }
+            } else {
+                nullCount++;
+            }
+        }
+
+        @Override
+        public void pop() {
+            BigInteger val = objectWindowValues.remove();
+
+            // reduce the running sum
+            if (val != null) {
+                curVal = curVal.subtract(val);
+            } else {
+                nullCount--;
+            }
+        }
+
+        @Override
+        public void writeToOutputChunk(int outIdx) {
+            if (objectWindowValues.size() == nullCount) {
+                outputValues.set(outIdx, null);
+            } else {
+                outputValues.set(outIdx, curVal);
+            }
         }
     }
 
@@ -48,39 +98,6 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
     }
 
     @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-        BigInteger val = ctx.objectInfluencerValuesChunk.get(pos);
-
-        // increase the running sum
-        if (val != null) {
-            if (ctx.curVal == null) {
-                ctx.curVal = val;
-            } else {
-                ctx.curVal = ctx.curVal.add(val);
-            }
-        } else {
-            ctx.nullCount++;
-        }
-    }
-
-    @Override
-    public void pop(UpdateContext context) {
-        final Context ctx = (Context) context;
-        int pos = ctx.windowIndices.front();
-        BigInteger val = ctx.objectInfluencerValuesChunk.get(pos);
-
-        // reduce the running sum
-        if (val != null) {
-            ctx.curVal = ctx.curVal.subtract(val);
-        } else {
-            ctx.nullCount--;
-        }
-    }
-
-    @Override
-    public void reset(UpdateContext context) {
-        final Context ctx = (Context) context;
-        ctx.curVal = null;
+    public void initializeUpdate(@NotNull UpdateContext context) {
     }
 }

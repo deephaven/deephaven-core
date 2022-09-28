@@ -118,8 +118,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
                     final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
                     final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
-                TLongHashSet ssaKeySet = new TLongHashSet();
-                timestampSsa.forAllKeys(ssaKeySet::add);
 
                 MutableLong lastTimestamp = new MutableLong(NULL_LONG);
                 while (it.hasMore()) {
@@ -132,15 +130,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                     // push only non-null values/keys into the Ssa
                     fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
-
-                    // verify that all values to remove are actually in this SSA
-                    for (int ii = 0; ii < valuesChunk.size(); ii++) {
-                        final long ts = valuesChunk.get(ii);
-                        final long key = keysChunk.get(ii);
-                        if (!ssaKeySet.contains(key)) {
-                            System.out.println(ts + " : " + key);
-                        }
-                    }
                     timestampSsa.remove(ssaValues, ssaKeys);
                 }
             }
@@ -180,9 +169,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
                     final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
                     final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
-                TLongHashSet ssaKeySet = new TLongHashSet();
-                timestampSsa.forAllKeys(ssaKeySet::add);
-
                 MutableLong lastTimestamp = new MutableLong(NULL_LONG);
                 while (it.hasMore()) {
                     RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
@@ -194,15 +180,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
                     // push only non-null values/keys into the Ssa
                     fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
-
-                    // verify that the items are not already in the SSA
-                    for (int ii = 0; ii < valuesChunk.size(); ii++) {
-                        final long ts = valuesChunk.get(ii);
-                        final long key = keysChunk.get(ii);
-                        if (ssaKeySet.contains(key)) {
-                            System.out.println(ts + " : " + key);
-                        }
-                    }
                     timestampSsa.insert(ssaValues, ssaKeys);
                 }
             }

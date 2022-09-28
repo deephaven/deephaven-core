@@ -1,8 +1,14 @@
 package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,6 +17,58 @@ import java.math.BigDecimal;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
+    public class Context extends BigNumberEMAOperator<BigDecimal>.Context {
+        protected Context(int chunkSize, ColumnSource<?> inputSource) {
+            super(chunkSize, inputSource);
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            final BigDecimal input = objectValueChunk.get(pos);
+            if (timestampColumnName == null) {
+                // compute with ticks
+                if (input == null) {
+                    handleBadData(this, true, false);
+                } else {
+                    if (curVal == null) {
+                        curVal = input;
+                    } else {
+                        curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
+                                .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
+                                        control.bigValueContextOrDefault());
+                    }
+                }
+            } else {
+                // compute with time
+                final long timestamp = timestampValueChunk.get(pos);
+                final boolean isNull = input == null;
+                final boolean isNullTime = timestamp == NULL_LONG;
+                if (isNull || isNullTime) {
+                    handleBadData(this, isNull, isNullTime);
+                } else {
+                    if (curVal == null) {
+                        curVal = input;
+                        lastStamp = timestamp;
+                    } else {
+                        final long dt = timestamp - lastStamp;
+                        if (dt <= 0) {
+                            handleBadTime(this, dt);
+                        } else {
+                            // alpha is dynamic, based on time
+                            BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
+                            BigDecimal oneMinusAlpha =
+                                    BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+
+                            curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
+                                    .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
+                                            control.bigValueContextOrDefault());
+                            lastStamp = timestamp;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * An operator that computes an EMA from a int column using an exponential decay function.
@@ -33,50 +91,9 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
         super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirContext);
     }
 
+    @NotNull
     @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-        final BigDecimal input = ctx.objectValueChunk.get(pos);
-        if (timestampColumnName == null) {
-            // compute with ticks
-            if (input == null) {
-                handleBadData(ctx, true, false);
-            } else {
-                if (ctx.curVal == null) {
-                    ctx.curVal = input;
-                } else {
-                    ctx.curVal = ctx.curVal.multiply(alpha, control.bigValueContextOrDefault())
-                            .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
-                                    control.bigValueContextOrDefault());
-                }
-            }
-        } else {
-            // compute with time
-            final long timestamp = ctx.timestampValueChunk.get(pos);
-            final boolean isNull = input == null;
-            final boolean isNullTime = timestamp == NULL_LONG;
-            if (isNull || isNullTime) {
-                handleBadData(ctx, isNull, isNullTime);
-            } else {
-                if (ctx.curVal == null) {
-                    ctx.curVal = input;
-                    ctx.lastStamp = timestamp;
-                } else {
-                    final long dt = timestamp - ctx.lastStamp;
-                    if (dt <= 0) {
-                        handleBadTime(ctx, dt);
-                    } else {
-                        // alpha is dynamic, based on time
-                        BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
-                        BigDecimal oneMinusAlpha = BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
-
-                        ctx.curVal = ctx.curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
-                                        control.bigValueContextOrDefault());
-                        ctx.lastStamp = timestamp;
-                    }
-                }
-            }
-        }
+    public UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?> inputSource) {
+        return new Context(chunkSize, inputSource);
     }
 }

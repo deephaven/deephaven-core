@@ -20,19 +20,61 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseWindowedFloatUpdateByOperator.Context {
-        public FloatChunk<Values> floatInfluencerValuesChunk;
-
-        public PairwiseFloatRingBuffer pairwiseSum;
+        protected FloatChunk<Values> floatInfluencerValuesChunk;
+        protected PairwiseFloatRingBuffer floatPairwiseSum;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            this.pairwiseSum = new PairwiseFloatRingBuffer(64, 0.0f, Float::sum);
+            floatPairwiseSum = new PairwiseFloatRingBuffer(64, 0.0f, new PairwiseFloatRingBuffer.FloatFunction() {
+                @Override
+                public float apply(float a, float b) {
+                    if (a == NULL_FLOAT) {
+                        return b;
+                    } else if (b == NULL_FLOAT) {
+                        return  a;
+                    }
+                    return a + b;
+                }
+            });
         }
 
         @Override
         public void close() {
             super.close();
-            this.pairwiseSum.close();
+            floatPairwiseSum.close();
+        }
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+            floatInfluencerValuesChunk = valuesChunk.asFloatChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            float val = floatInfluencerValuesChunk.get(pos);
+
+            floatPairwiseSum.push(val);
+            if (val == NULL_FLOAT) {
+                nullCount++;
+            }
+        }
+
+        @Override
+        public void pop() {
+            float val = floatPairwiseSum.pop();
+
+            if (val == NULL_FLOAT) {
+                nullCount--;
+            }
+        }
+
+        @Override
+        public void writeToOutputChunk(int outIdx) {
+            if (floatPairwiseSum.size() == nullCount) {
+                outputValues.set(outIdx, NULL_FLOAT);
+            } else {
+                outputValues.set(outIdx, floatPairwiseSum.evaluate());
+            }
         }
     }
 
@@ -58,45 +100,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     }
 
     @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-        float val = ctx.floatInfluencerValuesChunk.get(pos);
-
-        if (val != NULL_FLOAT) {
-            ctx.pairwiseSum.push(val);
-        } else {
-            ctx.pairwiseSum.pushEmptyValue();
-            ctx.nullCount++;
-        }
-    }
-
-    @Override
-    public void pop(UpdateContext context) {
-        final Context ctx = (Context) context;
-        int pos = ctx.windowIndices.front();
-        float val = ctx.floatInfluencerValuesChunk.get(pos);
-
-        if (val == NULL_FLOAT) {
-            ctx.nullCount--;
-        }
-        ctx.pairwiseSum.pop();
-    }
-
-    @Override
-    public void reset(UpdateContext context) {
-        final Context ctx = (Context) context;
-        // take this opportunity to clear the pairwise structure
-        ctx.pairwiseSum.clear();
-        ctx.nullCount = 0;
-    }
-
-    @Override
-    public float result(UpdateContext context) {
-        final Context ctx = (Context) context;
-        if (ctx.pairwiseSum.size() == ctx.nullCount) {
-            return NULL_FLOAT;
-        }
-        return ctx.pairwiseSum.evaluate();
+    public void initializeUpdate(@NotNull UpdateContext context) {
     }
 
     @NotNull

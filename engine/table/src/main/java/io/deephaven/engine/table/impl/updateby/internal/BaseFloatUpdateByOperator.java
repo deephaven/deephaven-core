@@ -28,25 +28,39 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends UpdateByCumulativeOperator.Context {
-        public final ChunkSink.FillFromContext fillContext;
+    protected abstract class Context extends UpdateByCumulativeOperator.Context {
+        public final ChunkSink.FillFromContext outputFillContext;
         public final WritableFloatChunk<Values> outputValues;
 
-        public float curVal = NULL_CHAR;
+        public float curVal = NULL_FLOAT;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            this.fillContext = outputSource.makeFillFromContext(chunkSize);
+            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableFloatChunk.makeWritableChunk(chunkSize);
         }
-
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
 
         @Override
         public void close() {
             super.close();
             outputValues.close();
-            fillContext.close();
+            outputFillContext.close();
+        }
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
+
+        @Override
+        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}
+
+        @Override
+        public void writeToOutputChunk(int outIdx) {
+            outputValues.set(outIdx, curVal);
+        }
+
+        @Override
+        public void writeToOutputColumn(@NotNull final RowSequence inputKeys) {
+            outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
     }
 
@@ -81,12 +95,6 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
         // endregion constructor
     }
 
-    @Override
-    public void reset(UpdateContext context) {
-        final Context ctx = (Context)context;
-        ctx.curVal = NULL_FLOAT;
-    }
-
     // region extra-methods
     // endregion extra-methods
 
@@ -96,7 +104,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getFloat(firstUnmodifiedKey);
         } else {
-            reset(ctx);
+            ctx.reset();
         }
 
         // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
@@ -120,25 +128,6 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         ((FloatSparseArraySource)outputSource).shift(subRowSetToShift, delta);
-    }
-    // endregion
-
-    // region Processing
-    @Override
-    public void processChunk(@NotNull final UpdateContext updateContext,
-                             @NotNull final RowSequence inputKeys,
-                             @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                             @Nullable final LongChunk<OrderedRowKeys> posChunk,
-                             @Nullable final Chunk<Values> valuesChunk,
-                             @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
-        Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
-        final Context ctx = (Context) updateContext;
-        ctx.storeValuesChunk(valuesChunk);
-        for (int ii = 0; ii < valuesChunk.size(); ii++) {
-            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
-            ctx.outputValues.set(ii, ctx.curVal);
-        }
-        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues, inputKeys);
     }
     // endregion
 

@@ -9,8 +9,7 @@ import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static io.deephaven.util.QueryConstants.*;
 
 public class ShortCumProdOperator extends BaseLongUpdateByOperator {
     // region extra-fields
@@ -24,8 +23,25 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             shortValueChunk = valuesChunk.asShortChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final short currentVal = shortValueChunk.get(pos);
+
+            if (curVal == NULL_LONG) {
+                curVal = currentVal == NULL_SHORT ? NULL_LONG : currentVal;
+            } else if (currentVal != NULL_SHORT) {
+                curVal *= currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_SHORT;
         }
     }
 
@@ -43,19 +59,5 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final short currentVal = ctx.shortValueChunk.get(pos);
-
-        if (ctx.curVal == NULL_LONG) {
-            ctx.curVal = currentVal == NULL_SHORT ? NULL_LONG : currentVal;
-        } else if (currentVal != NULL_SHORT) {
-            ctx.curVal *= currentVal;
-        }
     }
 }

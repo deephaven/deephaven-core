@@ -28,8 +28,21 @@ public class ShortFillByOperator extends BaseShortUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             shortValueChunk = valuesChunk.asShortChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            short currentVal = shortValueChunk.get(pos);
+            if(currentVal != NULL_SHORT) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_SHORT;
         }
     }
 
@@ -47,16 +60,6 @@ public class ShortFillByOperator extends BaseShortUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        short currentVal = ctx.shortValueChunk.get(pos);
-        if(currentVal != NULL_SHORT) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

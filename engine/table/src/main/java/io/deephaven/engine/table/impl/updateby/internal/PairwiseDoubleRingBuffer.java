@@ -283,7 +283,7 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
     }
 
     public void clear() {
-        head = tail = 0;
+        head = tail = capacity;
         dirtyIndices.clear();
         allDirty = false;
     }

@@ -2,14 +2,10 @@ package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
@@ -21,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
     protected final OperationControl control;
@@ -30,7 +26,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     protected final BigDecimal oneMinusAlpha;
 
 
-    class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
+    public abstract class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         protected final ColumnSource<?> valueSource;
         public LongChunk<? extends Values> timestampValueChunk;
         public ObjectChunk<T, Values> objectValueChunk;
@@ -43,13 +39,24 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
+        }
+
+        @Override
+        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {
+            timestampValueChunk = valuesChunk;
         }
 
         @Override
         public boolean isValueValid(long atKey) {
             return valueSource.get(atKey) != null;
+        }
+
+        @Override
+        public void reset() {
+            curVal = null;
+            lastStamp = NULL_LONG;
         }
     }
 
@@ -79,12 +86,6 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
                 timestampColumnName == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault()) : null;
     }
 
-    @NotNull
-    @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?> inputSource) {
-        return new Context(chunkSize, inputSource);
-    }
-
     @Override
     public void initializeUpdate(@NotNull final UpdateContext updateContext,
             @NotNull final long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
@@ -99,24 +100,6 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)
             ctx.lastStamp = firstUnmodifiedTimestamp;
         }
-    }
-
-    @Override
-    public void processChunk(@NotNull final UpdateContext updateContext,
-            @NotNull final RowSequence inputKeys,
-            @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-            @Nullable final LongChunk<OrderedRowKeys> posChunk,
-            @Nullable final Chunk<Values> valuesChunk,
-            @Nullable final LongChunk<? extends Values> timestampValuesChunk) {
-        Assert.neqNull(valuesChunk, "valuesChunk must not be null for a cumulative operator");
-        final Context ctx = (Context) updateContext;
-        ctx.storeValuesChunk(valuesChunk);
-        ctx.timestampValueChunk = timestampValuesChunk;
-        for (int ii = 0; ii < valuesChunk.size(); ii++) {
-            push(ctx, keyChunk == null ? NULL_ROW_KEY : keyChunk.get(ii), ii);
-            ctx.outputValues.set(ii, ctx.curVal);
-        }
-        outputSource.fillFromChunk(ctx.fillContext, ctx.outputValues, inputKeys);
     }
 
     void handleBadData(@NotNull final Context ctx,
@@ -138,8 +121,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         }
 
         if (doReset) {
-            ctx.curVal = null;
-            ctx.lastStamp = NULL_LONG;
+            ctx.reset();
         }
     }
 
@@ -158,8 +140,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         }
 
         if (doReset) {
-            ctx.curVal = null;
-            ctx.lastStamp = NULL_LONG;
+            ctx.reset();
         }
     }
 }

@@ -38,8 +38,28 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             longValueChunk = valuesChunk.asLongChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final long currentVal = longValueChunk.get(pos);
+
+            if (curVal == NULL_LONG) {
+                curVal = currentVal;
+            } else if (currentVal != NULL_LONG) {
+                if ((isMax && currentVal > curVal) ||
+                        (!isMax && currentVal < curVal)) {
+                    curVal = currentVal;
+                }
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_LONG;
         }
     }
 
@@ -62,34 +82,4 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
     }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final long currentVal = ctx.longValueChunk.get(pos);
-
-        if (ctx.curVal == NULL_LONG) {
-            ctx.curVal = currentVal;
-        } else if (currentVal != NULL_LONG) {
-            if ((isMax && currentVal > ctx.curVal) ||
-                    (!isMax && currentVal < ctx.curVal)) {
-                ctx.curVal = currentVal;
-            }
-        }
-    }
-    // region extra-methods
-    @NotNull
-    @Override
-    public Map<String, ColumnSource<?>> getOutputColumns() {
-        final ColumnSource<?> actualOutput;
-        if(type == DateTime.class) {
-            actualOutput = ReinterpretUtils.longToDateTimeSource(outputSource);
-        } else {
-            actualOutput = outputSource;
-        }
-        return Collections.singletonMap(pair.leftColumn, actualOutput);
-    }
-    // endregion extra-methods
 }

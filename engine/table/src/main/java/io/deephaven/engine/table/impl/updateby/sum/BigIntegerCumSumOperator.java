@@ -11,6 +11,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
 
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
+
 public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<BigInteger> {
     protected class Context extends BaseObjectUpdateByOperator<BigInteger>.Context {
         public ObjectChunk<BigInteger, Values> objectValueChunk;
@@ -20,8 +22,28 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final BigInteger currentVal = objectValueChunk.get(pos);
+
+            final boolean isCurrentNull = currentVal == null;
+            if(curVal == null) {
+                curVal = isCurrentNull ? null : currentVal;
+            } else {
+                if(!isCurrentNull) {
+                    curVal = curVal.add(objectValueChunk.get(pos));
+                }
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = null;
         }
     }
 
@@ -34,22 +56,5 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final BigInteger currentVal = ctx.objectValueChunk.get(pos);
-
-        final boolean isCurrentNull = currentVal == null;
-        if(ctx.curVal == null) {
-            ctx.curVal = isCurrentNull ? null : currentVal;
-        } else {
-            if(!isCurrentNull) {
-                ctx.curVal = ctx.curVal.add(ctx.objectValueChunk.get(pos));
-            }
-        }
     }
 }

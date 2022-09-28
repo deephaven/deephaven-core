@@ -12,6 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.math.MathContext;
 
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+
 public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     @NotNull
     private final MathContext mathContext;
@@ -24,8 +26,28 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final BigDecimal currentVal = objectValueChunk.get(pos);
+
+            final boolean isCurrentNull = currentVal == null;
+            if (curVal == null) {
+                curVal = isCurrentNull ? null : currentVal;
+            } else {
+                if (!isCurrentNull) {
+                    curVal = curVal.multiply(objectValueChunk.get(pos), mathContext);
+                }
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = null;
         }
     }
 
@@ -40,22 +62,5 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final BigDecimal currentVal = ctx.objectValueChunk.get(pos);
-
-        final boolean isCurrentNull = currentVal == null;
-        if (ctx.curVal == null) {
-            ctx.curVal = isCurrentNull ? null : currentVal;
-        } else {
-            if (!isCurrentNull) {
-                ctx.curVal = ctx.curVal.multiply(ctx.objectValueChunk.get(pos), mathContext);
-            }
-        }
     }
 }

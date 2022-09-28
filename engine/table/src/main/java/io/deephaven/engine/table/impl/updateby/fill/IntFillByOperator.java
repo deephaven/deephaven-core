@@ -28,8 +28,21 @@ public class IntFillByOperator extends BaseIntUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             intValueChunk = valuesChunk.asIntChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            int currentVal = intValueChunk.get(pos);
+            if(currentVal != NULL_INT) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_INT;
         }
     }
 
@@ -47,16 +60,6 @@ public class IntFillByOperator extends BaseIntUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        int currentVal = ctx.intValueChunk.get(pos);
-        if(currentVal != NULL_INT) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

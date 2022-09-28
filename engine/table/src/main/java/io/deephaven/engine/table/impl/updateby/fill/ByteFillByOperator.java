@@ -28,8 +28,21 @@ public class ByteFillByOperator extends BaseByteUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             byteValueChunk = valuesChunk.asByteChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            byte currentVal = byteValueChunk.get(pos);
+            if(currentVal != NULL_BYTE) {
+                curVal = currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_BYTE;
         }
     }
 
@@ -47,16 +60,6 @@ public class ByteFillByOperator extends BaseByteUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        byte currentVal = ctx.byteValueChunk.get(pos);
-        if(currentVal != NULL_BYTE) {
-            ctx.curVal = currentVal;
-        }
     }
 
     // region extra-methods

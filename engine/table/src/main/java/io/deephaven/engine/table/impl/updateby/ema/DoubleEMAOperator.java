@@ -30,7 +30,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             doubleValueChunk = valuesChunk.asDoubleChunk();
         }
 
@@ -45,6 +45,57 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
             // and the superclass will do the right thing.
             return !Double.isNaN(value) || control.onNanValueOrDefault() != BadDataBehavior.SKIP;
         }
+
+
+        @Override
+        public void push(long key, int pos) {
+            final double input = doubleValueChunk.get(pos);
+            final boolean isNull = input == NULL_DOUBLE;
+            final boolean isNan = Double.isNaN(input);
+
+            if (timestampColumnName == null) {
+                // compute with ticks
+                if(isNull || isNan) {
+                    handleBadData(this, isNull, isNan, false);
+                } else {
+                    if(curVal == NULL_DOUBLE) {
+                        curVal = input;
+                    } else {
+                        curVal = alpha * curVal + (oneMinusAlpha * input);
+                    }
+                }
+            } else {
+                // compute with time
+                final long timestamp = timestampValueChunk.get(pos);
+                final boolean isNullTime = timestamp == NULL_LONG;
+
+
+                // Handle bad data first
+                if (isNull || isNan || isNullTime) {
+                    handleBadData(this, isNull, isNan, isNullTime);
+                } else if (curVal == NULL_DOUBLE) {
+                    // If the data looks good, and we have a null ema,  just accept the current value
+                    curVal = input;
+                    lastStamp = timestamp;
+                } else {
+                    final boolean currentPoisoned = Double.isNaN(curVal);
+                    if (currentPoisoned && lastStamp == NULL_LONG) {
+                        // If the current EMA was a NaN, we should accept the first good timestamp so that
+                        // we can handle reset behavior properly in the following else
+                        lastStamp = timestamp;
+                    } else {
+                        final long dt = timestamp - lastStamp;
+                        if (dt <= 0) {
+                            handleBadTime(this, dt);
+                        } else if (!currentPoisoned) {
+                            final double alpha = Math.exp(-dt / timeScaleUnits);
+                            curVal = alpha * curVal + ((1 - alpha) * input);
+                            lastStamp = timestamp;
+                        }
+                    }
+                }
+            }
+        }        
     }
 
     /**
@@ -74,57 +125,5 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize, inputSource);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        final double input = ctx.doubleValueChunk.get(pos);
-        final boolean isNull = input == NULL_DOUBLE;
-        final boolean isNan = Double.isNaN(input);
-
-        if (timestampColumnName == null) {
-            // compute with ticks
-            if(isNull || isNan) {
-                handleBadData(ctx, isNull, isNan, false);
-            } else {
-                if(ctx.curVal == NULL_DOUBLE) {
-                    ctx.curVal = input;
-                } else {
-                    ctx.curVal = alpha * ctx.curVal + (oneMinusAlpha * input);
-                }
-            }
-        } else {
-            // compute with time
-            final long timestamp = ctx.timestampValueChunk.get(pos);
-            final boolean isNullTime = timestamp == NULL_LONG;
-
-
-            // Handle bad data first
-            if (isNull || isNan || isNullTime) {
-                handleBadData(ctx, isNull, isNan, isNullTime);
-            } else if (ctx.curVal == NULL_DOUBLE) {
-                // If the data looks good, and we have a null ema,  just accept the current value
-                ctx.curVal = input;
-                ctx.lastStamp = timestamp;
-            } else {
-                final boolean currentPoisoned = Double.isNaN(ctx.curVal);
-                if (currentPoisoned && ctx.lastStamp == NULL_LONG) {
-                    // If the current EMA was a NaN, we should accept the first good timestamp so that
-                    // we can handle reset behavior properly in the following else
-                    ctx.lastStamp = timestamp;
-                } else {
-                    final long dt = timestamp - ctx.lastStamp;
-                    if (dt <= 0) {
-                        handleBadTime(ctx, dt);
-                    } else if (!currentPoisoned) {
-                        final double alpha = Math.exp(-dt / timeScaleUnits);
-                        ctx.curVal = alpha * ctx.curVal + ((1 - alpha) * input);
-                        ctx.lastStamp = timestamp;
-                    }
-                }
-            }
-        }
     }
 }

@@ -27,8 +27,25 @@ public class LongCumSumOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void storeValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             longValueChunk = valuesChunk.asLongChunk();
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            // read the value from the values chunk
+            final long currentVal = longValueChunk.get(pos);
+
+            if(curVal == NULL_LONG) {
+                curVal = currentVal == NULL_LONG ? NULL_LONG : currentVal;
+            } else if (currentVal != NULL_LONG) {
+                curVal += currentVal;
+            }
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_LONG;
         }
     }
 
@@ -46,19 +63,5 @@ public class LongCumSumOperator extends BaseLongUpdateByOperator {
     @Override
     public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
         return new Context(chunkSize);
-    }
-
-    @Override
-    public void push(UpdateContext context, long key, int pos) {
-        final Context ctx = (Context) context;
-
-        // read the value from the values chunk
-        final long currentVal = ctx.longValueChunk.get(pos);
-
-        if(ctx.curVal == NULL_LONG) {
-            ctx.curVal = currentVal == NULL_LONG ? NULL_LONG : currentVal;
-        } else if (currentVal != NULL_LONG) {
-            ctx.curVal += currentVal;
-        }
     }
 }
