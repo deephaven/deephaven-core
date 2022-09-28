@@ -299,7 +299,8 @@ public class ModifiedColumnSet {
     public Transformer newTransformer(final String[] columnNames, final ModifiedColumnSet[] columnSets) {
         Assert.eq(columnNames.length, "columnNames.length", columnSets.length, "columnSets.length");
         if (columnNames.length == 0) {
-            return (input, output) -> {};
+            return (input, output) -> {
+            };
         }
 
         final int[] columnBits = new int[columnNames.length];
