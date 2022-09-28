@@ -211,10 +211,10 @@ class Classpaths {
         addDependency(ap, AUTOSERVICE_GROUP, AUTOSERVICE_COMPILER, AUTOSERVICE_VERSION)
     }
 
-    static void inheritImmutables(Project p) {
-        Configuration ap = p.configurations.getByName('annotationProcessor')
+    static void inheritImmutables(Project p, boolean test = false) {
+        Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
         addDependency(ap, IMMUTABLES_GROUP, IMMUTABLES_NAME, IMMUTABLES_VERSION)
-        p.getDependencies().add('compileOnly', p.project(':util-immutables'))
+        p.getDependencies().add(test ? 'testCompileOnly' : 'compileOnly', p.project(':util-immutables'))
     }
 
     static void inheritJUnitClassic(Project p, String configName) {
