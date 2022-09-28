@@ -114,22 +114,22 @@ public class GroovyStaticImports {
     public static  java.lang.Boolean and( java.lang.Boolean[] values, java.lang.Boolean nullValue ) {return Logic.and( values, nullValue );}
     /** @see io.deephaven.function.Logic#and(io.deephaven.vector.BooleanVector,java.lang.Boolean) */
     public static  java.lang.Boolean and( io.deephaven.vector.BooleanVector values, java.lang.Boolean nullValue ) {return Logic.and( values, nullValue );}
-    /** @see io.deephaven.function.Basic#array(byte[]) */
-    public static  io.deephaven.vector.ByteVector array( byte[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(char[]) */
-    public static  io.deephaven.vector.CharVector array( char[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(double[]) */
-    public static  io.deephaven.vector.DoubleVector array( double[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(float[]) */
-    public static  io.deephaven.vector.FloatVector array( float[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(int[]) */
-    public static  io.deephaven.vector.IntVector array( int[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(long[]) */
-    public static  io.deephaven.vector.LongVector array( long[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(short[]) */
-    public static  io.deephaven.vector.ShortVector array( short[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#arrayObj(T[]) */
-    public static <T> io.deephaven.vector.ObjectVector<T> arrayObj( T[] values ) {return Basic.arrayObj( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.ByteVector) */
+    public static  byte[] array( io.deephaven.vector.ByteVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.CharVector) */
+    public static  char[] array( io.deephaven.vector.CharVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.DoubleVector) */
+    public static  double[] array( io.deephaven.vector.DoubleVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.FloatVector) */
+    public static  float[] array( io.deephaven.vector.FloatVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.IntVector) */
+    public static  int[] array( io.deephaven.vector.IntVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.LongVector) */
+    public static  long[] array( io.deephaven.vector.LongVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.ShortVector) */
+    public static  short[] array( io.deephaven.vector.ShortVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#arrayObj(io.deephaven.vector.ObjectVector) */
+    public static <T> T[] arrayObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.arrayObj( values );}
     /** @see io.deephaven.function.Numeric#asin(byte) */
     public static  double asin( byte value ) {return Numeric.asin( value );}
     /** @see io.deephaven.function.Numeric#asin(double) */
@@ -2768,22 +2768,22 @@ public class GroovyStaticImports {
     public static  double var( io.deephaven.vector.LongVector values ) {return Numeric.var( values );}
     /** @see io.deephaven.function.Numeric#var(io.deephaven.vector.ShortVector) */
     public static  double var( io.deephaven.vector.ShortVector values ) {return Numeric.var( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.ByteVector) */
-    public static  byte[] vec( io.deephaven.vector.ByteVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.CharVector) */
-    public static  char[] vec( io.deephaven.vector.CharVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.DoubleVector) */
-    public static  double[] vec( io.deephaven.vector.DoubleVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.FloatVector) */
-    public static  float[] vec( io.deephaven.vector.FloatVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.IntVector) */
-    public static  int[] vec( io.deephaven.vector.IntVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.LongVector) */
-    public static  long[] vec( io.deephaven.vector.LongVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.ShortVector) */
-    public static  short[] vec( io.deephaven.vector.ShortVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vecObj(io.deephaven.vector.ObjectVector) */
-    public static <T> T[] vecObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.vecObj( values );}
+    /** @see io.deephaven.function.Basic#vec(byte[]) */
+    public static  io.deephaven.vector.ByteVector vec( byte[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(char[]) */
+    public static  io.deephaven.vector.CharVector vec( char[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(double[]) */
+    public static  io.deephaven.vector.DoubleVector vec( double[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(float[]) */
+    public static  io.deephaven.vector.FloatVector vec( float[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(int[]) */
+    public static  io.deephaven.vector.IntVector vec( int[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(long[]) */
+    public static  io.deephaven.vector.LongVector vec( long[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(short[]) */
+    public static  io.deephaven.vector.ShortVector vec( short[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vecObj(T[]) */
+    public static <T> io.deephaven.vector.ObjectVector<T> vecObj( T[] values ) {return Basic.vecObj( values );}
     /** @see io.deephaven.function.Numeric#wavg(byte[],byte[]) */
     public static  double wavg( byte[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
     /** @see io.deephaven.function.Numeric#wavg(byte[],double[]) */
