@@ -82,6 +82,7 @@ public abstract class DeephavenApiServerTestBase {
         final DeephavenApiServerTestConfig config = DeephavenApiServerTestConfig.builder()
                 .schedulerPoolSize(4)
                 .tokenExpire(sessionTokenExpireTime())
+                .port(-1)
                 .build();
 
         serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
