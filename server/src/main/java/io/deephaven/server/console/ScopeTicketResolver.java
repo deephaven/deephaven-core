@@ -15,6 +15,7 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
+import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
@@ -204,7 +205,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         if (ticket.remaining() < 3 || ticket.get(ticket.position()) != TICKET_PREFIX
                 || ticket.get(ticket.position() + 1) != '/') {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': found 0x" + byteBufToHex(ticket) + "' (hex)");
+                    "Could not resolve '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + "' (hex)");
         }
 
         final int initialLimit = ticket.limit();
