@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
@@ -13,6 +14,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.deephaven.server.table.validation.ColumnExpressionValidator;
 import io.deephaven.util.FunctionalInterfaces;
 
@@ -42,7 +44,10 @@ public class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableReque
     }
 
     @Override
-    public Table create(final SnapshotTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final SnapshotTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(TableServicePrivilege.CAN_SNAPSHOT);
         final Table lhs;
         final Table rhs;
         if (sourceTables.size() == 1) {

@@ -5,6 +5,7 @@ package io.deephaven.server.table.ops;
 
 import com.google.common.collect.Lists;
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.api.expression.ExpressionException;
 import io.deephaven.engine.table.MatchPair;
@@ -20,6 +21,7 @@ import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -37,6 +39,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     private final Function<T, List<String>> getColAddList;
     private final UpdateGraphProcessor updateGraphProcessor;
     private final RealTableOperation<T> realTableOperation;
+    private final TableServicePrivilege requiredPrivilege;
 
     protected JoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor,
             final Function<BatchTableRequest.Operation, T> getRequest,
@@ -44,12 +47,14 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             final MultiDependencyFunction<T> getDependencies,
             final Function<T, List<String>> getColMatchList,
             final Function<T, List<String>> getColAddList,
-            final RealTableOperation<T> realTableOperation) {
+            final RealTableOperation<T> realTableOperation,
+            final TableServicePrivilege requiredPrivilege) {
         super(getRequest, getTicket, getDependencies);
         this.updateGraphProcessor = updateGraphProcessor;
         this.getColMatchList = getColMatchList;
         this.getColAddList = getColAddList;
         this.realTableOperation = realTableOperation;
+        this.requiredPrivilege = requiredPrivilege;
     }
 
     @Override
@@ -64,7 +69,10 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     }
 
     @Override
-    public Table create(final T request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final T request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(requiredPrivilege);
         Assert.eq(sourceTables.size(), "sourceTables.size()", 2);
 
         final MatchPair[] columnsToMatch;
@@ -102,7 +110,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             super(updateGraphProcessor, BatchTableRequest.Operation::getAsOfJoin, AsOfJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     AsOfJoinTablesRequest::getColumnsToMatchList, AsOfJoinTablesRequest::getColumnsToAddList,
-                    AsOfJoinTablesGrpcImpl::doJoin);
+                    AsOfJoinTablesGrpcImpl::doJoin, TableServicePrivilege.CAN_AS_OF_JOIN_TABLES);
         }
 
         @Override
@@ -142,7 +150,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             super(updateGraphProcessor, BatchTableRequest.Operation::getCrossJoin, CrossJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     CrossJoinTablesRequest::getColumnsToMatchList, CrossJoinTablesRequest::getColumnsToAddList,
-                    CrossJoinTablesGrpcImpl::doJoin);
+                    CrossJoinTablesGrpcImpl::doJoin, TableServicePrivilege.CAN_CROSS_JOIN_TABLES);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
@@ -168,7 +176,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             super(updateGraphProcessor, BatchTableRequest.Operation::getExactJoin, ExactJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     ExactJoinTablesRequest::getColumnsToMatchList, ExactJoinTablesRequest::getColumnsToAddList,
-                    ExactJoinTablesGrpcImpl::doJoin);
+                    ExactJoinTablesGrpcImpl::doJoin, TableServicePrivilege.CAN_EXACT_JOIN_TABLES);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
@@ -189,7 +197,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             super(updateGraphProcessor, BatchTableRequest.Operation::getLeftJoin, LeftJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     LeftJoinTablesRequest::getColumnsToMatchList, LeftJoinTablesRequest::getColumnsToAddList,
-                    LeftJoinTablesGrpcImpl::doJoin);
+                    LeftJoinTablesGrpcImpl::doJoin, TableServicePrivilege.CAN_LEFT_JOIN_TABLES);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
@@ -212,7 +220,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                     NaturalJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     NaturalJoinTablesRequest::getColumnsToMatchList, NaturalJoinTablesRequest::getColumnsToAddList,
-                    NaturalJoinTablesGrpcImpl::doJoin);
+                    NaturalJoinTablesGrpcImpl::doJoin, TableServicePrivilege.CAN_NATURAL_JOIN_TABLES);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,

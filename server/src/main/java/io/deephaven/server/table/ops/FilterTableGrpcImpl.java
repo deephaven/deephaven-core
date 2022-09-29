@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -11,6 +12,7 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.deephaven.server.table.ops.filter.ConvertInvalidInExpressions;
 import io.deephaven.server.table.ops.filter.FilterFactory;
 import io.deephaven.server.table.ops.filter.FlipNonReferenceMatchExpression;
@@ -32,7 +34,10 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
     }
 
     @Override
-    public Table create(final FilterTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final FilterTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(TableServicePrivilege.CAN_FILTER_TABLE);
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         Table sourceTable = sourceTables.get(0).get();
 

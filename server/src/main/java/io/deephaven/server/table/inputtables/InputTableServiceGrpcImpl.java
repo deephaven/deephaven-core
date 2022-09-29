@@ -40,6 +40,7 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
     public void addTableToInputTable(AddTableRequest request, StreamObserver<AddTableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(InputTableServicePrivilege.CAN_ADD_TO_INPUT_TABLE);
 
             SessionState.ExportObject<Table> targetTable =
                     ticketRouter.resolve(session, request.getInputTable(), "inputTable");
@@ -87,6 +88,7 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
             StreamObserver<DeleteTableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(InputTableServicePrivilege.CAN_DELETE_FROM_INPUT_TABLE);
 
             SessionState.ExportObject<Table> targetTable =
                     ticketRouter.resolve(session, request.getInputTable(), "inputTable");

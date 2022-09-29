@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
@@ -11,6 +12,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -33,7 +35,10 @@ public class EmptyTableGrpcImpl extends GrpcTableOperation<EmptyTableRequest> {
     }
 
     @Override
-    public Table create(final EmptyTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final EmptyTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(TableServicePrivilege.CAN_CREATE_EMPTY_TABLE);
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
 
         return TableTools.emptyTable(request.getSize());

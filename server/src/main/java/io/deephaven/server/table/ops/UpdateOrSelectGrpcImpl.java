@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
@@ -12,6 +13,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.deephaven.server.table.validation.ColumnExpressionValidator;
 
 import javax.inject.Inject;
@@ -27,18 +29,24 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
 
     private final RealTableOperation realTableOperation;
     private final boolean requiresSharedLock;
+    private final TableServicePrivilege requiredPrivilege;
 
     protected UpdateOrSelectGrpcImpl(
             final Function<BatchTableRequest.Operation, SelectOrUpdateRequest> getRequest,
-            final RealTableOperation realTableOperation, final boolean requiresSharedLock) {
+            final RealTableOperation realTableOperation,
+            final boolean requiresSharedLock,
+            final TableServicePrivilege requiredPrivilege) {
         super(getRequest, SelectOrUpdateRequest::getResultId, SelectOrUpdateRequest::getSourceId);
         this.realTableOperation = realTableOperation;
         this.requiresSharedLock = requiresSharedLock;
+        this.requiredPrivilege = requiredPrivilege;
     }
 
     @Override
-    public Table create(final SelectOrUpdateRequest request,
+    public Table create(final AuthContext authContext,
+            final SelectOrUpdateRequest request,
             final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(requiredPrivilege);
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
@@ -58,7 +66,8 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     public static class UpdateGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
         public UpdateGrpcImpl() {
-            super(BatchTableRequest.Operation::getUpdate, Table::update, true);
+            super(BatchTableRequest.Operation::getUpdate, Table::update, true,
+                    TableServicePrivilege.CAN_UPDATE);
         }
     }
 
@@ -66,7 +75,8 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     public static class LazyUpdateGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
         public LazyUpdateGrpcImpl() {
-            super(BatchTableRequest.Operation::getLazyUpdate, Table::lazyUpdate, true);
+            super(BatchTableRequest.Operation::getLazyUpdate, Table::lazyUpdate, true,
+                    TableServicePrivilege.CAN_LAZY_UPDATE);
         }
     }
 
@@ -74,7 +84,8 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     public static class ViewGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
         public ViewGrpcImpl() {
-            super(BatchTableRequest.Operation::getView, Table::view, false);
+            super(BatchTableRequest.Operation::getView, Table::view, false,
+                    TableServicePrivilege.CAN_VIEW);
         }
     }
 
@@ -82,7 +93,8 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     public static class UpdateViewGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
         public UpdateViewGrpcImpl() {
-            super(BatchTableRequest.Operation::getUpdateView, Table::updateView, false);
+            super(BatchTableRequest.Operation::getUpdateView, Table::updateView, false,
+                    TableServicePrivilege.CAN_UPDATE_VIEW);
         }
     }
 
@@ -90,7 +102,8 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     public static class SelectGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
         public SelectGrpcImpl() {
-            super(BatchTableRequest.Operation::getSelect, Table::select, true);
+            super(BatchTableRequest.Operation::getSelect, Table::select, true,
+                    TableServicePrivilege.CAN_SELECT);
         }
     }
 }

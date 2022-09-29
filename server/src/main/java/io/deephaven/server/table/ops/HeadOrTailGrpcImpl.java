@@ -4,12 +4,14 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -24,12 +26,15 @@ public abstract class HeadOrTailGrpcImpl extends GrpcTableOperation<HeadOrTailRe
     }
 
     private final RealTableOperation realTableOperation;
+    private final TableServicePrivilege requiredPrivilege;
 
     protected HeadOrTailGrpcImpl(
             final Function<BatchTableRequest.Operation, HeadOrTailRequest> getRequest,
-            final RealTableOperation realTableOperation) {
+            final RealTableOperation realTableOperation,
+            final TableServicePrivilege requiredPrivilege) {
         super(getRequest, HeadOrTailRequest::getResultId, HeadOrTailRequest::getSourceId);
         this.realTableOperation = realTableOperation;
+        this.requiredPrivilege = requiredPrivilege;
     }
 
     @Override
@@ -41,7 +46,10 @@ public abstract class HeadOrTailGrpcImpl extends GrpcTableOperation<HeadOrTailRe
     }
 
     @Override
-    public Table create(final HeadOrTailRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final HeadOrTailRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(requiredPrivilege);
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         return realTableOperation.apply(sourceTables.get(0).get(), request.getNumRows());
     }
@@ -50,7 +58,7 @@ public abstract class HeadOrTailGrpcImpl extends GrpcTableOperation<HeadOrTailRe
     public static class HeadGrpcImpl extends HeadOrTailGrpcImpl {
         @Inject
         public HeadGrpcImpl() {
-            super(BatchTableRequest.Operation::getHead, Table::head);
+            super(BatchTableRequest.Operation::getHead, Table::head, TableServicePrivilege.CAN_HEAD);
         }
     }
 
@@ -58,7 +66,7 @@ public abstract class HeadOrTailGrpcImpl extends GrpcTableOperation<HeadOrTailRe
     public static class TailGrpcImpl extends HeadOrTailGrpcImpl {
         @Inject
         public TailGrpcImpl() {
-            super(BatchTableRequest.Operation::getTail, Table::tail);
+            super(BatchTableRequest.Operation::getTail, Table::tail, TableServicePrivilege.CAN_TAIL);
         }
     }
 }

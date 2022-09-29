@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
@@ -14,6 +15,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.deephaven.server.table.validation.ColumnExpressionValidator;
 import io.grpc.StatusRuntimeException;
 
@@ -30,14 +32,17 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
 
     private final RealTableOperation realTableOperation;
     private final UpdateGraphProcessor updateGraphProcessor;
+    private final TableServicePrivilege requiredPrivilege;
 
     protected HeadOrTailByGrpcImpl(
             final Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
             final RealTableOperation realTableOperation,
-            final UpdateGraphProcessor updateGraphProcessor) {
+            final UpdateGraphProcessor updateGraphProcessor,
+            final TableServicePrivilege requiredPrivilege) {
         super(getRequest, HeadOrTailByRequest::getResultId, HeadOrTailByRequest::getSourceId);
         this.realTableOperation = realTableOperation;
         this.updateGraphProcessor = updateGraphProcessor;
+        this.requiredPrivilege = requiredPrivilege;
     }
 
     @Override
@@ -49,7 +54,10 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     }
 
     @Override
-    public Table create(final HeadOrTailByRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final HeadOrTailByRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(requiredPrivilege);
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
@@ -71,7 +79,8 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     public static class HeadByGrpcImpl extends HeadOrTailByGrpcImpl {
         @Inject
         public HeadByGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
-            super(BatchTableRequest.Operation::getHeadBy, Table::headBy, updateGraphProcessor);
+            super(BatchTableRequest.Operation::getHeadBy, Table::headBy,
+                    updateGraphProcessor, TableServicePrivilege.CAN_HEAD_BY);
         }
     }
 
@@ -79,7 +88,8 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     public static class TailByGrpcImpl extends HeadOrTailByGrpcImpl {
         @Inject
         public TailByGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
-            super(BatchTableRequest.Operation::getTailBy, Table::tailBy, updateGraphProcessor);
+            super(BatchTableRequest.Operation::getTailBy, Table::tailBy,
+                    updateGraphProcessor, TableServicePrivilege.CAN_TAIL_BY);
         }
     }
 }

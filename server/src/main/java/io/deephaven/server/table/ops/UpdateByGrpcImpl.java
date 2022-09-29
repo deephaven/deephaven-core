@@ -15,6 +15,7 @@ import io.deephaven.api.updateby.spec.EmaSpec;
 import io.deephaven.api.updateby.spec.FillBySpec;
 import io.deephaven.api.updateby.spec.TimeScale;
 import io.deephaven.api.updateby.spec.UpdateBySpec;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -33,6 +34,7 @@ import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateByTable.Builder;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -72,7 +74,10 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
     }
 
     @Override
-    public Table create(UpdateByRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final UpdateByRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(TableServicePrivilege.CAN_UPDATE_BY);
         final Table parent = sourceTables.get(0).get();
         final UpdateByControl control = request.hasOptions() ? adaptOptions(request.getOptions()) : null;
         final List<UpdateByOperation> operations =

@@ -280,6 +280,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(TableServicePrivilege.CAN_BATCH);
 
             // step 1: initialize exports
             final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
@@ -338,7 +339,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                                     .build()));
                     onOneResolved.run();
                 }).submit(() -> {
-                    final Table table = exportBuilder.doExport();
+                    final Table table = exportBuilder.doExport(session);
 
                     safelyExecuteLocked(responseObserver,
                             () -> responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, table)));
@@ -355,6 +356,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(TableServicePrivilege.CAN_SUBSCRIBE_EXPORT_TABLE_UPDATES);
+
             final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
             session.addExportListener(listener);
             ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
@@ -367,6 +370,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(TableServicePrivilege.CAN_GET_EXPORTED_TABLE_CREATION_RESPONSE);
 
             if (request.getTicket().isEmpty()) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No request ticket supplied");
@@ -398,7 +402,9 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
      * @param responseObserver the observer that needs to know the result of this rpc
      * @param <T> the protobuf type that configures the behavior of the operation
      */
-    private <T> void oneShotOperationWrapper(final BatchTableRequest.Operation.OpCase op, final T request,
+    private <T> void oneShotOperationWrapper(
+            final BatchTableRequest.Operation.OpCase op,
+            final T request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
@@ -418,7 +424,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .require(dependencies)
                     .onError(responseObserver)
                     .submit(() -> {
-                        final Table result = operation.create(request, dependencies);
+                        final Table result = operation.create(session.getAuthContext(), request, dependencies);
                         safelyExecute(() -> {
                             responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, result));
                             responseObserver.onCompleted();
@@ -483,8 +489,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             exportBuilder.require(dependencies);
         }
 
-        Table doExport() {
-            return operation.create(request, dependencies);
+        Table doExport(final SessionState session) {
+            return operation.create(session.getAuthContext(), request, dependencies);
         }
     }
 }

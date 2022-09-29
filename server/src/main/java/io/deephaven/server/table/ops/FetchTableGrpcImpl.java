@@ -3,11 +3,13 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -20,7 +22,10 @@ public class FetchTableGrpcImpl extends GrpcTableOperation<FetchTableRequest> {
     }
 
     @Override
-    public Table create(FetchTableRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final FetchTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(TableServicePrivilege.CAN_FETCH_TABLE);
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         return sourceTables.get(0).get();
     }

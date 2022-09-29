@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.context;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -12,8 +13,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 public class ExecutionContext {
-
-    public static final ExecutionContext[] ZERO_LENGTH_EXECUTION_CONTEXT_ARRAY = new ExecutionContext[0];
 
     public static Builder newBuilder() {
         return new Builder();
@@ -25,7 +24,8 @@ public class ExecutionContext {
 
     @VisibleForTesting
     public static ExecutionContext createForUnitTests() {
-        return newBuilder()
+        // TODO: should I move this into a test-artifact that uses package private access?
+        return new Builder(new AuthContext.SuperUser())
                 .markSystemic()
                 .newQueryScope()
                 .newQueryLibrary()
@@ -44,7 +44,8 @@ public class ExecutionContext {
         if ((localContext = defaultContext) == null) {
             synchronized (ExecutionContext.class) {
                 if ((localContext = defaultContext) == null) {
-                    localContext = defaultContext = newBuilder().markSystemic().build();
+                    localContext = defaultContext = new Builder(new AuthContext.BlockAllAuthContext())
+                            .markSystemic().build();
                 }
             }
         }
@@ -75,7 +76,7 @@ public class ExecutionContext {
     /**
      * Installs the executionContext to be used for the current thread.
      */
-    static void setContext(final ExecutionContext context) {
+    private static void setContext(final ExecutionContext context) {
         currentContext.set(context);
     }
 
@@ -86,16 +87,19 @@ public class ExecutionContext {
     /** True if this execution context is supplied by the system and not the user. */
     private final boolean isSystemic;
 
+    private final AuthContext authContext;
     private final QueryLibrary queryLibrary;
     private final QueryScope queryScope;
     private final QueryCompiler queryCompiler;
 
     private ExecutionContext(
             final boolean isSystemic,
+            final AuthContext authContext,
             final QueryLibrary queryLibrary,
             final QueryScope queryScope,
             final QueryCompiler queryCompiler) {
         this.isSystemic = isSystemic;
+        this.authContext = authContext;
         this.queryLibrary = Objects.requireNonNull(queryLibrary);
         this.queryScope = Objects.requireNonNull(queryScope);
         this.queryCompiler = Objects.requireNonNull(queryCompiler);
@@ -112,7 +116,22 @@ public class ExecutionContext {
         if (isSystemic == this.isSystemic) {
             return this;
         }
-        return new ExecutionContext(isSystemic, queryLibrary, queryScope, queryCompiler);
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler);
+    }
+
+    /**
+     * Returns, or creates, an execution context with the given value for {@code authContext} and existing values for
+     * the other members. This is not intended to be used by user code.
+     *
+     * @param authContext the auth context to use instead
+     * @return the execution context
+     */
+    public ExecutionContext withAuthContext(final AuthContext authContext) {
+        // TODO: should the result be a composition of existing auth context and the provided?
+        if (authContext == this.authContext) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler);
     }
 
     /**
@@ -168,9 +187,20 @@ public class ExecutionContext {
     public static class Builder {
         private boolean isSystemic = false;
 
+        private final AuthContext authContext;
+
         private QueryLibrary queryLibrary = PoisonedQueryLibrary.INSTANCE;
         private QueryScope queryScope = PoisonedQueryScope.INSTANCE;
         private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
+
+        private Builder() {
+            // propagate the auth context from the current context
+            this(getContext().authContext);
+        }
+
+        private Builder(final AuthContext authContext) {
+            this.authContext = authContext;
+        }
 
         /**
          * A systemic execution context is one that is supplied by the system and not the user. A systemic context will
@@ -303,7 +333,7 @@ public class ExecutionContext {
          */
         @ScriptApi
         public ExecutionContext build() {
-            return new ExecutionContext(isSystemic, queryLibrary, queryScope, queryCompiler);
+            return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler);
         }
     }
 }

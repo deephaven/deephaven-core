@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -15,6 +16,7 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flatbuf.Schema;
 
@@ -55,7 +57,10 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
     }
 
     @Override
-    public Table create(CreateInputTableRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final CreateInputTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(TableServicePrivilege.CAN_CREATE_INPUT_TABLE);
         TableDefinition tableDefinitionFromSchema;
 
         if (request.hasSchema()) {

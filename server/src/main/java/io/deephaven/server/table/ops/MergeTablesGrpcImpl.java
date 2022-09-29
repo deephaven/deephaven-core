@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -12,6 +13,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.table.TableServicePrivilege;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -39,7 +41,10 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
     }
 
     @Override
-    public Table create(final MergeTablesRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AuthContext authContext,
+            final MergeTablesRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        authContext.requirePrivilege(TableServicePrivilege.CAN_MERGE_TABLES);
         Assert.gt(sourceTables.size(), "sourceTables.size()", 0);
 
         final String keyColumn = request.getKeyColumn();

@@ -53,6 +53,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     public void fetchObject(FetchObjectRequest request, StreamObserver<FetchObjectResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(ObjectServicePrivilege.CAN_FETCH_OBJECT);
+
             final String type = request.getSourceId().getType();
             if (type.isEmpty()) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No type supplied");

@@ -14,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.MergeRequest;
 import io.deephaven.proto.backplane.grpc.PartitionByRequest;
 import io.deephaven.proto.backplane.grpc.PartitionByResponse;
 import io.deephaven.proto.backplane.grpc.PartitionedTableServiceGrpc;
+import io.deephaven.server.object.ObjectServicePrivilege;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
@@ -45,6 +46,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     public void partitionBy(PartitionByRequest request, StreamObserver<PartitionByResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(PartitionedTableServicePrivilege.CAN_PARTITION_BY);
 
             SessionState.ExportObject<Table> targetTable =
                     ticketRouter.resolve(session, request.getTableId(), "tableId");
@@ -69,6 +71,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     public void merge(MergeRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(PartitionedTableServicePrivilege.CAN_MERGE);
 
             SessionState.ExportObject<PartitionedTable> partitionedTable =
                     ticketRouter.resolve(session, request.getPartitionedTable(), "partitionedTable");
@@ -98,6 +101,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     public void getTable(GetTableRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(PartitionedTableServicePrivilege.CAN_GET_TABLE);
 
             SessionState.ExportObject<PartitionedTable> partitionedTable =
                     ticketRouter.resolve(session, request.getPartitionedTable(), "partitionedTable");

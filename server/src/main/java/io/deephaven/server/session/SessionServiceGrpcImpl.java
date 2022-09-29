@@ -126,6 +126,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void release(final ReleaseRequest request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = service.getCurrentSession();
+            session.getAuthContext().requirePrivilege(SessionServicePrivilege.CAN_RELEASE);
+
             if (!request.hasId()) {
                 responseObserver
                         .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
@@ -157,6 +159,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void exportFromTicket(ExportRequest request, StreamObserver<ExportResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = service.getCurrentSession();
+
             if (!request.hasSourceId()) {
                 responseObserver
                         .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Source ticket not supplied"));
@@ -174,6 +177,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .require(source)
                     .onError(responseObserver)
                     .submit(() -> {
+                        // require the privilege from within the export runner
+                        session.getAuthContext().requirePrivilege(SessionServicePrivilege.CAN_EXPORT_FROM_TICKET);
                         GrpcUtil.safelyExecute(() -> responseObserver.onNext(ExportResponse.getDefaultInstance()));
                         GrpcUtil.safelyExecute(responseObserver::onCompleted);
                         return source.get();
@@ -186,6 +191,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             final StreamObserver<ExportNotification> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = service.getCurrentSession();
+            session.getAuthContext().requirePrivilege(SessionServicePrivilege.CAN_SUBSCRIBE_EXPORT_NOTIFICATIONS);
 
             session.addExportListener(responseObserver);
             ((ServerCallStreamObserver<ExportNotification>) responseObserver).setOnCancelHandler(() -> {
@@ -199,6 +205,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             StreamObserver<TerminationNotificationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = service.getCurrentSession();
+            session.getAuthContext().requirePrivilege(SessionServicePrivilege.CAN_REQUEST_TERMINATION_NOTIFICATION);
             service.addTerminationListener(session, responseObserver);
         });
     }

@@ -130,6 +130,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             StreamObserver<FieldsChangeUpdate> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            session.getAuthContext().requirePrivilege(ApplicationServicePrivilege.CAN_SUBSCRIBE_LIST_FIELDS);
             final Subscription subscription = new Subscription(session, responseObserver);
 
             final FieldsChangeUpdate.Builder responseBuilder = FieldsChangeUpdate.newBuilder();
