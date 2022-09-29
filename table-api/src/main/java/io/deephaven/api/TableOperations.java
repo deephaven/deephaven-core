@@ -1245,4 +1245,24 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS wavgBy(String weightColumn, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS ungroup();
+
+    TOPS ungroup(boolean nullFill);
+
+    TOPS ungroup(String... columnsToUngroup);
+
+    TOPS ungroup(boolean nullFill, String... columnsToUngroup);
+
+    /**
+     * Ungroups a table by converting arrays into columns.
+     *
+     * @param nullFill indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with
+     *        null values. If set to false, then all arrays should be the same length.
+     * @param columnsToUngroup the columns to ungroup
+     * @return the ungrouped table
+     */
+    TOPS ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup);
+
+    // -------------------------------------------------------------------------------------------
 }

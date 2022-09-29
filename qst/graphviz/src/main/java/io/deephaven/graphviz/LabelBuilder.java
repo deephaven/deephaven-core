@@ -27,6 +27,7 @@ import io.deephaven.qst.table.TableVisitorGeneric;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UngroupTable;
 import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
@@ -196,6 +197,13 @@ public class LabelBuilder extends TableVisitorGeneric {
         sb.append("updateBy([");
         append(Strings::of, updateByTable.groupByColumns(), sb);
         sb.append("],[ todo ])");
+    }
+
+    @Override
+    public void visit(UngroupTable ungroupTable) {
+        sb.append("ungroup(").append(ungroupTable.nullFill()).append(",[");
+        append(Strings::of, ungroupTable.ungroupColumns(), sb);
+        sb.append("])");
     }
 
     private void join(String name, Join j) {

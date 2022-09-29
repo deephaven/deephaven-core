@@ -541,5 +541,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return basicTransform(ct -> ct.selectDistinct(SelectColumn.copyFrom(selectColumns)));
     }
 
+    @Override
+    public PartitionedTable.Proxy ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+        return basicTransform(ct -> ct.ungroup(nullFill, columnsToUngroup));
+    }
+
     // endregion TableOperations Implementation
 }
