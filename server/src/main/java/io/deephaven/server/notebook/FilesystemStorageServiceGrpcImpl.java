@@ -185,7 +185,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
 
             Path path = resolveOrThrow(request.getPath());
             StandardOpenOption option =
-                    request.getNewFile() ? StandardOpenOption.CREATE_NEW : StandardOpenOption.CREATE;
+                    request.getAllowOverwrite() ? StandardOpenOption.CREATE : StandardOpenOption.CREATE_NEW;
             try {
                 Files.write(path, request.getContents().toByteArray(), option);
             } catch (FileAlreadyExistsException alreadyExistsException) {
@@ -206,8 +206,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             Path source = resolveOrThrow(request.getOldPath());
             Path target = resolveOrThrow(request.getNewPath());
 
-            StandardCopyOption[] options = request.getNewFile() ? new StandardCopyOption[0]
-                    : new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING};
+            StandardCopyOption[] options = request.getAllowOverwrite() ? new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING} : new StandardCopyOption[0];
 
             try {
                 Files.move(source, target, options);

@@ -80,9 +80,8 @@ message FetchFileResponse {
 }
 
 message SaveFileRequest {
-  // True to force new file creation and prevent overwriting an existing file, false to allow overwriting
-  // an existing file or creating a new one.
-  bool new_file = 1;
+  // True to permit replacing an existing file, false to require that no file already exists with that name.
+  bool allow_overwrite = 1;
   // The path to the file to write contents to
   string path = 2;
 
@@ -101,9 +100,8 @@ message MoveItemRequest {
   string old_path = 1;
   // The path where the file should be moved to
   string new_path = 2;
-  // True to force new file creation and prevent overwriting an existing file, false to allow overwriting
-  // an existing file or creating a new one.
-  bool new_file = 3;
+  // True to permit replacing an existing file, false to require that no file already exists with that name.
+  bool allow_overwrite = 3;
 }
 
 message MoveItemResponse {
