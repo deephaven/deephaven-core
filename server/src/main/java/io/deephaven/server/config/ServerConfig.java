@@ -29,6 +29,8 @@ public interface ServerConfig {
 
     String HTTP_PORT = "http.port";
 
+    String HTTP_TARGET_URL = "http.targetUrl";
+
     String SCHEDULER_POOL_SIZE = "scheduler.poolSize";
 
     String GRPC_MAX_INBOUND_MESSAGE_SIZE = "grpc.maxInboundMessageSize";
@@ -54,6 +56,10 @@ public interface ServerConfig {
      * <tr>
      * <td>{@value HTTP_PORT}</td>
      * <td>{@link Builder#port(int)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@value HTTP_TARGET_URL}</td>
+     * <td>{@link Builder#targetUrl(String)}</td>
      * </tr>
      * <tr>
      * <td>{@value SCHEDULER_POOL_SIZE}</td>
@@ -82,6 +88,7 @@ public interface ServerConfig {
         int httpSessionExpireMs = config.getIntegerWithDefault(HTTP_SESSION_DURATION_MS, -1);
         String httpHost = config.getStringWithDefault(HTTP_HOST, null);
         int httpPort = config.getIntegerWithDefault(HTTP_PORT, -1);
+        String httpTargetUrl = config.getStringWithDefault(HTTP_TARGET_URL, null);
         int schedulerPoolSize = config.getIntegerWithDefault(SCHEDULER_POOL_SIZE, -1);
         int maxInboundMessageSize = config.getIntegerWithDefault(GRPC_MAX_INBOUND_MESSAGE_SIZE, -1);
         String proxyHint = config.getStringWithDefault(PROXY_HINT, null);
@@ -93,6 +100,9 @@ public interface ServerConfig {
         }
         if (httpPort != -1) {
             builder.port(httpPort);
+        }
+        if (httpTargetUrl != null) {
+            builder.targetUrl(httpTargetUrl);
         }
         if (schedulerPoolSize != -1) {
             builder.schedulerPoolSize(schedulerPoolSize);
@@ -118,6 +128,11 @@ public interface ServerConfig {
      * The port.
      */
     int port();
+
+    /**
+     * The user-accessible target URL.
+     */
+    Optional<String> targetUrl();
 
     /**
      * The optional SSL configuration.
@@ -160,10 +175,40 @@ public interface ServerConfig {
     @Nullable
     Boolean proxyHint();
 
+    /**
+     * Returns {@link #targetUrl()} if set, otherwise computes a reasonable default based on {@link #host()},
+     * {@link #port()}, and {@link #ssl()}.
+     *
+     * @return the target URL or default
+     */
+    default String targetUrlOrDefault() {
+        final Optional<String> targetUrl = targetUrl();
+        if (targetUrl.isPresent()) {
+            return targetUrl.get();
+        }
+        final String host = host().orElse("localhost");
+        final int port = port();
+        if (ssl().isPresent()) {
+            if (port == 443) {
+                return String.format("https://%s", host);
+            } else {
+                return String.format("https://%s:%d", host, port);
+            }
+        } else {
+            if (port == 80) {
+                return String.format("http://%s", host);
+            } else {
+                return String.format("http://%s:%d", host, port);
+            }
+        }
+    }
+
     interface Builder<T, B extends Builder<T, B>> {
         B host(String host);
 
         B port(int port);
+
+        B targetUrl(String targetUrl);
 
         B ssl(SSLConfig ssl);
 
