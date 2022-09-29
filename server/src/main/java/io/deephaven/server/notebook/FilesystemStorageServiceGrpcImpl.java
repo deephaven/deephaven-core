@@ -52,8 +52,10 @@ import static com.google.common.io.Files.asByteSource;
  * Default implementation for the StorageService gRPC service, which will use the filesystem to store files on behalf of
  * authenticated clients.
  *
- * <p>Current implementation only checks if a user is logged in, and doesn't provide finer grained access controls to
- * files.</p>
+ * <p>
+ * Current implementation only checks if a user is logged in, and doesn't provide finer grained access controls to
+ * files.
+ * </p>
  */
 @Singleton
 public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.StorageServiceImplBase {
@@ -206,7 +208,9 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             Path source = resolveOrThrow(request.getOldPath());
             Path target = resolveOrThrow(request.getNewPath());
 
-            StandardCopyOption[] options = request.getAllowOverwrite() ? new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING} : new StandardCopyOption[0];
+            StandardCopyOption[] options =
+                    request.getAllowOverwrite() ? new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING}
+                            : new StandardCopyOption[0];
 
             try {
                 Files.move(source, target, options);
