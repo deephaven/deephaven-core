@@ -8,7 +8,6 @@ import unittest
 
 import jpy
 from deephaven import DHError
-from deephaven.execution_context import make_user_exec_ctx
 
 from deephaven.ugp import exclusive_lock
 from deephaven.table import Table
@@ -36,7 +35,7 @@ class BaseTestCase(unittest.TestCase):
         ...
 
     def setUp(self) -> None:
-        self._execution_context = make_user_exec_ctx().j_exec_ctx.open()
+        self._execution_context = py_dh_session.getExecutionContext().open()
 
     def tearDown(self) -> None:
         self._execution_context.close()

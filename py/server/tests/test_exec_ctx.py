@@ -8,9 +8,10 @@ import unittest
 from deephaven import DHError
 from deephaven import empty_table
 from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
+from tests.testbase import BaseTestCase
 
 
-class ExecCtxTestCase(unittest.TestCase):
+class ExecCtxTestCase(BaseTestCase):
     def test_exec_ctx_threads(self):
 
         def assert_threads_ok(thread_func):
