@@ -122,59 +122,66 @@ struct TypeConverterTraits {
 };
 
 template<>
+struct TypeConverterTraits<char16_t> {
+  typedef arrow::UInt16Type arrowType_t;
+  typedef arrow::UInt16Builder arrowBuilder_t;
+  static const char * const deephavenTypeName;
+};
+
+template<>
 struct TypeConverterTraits<bool> {
   typedef arrow::BooleanType arrowType_t;
   typedef arrow::BooleanBuilder arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<int8_t> {
   typedef arrow::Int8Type arrowType_t;
   typedef arrow::Int8Builder arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<int16_t> {
   typedef arrow::Int16Type arrowType_t;
   typedef arrow::Int16Builder arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<int32_t> {
   typedef arrow::Int32Type arrowType_t;
   typedef arrow::Int32Builder arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<int64_t> {
   typedef arrow::Int64Type arrowType_t;
   typedef arrow::Int64Builder arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<float> {
   typedef arrow::FloatType arrowType_t;
   typedef arrow::FloatBuilder arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<double> {
   typedef arrow::DoubleType arrowType_t;
   typedef arrow::DoubleBuilder arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<>
 struct TypeConverterTraits<std::string> {
   typedef arrow::StringType arrowType_t;
   typedef arrow::StringBuilder arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<typename T>
@@ -182,11 +189,11 @@ struct TypeConverterTraits<std::optional<T>> {
   typedef TypeConverterTraits<T> inner_t;
   typedef typename inner_t::arrowType_t arrowType_t;
   typedef typename inner_t::arrowBuilder_t arrowBuilder_t;
-  static const char *deephavenTypeName;
+  static const char * const deephavenTypeName;
 };
 
 template<typename T>
-const char *TypeConverterTraits<std::optional<T>>::deephavenTypeName =
+const char * const TypeConverterTraits<std::optional<T>>::deephavenTypeName =
     TypeConverterTraits<T>::deephavenTypeName;
 
 template<typename T>

@@ -70,6 +70,10 @@ class TableMakerForTests {
   typedef deephaven::client::TableHandle TableHandle;
 public:
   static TableMakerForTests create();
+  /**
+   * If you just want the Client.
+   */
+  static Client createClient();
 
   TableMakerForTests(TableMakerForTests &&) noexcept;
   TableMakerForTests &operator=(TableMakerForTests &&) noexcept;
@@ -99,7 +103,7 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
     const std::string &columnName, const std::shared_ptr<arrow::Array> &data);
 
 // base case
-inline void compareTableRecurse(int depth, const std::shared_ptr<arrow::Table> &table) {
+inline void compareTableRecurse(int /*depth*/, const std::shared_ptr<arrow::Table> &/*table*/) {
 }
 
 template<typename T, typename... Args>

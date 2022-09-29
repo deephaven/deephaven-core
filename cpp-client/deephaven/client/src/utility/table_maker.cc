@@ -63,13 +63,14 @@ TypeConverter::TypeConverter(std::shared_ptr<arrow::DataType> dataType,
     column_(std::move(column)) {}
     TypeConverter::~TypeConverter() = default;
 
-const char *TypeConverterTraits<bool>::deephavenTypeName = "java.lang.Boolean";
-const char *TypeConverterTraits<int8_t>::deephavenTypeName = "byte";
-const char *TypeConverterTraits<int16_t>::deephavenTypeName = "short";
-const char *TypeConverterTraits<int32_t>::deephavenTypeName = "int";
-const char *TypeConverterTraits<int64_t>::deephavenTypeName = "long";
-const char *TypeConverterTraits<float>::deephavenTypeName = "float";
-const char *TypeConverterTraits<double>::deephavenTypeName = "double";
-const char *TypeConverterTraits<std::string>::deephavenTypeName = "java.lang.String";
+const char * const TypeConverterTraits<char16_t>::deephavenTypeName = "char";
+const char * const TypeConverterTraits<bool>::deephavenTypeName = "java.lang.Boolean";
+const char * const TypeConverterTraits<int8_t>::deephavenTypeName = "byte";
+const char * const TypeConverterTraits<int16_t>::deephavenTypeName = "short";
+const char * const TypeConverterTraits<int32_t>::deephavenTypeName = "int";
+const char * const TypeConverterTraits<int64_t>::deephavenTypeName = "long";
+const char * const TypeConverterTraits<float>::deephavenTypeName = "float";
+const char * const TypeConverterTraits<double>::deephavenTypeName = "double";
+const char * const TypeConverterTraits<std::string>::deephavenTypeName = "java.lang.String";
 }  // namespace internal
 }  // namespace deephaven::client::utility

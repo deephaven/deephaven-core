@@ -53,6 +53,14 @@ public:
   T *end() { return data_.get() + size_; }
   const T *end() const { return data_.get() + size_; }
 
+  T& operator[](size_t index) {
+    return data_.get()[index];
+  }
+
+  const T& operator[](size_t index) const {
+    return data_.get()[index];
+  }
+
 private:
   GenericChunk(std::shared_ptr<T[]> data, size_t size);
 
@@ -66,8 +74,11 @@ private:
 
 typedef GenericChunk<bool> BooleanChunk;
 typedef GenericChunk<int8_t> Int8Chunk;
+typedef GenericChunk<uint8_t> UInt8Chunk;
 typedef GenericChunk<int16_t> Int16Chunk;
+typedef GenericChunk<uint16_t> UInt16Chunk;
 typedef GenericChunk<int32_t> Int32Chunk;
+typedef GenericChunk<uint32_t> UInt32Chunk;
 typedef GenericChunk<int64_t> Int64Chunk;
 typedef GenericChunk<uint64_t> UInt64Chunk;
 typedef GenericChunk<float> FloatChunk;
