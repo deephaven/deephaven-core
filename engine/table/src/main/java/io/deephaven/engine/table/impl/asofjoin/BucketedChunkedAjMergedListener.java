@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl.join;
+package io.deephaven.engine.table.impl.asofjoin;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
@@ -14,10 +14,10 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
-import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
+import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.sized.SizedChunk;
@@ -35,7 +35,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager.*;
+import static io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager.*;
 
 public class BucketedChunkedAjMergedListener extends MergedListener {
     private final JoinListenerRecorder leftRecorder;
@@ -76,7 +76,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
     private final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders =
             new ObjectArraySource<>(RowSetBuilderSequential.class);
-    private final LongArraySource slots = new LongArraySource();
+    private final IntegerArraySource slots = new IntegerArraySource();
 
     public BucketedChunkedAjMergedListener(JoinListenerRecorder leftRecorder,
             JoinListenerRecorder rightRecorder,
@@ -188,7 +188,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final MutableObject<WritableRowSet> leftIndexOutput = new MutableObject<>();
 
                 for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
-                    final long slot = slots.getLong(slotIndex);
+                    final int slot = slots.getInt(slotIndex);
                     final RowSet leftRemoved = indexFromBuilder(slotIndex);
 
                     leftRemoved.forAllRowKeys(rowRedirection::removeVoid);
@@ -245,7 +245,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                             for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
                                 final RowSet shiftedRowSet = indexFromBuilder(slotIndex);
-                                final long slot = slots.getLong(slotIndex);
+                                final int slot = slots.getInt(slotIndex);
                                 final byte state = asOfJoinStateManager.getState(slot);
 
                                 final RowSetShiftData shiftDataForSlot = leftShifted.intersect(shiftedRowSet);
@@ -319,7 +319,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     final WritableLongChunk<RowKeys> rightStampKeys =
                             WritableLongChunk.makeWritableChunk(rightChunkSize)) {
                 for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
-                    final long slot = slots.getLong(slotIndex);
+                    final int slot = slots.getInt(slotIndex);
 
                     try (final RowSet rightRemoved = indexFromBuilder(slotIndex)) {
                         final SegmentedSortedArray rightSsa =
@@ -378,7 +378,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                             for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
                                 final RowSet shiftedRowSet = indexFromBuilder(slotIndex);
-                                final long slot = slots.getLong(slotIndex);
+                                final int slot = slots.getInt(slotIndex);
                                 final byte state = asOfJoinStateManager.getState(slot);
 
                                 final SegmentedSortedArray leftSsa;
@@ -464,7 +464,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     final WritableBooleanChunk<Any> retainStamps =
                             WritableBooleanChunk.makeWritableChunk(rightChunkSize)) {
                 for (int slotIndex = 0; slotIndex < addedSlotCount; ++slotIndex) {
-                    final long slot = slots.getLong(slotIndex);
+                    final int slot = slots.getInt(slotIndex);
 
                     final RowSet rightAdded = indexFromBuilder(slotIndex);
 
@@ -578,7 +578,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         final WritableLongChunk<RowKeys> rightStampIndices =
                                 WritableLongChunk.makeWritableChunk(rightChunkSize)) {
                     for (int slotIndex = 0; slotIndex < modifiedSlotCount; ++slotIndex) {
-                        final long slot = slots.getLong(slotIndex);
+                        final int slot = slots.getInt(slotIndex);
 
                         final RowSet rightModified = indexFromBuilder(slotIndex);
 
@@ -633,7 +633,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     slots, sequentialBuilders);
 
             for (int slotIndex = 0; slotIndex < addedSlotCount; ++slotIndex) {
-                final long slot = slots.getLong(slotIndex);
+                final int slot = slots.getInt(slotIndex);
 
                 boolean makeLeftIndex = false;
                 boolean updateLeftIndex = false;

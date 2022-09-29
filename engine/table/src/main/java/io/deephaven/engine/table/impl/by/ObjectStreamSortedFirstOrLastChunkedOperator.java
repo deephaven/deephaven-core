@@ -138,7 +138,7 @@ public class ObjectStreamSortedFirstOrLastChunkedOperator extends CopyingPermute
     }
 
     @Override
-    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
         copyStreamToResult(resultTable.getRowSet());
         redirections = null;
     }

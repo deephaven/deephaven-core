@@ -4,7 +4,9 @@ plugins {
 }
 
 dependencies {
-    api project(':ParquetHadoop')
+    api project(':ParquetHadoop'),
+        project(':Util')
+
     implementation project(':Configuration')
 
     implementation depCommonsIo

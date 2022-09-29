@@ -15,7 +15,8 @@ from typing import Union, Sequence, List, Any, Optional, Callable
 import jpy
 
 from deephaven import DHError, dtypes
-from deephaven._wrapper import JObjectWrapper
+from deephaven._jpy import strict_cast
+from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
@@ -47,12 +48,18 @@ _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-_JQueryScope = jpy.get_type("io.deephaven.engine.context.QueryScope")
-_JUnsynchronizedScriptSessionQueryScope = jpy.get_type(
-    "io.deephaven.engine.util.AbstractScriptSession$UnsynchronizedScriptSessionQueryScope")
+_JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
-_j_script_session = jpy.cast(_JExecutionContext.getContext().getQueryScope(), _JUnsynchronizedScriptSessionQueryScope).scriptSession()
-_j_py_script_session = jpy.cast(_j_script_session, _JPythonScriptSession)
+
+
+def _j_py_script_session() -> _JPythonScriptSession:
+    j_execution_context = _JExecutionContext.getContext()
+    j_query_scope = j_execution_context.getQueryScope()
+    try:
+        j_script_session_query_scope = strict_cast(j_query_scope, _JScriptSessionQueryScope)
+        return strict_cast(j_script_session_query_scope.scriptSession(), _JPythonScriptSession)
+    except DHError:
+        return None
 
 
 @contextlib.contextmanager
@@ -69,14 +76,15 @@ def _query_scope_ctx():
     # combine the immediate caller's globals and locals into a single dict and use it as the query scope
     caller_frame = outer_frames[i + 1].frame
     function = outer_frames[i + 1].function
-    if len(outer_frames) > i + 2 or function != "<module>":
+    j_py_script_session = _j_py_script_session()
+    if j_py_script_session and (len(outer_frames) > i + 2 or function != "<module>"):
         scope_dict = caller_frame.f_globals.copy()
         scope_dict.update(caller_frame.f_locals)
         try:
-            _j_py_script_session.pushScope(scope_dict)
+            j_py_script_session.pushScope(scope_dict)
             yield
         finally:
-            _j_py_script_session.popScope()
+            j_py_script_session.popScope()
     else:
         # in the __main__ module, use the default main global scope
         yield
@@ -1274,14 +1282,25 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
-    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None) -> Table:
+    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
+               preserve_empty: bool = False, initial_groups: Table = None) -> Table:
         """The agg_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregations specified.
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
-
+            by (Union[str, Sequence[str]]): the group-by column name(s), if not provided, all rows from this table are
+                grouped into a single group of rows before the aggregations are applied to the result, default is None.
+            preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
+                a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
+            initial_groups (Table): a table whose distinct combinations of values for the group-by column(s)
+                should be used to create an initial set of aggregation groups. All other columns are ignored. This is
+                useful in combination with preserve_empty=True to ensure that particular groups appear in the result
+                table, or with preserve_empty=False to control the encounter order for a collection of groups and
+                thus their relative order in the result. Changes to this table are not expected or handled; if this
+                table is a refreshing table, only its contents at instantiation time will be used. Default is None,
+                the result will be the same as if a table is provided but no rows were supplied. When it is provided,
+                the 'by' argument must be provided to explicitly specify the grouping columns.
         Returns:
             a new table
 
@@ -1291,10 +1310,56 @@ class Table(JObjectWrapper):
         try:
             aggs = to_sequence(aggs)
             by = to_sequence(by)
+            if not by and initial_groups:
+                raise ValueError("missing group-by column names when initial_groups is provided.")
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
+            if not by:
+                return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
+            else:
+                j_column_name_list = j_array_list([_JColumnName.of(col) for col in by])
+                initial_groups = unwrap(initial_groups)
+                return Table(
+                    j_table=self.j_table.aggBy(j_agg_list, preserve_empty, initial_groups, j_column_name_list))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
+
+    def partitioned_agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]],
+                           by: Union[str, Sequence[str]] = None, preserve_empty: bool = False,
+                           initial_groups: Table = None) -> PartitionedTable:
+        """The partitioned_agg_by method is a convenience method that performs an agg_by operation on this table and
+        wraps the result in a PartitionedTable. If the argument 'aggs' does not include a partition aggregation
+        created by calling :py:func:`agg.partition`, one will be added automatically with the default constituent column
+        name __CONSTITUENT__.
+
+        Args:
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
+                a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
+            initial_groups (Table): a table whose distinct combinations of values for the group-by column(s)
+                should be used to create an initial set of aggregation groups. All other columns are ignored. This is
+                useful in combination with preserve_empty=True to ensure that particular groups appear in the result
+                table, or with preserve_empty=False to control the encounter order for a collection of groups and
+                thus their relative order in the result. Changes to this table are not expected or handled; if this
+                table is a refreshing table, only its contents at instantiation time will be used. Default is None,
+                the result will be the same as if a table is provided but no rows were supplied. When it is provided,
+                the 'by' argument must be provided to explicitly specify the grouping columns.
+
+        Returns:
+            a PartitionedTable
+
+        Raises:
+            DHError
+        """
+        try:
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            initial_groups = unwrap(initial_groups)
+            return PartitionedTable(
+                j_partitioned_table=self.j_table.partitionedAggBy(j_agg_list, preserve_empty, initial_groups, *by))
+        except Exception as e:
+            raise DHError(e, "table partitioned_agg_by operation failed.") from e
 
     def agg_all_by(self, agg: Aggregation, by: Union[str, Sequence[str]] = None) -> Table:
         """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting

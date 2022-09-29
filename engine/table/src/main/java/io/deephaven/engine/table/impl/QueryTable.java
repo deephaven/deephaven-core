@@ -1137,7 +1137,14 @@ public class QueryTable extends BaseTable {
                 sizeForInstrumentation(), () -> {
                     checkInitiateOperation(rightTable);
 
-                    final Table distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
+                    final Table distinctValues;
+                    final boolean setRefreshing = rightTable.isRefreshing();
+                    if (setRefreshing) {
+                        distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
+                    } else {
+                        distinctValues = rightTable;
+                    }
+
                     final DynamicWhereFilter dynamicWhereFilter =
                             new DynamicWhereFilter((QueryTable) distinctValues, inclusion, columnsToMatch);
                     final Table where = whereInternal(dynamicWhereFilter);

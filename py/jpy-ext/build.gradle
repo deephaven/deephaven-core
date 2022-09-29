@@ -16,6 +16,6 @@ plugins {
 }
 
 dependencies {
-  api 'org.jpyconsortium:jpy:0.11.0'
+  api 'org.jpyconsortium:jpy:0.12.0'
   api project(':deephaven-jpy-config')
 }

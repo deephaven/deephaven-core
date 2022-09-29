@@ -4,17 +4,12 @@
 package io.deephaven.engine.table.impl.snapshot;
 
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.LazySnapshotTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 
@@ -48,7 +43,9 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.resultLeftColumns = resultLeftColumns;
         this.resultRightColumns = resultRightColumns;
         this.resultRowSet = resultRowSet;
-        manage(snapshotTable);
+        if (snapshotTable.isRefreshing()) {
+            manage(snapshotTable);
+        }
         triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(triggerTable);
         snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
     }
@@ -81,29 +78,14 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             }
         }
         if (snapshotPrevLength < snapshotSize) {
-            // If the table got larger then:
-            // - added is (the suffix)
-            // - modified is (the old RowSet)
-            // resultRowSet updated (by including added) for next time
-            final RowSet addedRange = RowSetFactory.fromRange(snapshotPrevLength, snapshotSize - 1);
-            resultRowSet.insert(addedRange);
-            if (notifyListeners) {
-                result.notifyListeners(addedRange, RowSetFactory.empty(), resultRowSet.copy());
-            }
+            resultRowSet.insertRange(snapshotPrevLength, snapshotSize - 1);
         } else if (snapshotPrevLength > snapshotSize) {
-            // If the table got smaller, then:
-            // - removed is (the suffix)
-            // - resultRowSet updated (by removing 'removed') for next time
-            // modified is (just use the new RowSet)
-            final RowSet removedRange = RowSetFactory.fromRange(snapshotSize, snapshotPrevLength - 1);
-            resultRowSet.remove(removedRange);
-            if (notifyListeners) {
-                result.notifyListeners(RowSetFactory.empty(), removedRange, resultRowSet.copy());
-            }
-        } else if (notifyListeners) {
-            // If the table stayed the same size, then modified = the RowSet
-            result.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(),
-                    resultRowSet.copy());
+            resultRowSet.removeRange(snapshotSize, snapshotPrevLength - 1);
+        }
+        if (notifyListeners) {
+            result.notifyListeners(new TableUpdateImpl(
+                    resultRowSet.copy(), resultRowSet.copyPrev(),
+                    RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
         snapshotPrevLength = snapshotTable.size();
     }

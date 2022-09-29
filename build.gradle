@@ -83,8 +83,10 @@ tasks.register('smoke') {
 
 tasks.wrapper {
     Wrapper w ->
-        w.gradleVersion = '6.2.2'
         w.distributionType = 'ALL'
+        w.gradleVersion = '7.5'
+        // if you wish to update the gradleVersion, copy-paste the correct SHA from https://gradle.org/release-checksums
+        w.distributionSha256Sum = '97a52d145762adc241bad7fd18289bf7f6801e08ece6badf80402fe2b9f250b1'
 }
 
 if (findProperty('debugCI') == 'true') {

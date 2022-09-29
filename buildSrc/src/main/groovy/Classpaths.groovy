@@ -46,6 +46,7 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
+    // Note, when updated to 9.0.0+, fix deephaven-core#2923.
     static final String ARROW_VERSION = '7.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
@@ -210,10 +211,10 @@ class Classpaths {
         addDependency(ap, AUTOSERVICE_GROUP, AUTOSERVICE_COMPILER, AUTOSERVICE_VERSION)
     }
 
-    static void inheritImmutables(Project p) {
-        Configuration ap = p.configurations.getByName('annotationProcessor')
+    static void inheritImmutables(Project p, boolean test = false) {
+        Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
         addDependency(ap, IMMUTABLES_GROUP, IMMUTABLES_NAME, IMMUTABLES_VERSION)
-        p.getDependencies().add('compileOnly', p.project(':util-immutables'))
+        p.getDependencies().add(test ? 'testCompileOnly' : 'compileOnly', p.project(':util-immutables'))
     }
 
     static void inheritJUnitClassic(Project p, String configName) {

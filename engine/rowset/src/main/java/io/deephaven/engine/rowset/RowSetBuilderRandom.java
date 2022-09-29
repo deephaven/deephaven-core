@@ -50,6 +50,10 @@ public interface RowSetBuilderRandom {
         addRowKeysChunk(chunk);
     }
 
+    default void addOrderedRowKeysChunk(final LongChunk<OrderedRowKeys> chunk, int offset, int length) {
+        addKeys(new LongChunkIterator(chunk, offset, length));
+    }
+
     default void addOrderedRowKeysChunk(final IntChunk<? extends OrderedRowKeys> chunk) {
         addRowKeysChunk(chunk);
     }

@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.naturaljoin.DuplicateRightRowDecorationException;
 import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 
@@ -36,7 +37,7 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
     }
 
     protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftHashSlots, int hashSlotOffset) {
+            IntegerArraySource leftHashSlots, long hashSlotOffset) {
         final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -50,10 +51,10 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainRightRowKey.set(tableLocation, NO_RIGHT_STATE_VALUE);
-                    leftHashSlots.set(hashSlotOffset++, (long)tableLocation);
+                    leftHashSlots.set(hashSlotOffset++, tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    leftHashSlots.set(hashSlotOffset++, (long)tableLocation);
+                    leftHashSlots.set(hashSlotOffset++, tableLocation);
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -92,7 +93,7 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
     }
 
     protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, int hashSlotOffset) {
+            LongArraySource leftRedirections, long redirectionOffset) {
         final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -108,7 +109,7 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
                         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
                         throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                     }
-                    leftRedirections.set(hashSlotOffset++, rightRowKey);
+                    leftRedirections.set(redirectionOffset++, rightRowKey);
                     found = true;
                     break;
                 }
@@ -116,7 +117,7 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
             if (!found) {
-                leftRedirections.set(hashSlotOffset++, RowSet.NULL_ROW_KEY);
+                leftRedirections.set(redirectionOffset++, RowSet.NULL_ROW_KEY);
             }
         }
     }

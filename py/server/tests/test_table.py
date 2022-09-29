@@ -1,8 +1,6 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
-import jpy
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
@@ -10,6 +8,7 @@ from typing import List, Any
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
+from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
 from deephaven.pandas import to_pandas
 from deephaven.table import Table
@@ -18,10 +17,29 @@ from tests.testbase import BaseTestCase
 
 class TableTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
+        self.aggs = [
+            group(["aggGroup=var"]),
+            avg(["aggAvg=var"]),
+            count_("aggCount"),
+            partition("aggPartition"),
+            first(["aggFirst=var"]),
+            last(["aggLast=var"]),
+            max_(["aggMax=var"]),
+            median(["aggMed=var"]),
+            min_(["aggMin=var"]),
+            pct(0.20, ["aggPct=var"]),
+            std(["aggStd=var"]),
+            sum_(["aggSum=var"]),
+            abs_sum(["aggAbsSum=var"]),
+            var(["aggVar=var"]),
+            weighted_avg("var", ["weights"]),
+        ]
 
     def tearDown(self) -> None:
         self.test_table = None
+        super().tearDown()
 
     def test_repr(self):
         regex = r"deephaven\.table\.Table\(io\.deephaven\.engine\.table\.Table\(objectRef=0x.+\{.+\}\)\)"
@@ -405,30 +423,67 @@ class TableTestCase(BaseTestCase):
             ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
         )
 
-        aggs = [
-            group(["aggGroup=var"]),
-            avg(["aggAvg=var"]),
-            count_("aggCount"),
-            partition("aggPartition"),
-            first(["aggFirst=var"]),
-            last(["aggLast=var"]),
-            max_(["aggMax=var"]),
-            median(["aggMed=var"]),
-            min_(["aggMin=var"]),
-            pct(0.20, ["aggPct=var"]),
-            std(["aggStd=var"]),
-            sum_(["aggSum=var"]),
-            abs_sum(["aggAbsSum=var"]),
-            var(["aggVar=var"]),
-            weighted_avg("var", ["weights"]),
-        ]
+        result_table = test_table.agg_by(self.aggs, ["grp_id"])
+        self.assertEqual(result_table.size, 2)
 
-        result_table = test_table.agg_by(aggs, ["grp_id"])
-        self.assertGreaterEqual(result_table.size, 1)
-
-        for agg in aggs:
+        for agg in self.aggs:
             result_table = test_table.agg_by(agg, "grp_id")
-            self.assertGreaterEqual(result_table.size, 1)
+            self.assertEqual(result_table.size, 2)
+
+    def test_agg_by_initial_groups_preserve_empty(self):
+        test_table = empty_table(10)
+        test_table = test_table.update(
+            ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
+        )
+
+        with self.subTest("no-initial-groups, no-by, preserve_empty only"):
+            t = test_table.where("grp_id > 2")
+            result_table = t.agg_by(self.aggs, preserve_empty=False)
+            self.assertEqual(result_table.size, 0)
+            result_table = t.agg_by(self.aggs, preserve_empty=True)
+            self.assertEqual(result_table.size, 1)
+            print(result_table.to_string())
+
+        with self.subTest("with initial-groups, no-by, and preserve_empty"):
+            init_groups = test_table.update("grp_id=i")
+            # can't specify 'initial-groups' without also specifying 'by'
+            with self.assertRaises(DHError):
+                result_table = test_table.agg_by(self.aggs, initial_groups=init_groups)
+
+        with self.subTest("with initial-groups, by, and preserve_empty"):
+            result_table = test_table.agg_by(self.aggs, by="grp_id", initial_groups=init_groups, preserve_empty=False)
+            self.assertEqual(result_table.size, 2)
+            result_table = test_table.agg_by(self.aggs, by="grp_id", initial_groups=init_groups, preserve_empty=True)
+            self.assertEqual(result_table.size, 10)
+
+    def test_partitioned_agg_by(self):
+        test_table = empty_table(10)
+        test_table = test_table.update(
+            ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
+        )
+
+        with self.subTest("no-initial-groups"):
+            result_pt = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id")
+            self.assertGreaterEqual(result_pt.table.size, 2)
+            self.assertEqual(result_pt.constituent_column, "aggPartition")
+            self.assertEqual(result_pt.key_columns, ["grp_id"])
+            for ct in result_pt.constituent_tables:
+                self.assertEqual(ct.size, 5)
+
+        with self.subTest("initial-groups, preserve_empty=True"):
+            init_groups = test_table.update("grp_id=i")
+            result_pt1 = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id", preserve_empty=True,
+                                                       initial_groups=init_groups)
+            self.assertGreaterEqual(result_pt1.table.size, 10)
+            self.assertTrue(any([ct.size == 0 for ct in result_pt1.constituent_tables]))
+            self.assertTrue(any([ct.size == 5 for ct in result_pt1.constituent_tables]))
+
+        with self.subTest("initial-groups, preserve_empty=False, used to control constituent table order (reversed)"):
+            reversed_init_groups = test_table.update("grp_id=i").reverse()
+            result_pt2 = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id", initial_groups=reversed_init_groups)
+
+            self.assertEqual(result_pt2.table.size, 2)
+            self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
 
     def test_snapshot(self):
         with self.subTest("do_init is False"):
@@ -624,41 +679,24 @@ class TableTestCase(BaseTestCase):
         inner_func("param str")
 
     def test_nested_scopes(self):
-        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-        context = (_JExecutionContext.newBuilder()
-                   .captureQueryCompiler()
-                   .captureQueryLibrary()
-                   .captureQueryScope()
-                   .build())
-
         def inner_func(p) -> str:
-            openContext = context.open()
             t = empty_table(1).update("X = p * 10")
-            openContext.close()
             return t.to_string().split()[2]
 
-        t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+        with make_user_exec_ctx():
+            t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+
         self.assertIn("100", t.to_string())
 
     def test_nested_scope_ticking(self):
-        import jpy
-        _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-        j_context = (_JExecutionContext.newBuilder()
-                     .captureQueryCompiler()
-                     .captureQueryLibrary()
-                     .captureQueryScope()
-                     .build())
-
         def inner_func(p) -> str:
-            open_ctx = j_context.open()
             t = empty_table(1).update("X = p * 10")
-            open_ctx.close()
             return t.to_string().split()[2]
 
-        with ugp.shared_lock():
+        with make_user_exec_ctx(), ugp.shared_lock():
             t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
-        self.wait_ticking_table_update(t, row_count=5, timeout=10)
 
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
         self.assertIn("100", t.to_string())
 
     def test_scope_comprehensions(self):

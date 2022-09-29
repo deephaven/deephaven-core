@@ -11,7 +11,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.GroovyDeephavenSession;
@@ -336,7 +335,7 @@ public class FuzzerTest {
 
     private void validateBindingPartitionedTableConstituents(
             GroovyDeephavenSession session, Map<String, Object> hardReferences) {
-        final ExecutionContext executionContext = ExecutionContext.makeSystemicExecutionContext();
+        final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
         // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof PartitionedTable) {

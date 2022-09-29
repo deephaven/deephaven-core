@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.rowset.RowSet;
 
 public interface IncrementalNaturalJoinStateManager {
-    long getRightIndex(long slot);
-    RowSet getLeftIndex(long slot);
-    String keyString(long slot);
+    long getRightIndex(int slot);
+    RowSet getLeftIndex(int slot);
+    String keyString(int slot);
     void checkExactMatch(boolean exactMatch, long leftKeyIndex, long rightSide);
 }

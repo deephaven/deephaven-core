@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
@@ -36,7 +35,7 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
 /**
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#applyToAllBy}.
  */
-class FormulaChunkedOperator implements StateChangeRecorder, IterativeChunkedAggregationOperator {
+class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     private final GroupByChunkedOperator groupBy;
     private final boolean delegateToBy;
@@ -99,16 +98,6 @@ class FormulaChunkedOperator implements StateChangeRecorder, IterativeChunkedAgg
             // noinspection unchecked
             resultColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(0, formulaColumn.getReturnedType());
         }
-    }
-
-    @Override
-    public void startRecording(LongConsumer reincarnatedDestinationCallback, LongConsumer emptiedDestinationCallback) {
-        groupBy.startRecording(reincarnatedDestinationCallback, emptiedDestinationCallback);
-    }
-
-    @Override
-    public void finishRecording() {
-        groupBy.finishRecording();
     }
 
     @Override
@@ -257,9 +246,9 @@ class FormulaChunkedOperator implements StateChangeRecorder, IterativeChunkedAgg
     }
 
     @Override
-    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
         if (delegateToBy) {
-            groupBy.propagateInitialState(resultTable);
+            groupBy.propagateInitialState(resultTable, startingDestinationsCount);
         }
 
         final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();

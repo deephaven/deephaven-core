@@ -5,7 +5,6 @@ plugins {
 dependencies {
     implementation project(':Base')
     implementation project(':SevenZip')
-    implementation depCommonsCodec
     implementation depCommonsCompress
     testImplementation project(path: ':Base', configuration: 'tests')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')

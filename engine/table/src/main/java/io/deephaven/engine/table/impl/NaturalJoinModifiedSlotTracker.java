@@ -88,7 +88,7 @@ public class NaturalJoinModifiedSlotTracker {
      *
      * @return the cookie for future access
      */
-    public long addMain(final long cookie, final long slot, final long originalRightValue, byte flags) {
+    public long addMain(final long cookie, final int slot, final long originalRightValue, byte flags) {
         if (originalRightValue < 0) {
             flags |= FLAG_RIGHT_ADD;
         }
@@ -100,34 +100,13 @@ public class NaturalJoinModifiedSlotTracker {
     }
 
 
-    /**
-     * Add a slot in the overflow table.
-     *
-     * @param overflow the slot to add (0...n in the overflow table).
-     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification
-     *        (otherwise ignored)
-     *
-     * @return the cookie for future access
-     */
-    long addOverflow(final long cookie, final long overflow, final long originalRightValue, byte flags) {
-        final long slot = IncrementalChunkedNaturalJoinStateManager.overflowToSlot(overflow);
-        if (originalRightValue < 0) {
-            flags |= FLAG_RIGHT_ADD;
-        }
-        if (!isValidCookie(cookie)) {
-            return doAddition(slot, originalRightValue, flags);
-        } else {
-            return updateFlags(cookie, flags);
-        }
-    }
-
-    private long doAddition(final long slot, final long originalRightValue, byte flags) {
+    private long doAddition(final int slot, final long originalRightValue, byte flags) {
         if (pointer == allocated) {
             allocated += CHUNK_SIZE;
             modifiedSlots.ensureCapacity(allocated);
             originalRightValues.ensureCapacity(allocated);
         }
-        modifiedSlots.set(pointer, (slot << FLAG_SHIFT) | flags);
+        modifiedSlots.set(pointer, ((long) slot << FLAG_SHIFT) | flags);
         originalRightValues.set(pointer, originalRightValue);
         return getCookieFromPointer(pointer++);
     }
@@ -142,15 +121,12 @@ public class NaturalJoinModifiedSlotTracker {
     /**
      * For each main and overflow value, call slotConsumer.
      *
-     * Main values are represented as values >= 0. Overflow values are represented as negative values according to
-     * {@link IncrementalChunkedNaturalJoinStateManager#overflowToSlot(long)}.
-     *
      * @param slotConsumer the consumer of our values
      */
     void forAllModifiedSlots(ModifiedSlotConsumer slotConsumer) {
         for (int ii = 0; ii < pointer; ++ii) {
             final long slotAndFlag = modifiedSlots.getLong(ii);
-            final long slot = slotAndFlag >> FLAG_SHIFT;
+            final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
             final byte flag = (byte) (slotAndFlag & FLAG_MASK);
             slotConsumer.accept(slot, originalRightValues.getLong(ii), flag);
         }
@@ -162,13 +138,13 @@ public class NaturalJoinModifiedSlotTracker {
      * @param oldTableLocation the old hash slot
      * @param newTableLocation the new hash slot
      */
-    public void moveTableLocation(long cookie, @SuppressWarnings("unused") long oldTableLocation,
-            long newTableLocation) {
+    public void moveTableLocation(long cookie, @SuppressWarnings("unused") int oldTableLocation,
+            int newTableLocation) {
         if (isValidCookie(cookie)) {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);
             final byte flag = (byte) (existingSlotAndFlag & FLAG_MASK);
-            final long newSlotAndFlag = (newTableLocation << FLAG_SHIFT) | flag;
+            final long newSlotAndFlag = ((long) newTableLocation << FLAG_SHIFT) | flag;
             modifiedSlots.set(pointer, newSlotAndFlag);
         }
     }
@@ -179,17 +155,17 @@ public class NaturalJoinModifiedSlotTracker {
      * @param overflowLocation the old overflow location
      * @param tableLocation the new table location
      */
-    void promoteFromOverflow(long cookie, @SuppressWarnings("unused") long overflowLocation, long tableLocation) {
+    void promoteFromOverflow(long cookie, @SuppressWarnings("unused") int overflowLocation, int tableLocation) {
         if (isValidCookie(cookie)) {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);
             final byte flag = (byte) (existingSlotAndFlag & FLAG_MASK);
-            final long newSlotAndFlag = (tableLocation << FLAG_SHIFT) | flag;
+            final long newSlotAndFlag = ((long) tableLocation << FLAG_SHIFT) | flag;
             modifiedSlots.set(pointer, newSlotAndFlag);
         }
     }
 
     interface ModifiedSlotConsumer {
-        void accept(long slot, long originalRightValue, byte flag);
+        void accept(int slot, long originalRightValue, byte flag);
     }
 }

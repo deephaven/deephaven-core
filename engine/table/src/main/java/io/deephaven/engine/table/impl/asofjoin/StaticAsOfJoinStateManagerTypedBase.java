@@ -10,22 +10,23 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
-import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.JoinControl.MAX_TABLE_SIZE;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAsOfJoinStateManager {
-    public static final int CHUNK_SIZE = 4096;
-    private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
+
     public static final Object EMPTY_RIGHT_STATE = null;
 
     // the number of slots in our table
@@ -100,7 +101,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    static boolean addIndex(ImmutableObjectArraySource<RowSetBuilderSequential> source, long location, long keyToAdd) {
+    static boolean addIndex(ImmutableObjectArraySource<RowSetBuilderSequential> source, int location, long keyToAdd) {
         boolean addedSlot = false;
         RowSetBuilderSequential builder = source.getUnsafe(location);
         if (builder == null) {
@@ -114,11 +115,11 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     /**
      * Returns true if this is the first left row key added to this slot.
      */
-    protected boolean addLeftIndex(long tableLocation, long keyToAdd) {
+    protected boolean addLeftIndex(int tableLocation, long keyToAdd) {
         return addIndex(leftRowSetSource, tableLocation, keyToAdd);
     }
 
-    protected void addRightIndex(long tableLocation, long keyToAdd) {
+    protected void addRightIndex(int tableLocation, long keyToAdd) {
         // noinspection unchecked
         addIndex((ImmutableObjectArraySource) rightRowSetSource, tableLocation, keyToAdd);
     }
@@ -160,10 +161,10 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         }
     }
 
-    private int fillSlotsFromHashTable(@NotNull final LongArraySource slotArray) {
+    private int fillSlotsFromHashTable(@NotNull final IntegerArraySource slotArray) {
         slotArray.ensureCapacity(tableSize);
         long slotCount = 0;
-        for (long slotIdx = 0; slotIdx < tableSize; slotIdx++) {
+        for (int slotIdx = 0; slotIdx < tableSize; slotIdx++) {
             if (rightRowSetSource.get(slotIdx) != EMPTY_RIGHT_STATE) {
                 slotArray.set(slotCount++, slotIdx);
             }
@@ -173,7 +174,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
     @Override
     public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources,
-            @NotNull final LongArraySource addedSlots) {
+            @NotNull final IntegerArraySource addedSlots) {
         if (leftRowSet.isEmpty()) {
             return 0;
         }
@@ -185,7 +186,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
     @Override
     public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources,
-            @NotNull final LongArraySource addedSlots) {
+            @NotNull final IntegerArraySource addedSlots) {
         if (rightRowSet.isEmpty()) {
             return 0;
         }
@@ -222,8 +223,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     private class LeftProbeHandler implements TypedHasherUtil.ProbeHandler {
-        final LongArraySource hashSlots;
-        final MutableInt hashOffset;
+        final IntegerArraySource hashSlots;
+        final MutableLong hashOffset;
         final RowSetBuilderRandom foundBuilder;
 
         private LeftProbeHandler() {
@@ -232,7 +233,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
             this.foundBuilder = null;
         }
 
-        private LeftProbeHandler(final LongArraySource hashSlots, final MutableInt hashOffset,
+        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableLong hashOffset,
                 RowSetBuilderRandom foundBuilder) {
             this.hashSlots = hashSlots;
             this.hashOffset = hashOffset;
@@ -263,13 +264,13 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final LongArraySource slots,
+    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final IntegerArraySource slots,
             RowSetBuilderRandom foundBuilder) {
         if (leftRowSet.isEmpty()) {
             return 0;
         }
         try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
-            final MutableInt slotCount = new MutableInt();
+            final MutableLong slotCount = new MutableLong();
             probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount, foundBuilder));
             return slotCount.intValue();
         }
@@ -290,11 +291,6 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         return tableSize;
     }
 
-    @Override
-    public int getOverflowSize() {
-        return 0;
-    }
-
     /**
      * When we get the left RowSet out of our source (after a build or probe); we do it by pulling a sequential builder
      * and then calling build(). We also null out the value in the column source, thus freeing the builder's memory.
@@ -306,7 +302,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
      * @return the RowSet for this slot
      */
     @Override
-    public RowSet getLeftIndex(long slot) {
+    public RowSet getLeftIndex(int slot) {
         RowSetBuilderSequential builder = (RowSetBuilderSequential) leftRowSetSource.getAndSetUnsafe(slot, null);
         if (builder == null) {
             return null;
@@ -315,7 +311,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public RowSet getRightIndex(long slot) {
+    public RowSet getRightIndex(int slot) {
         if (rightBuildersConverted) {
             return (RowSet) rightRowSetSource.getUnsafe(slot);
         }
@@ -324,9 +320,9 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public void convertRightBuildersToIndex(LongArraySource slots, int slotCount) {
+    public void convertRightBuildersToIndex(IntegerArraySource slots, int slotCount) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
-            final long slot = slots.getLong(slotIndex);
+            final int slot = slots.getInt(slotIndex);
             // this might be empty, if so then set null
             final RowSetBuilderSequential sequentialBuilder =
                     (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
@@ -344,9 +340,9 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
+    public void convertRightGrouping(IntegerArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
-            final long slot = slots.getLong(slotIndex);
+            final int slot = slots.getInt(slotIndex);
 
             final RowSetBuilderSequential sequentialBuilder =
                     (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
@@ -376,7 +372,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource hashSlots, MutableInt hashSlotOffset, RowSetBuilderRandom foundBuilder);
+            IntegerArraySource hashSlots, MutableLong hashSlotOffset, RowSetBuilderRandom foundBuilder);
 
     abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
