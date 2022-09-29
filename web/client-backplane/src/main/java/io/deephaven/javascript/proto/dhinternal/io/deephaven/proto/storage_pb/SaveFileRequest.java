@@ -111,7 +111,10 @@ public class SaveFileRequest {
         String getPath();
 
         @JsProperty
-        boolean isNewFile();
+        boolean isAllowOverwrite();
+
+        @JsProperty
+        void setAllowOverwrite(boolean allowOverwrite);
 
         @JsProperty
         void setContents(SaveFileRequest.ToObjectReturnType.GetContentsUnionType contents);
@@ -127,9 +130,6 @@ public class SaveFileRequest {
             setContents(
                     Js.<SaveFileRequest.ToObjectReturnType.GetContentsUnionType>uncheckedCast(contents));
         }
-
-        @JsProperty
-        void setNewFile(boolean newFile);
 
         @JsProperty
         void setPath(String path);
@@ -177,7 +177,10 @@ public class SaveFileRequest {
         String getPath();
 
         @JsProperty
-        boolean isNewFile();
+        boolean isAllowOverwrite();
+
+        @JsProperty
+        void setAllowOverwrite(boolean allowOverwrite);
 
         @JsProperty
         void setContents(SaveFileRequest.ToObjectReturnType0.GetContentsUnionType contents);
@@ -195,9 +198,6 @@ public class SaveFileRequest {
         }
 
         @JsProperty
-        void setNewFile(boolean newFile);
-
-        @JsProperty
         void setPath(String path);
     }
 
@@ -211,17 +211,19 @@ public class SaveFileRequest {
     public static native SaveFileRequest.ToObjectReturnType toObject(
             boolean includeInstance, SaveFileRequest msg);
 
+    public native boolean getAllowOverwrite();
+
     public native SaveFileRequest.GetContentsUnionType getContents();
 
     public native String getContents_asB64();
 
     public native Uint8Array getContents_asU8();
 
-    public native boolean getNewFile();
-
     public native String getPath();
 
     public native Uint8Array serializeBinary();
+
+    public native void setAllowOverwrite(boolean value);
 
     public native void setContents(SaveFileRequest.SetContentsValueUnionType value);
 
@@ -234,8 +236,6 @@ public class SaveFileRequest {
     public final void setContents(Uint8Array value) {
         setContents(Js.<SaveFileRequest.SetContentsValueUnionType>uncheckedCast(value));
     }
-
-    public native void setNewFile(boolean value);
 
     public native void setPath(String value);
 

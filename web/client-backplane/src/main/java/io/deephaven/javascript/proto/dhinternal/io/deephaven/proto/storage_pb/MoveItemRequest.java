@@ -27,10 +27,10 @@ public class MoveItemRequest {
         String getOldPath();
 
         @JsProperty
-        boolean isNewFile();
+        boolean isAllowOverwrite();
 
         @JsProperty
-        void setNewFile(boolean newFile);
+        void setAllowOverwrite(boolean allowOverwrite);
 
         @JsProperty
         void setNewPath(String newPath);
@@ -53,10 +53,10 @@ public class MoveItemRequest {
         String getOldPath();
 
         @JsProperty
-        boolean isNewFile();
+        boolean isAllowOverwrite();
 
         @JsProperty
-        void setNewFile(boolean newFile);
+        void setAllowOverwrite(boolean allowOverwrite);
 
         @JsProperty
         void setNewPath(String newPath);
@@ -75,7 +75,7 @@ public class MoveItemRequest {
     public static native MoveItemRequest.ToObjectReturnType toObject(
             boolean includeInstance, MoveItemRequest msg);
 
-    public native boolean getNewFile();
+    public native boolean getAllowOverwrite();
 
     public native String getNewPath();
 
@@ -83,7 +83,7 @@ public class MoveItemRequest {
 
     public native Uint8Array serializeBinary();
 
-    public native void setNewFile(boolean value);
+    public native void setAllowOverwrite(boolean value);
 
     public native void setNewPath(String value);
 
