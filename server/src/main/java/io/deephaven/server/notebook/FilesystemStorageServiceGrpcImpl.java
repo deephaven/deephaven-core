@@ -188,14 +188,17 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             Path path = resolveOrThrow(request.getPath());
             StandardOpenOption option =
                     request.getAllowOverwrite() ? StandardOpenOption.CREATE : StandardOpenOption.CREATE_NEW;
+
+            byte[] bytes = request.getContents().toByteArray();
+            String etag = ByteSource.wrap(bytes).hash(HASH_FUNCTION).toString();
             try {
-                Files.write(path, request.getContents().toByteArray(), option);
+                Files.write(path, bytes, option);
             } catch (FileAlreadyExistsException alreadyExistsException) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File already exists");
             } catch (NoSuchFileException noSuchFileException) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Directory does not exist");
             }
-            responseObserver.onNext(SaveFileResponse.getDefaultInstance());
+            responseObserver.onNext(SaveFileResponse.newBuilder().setEtag(etag).build());
             responseObserver.onCompleted();
         });
     }
