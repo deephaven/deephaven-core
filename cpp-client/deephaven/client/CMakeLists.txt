@@ -8,7 +8,6 @@ include(GNUInstallDirs)
 
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
-find_package(Boost REQUIRED)
 find_package(Immer REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
@@ -162,6 +161,8 @@ set(ALL_FILES
     third_party/flatbuffers/include/flatbuffers/vector_downward.h
     third_party/flatbuffers/include/flatbuffers/vector.h
     third_party/flatbuffers/include/flatbuffers/verifier.h
+
+    third_party/roaring/include/roaring/roaring.c
     )
 
 add_library(client ${ALL_FILES})
@@ -170,9 +171,9 @@ add_library(client ${ALL_FILES})
 add_library(deephaven::client ALIAS client)
 target_compile_options(client PRIVATE -Wall -Werror)
 
-target_include_directories(client PRIVATE ${Boost_INCLUDE_DIR})
 target_include_directories(client PRIVATE include/private)
 target_include_directories(client PRIVATE third_party/flatbuffers/include)
+target_include_directories(client PRIVATE third_party/roaring/include)
 target_include_directories(client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
 # Protos and flatbuf are doing their own thing.
@@ -181,7 +182,6 @@ target_include_directories(client PRIVATE "./flatbuf")
 
 target_link_libraries(client PUBLIC arrow_flight_static)
 target_link_libraries(client PUBLIC arrow_static)
-target_link_libraries(client PUBLIC Boost::boost)
 target_link_libraries(client PUBLIC immer)
 target_link_libraries(client PUBLIC protobuf::libprotobuf)
 target_link_libraries(client PUBLIC gRPC::grpc++)

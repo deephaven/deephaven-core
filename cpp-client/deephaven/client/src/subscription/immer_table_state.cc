@@ -197,7 +197,7 @@ std::shared_ptr<Table> ImmerTableState::snapshot() const {
   for (const auto &fv : flexVectors_) {
     columnSources.push_back(fv->makeColumnSource());
   }
-  return std::make_shared<MyTable>(schema_, std::move(columnSources), spaceMapper_.size());
+  return std::make_shared<MyTable>(schema_, std::move(columnSources), spaceMapper_.cardinality());
 }
 
 namespace {
