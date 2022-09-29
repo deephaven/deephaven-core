@@ -65,6 +65,16 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             Configuration.getInstance().getStringWithDefault("storage.path", "<workspace>/storage")
                     .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
 
+    private static final String WEB_LAYOUT_DIRECTORY =
+            Configuration.getInstance().getStringWithDefault("web.storage.layout.directory", "/layouts");
+    private static final String WEB_NOTEBOOK_DIRECTORY =
+            Configuration.getInstance().getStringWithDefault("web.storage.notebook.directory", "/notebooks");
+    private static final String[] PRE_CREATE_PATHS = Configuration.getInstance()
+            .getStringArrayFromPropertyWithDefault("storage.path.defaults", new String[] {
+                    WEB_LAYOUT_DIRECTORY,
+                    WEB_NOTEBOOK_DIRECTORY,
+            });
+
     /**
      * Non-cryptographic hash, not resistant to adversarial collisions, but should suffice for quickly checking for
      * edits to files. We're circumventing the "change the seed each startup", as these hashes should be very low risk,
@@ -80,6 +90,9 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         this.sessionService = sessionService;
         try {
             Files.createDirectories(root);
+            for (String path : PRE_CREATE_PATHS) {
+                Files.createDirectories(resolveOrThrow(path));
+            }
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to initialize storage", e);
         }
