@@ -64,23 +64,26 @@ struct CorrespondingArrowArrayType<deephaven::client::DateTime> {
 
 struct FlexVectorAppender {
   template<typename ARROW_SRC, typename T>
-  static void append(const ARROW_SRC &src, immer::flex_vector<T> *destData,
-      immer::flex_vector<bool> *optionalDestNulls) {
+  static void append(const ARROW_SRC &src, size_t offset, size_t count,
+      immer::flex_vector<T> *destData, immer::flex_vector<bool> *optionalDestNulls) {
 
     auto transientData = destData->transient();
     immer::flex_vector_transient<bool> transientNulls;
     if (optionalDestNulls != nullptr) {
       transientNulls = optionalDestNulls->transient();
     }
-    for (auto optValue : src) {
-      bool isNull = !optValue.has_value();
+    auto beginIt = src.begin() + offset;
+    auto endIt = beginIt + count;
+    for (auto it = beginIt; it != endIt; ++it) {
+      const auto &optElement = *it;
+      bool isNull = !optElement.has_value();
       T value = T();
       if (isNull) {
         if constexpr(deephaven::client::arrowutil::isNumericType<T>()) {
           value = deephaven::client::DeephavenConstantsForType<T>::NULL_VALUE;
         }
       } else {
-        deephaven::client::arrowutil::ArrowValueConverter::convert(*optValue, &value);
+        deephaven::client::arrowutil::ArrowValueConverter::convert(*optElement, &value);
       }
       transientData.push_back(std::move(value));
       if (optionalDestNulls != nullptr) {
@@ -108,7 +111,7 @@ public:
   virtual std::unique_ptr<AbstractFlexVectorBase> take(size_t n) = 0;
   virtual void inPlaceDrop(size_t n) = 0;
   virtual void inPlaceAppend(std::unique_ptr<AbstractFlexVectorBase> other) = 0;
-  virtual void inPlaceAppendArrow(const arrow::Array &data) = 0;
+  virtual void inPlaceAppendArrow(const arrow::Array &data, size_t offset, size_t count) = 0;
 
   virtual std::shared_ptr<ColumnSource> makeColumnSource() const = 0;
 };
@@ -138,11 +141,11 @@ public:
     vec_ = std::move(temp);
   }
 
-  void inPlaceAppendArrow(const arrow::Array &data) final {
+  void inPlaceAppendArrow(const arrow::Array &data, size_t offset, size_t count) final {
     typedef typename internal::CorrespondingArrowArrayType<T>::type_t arrowArrayType_t;
     auto *typedArrow = deephaven::client::utility::verboseCast<const arrowArrayType_t*>(
         DEEPHAVEN_EXPR_MSG(&data));
-    internal::FlexVectorAppender::append(*typedArrow, &vec_, nullptr);
+    internal::FlexVectorAppender::append(*typedArrow, offset, count, &vec_, nullptr);
   }
 
   std::shared_ptr<ColumnSource> makeColumnSource() const final {
@@ -185,11 +188,11 @@ public:
     nulls_ = std::move(tempNulls);
   }
 
-  void inPlaceAppendArrow(const arrow::Array &data) final {
+  void inPlaceAppendArrow(const arrow::Array &data, size_t offset, size_t count) final {
     typedef typename internal::CorrespondingArrowArrayType<T>::type_t arrowArrayType_t;
     auto *typedArrow = deephaven::client::utility::verboseCast<const arrowArrayType_t*>(
         DEEPHAVEN_EXPR_MSG(&data));
-    internal::FlexVectorAppender::append(*typedArrow, &data_, &nulls_);
+    internal::FlexVectorAppender::append(*typedArrow, offset, count, &data_, &nulls_);
   }
 
   std::shared_ptr<ColumnSource> makeColumnSource() const final {

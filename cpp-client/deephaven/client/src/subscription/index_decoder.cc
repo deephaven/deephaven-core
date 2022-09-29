@@ -94,8 +94,10 @@ std::shared_ptr<RowSequence> IndexDecoder::readExternalCompressedDelta(DataInput
         return builder.build();
       }
 
-      default:
-        throw std::runtime_error(stringf("Bad command: %o", command));
+      default: {
+        auto message = stringf("Bad command: %o", command);
+        throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      }
     }
   }
 }
@@ -115,7 +117,8 @@ int64_t DataInput::readValue(int command) {
       return readByte();
     }
     default: {
-      throw std::runtime_error(stringf("Bad command: %o", command));
+      auto message = stringf("Bad command: %o", command);
+      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
   }
 }

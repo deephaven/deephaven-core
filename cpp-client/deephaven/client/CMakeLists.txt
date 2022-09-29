@@ -71,7 +71,6 @@ set(ALL_FILES
     include/public/deephaven/client/container/row_sequence.h
     include/public/deephaven/client/table/table.h
 
-    include/private/deephaven/client/subscription/batch_parser.h
     include/private/deephaven/client/subscription/classic_table_state.h
     include/private/deephaven/client/subscription/immer_table_state.h
     include/private/deephaven/client/subscription/index_decoder.h
@@ -80,7 +79,6 @@ set(ALL_FILES
     include/private/deephaven/client/subscription/subscribe_thread.h
     include/private/deephaven/client/subscription/subscription_handle.h
     include/private/deephaven/client/subscription/update_processor.h
-    src/subscription/batch_parser.cc
     src/subscription/classic_table_state.cc
     src/subscription/immer_table_state.cc
     src/subscription/index_decoder.cc
@@ -186,4 +184,3 @@ target_link_libraries(client PUBLIC immer)
 target_link_libraries(client PUBLIC protobuf::libprotobuf)
 target_link_libraries(client PUBLIC gRPC::grpc++)
 target_link_libraries(client PUBLIC Threads::Threads)
-
