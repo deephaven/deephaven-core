@@ -52,8 +52,8 @@ import static com.google.common.io.Files.asByteSource;
  * Default implementation for the StorageService gRPC service, which will use the filesystem to store files on behalf of
  * authenticated clients.
  *
- * Current implementation only checks if a user is logged in, and doesn't provide finer grained access controls to
- * files.
+ * <p>Current implementation only checks if a user is logged in, and doesn't provide finer grained access controls to
+ * files.</p>
  */
 @Singleton
 public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.StorageServiceImplBase {
@@ -83,12 +83,14 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         }
     }
 
-    private Path resolveOrThrow(String relativePath) {
-        Path resolved = root.resolve(relativePath).normalize();
-        if (resolved.startsWith(root)) {
-            return resolved;
+    private Path resolveOrThrow(String incomingPath) {
+        if (incomingPath.startsWith("/")) {
+            Path resolved = root.resolve(incomingPath.substring(1)).normalize();
+            if (resolved.startsWith(root)) {
+                return resolved;
+            }
         }
-        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + relativePath);
+        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + incomingPath);
     }
 
     @Override
@@ -107,7 +109,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                     }
                     BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
                     boolean isDirectory = attrs.isDirectory();
-                    ItemInfo.Builder info = ItemInfo.newBuilder().setPath(p.getFileName().toString());
+                    ItemInfo.Builder info = ItemInfo.newBuilder()
+                            .setPath("/" + root.relativize(p));
                     if (isDirectory) {
                         info.setType(ItemType.DIRECTORY);
                     } else {

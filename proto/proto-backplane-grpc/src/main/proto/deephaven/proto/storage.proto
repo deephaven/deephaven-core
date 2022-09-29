@@ -14,7 +14,7 @@ option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/stora
  *
  * Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
  *
- * Paths will be "/" delimited and should not start with a leading slash.
+ * Paths will be "/" delimited and must start with a leading slash.
 */
 service StorageService {
   // Lists the files and directories present in a given directory. Will return an error
@@ -90,6 +90,8 @@ message SaveFileRequest {
   bytes contents = 3;
 }
 message SaveFileResponse {
+  // Represents the etag of the saved contents, so the client can check for external changes.
+  optional string etag = 1;
 }
 
 // Requests to move a file to a new path, which may be in a different directory. Presently it is not
