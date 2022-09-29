@@ -68,7 +68,7 @@ public class JsStorageService {
      * Downloads a file at the given path, unless an etag is provided that matches the file's current contents.
      *
      * @param path the path of the file to fetch
-     * @param etag an etag from the last time the client saw this file
+     * @param etag an optional etag from the last time the client saw this file
      * @return a promise containing details about the file's contents, or an error.
      */
     @JsMethod
@@ -112,23 +112,23 @@ public class JsStorageService {
      *
      * @param path the path of the file to write
      * @param contents the contents to write to that path
-     * @param newFile true to force a new file to be created, false to allow an existing file to be overwritten
-     * @return a promise with no value on success, or an error.
+     * @param allowOverwrite true to allow an existing file to be overwritten, false or skip to require a new file
+     * @return a promise with a FileContents, holding only the new etag (if the server emitted one), or an error
      */
     @JsMethod
-    public Promise<Void> saveFile(String path, FileContents contents, @JsOptional Boolean newFile) {
+    public Promise<FileContents> saveFile(String path, FileContents contents, @JsOptional Boolean allowOverwrite) {
         return contents.arrayBuffer().then(ab -> {
             SaveFileRequest req = new SaveFileRequest();
             req.setContents(new Uint8Array(ab));
             req.setPath(path);
 
-            if (newFile != null) {
-                req.setNewFile(newFile);
+            if (allowOverwrite != null) {
+                req.setAllowOverwrite(allowOverwrite);
             }
 
             return Callbacks
                     .<SaveFileResponse, Object>grpcUnaryPromise(c -> client().saveFile(req, metadata(), c::apply))
-                    .then(response -> Promise.resolve((Void) null));
+                    .then(response -> Promise.resolve(new FileContents(response.getEtag())));
         });
     }
 
@@ -140,17 +140,17 @@ public class JsStorageService {
      *
      * @param oldPath the path of the existing item
      * @param newPath the new path to move the item to
-     * @param newFile true to forbid an existing file be created, false to allow an existing file to be overwritten
+     * @param allowOverwrite true to allow an existing file to be overwritten, false or skip to require a new file
      * @return a promise with no value on success, or an error.
      */
     @JsMethod
-    public Promise<Void> moveItem(String oldPath, String newPath, @JsOptional Boolean newFile) {
+    public Promise<Void> moveItem(String oldPath, String newPath, @JsOptional Boolean allowOverwrite) {
         MoveItemRequest req = new MoveItemRequest();
         req.setOldPath(oldPath);
         req.setNewPath(newPath);
 
-        if (newFile != null) {
-            req.setNewFile(newFile);
+        if (allowOverwrite != null) {
+            req.setAllowOverwrite(allowOverwrite);
         }
 
         return Callbacks.<MoveItemResponse, Object>grpcUnaryPromise(c -> client().moveItem(req, metadata(), c::apply))
