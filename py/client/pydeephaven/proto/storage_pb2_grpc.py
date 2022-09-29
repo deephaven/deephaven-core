@@ -11,7 +11,7 @@ class StorageServiceStub(object):
 
     Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
 
-    Paths will be "/" delimited and should not start with a leading slash.
+    Paths will be "/" delimited and must start with a leading slash.
     """
 
     def __init__(self, channel):
@@ -58,7 +58,7 @@ class StorageServiceServicer(object):
 
     Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
 
-    Paths will be "/" delimited and should not start with a leading slash.
+    Paths will be "/" delimited and must start with a leading slash.
     """
 
     def ListItems(self, request, context):
@@ -150,7 +150,7 @@ class StorageService(object):
 
     Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
 
-    Paths will be "/" delimited and should not start with a leading slash.
+    Paths will be "/" delimited and must start with a leading slash.
     """
 
     @staticmethod
