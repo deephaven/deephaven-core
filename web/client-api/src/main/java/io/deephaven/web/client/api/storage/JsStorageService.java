@@ -72,7 +72,7 @@ public class JsStorageService {
      * @return a promise containing details about the file's contents, or an error.
      */
     @JsMethod
-    public Promise<FileContents> loadFile(String path, @JsOptional String etag) {
+    public Promise<JsFileContents> loadFile(String path, @JsOptional String etag) {
         FetchFileRequest req = new FetchFileRequest();
         req.setPath(path);
         if (etag != null) {
@@ -81,11 +81,11 @@ public class JsStorageService {
         return Callbacks.<FetchFileResponse, Object>grpcUnaryPromise(c -> client().fetchFile(req, metadata(), c::apply))
                 .then(response -> {
                     if (response.hasEtag() && response.getEtag().equals(etag)) {
-                        return Promise.resolve(new FileContents(etag));
+                        return Promise.resolve(new JsFileContents(etag));
                     }
                     Blob contents = new Blob(JsArray.of(
                             Blob.ConstructorBlobPartsArrayUnionType.of(response.getContents_asU8().slice().buffer)));
-                    return Promise.resolve(new FileContents(contents, response.getEtag()));
+                    return Promise.resolve(new JsFileContents(contents, response.getEtag()));
                 });
     }
 
@@ -116,7 +116,7 @@ public class JsStorageService {
      * @return a promise with a FileContents, holding only the new etag (if the server emitted one), or an error
      */
     @JsMethod
-    public Promise<FileContents> saveFile(String path, FileContents contents, @JsOptional Boolean allowOverwrite) {
+    public Promise<JsFileContents> saveFile(String path, JsFileContents contents, @JsOptional Boolean allowOverwrite) {
         return contents.arrayBuffer().then(ab -> {
             SaveFileRequest req = new SaveFileRequest();
             req.setContents(new Uint8Array(ab));
@@ -128,7 +128,7 @@ public class JsStorageService {
 
             return Callbacks
                     .<SaveFileResponse, Object>grpcUnaryPromise(c -> client().saveFile(req, metadata(), c::apply))
-                    .then(response -> Promise.resolve(new FileContents(response.getEtag())));
+                    .then(response -> Promise.resolve(new JsFileContents(response.getEtag())));
         });
     }
 

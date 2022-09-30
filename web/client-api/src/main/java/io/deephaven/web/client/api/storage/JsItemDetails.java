@@ -36,7 +36,7 @@ public class JsItemDetails {
 
     @JsProperty
     public String getBasename() {
-        return path.substring(path.lastIndexOf('/')) + 1;
+        return path.substring(path.lastIndexOf('/') + 1);
     }
 
     @JsProperty
