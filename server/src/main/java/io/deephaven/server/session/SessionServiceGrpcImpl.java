@@ -295,7 +295,12 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 try {
                     session = service.getSessionForAuthToken(token);
                 } catch (AuthenticationException e) {
-                    call.close(Status.UNAUTHENTICATED, new Metadata());
+                    try {
+                        call.close(Status.UNAUTHENTICATED, new Metadata());
+                    } catch (IllegalStateException ignored) {
+                        // could be thrown if the call was already closed. As an interceptor, we can't throw,
+                        // so ignoring this and just returning the no-op listener.
+                    }
                     return new ServerCall.Listener<>() {};
                 }
             }
