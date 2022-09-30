@@ -108,6 +108,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + incomingPath);
     }
 
+    private void requireNotRoot(Path path, String message) {
+        if (path.equals(root)) {
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, message);
+        }
+    }
+
     @Override
     public void listItems(ListItemsRequest request, StreamObserver<ListItemsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
@@ -199,6 +205,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             sessionService.getCurrentSession();
 
             Path path = resolveOrThrow(request.getPath());
+            requireNotRoot(path, "Can't overwrite the root directory");
             StandardOpenOption option =
                     request.getAllowOverwrite() ? StandardOpenOption.CREATE : StandardOpenOption.CREATE_NEW;
 
@@ -223,6 +230,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
 
             Path source = resolveOrThrow(request.getOldPath());
             Path target = resolveOrThrow(request.getNewPath());
+            requireNotRoot(target, "Can't overwrite the root directory");
 
             StandardCopyOption[] options =
                     request.getAllowOverwrite() ? new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING}
@@ -235,6 +243,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             } catch (FileAlreadyExistsException alreadyExistsException) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "File already exists, cannot rename to replace");
+            } catch (DirectoryNotEmptyException directoryNotEmptyException) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot replace non-empty directory");
             }
             responseObserver.onNext(MoveItemResponse.getDefaultInstance());
             responseObserver.onCompleted();
@@ -248,6 +258,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             sessionService.getCurrentSession();
 
             Path dir = resolveOrThrow(request.getPath());
+            requireNotRoot(dir, "Can't overwrite the root directory");
+
             try {
                 Files.createDirectory(dir);
             } catch (FileAlreadyExistsException fileAlreadyExistsException) {
@@ -268,6 +280,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             sessionService.getCurrentSession();
 
             Path path = resolveOrThrow(request.getPath());
+            requireNotRoot(path, "Can't delete the root directory");
+
             try {
                 Files.delete(path);
             } catch (NoSuchFileException noSuchFileException) {
