@@ -77,13 +77,13 @@ public final class JsTypeDistribution extends JsTypeBase {
         Files.walkFileTree(src, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                Files.copy(dir, dest.resolve(src.relativize(dir)));
+                Files.copy(dir, dest.resolve(src.relativize(dir).toString()));
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.copy(file, dest.resolve(src.relativize(file)));
+                Files.copy(file, dest.resolve(src.relativize(file).toString()));
                 return FileVisitResult.CONTINUE;
             }
         });

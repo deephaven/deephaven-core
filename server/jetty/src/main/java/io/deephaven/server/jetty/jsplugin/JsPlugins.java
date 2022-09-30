@@ -4,6 +4,8 @@
 package io.deephaven.server.jetty.jsplugin;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import io.deephaven.plugin.type.JsType;
 import io.deephaven.plugin.type.JsTypeRegistration;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -13,6 +15,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,7 +39,8 @@ public final class JsPlugins implements JsTypeRegistration {
      * @throws IOException if an I/O exception occurs
      */
     public static JsPlugins create() throws IOException {
-        final JsPlugins jsPlugins = new JsPlugins(Files.createTempDirectory(JsPlugins.class.getName()));
+        final FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
+        final JsPlugins jsPlugins = new JsPlugins(fs.getPath("/"));
         jsPlugins.writeManifest(); // empty manifest
         return jsPlugins;
     }
@@ -57,9 +61,9 @@ public final class JsPlugins implements JsTypeRegistration {
      */
     public ServletHolder servletHolder(String name) {
         final ServletHolder jsPlugins = new ServletHolder(name, DefaultServlet.class);
-        jsPlugins.setInitParameter("resourceBase", path.toString());
+        jsPlugins.setInitParameter("resourceBase", path.toUri().toString());
         jsPlugins.setInitParameter("pathInfoOnly", "true");
-        jsPlugins.setInitParameter("dirAllowed", "true");
+        jsPlugins.setInitParameter("dirAllowed", "false");
         jsPlugins.setAsyncSupported(true);
         return jsPlugins;
     }

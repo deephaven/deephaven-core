@@ -11,6 +11,8 @@ dependencies {
     }
     runtimeOnly(project(':web'))
 
+    implementation 'com.google.jimfs:jimfs:1.2'
+
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)
 
