@@ -472,7 +472,8 @@ class BatchTableRequestBuilder {
         public void visit(UngroupTable ungroupTable) {
             final UngroupRequest.Builder request = UngroupRequest.newBuilder()
                     .setResultId(ticket)
-                    .setSourceId(ref(ungroupTable.parent()));
+                    .setSourceId(ref(ungroupTable.parent()))
+                    .setNullFill(ungroupTable.nullFill());
             for (ColumnName ungroupColumn : ungroupTable.ungroupColumns()) {
                 request.addColumnsToUngroup(ungroupColumn.name());
             }
