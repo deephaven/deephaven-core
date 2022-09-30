@@ -122,7 +122,7 @@ public class TableViewportSubscription extends HasEventHandling {
                     batcher.setFlat(true);
                 });
                 // TODO handle updateInterval core#188
-                Column[] columnsToSub = table.isStreamTable() ? table.getColumns().asArray(columns) : columns;
+                Column[] columnsToSub = table.isStreamTable() ? table.getColumns().asArray(new Column[0]) : columns;
                 table.setInternalViewport(firstRow, lastRow, columnsToSub);
 
                 // Listen for events and refire them on ourselves, optionally on the original table
