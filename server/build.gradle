@@ -9,6 +9,7 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':extensions-parquet-table')
     implementation project(':extensions-jdbc')
+    implementation project(':extensions-json')
     implementation project(':Util');
     implementation project(':Integrations')
     implementation project(':FishUtil')

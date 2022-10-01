@@ -6,6 +6,7 @@ package io.deephaven.time;
 import io.deephaven.base.CompareUtils;
 import io.deephaven.base.clock.TimeZones;
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.util.DateUtil;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
@@ -15,6 +16,7 @@ import org.joda.time.LocalTime;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class TestDateTimeUtils extends BaseArrayTestCase {
 
@@ -699,6 +701,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dateTime3 = DateTimeUtils.convertDateTime("2050-07-31T20:40 NY");
         TestCase.assertEquals(dateTime3,
                 DateTimeUtils.toDateTime(DateTimeUtils.getZonedDateTime(dateTime3, TimeZone.TZ_NY)));
+    }
+
+    public void testInstantToTime() {
+        final Instant instant = Instant.from(DateTimeFormatter.ISO_INSTANT.parse("2020-07-31T20:40:50.987654321Z"));
+        final DateTime dateTime = DateTimeUtils.instantToTime(instant);
+        Assert.equals(instant, "instant", dateTime.getInstant(), "dateTime.getInstant()");
+
+        final Instant instantFromDatetimeManual = Instant.ofEpochSecond(dateTime.getMillis() / 1000, dateTime.getMillis() % 1000L * 1_000_000L + dateTime.getNanosPartial());
+        Assert.equals(instant, "instant", instantFromDatetimeManual, "dateTime.getInstant()");
     }
 
     public void testISO8601() {

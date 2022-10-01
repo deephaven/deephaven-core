@@ -1222,11 +1222,20 @@ public class DateTimeUtils {
      * Converts a value of seconds from Epoch in the UTC time zone to a {@link DateTime}.
      *
      * @param seconds The long seconds value to convert.
-     * @return {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a {@link DateTime} representation of
-     *         the input.
+     * @return {@code null} if the input is null, otherwise, a {@link DateTime} representation of the input.
      */
     public static DateTime secondsToTime(long seconds) {
         return nanosToTime(secondsToNanos(seconds));
+    }
+
+    /**
+     * Converts an {@link Instant} to a {@code DateTime}.
+     * @param instant The instant to convert.
+     * @return {@code null} if the input is null, otherwise, a {@link DateTime} representation of the input.
+     */
+    public static DateTime instantToTime(Instant instant) {
+        if (instant == null) return null;
+        return new DateTime(Math.addExact(instant.getEpochSecond() * SECOND, instant.getNano()));
     }
 
     /**

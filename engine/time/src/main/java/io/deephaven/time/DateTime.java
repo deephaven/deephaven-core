@@ -65,7 +65,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return a new DateTime initialized to the current time.
      */
     public static DateTime now() {
-        return new DateTime(MicroTimer.currentTimeMicros() * 1000);
+        return new DateTime(MicroTimer.currentTimeMicros() * 1_000);
     }
 
     /**
@@ -92,7 +92,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return the number of microseconds since the epoch
      */
     public long getMicros() {
-        return nanos / 1000;
+        return nanos / 1_000;
     }
 
     /**
@@ -101,7 +101,11 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return the number of milliseconds since the epoch
      */
     public long getMillis() {
-        return nanos / 1000000;
+        return nanos / 1_000_000;
+    }
+
+    public long getSeconds() {
+        return nanos / 1_000_000_000;
     }
 
     /**
@@ -110,7 +114,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return the number of nanoseconds after the nearest millisecond.
      */
     public long getNanosPartial() {
-        return nanos % 1000000;
+        return nanos % 1_000_000;
     }
 
     /**
@@ -154,8 +158,8 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return a Java Instant representing this DateTime
      */
     public Instant getInstant() {
-        long epochSecond = nanos / 1000000000;
-        long nanoAdjustment = nanos % 1000000000;
+        long epochSecond = nanos / 1_000_000_000;
+        long nanoAdjustment = nanos % 1_000_000_000;
         return Instant.ofEpochSecond(epochSecond, nanoAdjustment);
     }
 
