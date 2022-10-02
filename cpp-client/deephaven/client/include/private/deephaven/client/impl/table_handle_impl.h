@@ -37,11 +37,8 @@ class TableHandleManagerImpl;
 namespace internal {
 class GetColumnDefsCallback;
 
-class LazyState final
+class EtcCallback final
     : public deephaven::client::utility::SFCallback<io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse> {
-  struct Private {
-  };
-
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::client::server::Server Server;
@@ -56,33 +53,54 @@ class LazyState final
   using CBFuture = deephaven::client::utility::CBFuture<T>;
 
 public:
-  static std::shared_ptr<LazyState> create(std::shared_ptr<Server> server,
-      std::shared_ptr<Executor> flightExecutor);
-  static std::shared_ptr<LazyState> createSatisfied(std::shared_ptr<Server> server,
-      std::shared_ptr<Executor> flightExecutor, Ticket ticket);
-
-  LazyState(Private, std::shared_ptr<Server> &&server, std::shared_ptr<Executor> &&flightExecutor);
-  ~LazyState() final;
-
-  void waitUntilReady();
+  explicit EtcCallback(CBPromise<Ticket> &&ticketPromise);
+  ~EtcCallback() final;
 
   void onSuccess(ExportedTableCreationResponse item) final;
   void onFailure(std::exception_ptr ep) final;
 
+private:
+  CBPromise<Ticket> ticketPromise_;
+
+  friend class GetColumnDefsCallback;
+};
+
+class LazyState final {
+  typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
+  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
+  typedef deephaven::client::server::Server Server;
+  typedef deephaven::client::utility::ColumnDefinitions ColumnDefinitions;
+  typedef deephaven::client::utility::Executor Executor;
+
+  template<typename T>
+  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  template<typename T>
+  using CBPromise = deephaven::client::utility::CBPromise<T>;
+  template<typename T>
+  using CBFuture = deephaven::client::utility::CBFuture<T>;
+
+public:
+  LazyState(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
+      CBFuture<Ticket> ticketFuture);
+  ~LazyState();
+
   std::shared_ptr<ColumnDefinitions> getColumnDefinitions();
-  void
-  getColumnDefinitionsAsync(std::shared_ptr<SFCallback<std::shared_ptr<ColumnDefinitions>>> cb);
+  void getColumnDefinitionsAsync(
+      std::shared_ptr<SFCallback<std::shared_ptr<ColumnDefinitions>>> cb);
+
+  /**
+   * Used in tests.
+   */
+  void waitUntilReady();
 
 private:
   std::shared_ptr<Server> server_;
   std::shared_ptr<Executor> flightExecutor_;
-
-  CBPromise<Ticket> ticketPromise_;
   CBFuture<Ticket> ticketFuture_;
+  std::atomic_flag requestSent_ = {};
+
   CBPromise<std::shared_ptr<ColumnDefinitions>> colDefsPromise_;
   CBFuture<std::shared_ptr<ColumnDefinitions>> colDefsFuture_;
-
-  std::weak_ptr<LazyState> weakSelf_;
 
   friend class GetColumnDefsCallback;
 };
@@ -106,14 +124,15 @@ class TableHandleImpl {
   template<typename ...Args>
   using SFCallback = deephaven::client::utility::SFCallback<Args...>;
 public:
-  static std::shared_ptr<internal::LazyState> createEtcCallback(const TableHandleManagerImpl *thm);
+  static std::pair<std::shared_ptr<internal::EtcCallback>, std::shared_ptr<internal::LazyState>>
+  createEtcCallback(const TableHandleManagerImpl *thm);
+
   // Create a callback that is already satisfied by "ticket".
-  static std::shared_ptr<internal::LazyState>
-  createSatisfiedCallback(const TableHandleManagerImpl *thm,
-      Ticket ticket);
+//  static std::shared_ptr<internal::EtcCallback>createSatisfiedCallback(
+//      const TableHandleManagerImpl *thm, Ticket ticket);
 
   static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<TableHandleManagerImpl> thm,
-      Ticket ticket, std::shared_ptr<internal::LazyState> etcCallback);
+      Ticket ticket, std::shared_ptr<internal::LazyState> lazyState);
   TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&thm,
       Ticket &&ticket, std::shared_ptr<internal::LazyState> &&lazyState);
   ~TableHandleImpl();
@@ -179,7 +198,9 @@ public:
   std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
   void unsubscribe(std::shared_ptr<SubscriptionHandle> handle);
 
-  // For debugging
+  /**
+   * Used in tests.
+   */
   void observe();
 
   const std::shared_ptr<TableHandleManagerImpl> &managerImpl() const { return managerImpl_; }
