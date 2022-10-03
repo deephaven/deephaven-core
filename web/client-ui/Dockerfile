@@ -1,7 +1,7 @@
 FROM deephaven/node:local-build
 WORKDIR /usr/src/app
 
-ARG WEB_VERSION=0.17.0
+ARG WEB_VERSION=0.19.0
 
 # Pull in the published code-studio package from npmjs and extract is
 RUN set -eux; \
