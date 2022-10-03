@@ -101,7 +101,7 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
     }
     dockerfile {
         // share the common base image to keep it simple
-        from 'deephaven/server:local-build'
+        from 'deephaven/server-netty:local-build'
 
         runCommand('''set -eux; \\
                       apt-get update; \\
