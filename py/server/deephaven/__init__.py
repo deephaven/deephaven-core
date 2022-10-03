@@ -7,9 +7,8 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
-import os
 
-__version__ = os.environ.get('DEEPHAVEN_VERSION') or "0.17.0"
+__version__ = "0.17.0"
 
 from deephaven_internal import jvm
 try:
@@ -25,3 +24,16 @@ from .stream.kafka import consumer as kafka_consumer
 from .stream.kafka import producer as kafka_producer
 from .table_factory import empty_table, time_table, merge, merge_sorted, new_table, DynamicTableWriter
 from .replay import TableReplayer
+
+def print_version():
+    """Print the version of Deephaven, java and the DEEPHAVEN_VERSION environment variable (if it is set)"""
+    from os import environ
+    from jpy import get_type
+    from deephaven import __version__
+    print("Deephaven version: {}".format(__version__))
+    env_var = environ.get("DEEPHAVEN_VERSION")
+    if env_var is not None:
+        print("System version: {}".format(env_var))
+    system = get_type('java.lang.System')
+    java_version = system.getProperty('java.version')
+    print("Java version: {}".format(java_version))
