@@ -72,21 +72,9 @@ public final class JsTypeDistribution extends JsTypeBase {
         copyRecursive(distributionDir, destination);
     }
 
-    private static void copyRecursive(Path src, Path dest) throws IOException {
-        Files.createDirectories(dest.getParent());
-        Files.walkFileTree(src, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                Files.copy(dir, dest.resolve(src.relativize(dir).toString()));
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.copy(file, dest.resolve(src.relativize(file).toString()));
-                return FileVisitResult.CONTINUE;
-            }
-        });
+    private static void copyRecursive(Path src, Path dst) throws IOException {
+        Files.createDirectories(dst.getParent());
+        Files.walkFileTree(src, new CopyRecursiveVisitor(src, dst));
     }
 
     static final class PackageJson {
@@ -102,6 +90,28 @@ public final class JsTypeDistribution extends JsTypeBase {
             this.name = name;
             this.version = version;
             this.main = main;
+        }
+    }
+
+    private static class CopyRecursiveVisitor extends SimpleFileVisitor<Path> {
+        private final Path src;
+        private final Path dst;
+
+        public CopyRecursiveVisitor(Path src, Path dst) {
+            this.src = Objects.requireNonNull(src);
+            this.dst = Objects.requireNonNull(dst);
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            Files.copy(dir, dst.resolve(src.relativize(dir).toString()));
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            Files.copy(file, dst.resolve(src.relativize(file).toString()));
+            return FileVisitResult.CONTINUE;
         }
     }
 }

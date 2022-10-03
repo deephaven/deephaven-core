@@ -3,23 +3,28 @@
  */
 package io.deephaven.server.jetty.jsplugin;
 
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.plugin.type.JsTypeRegistration;
+import io.deephaven.server.jetty.JettyConfig;
+import io.deephaven.server.plugin.type.JsTypeRegistrationNoOp;
 
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
 /**
- * Binds {@link JsPlugins} as {@link JsTypeRegistration}.
+ * Provides {@link JsPlugins} as a {@link Singleton} via {@link JsPlugins#create()}. If
+ * {@link JettyConfig#jsPluginsOrDefault()} is {@code true}, then the plugin is provided as the
+ * {@link JsTypeRegistration}; otherwise, a {@link JsTypeRegistrationNoOp} is provided.
  */
 @Module
 public interface JsPluginsModule {
 
-    @Binds
-    JsTypeRegistration bindsJsPlugins(JsPlugins plugins);
+    @Provides
+    static JsTypeRegistration providesRegistration(JettyConfig config, JsPlugins plugins) {
+        return config.jsPluginsOrDefault() ? plugins : new JsTypeRegistrationNoOp();
+    }
 
     @Provides
     @Singleton

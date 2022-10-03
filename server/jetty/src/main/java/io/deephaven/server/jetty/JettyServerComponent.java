@@ -31,7 +31,7 @@ import javax.inject.Singleton;
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         SessionToExecutionStateModule.class,
-        JsPluginsModule.class
+        JsPluginsModule.class,
 })
 public interface JettyServerComponent extends DeephavenApiServerComponent {
     @Component.Builder

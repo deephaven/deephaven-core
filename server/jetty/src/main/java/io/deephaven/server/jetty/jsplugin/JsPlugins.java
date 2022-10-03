@@ -33,7 +33,7 @@ import java.util.Objects;
 public final class JsPlugins implements JsTypeRegistration {
 
     /**
-     * Creates a new js plugins instance with a temporary directory.
+     * Creates a new js plugins instance with an in-memory filesystem.
      *
      * @return the js plugins
      * @throws IOException if an I/O exception occurs
@@ -43,6 +43,12 @@ public final class JsPlugins implements JsTypeRegistration {
         final JsPlugins jsPlugins = new JsPlugins(fs.getPath("/"));
         jsPlugins.writeManifest(); // empty manifest
         return jsPlugins;
+    }
+
+    public static ServletHolder servletHolderEmpty(String name) throws IOException {
+        // Creates an un-references JsPlugins that is not hooked up as a registration
+        final JsPlugins jsPlugins = create();
+        return jsPlugins.servletHolder(name);
     }
 
     private final Path path;

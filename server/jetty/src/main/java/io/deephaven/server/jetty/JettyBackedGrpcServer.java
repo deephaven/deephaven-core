@@ -88,9 +88,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Set up /js-plugins/*
-        if (config.jsPluginsOrDefault()) {
-            context.addServlet(jsPlugins.servletHolder("js-plugins"), "/js-plugins/*");
-        }
+        context.addServlet(jsPlugins.servletHolder("js-plugins"), "/js-plugins/*");
 
         // Set up websocket for grpc-web
         if (config.websocketsOrDefault()) {
