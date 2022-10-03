@@ -28,7 +28,6 @@ def extraJvmArgs = [
         '-XX:MaxGCPauseMillis=100',
         '-XX:+UseStringDeduplication',
         '-XshowSettings:vm',
-        "-Dstorage.path=${rootDir}/data"
 ]
 
 if (hasProperty('groovy')) {
@@ -69,6 +68,8 @@ if (hasProperty('gcApplication')) {
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect
     jvmArgs extraJvmArgs
+    // For development in this repository via Gradle, use the top-level data directory
+    jvmArgs "-Dstorage.path=${rootDir}/data"
 }
 
 tasks.withType(CreateStartScripts).configureEach {
