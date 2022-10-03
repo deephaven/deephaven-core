@@ -8,6 +8,8 @@
 #include "deephaven/client/container/row_sequence.h"
 #include "deephaven/client/utility/utility.h"
 
+#include <optional>
+
 using deephaven::client::chunk::AnyChunk;
 using deephaven::client::chunk::BooleanChunk;
 using deephaven::client::chunk::ChunkMaker;
