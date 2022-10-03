@@ -406,7 +406,6 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
         usedInputs = new ArrayList<>();
         for (String usedColumn : usedColumns) {
-
             final ColumnDefinition column = tableDefinition.getColumn(usedColumn);
             final Class columnType = column.getDataType();
             usedInputs.add(new Pair<>(usedColumn, columnType));

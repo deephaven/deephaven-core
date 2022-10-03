@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl.select.python;
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel.Context;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
+import io.deephaven.engine.util.PythonScopeJpyImpl;
+import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
 import org.jpy.PyObject;
 
 import java.util.Arrays;
@@ -18,9 +20,9 @@ import java.util.Objects;
  */
 public class DeephavenCompatibleFunction {
 
-    @SuppressWarnings("unused") // called from python
+    // @SuppressWarnings("unused") // called from python
     public static DeephavenCompatibleFunction create(
-            PyObject function,
+            CallableWrapper function,
 
             // todo: python can't convert from java type to Class<?> (ie, java_func_on_type(jpy.get_type('...')))
             // but it *will* match on object, and unwrap the actual java type...
@@ -34,13 +36,13 @@ public class DeephavenCompatibleFunction {
                 isVectorized);
     }
 
-    private final PyObject function;
+    private final CallableWrapper function;
     private final Class<?> returnedType; // the un-vectorized type (if this function is vectorized)
     private final List<String> columnNames;
     private final boolean isVectorized;
 
     private DeephavenCompatibleFunction(
-            PyObject function,
+            CallableWrapper function,
             Class<?> returnedType,
             List<String> columnNames,
             boolean isVectorized) {
@@ -52,7 +54,7 @@ public class DeephavenCompatibleFunction {
 
     public FormulaKernel toFormulaKernel() {
         return isVectorized ? new FormulaKernelPythonChunkedFunction(function)
-                : new io.deephaven.engine.table.impl.select.python.FormulaKernelPythonSingularFunction(function);
+                : new FormulaKernelPythonSingularFunction(function);
     }
 
     public FilterKernel<Context> toFilterKernel() {
@@ -63,7 +65,7 @@ public class DeephavenCompatibleFunction {
                 : new FilterKernelPythonSingularFunction(function);
     }
 
-    public PyObject getFunction() {
+    public CallableWrapper getFunction() {
         return function;
     }
 

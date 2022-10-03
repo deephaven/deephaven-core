@@ -10,9 +10,12 @@ from __future__ import annotations
 import contextlib
 import inspect
 from enum import Enum, auto
-from typing import Union, Sequence, List, Any, Optional, Callable
+from functools import wraps
+from itertools import zip_longest
+from typing import Union, Sequence, List, Any, Optional, Callable, Iterable
 
 import jpy
+import numpy as np
 
 from deephaven import DHError, dtypes
 from deephaven._jpy import strict_cast
@@ -60,6 +63,86 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return strict_cast(j_script_session_query_scope.scriptSession(), _JPythonScriptSession)
     except DHError:
         return None
+
+
+def _encode_signature(fn: Callable) -> str:
+    """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
+    type to numpy dtype chars (i,l,h,f,d,b,?,O), and pack them into a string with parameter type chars first,
+    in their original order, followed by the delimiter string '->', then the return type_char.
+
+    If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
+    """
+    try:
+        sig = inspect.signature(fn)
+    except:
+        return ""
+
+    parameter_types = []
+    for n, p in sig.parameters.items():
+        try:
+            np_dtype = np.dtype(p.annotation if p.annotation else "object")
+            parameter_types.append(np_dtype)
+        except TypeError:
+            parameter_types.append(np.dtype("object"))
+
+    try:
+        return_type = np.dtype(sig.return_annotation if sig.return_annotation else "object")
+    except TypeError:
+        return_type = np.dtype("object")
+
+    np_type_codes = [np.dtype(p).char for p in parameter_types]
+    np_type_codes.extend(["-", ">", np.dtype(return_type).char])
+    return "".join(np_type_codes)
+
+
+def dh_vectorize(fn: Callable) -> Callable:
+    """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
+
+    The result function will accept arrays of the declared parameter data types (vs. scalar) and iterate through them
+    together and call the wrapped function on each iteration and pack the result of each call into an array and return
+    the result array upon exhausting array parameters.
+    """
+    sig_code = _encode_signature(fn)
+    return_type = sig_code[-1]
+
+    @wraps(fn)
+    def wrapper(*args):
+        if len(args) != len(sig_code) - len("->?"):
+            raise ValueError(f"The number of arguments doesn't match the function signature. {len(args)}, {sig_code}")
+
+        def is_chunked(v) -> bool:
+            if isinstance(v, str) or not isinstance(v, jpy.JType):
+                return False
+            try:
+                iter(v)
+                return True
+            except:
+                return False
+
+        if args:
+            array_args = [arg for arg in args if is_chunked(arg)]
+            if not array_args:
+                chunk_size = 4096
+            else:
+                chunk_size = min([len(arg) for arg in array_args])
+        else:
+            chunk_size = 4096
+        chunk_result = np.empty(chunk_size, return_type)
+
+        if args:
+            vectorized_args = [arg if is_chunked(arg) else (arg,) * chunk_size for arg in args]
+            vectorized_args = zip(*vectorized_args)
+        else:
+            vectorized_args = [()] * chunk_size
+
+        for i, scalar_args in enumerate(vectorized_args):
+            chunk_result[i] = fn(*scalar_args)
+        return chunk_result
+
+    wrapper.dh_vectorized = True
+    wrapper.signature = sig_code
+
+    return wrapper
 
 
 @contextlib.contextmanager

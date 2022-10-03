@@ -3,20 +3,31 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.base.Pair;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyLib;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
 
     private static final ThreadLocal<Deque<PyDictWrapper>> threadScopeStack = new ThreadLocal<>();
+    private static final ThreadLocal<Deque<HashMap<PyObject, ?>>> threadConvertedMapStack = new ThreadLocal<>();
+
     private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
+
+    private static final PyModule dh_table_module = PyModule.importModule("deephaven.table");
 
     // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
     // false assumption, then we'll need to make this initialization code 'python restart' proof.
@@ -89,10 +100,92 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
      * varargs method, so that we can call it using __call__ without all of the JPy nastiness.
      */
     public static class CallableWrapper {
+        private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
+
+        static {
+            numpyType2JavaClass.put('i', int.class);
+            numpyType2JavaClass.put('l', long.class);
+            numpyType2JavaClass.put('h', short.class);
+            numpyType2JavaClass.put('f', float.class);
+            numpyType2JavaClass.put('d', double.class);
+            numpyType2JavaClass.put('b', byte.class);
+            numpyType2JavaClass.put('?', boolean.class);
+            numpyType2JavaClass.put('O', Object.class);
+        }
+
         private final PyObject pyObject;
+
+        private String signature = null;
+        private List<Class<?>> paramTypes;
+        private Class<?> returnType;
+        private boolean vectorizable = false;
+        private boolean vectorized = false;
+
+        // first value of the pair is null if it is a resolved constant arg, otherwise it is the used column name when
+        // uninitialized and an index value of the chunked arrays for the column sources used as args when initialized
+        private ArrayList<Pair<?, ?>> args = new ArrayList<>();
+        private Class<?>[] argTypes;
 
         public CallableWrapper(PyObject pyObject) {
             this.pyObject = pyObject;
+        }
+
+        private void prepareSignature() {
+            if (pyObject.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE)) {
+                List<PyObject> params = pyObject.getAttribute("types").asList();
+                if (params.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "numba vectorized function must have an explicit signature: " + pyObject);
+                }
+                // numba allows a vectorized function to have multiple signatures, only the first one
+                // will be accepted by DH
+                signature = params.get(0).getStringValue();
+                vectorized = true;
+            } else if (pyObject.hasAttribute("dh_vectorized")) {
+                signature = pyObject.getAttribute("signature").toString();
+                vectorized = true;
+            } else {
+                signature = dh_table_module.call("_encode_signature", pyObject).toString();
+                vectorized = false;
+            }
+        }
+
+        public void parseSignature() {
+            if (signature != null) {
+                return;
+            }
+
+            prepareSignature();
+
+            // the 'types' field of a vectorized function follows the pattern of '[ilhfdb?O]*->[ilhfdb?O]',
+            // eg. [ll->d] defines two int64 (long) arguments and a double return type.
+            if (signature == null || signature.length() == 0) {
+                throw new IllegalStateException("Signature should always be available.");
+            }
+
+            char numpyTypeCode = signature.charAt(signature.length() - 1);
+            Class<?> returnType = numpyType2JavaClass.get(numpyTypeCode);
+            if (returnType == null) {
+                throw new IllegalStateException(
+                        "Vectorized functions should always have an integral, floating point, boolean, or Object return type.");
+            }
+
+            List<Class<?>> paramTypes = new ArrayList<>();
+            for (char numpyTypeChar : signature.toCharArray()) {
+                if (numpyTypeChar != '-') {
+                    Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
+                    if (paramType == null) {
+                        throw new IllegalStateException(
+                                "Parameters of vectorized functions should always be of integral, floating point, boolean, or Object type.");
+                    }
+                    paramTypes.add(paramType);
+                } else {
+                    break;
+                }
+            }
+
+            this.paramTypes = paramTypes;
+            this.returnType = returnType;
         }
 
         public Object call(Object... args) {
@@ -102,17 +195,6 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         public PyObject getPyObject() {
             return pyObject;
         }
-    }
-
-    public static final class NumbaCallableWrapper extends CallableWrapper {
-        private final List<Class<?>> paramTypes;
-        private final Class<?> returnType;
-
-        public NumbaCallableWrapper(PyObject pyObject, Class<?> returnType, List<Class<?>> paramTypes) {
-            super(pyObject);
-            this.returnType = returnType;
-            this.paramTypes = paramTypes;
-        }
 
         public Class<?> getReturnType() {
             return returnType;
@@ -121,65 +203,66 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         public List<Class<?>> getParamTypes() {
             return paramTypes;
         }
-    }
 
-    private static CallableWrapper wrapCallable(PyObject pyObject) {
-        // check if this is a numba vectorized function
-        if (pyObject.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE)) {
-            List<PyObject> params = pyObject.getAttribute("types").asList();
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("numba vectorized function must have an explicit signature.");
-            }
-            // numba allows a vectorized function to have multiple signatures, only the first one
-            // will be accepted by DH
-            String numbaFuncTypes = params.get(0).getStringValue();
-            return parseNumbaVectorized(pyObject, numbaFuncTypes);
-        } else {
-            return new CallableWrapper(pyObject);
+        public boolean isVectorized() {
+            return vectorized;
+        }
+
+        public boolean isVectorizable() {
+            return vectorizable;
+        }
+
+        public void setVectorizable(boolean vectorizable) {
+            this.vectorizable = vectorizable;
+        }
+
+        public void clearArgs() {
+            this.args.clear();
+        }
+
+        public void addArg(Pair<?, ?> arg) {
+            this.args.add(arg);
+        }
+
+        public ArrayList<Pair<?, ?>> getArgs() {
+            return this.args;
+        }
+
+        public void setArgs(ArrayList<Pair<?, ?>> args) {
+            this.args = args;
+        }
+
+        public Class<?>[] getArgTypes() {
+            return argTypes;
+        }
+
+        public void setArgTypes(Class<?>[] argTypes) {
+            this.argTypes = argTypes;
         }
     }
 
-    private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
-    static {
-        numpyType2JavaClass.put('i', int.class);
-        numpyType2JavaClass.put('l', long.class);
-        numpyType2JavaClass.put('h', short.class);
-        numpyType2JavaClass.put('f', float.class);
-        numpyType2JavaClass.put('d', double.class);
-        numpyType2JavaClass.put('b', byte.class);
-        numpyType2JavaClass.put('?', boolean.class);
+    public static CallableWrapper vectorizeCallable(PyObject pyObject) {
+        PyObject vectorized = dh_table_module.call("dh_vectorize", pyObject);
+        CallableWrapper vectorizedCallableWrapper = new CallableWrapper(vectorized);
+        vectorizedCallableWrapper.parseSignature();
+        return vectorizedCallableWrapper;
     }
 
-    private static CallableWrapper parseNumbaVectorized(PyObject pyObject, String numbaFuncTypes) {
-        // the 'types' field of a numba vectorized function takes the form of
-        // '[parameter-type-char*]->[return-type-char]',
-        // eg. [ll->d] defines two int64 (long) arguments and a double return type.
-
-        char numpyTypeCode = numbaFuncTypes.charAt(numbaFuncTypes.length() - 1);
-        Class<?> returnType = numpyType2JavaClass.get(numpyTypeCode);
-        if (returnType == null) {
-            throw new IllegalArgumentException(
-                    "numba vectorized functions must have an integral, floating point, or boolean return type.");
+    private static void ensureConvertedMap() {
+        Deque<HashMap<PyObject, ?>> convertedMapStack = threadConvertedMapStack.get();
+        if (convertedMapStack == null) {
+            convertedMapStack = new ArrayDeque<>();
+            threadConvertedMapStack.set(convertedMapStack);
         }
-
-        List<Class<?>> paramTypes = new ArrayList<>();
-        for (char numpyTypeChar : numbaFuncTypes.toCharArray()) {
-            if (numpyTypeChar != '-') {
-                Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
-                if (paramType == null) {
-                    throw new IllegalArgumentException(
-                            "parameters of numba vectorized functions must be of integral, floating point, or boolean type.");
-                }
-                paramTypes.add(numpyType2JavaClass.get(numpyTypeChar));
-            } else {
-                break;
-            }
+        if (convertedMapStack.isEmpty()) {
+            HashMap<PyObject, ?> convertedMap = new HashMap<>();
+            convertedMapStack.push(convertedMap);
         }
+    }
 
-        if (paramTypes.size() == 0) {
-            throw new IllegalArgumentException("numba vectorized functions must have at least one argument.");
-        }
-        return new NumbaCallableWrapper(pyObject, returnType, paramTypes);
+    private static HashMap<PyObject, ?> currentConvertedMap() {
+        ensureConvertedMap();
+        return threadConvertedMapStack.get().peek();
     }
 
     /**
@@ -195,12 +278,18 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
      * @return a Java object representing the underlying JPy object.
      */
     public static Object convert(PyObject pyObject) {
+        HashMap convertedMap = currentConvertedMap();
+
+        return convertedMap.computeIfAbsent(pyObject, po -> convertInternal((PyObject) po));
+    }
+
+    private static Object convertInternal(PyObject pyObject) {
         if (pyObject.isList()) {
             return pyObject.asList();
         } else if (pyObject.isDict()) {
             return pyObject.asDict();
         } else if (pyObject.isCallable()) {
-            return wrapCallable(pyObject);
+            return new CallableWrapper(pyObject);
         } else if (pyObject.isConvertible()) {
             return pyObject.getObjectValue();
         } else {
@@ -220,16 +309,23 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             threadScopeStack.set(scopeStack);
         }
         scopeStack.push(pydict.asDict());
+
+        ensureConvertedMap();
     }
 
     @Override
     public void popScope() {
         Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
-        if (scopeStack != null) {
-            PyDictWrapper pydict = scopeStack.pop();
-            pydict.close();
-        } else {
+        if (scopeStack == null) {
             throw new IllegalStateException("The thread scope stack is empty.");
         }
+        PyDictWrapper pydict = scopeStack.pop();
+        pydict.close();
+
+        Deque<HashMap<PyObject, ?>> convertedMapStack = threadConvertedMapStack.get();
+        if (convertedMapStack == null) {
+            throw new IllegalStateException("The thread converted-map stack is empty.");
+        }
+        convertedMapStack.pop();
     }
 }

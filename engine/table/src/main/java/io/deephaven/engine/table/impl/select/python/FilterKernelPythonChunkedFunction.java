@@ -7,7 +7,7 @@ import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import org.jpy.PyObject;
+import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
 
 import java.util.Objects;
 
@@ -21,10 +21,10 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
     private static final String CALL_METHOD = "__call__";
 
     // this is a python function whose arguments can accept arrays
-    private final PyObject function;
+    private final CallableWrapper callableWrapper;
 
-    FilterKernelPythonChunkedFunction(PyObject function) {
-        this.function = Objects.requireNonNull(function, "function");
+    FilterKernelPythonChunkedFunction(CallableWrapper callableWrapper) {
+        this.callableWrapper = Objects.requireNonNull(callableWrapper, "callableWrapper");
     }
 
     @Override
@@ -38,9 +38,9 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
             LongChunk<OrderedRowKeys> indices,
             Chunk... inputChunks) {
         final int size = indices.size();
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked arguments =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(inputChunks);
-        final boolean[] results = function
+        final ArgumentsChunked arguments =
+                ArgumentsChunked.buildArguments(inputChunks, callableWrapper);
+        final boolean[] results = callableWrapper.getPyObject()
                 .call(boolean[].class, CALL_METHOD, arguments.getParamTypes(), arguments.getParams());
         if (size != results.length) {
             throw new IllegalStateException(

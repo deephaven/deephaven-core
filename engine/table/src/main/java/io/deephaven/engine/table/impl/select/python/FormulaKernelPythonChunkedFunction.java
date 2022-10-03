@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.select.FormulaKernelTypedBase;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import org.jpy.PyObject;
+import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
 
 import java.util.Objects;
 
@@ -22,10 +22,10 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
     private static final String CALL_METHOD = "__call__";
 
     // this is a python function whose arguments can accept arrays
-    private final PyObject function;
+    private final CallableWrapper callableWrapper;
 
-    FormulaKernelPythonChunkedFunction(PyObject function) {
-        this.function = Objects.requireNonNull(function, "function");
+    FormulaKernelPythonChunkedFunction(CallableWrapper callableWrapper) {
+        this.callableWrapper = Objects.requireNonNull(callableWrapper, "function");
     }
 
     @Override
@@ -33,11 +33,11 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableByteChunk<? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
-        final byte[] output = function
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
+        final byte[] output = callableWrapper.getPyObject()
                 .call(byte[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
-        __destination.copyFromTypedArray(output, 0, 0, output.length);
+        __destination.copyFromTypedArray(output, 0, 0, __destination.size());
     }
 
     @Override
@@ -45,11 +45,11 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableBooleanChunk<? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
-        final boolean[] output = function
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
+        final boolean[] output = callableWrapper.getPyObject()
                 .call(boolean[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
-        __destination.copyFromTypedArray(output, 0, 0, output.length);
+        __destination.copyFromTypedArray(output, 0, 0, __destination.size());
     }
 
     @Override
@@ -57,11 +57,11 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableCharChunk<? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
-        final char[] output = function
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
+        final char[] output = callableWrapper.getPyObject()
                 .call(char[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
-        __destination.copyFromTypedArray(output, 0, 0, output.length);
+        __destination.copyFromTypedArray(output, 0, 0, __destination.size());
     }
 
     @Override
@@ -69,11 +69,11 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableShortChunk<? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
-        final short[] output = function
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
+        final short[] output = callableWrapper.getPyObject()
                 .call(short[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
-        __destination.copyFromTypedArray(output, 0, 0, output.length);
+        __destination.copyFromTypedArray(output, 0, 0, __destination.size());
     }
 
     @Override
@@ -81,11 +81,11 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableIntChunk<? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
-        final int[] output = function
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
+        final int[] output = callableWrapper.getPyObject()
                 .call(int[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
-        __destination.copyFromTypedArray(output, 0, 0, output.length);
+        __destination.copyFromTypedArray(output, 0, 0, __destination.size());
     }
 
     @Override
@@ -93,11 +93,11 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableLongChunk<? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
-        final long[] output = function
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
+        final long[] output = callableWrapper.getPyObject()
                 .call(long[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
-        __destination.copyFromTypedArray(output, 0, 0, output.length);
+        __destination.copyFromTypedArray(output, 0, 0, __destination.size());
     }
 
     @Override
@@ -105,11 +105,11 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableFloatChunk<? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
-        final float[] output = function
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
+        final float[] output = callableWrapper.getPyObject()
                 .call(float[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
-        __destination.copyFromTypedArray(output, 0, 0, output.length);
+        __destination.copyFromTypedArray(output, 0, 0, __destination.size());
     }
 
     @Override
@@ -117,11 +117,11 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableDoubleChunk<? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
-        final double[] output = function
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
+        final double[] output = callableWrapper.getPyObject()
                 .call(double[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
-        __destination.copyFromTypedArray(output, 0, 0, output.length);
+        __destination.copyFromTypedArray(output, 0, 0, __destination.size());
     }
 
     @Override
@@ -129,16 +129,16 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
             FillContext __context,
             WritableObjectChunk<T, ? super Values> __destination,
             Chunk<? extends Values>[] __sources) {
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked args =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(__sources);
+        final ArgumentsChunked args =
+                ArgumentsChunked.buildArguments(__sources, callableWrapper);
 
         // this is LESS THAN IDEAL - it would be much better if ObjectChunk would be able to return
         // the array type
-        final Object[] output = function
+        final Object[] output = callableWrapper.getPyObject()
                 .call(Object[].class, CALL_METHOD, args.getParamTypes(), args.getParams());
 
         // noinspection unchecked
-        __destination.copyFromTypedArray((T[]) output, 0, 0, output.length);
+        __destination.copyFromTypedArray((T[]) output, 0, 0, __destination.size());
     }
 
     @Override

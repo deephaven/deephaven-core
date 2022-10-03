@@ -7,6 +7,8 @@ import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.engine.util.PythonScopeJpyImpl;
+import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
 import org.jpy.PyObject;
 
 import java.util.Objects;
@@ -21,9 +23,9 @@ class FilterKernelPythonSingularFunction implements FilterKernel<FilterKernel.Co
 
     private static final String CALL_METHOD = "__call__";
 
-    private final PyObject function;
+    private final CallableWrapper function;
 
-    FilterKernelPythonSingularFunction(PyObject function) {
+    FilterKernelPythonSingularFunction(CallableWrapper function) {
         this.function = Objects.requireNonNull(function, "function");
     }
 
@@ -42,7 +44,7 @@ class FilterKernelPythonSingularFunction implements FilterKernel<FilterKernel.Co
         context.resultChunk.setSize(0);
         for (int i = 0; i < size; ++i) {
             final Object[] params = ArgumentsSingular.buildArguments(inputChunks, i);
-            if (function.call(boolean.class, CALL_METHOD, paramTypes, params)) {
+            if (function.getPyObject().call(boolean.class, CALL_METHOD, paramTypes, params)) {
                 context.resultChunk.add(indices.get(i));
             }
         }
