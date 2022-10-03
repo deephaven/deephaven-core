@@ -5,6 +5,7 @@ package io.deephaven.server.runner;
 
 import io.deephaven.base.system.PrintStreamGlobals;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.extensions.barrage.VersionLookup;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.io.logger.LogBufferInterceptor;
@@ -78,6 +79,9 @@ public class Main {
 
         log.info().append("Starting up ").append(mainClass.getName()).append("...").endl();
 
+        // Version properties to bootstrap before we load configuration for the first time
+        VersionLookup.lookup();
+        System.setProperty("deephaven.version", mainClass.getPackage().getImplementationVersion());
         final Configuration config = Configuration.getInstance();
 
         // After logging and config are working, redirect any future JUL logging to SLF4J
