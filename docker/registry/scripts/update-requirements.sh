@@ -18,6 +18,7 @@ nltk_base_image_id="$(${__gradlew} -q docker-nltk-base:showImageId)"
 pytorch_base_image_id="$(${__gradlew} -q docker-pytorch-base:showImageId)"
 sklearn_base_image_id="$(${__gradlew} -q docker-sklearn-base:showImageId)"
 tensorflow_base_image_id="$(${__gradlew} -q docker-tensorflow-base:showImageId)"
+all_ai_base_image_id="$(${__gradlew} -q docker-all-ai-base:showImageId)"
 
 # Write down the (potentially) new requirements
 # Need to manually remove pkg-resources
@@ -27,3 +28,4 @@ docker run --rm "${nltk_base_image_id}" pip freeze | grep -v "pkg.resources" > "
 docker run --rm "${pytorch_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-pytorch/requirements.txt"
 docker run --rm "${sklearn_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-sklearn/requirements.txt"
 docker run --rm "${tensorflow_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-tensorflow/requirements.txt"
+docker run --rm "${all_ai_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-all-ai/requirements.txt"
