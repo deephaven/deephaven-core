@@ -2,16 +2,16 @@
 
 ## docker-server-slim
 
-The `docker-server-slim` project produces the image `deephaven/server-slim:local-build`.
+The `docker-server-slim` project produces the image `deephaven/server-slim-netty:local-build`.
 
 ## docker-server
 
 The `docker-server` project produces the images:
-* `deephaven/server:local-build`
-* `deephaven/server-nltk:local-build`
-* `deephaven/server-pytorch:local-build`
-* `deephaven/server-sklearn:local-build`
-* `deephaven/server-tensorflow:local-build`
+* `deephaven/server-netty:local-build`
+* `deephaven/server-nltk-netty:local-build`
+* `deephaven/server-pytorch-netty:local-build`
+* `deephaven/server-sklearn-netty:local-build`
+* `deephaven/server-tensorflow-netty:local-build`
 
 When the base images for `docker-server` are updated, the requirements.txt files may need to be updated.
 This can currently be done manually via:

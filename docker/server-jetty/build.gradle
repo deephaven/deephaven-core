@@ -9,17 +9,12 @@ plugins {
 def targetArch = Architecture.targetArchitecture(project)
 
 def baseMapAmd64 = [
-        'server-base': 'server-netty',
-        'nltk-base': 'server-nltk-netty',
-        'pytorch-base': 'server-pytorch-netty',
-        'sklearn-base': 'server-sklearn-netty',
-        'tensorflow-base': 'server-tensorflow-netty',
-        'all-ai-base': 'server-all-ai-netty'
+        'server-base': 'server-jetty',
 ]
 
 // Only the server image is supported on arm64
 // TODO(deephaven-core#1702): Support arm64 builds for applicable extended images
-def baseMapArm64 = baseMapAmd64.findAll { key, value -> value == 'server-netty' }
+def baseMapArm64 = baseMapAmd64.findAll { key, value -> value == 'server-jetty' }
 
 def baseMap = targetArch == Architecture.AMD64 ? baseMapAmd64 : baseMapArm64
 
@@ -33,7 +28,7 @@ configurations {
 }
 
 dependencies {
-    serverApplicationDist project(path: ':server-netty-app', configuration: 'applicationDist')
+    serverApplicationDist project(path: ':server-jetty-app', configuration: 'applicationDist')
 
     pythonWheel project(':py-server')
 }
@@ -65,15 +60,6 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
         into 'licenses'
     }
     into context
-}
-
-// TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
-// Currently, GH build-ci.yml calls prepareDockerAll, and relies on buildx; so we need to
-// make sure that dockerCreateDockerfile has the proper dependencies.
-// If we change how our build works in the future (so that gradle is responsible for pushing the
-// image), we can remove this extra dependency.
-project.tasks.register('prepareDockerAll') {
-    dependsOn prepareDocker, baseMap.keySet().collect { base -> Docker.registryTask(project, base) }
 }
 
 def buildDockerClosure = { String base, String server ->

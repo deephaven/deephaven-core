@@ -51,7 +51,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server
+            ghcr.io/${{ github.repository_owner }}/server-netty
           flavor: |
             latest=false
           tags: |
@@ -65,7 +65,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-nltk
+            ghcr.io/${{ github.repository_owner }}/server-nltk-netty
           flavor: |
             latest=false
           tags: |
@@ -79,7 +79,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-pytorch
+            ghcr.io/${{ github.repository_owner }}/server-pytorch-netty
           flavor: |
             latest=false
           tags: |
@@ -93,7 +93,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-sklearn
+            ghcr.io/${{ github.repository_owner }}/server-sklearn-netty
           flavor: |
             latest=false
           tags: |
@@ -107,7 +107,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-tensorflow
+            ghcr.io/${{ github.repository_owner }}/server-tensorflow-netty
           flavor: |
             latest=false
           tags: |
@@ -121,7 +121,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-all-ai
+            ghcr.io/${{ github.repository_owner }}/server-all-ai-netty
           flavor: |
             latest=false
           tags: |
@@ -135,7 +135,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-slim
+            ghcr.io/${{ github.repository_owner }}/server-slim-netty
           flavor: |
             latest=false
           tags: |
@@ -179,7 +179,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/server-base:local-build
-            SERVER=server
+            SERVER=server-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -191,7 +191,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/nltk-base:local-build
-            SERVER=server-nltk
+            SERVER=server-nltk-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -203,7 +203,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/pytorch-base:local-build
-            SERVER=server-pytorch
+            SERVER=server-pytorch-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_pytorch.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -215,7 +215,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/sklearn-base:local-build
-            SERVER=server-sklearn
+            SERVER=server-sklearn-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_sklearn.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -227,7 +227,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/tensorflow-base:local-build
-            SERVER=server-tensorflow
+            SERVER=server-tensorflow-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -239,7 +239,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/all-ai-base:local-build
-            SERVER=server-all-ai
+            SERVER=server-all-ai-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_all_ai.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}

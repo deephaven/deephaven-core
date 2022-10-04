@@ -59,11 +59,7 @@ tasks.register('nightly') {
 tasks.register('prepareCompose') {
     it.group 'Deephaven lifecycle'
     it.description 'A lifecycle task that prepares prerequisites for local docker-compose builds'
-    it.dependsOn project(':docker-server-slim').tasks.findByName('buildDocker-server-slim'),
-            project(':docker-server').tasks.findByName('buildDocker-server'),
-            project(':docker-web').tasks.findByName('buildDocker'),
-            project(':envoy').tasks.findByName('buildDocker'),
-            project(':grpc-proxy').tasks.findByName('buildDocker-grpc-proxy')
+    it.dependsOn project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty')
 }
 
 tasks.register('smoke') {
@@ -77,6 +73,7 @@ tasks.register('smoke') {
     it.dependsOn project(':server').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':docker-server-slim').tasks.findByName('prepareDocker')
     it.dependsOn project(':docker-server').tasks.findByName('prepareDocker')
+    it.dependsOn project(':docker-server-jetty').tasks.findByName('prepareDocker')
     it.dependsOn project(':web').tasks.findByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
