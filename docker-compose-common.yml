@@ -19,6 +19,15 @@ services:
       # For remote debugging switch the line above for the one below (and also change the ports below)
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
       #
+      # To use ssl certificates, include -Dssl.* properties :
+      # - JAVA_TOOL_OPTIONS=-Dssl.identity.type=privatekey -Dssl.identity.certChainPath=/path/to/tls.crt -Dssl.identity.privateKeyPath=/path/to/tls.key
+      #
+      # For mutual trust scenarios you may also need to specify trust certificates, or change -Doutbound.ssl.* properties
+      # - JAVA_TOOL_OPTIONS=-Dssl.trust.type=certs -Dssl.trust.path=/path/to/ca.crt -Dssl.clientAuthentication=NEEDED
+      #
+      # To serve a particular host/port, use -Dhttp.* properties
+      # - JAVA_TOOL_OPTIONS=-Dhttp.port=8080 -Dhttp.host=my.hostname.or.ip
+      #
       # For jprofiler sessions (if you tweaked the jprofiler version in jprofiler-server/Dockerfile you need to tweak path)
       # - JAVA_TOOL_OPTIONS=-agentpath:/opt/jprofiler13.0/bin/linux-x64/libjprofilerti.so=port=8849,nowait -Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
 

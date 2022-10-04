@@ -9,8 +9,6 @@ import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 
-import java.security.MessageDigest
-
 @CompileStatic
 class License {
     private static final String INPUT_LICENSE_NAME = 'LICENSE'

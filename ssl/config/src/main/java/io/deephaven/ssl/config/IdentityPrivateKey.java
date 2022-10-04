@@ -5,6 +5,7 @@ package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.deephaven.annotations.BuildableStyle;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Optional;
@@ -34,6 +35,7 @@ public abstract class IdentityPrivateKey implements Identity {
     /**
      * The optional private key password.
      */
+    @Value.Redacted
     public abstract Optional<String> privateKeyPassword();
 
     /**

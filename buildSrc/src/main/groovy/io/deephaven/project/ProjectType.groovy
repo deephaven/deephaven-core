@@ -20,7 +20,7 @@ enum ProjectType {
     static void register(Project project) {
         ProjectType type = getType(project)
         if (type == ROOT && project.rootProject != project) {
-            throw new IllegalStateException("Project '${project.name}' is likely inheriting the 'ROOT' type - please set the property 'io.deephaven.project.ProjectType' as appropriate.")
+            throw new IllegalStateException("Project '${project.name}' is likely inheriting the 'ROOT' type - please set the property 'io.deephaven.project.ProjectType' in file:${project.projectDir}/gradle.properties.")
         }
         registerInternal(project, type)
         project.pluginManager.apply(type.pluginId)
