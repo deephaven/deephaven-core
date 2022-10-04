@@ -2,9 +2,7 @@ version: "3.4"
 
 services:
   deephaven:
-    image: ghcr.io/deephaven/server-netty:latest
-    labels:
-      - 'traefik.http.routers.deephaven.rule=Host(`localhost`)'
+    image: ghcr.io/deephaven/server-jetty:latest
     volumes:
       - ./data:/data
     environment:
