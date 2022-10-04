@@ -2,7 +2,9 @@ version: "3.4"
 
 services:
   deephaven:
-    image: ghcr.io/deephaven/server-pytorch-jetty:latest
+    image: ghcr.io/deephaven/server-pytorch:latest
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
     volumes:
       - ./data:/data
     environment:

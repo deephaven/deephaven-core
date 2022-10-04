@@ -2,7 +2,9 @@ version: "3.4"
 
 services:
   deephaven:
-    image: ghcr.io/deephaven/server-jetty:latest
+    image: ghcr.io/deephaven/server:latest
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
     volumes:
       - ./data:/data
     environment:
