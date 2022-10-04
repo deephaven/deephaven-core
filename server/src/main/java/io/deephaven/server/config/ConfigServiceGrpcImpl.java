@@ -22,13 +22,38 @@ import java.util.function.Consumer;
  */
 public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ConfigServiceGrpcImpl.class);
+    private static final String VERSION_LIST_PROPERTY = "client.version.list";
+
     private static final String AUTH_CLIENT_CONFIG_PROPERTY = "authentication.client.configuration.list";
+
+    // TODO consider a mechanism for roles for these
     private static final String CLIENT_CONFIG_PROPERTY = "client.configuration.list";
 
     private final Configuration configuration = Configuration.getInstance();
 
     @Inject
     public ConfigServiceGrpcImpl() {
+        // On startup, lookup the versions to make available.
+        for (String pair : configuration.getStringArrayFromProperty(VERSION_LIST_PROPERTY)) {
+            pair = pair.trim();
+            if (pair.isEmpty()) {
+                continue;
+            }
+            String[] split = pair.split("=");
+            if (split.length != 2) {
+                throw new IllegalArgumentException("Missing '=' in " + VERSION_LIST_PROPERTY);
+            }
+            String key = split[0] + ".version";
+            if (configuration.hasProperty(key)) {
+                throw new IllegalArgumentException("Configuration already has a key for '" + key + "'");
+            }
+            String className = split[1];
+            try {
+                configuration.setProperty(key, Class.forName(className, false, getClass().getClassLoader()).getPackage().getImplementationVersion());
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException("Failed to find class to get its version '" + className + "'");
+            }
+        }
     }
 
     @Override

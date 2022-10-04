@@ -80,8 +80,8 @@ public class Main {
         log.info().append("Starting up ").append(mainClass.getName()).append("...").endl();
 
         // Version properties to bootstrap before we load configuration for the first time
-        VersionLookup.lookup();
-        System.setProperty("deephaven.version", mainClass.getPackage().getImplementationVersion());
+//        VersionLookup.lookup();
+//        System.setProperty("deephaven.version", mainClass.getPackage().getImplementationVersion());
         final Configuration config = Configuration.getInstance();
 
         // After logging and config are working, redirect any future JUL logging to SLF4J
