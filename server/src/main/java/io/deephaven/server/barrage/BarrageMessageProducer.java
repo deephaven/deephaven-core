@@ -2000,16 +2000,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         final RowSet.Iterator vit = values.iterator();
         keys.forAllRowKeys(lkey -> {
-            long[] mapping = mappings.get(arrIdx.intValue());
-            int keyIdx = LongSizedDataStructure.intSize("applyRedirMapping", lkey - arrOffset.longValue());
+            int keyIdx;
+            long[] mapping;
+
+            do {
+                mapping = mappings.get(arrIdx.intValue());
+                keyIdx = LongSizedDataStructure.intSize("applyRedirMapping", lkey - arrOffset.longValue());
+                if (keyIdx >= mapping.length) {
+                    arrOffset.add(mapping.length);
+                    arrIdx.increment();
+                }
+            } while (keyIdx >= mapping.length);
 
             Assert.eq(mapping[keyIdx], "mapping[keyIdx]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
             mapping[keyIdx] = vit.nextLong();
-
-            if (keyIdx == mapping.length - 1) {
-                arrOffset.add(mapping.length);
-                arrIdx.add(1);
-            }
         });
     }
 
