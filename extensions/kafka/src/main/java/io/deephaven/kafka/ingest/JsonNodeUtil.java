@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -28,7 +27,7 @@ public class JsonNodeUtil {
         try {
             return objectMapper.readTree(json);
         } catch (JsonProcessingException ex) {
-            throw new UncheckedDeephavenException("Failed to parse JSON string.", ex);
+            throw new JsonStringParseException("Failed to parse JSON string.", ex);
         }
     }
 
@@ -53,7 +52,10 @@ public class JsonNodeUtil {
             throw new IllegalArgumentException(
                     String.format("Key '%s' not found in the record, and allowMissingKeys is false.", key));
         }
-        if (!allowNullValues && isNullOrMissingField(node)) {
+        // 'node==null || node.isMissingNode()' is OK here, because missing keys
+        // are allowed (which implicitly means null values for those keys are allowed).
+        // only explicit null values are disallowed.
+        if (!allowNullValues && node != null && node.isNull()) {
             throw new IllegalArgumentException(String
                     .format("Value for '%s' is null or missing in the record, and allowNullValues is false.", key));
         }
@@ -741,6 +743,12 @@ public class JsonNodeUtil {
             return DateTimeUtils.autoEpochToTime(value);
         } else {
             return DateTimeUtils.convertDateTime(node.asText());
+        }
+    }
+
+    public static class JsonStringParseException extends IllegalArgumentException {
+        public JsonStringParseException(String message, JsonProcessingException cause) {
+            super(message, cause);
         }
     }
 }

@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 /**
  * Create a builder for processing message payloads. Common properties used by different message to table writer adapters.
  */
-public abstract class BaseTableWriterAdapterBuilder<M> {
+public abstract class BaseTableWriterAdapterBuilder<A> {
 
     String sendTimestampColumnName;
     String receiveTimestampColumnName;
@@ -31,7 +31,7 @@ public abstract class BaseTableWriterAdapterBuilder<M> {
      * @param sendTimestampColumnName name of the publication column
      * @return this builder
      */
-    public BaseTableWriterAdapterBuilder<M> sendTimestampColumnName(final String sendTimestampColumnName) {
+    public BaseTableWriterAdapterBuilder<A> sendTimestampColumnName(final String sendTimestampColumnName) {
         this.sendTimestampColumnName = sendTimestampColumnName;
         return this;
     }
@@ -44,7 +44,7 @@ public abstract class BaseTableWriterAdapterBuilder<M> {
      * @param receiveTimestampColumnName name of the receive timestamp column
      * @return this builder
      */
-    public BaseTableWriterAdapterBuilder<M> receiveTimestampColumnName(final String receiveTimestampColumnName) {
+    public BaseTableWriterAdapterBuilder<A> receiveTimestampColumnName(final String receiveTimestampColumnName) {
         this.receiveTimestampColumnName = receiveTimestampColumnName;
         return this;
     }
@@ -58,7 +58,7 @@ public abstract class BaseTableWriterAdapterBuilder<M> {
      * @param timestampColumnName name of the ingestion timestamp column
      * @return this builder
      */
-    public BaseTableWriterAdapterBuilder<M> timestampColumnName(final String timestampColumnName) {
+    public BaseTableWriterAdapterBuilder<A> timestampColumnName(final String timestampColumnName) {
         this.timestampColumnName = timestampColumnName;
         return this;
     }
@@ -73,7 +73,7 @@ public abstract class BaseTableWriterAdapterBuilder<M> {
      * @param messageIdColumnName name of the message ID column
      * @return this builder
      */
-    public BaseTableWriterAdapterBuilder<M> messageIdColumnName(final String messageIdColumnName) {
+    public BaseTableWriterAdapterBuilder<A> messageIdColumnName(final String messageIdColumnName) {
         this.messageIdColumnName = messageIdColumnName;
         return this;
     }
@@ -88,5 +88,13 @@ public abstract class BaseTableWriterAdapterBuilder<M> {
         return Stream.of(receiveTimestampColumnName, sendTimestampColumnName, timestampColumnName, messageIdColumnName).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-    public abstract Function<TableWriter<?>, MessageToTableWriterAdapter<M>> buildFactory(final Logger log);
+    /**
+     * Creates a factory that generates MessageToTableWriterAdapters that take a message of type {@code M},
+     * unpack the relevant data (e.g. a payload such as a JSON string or a bunch of bytes, and message metadata),
+     * and pass them to a {@link DataToTableWriterAdapter}.
+     *
+     * @param log
+     * @return
+     */
+    public abstract Function<TableWriter<?>, A> buildFactory(final Logger log);
 }

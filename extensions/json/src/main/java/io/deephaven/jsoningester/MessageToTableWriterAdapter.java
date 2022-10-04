@@ -5,24 +5,23 @@
 package io.deephaven.jsoningester;
 
 import io.deephaven.tablelogger.TableWriter;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 /**
  * Messages are externally produced, which we must then adapt to a {@link TableWriter TableWriter}.
- *
- * The MessagesToTableWriterAdapter consumes a message and writes zero or more rows to a TableWriter.
- * This adapter converts the message into an appropriate Java data type (e.g. a string or object), then uses
- * an additional {@link DataToTableWriterAdapter} to write the message data to the TableWriter.
+ * <p>
+ * The {@code MessagesToTableWriterAdapter} consumes a message of type {@code M} and writes zero or more rows to
+ * a TableWriter. This adapter extracts an appropriate Java data type (e.g. a string or object) from the message,
+ * then passes the message content and metadata (e.g. timestamps) to a {@link DataToTableWriterAdapter} to write
+ * the message data to the TableWriter.
  *
  * <pre>
  *     Subscriber --[message of type 'M']--> MessageToTableWriterAdapter --[String/Object]--> DataToTableWriterAdapter --> TableWriter
  * </pre>
  *
  * @param <M> Message object type
- *
  */
 public interface MessageToTableWriterAdapter<M> {
     /**
@@ -55,6 +54,7 @@ public interface MessageToTableWriterAdapter<M> {
 
     /**
      * Return the last message ID processed by this adapter.
+     *
      * @return null if there were no messages ever written to the location being used by this
      * adapter; otherwise, returns the String last checkpoint ID.
      */

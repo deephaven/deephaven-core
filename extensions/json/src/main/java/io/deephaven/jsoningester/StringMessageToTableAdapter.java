@@ -18,7 +18,7 @@ import java.util.function.ToLongFunction;
 /**
  * Translates a message into a standardized form for further processing, including attaching any needed metadata.
  */
-public class MessageToStringAdapter<M> implements MessageToTableWriterAdapter<M> {
+public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapter<M> {
     private static final long MILLIS_TO_NANOS = 1_000_000L;
 
     private final StringToTableWriterAdapter stringAdapter;
@@ -36,15 +36,15 @@ public class MessageToStringAdapter<M> implements MessageToTableWriterAdapter<M>
     private final ToLongFunction<M> messageToSendTimeMicros;
     private final ToLongFunction<M> messageToRecvTimeMicros;
 
-    private MessageToStringAdapter(final TableWriter<?> tableWriter,
-                                   final String sendTimeColumn,
-                                   final String receiveTimeColumn,
-                                   final String nowTimeColumn,
-                                   final String messageIdColumn,
-                                   final StringToTableWriterAdapter stringAdapter,
-                                   Function<M, String> messageToText,
-                                   ToLongFunction<M> messageToSendTimeMicros,
-                                   ToLongFunction<M> messageToRecvTimeMicros
+    private StringMessageToTableAdapter(final TableWriter<?> tableWriter,
+                                        final String sendTimeColumn,
+                                        final String receiveTimeColumn,
+                                        final String nowTimeColumn,
+                                        final String messageIdColumn,
+                                        final StringToTableWriterAdapter stringAdapter,
+                                        Function<M, String> messageToText,
+                                        ToLongFunction<M> messageToSendTimeMicros,
+                                        ToLongFunction<M> messageToRecvTimeMicros
     ) {
         this.stringAdapter = stringAdapter;
         stringAdapter.setOwner(this);
@@ -91,8 +91,8 @@ public class MessageToStringAdapter<M> implements MessageToTableWriterAdapter<M>
         DateTime ingestTime = null;
 
         if (sendTimeSetter != null) {
-            final Long senderTimestamp = messageToSendTimeMicros.applyAsLong(msg);
-            if (senderTimestamp != null) {
+            final long senderTimestamp = messageToSendTimeMicros.applyAsLong(msg);
+            if (senderTimestamp != 0) {
                 sentTime = new DateTime(senderTimestamp * MILLIS_TO_NANOS);
             }
             sendTimeSetter.set(sentTime);
@@ -171,20 +171,15 @@ public class MessageToStringAdapter<M> implements MessageToTableWriterAdapter<M>
         stringAdapter.waitForProcessing(timeoutMillis);
     }
 
-    /**
-     * Create a builder for processing payloads of message type {@code M} as simple strings.
-     *
-     * @param <M> The message type
-     */
-    public abstract static class Builder<M> extends BaseTableWriterAdapterBuilder<M> {
+    public abstract static class Builder<A extends StringMessageToTableAdapter<?>> extends BaseTableWriterAdapterBuilder<A> {
 
-        protected MessageToStringAdapter<M> buildInternal(final TableWriter<?> tw,
-                                                          final StringToTableWriterAdapter adapter,
-                                                          final Function<M, String> messageToText,
-                                                          final ToLongFunction<M> messageToSendTimeMicros,
-                                                          final ToLongFunction<M> messageToRecvTimeMicros
+        protected <M> StringMessageToTableAdapter<M> buildInternal(final TableWriter<?> tw,
+                                                                   final StringToTableWriterAdapter adapter,
+                                                                   final Function<M, String> messageToText,
+                                                                   final ToLongFunction<M> messageToSendTimeMicros,
+                                                                   final ToLongFunction<M> messageToRecvTimeMicros
         ) {
-            return new MessageToStringAdapter<>(tw,
+            return new StringMessageToTableAdapter<>(tw,
                     sendTimestampColumnName,
                     receiveTimestampColumnName,
                     timestampColumnName,

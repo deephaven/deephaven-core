@@ -7,9 +7,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.ProcessStreamLoggerImpl;
-import io.deephaven.jsoningester.JSONToTableWriterAdapter;
-import io.deephaven.jsoningester.JSONToTableWriterAdapterBuilder;
-import io.deephaven.jsoningester.MessageToTableWriterAdapter;
+import io.deephaven.jsoningester.*;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.tablelogger.TableWriter;
@@ -120,11 +118,10 @@ public class ComplexJsonImportTest {
         DynamicTableWriter mainObservationsWriter = new DynamicTableWriter(TableHeader.of(mainTableColHeaders.toArray(new ColumnHeader[0])));
 
         // Create the adapter factory for the main table
-        final Function<TableWriter<?>, MessageToTableWriterAdapter<JSONToTableWriterAdapterBuilder.StringMessageHolder>> factory =
-                mainBuilder.buildFactory(log);
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = mainBuilder.buildFactory(log);
 
         // Create the actual adapter:
-        final MessageToTableWriterAdapter<JSONToTableWriterAdapterBuilder.StringMessageHolder> adapter = factory.apply(mainObservationsWriter);
+        final MessageToTableWriterAdapter<StringMessageHolder> adapter = factory.apply(mainObservationsWriter);
 
         // Get the output tables:
         final UpdateSourceQueryTable mainTable = mainObservationsWriter.getTable();
@@ -135,7 +132,7 @@ public class ComplexJsonImportTest {
 
         System.out.println("Consuming message!");
         adapter.consumeMessage("0",
-                new JSONToTableWriterAdapterBuilder.StringMessageHolder(
+                new StringMessageHolder(
                         MicroTimer.currentTimeMicros(),
                         MicroTimer.currentTimeMicros(),
                         ExampleJSON.observationsJson));

@@ -13,7 +13,7 @@ import java.net.URL;
 public class ExampleJSON {
 
     /**
-     * https://api.weather.gov/stations/KNYC/observations
+     * https://api.weather.gov/stations/KNYC/observations/latest
      */
     public static final String observationsJson = "{\n" +
             "  \"@context\": [\n" +

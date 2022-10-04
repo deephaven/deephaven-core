@@ -7,9 +7,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.ProcessStreamLoggerImpl;
-import io.deephaven.jsoningester.JSONToTableWriterAdapter;
-import io.deephaven.jsoningester.JSONToTableWriterAdapterBuilder;
-import io.deephaven.jsoningester.MessageToTableWriterAdapter;
+import io.deephaven.jsoningester.*;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.tablelogger.TableWriter;
@@ -26,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -143,11 +140,11 @@ public class ComplexJsonImportTest2 {
         ));
 
         // Create the adapter factory for the main table
-        final Function<TableWriter<?>, MessageToTableWriterAdapter<JSONToTableWriterAdapterBuilder.StringMessageHolder>> factory =
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
                 outerBuilder.buildFactory(log);
 
         // Create the actual adapter:
-        final MessageToTableWriterAdapter<JSONToTableWriterAdapterBuilder.StringMessageHolder> adapter = factory.apply(outerObservationsWriter);
+        final MessageToTableWriterAdapter<StringMessageHolder> adapter = factory.apply(outerObservationsWriter);
 
         // Get the output tables:
         final UpdateSourceQueryTable observationsTable = outerObservationsWriter.getTable();
@@ -164,7 +161,7 @@ public class ComplexJsonImportTest2 {
         System.out.println("Consuming message!");
         try {
             adapter.consumeMessage("0",
-                    new JSONToTableWriterAdapterBuilder.StringMessageHolder(
+                    new StringMessageHolder(
                             MicroTimer.currentTimeMicros(),
                             MicroTimer.currentTimeMicros(),
                             json));
@@ -175,7 +172,7 @@ public class ComplexJsonImportTest2 {
 
         try {
             adapter.consumeMessage("100",
-                    new JSONToTableWriterAdapterBuilder.StringMessageHolder(
+                    new StringMessageHolder(
                             MicroTimer.currentTimeMicros(),
                             MicroTimer.currentTimeMicros(),
                             ExampleJSON.getFullObservationsJson("KCOS")));

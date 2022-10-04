@@ -22,7 +22,8 @@ import static io.deephaven.jsoningester.JSONToTableWriterAdapter.SUBTABLE_RECORD
  */
 @SuppressWarnings("unused")
 @ScriptApi
-public class JSONToTableWriterAdapterBuilder extends MessageToStringAdapter.Builder<JSONToTableWriterAdapterBuilder.StringMessageHolder> {
+public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter.Builder<StringMessageToTableAdapter<StringMessageHolder>> {
+    private int nConsumerThreads = JSONToTableWriterAdapter.N_CONSUMER_THREADS_DEFAULT;
 
     private StringToTableWriterAdapter stringAdapter;
     private final Map<String, String> columnToJsonField = new HashMap<>();
@@ -374,12 +375,33 @@ public class JSONToTableWriterAdapterBuilder extends MessageToStringAdapter.Buil
         return (JSONToTableWriterAdapterBuilder) super.messageIdColumnName(messageIdColumnName);
     }
 
+    public JSONToTableWriterAdapterBuilder nConsumerThreads(final int nConsumerThreads) {
+        this.nConsumerThreads = nConsumerThreads;
+        return this;
+    }
+
     /**
      * Create a factory according to the specifications of this builder.
      *
      * @return a factory for creating a StringTableWriterAdapter from a TableWriter
      */
-    public Function<TableWriter<?>, MessageToTableWriterAdapter<StringMessageHolder>> buildFactory(@NotNull final Logger log) {
+    public Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> buildFactory(@NotNull final Logger log) {
+        // TODO: buildFactory() should happen in StringMessageToTableAdapter and take a StringMessageToTableAdapter.Builder as an argument
+        return buildFactory(log,
+                StringMessageHolder.class,
+                StringMessageHolder::getMsg,
+                StringMessageHolder::getSendTimeMicros,
+                StringMessageHolder::getRecvTimeMicros);
+    }
+
+
+
+    public <M> Function<TableWriter<?>, StringMessageToTableAdapter<M>> buildFactory(@NotNull final Logger log,
+                                                                                     final Class<M> messageType,
+                                                                                     final Function<M, String> messageToText,
+                                                                                     final ToLongFunction<M> messageToSendTimeMicros,
+                                                                                     final ToLongFunction<M> messageToRecvTimeMicros
+                                                                                     ) {
         //noinspection ConstantConditions
         if (log == null) {
             throw new NullPointerException("Log passed to buildFactory must not be null!");
@@ -390,9 +412,9 @@ public class JSONToTableWriterAdapterBuilder extends MessageToStringAdapter.Buil
             final StringToTableWriterAdapter stringAdapter = makeAdapter(log, tw, allUnmapped, true);
             return buildInternal(tw,
                     stringAdapter,
-                    StringMessageHolder::getMsg,
-                    StringMessageHolder::getSendTimeMicros,
-                    StringMessageHolder::getRecvTimeMicros);
+                    messageToText,
+                    messageToSendTimeMicros,
+                    messageToRecvTimeMicros);
         };
     }
 
@@ -402,6 +424,7 @@ public class JSONToTableWriterAdapterBuilder extends MessageToStringAdapter.Buil
                                                    final Set<String> allUnmapped,
                                                    final boolean createHolders) {
         return new JSONToTableWriterAdapter(tw, log, allowMissingKeys, allowNullValues, processArrays,
+                nConsumerThreads,
                 columnToJsonField,
                 columnToIntFunction,
                 columnToLongFunction,
@@ -433,6 +456,11 @@ public class JSONToTableWriterAdapterBuilder extends MessageToStringAdapter.Buil
     ) {
         final int nThreads = 0; // nested adapters don't need threads
         final boolean createHolders = false; // parent adapters create the holders
+
+        // nested adapters must allow missing keys, because all nested keys will appear as 'missing' if the
+        // parent adapters allow missing keys or values and the nested adapter's field is missing.s
+        // TODO: allowMissingKeys for nested adapters should be handled independently
+        final boolean allowMissingKeys = true;
 
         return new JSONToTableWriterAdapter(tw,
                 log,
@@ -499,27 +527,4 @@ public class JSONToTableWriterAdapterBuilder extends MessageToStringAdapter.Buil
                 subtableProcessingQueue);
     }
 
-    public static class StringMessageHolder {
-        public final long sendTimeMicros;
-        public final long recvTimeMicros;
-        public final String msg;
-
-        public StringMessageHolder(long sendTimeMicros, long recvTimeMicros, String msg) {
-            this.sendTimeMicros = sendTimeMicros;
-            this.recvTimeMicros = recvTimeMicros;
-            this.msg = msg;
-        }
-
-        public long getSendTimeMicros() {
-            return sendTimeMicros;
-        }
-
-        public long getRecvTimeMicros() {
-            return recvTimeMicros;
-        }
-
-        public String getMsg() {
-            return msg;
-        }
-    }
 }

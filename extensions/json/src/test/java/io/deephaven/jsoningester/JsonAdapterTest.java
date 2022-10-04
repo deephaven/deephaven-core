@@ -1,0 +1,1587 @@
+package io.deephaven.jsoningester;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.DynamicTableWriter;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.io.log.LogLevel;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.io.logger.StreamLoggerImpl;
+import io.deephaven.kafka.ingest.JsonNodeUtil;
+import io.deephaven.qst.type.Type;
+import io.deephaven.tablelogger.TableWriter;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.process.FatalErrorReporter;
+import io.deephaven.util.process.ProcessEnvironment;
+import junit.framework.TestCase;
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.jetbrains.annotations.NotNull;
+import org.junit.*;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+
+import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
+/**
+ * Tests the {@link JSONToTableWriterAdapter} and {@link JSONToTableWriterAdapterBuilder}.
+ * <p>
+ * Note that some tests are run with a consumer thread pool (as would be used in production), and others use
+ * zero threads ({@link JSONToTableWriterAdapterBuilder#nConsumerThreads(int) JSONToTableWriterAdapterBuilder#nConsumerThreads(0)})
+ * and consume/process messages synchronously (which is helpful for catching exceptions and producing helpful stack
+ * traes in the unit tests).
+ */
+public class JsonAdapterTest {
+    private static final double NANOS_PER_SECOND = 1000000000.0;
+    private static final long MAX_WAIT_MILLIS = TimeUnit.SECONDS.toMillis(30);
+    private static final long MESSAGE_TIMESTAMP = 1601578523551L;
+
+    private final Logger log = new StreamLoggerImpl(System.out, LogLevel.FATAL);
+    // For convenience, we want to be able to kill the consumer daemons and clear queues.
+    private StringMessageToTableAdapter<StringMessageHolder> adapter = null;
+
+    static {
+        Configuration.getInstance().setProperty("UpdateGraphProcessor.allowUnitTestMode", "true");
+    }
+
+    @BeforeClass
+    static public void setup() {
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+    }
+
+    @Before
+    public void setProcEnv() {
+        if (ProcessEnvironment.tryGet() == null) {
+            ProcessEnvironment.basicServerInitialization(Configuration.getInstance(),
+                    JsonAdapterTest.class.getName(), new StreamLoggerImpl());
+        }
+    }
+
+    @After
+    public void reset() {
+        if (adapter != null) {
+            adapter.shutdown();
+        }
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        adapter = null;
+
+        if (ProcessEnvironment.tryGet() != null) {
+            ProcessEnvironment.clear();
+        }
+    }
+
+    /**
+     * Sleeps in a loop to ensure that other asynchronous processing, like DISP checkpoint callbacks
+     * happen after we've queued up data for writing.
+     * @param milliSeconds How long to wait
+     * @throws InterruptedException If interrupted while sleeping
+     */
+    private void loopSleep(final long milliSeconds) throws InterruptedException {
+        for (long i = 0; i < milliSeconds; i++) {
+            Thread.sleep(1);
+        }
+    }
+
+    @Test
+    public void testAutomap() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder().buildFactory(log);
+
+        final String strCol = "str";
+        final String dblCol = "dbl";
+        final String intCol = "iger";
+        final String shortCol = "shrt";
+        final String longCol = "lng";
+        final String byteCol = "byt";
+        final String floatColName = "flt";
+        final String boolColName = "bln";
+        final String charColName = "cha";
+
+        final String [] names = new String[]{strCol, dblCol, intCol, shortCol, longCol, byteCol, floatColName, boolColName, charColName};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class, short.class, long.class, byte.class, float.class, boolean.class, char.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\""+ strCol + "\": \"test\", \""
+                + dblCol + "\": 42.2, \""
+                + intCol + "\": 123, \""
+                + shortCol + "\": 6, \""
+                + longCol + "\": 123456789, \""
+                + byteCol + "\": 3, \""
+                + floatColName + "\": 98765.4321, \""
+                + boolColName + "\": true, \""
+                + charColName + "\": \"c\""
+                +"}", "id");
+
+        final Table expected = newTable(col(strCol, "test"),
+                doubleCol(dblCol, 42.2),
+                intCol(intCol, 123),
+                shortCol(shortCol, (short)6),
+                longCol(longCol, 123456789),
+                byteCol(byteCol, (byte)51),  // ASCII value of character '3' is the byte value 51
+                floatCol(floatColName, (float) 98765.4321),
+                col(boolColName, true),
+                col(charColName, 'c')
+
+        );
+
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testAutomapNulls() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                new JSONToTableWriterAdapterBuilder()
+                        .allowNullValues(true)
+                        .nConsumerThreads(0)
+                        .buildFactory(log);
+
+        final String strCol = "str";
+        final String dblCol = "dbl";
+        final String intCol = "iger";
+        final String shortCol = "shrt";
+        final String longCol = "lng";
+        final String byteCol = "byt";
+        final String floatColName = "flt";
+        final String boolColName = "bln";
+        final String charColName = "cha";
+
+        final String [] names = new String[]{strCol, dblCol, intCol, shortCol, longCol, byteCol, floatColName, boolColName, charColName};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class, short.class, long.class, byte.class, float.class, boolean.class, char.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\""+ strCol + "\": null, \""
+                + dblCol + "\": null, \""
+                + intCol + "\": null, \""
+                + shortCol + "\": null, \""
+                + longCol + "\": null, \""
+                + byteCol + "\": null, \""
+                + floatColName + "\": null, \""
+                + boolColName + "\": null, \""
+                + charColName + "\": null"
+                +"}", "id");
+
+        final Table expected = newTable(col(strCol, new String[] { null }),
+                doubleCol(dblCol, QueryConstants.NULL_DOUBLE),
+                intCol(intCol, QueryConstants.NULL_INT),
+                shortCol(shortCol, QueryConstants.NULL_SHORT),
+                longCol(longCol, NULL_LONG),
+                byteCol(byteCol, QueryConstants.NULL_BYTE),  // ASCII value of character '3' is the byte value 51
+                floatCol(floatColName, QueryConstants.NULL_FLOAT),
+                col(boolColName, QueryConstants.NULL_BOOLEAN),
+                col(charColName, QueryConstants.NULL_CHAR)
+        );
+
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testAutomapWithSenderTimestamp() throws IOException, InterruptedException, TimeoutException {
+        final String strCol = "str";
+        final String dblCol = "dbl";
+        final String intCol = "iger";
+        final String shortCol = "shrt";
+        final String longCol = "lng";
+        final String byteCol = "byt";
+        final String floatColName = "flt";
+        final String boolColName = "bln";
+        final String charColName = "cha";
+        final String sendCol = "sent";
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder().sendTimestampColumnName(sendCol).buildFactory(log);
+
+        final String [] names = new String[]{strCol, dblCol, intCol, shortCol, longCol, byteCol, floatColName, boolColName, charColName, sendCol};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class, short.class, long.class, byte.class, float.class, boolean.class, char.class, DateTime.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        final TextMessage msg = new TextMessage();
+        msg.setText("{\""+ strCol + "\": \"test\", \""
+                + dblCol + "\": 42.2, \""
+                + intCol + "\": 123, \""
+                + shortCol + "\": 6, \""
+                + longCol + "\": 123456789, \""
+                + byteCol + "\": 3, \""
+                + floatColName + "\": 98765.4321, \""
+                + boolColName + "\": true, \""
+                + charColName + "\": \"c\""
+                +"}");
+        final DateTime sendTime = DateTime.now();
+        final long sendTimeMillis = sendTime.getMillis();
+        final DateTime sendTimeTruncated = DateTimeUtils.millisToTime(sendTimeMillis);
+        msg.setSenderTimestamp(sendTimeMillis);
+        adapter.consumeMessage("id", msg);
+
+        // Because the message will be consumed almost instantly, then actually processed separately, we have to wait to see the results.
+        adapter.waitForProcessing(MAX_WAIT_MILLIS);
+        adapter.cleanup();
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+
+        final Table expected = newTable(col(strCol, "test"),
+                doubleCol(dblCol, 42.2),
+                intCol(intCol, 123),
+                shortCol(shortCol, (short)6),
+                longCol(longCol, 123456789),
+                byteCol(byteCol, (byte)51),  // ASCII value of character '3' is the byte value 51
+                floatCol(floatColName, (float) 98765.4321),
+                col(boolColName, true),
+                col(charColName, 'c'),
+                col(sendCol, sendTimeTruncated)
+        );
+
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testAutomapInvalidType() {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder().buildFactory(log);
+
+        final String strCol = "str";
+        final String objCol = "obj";
+
+        final String [] names = new String[]{strCol, objCol};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, Object.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+
+        try {
+            factory.apply(writer);
+            Assert.fail("Should not have been able to auto-create Object-type column!");
+        } catch (final UnsupportedOperationException uoe) {
+            Assert.assertEquals("Can not convert JSON field to class java.lang.Object for column " + objCol + " (field " + objCol + ")", uoe.getMessage());
+        }
+    }
+
+    @Test
+    public void testNullBoolean() throws IOException, InterruptedException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder().
+                allowNullValues(true)
+                .nConsumerThreads(0)
+                .buildFactory(log);
+
+        final String strCol = "str";
+        final String boolColName = "bln";
+
+        final String [] names = new String[]{strCol, boolColName};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, Boolean.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        final TextMessage msg = new TextMessage();
+        msg.setText("{\""+ strCol + "\": \"test\", \""
+                + boolColName + "\": null "
+                +"}");
+        adapter.consumeMessage("id", msg);
+
+        // Because the message will be consumed almost instantly, then actually processed separately, we have to wait to see the results.
+        Thread.sleep(200);
+        adapter.cleanup();
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+
+        final Table expected = newTable(col(strCol, "test"),
+                ColumnHolder.getBooleanColumnHolder( boolColName, false, (byte)2)
+        );
+
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testExtraneousMappings() {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("noSuchColumns", "ignored")
+                .buildFactory(log);
+
+        final String strCol = "str";
+
+        final String [] names = new String[]{strCol};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+
+        try {
+            factory.apply(writer);
+            Assert.fail("Should not have been able to include mapping to nonexistent column!");
+        } catch (final JSONIngesterException jie) {
+            Assert.assertEquals("Found mappings that do not correspond to this table: [noSuchColumns]", jie.getMessage());
+        }
+    }
+
+    @Test
+    public void testMissing() {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder().autoValueMapping(false).buildFactory(log);
+
+        final String [] names = new String[]{"a", "b", "c"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+
+        try {
+            factory.apply(writer);
+            TestCase.fail();
+        } catch (final JSONIngesterException e) {
+            TestCase.assertEquals("Found columns without mappings [a, b, c]", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testWithMissingKeys() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowMissingKeys(true)
+                .nConsumerThreads(0)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"a", "b", "c"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2}", "id");
+
+        Assert.assertEquals(1, result.intSize());
+        final Table expected = newTable(col("a", "test"), doubleCol("b", 42.2), intCol("c", QueryConstants.NULL_INT));
+        final String diffValue = diff(result, expected, 10);
+        Assert.assertEquals("", diffValue);
+    }
+
+    @Test
+    public void testWithNullInt() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder().allowNullValues(true).buildFactory(log);
+
+        final String [] names = new String[]{"a", "b", "c"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2, \"c\": null}", "id");
+
+        Assert.assertEquals(1, result.intSize());
+        final Table expected = newTable(col("a", "test"), doubleCol("b", 42.2), intCol("c", QueryConstants.NULL_INT));
+        final String diffValue = diff(result, expected, 10);
+        Assert.assertEquals("", diffValue);
+    }
+
+    @Test
+    public void testWithNullString() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                new JSONToTableWriterAdapterBuilder().allowNullValues(true).buildFactory(log);
+
+        final String [] names = new String[]{"a", "b", "c"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, String.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2, \"c\": null}", "id");
+
+        Assert.assertEquals(1, result.intSize());
+        final Table expected = newTable(col("a", "test"), doubleCol("b", 42.2), stringCol("c", new String[] { null }));
+        final String diffValue = diff(result, expected, 10);
+        Assert.assertEquals("", diffValue);
+    }
+
+    @Test
+    public void testTimes() throws IOException, InterruptedException, TimeoutException {
+        final DateTime reference = DateTimeUtils.convertDateTime("2020-06-25T09:37:00.123456789 NY");
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder().buildFactory(log);
+
+        final String [] names = new String[]{"Nanos", "Millis", "Micros", "StringVal"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{DateTime.class, DateTime.class, DateTime.class, DateTime.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        final TextMessage msg = new TextMessage();
+        msg.setText("{\"StringVal\": \"" + reference + "\", \"Nanos\": " + reference.getNanos() + ", \"Millis\": " + reference.getMillis() + ", \"Micros\":" + reference.getMicros() + "}");
+        adapter.consumeMessage("id", msg);
+
+        adapter.waitForProcessing(MAX_WAIT_MILLIS);
+        adapter.cleanup();
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+
+        Assert.assertEquals(1, result.intSize());
+        final Table expected = newTable(col("Nanos", reference), col("Millis", DateTimeUtils.convertDateTime("2020-06-25T09:37:00.123 NY")), col("Micros", DateTimeUtils.convertDateTime("2020-06-25T09:37:00.123456 NY")), col("StringVal", reference));
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testSimpleMapping() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowUnmapped("B").addColumnFromField("A", "a").buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "c"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2, \"c\": 123}", "id");
+
+        Assert.assertEquals(1, result.intSize());
+        final Table expected = newTable(col("A", "test"), doubleCol("B", QueryConstants.NULL_DOUBLE), intCol("c", 123));
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testPrimitiveParallel() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("A", "a")
+                .addColumnFromField("B", "b")
+                .addFieldParallel("C", "c")
+                .addFieldParallel("D", "d")
+                .autoValueMapping(false)
+                .allowNullValues(true)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "C", "D"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, long.class, String.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2, \"c\": [2020, 2021], \"d\": [\"Foo\", \"Bar\"] }", "id");
+
+        Assert.assertEquals(2, result.intSize());
+        final Table expected = newTable(
+                // expanded out to each row
+                col("A", "test", "test"), doubleCol("B", 42.2, 42.2),
+                // the parallel fields
+                longCol("C", 2020, 2021), stringCol("D", "Foo", "Bar"));
+        Assert.assertEquals("", diff(result, expected, 10));
+
+
+        injectJson(result, "{\"a\": \"Ahoy\", \"b\": 47, \"c\": [2022, 2023, 2024], \"d\": null }", "id2");
+
+        final Table expected2 = newTable(
+                // expanded out to each row
+                col("A", "test", "test", "Ahoy", "Ahoy", "Ahoy"), doubleCol("B", 42.2, 42.2, 47, 47, 47),
+                // the parallel fields
+                longCol("C", 2020, 2021, 2022, 2023, 2024), stringCol("D", "Foo", "Bar", null, null, null));
+        Assert.assertEquals("", diff(result, expected2, 10));
+
+        injectJson(result, "{\"a\": \"Greetings\", \"b\": 112358, \"c\": null, \"d\": null }", "id2");
+
+        final Table expected3 = newTable(
+                // expanded out to each row
+                col("A", "test", "test", "Ahoy", "Ahoy", "Ahoy", "Greetings"), doubleCol("B", 42.2, 42.2, 47, 47, 47, 112358),
+                // the parallel fields
+                longCol("C", 2020, 2021, 2022, 2023, 2024, NULL_LONG), stringCol("D", "Foo", "Bar", null, null, null, null));
+        Assert.assertEquals("", diff(result, expected3, 10));
+
+        injectJson(result, "{\"a\": \"Salutations\", \"b\": 132235, \"c\": null, \"d\": [\"Baz\"] }", "id2");
+
+        final Table expected4 = newTable(
+                // expanded out to each row
+                col("A", "test", "test", "Ahoy", "Ahoy", "Ahoy", "Greetings", "Salutations"), doubleCol("B", 42.2, 42.2, 47, 47, 47, 112358, 132235),
+                // the parallel fields
+                longCol("C", 2020, 2021, 2022, 2023, 2024, NULL_LONG, NULL_LONG), stringCol("D", "Foo", "Bar", null, null, null, null, "Baz"));
+        Assert.assertEquals("", diff(result, expected4, 10));
+    }
+
+    @Test
+    public void testParallelTypes() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("Expanded", "toExpand")
+                .addFieldParallel("ByteCol", "byte")
+                .addFieldParallel("CharCol", "char")
+                .addFieldParallel("ShortCol", "short")
+                .addFieldParallel("IntCol", "int")
+                .addFieldParallel("LongCol", "long")
+                .addFieldParallel("FloatCol", "float")
+                .addFieldParallel("DoubleCol", "double")
+                .addFieldParallel("StringCol", "str")
+                .addFieldParallel("BoolCol", "bool")
+                .addFieldParallel("DTCol", "dt")
+                .autoValueMapping(false)
+                .allowNullValues(true)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"Expanded", "ByteCol", "CharCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol", "StringCol", "BoolCol", "DTCol"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, byte.class, char.class, short.class, int.class, long.class, float.class, double.class, String.class, Boolean.class, DateTime.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"toExpand\": \"expanded\", \"byte\": [\"\\u0001\", null, \"\\u0002\"], \"char\": [\"A\", null, \"B\"], \"short\": [3, null, 4], \"int\": [5, null, 6], \"long\": [7, null, 8], \"float\": [9.9, null, 10.1], \"double\": [11.11, null, 12.12], \"str\":  [null, \"Billy\", \"Willy\"], \"bool\": [true, false, null], \"dt\": [ 1600348073000, 1600348077000, null ] }", "id");
+
+        final Table expected = newTable(
+                // expanded out to each row
+                col("Expanded", "expanded", "expanded", "expanded"),
+                // the parallel fields
+                byteCol("ByteCol", (byte)1, QueryConstants.NULL_BYTE, (byte)2),
+                charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'B'),
+                shortCol("ShortCol", (short)3, QueryConstants.NULL_SHORT, (short)4),
+                intCol("IntCol", 5, QueryConstants.NULL_INT, 6),
+                longCol("LongCol", 7, NULL_LONG, 8),
+                floatCol("FloatCol", 9.9f, QueryConstants.NULL_FLOAT, 10.10f),
+                doubleCol("DoubleCol", 11.11, QueryConstants.NULL_DOUBLE, 12.12),
+                stringCol("StringCol", null, "Billy", "Willy"),
+                col("BoolCol", true, false, null),
+                col("DTCol", new DateTime(1600348073L * 1000_000_000L), new DateTime(1600348077L * 1000_000_000L), null)
+                );
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testNestedRecordParallel() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factoryNestedDe = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .autoValueMapping(false);
+
+        final JSONToTableWriterAdapterBuilder factoryNestedHi = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("H", "h")
+                .addColumnFromField("I", "i")
+                .autoValueMapping(false);
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowUnmapped("B")
+                .addColumnFromField("A", "a")
+                .addNestedFieldParallel("c", factoryNestedDe)
+                .addFieldParallel("F", "f")
+                .addNestedField("g", factoryNestedHi)
+                .autoValueMapping(false)
+                .nConsumerThreads(0)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "D", "E", "F", "H", "I"};
+        @SuppressWarnings("rawtypes") final Class [] types = new Class[]{String.class, double.class, long.class, String.class, int.class, String.class, String.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2, \"c\": [ {\"d\": 123, \"e\": \"Foo\"}, {\"d\": 456, \"e\": \"Bar\"} ], \"f\": [2020, 2021], \"g\": { \"h\": \"chuckie\", \"i\": \"carlos\" } }", "id");
+
+        Assert.assertEquals(2, result.intSize());
+        final Table expected = newTable(
+                // expanded out to each row
+                col("A", "test", "test"), doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
+                // the nested parallel fields
+                longCol("D", 123, 456), stringCol("E", "Foo", "Bar"), intCol("F", 2020, 2021),
+                // the nested singleton field expanded to each row
+                stringCol("H", "chuckie", "chuckie"), stringCol("I", "carlos", "carlos"));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+
+        injectJson(result, "{\"a\": \"Ahoy\", \"b\": 44.2, \"c\": [ {\"d\": 124, \"e\": \"Baz\"}, null, {\"d\": 457, \"e\": \"Quux\"} ], \"f\": [2022, 2023, 2024], \"g\": { \"h\": \"chas\", \"i\": \"karl\" } }", "id");
+
+        final Table expected2 = newTable(
+                // expanded out to each row
+                col("A", "test", "test", "Ahoy", "Ahoy", "Ahoy"), doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
+                // the nested parallel fields
+                longCol("D", 123, 456, 124, NULL_LONG, 457), stringCol("E", "Foo", "Bar", "Baz", null, "Quux"), intCol("F", 2020, 2021, 2022, 2023, 2024),
+                // the nested singleton field expanded to each row
+                stringCol("H", "chuckie", "chuckie", "chas", "chas", "chas"), stringCol("I", "carlos", "carlos", "karl", "karl", "karl"));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected2, 10));
+    }
+
+    @Test
+    public void testNestedRecord() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factoryNestedDe = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .autoValueMapping(false);
+        final JSONToTableWriterAdapterBuilder factoryNestedGh = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("G", "g")
+                .addColumnFromField("H", "h")
+                .autoValueMapping(false);
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowUnmapped("B")
+                .addColumnFromField("I", "b")
+                .addColumnFromField("A", "a")
+                .addNestedField("c", factoryNestedDe)
+                .addNestedField("f", factoryNestedGh)
+                .autoValueMapping(false)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "D", "E", "G", "H", "I"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, long.class, String.class, short.class, float.class, double.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2, \"c\": {\"d\": 123, \"e\": \"Foo\"}, \"f\": {\"g\": 456, \"h\": 3.14 } }", "id");
+
+        Assert.assertEquals(1, result.intSize());
+        final Table expected = newTable(
+                col("A", "test"), doubleCol("B", QueryConstants.NULL_DOUBLE),
+                longCol("D", 123), stringCol("E", "Foo"), shortCol("G", (short)456), floatCol("H", 3.14f), doubleCol("I", 42.2));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testDoubleNestedRecord() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factoryNestedGh = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("G", "g")
+                .addColumnFromField("H", "h")
+                .autoValueMapping(false);
+
+        final JSONToTableWriterAdapterBuilder factoryNestedDe = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .addNestedField("f", factoryNestedGh)
+                .autoValueMapping(false);
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowUnmapped("B")
+                .addColumnFromField("I", "b")
+                .addColumnFromField("A", "a")
+                .addNestedFieldParallel("c", factoryNestedDe)
+                .autoValueMapping(false)
+                .sendTimestampColumnName("TM")
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "D", "E", "G", "H", "I", "TM"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, long.class, String.class, short.class, float.class, double.class, DateTime.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2, \"c\": [ {\"d\": 123, \"e\": \"Foo\", \"f\": {\"g\": 456, \"h\": 3.14 } }, {\"d\": 789, \"e\": \"Quux\", \"f\": {\"g\": 1011, \"h\": 2.71 } } ] }", "id");
+
+        final Table expected = newTable(
+                col("A", "test", "test"),
+                doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
+                longCol("D", 123, 789),
+                stringCol("E", "Foo", "Quux"),
+                shortCol("G", (short)456, (short)1011),
+                floatCol("H", 3.14f, 2.71f),
+                doubleCol("I", 42.2, 42.2),
+                col("TM", new DateTime(MESSAGE_TIMESTAMP * 1_000_000L), new DateTime(MESSAGE_TIMESTAMP * 1_000_000L)));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testTopLevelArray() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factoryNestedGh = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("G", "g")
+                .addColumnFromField("H", "h")
+                .autoValueMapping(false);
+
+        final JSONToTableWriterAdapterBuilder factoryNestedDe = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .addNestedField("f", factoryNestedGh)
+                .autoValueMapping(false);
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowUnmapped("B")
+                .addColumnFromField("I", "b")
+                .addColumnFromField("A", "a")
+                .addNestedFieldParallel("c", factoryNestedDe)
+                .autoValueMapping(false)
+                .processArrays(true)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "D", "E", "G", "H", "I"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, long.class, String.class, short.class, float.class, double.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "[{\"a\": \"test\", \"b\": 42.2, \"c\": [ {\"d\": 123, \"e\": \"Foo\", \"f\": {\"g\": 456, \"h\": 3.14 } }, {\"d\": 789, \"e\": \"Quux\", \"f\": {\"g\": 1011, \"h\": 2.71 } } ] }," +
+                " {\"a\": \"test test\", \"b\": 47, \"c\": [ {\"d\": 1213, \"e\": \"Baz\", \"f\": {\"g\": 456, \"h\": 3.14 } }, {\"d\": 1415, \"e\": \"Fribble\", \"f\": {\"g\": 1011, \"h\": 2.71 } } ] }]", "id");
+
+        final Table expected = newTable(
+                col("A", "test", "test", "test test", "test test"), doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
+                longCol("D", 123, 789, 1213, 1415), stringCol("E", "Foo", "Quux", "Baz", "Fribble"), shortCol("G", (short)456, (short)1011, (short)456, (short)1011), floatCol("H", 3.14f, 2.71f, 3.14f, 2.71f), doubleCol("I", 42.2, 42.2, 47, 47));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testTopLevelSimpleArray() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("I", "b")
+                .addColumnFromField("A", "a")
+                .autoValueMapping(false)
+                .processArrays(true)
+                .nConsumerThreads(0)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "I"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "[{\"a\": \"test\", \"b\": 42.2 }, {\"a\": \"Bo\", \"b\": 21.1 }]", "id");
+
+        final Table expected = newTable(
+                col("A", "test", "Bo"), doubleCol("I", 42.2, 21.1));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testMixedTopLevel() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factoryNestedGh = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("G", "g")
+                .addColumnFromField("H", "h")
+                .autoValueMapping(false);
+
+        final JSONToTableWriterAdapterBuilder factoryNestedDe = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .addNestedField("f", factoryNestedGh)
+                .autoValueMapping(false);
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowUnmapped("B")
+                .addColumnFromField("I", "b")
+                .addColumnFromField("A", "a")
+                .addNestedFieldParallel("c", factoryNestedDe)
+                .autoValueMapping(false)
+                .processArrays(true)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "D", "E", "G", "H", "I"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, long.class, String.class, short.class, float.class, double.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"Singleton\", \"b\": 33.3, \"c\": [ {\"d\": 0, \"e\": \"Boom\", \"f\": {\"g\": 1, \"h\": 2.71 } }, {\"d\": 2, \"e\": \"Box\", \"f\": {\"g\": 3, \"h\": 1.41 } } ] }", "id");
+
+        injectJson(result, "[{\"a\": \"test\", \"b\": 42.2, \"c\": [ {\"d\": 123, \"e\": \"Foo\", \"f\": {\"g\": 456, \"h\": 3.14 } }, {\"d\": 789, \"e\": \"Quux\", \"f\": {\"g\": 1011, \"h\": 2.71 } } ] }," +
+                " {\"a\": \"test test\", \"b\": 47, \"c\": [ {\"d\": 1213, \"e\": \"Baz\", \"f\": {\"g\": 456, \"h\": 3.14 } }, {\"d\": 1415, \"e\": \"Fribble\", \"f\": {\"g\": 1011, \"h\": 2.71 } } ] }]", "id");
+
+        final Table expected = newTable(
+                col("A", "Singleton", "Singleton", "test", "test", "test test", "test test"), doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
+                longCol("D", 0, 2, 123, 789, 1213, 1415), stringCol("E", "Boom", "Box", "Foo", "Quux", "Baz", "Fribble"), shortCol("G", (short)1, (short)3, (short)456, (short)1011, (short)456, (short)1011), floatCol("H", 2.71f, 1.41f, 3.14f, 2.71f, 3.14f, 2.71f), doubleCol("I", 33.3, 33.3, 42.2, 42.2, 47, 47));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testEmptyArrayOfMessages() throws InterruptedException, TimeoutException, IOException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowUnmapped("B")
+                .addColumnFromField("A", "a")
+                .processArrays(true)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "c"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        // First inject an empty message and verify nothing comes up as a result
+        try {
+            injectJson(result, "[]", "id");
+        } catch (final TimeoutException te) {
+            Assert.fail("Cleanup did not run properly!");
+        }
+        Assert.assertEquals(0, result.intSize());
+
+        // Then inject a message with some content, and make sure it populates
+        injectJson(result, "{\"a\": \"test\", \"b\": 42.2, \"c\": 123}", "id");
+        Assert.assertEquals(1, result.intSize());
+
+        final Table expected = newTable(col("A", "test"), doubleCol("B", QueryConstants.NULL_DOUBLE), intCol("c", 123));
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testNestedNulls() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factoryNestedGh = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("G", "g")
+                .addColumnFromField("H", "h")
+                .autoValueMapping(false);
+
+        final JSONToTableWriterAdapterBuilder factoryNestedDe = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .addNestedField("f", factoryNestedGh)
+                .allowNullValues(true)
+                .autoValueMapping(false);
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowUnmapped("B")
+                .addColumnFromField("I", "b")
+                .addColumnFromField("A", "a")
+                .addNestedField("c", factoryNestedDe)
+                .allowNullValues(true)
+                .autoValueMapping(false)
+                .nConsumerThreads(0)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"A", "B", "D", "E", "G", "H", "I"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, long.class, String.class, short.class, float.class, double.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"Angelica\", \"b\": 42.2, \"c\": {\"d\": 123, \"e\": \"Foo\", \"f\": {\"g\": 456, \"h\": 3.14 } } }", "id");
+
+        final Table expected = newTable(
+                col("A", "Angelica"), doubleCol("B", QueryConstants.NULL_DOUBLE),
+                longCol("D", 123), stringCol("E", "Foo"), shortCol("G", (short)456), floatCol("H", 3.14f), doubleCol("I", 42.2));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+
+       injectJson(result, "{\"a\": \"Eliza\", \"b\": 44, \"c\": {\"d\": 124, \"e\": \"Bar\", \"f\": null } }", "id");
+
+        final Table expected2 = newTable(
+                col("A", "Angelica", "Eliza"), doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
+                longCol("D", 123, 124), stringCol("E", "Foo", "Bar"), shortCol("G", (short)456, QueryConstants.NULL_SHORT), floatCol("H", 3.14f, QueryConstants.NULL_FLOAT), doubleCol("I", 42.2, 44));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected2, 10));
+
+        injectJson(result, "{\"a\": \"Peggy\", \"b\": 44, \"c\": null }", "id");
+
+        final Table expected3 = newTable(
+                col("A", "Angelica", "Eliza", "Peggy"), doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
+                longCol("D", 123, 124, NULL_LONG), stringCol("E", "Foo", "Bar", null), shortCol("G", (short)456, QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT),
+                floatCol("H", 3.14f, QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), doubleCol("I", 42.2, 44, 44));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected3, 10));
+    }
+
+    @Test
+    public void testBadNesting() {
+        final JSONToTableWriterAdapterBuilder factoryNestedDe = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .addFieldParallel("F", "f")
+                .autoValueMapping(false);
+
+        final JSONToTableWriterAdapterBuilder factoryNestedDe2 = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .autoValueMapping(true);
+
+        final JSONToTableWriterAdapterBuilder factoryNestedDe3 = new JSONToTableWriterAdapterBuilder()
+                .autoValueMapping(false)
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .allowUnmapped("F");
+
+        try {
+            new JSONToTableWriterAdapterBuilder()
+                    .allowUnmapped("B")
+                    .addColumnFromField("I", "b")
+                    .addColumnFromField("A", "a")
+                    .addNestedFieldParallel("c", factoryNestedDe)
+                    .autoValueMapping(false)
+                    .buildFactory(log);
+            TestCase.fail("Expected an exception");
+        } catch (final JSONIngesterException e) {
+            TestCase.assertEquals("Nested fields may not contain parallel array fields, c!", e.getMessage());
+        }
+
+        try {
+            new JSONToTableWriterAdapterBuilder()
+                    .allowUnmapped("B")
+                    .addColumnFromField("I", "b")
+                    .addColumnFromField("A", "a")
+                    .addNestedField("c", factoryNestedDe)
+                    .autoValueMapping(false)
+                    .buildFactory(log);
+            TestCase.fail("Expected an exception");
+        } catch (final JSONIngesterException e) {
+            TestCase.assertEquals("Nested fields may not contain parallel array fields, c!", e.getMessage());
+        }
+
+        try {
+            new JSONToTableWriterAdapterBuilder()
+                    .addNestedField("c", factoryNestedDe2)
+                    .buildFactory(log);
+            TestCase.fail("Expected an exception");
+        } catch (final JSONIngesterException e) {
+            TestCase.assertEquals("Auto value mapping is not supported for nested field, c!", e.getMessage());
+        }
+
+        try {
+            new JSONToTableWriterAdapterBuilder()
+                    .addNestedField("c", factoryNestedDe3)
+                    .buildFactory(log);
+            TestCase.fail("Expected an exception");
+        } catch (final JSONIngesterException e) {
+            TestCase.assertEquals("Nested fields may not define unmapped fields, c!", e.getMessage());
+        }
+
+        try {
+            new JSONToTableWriterAdapterBuilder()
+                    .addNestedField("c", factoryNestedDe2.autoValueMapping(false).receiveTimestampColumnName("Foo"))
+                    .buildFactory(log);
+            TestCase.fail("Expected an exception");
+        } catch (final JSONIngesterException e) {
+            TestCase.assertEquals("Nested fields may not define message header columns field c, columns=[Foo]", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testWaitForProcessing() throws IOException, InterruptedException {
+            final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                    .allowUnmapped("B")
+                    .addColumnFromField("A", "a")
+                    .nConsumerThreads(-1)
+                    .buildFactory(log);
+
+            final String [] names = new String[]{"A", "B", "c"};
+            @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class};
+
+            final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+
+            adapter = factory.apply(writer);
+
+            final TextMessage msg = new TextMessage();
+            msg.setText("{\"a\": \"test\", \"b\": 42.2, \"c\": 123}");
+            adapter.consumeMessage("id", msg);
+
+            try {
+                // this will unfortunately take MAX_WAIT_MILLIS to finish
+                adapter.waitForProcessing(MAX_WAIT_MILLIS);
+                Assert.fail("Expected timeout exception did not occur");
+            } catch(final TimeoutException ex) {
+                // expected;
+            }
+    }
+
+    @Test
+    public void testMissingColumns() {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .autoValueMapping(false)
+                .allowUnmapped("unmapped")
+                .addColumnFromField("str", "a")
+                .addColumnFromDoubleFunction("dbl", (x)->1.5)
+                .addColumnFromIntFunction("iger", (x)->2)
+                .addColumnFromLongFunction("lng", (x) -> (long)3.0)
+                .addColumnFromFunction("obj", Object.class, (x) -> new Object())
+                .buildFactory(log);
+
+        final String [] names = new String[]{"str", "dbl", "iger", "lng", "obj", "unmapped", "needmap"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class, long.class, Object.class, Object.class, Object.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        try {
+            factory.apply(writer);
+            Assert.fail("Should have failed to consume message");
+        } catch (final JSONIngesterException jie) {
+            Assert.assertEquals("Found columns without mappings [needmap], allowed unmapped=[unmapped], mapped to fields=[str], mapped to int functions=[iger], mapped to long functions=[lng], mapped to double functions=[dbl], mapped to functions=[obj]", jie.getMessage());
+        }
+    }
+
+    @Test
+    public void testColumnTypeMismatchDouble()  {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .autoValueMapping(false)
+                .allowUnmapped("unmapped")
+                .addColumnFromField("str", "a")
+                .addColumnFromDoubleFunction("dbl", (x)->1.5)
+                .addColumnFromIntFunction("iger", (x)->2)
+                .addColumnFromLongFunction("lng", (x) -> (long)3.0)
+                .addColumnFromFunction("obj", String.class, (x) -> "")
+                .buildFactory(log);
+
+        final String [] names = new String[]{"str", "dbl", "iger", "lng", "obj", "unmapped"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, int.class, double.class, int.class, int.class, Object.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        try {
+            factory.apply(writer);
+            Assert.fail("Should have failed to consume message");
+        } catch (final JSONIngesterException jie) {
+            Assert.assertEquals("Column dbl is of type int, can not assign ToDoubleFunction.", jie.getMessage());
+        }
+    }
+
+    @Test
+    public void testColumnTypeMismatchInt()  {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .autoValueMapping(false)
+                .allowUnmapped("unmapped")
+                .addColumnFromField("str", "a")
+                .addColumnFromDoubleFunction("dbl", (x)->1.5)
+                .addColumnFromIntFunction("iger", (x)->2)
+                .addColumnFromLongFunction("lng", (x) -> (long)3.0)
+                .addColumnFromFunction("obj", String.class, (x) -> "")
+                .buildFactory(log);
+
+        final String [] names = new String[]{"str", "dbl", "iger", "lng", "obj", "unmapped"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, double.class, int.class, int.class, Object.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        try {
+            factory.apply(writer);
+            Assert.fail("Should have failed to consume message");
+        } catch (final JSONIngesterException jie) {
+            Assert.assertEquals("Column iger is of type double, can not assign ToIntFunction.", jie.getMessage());
+        }
+    }
+
+    @Test
+    public void testColumnTypeMismatchLong()  {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .autoValueMapping(false)
+                .allowUnmapped("unmapped")
+                .addColumnFromField("str", "a")
+                .addColumnFromDoubleFunction("dbl", (x)->1.5)
+                .addColumnFromIntFunction("iger", (x)->2)
+                .addColumnFromLongFunction("lng", (x) -> (long)3.0)
+                .addColumnFromFunction("obj", String.class, (x) -> "")
+                .buildFactory(log);
+
+        final String [] names = new String[]{"str", "dbl", "iger", "lng", "obj", "unmapped"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class, int.class, int.class, Object.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        try {
+            factory.apply(writer);
+            Assert.fail("Should have failed to consume message");
+        } catch (final JSONIngesterException jie) {
+            Assert.assertEquals("Column lng is of type int, can not assign ToLongFunction.", jie.getMessage());
+        }
+    }
+
+    @Test
+    public void testFunction() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromFunction("StrCol", String.class, (r) -> JsonNodeUtil.getString(r, "a", false, false).split(",")[0])
+                .addColumnFromIntFunction("IntCol", (r) -> JsonNodeUtil.getInt(r, "c", false, false) * 2)
+                .addColumnFromLongFunction("LongCol", (r) -> JsonNodeUtil.getLong(r, "c", false, false) * (1L<<32))
+                .addColumnFromDoubleFunction("DoubleCol", (r) -> {
+                    double sum = 0;
+                    for (final JsonNode node: r.get("b")) {
+                        sum += node.asDouble();
+                    }
+                    return sum;
+                })
+                .buildFactory(log);
+
+        final String [] names = new String[]{"StrCol", "DoubleCol", "IntCol", "LongCol"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class, long.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"Hello, world\", \"b\": [42.2, 37], \"c\": 123}", "id");
+
+        final Table expected = newTable(col("StrCol", "Hello"),
+                doubleCol("DoubleCol", 79.2),
+                intCol("IntCol", 246),
+                longCol("LongCol", 123L << 32));
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testFunctionWithMismatchedColumnType() {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromFunction("StrCol", Object.class, (r) -> new Object())
+                .buildFactory(log);
+
+        final String [] names = new String[]{"StrCol"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+
+        try {
+            factory.apply(writer);
+            Assert.fail("Should have failed to apply factory!");
+        } catch (final JSONIngesterException jie) {
+            Assert.assertEquals("Column StrCol is of type class java.lang.String, can not assign function of type: class java.lang.Object", jie.getMessage());
+        }
+    }
+
+    @Test
+    public void testTypedGenericColumnSetterFunctions() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromFunction("StrCol", String.class, (r) -> JsonNodeUtil.getString(r, "a", false, false).split(",")[0])
+                .addColumnFromFunction("IntCol", int.class, (r) -> JsonNodeUtil.getInt(r, "c", false, false) * 2)
+                .addColumnFromFunction("LongCol", long.class, (r) -> JsonNodeUtil.getLong(r, "c", false, false) * (1L<<32))
+                .addColumnFromFunction("ShortCol", short.class, (r) -> JsonNodeUtil.getShort(r, "c", false, false) )
+                .addColumnFromFunction("FloatCol", float.class, (r) -> JsonNodeUtil.getFloat(r, "c", false, false) * 0.5f)
+                .addColumnFromFunction("ByteCol", byte.class, (r) -> (byte)3)
+                .addColumnFromFunction("DoubleCol", double.class, (r) -> {
+                    double sum = 0;
+                    for (final JsonNode node: r.get("b")) {
+                        sum += node.asDouble();
+                    }
+                    return sum;
+                })
+                .addColumnFromFunction("BoolCol", Boolean.class, (r) -> JsonNodeUtil.getChar(r, "d", false, false) == 'a')
+                .addColumnFromFunction("CharCol", char.class, (r) -> JsonNodeUtil.getChar(r, "d", false, false))
+                .nConsumerThreads(0)
+                .buildFactory(log);
+
+        final String [] names = new String[]{"StrCol", "DoubleCol", "IntCol", "LongCol", "ShortCol", "FloatCol", "ByteCol", "BoolCol", "CharCol"};
+        @SuppressWarnings("rawtypes") final Class [] types= new Class[]{String.class, double.class, int.class, long.class, short.class, float.class, byte.class, Boolean.class, char.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(result, "{\"a\": \"Hello, world\", \"b\": [42.2, 37], \"c\": 123, \"d\": \"a\"}", "id");
+
+        final Table expected = newTable(col("StrCol", "Hello"),
+                doubleCol("DoubleCol", 79.2),
+                intCol("IntCol", 246),
+                longCol("LongCol", 123L << 32),
+                shortCol("ShortCol", (short)123),
+                floatCol("FloatCol", 61.5f),
+                byteCol("ByteCol", (byte)3),
+                col("BoolCol", true),
+                col("CharCol", 'a')
+        );
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    private void injectJson(final UpdateSourceQueryTable result, final String s, final String id) throws IOException, InterruptedException, TimeoutException {
+        final TextMessage msg = new TextMessage();
+        msg.setText(s);
+        msg.setSenderTimestamp(MESSAGE_TIMESTAMP);
+        adapter.consumeMessage(id, msg);
+
+        adapter.waitForProcessing(MAX_WAIT_MILLIS);
+        adapter.cleanup();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+    }
+
+    @Test
+    public void testDuplicateColumns() {
+        final JSONToTableWriterAdapterBuilder builder = new JSONToTableWriterAdapterBuilder();
+        builder.allowUnmapped("A");
+        expectAlreadyDefined(() -> builder.addColumnFromField("A", "B"));
+        expectAlreadyDefined(() -> builder.addColumnFromIntFunction("A", (r) -> QueryConstants.NULL_INT));
+        expectAlreadyDefined(() -> builder.addColumnFromLongFunction("A", (r) -> NULL_LONG));
+        expectAlreadyDefined(() -> builder.addColumnFromDoubleFunction("A", (r) -> QueryConstants.NULL_DOUBLE));
+        expectAlreadyDefined(() -> builder.addColumnFromFunction("A", String.class, (r) -> "test"));
+
+        final JSONToTableWriterAdapterBuilder builder2 = new JSONToTableWriterAdapterBuilder();
+        builder2.addColumnFromField("A", "B");
+        expectAlreadyDefined(() -> builder2.allowUnmapped("A"));
+        expectAlreadyDefined(() -> builder2.addColumnFromIntFunction("A", (r) -> QueryConstants.NULL_INT));
+        expectAlreadyDefined(() -> builder2.addColumnFromLongFunction("A", (r) -> NULL_LONG));
+        expectAlreadyDefined(() -> builder2.addColumnFromDoubleFunction("A", (r) -> QueryConstants.NULL_DOUBLE));
+        expectAlreadyDefined(() -> builder2.addColumnFromFunction("A", String.class, (r) -> "test"));
+
+        final JSONToTableWriterAdapterBuilder builder3 = new JSONToTableWriterAdapterBuilder();
+        builder3.addColumnFromIntFunction("A", (r) -> QueryConstants.NULL_INT);
+        expectAlreadyDefined(() -> builder3.allowUnmapped("A"));
+        expectAlreadyDefined(() -> builder3.addColumnFromField("A", "B"));
+        expectAlreadyDefined(() -> builder3.addColumnFromDoubleFunction("A", (r) -> QueryConstants.NULL_DOUBLE));
+        expectAlreadyDefined(() -> builder3.addColumnFromLongFunction("A", (r) -> QueryConstants.NULL_INT));
+        expectAlreadyDefined(() -> builder3.addColumnFromFunction("A", String.class, (r) -> "test"));
+
+        final JSONToTableWriterAdapterBuilder builder4 = new JSONToTableWriterAdapterBuilder();
+        builder4.addColumnFromLongFunction("A", (r) -> NULL_LONG);
+        expectAlreadyDefined(() -> builder4.allowUnmapped("A"));
+        expectAlreadyDefined(() -> builder4.addColumnFromField("A", "B"));
+        expectAlreadyDefined(() -> builder4.addColumnFromIntFunction("A", (r) -> QueryConstants.NULL_INT));
+        expectAlreadyDefined(() -> builder4.addColumnFromDoubleFunction("A", (r) -> QueryConstants.NULL_DOUBLE));
+        expectAlreadyDefined(() -> builder4.addColumnFromFunction("A", String.class, (r) -> "test"));
+
+        final JSONToTableWriterAdapterBuilder builder5 = new JSONToTableWriterAdapterBuilder();
+        builder5.addColumnFromDoubleFunction("A", (r) -> QueryConstants.NULL_DOUBLE);
+        expectAlreadyDefined(() -> builder5.allowUnmapped("A"));
+        expectAlreadyDefined(() -> builder5.addColumnFromField("A", "B"));
+        expectAlreadyDefined(() -> builder5.addColumnFromIntFunction("A", (r) -> QueryConstants.NULL_INT));
+        expectAlreadyDefined(() -> builder5.addColumnFromLongFunction("A", (r) -> NULL_LONG));
+        expectAlreadyDefined(() -> builder5.addColumnFromFunction("A", String.class, (r) -> "test"));
+
+        final JSONToTableWriterAdapterBuilder builder6 = new JSONToTableWriterAdapterBuilder();
+        builder6.addColumnFromFunction("A", String.class, (r) -> "test");
+        expectAlreadyDefined(() -> builder6.allowUnmapped("A"));
+        expectAlreadyDefined(() -> builder6.addColumnFromField("A", "B"));
+        expectAlreadyDefined(() -> builder6.addColumnFromIntFunction("A", (r) -> QueryConstants.NULL_INT));
+        expectAlreadyDefined(() -> builder6.addColumnFromLongFunction("A", (r) -> NULL_LONG));
+        expectAlreadyDefined(() -> builder4.addColumnFromDoubleFunction("A", (r) -> QueryConstants.NULL_DOUBLE));
+    }
+
+    private void expectAlreadyDefined(final Runnable r) {
+        try {
+            r.run();
+            TestCase.fail();
+        } catch (final JSONIngesterException e) {
+            Assert.assertEquals("Column is already defined A", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testPerformanceSmallMessages() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder().buildFactory(log);
+
+        final String strCol = "str";
+        final String dblCol = "dbl";
+        final String intCol = "iger";
+        final String shortCol = "shrt";
+        final String longCol = "lng";
+        final String byteCol = "byt";
+        final String floatCol = "flt";
+
+        final String[] names = new String[7];
+        @SuppressWarnings("rawtypes") final Class[] types = new Class[names.length];
+        final int groupSize = names.length / 7;
+        for (int i = 0; i < names.length; i++) {
+
+            if (i < groupSize) {
+                //noinspection ConstantConditions
+                names[i] = strCol + (i % groupSize);
+                types[i] = String.class;
+            } else if (i < 2 * groupSize) {
+                //noinspection ConstantConditions
+                names[i] = dblCol + (i % groupSize);
+                types[i] = double.class;
+            } else if (i < 3 * groupSize) {
+                //noinspection ConstantConditions
+                names[i] = intCol + (i % groupSize);
+                types[i] = int.class;
+            } else if (i < 4 * groupSize) {
+                //noinspection ConstantConditions
+                names[i] = shortCol + (i % groupSize);
+                types[i] = short.class;
+            } else if (i < 5 * groupSize) {
+                //noinspection ConstantConditions
+                names[i] = longCol + (i % groupSize);
+                types[i] = long.class;
+            } else if (i < 6 * groupSize) {
+                //noinspection ConstantConditions
+                names[i] = byteCol + (i % groupSize);
+                types[i] = byte.class;
+            } else {
+                //noinspection ConstantConditions
+                names[i] = floatCol + (i % groupSize);
+                types[i] = float.class;
+            }
+        }
+
+        final TextMessage[] messages = new TextMessage[200000];
+
+        final int mgGroupSize = 1;
+        for (int i = 0; i < messages.length; i++) {
+            final StringBuilder builder = new StringBuilder("{" + System.lineSeparator());
+            for (int mg = 0; mg < 7; mg++) {
+                if (mg < mgGroupSize) {
+                    //noinspection ConstantConditions
+                    builder.append("\"" + strCol).append(mg % mgGroupSize).append("\": \"test\",").append(System.lineSeparator());
+                } else if (mg < 2 * mgGroupSize) {
+                    //noinspection ConstantConditions
+                    builder.append("\"" + dblCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append(".2,").append(System.lineSeparator());
+                } else if (mg < 3 * mgGroupSize) {
+                    //noinspection ConstantConditions
+                    builder.append("\"" + intCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append("23,").append(System.lineSeparator());
+                } else if (mg < 4 * mgGroupSize) {
+                    //noinspection ConstantConditions
+                    builder.append("\"" + shortCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append(",").append(System.lineSeparator());
+                } else if (mg < 5 * mgGroupSize) {
+                    //noinspection ConstantConditions
+                    builder.append("\"" + longCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append("23456789,").append(System.lineSeparator());
+                } else if (mg < 6 * mgGroupSize) {
+                    //noinspection ConstantConditions
+                    builder.append("\"" + byteCol).append(mg % mgGroupSize).append("\": 3,").append(System.lineSeparator());
+                } else {
+                    //noinspection ConstantConditions
+                    builder.append("\"" + floatCol).append(mg % mgGroupSize).append("\": 98765.4321,").append(System.lineSeparator());
+                }
+            }
+            builder.deleteCharAt(builder.length() - 2); // Remove trailing comma
+            builder.append("}");
+
+            messages[i] = new TextMessage();
+            messages[i].setText(builder.toString());
+        }
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        // Give time for the adapter to get set up, including a few initial messages so the setters exist on each thread
+        adapter.consumeMessage("id", messages[0]);
+        adapter.consumeMessage("id", messages[1]);
+        adapter.consumeMessage("id", messages[2]);
+        adapter.consumeMessage("id", messages[3]);
+        adapter.waitForProcessing(MAX_WAIT_MILLIS);
+
+        long before = System.nanoTime();
+        for (int i = 4; i < messages.length; i++) {
+            adapter.consumeMessage("id", messages[i]);
+        }
+        long after = System.nanoTime();
+        long intervalNanos = after - before;
+        System.out.println("Consumed " + messages.length + " in " + intervalNanos / 1_000_000L + "ms, " + NANOS_PER_SECOND * messages.length / intervalNanos + " msgs/sec");
+        before = System.nanoTime();
+        while (result.intSize() < messages.length) {
+            adapter.cleanup();
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+            // busy-wait or else the processor threads will pause too
+            //noinspection StatementWithEmptyBody
+            while (System.nanoTime() - before < 100_000_000L) {
+                // Do nothing
+            }
+        }
+        after = System.nanoTime();
+        intervalNanos = after - before;
+        System.out.println("Processed " + result.intSize() + " in " + intervalNanos / 1_000_000L + "ms, " + NANOS_PER_SECOND * messages.length / intervalNanos + " msgs/sec");
+
+        Assert.assertEquals(messages.length, result.intSize());
+        // Somewhat arbitrarily picking 50,000 messages per second as a minimum performance benchmark.
+        Assert.assertTrue("Performance minimum", NANOS_PER_SECOND * messages.length / intervalNanos > 50000);
+    }
+
+    @Test
+    public void testPerformanceBigMessages() throws IOException, InterruptedException, TimeoutException {
+        // Many other tests want fewer threads. For the performance test, we want to standardize on 4.
+        final int numThreads = 4;
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .nConsumerThreads(numThreads)
+                .buildFactory(log);
+
+        final String strCol = "str";
+        final String dblCol = "dbl";
+        final String intCol = "iger";
+        final String shortCol = "shrt";
+        final String longCol = "lng";
+        final String byteCol = "byt";
+        final String floatCol = "flt";
+
+        final String[] names = new String[140];
+        @SuppressWarnings("rawtypes") final Class[] types = new Class[names.length];
+        final int groupSize = names.length / 7;
+        for (int i = 0; i < names.length; i++) {
+
+            if (i < groupSize) {
+                names[i] = strCol + (i % groupSize);
+                types[i] = String.class;
+            } else if (i < 2 * groupSize) {
+                names[i] = dblCol + (i % groupSize);
+                types[i] = double.class;
+            } else if (i < 3 * groupSize) {
+                names[i] = intCol + (i % groupSize);
+                types[i] = int.class;
+            } else if (i < 4 * groupSize) {
+                names[i] = shortCol + (i % groupSize);
+                types[i] = short.class;
+            } else if (i < 5 * groupSize) {
+                names[i] = longCol + (i % groupSize);
+                types[i] = long.class;
+            } else if (i < 6 * groupSize) {
+                names[i] = byteCol + (i % groupSize);
+                types[i] = byte.class;
+            } else {
+                names[i] = floatCol + (i % groupSize);
+                types[i] = float.class;
+            }
+        }
+
+        final TextMessage[] messages = new TextMessage[100000];
+
+        final int mgGroupSize = 30;
+        for (int i = 0; i < messages.length; i++) {
+            final StringBuilder builder = new StringBuilder("{" + System.lineSeparator());
+            for (int mg = 0; mg < 210; mg++) {
+                if (mg < mgGroupSize) {
+                    builder.append("\"" + strCol).append(mg % mgGroupSize).append("\": \"test\",").append(System.lineSeparator());
+                } else if (mg < 2 * mgGroupSize) {
+                    builder.append("\"" + dblCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append(".2,").append(System.lineSeparator());
+                } else if (mg < 3 * mgGroupSize) {
+                    builder.append("\"" + intCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append("23,").append(System.lineSeparator());
+                } else if (mg < 4 * mgGroupSize) {
+                    builder.append("\"" + shortCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append(",").append(System.lineSeparator());
+                } else if (mg < 5 * mgGroupSize) {
+                    builder.append("\"" + longCol).append(mg % mgGroupSize).append("\": ").append(i + 1).append("23456789,").append(System.lineSeparator());
+                } else if (mg < 6 * mgGroupSize) {
+                    builder.append("\"" + byteCol).append(mg % mgGroupSize).append("\": 3,").append(System.lineSeparator());
+                } else {
+                    builder.append("\"" + floatCol).append(mg % mgGroupSize).append("\": 98765.4321,").append(System.lineSeparator());
+                }
+            }
+            builder.deleteCharAt(builder.length() - 2); // Remove trailing comma
+            builder.append("}");
+
+            messages[i] = new TextMessage();
+            messages[i].setText(builder.toString());
+        }
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        // Give time for the adapter to get set up, including a few initial messages so the setters exist on each thread
+        adapter.consumeMessage("id", messages[0]);
+        adapter.consumeMessage("id", messages[1]);
+        adapter.consumeMessage("id", messages[2]);
+        adapter.consumeMessage("id", messages[3]);
+
+        adapter.waitForProcessing(MAX_WAIT_MILLIS);
+
+        long before = System.nanoTime();
+        for (int i = 4; i < messages.length; i++) {
+            adapter.consumeMessage("id", messages[i]);
+        }
+        long after = System.nanoTime();
+        long intervalNanos = after - before;
+        System.out.println("Consumed " + messages.length + " in " + intervalNanos / 1_000_000L + "ms, " + NANOS_PER_SECOND * messages.length / intervalNanos + " msgs/sec");
+        before = System.nanoTime();
+        while (result.intSize() < messages.length) {
+            adapter.cleanup();
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+            // busy-wait or else the processor threads will pause too
+            //noinspection StatementWithEmptyBody
+            while (System.nanoTime() - before < 200_000_000L) {
+                // Do nothing
+            }
+        }
+        after = System.nanoTime();
+        intervalNanos = after - before;
+        System.out.println("Processed " + result.intSize() + " in " + intervalNanos / 1_000_000L + "ms, " + NANOS_PER_SECOND * messages.length / intervalNanos + " msgs/sec");
+
+        // Somewhat arbitrarily picking 30,000 messages per second as a minimum performance benchmark
+        // - note that this test is lumping the LTM in with the imports, so actual performance should be higher.
+        Assert.assertEquals(messages.length, result.intSize());
+        Assert.assertTrue(intervalNanos < (10f/3f) * NANOS_PER_SECOND);
+    }
+
+    @Test
+    public void testBadParse() throws IOException, InterruptedException, TimeoutException {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final Logger log = new StreamLoggerImpl(baos, LogLevel.ERROR);
+
+        //noinspection Convert2Lambda
+        ProcessEnvironment.getGlobalFatalErrorReporter().addInterceptor(new FatalErrorReporter.Interceptor() {
+            @Override
+            public void intercept(@NotNull final String message, @NotNull final Throwable throwable, boolean isFromUncaught) {
+                System.out.println("Uncaught exception: " + throwable.getMessage());
+                throwable.printStackTrace();
+
+                // throwing this exception will crash FatalErrorReporterBase.report() before it has a chance to call System.exit().
+                throw new RuntimeException(throwable);
+            }
+    });
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory = new JSONToTableWriterAdapterBuilder()
+                .allowNullValues(true)
+                .nConsumerThreads(1)
+                .buildFactory(log);
+
+        final String strCol = "str";
+        final String boolColName = "bln";
+
+        final String [] names = new String[]{strCol, boolColName};
+        final Class<?> [] types= new Class[]{String.class, Boolean.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        final TextMessage msg = new TextMessage();
+        msg.setText("{\""+ strCol + "\": \"test\", \""
+                + boolColName + "\": null "
+                +"}");
+        adapter.consumeMessage("id", msg);
+
+        // Because the message will be consumed almost instantly, then actually processed separately, we have to wait to see the results.
+        adapter.waitForProcessing(1000);
+        adapter.cleanup();
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+
+        final Table expected = newTable(col(strCol, "test"),
+                ColumnHolder.getBooleanColumnHolder( boolColName, false, (byte)2)
+        );
+
+        Assert.assertEquals("", diff(result, expected, 10));
+
+        Assert.assertEquals("", baos.toString(StandardCharsets.UTF_8));
+        baos.reset();
+
+        final TextMessage msg2 = new TextMessage();
+        msg2.setText("~x=y;b=c");
+        adapter.consumeMessage("id", msg2);
+
+        final TextMessage msg3 = new TextMessage();
+        msg3.setText("{\""+ strCol + "\": \"Yikes\", \""
+                + boolColName + "\": false "
+                +"}");
+        adapter.consumeMessage("id", msg3);
+
+        // Because the message will be consumed almost instantly, then actually processed separately, we have to wait to see the results.
+        adapter.waitForProcessing(1000);
+        adapter.cleanup();
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
+
+        final Table expected3 = newTable(col(strCol, "test", "Yikes"),
+                ColumnHolder.getBooleanColumnHolder( boolColName, false, (byte)2, (byte)0)
+        );
+
+        Assert.assertEquals("", diff(result, expected3, 10));
+
+        final String logText = baos.toString(StandardCharsets.UTF_8);
+        if (!logText.startsWith("Unable to parse JSON message: \"~x=y;b=c\": io.deephaven.kafka.ingest.JsonNodeUtil$JsonStringParseException: Failed to parse JSON string.")) {
+            TestCase.fail("Expected JSON parse error in log, but was : " + logText);
+        }
+        baos.reset();
+    }
+
+}

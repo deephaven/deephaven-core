@@ -19,6 +19,7 @@ import java.util.Map;
  */
 class InMemoryRowHolder {
 
+    // TODO: generate row holders specific to the adapter's field setter types?
     private final Object[] data;
     private int dataPosition = 0;
     private long messageNumber;

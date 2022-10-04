@@ -22,9 +22,9 @@ public interface StringToTableWriterAdapter extends DataToTableWriterAdapter {
     void consumeString(final TextMessageMetadata metadata, String input) throws IOException;
 
     /**
-     * Record the owning MessageToStringAdapter, if this StringToTableWriterAdapter needs that.
-     * @param parent The MessageToStringAdapter that controls this StringToTableWriterAdapter.
+     * Record the owning StringMessageToTableAdapter, if this StringToTableWriterAdapter needs that.
+     * @param parent The StringMessageToTableAdapter that controls this StringToTableWriterAdapter.
      */
-    void setOwner(MessageToStringAdapter<?> parent);
+    void setOwner(StringMessageToTableAdapter<?> parent);
 
 }

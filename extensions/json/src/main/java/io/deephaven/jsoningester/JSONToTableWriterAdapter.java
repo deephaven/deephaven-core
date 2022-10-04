@@ -48,13 +48,13 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private static final int MAX_UNPARSEABLE_LOG_MESSAGES = Configuration.getInstance().getIntegerWithDefault("JSONToTableWriterAdapter.maxUnparseableLogMessages", 100);
     private static final int SHUTDOWN_TIMEOUT_SECS = 30;
     public static final String SUBTABLE_RECORD_ID_COL = "SubtableRecordId";
-    private static final int N_CONSUMER_THREADS_DEFAULT = Configuration.getInstance().getIntegerWithDefault("JSONToTableWriterAdapter.consumerThreads", 1);
+    static final int N_CONSUMER_THREADS_DEFAULT = Configuration.getInstance().getIntegerWithDefault("JSONToTableWriterAdapter.consumerThreads", 1);
 
     @SuppressWarnings("FieldCanBeLocal")
-    private final ThreadGroup threadGroup;
+    private final ThreadGroup consumerThreadGroup;
     private final List<DataToTableWriterAdapter> allSubtableAdapters;
 
-    private MessageToStringAdapter<?> owner;
+    private StringMessageToTableAdapter<?> owner;
 
     private final TableWriter<?> writer;
     private final Logger log;
@@ -68,7 +68,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private final boolean processArrays;
 
     /**
-     * Number of JSON processing threads.
+     * Number of JSON processing threads. If {@code numThreads == 0}, then {@link #consumeString} will
+     * process messages synchronously (instead of enqueuing them on the {@link #waitingMessages} queue to be
+     * processed by the {@link #consumerThreadGroup consumer threads}).
      */
     private final int numThreads;
 
@@ -113,7 +115,6 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      */
     private static final AtomicInteger instanceCounter = new AtomicInteger();
     private Map<String, JSONToTableWriterAdapter> subtableFieldsToAdapters = new LinkedHashMap<>();
-    private Map<String, AtomicLong> subtableFieldsToCounters = new LinkedHashMap<>();
 
     private final Queue<SubtableData> subtableProcessingQueue;
 
@@ -122,6 +123,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                              final boolean allowMissingKeys,
                              final boolean allowNullValues,
                              final boolean processArrays,
+                             final int nConsumerThreads,
                              final Map<String, String> columnToJsonField,
                              final Map<String, ToIntFunction<JsonNode>> columnToIntFunctions,
                              final Map<String, ToLongFunction<JsonNode>> columnToLongFunctions,
@@ -136,7 +138,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                              final boolean createHolders
     ) {
         this(writer, log, allowMissingKeys, allowNullValues, processArrays,
-                N_CONSUMER_THREADS_DEFAULT,
+                nConsumerThreads,
                 columnToJsonField,
                 columnToIntFunctions,
                 columnToLongFunctions,
@@ -174,7 +176,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param createHolders Whether to create the InMemmoryRowHolders and associated thread pool.
      * @param subtableProcessingQueue
      */
-    JSONToTableWriterAdapter(final TableWriter<?> writer,
+     JSONToTableWriterAdapter(final TableWriter<?> writer,
                              @NotNull final Logger log,
                              final boolean allowMissingKeys,
                              final boolean allowNullValues,
@@ -288,7 +290,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         if (!missingColumns.isEmpty()) {
             final StringBuilder sb = new StringBuilder("Found columns without mappings " + missingColumns);
             if (!allowedUnmappedColumns.isEmpty()) {
-                sb.append(", unmapped=").append(allowedUnmappedColumns);
+                sb.append(", allowed unmapped=").append(allowedUnmappedColumns);
             }
             if (!columnToJsonField.isEmpty()) {
                 sb.append(", mapped to fields=").append(columnToJsonField.keySet());
@@ -298,9 +300,6 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             }
             if (!columnToLongFunctions.isEmpty()) {
                 sb.append(", mapped to long functions=").append(columnToLongFunctions.keySet());
-            }
-            if (!columnToDoubleFunctions.isEmpty()) {
-                sb.append(", mapped to double functions=").append(columnToDoubleFunctions.keySet());
             }
             if (!columnToDoubleFunctions.isEmpty()) {
                 sb.append(", mapped to double functions=").append(columnToDoubleFunctions.keySet());
@@ -333,12 +332,14 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             // Create the message processing threads -- one per holder.
             // For subtable adapters, numThreads is zero, and processing is done synchronously by consumeString().
             // This way, subtables from multiple records are parsed under the parent adapter's thread pool.
-            if (numThreads > 0) {
-                threadGroup = new ThreadGroup(JSONToTableWriterAdapter.class.getSimpleName() + instanceId + "_ThreadGroup");
-                threadGroup.setDaemon(true);
+            if (numThreads > 0
+                || numThreads == -1 // numThreads==-1 is used in tests to create an adapter that never processes
+            ) {
+                consumerThreadGroup = new ThreadGroup(JSONToTableWriterAdapter.class.getSimpleName() + instanceId + "_ThreadGroup");
+                consumerThreadGroup.setDaemon(true);
 
                 for (int threadCount = 0; threadCount < numThreads; threadCount++) {
-                    final Thread t = new ConsumerThread(threadGroup, instanceId, threadCount);
+                    final Thread t = new ConsumerThread(consumerThreadGroup, instanceId, threadCount);
                     t.setDaemon(true);
                     t.start();
                 }
@@ -346,18 +347,24 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 {
                     // Start a thread to flush the adapter occasionally occasionally
                     // TODO: this is really the responsibility of whoever owns the TableWriters (i.e. some ingester)
-                    final Thread flushThread = new Thread(threadGroup, () -> {
+                    final Thread cleanupThread = new Thread(consumerThreadGroup, () -> {
                         final long flushIntervalMillis = 5000L;
+                        long lastFlush = 0L;
                         while (!isShutdown.get()) {
                             try {
+                                //noinspection BusyWait
                                 Thread.sleep(flushIntervalMillis);
                             } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
+                                throw new RuntimeException(Thread.currentThread().getName() + ": Interrupted while waiting to flush", e);
                             }
-                            try {
-                                JSONToTableWriterAdapter.this.cleanup();
-                            } catch (IOException e) {
-                                throw new RuntimeException("Exception while flushing data to table writers", e);
+                            final long now = System.currentTimeMillis();
+                            if(now - lastFlush > flushIntervalMillis) {
+                                try {
+                                    lastFlush = now;
+                                    JSONToTableWriterAdapter.this.cleanup();
+                                } catch (IOException e) {
+                                    throw new RuntimeException(Thread.currentThread().getName() + ": Exception while flushing data to table writers", e);
+                                }
                             }
                         }
 
@@ -375,24 +382,25 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                         } catch (IOException e) {
                             throw new RuntimeException("Exception while flushing data to table writers", e);
                         }
-                    }, instanceId + "_flush");
-                    flushThread.setDaemon(true);
-                    flushThread.start();
+                    }, instanceId + "_cleanupThread");
+                    cleanupThread.setDaemon(true);
+                    cleanupThread.start();
 
-                    // handle shutdown. (this also should be done by an ingester.)
+                    // handle shutdown. (this also should be done by an ingester, but if we are taking responsibility for
+                    // flushing the data, then we should also take responsibility for clean shutdown.)
                     ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST, this::shutdown);
                 }
             } else {
-                threadGroup = null;
+                consumerThreadGroup = null;
             }
             setNestedHolders(holders);
 
-            consumerThreadsCountDownLatch = new CountDownLatch(numThreads);
+            consumerThreadsCountDownLatch = new CountDownLatch(Math.max(0, numThreads));
         } else {
             if (numThreads != 0) {
                 throw new IllegalArgumentException("numThreads must be zero when createHolders is false. numThreads: " + numThreads);
             }
-            threadGroup = null;
+            consumerThreadGroup = null;
             consumerThreadsCountDownLatch = null;
         }
     }
@@ -474,7 +482,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         final Set<String> newUnmapped = new HashSet<>(allColumns);
         newUnmapped.removeAll(nestedBuilder.getDefinedColumns());
 
-        final JSONToTableWriterAdapter nestedAdapter = nestedBuilder.makeAdapter(log, writer, newUnmapped, false);
+        final JSONToTableWriterAdapter nestedAdapter = nestedBuilder.makeNestedAdapter(log, writer, newUnmapped, subtableProcessingQueue);
         nestedAdapters.add(nestedAdapter);
 
         arrayFieldNames.add(fieldName);
@@ -667,6 +675,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         final Consumer<InMemoryRowHolder> fieldSetter;
         final ObjIntConsumer<JsonNode> fieldConsumer;
         final MutableInt position = new MutableInt();
+        // TODO: how does this work with threading? aren't the consumers run by multiple threads at once?
         if (setterType == boolean.class || setterType == Boolean.class) {
             fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, setterType, position, holderNumber).setBoolean(JsonNodeUtil.getBoolean(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> setter.setBoolean(holder.getBoolean(position.intValue()));
@@ -821,70 +830,72 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
     @Override
     public void cleanup() throws IOException {
-        final long beforePoll = System.nanoTime();
-        final long intervalMessages = processedMessages.size();
-        log.debug().append("JSONToTableWriterAdapter cleanup: Cleanup called with ").append(intervalMessages).append(" messages to clean up.").endl();
-        if (intervalMessages > 0) {
-            int cleanedMessages = 0;
-            int badMessages = 0;
-            processedMessages.drainTo(pendingCleanup);
-            pendingCleanup.sort(Comparator.comparingLong(InMemoryRowHolder::getMessageNumber));
+        synchronized (pendingCleanup) {
+            final long beforePoll = System.nanoTime();
+            final long intervalMessages = processedMessages.size();
+            log.debug().append("JSONToTableWriterAdapter cleanup: Cleanup called with ").append(intervalMessages).append(" messages to clean up.").endl();
+            if (intervalMessages > 0) {
+                int cleanedMessages = 0;
+                int badMessages = 0;
+                processedMessages.drainTo(pendingCleanup);
+                pendingCleanup.sort(Comparator.comparingLong(InMemoryRowHolder::getMessageNumber));
 
-            if (!pendingCleanup.isEmpty()) {
-                final long firstMessageNumber = pendingCleanup.get(0).getMessageNumber();
-                log.debug().append("JSONToTableWriterAdapter cleanup: Cleaning up starting with ").append(firstMessageNumber).endl();
-                if (firstMessageNumber < nextMsgNo.longValue()) {
-                    throw new IllegalStateException("Unexpected back-in-time message: " + firstMessageNumber + " is less than " + nextMsgNo);
+                if (!pendingCleanup.isEmpty()) {
+                    final long firstMessageNumber = pendingCleanup.get(0).getMessageNumber();
+                    log.debug().append("JSONToTableWriterAdapter cleanup: Cleaning up starting with ").append(firstMessageNumber).endl();
+                    if (firstMessageNumber < nextMsgNo.longValue()) {
+                        throw new IllegalStateException("Unexpected back-in-time message: " + firstMessageNumber + " is less than " + nextMsgNo);
+                    }
                 }
-            }
 
-            while (!pendingCleanup.isEmpty()
-                    && cleanedMessages < pendingCleanup.size()
-                    && pendingCleanup.get(cleanedMessages).getMessageNumber() == nextMsgNo.get()) {
-                final InMemoryRowHolder finalHolder = pendingCleanup.get(cleanedMessages);
-                if (finalHolder.getParseException() != null) {
-                    // there was a parsing exception for this message; we should log the error and proceed to the next message
-                    if (unparseableMessagesLogged++ < MAX_UNPARSEABLE_LOG_MESSAGES) {
-                        log.error().append("Unable to parse JSON message: \"" + finalHolder.getOriginalText() + "\": ").append(finalHolder.getParseException()).endl();
-                    }
-                    if (!skipUnparseableMessages) {
-                        throw new JSONIngesterException("Unable to parse JSON message", finalHolder.getParseException());
-                    }
-                    nextMsgNo.incrementAndGet();
-                } else {
-                    if (!finalHolder.getIsEmpty()) {
+                while (!pendingCleanup.isEmpty()
+                        && cleanedMessages < pendingCleanup.size()
+                        && pendingCleanup.get(cleanedMessages).getMessageNumber() == nextMsgNo.get()) {
+                    final InMemoryRowHolder finalHolder = pendingCleanup.get(cleanedMessages);
+                    if (finalHolder.getParseException() != null) {
+                        // there was a parsing exception for this message; we should log the error and proceed to the next message
+                        if (unparseableMessagesLogged++ < MAX_UNPARSEABLE_LOG_MESSAGES) {
+                            log.error().append("Unable to parse JSON message: \"" + finalHolder.getOriginalText() + "\": ").append(finalHolder.getParseException()).endl();
+                        }
+                        if (!skipUnparseableMessages) {
+                            throw new JSONIngesterException("Unable to parse JSON message", finalHolder.getParseException());
+                        }
+                        nextMsgNo.incrementAndGet();
+                    } else {
+                        if (!finalHolder.getIsEmpty()) {
 
-                        // First, set all the fields for which there is a 1-1 message/row ratio.
-                        fieldSetters.forEach(fp -> fp.accept(finalHolder));
+                            // First, set all the fields for which there is a 1-1 message/row ratio.
+                            fieldSetters.forEach(fp -> fp.accept(finalHolder));
 
-                        // Then run cleanup() for any subtable adapters before, we commit this row
-                        // (The parent row has IDs referring to subtable rows, so subtable rows must be written
-                        // first to ensure that anything querying the parent table can refer to the subtable data.)
-                        for (DataToTableWriterAdapter subtableAdapter : allSubtableAdapters) {
-                            subtableAdapter.cleanup();
+                            // Then run cleanup() for any subtable adapters before, we commit this row
+                            // (The parent row has IDs referring to subtable rows, so subtable rows must be written
+                            // first to ensure that anything querying the parent table can refer to the subtable data.)
+                            for (DataToTableWriterAdapter subtableAdapter : allSubtableAdapters) {
+                                subtableAdapter.cleanup();
+                            }
+
+                            cleanupMetadata(finalHolder);
+                            writer.setFlags(finalHolder.getFlags());
+                            writer.writeRow();
+                            writer.flush();
                         }
 
-                        cleanupMetadata(finalHolder);
-                        writer.setFlags(finalHolder.getFlags());
-                        writer.writeRow();
-                        writer.flush();
+                        if (finalHolder.getFlags() == Row.Flags.EndTransaction || finalHolder.getFlags() == Row.Flags.SingleRow) {
+                            nextMsgNo.incrementAndGet();
+                        }
                     }
-
-                    if (finalHolder.getFlags() == Row.Flags.EndTransaction || finalHolder.getFlags() == Row.Flags.SingleRow) {
-                        nextMsgNo.incrementAndGet();
-                    }
+                    cleanedMessages++;
                 }
-                cleanedMessages++;
-            }
-            // Compact the array. The next message in the sequence has not been processed yet, we will try again shortly
-            if (cleanedMessages > 0) {
-                // Note that the toIndex of removeRange is exclusive, so (0,1) will remove only the message at position 0.
-                pendingCleanup.removeRange(0, cleanedMessages);
-            }
+                // Compact the array. The next message in the sequence has not been processed yet, we will try again shortly
+                if (cleanedMessages > 0) {
+                    // Note that the toIndex of removeRange is exclusive, so (0,1) will remove only the message at position 0.
+                    pendingCleanup.removeRange(0, cleanedMessages);
+                }
 
-            final long afterPoll = System.nanoTime();
-            final long intervalNanos = afterPoll - beforePoll;
-            log.debug().append("JSONToTableWriterAdapter cleanup - wrote ").append(cleanedMessages - badMessages).append(" to disk in ").append(intervalNanos / 1000_000L).append("ms, ").appendDouble(1000000000.0 * intervalMessages / intervalNanos, 4).append(" msgs/sec, remaining pending messages=").append(pendingCleanup.size()).append(", messages with errors=").append(badMessages).endl();
+                final long afterPoll = System.nanoTime();
+                final long intervalNanos = afterPoll - beforePoll;
+                log.debug().append("JSONToTableWriterAdapter cleanup - wrote ").append(cleanedMessages - badMessages).append(" to disk in ").append(intervalNanos / 1000_000L).append("ms, ").appendDouble(1000000000.0 * intervalMessages / intervalNanos, 4).append(" msgs/sec, remaining pending messages=").append(pendingCleanup.size()).append(", messages with errors=").append(badMessages).endl();
+            }
         }
     }
 
@@ -945,7 +956,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     @Override
-    public void setOwner(final MessageToStringAdapter<?> parent) {
+    public void setOwner(final StringMessageToTableAdapter<?> parent) {
         this.owner = parent;
     }
 
@@ -975,10 +986,16 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 final int pollWaitMillis = isShutdown ? 0 : CONSUMER_WAIT_INTERVAL_MS;
                 pollOnce(thisHolder, Duration.ofNanos(pollWaitMillis * NANOS_PER_MILLI));
             } catch (final Exception ioe) {
-                // This thread doesn't inherently cause the query to stop if it fails, so we want to stop everything
-                // on any error.
-                log.error().append("Error processing JSON message: ").append(ioe).endl();
-                ProcessEnvironment.getGlobalFatalErrorReporter().report("Error processing JSON message!", ioe);
+                /*
+                 This thread doesn't inherently cause the query to stop if it fails, so we want to stop everything
+                 on any error.
+                */
+
+                // new exception to improve reported stack trace:
+                final Exception newException = new JSONIngesterException("Error processing JSON message!", ioe);
+
+                log.error().append("Error processing JSON message: ").append(newException).endl();
+                ProcessEnvironment.getGlobalFatalErrorReporter().report("Error processing JSON message!", newException);
                 System.exit(ERROR_PROCESSING); // Make the worker stop if we failed.
             }
             try {
@@ -1001,8 +1018,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                     }
                 }
             } catch (final Exception e) {
-                log.error().append("Error reporting on message timing: ").append(e).endl();
-                ProcessEnvironment.getGlobalFatalErrorReporter().report("Error reporting JSON message timing!", e);
+                final Exception newException = new JSONIngesterException("Error reporting on message timing!", e);
+                log.error().append("Error reporting on message timing: ").append( newException).endl();
+                ProcessEnvironment.getGlobalFatalErrorReporter().report("Error reporting JSON message timing!",  newException);
                 System.exit(ERROR_REPORTING);
             }
         }
@@ -1033,8 +1051,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         final JsonNode record;
         try {
             record = JsonNodeUtil.makeJsonNode(msg);
-        } catch (final IllegalArgumentException iae) {
-            processExceptionRecord(holder, iae, msgData, msg);
+        } catch (final JsonNodeUtil.JsonStringParseException parseException) {
+            // handle JSON parse exception and keep going
+            processExceptionRecord(holder, parseException, msgData, msg);
             return;
         }
         if (processArrays && record.isArray()) {
@@ -1171,10 +1190,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         // element across our record, we copy the beginning holder elements to a new holder, thus allowing us to expand
         // the non-array elements to all of the logged rows.  Each set of rows from the same message is a transaction.
         if (!arrayFieldNames.isEmpty()) {
-            final ArrayNode[] nodes = new ArrayNode[arrayFieldNames.size()];
+            final int nArrayFields = arrayFieldNames.size();
+            final ArrayNode[] nodes = new ArrayNode[nArrayFields];
             int expectedLength = -1;
             String lengthFound = null;
-            for (int ii = 0; ii < arrayFieldNames.size(); ++ii) {
+            for (int ii = 0; ii < nArrayFields; ++ii) {
                 final String fieldName = arrayFieldNames.get(ii);
                 final Object object = JsonNodeUtil.getValue(record, fieldName, true, true);
                 if (object == null) {
@@ -1187,7 +1207,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 final int arrayLength = arrayNode.size();
                 if (expectedLength >= 0) {
                     if (expectedLength != arrayLength) {
-                        throw new JSONIngesterException("Array nodes do not have a consistent length " + lengthFound + " has length of " + expectedLength + ", " + fieldName + " has length of " + arrayLength);
+                        throw new JSONIngesterException("Array nodes do not have a consistent length: " + lengthFound + " has length of " + expectedLength + ", " + fieldName + " has length of " + arrayLength);
                     }
                 } else {
                     lengthFound = fieldName;
@@ -1197,7 +1217,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             }
 
             if (expectedLength <= 0) {
-                for (int ii = 0; ii < arrayFieldNames.size(); ++ii) {
+                for (int ii = 0; ii < nArrayFields; ++ii) {
                     arrayFieldProcessors.get(ii).accept(NullNode.getInstance(), holder);
                 }
                 holders[holder].singleRow();
@@ -1216,12 +1236,16 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                         holders[holder].inTransaction();
                     }
                     final int startingPosition = holders[holder].getDataPosition();
-                    for (int ii = 0; ii < arrayFieldNames.size(); ++ii) {
+                    for (int ii = 0; ii < nArrayFields; ++ii) {
                         final ArrayNode node = nodes[ii];
-                        if (node == null) {
-                            arrayFieldProcessors.get(ii).accept(NullNode.getInstance(), holder);
-                        } else {
-                            arrayFieldProcessors.get(ii).accept(node.get(expandedRow), holder);
+                        try {
+                            if (node == null) {
+                                arrayFieldProcessors.get(ii).accept(NullNode.getInstance(), holder);
+                            } else {
+                                arrayFieldProcessors.get(ii).accept(node.get(expandedRow), holder);
+                            }
+                        } catch (Exception ex) {
+                            throw new JSONIngesterException("Exception occurred while processing array record at index " + expandedRow + " (of " + expectedLength + ')', ex);
                         }
                     }
                     if (expandedRow == expectedLength - 1) {
@@ -1284,6 +1308,10 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
     @Override
     public void waitForProcessing(final long timeoutMillis) throws InterruptedException, TimeoutException {
+        if(numThreads == 0) {
+            return;
+        }
+
         // use a loop with sleep instead of wait/notify to avoid any contention with processing threads
         final long startTime = System.currentTimeMillis();
         while (hasUnprocessedMessages()
