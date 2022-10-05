@@ -10,6 +10,8 @@ import io.deephaven.engine.table.impl.util.DynamicTableWriter;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.NullLoggerImpl;
+import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.time.DateTime;
@@ -34,15 +36,19 @@ public class SimpleStringAdapterTest {
 
     @Test
     public void testSimple() throws IOException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<TextMessage>> factory = new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a").buildFactory(new NullLoggerImpl(LogLevel.FATAL));
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactory(
+                        new NullLoggerImpl(LogLevel.FATAL),
+                        new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a"));
 
-        final String [] names = new String[]{"a"};
-        @SuppressWarnings("rawtypes") final Class [] types = new Class[]{String.class};
+        final String[] names = new String[] {"a"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<TextMessage> adapter = factory.apply(writer);
+        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final TextMessage msg = new TextMessage();
 
@@ -59,7 +65,9 @@ public class SimpleStringAdapterTest {
     @Test
     public void testNullValueColumn() {
         try {
-            new SimpleStringToTableWriterAdapter.Builder().setValueColumnName(null).buildFactory(new NullLoggerImpl(LogLevel.FATAL));
+            new SimpleStringToTableWriterAdapter.Builder().setValueColumnName(null).makeAdapter(
+                    new NullLoggerImpl(LogLevel.FATAL),
+                    new DynamicTableWriter(TableHeader.of(ColumnHeader.ofString("Value"))));
             Assert.fail("buildFactory should have failed on null value column name!");
         } catch (final IllegalArgumentException iae) {
             Assert.assertEquals("Value column must be specified!", iae.getMessage());
@@ -74,19 +82,22 @@ public class SimpleStringAdapterTest {
         final String idCol = "id";
         // Deliberately skipping 'receive' and 'processed' cols for now, because then we need to do a lot more mocking;
         // both are set internally.
-        final Function<TableWriter<?>, StringMessageToTableAdapter<TextMessage>> factory = new SimpleStringToTableWriterAdapter.Builder()
-                .setValueColumnName(testCol)
-                .sendTimestampColumnName(sentCol)
-                .messageIdColumnName(idCol)
-                .buildFactory(new NullLoggerImpl(LogLevel.FATAL));
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactory(
+                        new NullLoggerImpl(LogLevel.FATAL),
+                        new SimpleStringToTableWriterAdapter.Builder()
+                                .setValueColumnName(testCol)
+                                .sendTimestampColumnName(sentCol)
+                                .messageIdColumnName(idCol));
 
-        final String [] names = new String[]{testCol, sentCol, idCol};
-        @SuppressWarnings("rawtypes") final Class [] types = new Class[]{String.class, DateTime.class, String.class};
+        final String[] names = new String[] {testCol, sentCol, idCol};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class, DateTime.class, String.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<TextMessage> adapter = factory.apply(writer);
+        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final TextMessage msg = new TextMessage();
 
@@ -110,18 +121,21 @@ public class SimpleStringAdapterTest {
         final String sentCol = "sent";
         // Deliberately skipping 'receive' and 'processed' cols for now, because then we need to do a lot more mocking;
         // both are set internally.
-        final Function<TableWriter<?>, StringMessageToTableAdapter<TextMessage>> factory = new SimpleStringToTableWriterAdapter.Builder()
-                .setValueColumnName(testCol)
-                .sendTimestampColumnName(sentCol)
-                .buildFactory(new NullLoggerImpl(LogLevel.FATAL));
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactory(
+                        new NullLoggerImpl(LogLevel.FATAL),
+                        new SimpleStringToTableWriterAdapter.Builder()
+                                .setValueColumnName(testCol)
+                                .sendTimestampColumnName(sentCol));
 
-        final String [] names = new String[]{testCol, sentCol};
-        @SuppressWarnings("rawtypes") final Class [] types = new Class[]{String.class, DateTime.class};
+        final String[] names = new String[] {testCol, sentCol};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class, DateTime.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<TextMessage> adapter = factory.apply(writer);
+        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final TextMessage msg = new TextMessage();
 
@@ -131,7 +145,7 @@ public class SimpleStringAdapterTest {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
 
-        final Table expected = newTable(col(testCol, input), col(sentCol, (DateTime)null));
+        final Table expected = newTable(col(testCol, input), col(sentCol, (DateTime) null));
         Assert.assertEquals("", diff(result, expected, 10));
     }
 
@@ -142,19 +156,22 @@ public class SimpleStringAdapterTest {
         final String procCol = "processed";
         // Deliberately skipping 'receive' and 'processed' cols for now, because then we need to do a lot more mocking;
         // both are set internally.
-        final Function<TableWriter<?>, StringMessageToTableAdapter<TextMessage>> factory = new SimpleStringToTableWriterAdapter.Builder()
-                .setValueColumnName(testCol)
-                .receiveTimestampColumnName(rcvCol)
-                .timestampColumnName(procCol)
-                .buildFactory(new NullLoggerImpl(LogLevel.FATAL));
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactory(
+                        new NullLoggerImpl(LogLevel.FATAL),
+                        new SimpleStringToTableWriterAdapter.Builder()
+                                .setValueColumnName(testCol)
+                                .receiveTimestampColumnName(rcvCol)
+                                .timestampColumnName(procCol));
 
-        final String [] names = new String[]{testCol, rcvCol, procCol};
-        @SuppressWarnings("rawtypes") final Class [] types = new Class[]{String.class, DateTime.class, DateTime.class};
+        final String[] names = new String[] {testCol, rcvCol, procCol};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class, DateTime.class, DateTime.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<TextMessage> adapter = factory.apply(writer);
+        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final TextMessage msg = new TextMessage();
 
@@ -164,24 +181,30 @@ public class SimpleStringAdapterTest {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
 
-        final Table expected = newTable(col(testCol, input), col(rcvCol, (DateTime)null), col(procCol, (DateTime)null));
+        final Table expected =
+                newTable(col(testCol, input), col(rcvCol, (DateTime) null), col(procCol, (DateTime) null));
         final String results = diff(result, expected, 10);
         // The timestamps are variable, so just check that it was different, not the actual value.
-        Assert.assertTrue(results.contains("Column processed different from the expected set, first difference at row 0 encountered "));
+        Assert.assertTrue(results
+                .contains("Column processed different from the expected set, first difference at row 0 encountered "));
         Assert.assertTrue(results.contains("expected null"));
     }
 
     @Test
     public void testXMLContentMessage() throws IOException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<TextMessage>> factory = new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a").buildFactory(new NullLoggerImpl(LogLevel.FATAL));
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactory(
+                        new NullLoggerImpl(LogLevel.FATAL),
+                        new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a"));
 
-        final String [] names = new String[]{"a"};
-        @SuppressWarnings("rawtypes") final Class [] types = new Class[]{String.class};
+        final String[] names = new String[] {"a"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<TextMessage> adapter = factory.apply(writer);
+        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final TextMessage msg = new TextMessage();
 
@@ -197,15 +220,19 @@ public class SimpleStringAdapterTest {
 
     @Test
     public void testBytesContentMessage() throws IOException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<TextMessage>> factory = new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a").buildFactory(new NullLoggerImpl(LogLevel.FATAL));
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactory(
+                        new NullLoggerImpl(LogLevel.FATAL),
+                        new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a"));
 
-        final String [] names = new String[]{"a"};
-        @SuppressWarnings("rawtypes") final Class [] types = new Class[]{String.class};
+        final String[] names = new String[] {"a"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<TextMessage> adapter = factory.apply(writer);
+        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final TextMessage msg = new TextMessage();
 

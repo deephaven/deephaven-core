@@ -13,9 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Holds data in memory simulating a single row of Deephaven data.
- * Intended for use caching data that can be expensive to process but can be multithreaded, and has to be
- * held for a fixed ordering of writes.
+ * Holds data in memory simulating a single row of Deephaven data. Intended for use caching data that can be expensive
+ * to process but can be multithreaded, and has to be held for a fixed ordering of writes.
  */
 class InMemoryRowHolder {
 
@@ -38,10 +37,11 @@ class InMemoryRowHolder {
      * Create a new instance of this class.
      *
      * @param columnName The name of the Deephaven column this RowSetter will emulate
-     * @param type       The class of the Deephaven column this RowSetter will emulate
+     * @param type The class of the Deephaven column this RowSetter will emulate
      * @return a RowSetter that stores data to an in-memory store only
      */
-    public @SuppressWarnings("rawtypes") SingleRowSetter getSetter(final String columnName, @SuppressWarnings("rawtypes") final Class type) {
+    public @SuppressWarnings("rawtypes") SingleRowSetter getSetter(final String columnName,
+            @SuppressWarnings("rawtypes") final Class type) {
         return setters.computeIfAbsent(columnName, setter -> new SingleRowSetter(type));
     }
 
@@ -55,14 +55,20 @@ class InMemoryRowHolder {
 
     /**
      * Indicate whether this holder is a placeholder to indicate a message with no elements.
+     * 
      * @return True if this holder should not cause a row to be created in the database, false otherwise.
      */
-    public boolean getIsEmpty() { return isEmpty; }
+    public boolean getIsEmpty() {
+        return isEmpty;
+    }
 
-    public void setIsEmpty(final boolean isEmpty) { this.isEmpty = isEmpty; }
+    public void setIsEmpty(final boolean isEmpty) {
+        this.isEmpty = isEmpty;
+    }
 
     /**
      * Returns a caught exception that occurred during parsing this message.
+     * 
      * @return the exception that occurred while processing this message, null if no exception occurred
      */
     public Exception getParseException() {
@@ -75,6 +81,7 @@ class InMemoryRowHolder {
 
     /**
      * The original message text for error reporting.
+     * 
      * @return the original message text
      */
     public String getOriginalText() {
@@ -92,7 +99,7 @@ class InMemoryRowHolder {
      * @return The value that was previously stored. Note that we DO allow null Booleans
      */
     public Boolean getBoolean(final int position) {
-        return (Boolean)data[position];
+        return (Boolean) data[position];
     }
 
     /**
@@ -102,7 +109,7 @@ class InMemoryRowHolder {
      * @return The value that was previously stored.
      */
     public byte getByte(final int position) {
-        return TypeUtils.unbox((Byte)data[position]);
+        return TypeUtils.unbox((Byte) data[position]);
     }
 
     /**
@@ -112,7 +119,7 @@ class InMemoryRowHolder {
      * @return The value that was previously stored.
      */
     public char getChar(final int position) {
-        return TypeUtils.unbox((Character)data[position]);
+        return TypeUtils.unbox((Character) data[position]);
     }
 
     /**
@@ -122,7 +129,7 @@ class InMemoryRowHolder {
      * @return The value that was previously stored.
      */
     public double getDouble(final int position) {
-        return TypeUtils.unbox((Double)data[position]);
+        return TypeUtils.unbox((Double) data[position]);
     }
 
     /**
@@ -132,7 +139,7 @@ class InMemoryRowHolder {
      * @return The value that was previously stored.
      */
     public float getFloat(final int position) {
-        return TypeUtils.unbox((Float)data[position]);
+        return TypeUtils.unbox((Float) data[position]);
     }
 
     /**
@@ -142,7 +149,7 @@ class InMemoryRowHolder {
      * @return The value that was previously stored.
      */
     public int getInt(final int position) {
-        return TypeUtils.unbox((Integer)data[position]);
+        return TypeUtils.unbox((Integer) data[position]);
     }
 
     /**
@@ -152,7 +159,7 @@ class InMemoryRowHolder {
      * @return The value that was previously stored.
      */
     public long getLong(final int position) {
-        return TypeUtils.unbox((Long)data[position]);
+        return TypeUtils.unbox((Long) data[position]);
     }
 
     /**
@@ -162,7 +169,7 @@ class InMemoryRowHolder {
      * @return The value that was previously stored.
      */
     public short getShort(final int position) {
-        return TypeUtils.unbox((Short)data[position]);
+        return TypeUtils.unbox((Short) data[position]);
     }
 
     /**
@@ -175,7 +182,9 @@ class InMemoryRowHolder {
         return data[position];
     }
 
-    public Object getObject(final String columnName) { return data[setters.get(columnName).getThisPosition()];}
+    public Object getObject(final String columnName) {
+        return data[setters.get(columnName).getThisPosition()];
+    }
 
     public Row.Flags getFlags() {
         return flags;
@@ -184,12 +193,15 @@ class InMemoryRowHolder {
     public void startTransaction() {
         this.flags = Row.Flags.StartTransaction;
     }
+
     public void inTransaction() {
         this.flags = Row.Flags.None;
     }
+
     public void endTransaction() {
         this.flags = Row.Flags.EndTransaction;
     }
+
     public void singleRow() {
         this.flags = Row.Flags.SingleRow;
     }
@@ -213,13 +225,14 @@ class InMemoryRowHolder {
      */
     @SuppressWarnings("rawtypes")
     class SingleRowSetter implements RowSetter {
-        @SuppressWarnings("rawtypes") private final Class type;
+        @SuppressWarnings("rawtypes")
+        private final Class type;
         private final int thisPosition;
 
         /**
          * Create a new instance of this class.
          *
-         * @param type      The class of the Deephaven column being populated.
+         * @param type The class of the Deephaven column being populated.
          */
         public SingleRowSetter(@SuppressWarnings("rawtypes") final Class type) {
             this.type = type;

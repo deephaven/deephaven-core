@@ -77,7 +77,8 @@ public class ExampleJSON {
             "    },\n" +
             "    \"station\": \"https://api.weather.gov/stations/KNYC\",\n" +
             "    \"timestamp\": \"2022-09-29T02:51:00+00:00\",\n" +
-            "    \"rawMessage\": \"KNYC 290251Z AUTO VRB03KT 10SM FEW065 SCT085 17/10 A3026 RMK AO2 SLP237 T01720100 51018 $\",\n" +
+            "    \"rawMessage\": \"KNYC 290251Z AUTO VRB03KT 10SM FEW065 SCT085 17/10 A3026 RMK AO2 SLP237 T01720100 51018 $\",\n"
+            +
             "    \"textDescription\": \"Partly Cloudy\",\n" +
             "    \"icon\": \"https://api.weather.gov/icons/land/night/sct?size=medium\",\n" +
             "    \"presentWeather\": [],\n" +
@@ -262,7 +263,8 @@ public class ExampleJSON {
             "        },\n" +
             "        \"station\": \"https://api.weather.gov/stations/KNYC\",\n" +
             "        \"timestamp\": \"2022-10-01T02:51:00+00:00\",\n" +
-            "        \"rawMessage\": \"KNYC 010251Z AUTO 07007KT 10SM CLR 16/09 A3017 RMK AO2 SLP206 T01560094 58018 $\",\n" +
+            "        \"rawMessage\": \"KNYC 010251Z AUTO 07007KT 10SM CLR 16/09 A3017 RMK AO2 SLP206 T01560094 58018 $\",\n"
+            +
             "        \"textDescription\": \"Clear\",\n" +
             "        \"icon\": \"https://api.weather.gov/icons/land/night/skc?size=medium\",\n" +
             "        \"presentWeather\": [],\n" +

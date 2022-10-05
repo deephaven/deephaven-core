@@ -708,7 +708,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dateTime = DateTimeUtils.instantToTime(instant);
         Assert.equals(instant, "instant", dateTime.getInstant(), "dateTime.getInstant()");
 
-        final Instant instantFromDatetimeManual = Instant.ofEpochSecond(dateTime.getMillis() / 1000, dateTime.getMillis() % 1000L * 1_000_000L + dateTime.getNanosPartial());
+        final Instant instantFromDatetimeManual = Instant.ofEpochSecond(dateTime.getMillis() / 1000,
+                dateTime.getMillis() % 1000L * 1_000_000L + dateTime.getNanosPartial());
         Assert.equals(instant, "instant", instantFromDatetimeManual, "dateTime.getInstant()");
     }
 

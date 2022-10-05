@@ -4,10 +4,12 @@
 
 package io.deephaven.jsoningester;
 
+import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.ScriptApi;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -37,15 +39,14 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
     private final ToLongFunction<M> messageToRecvTimeMicros;
 
     private StringMessageToTableAdapter(final TableWriter<?> tableWriter,
-                                        final String sendTimeColumn,
-                                        final String receiveTimeColumn,
-                                        final String nowTimeColumn,
-                                        final String messageIdColumn,
-                                        final StringToTableWriterAdapter stringAdapter,
-                                        Function<M, String> messageToText,
-                                        ToLongFunction<M> messageToSendTimeMicros,
-                                        ToLongFunction<M> messageToRecvTimeMicros
-    ) {
+            final String sendTimeColumn,
+            final String receiveTimeColumn,
+            final String nowTimeColumn,
+            final String messageIdColumn,
+            final StringToTableWriterAdapter stringAdapter,
+            Function<M, String> messageToText,
+            ToLongFunction<M> messageToSendTimeMicros,
+            ToLongFunction<M> messageToRecvTimeMicros) {
         this.stringAdapter = stringAdapter;
         stringAdapter.setOwner(this);
         this.messageIdColumn = messageIdColumn;
@@ -112,9 +113,10 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
         if (messageIdSetter != null) {
             messageIdSetter.set(msgId);
         }
-        final TextMessageMetadata metadata = new TextMessageMetadata(sentTime, receiveTime, ingestTime, msgId, messageNumber.getAndIncrement(), msgText);
+        final TextMessageMetadata metadata = new TextMessageMetadata(sentTime, receiveTime, ingestTime, msgId,
+                messageNumber.getAndIncrement(), msgText);
 
-        stringAdapter.consumeString(metadata, msgText);
+        stringAdapter.consumeString(metadata);
     }
 
     public String getMessageIdColumn() {
@@ -160,35 +162,70 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
         stringAdapter.shutdown();
     }
 
-//    @Override
-//    public void setProcessor(@NotNull final SimpleDataImportStreamProcessor processor,
-//                             final String lastCheckpointId) {
-//        return; // Not currently used for JSON message processing
-//    }
+    // @Override
+    // public void setProcessor(@NotNull final SimpleDataImportStreamProcessor processor,
+    // final String lastCheckpointId) {
+    // return; // Not currently used for JSON message processing
+    // }
 
     @Override
     public void waitForProcessing(final long timeoutMillis) throws InterruptedException, TimeoutException {
         stringAdapter.waitForProcessing(timeoutMillis);
     }
 
-    public abstract static class Builder<A extends StringMessageToTableAdapter<?>> extends BaseTableWriterAdapterBuilder<A> {
+    public abstract static class Builder<A extends StringToTableWriterAdapter>
+            extends BaseTableWriterAdapterBuilder<A> {
 
-        protected <M> StringMessageToTableAdapter<M> buildInternal(final TableWriter<?> tw,
-                                                                   final StringToTableWriterAdapter adapter,
-                                                                   final Function<M, String> messageToText,
-                                                                   final ToLongFunction<M> messageToSendTimeMicros,
-                                                                   final ToLongFunction<M> messageToRecvTimeMicros
-        ) {
-            return new StringMessageToTableAdapter<>(tw,
-                    sendTimestampColumnName,
-                    receiveTimestampColumnName,
-                    timestampColumnName,
-                    messageIdColumnName,
-                    adapter,
-                    messageToText,
-                    messageToSendTimeMicros,
-                    messageToRecvTimeMicros
-            );
+        @Deprecated
+        public Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> buildFactory(Logger log) {
+            return StringMessageToTableAdapter.buildFactory(log, this);
         }
+    }
+
+    /**
+     * Returns a factory that creates adapters that take messages of type {@code M}, unpack the message text and
+     * timestamps, and pass the message data to an adapter created from the given {@code adapterBuilder} (e.g. a
+     * {@link JSONToTableWriterAdapterBuilder}).
+     * <p>
+     * This is helpful when creating multiple for different partitions.
+     *
+     * @param log The logger
+     * @param adapterBuilder Adapter builder
+     * @param messageToText Function to extract text data from {@code M}
+     * @param messageToSendTimeMicros Function to extract a send timestamp from {@code M}
+     * @param messageToRecvTimeMicros Function to extract a receipt timestamp from {@code M}
+     * @param <M>
+     * @return A function that takes a TableWriter and returns a new {@code StringMessageToTableAdapter} that writes
+     *         data to that TableWriter.
+     */
+    public static <M> Function<TableWriter<?>, StringMessageToTableAdapter<M>> buildFactory(
+            @NotNull final Logger log,
+            @NotNull final BaseTableWriterAdapterBuilder<? extends StringToTableWriterAdapter> adapterBuilder,
+            @NotNull final Function<M, String> messageToText,
+            @NotNull final ToLongFunction<M> messageToSendTimeMicros,
+            @NotNull final ToLongFunction<M> messageToRecvTimeMicros) {
+        return (tw) -> new StringMessageToTableAdapter<>(tw,
+                adapterBuilder.sendTimestampColumnName,
+                adapterBuilder.receiveTimestampColumnName,
+                adapterBuilder.timestampColumnName,
+                adapterBuilder.messageIdColumnName,
+                adapterBuilder.makeAdapter(log, tw),
+                messageToText,
+                messageToSendTimeMicros,
+                messageToRecvTimeMicros);
+    }
+
+    public static Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> buildFactory(
+            @NotNull final Logger log,
+            @NotNull final BaseTableWriterAdapterBuilder<? extends StringToTableWriterAdapter> adapterBuilder) {
+        return (tw) -> new StringMessageToTableAdapter<>(tw,
+                adapterBuilder.sendTimestampColumnName,
+                adapterBuilder.receiveTimestampColumnName,
+                adapterBuilder.timestampColumnName,
+                adapterBuilder.messageIdColumnName,
+                adapterBuilder.makeAdapter(log, tw),
+                StringMessageHolder::getMsg,
+                StringMessageHolder::getSendTimeMicros,
+                StringMessageHolder::getRecvTimeMicros);
     }
 }

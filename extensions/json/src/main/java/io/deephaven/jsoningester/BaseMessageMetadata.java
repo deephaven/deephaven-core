@@ -17,16 +17,18 @@ abstract class BaseMessageMetadata implements MessageMetadata {
     private final String messageId;
     private final long msgNo;
 
-    /** Create a new instance of this class.
-     @param sentTime The time (if available) when this message was published
-     @param receiveTime The time (reported by subscriber) when this message was received.
-     @param ingestTime The time when this message was finished processing by its ingester
-     and was ready to be written to disk.
-     @param messageId The unique, monotonically-increasing ID for this message.
-     @param messageNumber The sequential number indicating the sequence this message was
-     received in by the ingester.
+    /**
+     * Create a new instance of this class.
+     * 
+     * @param sentTime The time (if available) when this message was published
+     * @param receiveTime The time (reported by subscriber) when this message was received.
+     * @param ingestTime The time when this message was finished processing by its ingester and was ready to be written
+     *        to disk.
+     * @param messageId The unique, monotonically-increasing ID for this message.
+     * @param messageNumber The sequential number indicating the sequence this message was received in by the ingester.
      */
-    public BaseMessageMetadata(final DateTime sentTime, final DateTime receiveTime, final DateTime ingestTime, final String messageId, final long messageNumber) {
+    public BaseMessageMetadata(final DateTime sentTime, final DateTime receiveTime, final DateTime ingestTime,
+            final String messageId, final long messageNumber) {
         this.sentTime = sentTime;
         this.receiveTime = receiveTime;
         this.ingestTime = ingestTime;
@@ -55,6 +57,8 @@ abstract class BaseMessageMetadata implements MessageMetadata {
     }
 
     @Override
-    public long getMsgNo() { return msgNo; }
+    public long getMsgNo() {
+        return msgNo;
+    }
 
 }

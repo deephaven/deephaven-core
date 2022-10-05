@@ -22,11 +22,9 @@ public interface MessageMetadata {
     DateTime getReceiveTime();
 
     /**
-     * Gets the time when this message was finished processing by its ingester
-     * and was ready to be written to disk.
+     * Gets the time when this message was finished processing by its ingester and was ready to be written to disk.
      *
-     * @return the time when this message was finished processing by its ingester
-     * and was ready to be written to disk.
+     * @return the time when this message was finished processing by its ingester and was ready to be written to disk.
      */
     DateTime getIngestTime();
 
@@ -38,11 +36,9 @@ public interface MessageMetadata {
     String getMessageId();
 
     /**
-     * Gets the sequential number indicating the sequence this message was
-     * received in by the ingester.
+     * Gets the sequential number indicating the sequence this message was received in by the ingester.
      *
-     * @return the sequential number indicating the sequence this message was
-     * received in by the ingester.
+     * @return the sequential number indicating the sequence this message was received in by the ingester.
      */
     long getMsgNo();
 }

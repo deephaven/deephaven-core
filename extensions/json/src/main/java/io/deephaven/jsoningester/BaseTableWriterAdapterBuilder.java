@@ -9,12 +9,12 @@ import io.deephaven.tablelogger.TableWriter;
 
 import java.util.Collection;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Create a builder for processing message payloads. Common properties used by different message to table writer adapters.
+ * Create a builder for processing message payloads. Common properties used by different message to table writer
+ * adapters.
  */
 public abstract class BaseTableWriterAdapterBuilder<A> {
 
@@ -52,8 +52,8 @@ public abstract class BaseTableWriterAdapterBuilder<A> {
     /**
      * Sets the name of the ingestion timestamp column in the output table.
      * <p>
-     * If this is set, then the output column will contain an ingestion timestamp that is the wall-clock time when
-     * the record was consumed by the adapter.
+     * If this is set, then the output column will contain an ingestion timestamp that is the wall-clock time when the
+     * record was consumed by the adapter.
      *
      * @param timestampColumnName name of the ingestion timestamp column
      * @return this builder
@@ -67,8 +67,8 @@ public abstract class BaseTableWriterAdapterBuilder<A> {
      * Set the name of the message ID column in the output table.
      * <p>
      * If this is set, then the output column will contain the message ID header value. The message ID is a String
-     * header defined within messages, used internally by Deephaven to resume processing a queue from
-     * the last checkpointed position. You may include it in the output table explicitly for debugging purposes.
+     * header defined within messages, used internally by Deephaven to resume processing a queue from the last
+     * checkpointed position. You may include it in the output table explicitly for debugging purposes.
      *
      * @param messageIdColumnName name of the message ID column
      * @return this builder
@@ -85,16 +85,13 @@ public abstract class BaseTableWriterAdapterBuilder<A> {
      */
     @SuppressWarnings("WeakerAccess")
     protected Collection<String> getInternalColumns() {
-        return Stream.of(receiveTimestampColumnName, sendTimestampColumnName, timestampColumnName, messageIdColumnName).filter(Objects::nonNull).collect(Collectors.toList());
+        return Stream.of(receiveTimestampColumnName,
+                sendTimestampColumnName,
+                timestampColumnName,
+                messageIdColumnName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
-    /**
-     * Creates a factory that generates MessageToTableWriterAdapters that take a message of type {@code M},
-     * unpack the relevant data (e.g. a payload such as a JSON string or a bunch of bytes, and message metadata),
-     * and pass them to a {@link DataToTableWriterAdapter}.
-     *
-     * @param log
-     * @return
-     */
-    public abstract Function<TableWriter<?>, A> buildFactory(final Logger log);
+    public abstract A makeAdapter(final Logger log, final TableWriter<?> tableWriter);
 }
