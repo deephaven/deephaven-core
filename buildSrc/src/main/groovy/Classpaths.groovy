@@ -117,7 +117,7 @@ class Classpaths {
 
     static final String JETTY11_GROUP = 'org.eclipse.jetty'
     static final String JETTY11_NAME = 'jetty-bom'
-    static final String JETTY11_VERSION = '11.0.11'
+    static final String JETTY11_VERSION = '11.0.12'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
