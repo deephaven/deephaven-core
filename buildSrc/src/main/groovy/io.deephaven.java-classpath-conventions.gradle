@@ -8,7 +8,7 @@ ext {
     depAnnotations = 'com.intellij:annotations:5.1'
     depCommonsCompress = 'org.apache.commons:commons-compress:1.18'
     depCommonsLang3 = 'org.apache.commons:commons-lang3:3.9'
-    depCommonsIo = 'commons-io:commons-io:2.5'
+    depCommonsIo = 'commons-io:commons-io:2.11.0'
     depJdom2 = 'org.jdom:jdom2:2.0.6.1'
     depTrove3 = 'net.sf.trove4j:trove4j:3.0.3'
 }
@@ -51,7 +51,7 @@ dependencies {
     httpClient 'org.apache.httpcomponents:httpclient:4.5.6'
     commonsLang3 'org.apache.commons:commons-lang3:3.9'
     commonsText 'org.apache.commons:commons-text:1.9'
-    commonsIo 'commons-io:commons-io:2.6'
+    commonsIo 'commons-io:commons-io:2.11.0'
     math3 'org.apache.commons:commons-math3:3.6.1'
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
     mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
