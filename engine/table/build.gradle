@@ -67,7 +67,7 @@ dependencies {
 
     runtimeOnly project(':engine-tuplesource')
 
-    implementation 'com.google.guava:guava:19.0'
+    Classpaths.inheritGuava(project)
 
     testImplementation TestTools.projectDependency(project, 'Base')
     testImplementation TestTools.projectDependency(project, 'Util')

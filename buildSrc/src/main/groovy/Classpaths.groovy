@@ -119,6 +119,10 @@ class Classpaths {
     static final String JETTY11_NAME = 'jetty-bom'
     static final String JETTY11_VERSION = '11.0.11'
 
+    static final String GUAVA_GROUP = 'com.google.guava'
+    static final String GUAVA_NAME = 'guava'
+    static final String GUAVA_VERSION = '31.1-jre'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -281,5 +285,10 @@ class Classpaths {
     static void inheritJetty11Platform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, p.getDependencies().platform("${JETTY11_GROUP}:${JETTY11_NAME}:${JETTY11_VERSION}"))
+    }
+
+    static void inheritGuava(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, GUAVA_GROUP, GUAVA_NAME, GUAVA_VERSION)
     }
 }
