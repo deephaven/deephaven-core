@@ -746,8 +746,7 @@ public class BarrageStreamGenerator implements
         long offset = 0;
         MutableInt actualBatchSize = new MutableInt();
 
-        int batchSize = DEFAULT_INITIAL_BATCH_SIZE;
-//        int batchSize = Math.min(DEFAULT_INITIAL_BATCH_SIZE, maxBatchSize);
+        int batchSize = Math.min(DEFAULT_INITIAL_BATCH_SIZE, maxBatchSize);
 
         // allow the client to override the default message size
         final int maxMessageSize =
@@ -841,23 +840,23 @@ public class BarrageStreamGenerator implements
         }
 
         // find the generator for the initial position-space key
-        long startKey = view.addRowOffsets().get(startRange);
-        int chunkIdx = findGeneratorForOffset(addColumnData[0].generators, startKey);
+        long startPos = view.addRowOffsets().get(startRange);
+        int chunkIdx = findGeneratorForOffset(addColumnData[0].generators, startPos);
 
         // adjust the batch size if we would cross a chunk boundary
         long shift = 0;
-        long endKey = view.addRowOffsets().get(startRange + targetBatchSize);
-        if (endKey == RowSet.NULL_ROW_KEY) {
-            endKey = Long.MAX_VALUE;
+        long endPos = view.addRowOffsets().get(startRange + targetBatchSize - 1);
+        if (endPos == RowSet.NULL_ROW_KEY) {
+            endPos = Long.MAX_VALUE;
         }
         if (addColumnData[0].generators.length > 0) {
             final ChunkInputStreamGenerator tmpGenerator = addColumnData[0].generators[chunkIdx];
-            endKey = Math.min(endKey, tmpGenerator.getLastRowOffset());
+            endPos = Math.min(endPos, tmpGenerator.getLastRowOffset());
             shift = -tmpGenerator.getRowOffset();
         }
 
         // all column generators have the same boundaries, so we can re-use the offsets internal to this chunkIdx
-        try (final RowSet allowedRange = RowSetFactory.fromRange(startKey, endKey);
+        try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos);
              final WritableRowSet myAddedOffsets = view.addRowOffsets().intersect(allowedRange);
              final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
             // every column must write to the stream
@@ -904,10 +903,10 @@ public class BarrageStreamGenerator implements
             if (generators.length > 0) {
                 final RowSet modOffsets = view.modRowOffsets(ii);
                 // if all mods are being sent, then offsets yield an identity mapping
-                final long startKey = modOffsets != null ? modOffsets.get(startRange) : startRange;
-                chunkIdx = findGeneratorForOffset(generators, startKey);
-                if (chunkIdx < generators.length - 1) {
-                    maxLength = Math.min(maxLength, generators[chunkIdx].getLastRowOffset() + 1 - startKey);
+                final long startPos = modOffsets != null ? modOffsets.get(startRange) : startRange;
+                if (startPos != RowSet.NULL_ROW_KEY && chunkIdx < generators.length - 1) {
+                    chunkIdx = findGeneratorForOffset(generators, startPos);
+                    maxLength = Math.min(maxLength, generators[chunkIdx].getLastRowOffset() + 1 - startPos);
                 }
             }
             columnChunkIdx[ii] = chunkIdx;
@@ -922,41 +921,36 @@ public class BarrageStreamGenerator implements
                     : null;
 
             final RowSet modOffsets = view.modRowOffsets(ii);
-            long startKey, endKey;
+            long startPos, endPos;
             if (modOffsets != null) {
-                startKey = modOffsets.get(startRange);
-                endKey = modOffsets.get(startRange + maxLength - 1);
+                startPos = modOffsets.get(startRange);
+                final long endRange = startRange + maxLength - 1;
+                endPos = endRange >= modOffsets.size() ? modOffsets.lastRowKey() : modOffsets.get(endRange);
             } else if (startRange >= mcd.rowsModified.original.size()) {
-                startKey = RowSet.NULL_ROW_KEY;
-                endKey = RowSet.NULL_ROW_KEY;
+                startPos = RowSet.NULL_ROW_KEY;
+                endPos = RowSet.NULL_ROW_KEY;
             } else {
                 // if all mods are being sent, then offsets yield an identity mapping
-                startKey = startRange;
-                endKey = startRange + maxLength - 1;
+                startPos = startRange;
+                endPos = startRange + maxLength - 1;
                 if (generator != null) {
-                    endKey = Math.min(endKey, generator.getLastRowOffset());
+                    endPos = Math.min(endPos, generator.getLastRowOffset());
                 }
-            }
-
-            if (endKey == RowSet.NULL_ROW_KEY) {
-                endKey = generator != null ? generator.getLastRowOffset() : Long.MAX_VALUE;
             }
 
             final RowSet myModOffsets;
-            if (view.isViewport()) {
-                // only include modified rows that are within the viewport
-                try (final RowSet filter = RowSetFactory.fromRange(startKey, endKey)) {
-                    myModOffsets = view.modRowOffsets(ii).intersect(filter);
+            if (startPos == RowSet.NULL_ROW_KEY) {
+                // not all mod columns have the same length
+                myModOffsets = RowSetFactory.empty();
+            } else if (modOffsets != null) {
+                try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos)) {
+                    myModOffsets = modOffsets.intersect(allowedRange);
                 }
             } else {
-                if (startKey == RowSet.NULL_ROW_KEY) {
-                    // not all mod columns have the same length
-                    myModOffsets = RowSetFactory.empty();
-                } else {
-                    myModOffsets = RowSetFactory.fromRange(startKey, endKey);
-                }
+                myModOffsets = RowSetFactory.fromRange(startPos, endPos);
             }
             numRows = Math.max(numRows, myModOffsets.size());
+
             try {
                 if (myModOffsets.isEmpty() || generator == null) {
                     // use the empty generator to publish the column data

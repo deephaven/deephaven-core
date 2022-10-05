@@ -739,7 +739,6 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     // These test mid-cycle subscription changes and snapshot content
-
     private abstract class SubscriptionChangingHelper extends SharedProducerForAllClients {
         SubscriptionChangingHelper(final int numProducerCoalesce, final int numConsumerCoalesce, final int size,
                 final int seed, final MutableInt numSteps) {

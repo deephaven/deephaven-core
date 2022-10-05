@@ -194,7 +194,6 @@ public class BarrageStreamReader implements StreamReader {
                 // noinspection UnstableApiUsage
                 try (final LittleEndianDataInputStream ois =
                         new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size))) {
-                    final MutableInt bufferOffset = new MutableInt();
                     final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                                     i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
@@ -209,7 +208,6 @@ public class BarrageStreamReader implements StreamReader {
                             // our parsers handle overhanging buffers
                             length += Math.max(0, nextOffset - offset - length);
                         }
-                        bufferOffset.setValue(offset + length);
                         bufferInfo.add(length);
                     }
                     final TLongIterator bufferInfoIter = bufferInfo.iterator();
