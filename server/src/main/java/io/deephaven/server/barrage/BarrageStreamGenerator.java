@@ -759,9 +759,6 @@ public class BarrageStreamGenerator implements
             try {
                 final InputStream is =
                         getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
-                if (actualBatchSize.intValue() == 0) {
-                    getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
-                }
                 int bytesToWrite = is.available();
 
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
