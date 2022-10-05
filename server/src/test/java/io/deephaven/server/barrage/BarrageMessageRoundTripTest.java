@@ -1225,7 +1225,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final int numDeltas = 4;
         for (int ii = 0; ii < numDeltas; ++ii) {
             final RowSetBuilderSequential newRowsBuilder = RowSetFactory.builderSequential();
-            final Integer[] values = new Integer[sz/numDeltas];
+            final Integer[] values = new Integer[sz / numDeltas];
             for (int jj = ii; jj < sz; jj += numDeltas) {
                 newRowsBuilder.appendKey(jj);
                 values[jj / numDeltas] = ii;
@@ -1250,7 +1250,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         // Modify all of our rows spread over multiple deltas.
         for (int ii = 0; ii < numDeltas; ++ii) {
             final RowSetBuilderSequential modRowsBuilder = RowSetFactory.builderSequential();
-            final Integer[] values = new Integer[sz/numDeltas];
+            final Integer[] values = new Integer[sz / numDeltas];
             for (int jj = ii; jj < sz; jj += numDeltas) {
                 modRowsBuilder.appendKey(jj);
                 values[jj / numDeltas] = numDeltas + ii;

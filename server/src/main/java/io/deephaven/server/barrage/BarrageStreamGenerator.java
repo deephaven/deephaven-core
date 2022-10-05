@@ -857,8 +857,8 @@ public class BarrageStreamGenerator implements
 
         // all column generators have the same boundaries, so we can re-use the offsets internal to this chunkIdx
         try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos);
-             final WritableRowSet myAddedOffsets = view.addRowOffsets().intersect(allowedRange);
-             final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
+                final WritableRowSet myAddedOffsets = view.addRowOffsets().intersect(allowedRange);
+                final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
             // every column must write to the stream
             for (final ChunkListInputStreamGenerator data : addColumnData) {
                 if (myAddedOffsets.isEmpty() || data.generators.length == 0) {

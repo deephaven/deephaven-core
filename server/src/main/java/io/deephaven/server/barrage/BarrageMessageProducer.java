@@ -1979,7 +1979,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         for (int ii = 0; ii < numAddChunks; ++ii) {
             final int chunkSize = (ii < numAddChunks - 1 || size % SNAPSHOT_CHUNK_SIZE == 0)
                     ? SNAPSHOT_CHUNK_SIZE
-                    : (int)(size % SNAPSHOT_CHUNK_SIZE);
+                    : (int) (size % SNAPSHOT_CHUNK_SIZE);
             final long[] newChunk = new long[chunkSize];
             result[ii] = newChunk;
             Arrays.fill(newChunk, RowSequence.NULL_ROW_KEY);
@@ -1993,8 +1993,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         final RowSet.Iterator vit = values.iterator();
         keys.forAllRowKeys(lkey -> {
-            final int arrIdx = (int)(lkey / SNAPSHOT_CHUNK_SIZE);
-            final int keyIdx = (int)(lkey % SNAPSHOT_CHUNK_SIZE);
+            final int arrIdx = (int) (lkey / SNAPSHOT_CHUNK_SIZE);
+            final int keyIdx = (int) (lkey % SNAPSHOT_CHUNK_SIZE);
             final long[] chunk = mapping[arrIdx];
             Assert.eq(chunk[keyIdx], "chunk[keyIdx]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
             chunk[keyIdx] = vit.nextLong();
