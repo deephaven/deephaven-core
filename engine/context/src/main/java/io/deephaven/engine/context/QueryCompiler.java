@@ -10,6 +10,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.ByteUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,10 +22,13 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -418,14 +422,17 @@ public class QueryCompiler {
             @NotNull final String packageNameRoot,
             @Nullable final StringBuilder codeLog,
             @NotNull final Map<String, Class<?>> parameterClasses) {
-        // NB: We include class name hash in order to (hopefully) account for case insensitive file systems.
-        final int classNameHash = className.hashCode();
-        final int classBodyHash = classBody.hashCode();
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Unable to create SHA-256 hashing digest", e);
+        }
+        final String basicHashText =
+                ByteUtils.byteArrToHex(digest.digest(classBody.getBytes(StandardCharsets.UTF_8)));
 
         for (int pi = 0; pi < MAX_CLASS_COLLISIONS; ++pi) {
-            final String packageNameSuffix = "c"
-                    + (classBodyHash < 0 ? "m" : "") + (classBodyHash & Integer.MAX_VALUE)
-                    + (classNameHash < 0 ? "n" : "") + (classNameHash & Integer.MAX_VALUE)
+            final String packageNameSuffix = "c_" + basicHashText
                     + (pi == 0 ? "" : ("p" + pi))
                     + "v" + JAVA_CLASS_VERSION;
             final String packageName = (packageNameRoot.isEmpty()
@@ -488,7 +495,12 @@ public class QueryCompiler {
                 knownClasses.put(identifyingFieldValue, p);
                 // It's also possible that some other code has already fulfilled this promise with exactly the same
                 // class. That's ok though: the promise code does not reject multiple sets to the identical value.
-                p.complete(result);
+                // But if the result is already set, that means that we've already been through this logic, determined
+                // the class, and set it (each run through this logic can be using a different ClassLoader, so it may
+                // be a different instance of the same Class).
+                if (!p.complete(result)) {
+                    log.warn("Found pre-existing class result for " + fqClassName);
+                }
             }
 
             // If the class we found was indeed the class we were looking for, then return it
@@ -504,7 +516,7 @@ public class QueryCompiler {
         }
         throw new IllegalStateException("Found too many collisions for package name root " + packageNameRoot
                 + ", class name=" + className
-                + ", class body hash=" + classBodyHash + " - contact Deephaven support!");
+                + ", class body hash=" + basicHashText + " - contact Deephaven support!");
     }
 
     private Class<?> tryLoadClassByFqName(String fqClassName, Map<String, Class<?>> parameterClasses) {
