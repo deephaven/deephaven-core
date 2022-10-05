@@ -226,10 +226,12 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 throw new IllegalStateException("payload buffer is too short for expected number of elements");
             }
 
-            if (options.useDeephavenNulls()) {
-                useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
-            } else {
-                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, outOffset, isValid);
+            if (totalRows > 0) {
+                if (options.useDeephavenNulls()) {
+                    useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
+                } else {
+                    useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, outOffset, isValid);
+                }
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;

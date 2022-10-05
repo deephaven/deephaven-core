@@ -428,7 +428,7 @@ public class BarrageStreamGenerator implements
         @Override
         public RowSet modRowOffsets(int col) {
             if (modRowOffsets == null) {
-                return generator.message.modColumnData[col].rowsModified;
+                return null;
             }
             return modRowOffsets[col];
         }
@@ -902,9 +902,13 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator[] generators = mcd.data.generators;
             int chunkIdx = 0;
             if (generators.length > 0) {
-                long startKey = view.modRowOffsets(ii).get(startRange);
+                final RowSet modOffsets = view.modRowOffsets(ii);
+                // if all mods are being sent, then offsets yield an identity mapping
+                final long startKey = modOffsets != null ? modOffsets.get(startRange) : startRange;
                 chunkIdx = findGeneratorForOffset(generators, startKey);
-                maxLength = Math.min(maxLength, generators[chunkIdx].getLastRowOffset() + 1 - startKey);
+                if (chunkIdx < generators.length - 1) {
+                    maxLength = Math.min(maxLength, generators[chunkIdx].getLastRowOffset() + 1 - startKey);
+                }
             }
             columnChunkIdx[ii] = chunkIdx;
         }
@@ -913,12 +917,29 @@ public class BarrageStreamGenerator implements
         long numRows = 0;
         for (int ii = 0; ii < modColumnData.length; ++ii) {
             final ModColumnData mcd = modColumnData[ii];
-            long startKey = view.modRowOffsets(ii).get(startRange);
-            long endKey = view.modRowOffsets(ii).get(startRange + maxLength - 1);
+            final ChunkInputStreamGenerator generator = mcd.data.generators.length > 0
+                    ? mcd.data.generators[columnChunkIdx[ii]]
+                    : null;
+
+            final RowSet modOffsets = view.modRowOffsets(ii);
+            long startKey, endKey;
+            if (modOffsets != null) {
+                startKey = modOffsets.get(startRange);
+                endKey = modOffsets.get(startRange + maxLength - 1);
+            } else if (startRange >= mcd.rowsModified.original.size()) {
+                startKey = RowSet.NULL_ROW_KEY;
+                endKey = RowSet.NULL_ROW_KEY;
+            } else {
+                // if all mods are being sent, then offsets yield an identity mapping
+                startKey = startRange;
+                endKey = startRange + maxLength - 1;
+                if (generator != null) {
+                    endKey = Math.min(endKey, generator.getLastRowOffset());
+                }
+            }
+
             if (endKey == RowSet.NULL_ROW_KEY) {
-                endKey = mcd.data.generators.length > 0
-                        ? mcd.data.generators[columnChunkIdx[ii]].getLastRowOffset()
-                        : Long.MAX_VALUE;
+                endKey = generator != null ? generator.getLastRowOffset() : Long.MAX_VALUE;
             }
 
             final RowSet myModOffsets;
@@ -937,7 +958,7 @@ public class BarrageStreamGenerator implements
             }
             numRows = Math.max(numRows, myModOffsets.size());
             try {
-                if (myModOffsets.isEmpty() || mcd.data.generators.length == 0) {
+                if (myModOffsets.isEmpty() || generator == null) {
                     // use the empty generator to publish the column data
                     try (final RowSet empty = RowSetFactory.empty()) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
@@ -948,8 +969,6 @@ public class BarrageStreamGenerator implements
                         addStream.accept(drainableColumn);
                     }
                 } else {
-                    final int chunkIdx = columnChunkIdx[ii];
-                    final ChunkInputStreamGenerator generator = mcd.data.generators[chunkIdx];
                     final long shift = -generator.getRowOffset();
                     // normalize to the chunk offsets
                     try (final WritableRowSet adjustedOffsets = shift == 0 ? null : myModOffsets.shift(shift)) {
