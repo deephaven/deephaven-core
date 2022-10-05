@@ -31,7 +31,7 @@ public class JsonNodeUtil {
         }
     }
 
-    private static JsonNode checkAllowMissingOrNull(
+    public static JsonNode getNode(
             final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = node == null ? null : node.get(key);
@@ -77,7 +77,7 @@ public class JsonNodeUtil {
      */
     public static int getInt(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getInt(tmpNode);
     }
 
@@ -114,7 +114,7 @@ public class JsonNodeUtil {
     @Nullable
     public static Integer getBoxedInt(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBoxedInt(tmpNode);
     }
 
@@ -138,7 +138,7 @@ public class JsonNodeUtil {
      */
     public static short getShort(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getShort(tmpNode);
     }
 
@@ -175,7 +175,7 @@ public class JsonNodeUtil {
     @Nullable
     public static Short getBoxedShort(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBoxedShort(tmpNode);
     }
 
@@ -193,7 +193,7 @@ public class JsonNodeUtil {
      */
     public static long getLong(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getLong(tmpNode);
     }
 
@@ -230,7 +230,7 @@ public class JsonNodeUtil {
     @Nullable
     public static Long getBoxedLong(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBoxedLong(tmpNode);
     }
 
@@ -254,7 +254,7 @@ public class JsonNodeUtil {
      */
     public static double getDouble(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getDouble(tmpNode);
     }
 
@@ -291,7 +291,7 @@ public class JsonNodeUtil {
     @Nullable
     public static Double getBoxedDouble(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBoxedDouble(tmpNode);
     }
 
@@ -315,7 +315,7 @@ public class JsonNodeUtil {
      */
     public static float getFloat(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getFloat(tmpNode);
     }
 
@@ -352,7 +352,7 @@ public class JsonNodeUtil {
     @Nullable
     public static Float getBoxedFloat(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBoxedFloat(tmpNode);
     }
 
@@ -376,7 +376,7 @@ public class JsonNodeUtil {
      */
     public static byte getByte(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getByte(tmpNode);
     }
 
@@ -420,7 +420,7 @@ public class JsonNodeUtil {
     @Nullable
     public static Byte getBoxedByte(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBoxedByte(tmpNode);
     }
 
@@ -451,7 +451,7 @@ public class JsonNodeUtil {
      */
     public static char getChar(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getChar(tmpNode);
     }
 
@@ -495,7 +495,7 @@ public class JsonNodeUtil {
     @Nullable
     public static Character getBoxedChar(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBoxedChar(tmpNode);
     }
 
@@ -521,7 +521,7 @@ public class JsonNodeUtil {
     @Nullable
     public static String getString(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getString(tmpNode);
     }
 
@@ -562,7 +562,7 @@ public class JsonNodeUtil {
      */
     public static Boolean getBoolean(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBoolean(tmpNode);
     }
 
@@ -599,7 +599,7 @@ public class JsonNodeUtil {
      */
     public static BigInteger getBigInteger(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBigInteger(tmpNode);
     }
 
@@ -637,7 +637,7 @@ public class JsonNodeUtil {
     @Nullable
     public static BigDecimal getBigDecimal(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getBigDecimal(tmpNode);
     }
 
@@ -676,7 +676,7 @@ public class JsonNodeUtil {
     @Nullable
     public static Object getValue(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getValue(tmpNode);
     }
 
@@ -703,7 +703,7 @@ public class JsonNodeUtil {
     @Nullable
     public static DateTime getDateTime(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+        final JsonNode tmpNode = getNode(node, key, allowMissingKeys, allowNullValues);
         return getDateTime(tmpNode);
     }
 

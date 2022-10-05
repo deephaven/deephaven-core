@@ -20,6 +20,7 @@ import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,13 +48,23 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private static final int ERROR_PROCESSING = 98;
     private static final int MAX_UNPARSEABLE_LOG_MESSAGES = Configuration.getInstance().getIntegerWithDefault("JSONToTableWriterAdapter.maxUnparseableLogMessages", 100);
     private static final int SHUTDOWN_TIMEOUT_SECS = 30;
+
+    /**
+     * Column in subtable that identifiers corresponding row in parent table.
+     */
     public static final String SUBTABLE_RECORD_ID_COL = "SubtableRecordId";
+
+    /**
+     * Suffix of column name in parent table that identifies corresponding rows in subtable.
+     */
+    private static final String SUBTABLE_RECORD_ID_SUFFIX = "_id";
     static final int N_CONSUMER_THREADS_DEFAULT = Configuration.getInstance().getIntegerWithDefault("JSONToTableWriterAdapter.consumerThreads", 1);
 
     @SuppressWarnings("FieldCanBeLocal")
     private final ThreadGroup consumerThreadGroup;
     private final List<DataToTableWriterAdapter> allSubtableAdapters;
 
+    // TODO: what is/was this for?
     private StringMessageToTableAdapter<?> owner;
 
     private final TableWriter<?> writer;
@@ -114,9 +125,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * Instance count. Used for thread names.
      */
     private static final AtomicInteger instanceCounter = new AtomicInteger();
-    private Map<String, JSONToTableWriterAdapter> subtableFieldsToAdapters = new LinkedHashMap<>();
+    private final Map<String, JSONToTableWriterAdapter> subtableFieldsToAdapters = new LinkedHashMap<>();
 
-    private final Queue<SubtableData> subtableProcessingQueue;
+    private final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal;
 
     JSONToTableWriterAdapter(final TableWriter<?> writer,
                              @NotNull final Logger log,
@@ -151,7 +162,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 columnsUnmapped,
                 autoValueMapping,
                 createHolders,
-                new ConcurrentLinkedDeque<>());
+                ThreadLocal.withInitial(ConcurrentLinkedDeque::new));
     }
 
     /**
@@ -174,7 +185,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param allowedUnmappedColumns
      * @param autoValueMapping
      * @param createHolders Whether to create the InMemmoryRowHolders and associated thread pool.
-     * @param subtableProcessingQueue
+     * @param subtableProcessingQueueThreadLocal
      */
      JSONToTableWriterAdapter(final TableWriter<?> writer,
                              @NotNull final Logger log,
@@ -194,7 +205,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                              final Set<String> allowedUnmappedColumns,
                              final boolean autoValueMapping,
                              final boolean createHolders,
-                             final Queue<SubtableData> subtableProcessingQueue
+                             final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal
     ) {
         this.log = log;
         this.writer = writer;
@@ -202,7 +213,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         this.allowNullValues = allowNullValues;
         this.processArrays = processArrays;
         this.numThreads = nThreads;
-        this.subtableProcessingQueue = subtableProcessingQueue;
+        this.subtableProcessingQueueThreadLocal = subtableProcessingQueueThreadLocal;
 
         final int instanceId = instanceCounter.getAndIncrement();
 
@@ -413,7 +424,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      */
     @NotNull
     public static String getSubtableRowIdColName(String fieldName) {
-        return fieldName + "_id";
+        return fieldName + SUBTABLE_RECORD_ID_SUFFIX;
     }
 
     private void setHolders(final InMemoryRowHolder[] holders) {
@@ -439,7 +450,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 //        // implicit subtable ID columns defined in the parent are not relevant to the nested adapter
 //        newAllowedUnmapped.removeAll(subtableFieldsToAdapters.keySet());
 
-        final JSONToTableWriterAdapter nestedAdapter = nestedBuilder.makeNestedAdapter(log, writer, newAllowedUnmapped, subtableProcessingQueue);
+        final JSONToTableWriterAdapter nestedAdapter = nestedBuilder.makeNestedAdapter(log, writer, newAllowedUnmapped, subtableProcessingQueueThreadLocal);
         nestedAdapters.add(nestedAdapter);
 
         // we make a single field processor that in turn calls the nested adapter's field processors after extracting
@@ -482,7 +493,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         final Set<String> newUnmapped = new HashSet<>(allColumns);
         newUnmapped.removeAll(nestedBuilder.getDefinedColumns());
 
-        final JSONToTableWriterAdapter nestedAdapter = nestedBuilder.makeNestedAdapter(log, writer, newUnmapped, subtableProcessingQueue);
+        final JSONToTableWriterAdapter nestedAdapter = nestedBuilder.makeNestedAdapter(log, writer, newUnmapped, subtableProcessingQueueThreadLocal);
         nestedAdapters.add(nestedAdapter);
 
         arrayFieldNames.add(fieldName);
@@ -516,13 +527,18 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         // TODO: it would be better to use a unique parent message ID if available
         final AtomicLong subtableRecordIdCounter = new AtomicLong(0);
 
+        // ThreadLocal to store the record counter value. The subtable record ID is captured into the
+        // ThreadLocal MutableLong while processing the parent record (and stored in the parent record's row holder),
+        // then read later by a field processor in the subtable adapter (which adds it to each subtable row's row holder).
+        final ThreadLocal<MutableLong> subtableRecordIdThreadLocal = ThreadLocal.withInitial(MutableLong::new);
+
         final JSONToTableWriterAdapter subtableAdapter = subtableBuilder
                 .makeSubtableAdapter(
                         log,
                         subtableWriter,
                         Collections.emptySet(),
-                        subtableProcessingQueue,
-                        subtableRecordIdCounter
+                        subtableProcessingQueueThreadLocal,
+                        subtableRecordIdThreadLocal
                 );
         subtableFieldsToAdapters.put(fieldName, subtableAdapter);
 
@@ -546,15 +562,20 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             // index of the next record being processed into the subtable
             final long subtableRecordIdxVal = subtableRecordIdCounter.getAndIncrement();
 
+            // store it in a ThreadLocal that is read by the subtable field processor. (It is processed for the subtable
+            // synchronously, later in processOneRecordTopLevel).
+            subtableRecordIdThreadLocal.get().setValue(subtableRecordIdxVal);
+
             // store the idx in the rowSetter (later, the fieldSetter will add it to the table)
             // note that this will only work correctly when single-threaded
             final InMemoryRowHolder.SingleRowSetter rowSetter = getSingleRowSetterAndCapturePosition(subtableRowIdFieldName, setterType, position, holderNumber);
             rowSetter.setLong(subtableRecordIdxVal);
 
-            final JsonNode subtableFieldValue = record.get(fieldName);
+            final JsonNode subtableFieldValue = JsonNodeUtil.getNode(record, fieldName, allowMissingKeys, allowNullValues);
 
             // Enqueue the subtable node to be processed by the subtable adapter (this happens after all the main
             // fieldProcessors have been processed)
+            final Queue<SubtableData> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
             subtableProcessingQueue.add(new SubtableData(fieldName, subtableAdapter, subtableFieldValue, subtableMessageCounter));
         };
 
@@ -622,7 +643,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             throw new JSONIngesterException("Column " + columnName + " is of type " + setterType + ", can not assign ToIntFunction.");
         }
         final MutableInt position = new MutableInt();
-        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, int.class, position, holderNumber).setInt(TypeUtils.unbox(function.applyAsInt(record)));
+        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, int.class, position, holderNumber).setInt(function.applyAsInt(record));
         final Consumer<InMemoryRowHolder> fieldProcessor = (InMemoryRowHolder holder) -> setter.setInt(holder.getInt(position.intValue()));
         fieldProcessors.add(fieldConsumer);
         fieldSetters.add(fieldProcessor);
@@ -637,7 +658,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             throw new JSONIngesterException("Column " + columnName + " is of type " + setterType + ", can not assign ToLongFunction.");
         }
         final MutableInt position = new MutableInt();
-        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, long.class, position, holderNumber).setLong(TypeUtils.unbox(function.applyAsLong(record)));
+        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, long.class, position, holderNumber).setLong(function.applyAsLong(record));
         final Consumer<InMemoryRowHolder> fieldProcessor = (InMemoryRowHolder holder) -> setter.setLong(holder.getLong(position.intValue()));
         fieldProcessors.add(fieldConsumer);
         fieldSetters.add(fieldProcessor);
@@ -652,7 +673,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             throw new JSONIngesterException("Column " + columnName + " is of type " + setterType + ", can not assign ToDoubleFunction.");
         }
         final MutableInt position = new MutableInt();
-        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, double.class, position, holderNumber).setDouble(TypeUtils.unbox(function.applyAsDouble(record)));
+        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, double.class, position, holderNumber).setDouble(function.applyAsDouble(record));
         final Consumer<InMemoryRowHolder> fieldProcessor = (InMemoryRowHolder holder) -> setter.setDouble(holder.getDouble(position.intValue()));
         fieldProcessors.add(fieldConsumer);
         fieldSetters.add(fieldProcessor);
@@ -1110,8 +1131,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             }
         };
 
-        // TODO: skip this when the current adapter is a subtable adapter
+        // TODO: skip this when the current adapter is a subtable adapter?
         processMetadata(subtableMessageMetadata, holder);
+
+        // Get current consumer thread's subtable processing queue
+        final Queue<SubtableData> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
 
         for (SubtableData subtableFieldToProcess = subtableProcessingQueue.poll();
              subtableFieldToProcess != null;
@@ -1152,15 +1176,17 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
             final int nNodes = subtableArrNode.size();
             if (nNodes == 0) {
+                // TODO: add empty holders?
                 continue;
             }
 
             // A holder must be processed for each value of 'thisSubtableMsgNo'! Gaps are not allowed
+            // TODO ^^ why is that true? and do we need to add empty holders?
             final long thisSubtableMsgNo = subtableMessageCounter.getAndIncrement();
             for (int nodeIdx = 0; nodeIdx < nNodes; nodeIdx++) {
                 try {
                     JsonNode subtableRecord = subtableArrNode.get(nodeIdx);
-
+                    
                     final boolean isSubtableFirst = nodeIdx == 0;
                     final boolean isSubtableLast = nodeIdx == nNodes - 1;
 

@@ -5,10 +5,10 @@ import io.deephaven.base.Pair;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.util.annotations.ScriptApi;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
@@ -126,7 +126,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
      * the JSON.
      * <p>
      * @param field JSON field that is mapped to a different table
-     * @return
+     * @return this builder
      */
     @ScriptApi
     public JSONToTableWriterAdapterBuilder addFieldToSubTableMapping(final String field,
@@ -452,7 +452,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
     protected JSONToTableWriterAdapter makeNestedAdapter(@NotNull final Logger log,
                                                    final TableWriter<?> tw,
                                                    final Set<String> allUnmapped,
-                                                 final Queue<JSONToTableWriterAdapter.SubtableData> subtableProcessingQueue
+                                                   final ThreadLocal<Queue<JSONToTableWriterAdapter.SubtableData>> subtableProcessingQueue
     ) {
         final int nThreads = 0; // nested adapters don't need threads
         final boolean createHolders = false; // parent adapters create the holders
@@ -488,10 +488,10 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
      * Creates an adapter to be used as a subtable adapter. Subtable adapters always have a single consumer thread,
      * must use the same subtableProcessingQueue as the parent adapter, and always create new holders.
      *
-     * @param log
-     * @param tw
-     * @param allUnmapped
-     * @param subtableProcessingQueue
+     * @param log Logger to use
+     * @param tw Subtable's table writer
+     * @param allUnmapped Columns that are not required to be mapped to JSON data
+     * @param subtableProcessingQueue The queue to which subtable records to process are added
      * @param subtableRecordCounter
      * @return
      */
@@ -499,8 +499,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
     protected JSONToTableWriterAdapter makeSubtableAdapter(@NotNull final Logger log,
                                                            final TableWriter<?> tw,
                                                            final Set<String> allUnmapped,
-                                                           final Queue<JSONToTableWriterAdapter.SubtableData> subtableProcessingQueue,
-                                                           final AtomicLong subtableRecordCounter) {
+                                                           final ThreadLocal<Queue<JSONToTableWriterAdapter.SubtableData>> subtableProcessingQueue,
+                                                           final ThreadLocal<MutableLong> subtableRecordCounter) {
 
         // make a copy of the columnToLong (do not mutate the map from the original builder)
         final HashMap<String, ToLongFunction<JsonNode>> columnToLongFunctionForSubtableAdapter = new HashMap<>(columnToLongFunction);
@@ -509,7 +509,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         columnToLongFunctionForSubtableAdapter.put(
                 SUBTABLE_RECORD_ID_COL, value -> {
                     // just return the subtable record ID that's set by the parent's field processor
-                    return subtableRecordCounter.longValue();
+                    return subtableRecordCounter.get().longValue();
                 }
         );
 
