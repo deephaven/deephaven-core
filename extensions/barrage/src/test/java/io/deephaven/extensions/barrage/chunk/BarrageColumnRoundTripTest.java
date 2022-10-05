@@ -509,7 +509,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         initData.accept(data);
 
         try (ChunkInputStreamGenerator generator =
-                ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, type.getComponentType(), data)) {
+                ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, type.getComponentType(), data, 0)) {
 
             // full sub logic
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
