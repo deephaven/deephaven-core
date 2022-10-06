@@ -9,7 +9,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TupleSource;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
+import io.deephaven.engine.table.impl.UpdatableTable;
 import io.deephaven.engine.util.ToMapListener;
 import io.deephaven.queryutil.dataadapter.datafetch.single.SingleRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.locking.GetDataLockType;
@@ -45,8 +47,7 @@ public class KeyedRecordAdapter<K, T> {
      * Consumer that obtains lock before calling code
      */
     @NotNull
-    protected static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> DO_LOCKED_FUNCTION =
-            GetDataLockType.getDoLockedConsumer(GetDataLockType.SNAPSHOT);
+    protected final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> DO_LOCKED_FUNCTION;
 
     /**
      * The ToMapListener that tracks the DH index for each key. Table data is never retrieved through the ToMapListener.
@@ -140,6 +141,15 @@ public class KeyedRecordAdapter<K, T> {
                 null,
                 null);
         sourceTable.listenForUpdates(toMapListener);
+
+        // TODO: should this be the the listener instead of the sourceTable? probably? bit confusing with
+        // ToMapListener's
+        // baselineMap/currentMap stuff. I bet it's specifically broken to introduce the notification-awareness but to
+        // only pay attention to the table.
+        final NotificationStepSource notificationSource =
+                sourceTable instanceof UpdatableTable ? (UpdatableTable) sourceTable : null;
+        DO_LOCKED_FUNCTION = GetDataLockType.getDoLockedConsumer(GetDataLockType.SNAPSHOT, notificationSource);
+
 
         // Create a record adapter that excludes the key columns, if they are present, (since all available keys will
         // already be in memory)

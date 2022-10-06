@@ -1,25 +1,28 @@
 package io.deephaven.queryutil.dataadapter.locking;
 
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.FunctionalInterfaces;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Type of locking used when retrieving data.
  */
 public enum GetDataLockType {
     /**
-     * The LTM lock is already held.
+     * Assert that the UGP lock is already held.
      */
-    LTM_LOCK_ALREADY_HELD,
+    UGP_LOCK_ALREADY_HELD,
     /**
-     * Acquire the LTM lock.
+     * Acquire the UGP exclusive (write) lock.
      */
-    LTM_LOCK,
+    UGP_EXCLUSIVE_LOCK,
     /**
-     * Acquire an LTM read lock.
+     * Acquire a UGP shared (read) lock.
      */
-    LTM_READ_LOCK,
+    UGP_SHARED_LOCK,
     /**
      * Use the (usually) lock-free snapshotting mechanism.
      */
@@ -27,31 +30,51 @@ public enum GetDataLockType {
 
     /**
      * Returns a {@code ThrowingConsumer} that takes a {@link QueryDataRetrievalOperation}, acquires a
-     * {@link UpdateGraphProcessor} lock based on the specified {@code lockType}, then executes the
-     * {@code FitDataPopulator} with the appropriate value for usePrev.
+     * {@link UpdateGraphProcessor} lock based on the specified {@code lockType}, then executes the operation with the
+     * appropriate value for usePrev.
      *
      * @param lockType The way of acquiring the {@code UpdateGraphProcessor} lock.
-     * @return A function that runs a {@link }
+     * @param sources Notification sources to check when using {@link #SNAPSHOT}. If sources is {@code null} or empty,
+     *        then the SnapshotControl will not be notification aware. If all sources are non-refreshing
+     *        {@link DynamicNode DynamicNodes}, then a non-refreshing SnapshotControl is created.
+     * @return A function that runs an operation under the specified lock type.
      */
     @SuppressWarnings("WeakerAccess")
     public static FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> getDoLockedConsumer(
-            final GetDataLockType lockType) {
+            final GetDataLockType lockType, @Nullable NotificationStepSource... sources) {
         switch (lockType) {
-            case LTM_LOCK_ALREADY_HELD:
-                return (queryDataRetrievalOperation, description) -> queryDataRetrievalOperation.retrieveData(false);
-            case LTM_LOCK:
+            case UGP_LOCK_ALREADY_HELD:
+                return (queryDataRetrievalOperation, description) -> {
+                    if (!UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                            && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+                        throw new IllegalStateException("No UGP lock is held");
+                    }
+
+                    queryDataRetrievalOperation.retrieveData(false);
+                };
+            case UGP_EXCLUSIVE_LOCK:
                 return (queryDataRetrievalOperation, description) -> UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
-            case LTM_READ_LOCK:
+            case UGP_SHARED_LOCK:
                 return (queryDataRetrievalOperation, description) -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
             case SNAPSHOT:
+                if (sources == null) {
+                    sources = new NotificationStepSource[0];
+                }
+
+                boolean allSourcesNonRefreshing = sources.length > 0;
+                for (NotificationStepSource source : sources) {
+                    final boolean sourceIsNonRefreshingNode =
+                            source instanceof DynamicNode && !((DynamicNode) source).isRefreshing();
+                    allSourcesNonRefreshing &= sourceIsNonRefreshingNode;
+                }
+
+                final boolean notificationAware = sources.length > 0;
+                final ConstructSnapshot.SnapshotControl snapshotControl =
+                        ConstructSnapshot.makeSnapshotControl(notificationAware, allSourcesNonRefreshing, sources);
                 return (queryDataRetrievalOperation, description) -> ConstructSnapshot.callDataSnapshotFunction(
-                        description,
-                        ConstructSnapshot.makeSnapshotControl(false,
-                                // TODO: should this next boolean ('refreshing') be true or false? or depend on the
-                                // table?
-                                false),
+                        description, snapshotControl,
                         (usePrev, beforeClockValue) -> queryDataRetrievalOperation.retrieveData(usePrev));
             default:
                 throw new UnsupportedOperationException("Unsupported lockType: " + lockType);

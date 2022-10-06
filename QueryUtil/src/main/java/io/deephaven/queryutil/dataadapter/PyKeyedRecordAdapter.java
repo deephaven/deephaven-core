@@ -30,7 +30,7 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
      * the provided {@code recordAdapterDescriptor}, keyed by the given {@code keyColumns}.
      *
      * @param sourceTable The table whose data will be used to create records.
-     * @param keyColumns  The key columns to use when retrieving data
+     * @param keyColumns The key columns to use when retrieving data
      */
     public PyKeyedRecordAdapter(@NotNull Table sourceTable, @NotNull String[] keyColumns, String[] dataColumns) {
         super(sourceTable, new RecordAdapterDescriptor<>() {
@@ -150,7 +150,7 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
         public final Object[] recordDataArrs;
 
         public RecordRetrievalResult(@NotNull long[] recordDataRowKeys,
-                                     @NotNull TLongIntMap rowKeyToDataKeyPositionalIndex, @NotNull Object[] recordDataArrs) {
+                @NotNull TLongIntMap rowKeyToDataKeyPositionalIndex, @NotNull Object[] recordDataArrs) {
             this.recordDataRowKeys = recordDataRowKeys;
             this.rowKeyToDataKeyPositionalIndex = rowKeyToDataKeyPositionalIndex;
             this.recordDataArrs = recordDataArrs;

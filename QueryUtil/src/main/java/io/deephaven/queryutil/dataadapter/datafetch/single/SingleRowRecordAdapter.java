@@ -64,9 +64,9 @@ public class SingleRowRecordAdapter<T> {
     /**
      * Create a record of type {@code T} from the data in the table at index {@code k}.
      *
-     * @param k       The index key from which to retrieve data.
+     * @param k The index key from which to retrieve data.
      * @param usePrev Whether to use prev values.
-     * @param record  The record to store the data in.
+     * @param record The record to store the data in.
      * @return A record containing the data at {@code k}.
      */
     public T retrieveDataSingleKey(long k, boolean usePrev, T record) {
