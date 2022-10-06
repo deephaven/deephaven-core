@@ -66,7 +66,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private final ThreadGroup consumerThreadGroup;
     private final List<DataToTableWriterAdapter> allSubtableAdapters;
 
-    // TODO: what is/was this for?
+    /**
+     * The owner message adapter, which has {@link RowSetter setters} for metadata columns.
+     */
     private StringMessageToTableAdapter<?> owner;
 
     private final TableWriter<?> writer;
@@ -133,6 +135,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private final Map<String, JSONToTableWriterAdapter> subtableFieldsToAdapters = new LinkedHashMap<>();
 
     private final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal;
+    private final boolean isSubtableAdapter;
 
     JSONToTableWriterAdapter(final TableWriter<?> writer,
             @NotNull final Logger log,
@@ -166,7 +169,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 columnsUnmapped,
                 autoValueMapping,
                 createHolders,
-                ThreadLocal.withInitial(ConcurrentLinkedDeque::new));
+                ThreadLocal.withInitial(ConcurrentLinkedDeque::new),
+                false);
     }
 
     /**
@@ -209,7 +213,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             final Set<String> allowedUnmappedColumns,
             final boolean autoValueMapping,
             final boolean createHolders,
-            final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal) {
+            final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal,
+            final boolean isSubtableAdapter) {
         this.log = log;
         this.writer = writer;
         this.allowMissingKeys = allowMissingKeys;
@@ -217,6 +222,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         this.processArrays = processArrays;
         this.numThreads = nThreads;
         this.subtableProcessingQueueThreadLocal = subtableProcessingQueueThreadLocal;
+        this.isSubtableAdapter = isSubtableAdapter;
 
         final int instanceId = instanceCounter.getAndIncrement();
 
@@ -1026,7 +1032,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                                 subtableAdapter.cleanup();
                             }
 
-                            cleanupMetadata(finalHolder);
+                            if (!isSubtableAdapter) {
+                                // subtable adapters don't handle message metadata -- only the top adapter
+                                cleanupMetadata(finalHolder);
+                            }
+
                             writer.setFlags(finalHolder.getFlags());
                             writer.writeRow();
                             writer.flush();
@@ -1060,19 +1070,22 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
 
     private void cleanupMetadata(final InMemoryRowHolder holder) {
-        // log.warn("cleanupMetadata() not implemented; doing nothing");
-        // if (owner.getMessageIdSetter() != null) {
-        // owner.getMessageIdSetter().set((String)holder.getObject(owner.getMessageIdColumn()));
-        // }
-        // if (owner.getSendTimeSetter() != null) {
-        // owner.getSendTimeSetter().set((DateTime) holder.getObject(owner.getSendTimeColumn()));
-        // }
-        // if (owner.getReceiveTimeSetter() != null) {
-        // owner.getReceiveTimeSetter().set((DateTime)holder.getObject(owner.getReceiveTimeColumn()));
-        // }
-        // if (owner.getNowSetter() != null) {
-        // owner.getNowSetter().set(DateTime.now());
-        // }
+        final RowSetter<String> messageIdSetter = owner.getMessageIdSetter();
+        if (messageIdSetter != null) {
+            messageIdSetter.set((String) holder.getObject(owner.getMessageIdColumn()));
+        }
+        final RowSetter<DateTime> sendTimeSetter = owner.getSendTimeSetter();
+        if (sendTimeSetter != null) {
+            sendTimeSetter.set((DateTime) holder.getObject(owner.getSendTimeColumn()));
+        }
+        final RowSetter<DateTime> receiveTimeSetter = owner.getReceiveTimeSetter();
+        if (receiveTimeSetter != null) {
+            receiveTimeSetter.set((DateTime) holder.getObject(owner.getReceiveTimeColumn()));
+        }
+        final RowSetter<DateTime> nowSetter = owner.getNowSetter();
+        if (nowSetter != null) {
+            nowSetter.set(DateTime.now());
+        }
     }
 
     /**
@@ -1240,7 +1253,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             final TextMessageMetadata msgData, final String messageText) {
         holders[holder].setParseException(iae);
         holders[holder].setOriginalText(messageText);
-        processMetadata(msgData, holder);
+        if (!isSubtableAdapter) {
+            processMetadata(msgData, holder);
+        }
         holders[holder].singleRow();
         processHolder(holder, true);
     }
@@ -1277,8 +1292,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             }
         };
 
-        // TODO: skip this when the current adapter is a subtable adapter?
-        processMetadata(subtableMessageMetadata, holder);
+        if (!isSubtableAdapter) {
+            processMetadata(subtableMessageMetadata, holder);
+        }
 
         // Get current consumer thread's subtable processing queue
         final Queue<SubtableData> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
@@ -1484,6 +1500,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
     @NotNull
     private InMemoryRowHolder createRowHolder() {
+        // the row holder needs to have room for the message metadata as well
+        // (these setters are stored in this adapter's 'owner'
         return new InMemoryRowHolder(fieldSetters.size() + TextMessageMetadata.numberOfMetadataFields());
     }
 
@@ -1509,16 +1527,27 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         return messagesQueued.longValue() > messagesProcessed.longValue();
     }
 
-    private void processMetadata(final MessageMetadata metadata, final int holderNum) {
-        // log.warn("processMetadata() not implemented; doing nothing");
-        /*
-         * final InMemoryRowHolder holder = holders[holderNum]; if (owner.getMessageIdColumn() != null) {
-         * holder.getSetter(owner.getMessageIdColumn(), String.class).set(metadata.getMessageId()); } if
-         * (owner.getSendTimeColumn() != null) { holder.getSetter(owner.getSendTimeColumn(),
-         * long.class).set(metadata.getSentTime()); } if (owner.getReceiveTimeColumn() != null) {
-         * holder.getSetter(owner.getReceiveTimeColumn(), long.class).set(metadata.getReceiveTime()); }
-         */
-        // Do not set the 'now' time - we want that to be set as the very last step before writing to disk.
+    /**
+     * Stores the message metadata in the row holder. (It is copied to the table writer's seters by
+     * {@link #cleanupMetadata}).
+     * 
+     * @param metadata The message metadata.
+     * @param holderIdx The index of the target message holder.
+     */
+    private void processMetadata(final MessageMetadata metadata, final int holderIdx) {
+        final InMemoryRowHolder holder = holders[holderIdx];
+        if (owner != null) {
+            if (owner.getMessageIdColumn() != null) {
+                holder.getSetter(owner.getMessageIdColumn(), String.class).set(metadata.getMessageId());
+            }
+            if (owner.getSendTimeColumn() != null) {
+                holder.getSetter(owner.getSendTimeColumn(), long.class).set(metadata.getSentTime());
+            }
+            if (owner.getReceiveTimeColumn() != null) {
+                holder.getSetter(owner.getReceiveTimeColumn(), long.class).set(metadata.getReceiveTime());
+            }
+            // Do not set the 'now' time - we want that to be set as the very last step before writing to disk.
+        }
     }
 
     private static class PermissiveArrayList<T> extends ArrayList<T> {

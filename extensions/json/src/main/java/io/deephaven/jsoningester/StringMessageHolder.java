@@ -5,13 +5,14 @@ import io.deephaven.util.clock.MicroTimer;
 /**
  * Created by rbasralian on 10/3/22
  */
+// TODO: replace this with TextMessageMetadata?
 public class StringMessageHolder {
     private final long sendTimeMicros;
     private final long recvTimeMicros;
     private final String msg;
 
     public StringMessageHolder(String msg) {
-        this(MicroTimer.currentTimeMicros(), msg);
+        this(System.currentTimeMillis() * 1000L, msg);
     }
 
     public StringMessageHolder(long timeMicros, String msg) {

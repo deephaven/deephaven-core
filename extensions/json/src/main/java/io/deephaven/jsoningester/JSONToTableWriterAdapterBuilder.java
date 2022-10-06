@@ -414,11 +414,11 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
      * Creates an adapter to be used as a nested adapter. Nested adapters always have a single consumer thread, must use
      * the same subtableProcessingQueue as the parent adapter, and always create new holders.
      *
-     * @param log
-     * @param tw
-     * @param allUnmapped
-     * @param subtableProcessingQueue
-     * @return
+     * @param log Logger to use
+     * @param tw The table writer (same as parent)
+     * @param allUnmapped Columns that are not required to be mapped to JSON data
+     * @param subtableProcessingQueue The queue to which subtable records to process are added (i.e. the parent's queue)
+     * @return An adapter that provides field processors for nested fields within a JSON message
      */
     @NotNull
     protected JSONToTableWriterAdapter makeNestedAdapter(@NotNull final Logger log,
@@ -451,7 +451,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 allUnmapped,
                 autoValueMapping,
                 createHolders,
-                subtableProcessingQueue);
+                subtableProcessingQueue,
+                false);
     }
 
     /**
@@ -461,9 +462,9 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
      * @param log Logger to use
      * @param tw Subtable's table writer
      * @param allUnmapped Columns that are not required to be mapped to JSON data
-     * @param subtableProcessingQueue The queue to which subtable records to process are added
-     * @param subtableRecordCounter
-     * @return
+     * @param subtableProcessingQueue The queue to which subtable records to proces are added (i.e. the parent's queue)
+     * @param subtableRecordCounter A ThreadLocal reference to a long, which will contain this subtable's record ID.
+     * @return An adapter that logs records to a separate table
      */
     @NotNull
     protected JSONToTableWriterAdapter makeSubtableAdapter(@NotNull final Logger log,
@@ -472,7 +473,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
             final ThreadLocal<Queue<JSONToTableWriterAdapter.SubtableData>> subtableProcessingQueue,
             final ThreadLocal<MutableLong> subtableRecordCounter) {
 
-        // make a copy of the columnToLong (do not mutate the map from the original builder)
+        // make a copy of the columnToLongFunction map (do not mutate the map from the original builder)
         final HashMap<String, ToLongFunction<JsonNode>> columnToLongFunctionForSubtableAdapter =
                 new HashMap<>(columnToLongFunction);
 
@@ -495,7 +496,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 Collections.emptySet(),
                 autoValueMapping,
                 true,
-                subtableProcessingQueue);
+                subtableProcessingQueue,
+                true);
     }
 
 }

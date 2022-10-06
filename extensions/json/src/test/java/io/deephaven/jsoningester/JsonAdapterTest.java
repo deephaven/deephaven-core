@@ -828,9 +828,14 @@ public class JsonAdapterTest {
                     "id", resultMain, resultSubtable);
             Assert.fail("Should have thrown an exception");
         } catch (JSONIngesterException ex) {
-            Assert.assertEquals("Failed processing subtable field \"c\"", ex.getMessage());
-            Assert.assertEquals("Key 'd' not found in the record, and allowMissingKeys is false.",
-                    ex.getCause().getMessage());
+            try {
+                Assert.assertEquals("Failed processing subtable field \"c\"", ex.getMessage());
+                Assert.assertEquals("Key 'd' not found in the record, and allowMissingKeys is false.",
+                        ex.getCause().getMessage());
+            } catch (AssertionError ae) {
+                ex.printStackTrace();
+                throw ae;
+            }
         }
     }
 

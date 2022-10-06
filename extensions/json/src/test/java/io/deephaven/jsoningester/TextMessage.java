@@ -1,7 +1,8 @@
 package io.deephaven.jsoningester;
 
 /**
- * Mutable implementation of StringMessageHolder
+ * Mutable implementation of StringMessageHolder. This is not strictly necessary but was helpful for porting the unit
+ * tests.
  */
 class TextMessage extends StringMessageHolder {
 

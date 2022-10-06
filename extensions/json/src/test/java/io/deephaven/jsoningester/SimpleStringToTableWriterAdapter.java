@@ -7,6 +7,7 @@ package io.deephaven.jsoningester;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
+import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ public class SimpleStringToTableWriterAdapter implements StringToTableWriterAdap
     private final TableWriter<?> writer;
     @NotNull
     private final RowSetter<String> valueColumnSetter;
+    private StringMessageToTableAdapter<?> owner;
 
     private SimpleStringToTableWriterAdapter(final TableWriter<?> writer,
             final String valueColumnName) {
@@ -29,6 +31,12 @@ public class SimpleStringToTableWriterAdapter implements StringToTableWriterAdap
     @Override
     public void consumeString(final TextMessageMetadata metadata) throws IOException {
         valueColumnSetter.set(metadata.getText());
+
+        owner.setSendTime(metadata.getSentTime());
+        owner.setReceiveTime(metadata.getReceiveTime());
+        owner.setNow(DateTime.now());
+        owner.setMessageId(metadata.getMessageId());
+
         writer.writeRow();
     }
 
@@ -49,7 +57,7 @@ public class SimpleStringToTableWriterAdapter implements StringToTableWriterAdap
 
     @Override
     public void setOwner(final StringMessageToTableAdapter<?> parent) {
-        // Do nothing; this adapter doesn't care.
+        this.owner = parent;
     }
 
     /**

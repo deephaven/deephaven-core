@@ -96,27 +96,32 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
             if (senderTimestamp != 0) {
                 sentTime = new DateTime(senderTimestamp * MILLIS_TO_NANOS);
             }
-            sendTimeSetter.set(sentTime);
+            // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
+            // threads
         }
         if (receiveTimeSetter != null) {
             final long timestamp = messageToRecvTimeMicros.applyAsLong(msg);
             if (timestamp != 0) {
                 receiveTime = new DateTime(timestamp * MILLIS_TO_NANOS);
             }
-            receiveTimeSetter.set(receiveTime);
+            // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
+            // threads
 
         }
         if (nowSetter != null) {
             ingestTime = DateTime.now();
-            nowSetter.set(ingestTime);
+            // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
+            // threads
         }
-        if (messageIdSetter != null) {
-            messageIdSetter.set(msgId);
-        }
+
         final TextMessageMetadata metadata = new TextMessageMetadata(sentTime, receiveTime, ingestTime, msgId,
                 messageNumber.getAndIncrement(), msgText);
 
         stringAdapter.consumeString(metadata);
+    }
+
+    protected void setMetadataSetters() {
+
     }
 
     public String getMessageIdColumn() {
@@ -140,16 +145,40 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
         return sendTimeSetter;
     }
 
+    public void setSendTime(DateTime sendTime) {
+        if (sendTimeSetter != null) {
+            sendTimeSetter.set(sendTime);
+        }
+    }
+
     public RowSetter<DateTime> getReceiveTimeSetter() {
         return receiveTimeSetter;
+    }
+
+    public void setReceiveTime(DateTime receiveTime) {
+        if (receiveTimeSetter != null) {
+            receiveTimeSetter.set(receiveTime);
+        }
     }
 
     public RowSetter<DateTime> getNowSetter() {
         return nowSetter;
     }
 
+    public void setNow(DateTime getNow) {
+        if (nowSetter != null) {
+            nowSetter.set(getNow);
+        }
+    }
+
     public RowSetter<String> getMessageIdSetter() {
         return messageIdSetter;
+    }
+
+    public void setMessageId(String messageId) {
+        if (messageIdSetter != null) {
+            messageIdSetter.set(messageId);
+        }
     }
 
     @Override
@@ -191,10 +220,10 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
      *
      * @param log The logger
      * @param adapterBuilder Adapter builder
-     * @param messageToText Function to extract text data from {@code M}
-     * @param messageToSendTimeMicros Function to extract a send timestamp from {@code M}
-     * @param messageToRecvTimeMicros Function to extract a receipt timestamp from {@code M}
-     * @param <M>
+     * @param messageToText Function to extract text data from an instance of type {@code M}
+     * @param messageToSendTimeMicros Function to extract a send timestamp from an instance of type {@code M}
+     * @param messageToRecvTimeMicros Function to extract a receipt timestamp from an instance of type {@code M}
+     * @param <M> The message datatype
      * @return A function that takes a TableWriter and returns a new {@code StringMessageToTableAdapter} that writes
      *         data to that TableWriter.
      */
@@ -204,26 +233,30 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
             @NotNull final Function<M, String> messageToText,
             @NotNull final ToLongFunction<M> messageToSendTimeMicros,
             @NotNull final ToLongFunction<M> messageToRecvTimeMicros) {
-        return (tw) -> new StringMessageToTableAdapter<>(tw,
-                adapterBuilder.sendTimestampColumnName,
-                adapterBuilder.receiveTimestampColumnName,
-                adapterBuilder.timestampColumnName,
-                adapterBuilder.messageIdColumnName,
-                adapterBuilder.makeAdapter(log, tw),
-                messageToText,
-                messageToSendTimeMicros,
-                messageToRecvTimeMicros);
+        return (tw) -> {
+            // create the string-to-tablewriter adapter
+            final StringToTableWriterAdapter stringToTableWriterAdapter = adapterBuilder.makeAdapter(log, tw);
+
+            // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
+            // adapter
+            return new StringMessageToTableAdapter<>(tw,
+                    adapterBuilder.sendTimestampColumnName,
+                    adapterBuilder.receiveTimestampColumnName,
+                    adapterBuilder.timestampColumnName,
+                    adapterBuilder.messageIdColumnName,
+                    stringToTableWriterAdapter,
+                    messageToText,
+                    messageToSendTimeMicros,
+                    messageToRecvTimeMicros);
+        };
     }
 
     public static Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> buildFactory(
             @NotNull final Logger log,
             @NotNull final BaseTableWriterAdapterBuilder<? extends StringToTableWriterAdapter> adapterBuilder) {
-        return (tw) -> new StringMessageToTableAdapter<>(tw,
-                adapterBuilder.sendTimestampColumnName,
-                adapterBuilder.receiveTimestampColumnName,
-                adapterBuilder.timestampColumnName,
-                adapterBuilder.messageIdColumnName,
-                adapterBuilder.makeAdapter(log, tw),
+        return buildFactory(
+                log,
+                adapterBuilder,
                 StringMessageHolder::getMsg,
                 StringMessageHolder::getSendTimeMicros,
                 StringMessageHolder::getRecvTimeMicros);
