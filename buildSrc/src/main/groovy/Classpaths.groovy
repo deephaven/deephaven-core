@@ -59,7 +59,7 @@ class Classpaths {
     static final String DAGGER_GROUP = 'com.google.dagger'
     static final String DAGGER_NAME = 'dagger'
     static final String DAGGER_COMPILER = 'dagger-compiler'
-    static final String DAGGER_VERSION = '2.31.1'
+    static final String DAGGER_VERSION = '2.44'
 
     static final String AUTOSERVICE_GROUP = 'com.google.auto.service'
     static final String AUTOSERVICE_NAME = 'auto-service-annotations'
