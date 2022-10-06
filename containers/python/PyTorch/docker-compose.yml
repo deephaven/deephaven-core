@@ -5,6 +5,7 @@ services:
     image: ghcr.io/deephaven/server-pytorch:latest
     ports:
       - "${DEEPHAVEN_PORT:-10000}:10000"
+      - 6006:6006
     volumes:
       - ./data:/data
     environment:
