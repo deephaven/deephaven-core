@@ -11,7 +11,7 @@ services:
       - JAVA_OPTS=-Xmx4g
 
   examples:
-    image: ghcr.io/deephaven/examples
+    image: ghcr.io/deephaven/examples:latest
     volumes:
       - ./data:/data
     command: initialize
