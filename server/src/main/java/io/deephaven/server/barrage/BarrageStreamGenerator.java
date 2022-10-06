@@ -761,6 +761,10 @@ public class BarrageStreamGenerator implements
                         getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
                 int bytesToWrite = is.available();
 
+                if (actualBatchSize.intValue() == 0) {
+                    throw new IllegalStateException("No data was written for a batch");
+                }
+
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
                 if (sendAllowed && (bytesToWrite < maxMessageSize || batchSize == 1)) {
@@ -833,7 +837,7 @@ public class BarrageStreamGenerator implements
             final Consumer<InputStream> addStream, final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         if (addColumnData.length == 0) {
-            return 0;
+            return view.addRowOffsets().size();
         }
 
         // find the generator for the initial position-space key
