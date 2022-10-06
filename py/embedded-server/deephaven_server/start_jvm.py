@@ -54,7 +54,6 @@ def start_jvm(
         java_home: str = os.environ.get('JAVA_HOME', None),
         extra_classpath = [],
         propfile: str = None,
-        devroot: str = '.',
         workspace: str = '.',
         config = None):
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
@@ -65,7 +64,6 @@ def start_jvm(
 
     # Build jvm system properties starting with defaults we accept as args
     system_properties = {
-        'devroot': os.path.realpath(devroot),
         'workspace': workspace,
         'Configuration.rootFile': propfile,
     }
