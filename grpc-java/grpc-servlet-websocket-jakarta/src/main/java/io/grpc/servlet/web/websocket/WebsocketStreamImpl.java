@@ -2,7 +2,6 @@ package io.grpc.servlet.web.websocket;
 
 import io.grpc.Attributes;
 import io.grpc.InternalLogId;
-import io.grpc.InternalMetadata;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.internal.AbstractServerStream;
@@ -42,7 +41,7 @@ public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
             // trailer response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the length of the
             // message
 
-            byte[][] serializedHeaders = InternalMetadata.serialize(headers);
+            byte[][] serializedHeaders = TransportFrameUtil.toHttp2Headers(headers);
             // Total up the size of the payload: 5 bytes for the prefix, and each header needs a colon delimiter, and to
             // end with \r\n
             int headerLength = Arrays.stream(serializedHeaders).mapToInt(arr -> arr.length + 2).sum();
