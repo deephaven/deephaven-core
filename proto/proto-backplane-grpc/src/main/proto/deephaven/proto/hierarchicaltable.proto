@@ -1,0 +1,60 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/hierarchicaltable";
+
+import "deephaven/proto/table.proto";
+import "deephaven/proto/ticket.proto";
+
+/*
+ * This service provides tools to create hierarchical tables (rollups and trees).
+ */
+service HierarchicalTableService {
+  /*
+   * Performs a rollup operation on a table.
+   */
+  rpc Rollup(RollupRequest) returns (RollupResponse);
+  /*
+   * Performs a tree operation on a table.
+   */
+  rpc Tree(TreeRequest) returns (TreeResponse);
+}
+
+message RollupRequest {
+  // The ticket to use to hold the results of the rollup operation
+  Ticket result_id = 1;
+  // The ticket for the source Table object to rollup
+  Ticket source_id = 2;
+  // The aggregations that should be applied at each level of the rollup
+  repeated Aggregate aggregations = 3; // TODO-RWC: At some point, we should re-do these. Be sure to validate in server handling.
+  // Whether to include the leaf-level constituents in the result
+  bool include_constituents = 4;
+  // The names of the columns to rollup by
+  repeated string group_by_columns = 5;
+}
+
+message RollupResponse {
+  // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
+}
+
+  message TreeRequest {
+    // The ticket to use to hold the results of the tree operation
+  Ticket result_id = 1;
+  // The ticket for the source Table object to tree
+  Ticket source_id = 2;
+  // The name of the column containing the unique identifier for each row in the source table
+  string identifier_column = 3;
+  // The name of the column containing the parent row's unique identifier for each row in the source table
+  string parent_identifier_column = 4;
+}
+
+message TreeResponse {
+  // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
+}

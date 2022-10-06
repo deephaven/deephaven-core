@@ -25,8 +25,8 @@ import java.util.Collection;
 import java.util.function.Predicate;
 
 /**
- * This class is an extension of QueryTable that overrides many methods from {@link Table} which are not valid to
- * perform on Hierarchical tables (treeTables() and rollups()).
+ * This class is an extension of {@link QueryTable} that overrides many methods from {@link Table} which are not valid
+ * to perform on hierarchical tables ({@link #rollup rollups} and {@link #treeTable(String, String) trees}).
  */
 public class HierarchicalTable extends QueryTable {
     private final QueryTable rootTable;
@@ -311,7 +311,6 @@ public class HierarchicalTable extends QueryTable {
     static HierarchicalTable createFrom(@NotNull QueryTable rootTable, @NotNull HierarchicalTableInfo info) {
         final Mutable<HierarchicalTable> resultHolder = new MutableObject<>();
 
-        // Create a copy of the root partitionBy table as a HierarchicalTable, and wire it up for listeners.
         final SwapListener swapListener =
                 rootTable.createSwapListenerIfRefreshing(SwapListener::new);
         initializeWithSnapshot("-hierarchicalTable", swapListener, (usePrev, beforeClockValue) -> {
