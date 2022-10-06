@@ -853,23 +853,7 @@ public interface Table extends
     // Disaggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    /**
-     * Ungroups a table by converting arrays into columns.
-     *
-     * @param nullFill indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with
-     *        null values. If set to false, then all arrays should be the same length.
-     * @param columnsToUngroup the columns to ungroup
-     * @return the ungrouped table
-     */
-    Table ungroup(boolean nullFill, String... columnsToUngroup);
-
-    Table ungroup(String... columnsToUngroup);
-
     Table ungroupAllBut(String... columnsNotToUngroup);
-
-    Table ungroup();
-
-    Table ungroup(boolean nullFill);
 
     // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations

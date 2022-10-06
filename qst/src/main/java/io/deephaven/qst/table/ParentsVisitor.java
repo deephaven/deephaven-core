@@ -296,6 +296,11 @@ public class ParentsVisitor implements Visitor {
         out = single(updateByTable);
     }
 
+    @Override
+    public void visit(UngroupTable ungroupTable) {
+        out = single(ungroupTable);
+    }
+
     private static class Search {
 
         private final Predicate<TableSpec> excludePaths;
