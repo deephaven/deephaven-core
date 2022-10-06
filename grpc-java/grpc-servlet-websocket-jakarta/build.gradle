@@ -12,6 +12,6 @@ dependencies {
 //    compileOnly 'javax.websocket:javax.websocket-api:1.1'
     implementation 'jakarta.websocket:jakarta.websocket-api:2.0.0'
 
-    implementation 'com.google.guava:guava:19.0'
+    Classpaths.inheritGuava(project)
 
 }

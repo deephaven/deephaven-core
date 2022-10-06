@@ -11,7 +11,7 @@ dependencies {
     implementation project(':engine-table'),
             project(':engine-base')
 
-    implementation 'com.google.guava:guava:19.0'
+    Classpaths.inheritGuava(project)
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)

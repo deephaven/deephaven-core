@@ -9,5 +9,5 @@ dependencies {
     compileOnly 'jakarta.servlet:jakarta.servlet-api:5.0.0',
             'org.apache.tomcat:annotations-api:6.0.53'
 
-    implementation 'com.google.guava:guava:19.0'
+    Classpaths.inheritGuava(project)
 }
