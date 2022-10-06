@@ -17,6 +17,7 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project)
     Classpaths.inheritJetty11Platform(project)
 
+    api 'jakarta.servlet:jakarta.servlet-api:5.0.0'
     implementation 'org.eclipse.jetty:jetty-servlet'
     implementation 'org.eclipse.jetty:jetty-webapp'
     implementation 'org.eclipse.jetty.http2:http2-server'
