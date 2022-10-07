@@ -147,6 +147,7 @@ public class BarrageUtil {
         }
 
         // copy rollup details
+        // TODO-RWC: Delete me
         if (attributes.containsKey(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)) {
             unsentAttributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
             final HierarchicalTableInfo hierarchicalTableInfo =
@@ -191,6 +192,8 @@ public class BarrageUtil {
                 putMetadata(extraMetadata, "dateFormatColumn", colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
             }
 
+            // TODO-RWC: Use a list, not a map, and add constituent=true metadata for secondary definition
+            // TODO-RWC: Remember to reinterpret to primitive when chunk filling.
             fields.put(colName, arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
         }
 
