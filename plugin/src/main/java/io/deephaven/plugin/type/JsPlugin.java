@@ -6,13 +6,12 @@ package io.deephaven.plugin.type;
 import io.deephaven.plugin.Plugin;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Path;
 
 /**
- * A "js type" plugin. Useful for adding custom javascript code to the server.
+ * A js plugin. Useful for adding custom JS code to the server that can be passed to the web client.
  */
-public interface JsType extends Plugin {
+public interface JsPlugin extends Plugin {
 
     /**
      * The name of the plugin.
@@ -39,7 +38,7 @@ public interface JsType extends Plugin {
      * Copy all distribution files into the directory {@code destination}.
      *
      * <p>
-     * Note: this is only be called during the {@link JsTypeRegistration#register(JsType)} phase.
+     * Note: this should only be called during the {@link JsPluginRegistration#register(JsPlugin)} phase.
      *
      * @param destination the destination directory
      * @throws IOException if an I/O exception occurs

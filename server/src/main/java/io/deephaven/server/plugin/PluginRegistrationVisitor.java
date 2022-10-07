@@ -4,8 +4,8 @@
 package io.deephaven.server.plugin;
 
 import io.deephaven.plugin.Plugin;
-import io.deephaven.plugin.type.JsType;
-import io.deephaven.plugin.type.JsTypeRegistration;
+import io.deephaven.plugin.type.JsPlugin;
+import io.deephaven.plugin.type.JsPluginRegistration;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeRegistration;
 
@@ -16,13 +16,13 @@ final class PluginRegistrationVisitor
         implements io.deephaven.plugin.Registration.Callback, Plugin.Visitor<PluginRegistrationVisitor> {
 
     private final ObjectTypeRegistration objectTypeRegistration;
-    private final JsTypeRegistration jsTypeRegistration;
+    private final JsPluginRegistration jsPluginRegistration;
 
     @Inject
     public PluginRegistrationVisitor(ObjectTypeRegistration objectTypeRegistration,
-            JsTypeRegistration jsTypeRegistration) {
+            JsPluginRegistration jsPluginRegistration) {
         this.objectTypeRegistration = Objects.requireNonNull(objectTypeRegistration);
-        this.jsTypeRegistration = Objects.requireNonNull(jsTypeRegistration);
+        this.jsPluginRegistration = Objects.requireNonNull(jsPluginRegistration);
     }
 
     @Override
@@ -37,8 +37,8 @@ final class PluginRegistrationVisitor
     }
 
     @Override
-    public PluginRegistrationVisitor visit(JsType jsType) {
-        jsTypeRegistration.register(jsType);
+    public PluginRegistrationVisitor visit(JsPlugin jsPlugin) {
+        jsPluginRegistration.register(jsPlugin);
         return this;
     }
 }

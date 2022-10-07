@@ -5,25 +5,25 @@ package io.deephaven.server.jetty.jsplugin;
 
 import dagger.Module;
 import dagger.Provides;
-import io.deephaven.plugin.type.JsTypeRegistration;
+import io.deephaven.plugin.type.JsPluginRegistration;
 import io.deephaven.server.jetty.JettyConfig;
-import io.deephaven.server.plugin.type.JsTypeRegistrationNoOp;
+import io.deephaven.server.plugin.type.JsPluginRegistrationNoOp;
 
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
 /**
- * Provides {@link JsPlugins} as a {@link Singleton} via {@link JsPlugins#create()}. If
- * {@link JettyConfig#jsPluginsOrDefault()} is {@code true}, then the plugin is provided as the
- * {@link JsTypeRegistration}; otherwise, a {@link JsTypeRegistrationNoOp} is provided.
+ * Binds {@link JsPlugins} as {@link JsPluginRegistration}. Provides {@link JsPlugins} as a {@link Singleton} via
+ * {@link JsPlugins#create()}. If {@link JettyConfig#jsPluginsOrDefault()} is {@code true}, then the plugin is provided
+ * as the {@link JsPluginRegistration}; otherwise, a {@link JsPluginRegistrationNoOp} is provided.
  */
 @Module
 public interface JsPluginsModule {
 
     @Provides
-    static JsTypeRegistration providesRegistration(JettyConfig config, JsPlugins plugins) {
-        return config.jsPluginsOrDefault() ? plugins : new JsTypeRegistrationNoOp();
+    static JsPluginRegistration providesRegistration(JettyConfig config, JsPlugins plugins) {
+        return config.jsPluginsOrDefault() ? plugins : new JsPluginRegistrationNoOp();
     }
 
     @Provides

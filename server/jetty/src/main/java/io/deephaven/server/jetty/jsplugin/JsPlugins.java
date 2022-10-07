@@ -6,8 +6,8 @@ package io.deephaven.server.jetty.jsplugin;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import io.deephaven.plugin.type.JsType;
-import io.deephaven.plugin.type.JsTypeRegistration;
+import io.deephaven.plugin.type.JsPlugin;
+import io.deephaven.plugin.type.JsPluginRegistration;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 
@@ -26,11 +26,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@link JsTypeRegistration} for Jetty.
+ * A {@link JsPluginRegistration} for Jetty.
  *
  * @see #servletHolder(String)
  */
-public final class JsPlugins implements JsTypeRegistration {
+public final class JsPlugins implements JsPluginRegistration {
 
     /**
      * Creates a new js plugins instance with an in-memory filesystem.
@@ -45,14 +45,8 @@ public final class JsPlugins implements JsTypeRegistration {
         return jsPlugins;
     }
 
-    public static ServletHolder servletHolderEmpty(String name) throws IOException {
-        // Creates an un-references JsPlugins that is not hooked up as a registration
-        final JsPlugins jsPlugins = create();
-        return jsPlugins.servletHolder(name);
-    }
-
     private final Path path;
-    private final Map<String, JsType> plugins;
+    private final Map<String, JsPlugin> plugins;
 
     private JsPlugins(Path path) {
         this.path = Objects.requireNonNull(path);
@@ -75,17 +69,17 @@ public final class JsPlugins implements JsTypeRegistration {
     }
 
     @Override
-    public synchronized void register(JsType jsType) {
-        if (plugins.containsKey(jsType.name())) {
+    public synchronized void register(JsPlugin jsPlugin) {
+        if (plugins.containsKey(jsPlugin.name())) {
             throw new IllegalArgumentException(
-                    String.format("js plugin with name '%s' already exists", jsType.name()));
+                    String.format("js plugin with name '%s' already exists", jsPlugin.name()));
         }
         try {
-            jsType.copyTo(path.resolve(jsType.name()));
+            jsPlugin.copyTo(path.resolve(jsPlugin.name()));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        plugins.put(jsType.name(), jsType);
+        plugins.put(jsPlugin.name(), jsPlugin);
         try {
             writeManifest();
         } catch (IOException e) {
@@ -97,7 +91,7 @@ public final class JsPlugins implements JsTypeRegistration {
         // note: would this be better as a custom servlet instead? (this current way is certainly easy...)
         try (final OutputStream out = new BufferedOutputStream(Files.newOutputStream(path.resolve("manifest.json")))) {
             final List<Map<String, String>> pluginsList = new ArrayList<>(plugins.size());
-            for (JsType value : plugins.values()) {
+            for (JsPlugin value : plugins.values()) {
                 final Map<String, String> p = new LinkedHashMap<>(3);
                 p.put("name", value.name());
                 p.put("version", value.version());

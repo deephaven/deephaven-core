@@ -13,23 +13,22 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * A {@link Registration} that sources {@link JsTypeDistribution#fromPackageJson(Path)} from the system property
- * {@value FROM_PACKAGE_JSON}. Multiple values can be specified by using a comma as a separator.
+ * A {@link Registration} that sources {@link JsPluginDistribution#fromDistribution(Path)} from the system property
+ * {@value PROPERTY}. Multiple values can be specified by using a comma as a separator.
  *
  * <p>
- * Potentially useful for development purposes while developing an NPM js plugin.
+ * Potentially useful for development purposes while developing JS plugins.
  */
-public final class JsTypeDistributionFromPackageJsonSystemPropertyRegistration implements Registration {
+public final class JsPluginDistributionRegistration implements Registration {
 
-    private static final String FROM_PACKAGE_JSON =
-            "io.deephaven.server.plugin.type.JsTypeDistribution.fromPackageJson";
+    private static final String PROPERTY = "io.deephaven.server.plugin.type.JsPluginDistribution";
 
     @Inject
-    public JsTypeDistributionFromPackageJsonSystemPropertyRegistration() {}
+    public JsPluginDistributionRegistration() {}
 
     @Override
     public void registerInto(Callback callback) {
-        final String values = System.getProperty(FROM_PACKAGE_JSON, null);
+        final String values = System.getProperty(PROPERTY, null);
         if (values == null) {
             return;
         }
@@ -38,9 +37,9 @@ public final class JsTypeDistributionFromPackageJsonSystemPropertyRegistration i
                 .filter(s -> !s.isEmpty())
                 .iterator();
         while (it.hasNext()) {
-            final String packageJson = it.next();
+            final String distributionDir = it.next();
             try {
-                callback.register(JsTypeDistribution.fromPackageJson(Path.of(packageJson)));
+                callback.register(JsPluginDistribution.fromDistribution(Path.of(distributionDir)));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

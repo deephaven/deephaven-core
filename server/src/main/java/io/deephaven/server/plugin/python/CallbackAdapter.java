@@ -4,7 +4,7 @@
 package io.deephaven.server.plugin.python;
 
 import io.deephaven.plugin.Registration.Callback;
-import io.deephaven.server.plugin.type.JsTypeDistribution;
+import io.deephaven.server.plugin.type.JsPluginDistribution;
 import org.jpy.PyObject;
 
 import java.nio.file.Path;
@@ -19,12 +19,12 @@ class CallbackAdapter {
     }
 
     @SuppressWarnings("unused")
-    public void registerObjectType(String name, PyObject objectTypeAdapter) {
+    public void registerObjectTypePlugin(String name, PyObject objectTypeAdapter) {
         callback.register(new ObjectTypeAdapter(name, objectTypeAdapter));
     }
 
     @SuppressWarnings("unused")
-    public void registerJsType(String path, String name, String version, String main) {
-        callback.register(new JsTypeDistribution(Path.of(path), name, version, main));
+    public void registerJsPlugin(String path, String name, String version, String main) {
+        callback.register(new JsPluginDistribution(Path.of(path), name, version, main));
     }
 }

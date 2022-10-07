@@ -8,7 +8,7 @@ import dagger.Module;
 import io.deephaven.plugin.PluginModule;
 import io.deephaven.plugin.Registration;
 import io.deephaven.plugin.Registration.Callback;
-import io.deephaven.server.plugin.type.JsTypesModule;
+import io.deephaven.server.plugin.type.JsPluginsModule;
 import io.deephaven.server.plugin.type.ObjectTypesModule;
 
 /**
@@ -19,10 +19,10 @@ import io.deephaven.server.plugin.type.ObjectTypesModule;
  * <a href="https://github.com/deephaven/deephaven-core/issues/1809">deephaven-core#1809</a> for the feature request.
  *
  * @see ObjectTypesModule
- * @see JsTypesModule
+ * @see JsPluginsModule
  * @see PluginModule
  */
-@Module(includes = {ObjectTypesModule.class, JsTypesModule.class, PluginModule.class})
+@Module(includes = {ObjectTypesModule.class, JsPluginsModule.class, PluginModule.class})
 public interface PluginsModule {
 
     @Binds
