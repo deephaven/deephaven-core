@@ -490,16 +490,16 @@ public class KeyedRecordAdapter<K, T> {
     }
 
     private T singleRecordLockedRetriever(final Object mapKey) {
-        final T result = rowRecordAdapterDescriptor.getEmptyRecord();
+        final MutableObject<T> result = new MutableObject<>();
         DO_LOCKED_FUNCTION.accept(
                 usePrev -> {
-                    toMapListener.get(
+                    result.setValue(toMapListener.get(
                             mapKey,
-                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, false, result),
-                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, true, result));
+                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, false),
+                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, true)));
                     return true;
                 }, "KeyedRecordAdapter.getRecord()");
-        return result;
+        return result.getValue();
     }
 
     @SuppressWarnings("unused")

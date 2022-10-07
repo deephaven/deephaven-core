@@ -66,10 +66,10 @@ public class SingleRowRecordAdapter<T> {
      *
      * @param k The index key from which to retrieve data.
      * @param usePrev Whether to use prev values.
-     * @param record The record to store the data in.
      * @return A record containing the data at {@code k}.
      */
-    public T retrieveDataSingleKey(long k, boolean usePrev, T record) {
+    public T retrieveDataSingleKey(long k, boolean usePrev) {
+        T record = rowRecordAdapterDescriptor.getEmptyRecord();
         for (int colIdx = 0; colIdx < recordColumnSources.length; colIdx++) {
             updateRecordFromColumn(colIdx, k, usePrev, record);
         }
