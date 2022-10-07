@@ -26,6 +26,12 @@ public class TreeSnapshotQuery implements Function<Table, TreeSnapshotResult> {
 
     private final TreeTableClientTableManager.Client client;
 
+    // TODO-RWC:
+    //   1. We can assume that viewports are a single range.
+    //   2. Columns can be sparse.
+    //   3. baseTableId is the Ticket (export) for the hierarchical table
+    //   4. How best to communicate rolled up vs. constituent columns (rollup-specific)
+    //   5. Replace tablesByKey with a Ticket for a Table of expanded rows.
     private final long firstViewportRow;
     private final long lastViewportRow;
     private final int baseTableId;
