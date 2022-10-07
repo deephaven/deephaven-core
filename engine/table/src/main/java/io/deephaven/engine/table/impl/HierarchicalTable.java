@@ -10,12 +10,14 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -74,6 +76,8 @@ public class HierarchicalTable extends QueryTable {
     public Table getRawRootTable() {
         return rootTable;
     }
+
+    // TODO-RWC: Can HierarchicalTable stop being a QueryTable and just have the actually-implemented interface?
 
     @Override
     public Table formatColumns(String... columnFormats) {
@@ -184,6 +188,18 @@ public class HierarchicalTable extends QueryTable {
     public Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
             Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported("aggBy()");
+    }
+
+    public final class ClientView extends LivenessArtifact {
+        final Collection<SortColumn> sorts;
+        final Collection<WhereFilter> filters;
+
+        public ClientView(Collection<SortColumn> sorts, Collection<WhereFilter> filters) {
+            this.sorts = sorts;
+            this.filters = filters;
+        }
+
+
     }
 
     @Override

@@ -14,26 +14,34 @@ import "deephaven/proto/table.proto";
 import "deephaven/proto/ticket.proto";
 
 /*
- * This service provides tools to create hierarchical tables (rollups and trees).
+ * This service provides tools to create and view hierarchical tables (rollups and trees).
  */
 service HierarchicalTableService {
   /*
-   * Performs a rollup operation on a table.
+   * Performs a rollup operation on a table and exports a default hierarchical table view of the result.
    */
   rpc Rollup(RollupRequest) returns (RollupResponse);
   /*
-   * Performs a tree operation on a table.
+   * Performs a tree operation on a table and exports a default hierarchical table view of the result.
    */
   rpc Tree(TreeRequest) returns (TreeResponse);
+  /*
+   * Exports the source table for a hierarchical table view.
+   */
+  rpc ExportSource(HierarchicalTableSourceExportRequest) returns (HierarchicalTableSourceExportResponse);
+  /*
+   * Derives a new hierarchical table view from an existing hierarchical table view.
+   */
+  rpc View(HierarchicalTableViewRequest) returns (HierarchicalTableViewResponse);
 }
 
 message RollupRequest {
-  // The ticket to use to hold the results of the rollup operation
-  Ticket result_id = 1;
-  // The ticket for the source Table object to rollup
+  // Ticket to use to hold a default view of the results of the rollup operation
+  Ticket result_view_id = 1;
+  // Ticket for the source Table object to rollup
   Ticket source_id = 2;
   // The aggregations that should be applied at each level of the rollup
-  repeated Aggregate aggregations = 3; // TODO-RWC: At some point, we should re-do these. Be sure to validate in server handling.
+  repeated Aggregate aggregations = 3;
   // Whether to include the leaf-level constituents in the result
   bool include_constituents = 4;
   // The names of the columns to rollup by
@@ -44,10 +52,10 @@ message RollupResponse {
   // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
 }
 
-  message TreeRequest {
-    // The ticket to use to hold the results of the tree operation
-  Ticket result_id = 1;
-  // The ticket for the source Table object to tree
+message TreeRequest {
+  // Ticket to use to hold a default view of the results of the tree operation
+  Ticket result_view_id = 1;
+  // Ticket for the source Table object to tree
   Ticket source_id = 2;
   // The name of the column containing the unique identifier for each row in the source table
   string identifier_column = 3;
@@ -56,5 +64,58 @@ message RollupResponse {
 }
 
 message TreeResponse {
+  // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
+}
+
+message HierarchicalTableSourceExportRequest {
+  // Ticket to use to hold an export of the hierarchical table view's source table
+  Ticket result_id = 1;
+  // Ticket for the (existing) hierarchical table view
+  Ticket view_id = 2;
+}
+
+message HierarchicalTableSourceExportResponse {
+  // Deliberately empty response, the result is encoded in the result_id ticket
+}
+
+enum RollupLeafType {
+  UNDEFINED = 0;
+  NORMAL = 1;
+  CONSTITUENT = 2;
+}
+
+message HierarchicalTableViewDescriptor {
+  // The column names to expand by
+  // Implementation notes:
+  //   - Rollups: The group-by columns
+  //   - Trees: The single identifier column
+  repeated string expand_by_columns = 1;
+  // The name of a column that signifies the "width" (in defined columns) for a rollup key. Must be included along
+  // with expanded columns in a rollup key table.
+  optional string rollup_key_width_column = 2;
+  // Whether this rollup's leaf nodes are "normal" first level aggregations or constituents
+  optional RollupLeafType rollup_leaf_type = 3;
+  // '='-delimited pairs from output (aggregation) column name to input (constituent) column name
+  repeated string rollup_output_input_column_pairs = 4;
+
+  // Schema as described in Arrow Message.fbs::Message.
+  bytes schema_header = 5;
+}
+
+message HierarchicalTableViewRequest {
+  // Ticket for the resulting hierarchical table view
+  Ticket result_view_id = 1;
+  // Ticket for the existing view to inherit the hierarchical table (TODO-RWC: and other fields?) from
+  Ticket existing_view_id = 2;
+  // Ticket that represents expanded or contracted keys from a hierarchical (rollup or tree) table.
+  // If empty or not present, the result will have all nodes collapsed.
+  Ticket key_table = 3;
+  // Filters to apply to the hierarchical table nodes
+  repeated Condition filters = 4;
+  // Sorts to apply to the hierarchical table nodes
+  repeated SortDescriptor sorts = 5;
+}
+
+message HierarchicalTableViewResponse {
   // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
 }
