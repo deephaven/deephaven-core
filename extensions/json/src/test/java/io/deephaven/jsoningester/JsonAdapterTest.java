@@ -1655,7 +1655,7 @@ public class JsonAdapterTest {
     @Test
     public void testPerformanceBigMessages() throws IOException, InterruptedException, TimeoutException {
         // Many other tests want fewer threads. For the performance test, we want to standardize on 4.
-        final int numThreads = 4;
+        final int numThreads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() - 1));
 
         final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
                 StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
@@ -1699,7 +1699,8 @@ public class JsonAdapterTest {
             }
         }
 
-        final TextMessage[] messages = new TextMessage[100000];
+        final int numMessages = numThreads * 25_000;
+        final TextMessage[] messages = new TextMessage[numMessages];
 
         final int mgGroupSize = 30;
         for (int i = 0; i < messages.length; i++) {
@@ -1774,7 +1775,16 @@ public class JsonAdapterTest {
         // Somewhat arbitrarily picking 30,000 messages per second as a minimum performance benchmark
         // - note that this test is lumping the LTM in with the imports, so actual performance should be higher.
         Assert.assertEquals(messages.length, result.intSize());
-        Assert.assertTrue(intervalNanos < (10f / 3f) * NANOS_PER_SECOND);
+
+
+        long minMessagesPerSecEachThread = 7500L;
+        long expectedMsgsPerSecOverall = minMessagesPerSecEachThread * numThreads;
+        long realizedMsgsPerSec = Math.round(numMessages / (intervalNanos / NANOS_PER_SECOND));
+
+        Assert.assertTrue(
+                "expected realizedMsgsPerSec > expectedMsgsPerSecOverall; realizedMsgsPerSec=" + realizedMsgsPerSec
+                        + ", expectedMsgsPerSecOverall=" + expectedMsgsPerSecOverall,
+                realizedMsgsPerSec > expectedMsgsPerSecOverall);
     }
 
     @Test
