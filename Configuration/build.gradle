@@ -39,7 +39,6 @@ test {
     maxHeapSize = '3g'
 
     systemProperty 'Configuration.rootFile', 'lib-tests.prop'
-    systemProperty 'devroot', "$rootDir"
     systemProperty 'workspace', "$rootDir/tmp/workspace"
     systemProperty 'configuration.quiet', 'true'
 
