@@ -12,7 +12,7 @@ public class ByteUtils {
 
         for (int ii = 0; ii < bytes.length; ii++) {
             // extract the upper 4 bits
-            buffer[ii << 1] = HEX_LOOKUP[bytes[ii] >>> 4];
+            buffer[ii << 1] = HEX_LOOKUP[(bytes[ii] >> 4) & 0xF];
             // extract the lower 4 bits
             buffer[(ii << 1) + 1] = HEX_LOOKUP[bytes[ii] & 0xF];
         }
