@@ -109,13 +109,16 @@ public class ArrowFlightUtil {
                     final BarrageStreamGenerator.SchemaView schemaView =
                             new BarrageStreamGenerator.SchemaView(serializedMessage);
 
-                    // push the schema to the listener
-                    listener.onNext(schemaView);
+                    GrpcUtil.safelyExecute(() -> {
+                        // push the schema to the listener
+                        listener.onNext(schemaView);
 
-                    // shared code between `DoGet` and `BarrageSnapshotRequest`
-                    createAndSendSnapshot(table, null, null, false, DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
+                        // shared code between `DoGet` and `BarrageSnapshotRequest`
+                        createAndSendSnapshot(table, null, null, false,
+                                DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
 
-                    listener.onCompleted();
+                        listener.onCompleted();
+                    });
                 });
     }
 

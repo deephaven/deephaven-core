@@ -133,10 +133,10 @@ public class GrpcUtil {
      *
      * @param runner the runnable to execute safely
      */
-    public static void safelyExecute(final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
+    public static void safelyExecute(final FunctionalInterfaces.ThrowingRunnable<StatusRuntimeException> runner) {
         try {
             runner.run();
-        } catch (final Exception err) {
+        } catch (final StatusRuntimeException err) {
             log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
         }
     }
@@ -147,13 +147,13 @@ public class GrpcUtil {
      * @param runner the runnable to execute safely
      */
     public static void safelyExecuteLocked(final Object lockedObject,
-            final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
+            final FunctionalInterfaces.ThrowingRunnable<StatusRuntimeException> runner) {
         try {
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (lockedObject) {
                 runner.run();
             }
-        } catch (final Exception err) {
+        } catch (final StatusRuntimeException err) {
             log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
         }
     }
