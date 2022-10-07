@@ -36,7 +36,8 @@ public class CoreClient extends QueryConnectable<CoreClient> {
         this.serverUrl = serverUrl;
     }
 
-    private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall, JsFunction<R, JsArray<ConfigPair>> getConfigValues) {
+    private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
+            JsFunction<R, JsArray<ConfigPair>> getConfigValues) {
         return Callbacks.grpcUnaryPromise(rpcCall).then(response -> {
             String[][] result = new String[0][];
             getConfigValues.apply(response).forEach((item, index, array) -> {
@@ -67,10 +68,8 @@ public class CoreClient extends QueryConnectable<CoreClient> {
                 c -> connection.get().configServiceClient().getAuthenticationConstants(
                         new AuthenticationConstantsRequest(),
                         connection.get().metadata(),
-                        c::apply
-                ),
-                AuthenticationConstantsResponse::getConfigValuesList
-        );
+                        c::apply),
+                AuthenticationConstantsResponse::getConfigValuesList);
     }
 
     public Promise<Void> login(LoginCredentials credentials) {
@@ -86,10 +85,8 @@ public class CoreClient extends QueryConnectable<CoreClient> {
                 c -> connection.get().configServiceClient().getConfigurationConstants(
                         new ConfigurationConstantsRequest(),
                         connection.get().metadata(),
-                        c::apply
-                ),
-                ConfigurationConstantsResponse::getConfigValuesList
-        );
+                        c::apply),
+                ConfigurationConstantsResponse::getConfigValuesList);
     }
 
     public Promise<UserInfo> getUserInfo() {

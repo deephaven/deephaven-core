@@ -22,7 +22,8 @@ import java.util.Optional;
 @Module()
 public class AuthContextModule {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
-    private static final String[] AUTH_HANDLERS = Configuration.getInstance().getStringArrayFromProperty("AuthHandlers");
+    private static final String[] AUTH_HANDLERS =
+            Configuration.getInstance().getStringArrayFromProperty("AuthHandlers");
 
     private static BasicAuthMarshaller basicAuthMarshaller;
     private static Map<String, AuthenticationRequestHandler> authHandlerMap;

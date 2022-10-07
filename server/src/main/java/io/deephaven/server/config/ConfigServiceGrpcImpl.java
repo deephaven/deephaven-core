@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- *
+ * Serves specified configuration properties to gRPC clients.
  */
 public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ConfigServiceGrpcImpl.class);
@@ -49,7 +49,8 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
             }
             String className = split[1];
             try {
-                configuration.setProperty(key, Class.forName(className, false, getClass().getClassLoader()).getPackage().getImplementationVersion());
+                configuration.setProperty(key, Class.forName(className, false, getClass().getClassLoader()).getPackage()
+                        .getImplementationVersion());
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException("Failed to find class to get its version '" + className + "'");
             }
@@ -57,7 +58,8 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
     }
 
     @Override
-    public void getAuthenticationConstants(AuthenticationConstantsRequest request, StreamObserver<AuthenticationConstantsResponse> responseObserver) {
+    public void getAuthenticationConstants(AuthenticationConstantsRequest request,
+            StreamObserver<AuthenticationConstantsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             AuthenticationConstantsResponse.Builder builder = AuthenticationConstantsResponse.newBuilder();
             collectConfigs(builder::addConfigValues, AUTH_CLIENT_CONFIG_PROPERTY);
@@ -67,7 +69,8 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
     }
 
     @Override
-    public void getConfigurationConstants(ConfigurationConstantsRequest request, StreamObserver<ConfigurationConstantsResponse> responseObserver) {
+    public void getConfigurationConstants(ConfigurationConstantsRequest request,
+            StreamObserver<ConfigurationConstantsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             ConfigurationConstantsResponse.Builder builder = ConfigurationConstantsResponse.newBuilder();
             collectConfigs(builder::addConfigValues, CLIENT_CONFIG_PROPERTY);
