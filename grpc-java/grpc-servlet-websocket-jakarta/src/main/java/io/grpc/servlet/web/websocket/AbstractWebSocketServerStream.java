@@ -1,5 +1,6 @@
 package io.grpc.servlet.web.websocket;
 
+import com.google.common.io.BaseEncoding;
 import io.grpc.Attributes;
 import io.grpc.InternalMetadata;
 import io.grpc.Metadata;
@@ -18,6 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public abstract class AbstractWebSocketServerStream extends Endpoint {
+    private static final byte[] BINARY_HEADER_SUFFIX_ARR =
+            Metadata.BINARY_HEADER_SUFFIX.getBytes(StandardCharsets.US_ASCII);
     protected final ServerTransportListener transportListener;
     protected final List<? extends ServerStreamTracer.Factory> streamTracerFactories;
     protected final int maxInboundMessageSize;
@@ -36,10 +39,9 @@ public abstract class AbstractWebSocketServerStream extends Endpoint {
     }
 
     protected static Metadata readHeaders(ByteBuffer headerPayload) {
-        // Headers are passed as ascii (browsers don't support binary), ":"-separated key/value pairs, separated on
-        // "\r\n". The client implementation shows that values might be comma-separated, but we'll pass that through
-        // directly as a plain string.
-        //
+        // Headers are passed as ascii, ":"-separated key/value pairs, separated on "\r\n". The client
+        // implementation shows that values might be comma-separated, but we'll pass that through directly as a plain
+        // string.
         List<byte[]> byteArrays = new ArrayList<>();
         while (headerPayload.hasRemaining()) {
             int nameStart = headerPayload.position();
@@ -61,22 +63,21 @@ public abstract class AbstractWebSocketServerStream extends Endpoint {
 
             byteArrays.add(headerBytes);
             if (Arrays.equals(headerBytes, "content-type".getBytes(StandardCharsets.US_ASCII))) {
-                // rewrite grpc-web content type to matching grpc content type
+                // rewrite grpc-web content type to matching grpc content type, regardless of what it said
                 byteArrays.add("grpc+proto".getBytes(StandardCharsets.US_ASCII));
                 // TODO support other formats like text, non-proto
                 headerPayload.position(valueEnd);
                 continue;
             }
 
-            // TODO check for binary header suffix
-            // if (headerBytes.endsWith(Metadata.BINARY_HEADER_SUFFIX)) {
-            //
-            // } else {
             byte[] valueBytes = new byte[valueEnd - valueStart];
             headerPayload.position(valueStart);
             headerPayload.get(valueBytes);
-            byteArrays.add(valueBytes);
-            // }
+            if (endsWithBinHeaderSuffix(headerBytes)) {
+                byteArrays.add(BaseEncoding.base64().decode(ByteBuffer.wrap(valueBytes).asCharBuffer()));
+            } else {
+                byteArrays.add(valueBytes);
+            }
 
             headerPayload.position(endOfLinePosition);
         }
@@ -88,6 +89,20 @@ public abstract class AbstractWebSocketServerStream extends Endpoint {
         // TODO to support text encoding
 
         return InternalMetadata.newMetadata(byteArrays.toArray(new byte[][] {}));
+    }
+
+    private static boolean endsWithBinHeaderSuffix(byte[] headerBytes) {
+        // This is intended to be equiv to
+        // header.endsWith(Metadata.BINARY_HEADER_SUFFIX), without actually making a string for it
+        if (headerBytes.length < BINARY_HEADER_SUFFIX_ARR.length) {
+            return false;
+        }
+        for (int i = 0; i < BINARY_HEADER_SUFFIX_ARR.length; i++) {
+            if (headerBytes[headerBytes.length - 3 + i] != BINARY_HEADER_SUFFIX_ARR[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

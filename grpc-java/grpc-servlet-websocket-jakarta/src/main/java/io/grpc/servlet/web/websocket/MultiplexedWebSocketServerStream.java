@@ -38,13 +38,13 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
  */
 public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStream {
     private static final Logger logger = Logger.getLogger(MultiplexedWebSocketServerStream.class.getName());
+    /** Custom metadata to hold the path requested by the incoming stream */
     public static final Metadata.Key<String> PATH =
             Metadata.Key.of("grpc-websockets-path", Metadata.ASCII_STRING_MARSHALLER);
 
     private final InternalLogId logId = InternalLogId.allocate(MultiplexedWebSocketServerStream.class, null);
 
-    // fields set after headers are decoded. No need to be threadsafe, this will only be accessed from the transport
-    // thread.
+    // No need to be thread-safe, this will only be accessed from the transport thread.
     private final Map<Integer, MultiplexedWebsocketStreamImpl> streams = new HashMap<>();
     private final boolean isTextRequest = false;// not supported yet
 
@@ -78,6 +78,7 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
         final boolean closed;
         if (streamId < 0) {
             closed = true;
+            // unset the msb, extract the actual streamid
             streamId = streamId ^ (1 << 31);
         } else {
             closed = false;

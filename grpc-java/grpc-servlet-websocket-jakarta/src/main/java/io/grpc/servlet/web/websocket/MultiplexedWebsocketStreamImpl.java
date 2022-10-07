@@ -44,19 +44,31 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
 
         @Override
         public void writeHeaders(Metadata headers) {
-            // headers/trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The
-            // trailer response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the length of the
-            // message
+            writeMetadataToStream(headers, false);
+        }
 
+        /**
+         * Usual multiplexing framing applies - before writing metadata, we write the 32-bit int streamId, with the top
+         * bit to represent if this stream (over the shared transport) should be closed or not.
+         * <p>
+         * </p>
+         * Headers/trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The trailer
+         * response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the length of the message.
+         */
+        private void writeMetadataToStream(Metadata headers, boolean closeBitSet) {
             byte[][] serializedHeaders = TransportFrameUtil.toHttp2Headers(headers);
             // Total up the size of the payload: 4 bytes for multiplexing framing, 5 bytes for the prefix, and each
             // header needs a colon delimiter, and to end with \r\n
             int headerLength = Arrays.stream(serializedHeaders).mapToInt(arr -> arr.length + 2).sum();
-            ByteBuffer message = ByteBuffer.allocate(headerLength + 9 + 4);
-            message.putInt(streamId);
+            ByteBuffer message = ByteBuffer.allocate(headerLength + 9);
+            // If this is the final write, set the highest bit on the streamid
+            message.putInt(closeBitSet ? streamId ^ (1 << 31) : streamId);
             message.put((byte) 0x80);
             message.putInt(headerLength);
             writeAsciiHeadersToMessage(serializedHeaders, message);
+            if (message.hasRemaining()) {
+                throw new IllegalStateException("Incorrectly sized buffer, header/trailer payload will be sized wrong");
+            }
             message.flip();
             try {
                 websocketSession.getBasicRemote().sendBinary(message);
@@ -110,27 +122,7 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
                         new Object[] {logId, trailers, headersSent, status});
             }
 
-            // Trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The
-            // trailer response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the size in a 4 byte int
-
-            byte[][] serializedTrailers = TransportFrameUtil.toHttp2Headers(trailers);
-            // Total up the size of the payload: 4 bytes for multiplexing framing, 5 bytes for the grpc payload prefix,
-            // and each trailer needs a colon+space delimiter, and to end with \r\n
-            int trailerLength = Arrays.stream(serializedTrailers).mapToInt(arr -> arr.length + 2).sum();
-
-            ByteBuffer message = ByteBuffer.allocate(9 + trailerLength);
-            message.putInt(streamId ^ (1 << 31));
-            message.put((byte) 0x80);
-            message.putInt(trailerLength);
-            writeAsciiHeadersToMessage(serializedTrailers, message);
-            message.flip();
-            try {
-                websocketSession.getBasicRemote().sendBinary(message);
-
-                // websocketSession.close();//don't close this, leave it up to the client, or use a timeout
-            } catch (IOException e) {
-                throw Status.fromThrowable(e).asRuntimeException();
-            }
+            writeMetadataToStream(trailers, true);
             transportState().runOnTransportThread(() -> {
                 transportState().complete();
             });
