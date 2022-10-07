@@ -51,3 +51,8 @@ default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnviro
 
 OperationInitializationThreadPool.threads=1
 
+
+AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
+
+authentication.client.configuration.list=AuthHandlers
+client.configuration.list=java.version,deephaven.version,barrage.version,

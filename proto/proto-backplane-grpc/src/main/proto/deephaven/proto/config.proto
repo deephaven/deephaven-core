@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/config";
+
+/**
+ * Provides simple configuration data to users. Unauthenticated users may call GetAuthenticationConstants
+ * to discover hints on how they should proceed with providing their identity, while already-authenticated
+ * clients may call GetConfigurationConstants for details on using the platform.
+ */
+service ConfigService {
+  rpc GetAuthenticationConstants(AuthenticationConstantsRequest) returns (AuthenticationConstantsResponse) {}
+  rpc GetConfigurationConstants(ConfigurationConstantsRequest) returns (ConfigurationConstantsResponse) {}
+}
+
+message AuthenticationConstantsRequest {}
+message ConfigurationConstantsRequest {}
+message AuthenticationConstantsResponse {
+  repeated ConfigPair config_values = 1;
+}
+message ConfigurationConstantsResponse {
+  repeated ConfigPair config_values = 1;
+}
+message ConfigPair {
+  string key = 1;
+  oneof value {//leave room for more types
+    string string_value = 2;
+  }
+}
