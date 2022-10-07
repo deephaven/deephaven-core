@@ -19,8 +19,7 @@ dependencies {
     implementation depTrove3
 
     Classpaths.inheritImmutables(project)
-
-    implementation 'com.google.guava:guava:19.0'
+    Classpaths.inheritGuava(project)
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 

@@ -858,6 +858,51 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final UngroupTable ungroup() {
+        return UngroupTable.builder()
+                .parent(this)
+                .build();
+    }
+
+    @Override
+    public final UngroupTable ungroup(boolean nullFill) {
+        return UngroupTable.builder()
+                .parent(this)
+                .nullFill(nullFill)
+                .build();
+    }
+
+    @Override
+    public final UngroupTable ungroup(String... columnsToUngroup) {
+        final UngroupTable.Builder builder = UngroupTable.builder()
+                .parent(this);
+        for (String columnToUngroup : columnsToUngroup) {
+            builder.addUngroupColumns(ColumnName.of(columnToUngroup));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final UngroupTable ungroup(boolean nullFill, String... columnsToUngroup) {
+        final UngroupTable.Builder builder = UngroupTable.builder()
+                .parent(this)
+                .nullFill(nullFill);
+        for (String columnToUngroup : columnsToUngroup) {
+            builder.addUngroupColumns(ColumnName.of(columnToUngroup));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final UngroupTable ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+        return UngroupTable.builder()
+                .parent(this)
+                .nullFill(nullFill)
+                .addAllUngroupColumns(columnsToUngroup)
+                .build();
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

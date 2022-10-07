@@ -76,7 +76,6 @@ ${PFX}/re2:\
 ${PFX}/zlib:\
 ${PFX}/grpc:\
 ${PFX}/arrow:\
-${PFX}/boost:\
 ${PFX}/immer:\
 ${PFX}/deephaven
 
@@ -107,7 +106,6 @@ if [ "$CHECKOUT" = "yes" ]; then
   git clone $GIT_FLAGS -b v1.45.2 --depth 1 https://github.com/grpc/grpc
   git clone $GIT_FLAGS -b apache-arrow-7.0.0 --depth 1 https://github.com/apache/arrow
   git clone $GIT_FLAGS https://github.com/arximboldi/immer.git && (cd immer && git checkout "${IMMER_SHA}")
-  curl -sL https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_"${BOOST_VERSION}".tar.bz2 | tar jxf -
   # Apply apache arrow patch.
   (cd arrow && patch -p1 <<EOF
 diff --git a/cpp/src/arrow/ipc/reader.cc b/cpp/src/arrow/ipc/reader.cc
@@ -242,15 +240,6 @@ if [ "$BUILD_IMMER" = "yes" ]; then
   cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${PFX}/immer ..
   make -j$NCPUS
   make install
-fi
-
-### boost
-if [ "$BUILD_BOOST" = "yes" ]; then
-  echo
-  echo "*** Building boost"
-  cd $SRC/boost_"${BOOST_VERSION}"
-  ./bootstrap.sh --prefix=${PFX}/boost
-  ./b2 install
 fi
 
 echo DONE.

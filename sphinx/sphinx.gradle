@@ -29,7 +29,7 @@ def copySphinxLib = tasks.register('copySphinxLib', Sync) {
 def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     destFile.set layout.buildDirectory.file('sphinx-image/Dockerfile')
     // Deephaven server python API requires that the wheel be installed to build, so we share this image
-    from 'deephaven/server:local-build'
+    from 'deephaven/server-netty:local-build'
 
     copyFile "./wheel", "/wheel"
     copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.7/site-packages/'
@@ -52,7 +52,7 @@ def sphinxImage = Docker.registerDockerImage(project, 'sphinx') {
     inputs.files copyPyClientWhl.get().outputs.files
     inputs.files copySphinxLib.get().outputs.files
     inputDir.set layout.buildDirectory.dir('sphinx-image')
-    inputs.files project(':docker-server').tasks.findByName('buildDocker-server').outputs.files // deephaven/server
+    inputs.files project(':docker-server').tasks.findByName('buildDocker-server-netty').outputs.files // deephaven/server-netty
     images.add('deephaven/sphinx:local-build')
 }
 
@@ -101,7 +101,7 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
     }
     dockerfile {
         // share the common base image to keep it simple
-        from 'deephaven/server:local-build'
+        from 'deephaven/server-netty:local-build'
 
         runCommand('''set -eux; \\
                       apt-get update; \\
@@ -116,7 +116,7 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
                       doxygen
                       ''')
     }
-    parentContainers = [project(':docker-server').tasks.findByName('buildDocker-server')] // deephaven/server
+    parentContainers = [project(':docker-server').tasks.findByName('buildDocker-server-netty')] // deephaven/server-netty
     containerOutPath = '/project/doc/doxygenoutput'
     copyOut {
         into "$buildDir/cppClientDoxygen"

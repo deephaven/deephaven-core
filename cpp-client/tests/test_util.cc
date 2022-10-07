@@ -96,9 +96,7 @@ ColumnDataForTests &ColumnDataForTests::operator=(ColumnDataForTests &&other) no
 ColumnDataForTests::~ColumnDataForTests() = default;
 
 TableMakerForTests TableMakerForTests::create() {
-  std::string connectionString("localhost:10000");
-  streamf(std::cerr, "Connecting to %o\n", connectionString);
-  auto client = Client::connect("localhost:10000");
+  auto client = createClient();
   auto manager = client.getManager();
 
   ColumnNamesForTests cn;
@@ -115,6 +113,13 @@ TableMakerForTests TableMakerForTests::create() {
   return TableMakerForTests(std::move(client), std::move(testTable), std::move(cn), std::move(cd));
 }
 
+Client TableMakerForTests::createClient() {
+  std::string connectionString("localhost:10000");
+  streamf(std::cerr, "Connecting to %o\n", connectionString);
+  auto client = Client::connect(connectionString);
+  return client;
+}
+
 TableMakerForTests::TableMakerForTests(TableMakerForTests &&) noexcept = default;
 TableMakerForTests &TableMakerForTests::operator=(TableMakerForTests &&) noexcept = default;
 TableMakerForTests::~TableMakerForTests() = default;
@@ -129,7 +134,7 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   if (field->name() != columnName) {
     auto message = stringf("Column %o: Expected column name %o, have %o", depth, columnName,
         field->name());
-    throw std::runtime_error(message);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
   arrow::ChunkedArray chunkedData(data);
@@ -140,13 +145,13 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   if (column->length() != chunkedData.length()) {
     auto message = stringf("Column %o: Expected length %o, got %o", depth, chunkedData.length(),
         column->length());
-    throw std::runtime_error(message);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
   if (!column->type()->Equals(chunkedData.type())) {
     auto message = stringf("Column %o: Expected type %o, got %o", depth,
         chunkedData.type()->ToString(), column->type()->ToString());
-    throw std::runtime_error(message);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
   int64_t elementIndex = 0;
@@ -156,7 +161,7 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
   int rChunkIndex = 0;
   while (elementIndex < column->length()) {
     if (lChunkNum >= column->num_chunks() || rChunkNum >= chunkedData.num_chunks()) {
-      throw std::runtime_error("sad");
+      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Logic error"));
     }
     const auto &lChunk = column->chunk(lChunkNum);
     if (lChunkIndex == lChunk->length()) {
@@ -178,7 +183,7 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
     if (!lItem->Equals(rItem)) {
       auto message = stringf("Column %o: Columns differ at element %o: %o vs %o",
           depth, elementIndex, lItem->ToString(), rItem->ToString());
-      throw std::runtime_error(message);
+      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
 
     ++elementIndex;
@@ -186,7 +191,8 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
     ++rChunkIndex;
   }
 
-  throw std::runtime_error("Some other difference (TODO(kosak): describe difference)");
+  // TODO(kosak): describe difference
+  throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Some other difference"));
 }
 
 std::shared_ptr<arrow::Table> basicValidate(const TableHandle &table, int expectedColumns) {
@@ -197,7 +203,7 @@ std::shared_ptr<arrow::Table> basicValidate(const TableHandle &table, int expect
   if (expectedColumns != arrowTable->num_columns()) {
     auto message = stringf("Expected %o columns, but table actually has %o columns",
         expectedColumns, arrowTable->num_columns());
-    throw std::runtime_error(message);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
 
   return arrowTable;

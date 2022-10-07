@@ -19,10 +19,6 @@ public class HealthCheckModule {
     @Singleton
     public HealthStatusManager bindHealthStatusManager() {
         HealthStatusManager healthStatusManager = new HealthStatusManager();
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(
-                ShutdownManager.OrderingCategory.FIRST,
-                healthStatusManager::enterTerminalState);
-
         return healthStatusManager;
     }
 

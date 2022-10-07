@@ -259,13 +259,13 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(Integer.valueOf(40), nthObj(0, 40, 50, 60));
     }
 
-    public void testObjVec() {
-        assertEquals(new Character[]{new Character('1'), new Character('3'), new Character('5')}, vecObj(new ObjectVectorDirect<Character>(new Character('1'), new Character('3'), new Character('5'))));
+    public void testObjArray() {
+        assertEquals(new Character[]{new Character('1'), new Character('3'), new Character('5')}, arrayObj(new ObjectVectorDirect<Character>(new Character('1'), new Character('3'), new Character('5'))));
     }
 
-    public void testObjArray() {
-        assertEquals(null, arrayObj((Character[])null));
-        assertEquals(new ObjectVectorDirect<>(new Character[]{new Character('1'), new Character('3'), new Character('5')}), arrayObj(new Character('1'), new Character('3'), new Character('5')));
+    public void testObjVec() {
+        assertEquals(null, vecObj((Character[])null));
+        assertEquals(new ObjectVectorDirect<>(new Character[]{new Character('1'), new Character('3'), new Character('5')}), vecObj(new Character('1'), new Character('3'), new Character('5')));
     }
 
     public void testObjIn() {
@@ -395,13 +395,13 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(QueryConstants.NULL_BOOLEAN, nthObj(10,new Boolean[]{true,false,true}));
     }
 
-    public void testBooleanVec(){
-        assertEquals(null, vecObj((ObjectVector)null));
-        assertEquals(new Boolean[]{true,false,true}, vecObj(new ObjectVectorDirect<>(true,false,true)));
+    public void testBooleanArray(){
+        assertEquals(null, arrayObj((ObjectVector)null));
+        assertEquals(new Boolean[]{true,false,true}, arrayObj(new ObjectVectorDirect<>(true,false,true)));
     }
 
-    public void testBooleanArray(){
-        assertEquals(new ObjectVectorDirect<Boolean>(true,false,true), arrayObj(new Boolean[]{true,false,true}));
+    public void testBooleanVec(){
+        assertEquals(new ObjectVectorDirect<Boolean>(true,false,true), vecObj(new Boolean[]{true,false,true}));
     }
 
     public void testBooleanIn(){
@@ -676,13 +676,13 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{3,1,2,4,${pt.null}}, distinct(new ${pt.primitive}[]{3,1,2,4,1, ${pt.null}, ${pt.null}}, true));
     }
 
-    public void test${pt.boxed}Vec(){
-        assertEquals(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5}, vec(new ${pt.dbArrayDirect}((${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5)));
-        assertEquals(null, vec((${pt.dbArray})null));
+    public void test${pt.boxed}Array(){
+        assertEquals(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5}, array(new ${pt.dbArrayDirect}((${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5)));
+        assertEquals(null, array((${pt.dbArray})null));
     }
 
-    public void test${pt.boxed}Array(){
-        assertEquals(new ${pt.dbArrayDirect}((${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5), array(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5}));
+    public void test${pt.boxed}Vec(){
+        assertEquals(new ${pt.dbArrayDirect}((${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5), vec(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5}));
     }
 
     public void test${pt.boxed}In(){

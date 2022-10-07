@@ -67,8 +67,9 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // For the Web UI, cache everything in the static folder
         // https://create-react-app.dev/docs/production-build/#static-file-caching
-        context.addFilter(NoCacheFilter.class, "/iriside/*", EnumSet.noneOf(DispatcherType.class));
-        context.addFilter(CacheFilter.class, "/iriside/static/*", EnumSet.noneOf(DispatcherType.class));
+        context.addFilter(NoCacheFilter.class, "/ide/*", EnumSet.noneOf(DispatcherType.class));
+        context.addFilter(NoCacheFilter.class, "/jsapi/*", EnumSet.noneOf(DispatcherType.class));
+        context.addFilter(CacheFilter.class, "/ide/static/*", EnumSet.noneOf(DispatcherType.class));
 
         // Always add eTags
         context.setInitParameter("org.eclipse.jetty.servlet.Default.etags", "true");

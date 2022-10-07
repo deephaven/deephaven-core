@@ -11,6 +11,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.type.JsTypesNoOpModule;
@@ -25,6 +26,7 @@ import org.junit.Rule;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.PrintStream;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -34,6 +36,7 @@ public abstract class DeephavenApiServerTestBase {
     @Singleton
     @Component(modules = {
             DeephavenApiServerModule.class,
+            DeephavenApiConfigModule.class,
             LogModule.class,
             NoConsoleSessionModule.class,
             ServerBuilderInProcessModule.class,
@@ -50,10 +53,7 @@ public abstract class DeephavenApiServerTestBase {
         interface Builder {
 
             @BindsInstance
-            Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
-
-            @BindsInstance
-            Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
+            Builder withServerConfig(ServerConfig serverConfig);
 
             @BindsInstance
             Builder withOut(@Named("out") PrintStream out);
@@ -81,9 +81,14 @@ public abstract class DeephavenApiServerTestBase {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
+        final DeephavenApiServerTestConfig config = DeephavenApiServerTestConfig.builder()
+                .schedulerPoolSize(4)
+                .tokenExpire(sessionTokenExpireTime())
+                .port(-1)
+                .build();
+
         serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
-                .withSchedulerPoolSize(4)
-                .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())
+                .withServerConfig(config)
                 .withOut(System.out)
                 .withErr(System.err)
                 .build();
@@ -111,14 +116,14 @@ public abstract class DeephavenApiServerTestBase {
     }
 
     /**
-     * The session token expiration, in milliseconds.
+     * The session token expiration
      *
-     * @return the session token expiration, in milliseconds.
+     * @return the session token expiration
      */
-    public long sessionTokenExpireTmMs() {
+    public Duration sessionTokenExpireTime() {
         // Long expiration is useful for debugging sessions, and the majority of tests should not worry about
         // re-authentication. Any test classes that need an explicit token expiration should override this method.
-        return TimeUnit.DAYS.toMillis(7);
+        return Duration.ofDays(7);
     }
 
     public ManagedChannelBuilder<?> channelBuilder() {

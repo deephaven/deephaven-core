@@ -140,6 +140,14 @@ jobs:
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: docs-ci-pydoc-jvm-err
+          path: '**/*_pid*.log'
+          if-no-files-found: ignore
+
   cppdoc:
     runs-on: ubuntu-22.04
     steps:
