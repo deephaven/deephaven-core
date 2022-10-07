@@ -232,34 +232,34 @@ public class QueryCompiler {
             @NotNull final String packageNameRoot,
             @Nullable final StringBuilder codeLog,
             @NotNull final Map<String, Class<?>> parameterClasses) {
-        CompletableFuture<Class<?>> promise;
-        final boolean promiseAlreadyMade;
+        CompletableFuture<Class<?>> future;
+        final boolean alreadyExists;
 
         synchronized (this) {
-            promise = knownClasses.get(classBody);
-            if (promise != null) {
-                promiseAlreadyMade = true;
+            future = knownClasses.get(classBody);
+            if (future != null) {
+                alreadyExists = true;
             } else {
-                promise = new CompletableFuture<>();
-                knownClasses.put(classBody, promise);
-                promiseAlreadyMade = false;
+                future = new CompletableFuture<>();
+                knownClasses.put(classBody, future);
+                alreadyExists = false;
             }
         }
 
-        // Someone else has already made the promise. I'll just wait for the answer.
-        if (promiseAlreadyMade) {
+        // Someone else has already made the future. I'll just wait for the answer.
+        if (alreadyExists) {
             try {
-                return promise.get();
+                return future.get();
             } catch (InterruptedException | ExecutionException error) {
                 throw new UncheckedDeephavenException(error);
             }
         }
 
-        // It's my job to fulfill the promise
+        // It's my job to fulfill the future.
         try {
-            return compileHelper(className, classBody, packageNameRoot, codeLog, parameterClasses);
+            return compileHelper(className, classBody, packageNameRoot, codeLog, parameterClasses, future);
         } catch (RuntimeException e) {
-            promise.completeExceptionally(e);
+            future.completeExceptionally(e);
             throw e;
         }
     }
@@ -413,15 +413,12 @@ public class QueryCompiler {
         return sb.toString();
     }
 
-    private WritableURLClassLoader getClassLoader() {
-        return ucl;
-    }
-
     private Class<?> compileHelper(@NotNull final String className,
             @NotNull final String classBody,
             @NotNull final String packageNameRoot,
             @Nullable final StringBuilder codeLog,
-            @NotNull final Map<String, Class<?>> parameterClasses) {
+            @NotNull final Map<String, Class<?>> parameterClasses,
+            @NotNull final CompletableFuture<Class<?>> resultFuture) {
         final MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("SHA-256");
@@ -475,40 +472,22 @@ public class QueryCompiler {
 
             final String identifyingFieldValue = loadIdentifyingField(result);
 
-            // We have a class. It either contains the formula we are looking for (cases 2, A, and B) or a different
-            // formula with the same name (cases 3 and C). In either case, we should store the result in our cache,
-            // either fulfilling an existing promise or making a new, fulfilled promise.
-            synchronized (this) {
-                // Note we are doing something kind of subtle here. We are removing an entry whose key was matched by
-                // value equality and replacing it with a value-equal but reference-different string that is a static
-                // member of the class we just loaded. This should be easier on the garbage collector because we are
-                // replacing a calculated value with a classloaded value and so in effect we are "canonicalizing" the
-                // string. This is important because these long strings stay in knownClasses forever.
-                CompletableFuture<Class<?>> p = knownClasses.remove(identifyingFieldValue);
-                if (p == null) {
-                    // If we encountered a different class than the one we're looking for, make a fresh promise and
-                    // immediately fulfill it. This is for the purpose of populating the cache in case someone comes
-                    // looking for that class later. Rationale: we already did all the classloading work; no point in
-                    // throwing it away now, even though this is not the class we're looking for.
-                    p = new CompletableFuture<>();
-                }
-                knownClasses.put(identifyingFieldValue, p);
-                // It's also possible that some other code has already fulfilled this promise with exactly the same
-                // class. That's ok though: the promise code does not reject multiple sets to the identical value.
-                // But if the result is already set, that means that we've already been through this logic, determined
-                // the class, and set it (each run through this logic can be using a different ClassLoader, so it may
-                // be a different instance of the same Class).
-                if (!p.complete(result)) {
-                    log.warn("Found pre-existing class result for " + fqClassName);
-                }
-            }
-
-            // If the class we found was indeed the class we were looking for, then return it
+            // If the class we found was indeed the class we were looking for, then complete the future and return it.
             if (classBody.equals(identifyingFieldValue)) {
-                // Cases 2, A, and B.
                 if (codeLog != null) {
                     // If the caller wants a textual copy of the code we either made, or just found in the cache.
                     codeLog.append(makeFinalCode(className, classBody, packageName));
+                }
+                resultFuture.complete(result);
+                synchronized (this) {
+                    // Note we are doing something kind of subtle here. We are removing an entry whose key was matched
+                    // by value equality and replacing it with a value-equal but reference-different string that is a
+                    // static member of the class we just loaded. This should be easier on the garbage collector because
+                    // we are replacing a calculated value with a classloaded value and so in effect we are
+                    // "canonicalizing" the string. This is important because these long strings stay in knownClasses
+                    // forever.
+                    knownClasses.remove(identifyingFieldValue);
+                    knownClasses.put(identifyingFieldValue, resultFuture);
                 }
                 return result;
             }
