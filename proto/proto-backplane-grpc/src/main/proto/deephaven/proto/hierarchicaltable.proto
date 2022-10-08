@@ -41,7 +41,7 @@ message RollupRequest {
   // Ticket for the source Table object to rollup
   Ticket source_id = 2;
   // The aggregations that should be applied at each level of the rollup
-  repeated Aggregate aggregations = 3;
+  repeated ComboAggregateRequest.Aggregate aggregations = 3;
   // Whether to include the leaf-level constituents in the result
   bool include_constituents = 4;
   // The names of the columns to rollup by
