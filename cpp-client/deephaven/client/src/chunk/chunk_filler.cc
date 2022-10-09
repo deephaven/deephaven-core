@@ -3,6 +3,7 @@
  */
 #include "deephaven/client/chunk/chunk_filler.h"
 
+#include "deephaven/client/arrowutil/arrow_traits.h"
 #include "deephaven/client/arrowutil/arrow_visitors.h"
 #include "deephaven/client/arrowutil/arrow_value_converter.h"
 #include "deephaven/client/container/row_sequence.h"

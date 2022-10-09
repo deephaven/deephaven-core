@@ -44,6 +44,7 @@ set(ALL_FILES
 
     src/arrowutil/arrow_util.cc
 
+    include/private/deephaven/client/arrowutil/arrow_traits.h
     include/private/deephaven/client/arrowutil/arrow_util.h
     include/private/deephaven/client/arrowutil/arrow_visitors.h
     include/private/deephaven/client/arrowutil/arrow_value_converter.h
