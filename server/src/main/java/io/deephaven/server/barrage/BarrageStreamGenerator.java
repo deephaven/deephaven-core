@@ -14,7 +14,6 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
@@ -30,7 +29,6 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -900,17 +898,20 @@ public class BarrageStreamGenerator implements
         for (int ii = 0; ii < modColumnData.length; ++ii) {
             final ModColumnData mcd = modColumnData[ii];
             final ChunkInputStreamGenerator[] generators = mcd.data.generators;
-            int chunkIdx = 0;
-            if (generators.length > 0) {
-                final RowSet modOffsets = view.modRowOffsets(ii);
-                // if all mods are being sent, then offsets yield an identity mapping
-                final long startPos = modOffsets != null ? modOffsets.get(startRange) : startRange;
-                if (startPos != RowSet.NULL_ROW_KEY && chunkIdx < generators.length - 1) {
-                    chunkIdx = findGeneratorForOffset(generators, startPos);
+            if (generators.length == 0) {
+                continue;
+            }
+
+            final RowSet modOffsets = view.modRowOffsets(ii);
+            // if all mods are being sent, then offsets yield an identity mapping
+            final long startPos = modOffsets != null ? modOffsets.get(startRange) : startRange;
+            if (startPos != RowSet.NULL_ROW_KEY) {
+                final int chunkIdx = findGeneratorForOffset(generators, startPos);
+                if (chunkIdx < generators.length - 1) {
                     maxLength = Math.min(maxLength, generators[chunkIdx].getLastRowOffset() + 1 - startPos);
                 }
+                columnChunkIdx[ii] = chunkIdx;
             }
-            columnChunkIdx[ii] = chunkIdx;
         }
 
         // now add mod-column streams, and write the mod column indexes
