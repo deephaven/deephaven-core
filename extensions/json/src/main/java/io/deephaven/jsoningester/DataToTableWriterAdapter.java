@@ -24,7 +24,9 @@ public interface DataToTableWriterAdapter {
     void cleanup() throws IOException;
 
     /**
-     * Shut down the adapter. This <b>must not run {@link #cleanup cleanup}</b>; that is handled by the StreamContext.
+     * Shut down the adapter. This <b>must not run {@link #cleanup cleanup}</b>, as {@code cleanup()} flushes data.
+     * Depending on the output destination, it is not necessarily safe to call {@code cleanup()} from the context in
+     * which {@code shutdown()} is called.
      */
     void shutdown();
 
