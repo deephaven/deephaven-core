@@ -14,53 +14,6 @@
 
 namespace deephaven::client::immerutil {
 namespace internal {
-template<typename T>
-struct CorrespondingArrowArrayType {};
-
-template<>
-struct CorrespondingArrowArrayType<int8_t> {
-  typedef arrow::Int8Array type_t;
-};
-
-template<>
-struct CorrespondingArrowArrayType<int16_t> {
-  typedef arrow::Int16Array type_t;
-};
-
-template<>
-struct CorrespondingArrowArrayType<int32_t> {
-  typedef arrow::Int32Array type_t;
-};
-
-template<>
-struct CorrespondingArrowArrayType<int64_t> {
-  typedef arrow::Int64Array type_t;
-};
-
-template<>
-struct CorrespondingArrowArrayType<float> {
-  typedef arrow::FloatArray type_t;
-};
-
-template<>
-struct CorrespondingArrowArrayType<double> {
-  typedef arrow::DoubleArray type_t;
-};
-
-template<>
-struct CorrespondingArrowArrayType<bool> {
-  typedef arrow::BooleanArray type_t;
-};
-
-template<>
-struct CorrespondingArrowArrayType<std::string> {
-  typedef arrow::StringArray type_t;
-};
-
-template<>
-struct CorrespondingArrowArrayType<deephaven::client::DateTime> {
-  typedef arrow::TimestampArray type_t;
-};
 
 struct FlexVectorAppender {
   template<typename ARROW_SRC, typename T>
@@ -142,7 +95,7 @@ public:
   }
 
   void inPlaceAppendArrow(const arrow::Array &data, size_t offset, size_t count) final {
-    typedef typename internal::CorrespondingArrowArrayType<T>::type_t arrowArrayType_t;
+    typedef typename deephaven::client::arrowutil::CorrespondingArrowArrayType<T>::type_t arrowArrayType_t;
     auto *typedArrow = deephaven::client::utility::verboseCast<const arrowArrayType_t*>(
         DEEPHAVEN_EXPR_MSG(&data));
     internal::FlexVectorAppender::append(*typedArrow, offset, count, &vec_, nullptr);
@@ -189,7 +142,8 @@ public:
   }
 
   void inPlaceAppendArrow(const arrow::Array &data, size_t offset, size_t count) final {
-    typedef typename internal::CorrespondingArrowArrayType<T>::type_t arrowArrayType_t;
+    typedef typename deephaven::client::arrowutil::CorrespondingArrowArrayType<T>::type_t
+        arrowArrayType_t;
     auto *typedArrow = deephaven::client::utility::verboseCast<const arrowArrayType_t*>(
         DEEPHAVEN_EXPR_MSG(&data));
     internal::FlexVectorAppender::append(*typedArrow, offset, count, &data_, &nulls_);

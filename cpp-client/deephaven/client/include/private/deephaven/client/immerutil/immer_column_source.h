@@ -4,6 +4,7 @@
 #pragma once
 #include <immer/algorithm.hpp>
 #include <immer/flex_vector.hpp>
+#include "deephaven/client/arrowutil/arrow_traits.h"
 #include "deephaven/client/arrowutil/arrow_visitors.h"
 #include "deephaven/client/chunk/chunk.h"
 #include "deephaven/client/column/column_source.h"
