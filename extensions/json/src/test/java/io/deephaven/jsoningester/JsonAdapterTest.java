@@ -22,10 +22,10 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.process.FatalErrorReporter;
 import io.deephaven.util.process.ProcessEnvironment;
 import junit.framework.TestCase;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.jetbrains.annotations.NotNull;
 import org.junit.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
@@ -1781,6 +1781,9 @@ public class JsonAdapterTest {
         long expectedMsgsPerSecOverall = minMessagesPerSecEachThread * numThreads;
         long realizedMsgsPerSec = Math.round(numMessages / (intervalNanos / NANOS_PER_SECOND));
 
+        System.out.println("realizedMsgsPerSec=" + realizedMsgsPerSec + "; expectedMsgsPerSecOverall="
+                + expectedMsgsPerSecOverall);
+
         Assert.assertTrue(
                 "expected realizedMsgsPerSec > expectedMsgsPerSecOverall; realizedMsgsPerSec=" + realizedMsgsPerSec
                         + ", expectedMsgsPerSecOverall=" + expectedMsgsPerSecOverall,
@@ -1871,6 +1874,35 @@ public class JsonAdapterTest {
             TestCase.fail("Expected JSON parse error in log, but was : " + logText);
         }
         baos.reset();
+    }
+
+    /**
+     * Test an adapter built directly (rather than wrapped by {@link StringMessageToTableAdapter#buildFactory}). In this
+     * case there is no {@link MessageMetadata} to process.
+     */
+    @Test
+    public void testNoMessageAdapter() throws IOException {
+        final DynamicTableWriter tableWriter = new DynamicTableWriter(
+                new String[] {"Col1"},
+                Type.fromClasses(String.class));
+
+        final JSONToTableWriterAdapter adapter = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("Col1", "field1")
+                .nConsumerThreads(0)
+                .makeAdapter(log, tableWriter);
+
+        adapter.consumeString("{ \"field1\": \"hello\"}");
+
+        adapter.cleanup();
+
+        final UpdateSourceQueryTable table = tableWriter.getTable();
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(table::run);
+
+        Assert.assertEquals("table.size()", 1, table.size());
+
+        String value = (String) table.getColumn("Col1").get(0);
+        Assert.assertEquals("hello", value);
     }
 
 }

@@ -69,6 +69,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     /**
      * The owner message adapter, which has {@link RowSetter setters} for metadata columns.
      */
+    @Nullable
     private StringMessageToTableAdapter<?> owner;
 
     private final TableWriter<?> writer;
@@ -444,8 +445,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * Get a column name that will contain an ID used for mapping between the parent table row and the corresponding
      * subtable rows.
      *
-     * @param fieldName
-     * @return
+     * @param fieldName The name of the field containing the subtable data.
+     * @return The {@code fieldName} concatenated with the {@link #SUBTABLE_RECORD_ID_SUFFIX}
      */
     @NotNull
     public static String getSubtableRowIdColName(String fieldName) {
@@ -1070,21 +1071,23 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
 
     private void cleanupMetadata(final InMemoryRowHolder holder) {
-        final RowSetter<String> messageIdSetter = owner.getMessageIdSetter();
-        if (messageIdSetter != null) {
-            messageIdSetter.set((String) holder.getObject(owner.getMessageIdColumn()));
-        }
-        final RowSetter<DateTime> sendTimeSetter = owner.getSendTimeSetter();
-        if (sendTimeSetter != null) {
-            sendTimeSetter.set((DateTime) holder.getObject(owner.getSendTimeColumn()));
-        }
-        final RowSetter<DateTime> receiveTimeSetter = owner.getReceiveTimeSetter();
-        if (receiveTimeSetter != null) {
-            receiveTimeSetter.set((DateTime) holder.getObject(owner.getReceiveTimeColumn()));
-        }
-        final RowSetter<DateTime> nowSetter = owner.getNowSetter();
-        if (nowSetter != null) {
-            nowSetter.set(DateTime.now());
+        if (owner != null) {
+            final RowSetter<String> messageIdSetter = owner.getMessageIdSetter();
+            if (messageIdSetter != null) {
+                messageIdSetter.set((String) holder.getObject(owner.getMessageIdColumn()));
+            }
+            final RowSetter<DateTime> sendTimeSetter = owner.getSendTimeSetter();
+            if (sendTimeSetter != null) {
+                sendTimeSetter.set((DateTime) holder.getObject(owner.getSendTimeColumn()));
+            }
+            final RowSetter<DateTime> receiveTimeSetter = owner.getReceiveTimeSetter();
+            if (receiveTimeSetter != null) {
+                receiveTimeSetter.set((DateTime) holder.getObject(owner.getReceiveTimeColumn()));
+            }
+            final RowSetter<DateTime> nowSetter = owner.getNowSetter();
+            if (nowSetter != null) {
+                nowSetter.set(DateTime.now());
+            }
         }
     }
 
@@ -1222,7 +1225,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         processSingleMessage(holder, msgData);
     }
 
-    private void processSingleMessage(int holder, TextMessageMetadata msgData) {
+    private void processSingleMessage(final int holder, final TextMessageMetadata msgData) {
         final String msg = msgData.getText();
         holders[holder].setMessageNumber(msgData.getMsgNo());
         // The JSON parsing is time-consuming, so we can multi-thread that.
@@ -1260,40 +1263,14 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         processHolder(holder, true);
     }
 
-    private void processOneRecordTopLevel(final int holder, final MessageMetadata msgData, final JsonNode record,
+    private void processOneRecordTopLevel(final int holder, @Nullable final MessageMetadata msgData,
+            @Nullable final JsonNode record,
             final boolean isFirst, final boolean isLast) {
         // process the row so that it's ready when our turn comes to write.
         fieldProcessors.forEach(fc -> fc.accept(record, holder));
 
-        final MessageMetadata subtableMessageMetadata = new MessageMetadata() {
-            @Override
-            public DateTime getSentTime() {
-                return msgData.getSentTime();
-            }
-
-            @Override
-            public DateTime getReceiveTime() {
-                return msgData.getReceiveTime();
-            }
-
-            @Override
-            public DateTime getIngestTime() {
-                return msgData.getIngestTime();
-            }
-
-            @Override
-            public String getMessageId() {
-                return msgData.getMessageId();
-            }
-
-            @Override
-            public long getMsgNo() {
-                throw new UnsupportedOperationException("getMsgNo() not supported on subtable message data");
-            }
-        };
-
         if (!isSubtableAdapter) {
-            processMetadata(subtableMessageMetadata, holder);
+            processMetadata(msgData, holder);
         }
 
         // Get current consumer thread's subtable processing queue
@@ -1369,8 +1346,14 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                     }
 
                     // process the record (and reset the holder at holders[holderIdx])
-                    subtableAdapter.processOneRecordTopLevel(subtableHolderIdx, subtableMessageMetadata, subtableRecord,
-                            isSubtableFirst, isSubtableLast);
+                    // the MessageMetadata can be null because subtables don't process it anyway.
+                    final MessageMetadata subtableMsgMetadata = null;
+                    subtableAdapter.processOneRecordTopLevel(
+                            subtableHolderIdx,
+                            subtableMsgMetadata,
+                            subtableRecord,
+                            isSubtableFirst,
+                            isSubtableLast);
                 } catch (Exception ex) {
                     throw new JSONIngesterException("Failed processing subtable field \"" + subtableFieldName + '"',
                             ex);
