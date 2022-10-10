@@ -1194,7 +1194,7 @@ public class JsonAdapterTest {
     }
 
     @Test
-    public void testWaitForProcessing() throws IOException, InterruptedException {
+    public void testWaitForProcessingTimeout() throws IOException, InterruptedException {
         final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
                 StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
@@ -1215,7 +1215,7 @@ public class JsonAdapterTest {
 
         try {
             // this will unfortunately take MAX_WAIT_MILLIS to finish
-            adapter.waitForProcessing(MAX_WAIT_MILLIS);
+            adapter.waitForProcessing(10_000L);
             Assert.fail("Expected timeout exception did not occur");
         } catch (final TimeoutException ex) {
             // expected;
