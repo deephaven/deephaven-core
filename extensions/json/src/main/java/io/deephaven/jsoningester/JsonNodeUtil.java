@@ -52,9 +52,10 @@ public class JsonNodeUtil {
             throw new IllegalArgumentException(
                     String.format("Key '%s' not found in the record, and allowMissingKeys is false.", key));
         }
-        // 'node==null || node.isMissingNode()' is OK here, because missing keys
-        // are allowed (which implicitly means null values for those keys are allowed).
-        // only explicit null values are disallowed.
+        // 'node==null || node.isMissingNode()' is OK here, because missing keys are allowed.
+        // only *explicit* null values are disallowed -- so if explicit nulls are disallowed,
+        // and we actually have a non-null 'node' variable (meaning the key was present), but
+        // the node is a null node (`node.isNull()`), then we want to throw the exception.
         if (!allowNullValues && node != null && node.isNull()) {
             throw new IllegalArgumentException(String
                     .format("Value for '%s' is null or missing in the record, and allowNullValues is false.", key));
