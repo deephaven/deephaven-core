@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.base.Pair;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.kafka.ingest.JsonNodeUtil;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;

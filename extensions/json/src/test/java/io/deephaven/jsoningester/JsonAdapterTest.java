@@ -13,7 +13,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
-import io.deephaven.kafka.ingest.JsonNodeUtil;
 import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.time.DateTime;
@@ -1870,7 +1869,7 @@ public class JsonAdapterTest {
 
         final String logText = baos.toString(StandardCharsets.UTF_8);
         if (!logText.startsWith(
-                "Unable to parse JSON message: \"~x=y;b=c\": io.deephaven.kafka.ingest.JsonNodeUtil$JsonStringParseException: Failed to parse JSON string.")) {
+                "Unable to parse JSON message: \"~x=y;b=c\": io.deephaven.jsoningester.JsonNodeUtil$JsonStringParseException: Failed to parse JSON string.")) {
             TestCase.fail("Expected JSON parse error in log, but was : " + logText);
         }
         baos.reset();

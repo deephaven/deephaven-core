@@ -6,7 +6,7 @@ plugins {
 description 'Kafka: Integrating Engine tables with Kafka'
 
 dependencies {
-    api project(':engine-table')
+    api project(':extensions-json')
 
     api 'org.apache.avro:avro:1.11.0'
 

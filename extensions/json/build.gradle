@@ -3,16 +3,16 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-//description 'JSON: Integrating Engine tables with JSON'
+description 'JSON: Integrating Engine tables with JSON'
 
 dependencies {
     api project(':Base')
     api project(':Util')
+    api project(':engine-table')
     api project(':engine-time')
     api project(':table-api')
     api project(':IO')
     api project(':extensions-parquet-table')
-    api project(':extensions-kafka')
     api project(':Configuration')
     api project(':FishUtil')
     api project(':TableLogger')

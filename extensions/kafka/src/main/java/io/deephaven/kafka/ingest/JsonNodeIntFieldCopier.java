@@ -14,6 +14,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableChunk;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.jsoningester.JsonNodeUtil;
 
 public class JsonNodeIntFieldCopier implements FieldCopier {
     private final JsonPointer fieldPointer;
