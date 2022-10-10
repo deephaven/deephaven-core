@@ -75,11 +75,11 @@ using io::deephaven::barrage::flatbuf::CreateBarrageSubscriptionRequest;
 
 namespace deephaven::client {
 namespace impl {
-std::pair<std::shared_ptr<internal::EtcCallback>, std::shared_ptr<internal::LazyState>>
+std::pair<std::shared_ptr<internal::ExportedTableCreationCallback>, std::shared_ptr<internal::LazyState>>
 TableHandleImpl::createEtcCallback(const TableHandleManagerImpl *thm) {
   CBPromise<Ticket> ticketPromise;
   auto ticketFuture = ticketPromise.makeFuture();
-  auto cb = std::make_shared<internal::EtcCallback>(std::move(ticketPromise));
+  auto cb = std::make_shared<internal::ExportedTableCreationCallback>(std::move(ticketPromise));
   auto ls = std::make_shared<internal::LazyState>(thm->server(), thm->flightExecutor(),
       std::move(ticketFuture));
   return std::make_pair(std::move(cb), std::move(ls));
@@ -460,11 +460,11 @@ void TableHandleImpl::observe() {
 }
 
 namespace internal {
-EtcCallback::EtcCallback(CBPromise<Ticket> &&ticketPromise) :
+ExportedTableCreationCallback::ExportedTableCreationCallback(CBPromise<Ticket> &&ticketPromise) :
   ticketPromise_(std::move(ticketPromise)) {}
-EtcCallback::~EtcCallback() = default;
+ExportedTableCreationCallback::~ExportedTableCreationCallback() = default;
 
-void EtcCallback::onSuccess(ExportedTableCreationResponse item) {
+void ExportedTableCreationCallback::onSuccess(ExportedTableCreationResponse item) {
   if (!item.result_id().has_ticket()) {
     const char *message = "ExportedTableCreationResponse did not contain a ticket";
     auto ep = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
@@ -474,7 +474,7 @@ void EtcCallback::onSuccess(ExportedTableCreationResponse item) {
   ticketPromise_.setValue(item.result_id().ticket());
 }
 
-void EtcCallback::onFailure(std::exception_ptr error) {
+void ExportedTableCreationCallback::onFailure(std::exception_ptr error) {
   ticketPromise_.setError(std::move(error));
 }
 

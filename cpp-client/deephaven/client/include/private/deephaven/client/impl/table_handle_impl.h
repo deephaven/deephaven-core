@@ -37,7 +37,7 @@ class TableHandleManagerImpl;
 namespace internal {
 class GetColumnDefsCallback;
 
-class EtcCallback final
+class ExportedTableCreationCallback final
     : public deephaven::client::utility::SFCallback<io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse> {
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
@@ -53,8 +53,8 @@ class EtcCallback final
   using CBFuture = deephaven::client::utility::CBFuture<T>;
 
 public:
-  explicit EtcCallback(CBPromise<Ticket> &&ticketPromise);
-  ~EtcCallback() final;
+  explicit ExportedTableCreationCallback(CBPromise<Ticket> &&ticketPromise);
+  ~ExportedTableCreationCallback() final;
 
   void onSuccess(ExportedTableCreationResponse item) final;
   void onFailure(std::exception_ptr ep) final;
@@ -124,12 +124,8 @@ class TableHandleImpl {
   template<typename ...Args>
   using SFCallback = deephaven::client::utility::SFCallback<Args...>;
 public:
-  static std::pair<std::shared_ptr<internal::EtcCallback>, std::shared_ptr<internal::LazyState>>
+  static std::pair<std::shared_ptr<internal::ExportedTableCreationCallback>, std::shared_ptr<internal::LazyState>>
   createEtcCallback(const TableHandleManagerImpl *thm);
-
-  // Create a callback that is already satisfied by "ticket".
-//  static std::shared_ptr<internal::EtcCallback>createSatisfiedCallback(
-//      const TableHandleManagerImpl *thm, Ticket ticket);
 
   static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<TableHandleManagerImpl> thm,
       Ticket ticket, std::shared_ptr<internal::LazyState> lazyState);
