@@ -38,7 +38,7 @@ public:
   createForFuture();
 
   ~SFCallback() override = default;
-  virtual void onSuccess(Args... item) = 0;
+  virtual void onSuccess(Args ...args) = 0;
 };
 
 // This helps us make a Callback<T> that can hold some kind of invokeable item (function object or
@@ -84,7 +84,7 @@ private:
 template<typename... Args>
 class SFCallbackFutureable final : public SFCallback<Args...> {
 public:
-  void onSuccess(Args... args) final {
+  void onSuccess(Args ...args) final {
     promise_.set_value(std::make_tuple(std::forward<Args>(args)...));
   }
 
@@ -115,8 +115,8 @@ std::shared_ptr<SFCallback<Args...>> SFCallback<Args...>::createFromCallable(Cal
       std::forward<Callable>(callable));
 }
 
-// Returns a pair whose first item is a SFCallback<T> which satisfies a promise, and whose second
-// item is a std::future<T> which is the future corresponding to that promise.
+// Returns a pair whose first item is a SFCallback<Args...> which satisfies a promise, and whose second
+// item is a std::future<Args...> which is the future corresponding to that promise.
 template<typename... Args>
 std::pair<std::shared_ptr<SFCallback<Args...>>, std::future<std::tuple<Args...>>>
 SFCallback<Args...>::createForFuture() {

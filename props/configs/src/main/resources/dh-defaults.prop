@@ -32,16 +32,12 @@ Calendar.importPath=/default_calendar_imports.txt
 
 NIO.wireLagClock.native=false
 
-WorkerPythonEnvironment.defaultScriptPath=<devroot>
-
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
 ########## Deephaven Groovy and Python Session defaults ##########
 
-GroovyDeephavenSession.defaultScriptPath=<devroot>
 GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
 
-PythonDeephavenSession.defaultScriptPath=<devroot>
 PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
 
 ###### Server's timezone #####
