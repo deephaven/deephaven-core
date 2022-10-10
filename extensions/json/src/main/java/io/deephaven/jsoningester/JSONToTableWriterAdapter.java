@@ -1060,8 +1060,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
                 final long afterPoll = System.nanoTime();
                 final long intervalNanos = afterPoll - beforePoll;
-                log.debug().append("JSONToTableWriterAdapter cleanup - wrote ").append(cleanedMessages - badMessages)
-                        .append(" to disk in ").append(intervalNanos / 1000_000L).append("ms, ")
+                log.debug().append("JSONToTableWriterAdapter cleanup - flushed ").append(cleanedMessages - badMessages)
+                        .append(" in ").append(intervalNanos / 1000_000L).append("ms, ")
                         .appendDouble(1000000000.0 * intervalMessages / intervalNanos, 4)
                         .append(" msgs/sec, remaining pending messages=").append(pendingCleanup.size())
                         .append(", messages with errors=").append(badMessages).endl();
@@ -1529,7 +1529,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             if (owner.getReceiveTimeColumn() != null) {
                 holder.getSetter(owner.getReceiveTimeColumn(), long.class).set(metadata.getReceiveTime());
             }
-            // Do not set the 'now' time - we want that to be set as the very last step before writing to disk.
+            // Do not set the 'now' time - we want that to be set as the very last step before flushing data (to disk or
+            // otherwise)
         }
     }
 

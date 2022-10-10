@@ -22,9 +22,9 @@ public interface MessageMetadata {
     DateTime getReceiveTime();
 
     /**
-     * Gets the time when this message was finished processing by its ingester and was ready to be written to disk.
+     * Gets the time when this message was finished processing by its ingester and was ready to be flushed.
      *
-     * @return the time when this message was finished processing by its ingester and was ready to be written to disk.
+     * @return the time when this message was finished processing by its ingester and was ready to be flushed.
      */
     DateTime getIngestTime();
 
