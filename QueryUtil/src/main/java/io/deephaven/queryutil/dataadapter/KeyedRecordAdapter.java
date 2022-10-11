@@ -9,9 +9,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TupleSource;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
-import io.deephaven.engine.table.impl.UpdatableTable;
 import io.deephaven.engine.util.ToMapListener;
 import io.deephaven.queryutil.dataadapter.datafetch.single.SingleRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.locking.GetDataLockType;
@@ -143,11 +143,12 @@ public class KeyedRecordAdapter<K, T> {
         sourceTable.listenForUpdates(toMapListener);
 
         // TODO: should this be the the listener instead of the sourceTable? probably? bit confusing with
-        // ToMapListener's
-        // baselineMap/currentMap stuff. I bet it's specifically broken to introduce the notification-awareness but to
-        // only pay attention to the table.
+        // ToMapListener's baselineMap/currentMap stuff.
+        // I bet it's specifically broken to introduce the notification-awareness but
+        // to only pay attention to the table.
         final NotificationStepSource notificationSource =
-                sourceTable instanceof UpdatableTable ? (UpdatableTable) sourceTable : null;
+                sourceTable instanceof BaseTable ? (BaseTable) sourceTable : null;
+        // final NotificationStepSource notificationSource = toMapListener;
         DO_LOCKED_FUNCTION = GetDataLockType.getDoLockedConsumer(GetDataLockType.SNAPSHOT, notificationSource);
 
 

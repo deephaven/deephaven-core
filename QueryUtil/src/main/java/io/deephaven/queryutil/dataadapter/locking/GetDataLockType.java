@@ -41,7 +41,7 @@ public enum GetDataLockType {
      */
     @SuppressWarnings("WeakerAccess")
     public static FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> getDoLockedConsumer(
-            final GetDataLockType lockType, @Nullable NotificationStepSource... sources) {
+            final GetDataLockType lockType, final @Nullable NotificationStepSource... sources) {
         switch (lockType) {
             case UGP_LOCK_ALREADY_HELD:
                 return (queryDataRetrievalOperation, description) -> {
@@ -59,20 +59,23 @@ public enum GetDataLockType {
                 return (queryDataRetrievalOperation, description) -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
             case SNAPSHOT:
-                if (sources == null) {
-                    sources = new NotificationStepSource[0];
+                if (sources == null || sources.length == 0) {
+                    // not providing sources is probably a bug -- can't ensure snapshot consistency if we don't know
+                    // what we were snapshotting.
+                    throw new IllegalArgumentException(
+                            "Snapshot notification sources must be provided when using mode SNAPSHOT!");
                 }
 
-                boolean allSourcesNonRefreshing = sources.length > 0;
+                boolean isRefreshing = false;
                 for (NotificationStepSource source : sources) {
                     final boolean sourceIsNonRefreshingNode =
                             source instanceof DynamicNode && !((DynamicNode) source).isRefreshing();
-                    allSourcesNonRefreshing &= sourceIsNonRefreshingNode;
+                    isRefreshing |= sourceIsNonRefreshingNode;
                 }
 
-                final boolean notificationAware = sources.length > 0;
+                final boolean notificationAware = false;
                 final ConstructSnapshot.SnapshotControl snapshotControl =
-                        ConstructSnapshot.makeSnapshotControl(notificationAware, allSourcesNonRefreshing, sources);
+                        ConstructSnapshot.makeSnapshotControl(notificationAware, isRefreshing, sources);
                 return (queryDataRetrievalOperation, description) -> ConstructSnapshot.callDataSnapshotFunction(
                         description, snapshotControl,
                         (usePrev, beforeClockValue) -> queryDataRetrievalOperation.retrieveData(usePrev));
