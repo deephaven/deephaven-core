@@ -3,7 +3,6 @@
  */
 package io.deephaven.extensions.barrage.chunk;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -28,13 +27,25 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
     protected static final AtomicIntegerFieldUpdater<BaseChunkInputStreamGenerator> REFERENCE_COUNT_UPDATER
             = AtomicIntegerFieldUpdater.newUpdater(BaseChunkInputStreamGenerator.class, "refCount");
 
+    protected final T chunk;
     protected final int elementSize;
 
-    protected final T chunk;
+    private final long rowOffset;
 
-    BaseChunkInputStreamGenerator(final T chunk, final int elementSize) {
+    BaseChunkInputStreamGenerator(final T chunk, final int elementSize, final long rowOffset) {
         this.chunk = chunk;
         this.elementSize = elementSize;
+        this.rowOffset = rowOffset;
+    }
+
+    @Override
+    public long getRowOffset() {
+        return rowOffset;
+    }
+
+    @Override
+    public long getLastRowOffset() {
+        return rowOffset + chunk.size() - 1;
     }
 
     @Override
@@ -65,7 +76,11 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
             this.options = options;
             this.subset = chunk.size() == 0 ? RowSequenceFactory.EMPTY : subset != null ? subset.copy() : RowSequenceFactory.forRange(0, chunk.size() - 1);
             REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
-            Assert.leq(this.subset.lastRowKey(), "this.subset.lastRowKey()", Integer.MAX_VALUE, "Integer.MAX_VALUE");
+            // ignore the empty chunk as these are intentionally empty generators that should work for any subset
+            if (chunk.size() > 0 && this.subset.lastRowKey() >= chunk.size()) {
+                throw new IllegalStateException(
+                        "Subset " + this.subset + " is out of bounds for chunk of size " + chunk.size());
+            }
         }
 
         @Override
