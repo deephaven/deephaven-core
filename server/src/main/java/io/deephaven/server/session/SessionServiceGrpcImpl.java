@@ -56,7 +56,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     private final SessionService service;
     private final TicketRouter ticketRouter;
 
-    @Inject()
+    @Inject
     public SessionServiceGrpcImpl(
             final SessionService service,
             final TicketRouter ticketRouter) {
@@ -267,7 +267,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public static class AuthServerInterceptor implements ServerInterceptor {
         private final SessionService service;
 
-        @Inject()
+        @Inject
         public AuthServerInterceptor(final SessionService service) {
             this.service = service;
         }
