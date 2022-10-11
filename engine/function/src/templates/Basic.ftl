@@ -5,6 +5,7 @@
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.array.*;
 import gnu.trove.set.*;
@@ -129,6 +130,35 @@ public class Basic {
         }
 
         return result;
+    }
+
+    /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or the Deephaven null constant for null inputs.
+     */
+    static public <T> long len(T[] values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return values.length;
+    }
+
+    /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or the Deephaven null constant for null inputs.
+     */
+    @SuppressWarnings("rawtypes")
+    static public long len(LongSizedDataStructure values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return values.size();
     }
 
     /**
@@ -261,12 +291,12 @@ public class Basic {
     }
 
     /**
-     * Converts a DB array to an array.
+     * Converts a Deephaven vector to an array.
      *
-     * @param values DB array
+     * @param values Deephaven vector
      * @return primitive array.
      */
-    public static <T> T[] vecObj(ObjectVector<T> values) {
+    public static <T> T[] arrayObj(ObjectVector<T> values) {
         if(values == null) {
             return null;
         }
@@ -275,13 +305,13 @@ public class Basic {
     }
 
     /**
-     * Converts an array to a DB array.
+     * Converts an array to a Deephaven vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Deephaven vector.
      */
     @SafeVarargs
-    public static <T> ObjectVector<T> arrayObj(T... values){
+    public static <T> ObjectVector<T> vecObj(T... values){
         if(values == null) {
             return null;
         }
@@ -684,6 +714,77 @@ public class Basic {
         return NULL_LONG;
     }
 
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return trueCase value if condition is true, falseCase value if condition is false, or null if condition is null.
+     */
+    public static <T> T ifelseObj(Boolean condition, T trueCase, T falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        return condition ? trueCase : falseCase;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of T whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be the trueCase element if the condition element is true;
+     *         the falseCase element if the condition element is false; or null if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static <T> T[] ifelseObj(BooleanVector condition, ObjectVector<T> trueCase, ObjectVector<T> falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+        final int n_t = trueCase.intSize("trueCase");
+        final int n_f = falseCase.intSize("falseCase");
+
+        if (n_c != n_t || n_c != n_f) {
+            throw new IllegalArgumentException("Inconsistent input sizes: condition=" + n_c + " trueCase=" + n_t + " falseCase=" + n_f);
+        }
+
+        if (!trueCase.getComponentType().equals(falseCase.getComponentType())) {
+            throw new IllegalArgumentException("Input vectors have different element types. trueCase=" + trueCase.getComponentType() + " falseCase=" + falseCase.getComponentType());
+        }
+
+        @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(trueCase.getComponentType(), n_c);
+
+        for (int i=0; i < n_c; i++) {
+            result[i] = condition.get(i) == null ? null : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of T whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be the trueCase element if the condition element is true;
+     *         the falseCase element if the condition element is false; or null if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static <T> T[] ifelseObj(Boolean[] condition, T[] trueCase, T[] falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        return ifelseObj(new BooleanVectorDirect(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
+    }
 
     <#list primitiveTypes as pt>
     <#if !pt.valueType.isBoolean >
@@ -779,6 +880,20 @@ public class Basic {
     }
 
     /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or the Deephaven null constant for null inputs.
+     */
+    static public long len(${pt.primitive}[] values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return values.length;
+    }
+
+    /**
      * Counts the number of non-null values.
      *
      * @param values values.
@@ -846,7 +961,7 @@ public class Basic {
             return QueryConstants.${pt.null};
         }
 
-        return last(array(values));
+        return last(vec(values));
     }
 
     /**
@@ -874,7 +989,7 @@ public class Basic {
             return QueryConstants.${pt.null};
         }
 
-        return first(array(values));
+        return first(vec(values));
     }
 
     /**
@@ -900,16 +1015,16 @@ public class Basic {
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
     static public ${pt.primitive} nth(long index, ${pt.primitive}... values){
-        return nth(index, array(values));
+        return nth(index, vec(values));
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Deephaven vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Deephaven vector
      * @return primitive array.
      */
-    public static ${pt.primitive}[] vec(${pt.dbArray} values) {
+    public static ${pt.primitive}[] array(${pt.dbArray} values) {
         if(values == null){
             return null;
         }
@@ -918,12 +1033,12 @@ public class Basic {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Deephaven vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Deephaven vector.
      */
-    public static ${pt.dbArray} array(${pt.primitive}... values) {
+    public static ${pt.dbArray} vec(${pt.primitive}... values) {
         return new ${pt.dbArrayDirect}(values);
     }
 
@@ -1400,6 +1515,74 @@ public class Basic {
         }
 
         return NULL_LONG;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return trueCase value if condition is true, falseCase value if condition is false, or the Deephaven null constant if condition is null.
+     */
+    public static ${pt.primitive} ifelse(Boolean condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+        if (condition == null) {
+            return ${pt.null};
+        }
+
+        return condition ? trueCase : falseCase;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of ${pt.primitive} whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be the trueCase element if the condition element is true;
+     *         the falseCase element if the condition element is false; or the Deephaven null constant if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.dbArray} trueCase, ${pt.dbArray} falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+        final int n_t = trueCase.intSize("trueCase");
+        final int n_f = falseCase.intSize("falseCase");
+
+        if (n_c != n_t || n_c != n_f) {
+            throw new IllegalArgumentException("Inconsistent input sizes: condition=" + n_c + " trueCase=" + n_t + " falseCase=" + n_f);
+        }
+
+        final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
+
+        for (int i=0; i < n_c; i++) {
+            result[i] = condition.get(i) == null ? ${pt.null} : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of ${pt.primitive} whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be the trueCase element if the condition element is true;
+     *         the falseCase element if the condition element is false; or the Deephaven null constant if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static ${pt.primitive}[] ifelse(Boolean[] condition, ${pt.primitive}[] trueCase, ${pt.primitive}[] falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        return ifelse(new BooleanVectorDirect(condition), new ${pt.dbArrayDirect}(trueCase), new ${pt.dbArrayDirect}(falseCase));
     }
 
     public static ${pt.primitive}[] forwardFill(${pt.primitive}... values){

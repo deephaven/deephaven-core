@@ -9,8 +9,6 @@ dependencies {
     implementation project(':IO')
     implementation project(':Configuration')
     implementation project(':log-factory')
-    implementation depCommonsEmail
-    implementation depCommonsNet
 
     testImplementation project(path: ':Base', configuration: 'tests')
 }

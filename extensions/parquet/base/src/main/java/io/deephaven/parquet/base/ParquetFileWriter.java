@@ -5,8 +5,8 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.compress.Compressor;
-import io.deephaven.parquet.compress.DeephavenCodecFactory;
+import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import org.apache.parquet.Version;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesUtils;
@@ -38,7 +38,7 @@ public class ParquetFileWriter {
     private final int targetPageSize;
     private final ByteBufferAllocator allocator;
     private final SeekableChannelsProvider channelsProvider;
-    private final Compressor compressor;
+    private final CompressorAdapter compressorAdapter;
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
@@ -58,20 +58,21 @@ public class ParquetFileWriter {
         writeChannel.write(ByteBuffer.wrap(ParquetFileReader.MAGIC));
         this.type = type;
         this.channelsProvider = channelsProvider;
-        this.compressor = DeephavenCodecFactory.getInstance().getByName(codecName);
+        this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
     }
 
     @SuppressWarnings("unused")
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         RowGroupWriterImpl rowGroupWriter =
-                new RowGroupWriterImpl(path, append, channelsProvider, type, targetPageSize, allocator, compressor);
+                new RowGroupWriterImpl(path, append, channelsProvider, type, targetPageSize, allocator,
+                        compressorAdapter);
         blocks.add(rowGroupWriter.getBlock());
         return rowGroupWriter;
     }
 
     public RowGroupWriter addRowGroup(final long size) {
         RowGroupWriterImpl rowGroupWriter =
-                new RowGroupWriterImpl(writeChannel, type, targetPageSize, allocator, compressor);
+                new RowGroupWriterImpl(writeChannel, type, targetPageSize, allocator, compressorAdapter);
         rowGroupWriter.getBlock().setRowCount(size);
         blocks.add(rowGroupWriter.getBlock());
         offsetIndexes.add(rowGroupWriter.offsetIndexes());
@@ -86,6 +87,8 @@ public class ParquetFileWriter {
             serializeFooter(footer, os);
         }
         // os (and thus writeChannel) are closed at this point.
+
+        compressorAdapter.close();
     }
 
     private void serializeFooter(final ParquetMetadata footer, final OutputStream os) throws IOException {

@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api.parse;
 
+import com.google.gwt.i18n.client.TimeZone;
 import elemental2.core.ArrayBuffer;
 import elemental2.core.Float32Array;
 import elemental2.core.Float64Array;
@@ -92,6 +93,68 @@ public enum JsDataHandler {
         }
     },
     DATE_TIME(Type.Int, "io.deephaven.time.DateTime", "datetime") {
+        // Ensures that the 'T' separator character is in the date time
+        private String ensureSeparator(String s) {
+            if (s.charAt(SEPARATOR_INDEX) == ' ') {
+                StringBuilder stringBuilder = new StringBuilder(s);
+                stringBuilder.setCharAt(SEPARATOR_INDEX, 'T');
+                return stringBuilder.toString();
+            }
+            return s;
+        }
+
+        // Guess the pattern for the correct number of subsecond digits 'S'
+        private String getSubsecondPattern(String s) {
+            final int decimalIndex = s.indexOf('.');
+            if (decimalIndex == -1) {
+                // No subsecond digits
+                return DEFAULT_DATE_TIME_PATTERN;
+            }
+            final int numDigits = s.length() - decimalIndex - 1;
+            final StringBuilder stringBuilder = new StringBuilder(numDigits);
+            for (int i = 0; i < numDigits; i++) {
+                stringBuilder.append('S');
+            }
+            return DEFAULT_DATE_TIME_PATTERN + "." + stringBuilder;
+        }
+
+        private long parseDateString(String str, ParseContext context) {
+            final String s = ensureSeparator(str);
+            final int spaceIndex = s.indexOf(' ');
+            final String dateTimeString;
+            final String timeZoneString;
+            if (spaceIndex == -1) {
+                // Zulu is an exception to the space rule
+                if (s.endsWith("Z")) {
+                    dateTimeString = s.substring(0, s.length() - 1);
+                    timeZoneString = "Z";
+                } else {
+                    dateTimeString = s;
+                    timeZoneString = null;
+                }
+            } else {
+                dateTimeString = s.substring(0, spaceIndex);
+                timeZoneString = s.substring(spaceIndex + 1);
+            }
+
+            final TimeZone timeZone = timeZoneString == null
+                    ? context.timeZone.unwrap()
+                    : JsTimeZone.getTimeZone(timeZoneString).unwrap();
+            boolean needsAdjustment = JsTimeZone.needsDstAdjustment(timeZoneString);
+
+            try {
+                // First try with the pattern we already have
+                return JsDateTimeFormat.getFormat(context.dateTimePattern).parseWithTimezoneAsLong(dateTimeString,
+                        timeZone, needsAdjustment);
+            } catch (IllegalArgumentException e) {
+                // We failed to parse with the existing context pattern, try and update the pattern from the string of
+                // text and do it again
+                context.dateTimePattern = getSubsecondPattern(dateTimeString);
+                return JsDateTimeFormat.getFormat(context.dateTimePattern).parseWithTimezoneAsLong(dateTimeString,
+                        timeZone, needsAdjustment);
+            }
+        }
+
         @Override
         public double writeType(Builder builder) {
             return Int.createInt(builder, 64, true);
@@ -121,7 +184,7 @@ public enum JsDataHandler {
                         dateValue = NULL_LONG;
                     } else {
                         // take the format string and the timezone, and solve for a date
-                        dateValue = JsDateTimeFormat.parse(context.dateTimePattern, str, context.timeZone).getWrapped();
+                        dateValue = parseDateString(str, context);
                     }
                 }
 
@@ -427,6 +490,10 @@ public enum JsDataHandler {
 
     private static final Uint8Array EMPTY = new Uint8Array(0);
 
+    private static final String DEFAULT_DATE_TIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss";
+
+    private static final int SEPARATOR_INDEX = DEFAULT_DATE_TIME_PATTERN.indexOf('T');
+
     private final int arrowTypeType;
     private final String deephavenType;
 
@@ -456,7 +523,7 @@ public enum JsDataHandler {
 
     public static class ParseContext {
         public JsTimeZone timeZone;
-        public String dateTimePattern = "yyyy-MM-dd'T'HH:mm:ss";
+        public String dateTimePattern = DEFAULT_DATE_TIME_PATTERN;
     }
 
     public static class Node {

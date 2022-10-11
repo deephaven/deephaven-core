@@ -172,8 +172,13 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             locations.sorted(Comparator.comparing(TableLocation::getKey)).forEach(tl -> {
                 final long constituentRowKey = lastInsertedRowKey.incrementAndGet();
                 final Table constituentTable = makeConstituentTable(tl);
+
+                resultTableLocationKeys.ensureCapacity(constituentRowKey + 1);
                 resultTableLocationKeys.set(constituentRowKey, tl.getKey());
+
+                resultLocationTables.ensureCapacity(constituentRowKey + 1);
                 resultLocationTables.set(constituentRowKey, constituentTable);
+
                 result.manage(constituentTable);
             });
             return initialLastRowKey == lastInsertedRowKey.longValue()

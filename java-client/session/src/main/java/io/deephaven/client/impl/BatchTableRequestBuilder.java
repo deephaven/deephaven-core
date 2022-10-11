@@ -62,6 +62,7 @@ import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
+import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
@@ -96,6 +97,7 @@ import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeProvider.Visitor;
 import io.deephaven.qst.table.TimeProviderSystem;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UngroupTable;
 import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
@@ -464,6 +466,18 @@ class BatchTableRequestBuilder {
                     .setResultId(ticket)
                     .setSourceId(ref(updateByTable.parent()));
             out = op(Builder::setUpdateBy, request);
+        }
+
+        @Override
+        public void visit(UngroupTable ungroupTable) {
+            final UngroupRequest.Builder request = UngroupRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(ungroupTable.parent()))
+                    .setNullFill(ungroupTable.nullFill());
+            for (ColumnName ungroupColumn : ungroupTable.ungroupColumns()) {
+                request.addColumnsToUngroup(ungroupColumn.name());
+            }
+            out = op(Builder::setUngroup, request);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

@@ -27,6 +27,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -1138,7 +1139,14 @@ public class QueryTable extends BaseTable {
                 sizeForInstrumentation(), () -> {
                     checkInitiateOperation(rightTable);
 
-                    final Table distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
+                    final Table distinctValues;
+                    final boolean setRefreshing = rightTable.isRefreshing();
+                    if (setRefreshing) {
+                        distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
+                    } else {
+                        distinctValues = rightTable;
+                    }
+
                     final DynamicWhereFilter dynamicWhereFilter =
                             new DynamicWhereFilter((QueryTable) distinctValues, inclusion, columnsToMatch);
                     final Table where = whereInternal(dynamicWhereFilter);
@@ -2289,8 +2297,19 @@ public class QueryTable extends BaseTable {
         return getResult(new ReverseOperation(this));
     }
 
+
     @Override
-    public Table ungroup(boolean nullFill, String... columnsToUngroupBy) {
+    public Table ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+        final String[] columnsToUngroupBy;
+        if (columnsToUngroup.isEmpty()) {
+            columnsToUngroupBy = getDefinition()
+                    .getColumnStream()
+                    .filter(c -> c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType()))
+                    .map(ColumnDefinition::getName)
+                    .toArray(String[]::new);
+        } else {
+            columnsToUngroupBy = columnsToUngroup.stream().map(ColumnName::name).toArray(String[]::new);
+        }
         return QueryPerformanceRecorder.withNugget("ungroup(" + Arrays.toString(columnsToUngroupBy) + ")",
                 sizeForInstrumentation(), () -> {
                     if (columnsToUngroupBy.length == 0) {

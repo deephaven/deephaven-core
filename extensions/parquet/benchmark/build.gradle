@@ -1,0 +1,92 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Parquet Benchmark: Benchmarks for Parquet modules'
+
+sourceSets {
+    test {
+        java {
+            srcDir 'src/benchmark/java'
+        }
+    }
+}
+
+dependencies {
+    testImplementation project(':extensions-parquet-table'),
+            project(':engine-table'),
+            project(':BenchmarkSupport'),
+            TestTools.projectDependency(project, 'engine-rowset'),
+            TestTools.projectDependency(project, 'engine-table')
+
+    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+    testCompileOnly 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/Boolean*Benchmark.java',
+                '**/Byte*Benchmark.java',
+                '**/Char*Benchmark.java',
+                '**/Short*Benchmark.java',
+                '**/Int*Benchmark.java',
+                '**/Long*Benchmark.java',
+                '**/Float*Benchmark.java',
+                '**/Double*Benchmark.java',
+                '**/Object*Benchmark.java',
+        )
+    }
+}
+
+task jmhRun(type: JavaExec)  {
+    new File("$rootDir/tmp/workspace").mkdirs()
+    new File("$rootDir/tmp/logs").mkdirs()
+    workingDir "$rootDir/tmp/workspace"
+
+    classpath = sourceSets.test.runtimeClasspath
+
+    main = 'io.deephaven.benchmarking.runner.BenchmarkRunner'
+
+    // arguments to pass to the application
+    jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
+            "-Dworkspace=$rootDir/tmp/workspace",
+            '-Dconfiguration.quiet=true',
+            '-Djava.awt.headless=true',
+            '-DQueryTable.memoizeResults=false',
+            '-DUpdateGraphProcessor.checkTableOperations=false',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9500'
+}
+
+def createJmhTask = {
+    taskName, cliArgs, jvmAddArgs=[], heapSize='8g' -> tasks.create(taskName, JavaExec, { JavaExec task ->
+        new File("$rootDir/tmp/workspace").mkdirs()
+        new File("$rootDir/tmp/logs").mkdirs()
+
+        task.workingDir "$rootDir/tmp/workspace"
+        task.classpath = sourceSets.test.runtimeClasspath
+        task.main = 'io.deephaven.benchmarking.runner.BenchmarkRunner'
+
+        // arguments to pass to the application
+        def jvmArgs = [ '-DConfiguration.rootFile=dh-tests.prop',
+                "-Dworkspace=$rootDir/tmp/workspace",
+                '-Dconfiguration.quiet=true',
+                '-Djava.awt.headless=true',
+                '-DQueryTable.memoizeResults=false',
+                '-DUpdateGraphProcessor.checkTableOperations=false',
+                "-Xmx$heapSize"
+                //'-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9501'
+        ]
+        jvmArgs.addAll(jvmAddArgs)
+        task.jvmArgs jvmArgs
+        task.args cliArgs
+
+        return
+    })
+}
+
+createJmhTask('jmhRunTableWrite', 'TableWriteBenchmark')

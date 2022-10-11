@@ -24,10 +24,6 @@ public class Configuration extends PropertyFile {
     @SuppressWarnings("WeakerAccess")
     public static final String WORKSPACE_PROPERTY = "workspace";
 
-    /** Property that specifies the software installation root directory. */
-    @SuppressWarnings("WeakerAccess")
-    public static final String DEVROOT_PROPERTY = "devroot";
-
     /** Property that specifies the directory for process logs. */
     @SuppressWarnings("WeakerAccess")
     public static final String LOGDIR_PROPERTY = "logDir"; // Defaults to getProperty(WORKSPACE_PROPERTY)/../logs
@@ -43,9 +39,6 @@ public class Configuration extends PropertyFile {
 
     /** Token used for process name substitution */
     private static final String PROCESS_NAME_TOKEN = "<processname>";
-
-    /** Token used for devroot substitution */
-    private static final String DEVROOT_TOKEN = "<devroot>";
 
     /** Token used for workspace substitution */
     private static final String WORKSPACE_TOKEN = "<workspace>";
@@ -63,7 +56,6 @@ public class Configuration extends PropertyFile {
     private final String confFileName;
     private final String confFileProperty;
     private final String workspace;
-    private final String devroot;
 
     // This should never be null to meet the contract for getContextKeyValues()
     private Collection<String> contextKeys = Collections.emptySet();
@@ -174,7 +166,6 @@ public class Configuration extends PropertyFile {
      * Normalize a directory path. This performs the following substitutions and manipulations.
      * <ul>
      * <li>{@code <workspace>} - replaced with the process workspace</li>
-     * <li>{@code <devroot>} - replaced with the installation root directory</li>
      * <li>{@code <processname>} - replaced with the process name</li>
      * <li>{@code <logroot>} - replaced with the value found by the property {@link #LOGDIR_ROOT_PROPERTY}</li>
      * <li>After all substitutions, {@link #expandLinuxPath(String)} is called</li>
@@ -215,15 +206,6 @@ public class Configuration extends PropertyFile {
                         + ") contains " + WORKSPACE_TOKEN + " but " + WORKSPACE_PROPERTY + " property is not defined");
             } else {
                 substitutedPath = substitutedPath.replace(WORKSPACE_TOKEN, workspace);
-            }
-        }
-
-        if (substitutedPath.contains(DEVROOT_TOKEN)) {
-            if (devroot == null) {
-                throw new IllegalArgumentException("Directory " + substitutedPath + " (original path " + directoryName
-                        + ") contains " + DEVROOT_TOKEN + " but " + DEVROOT_PROPERTY + " property is not defined");
-            } else {
-                substitutedPath = substitutedPath.replace(DEVROOT_TOKEN, devroot);
             }
         }
 
@@ -333,14 +315,6 @@ public class Configuration extends PropertyFile {
         }
         workspace = workspacePropValue;
 
-        String devrootPropValue;
-        try {
-            devrootPropValue = lookupPath(DEVROOT_PROPERTY);
-        } catch (ConfigurationException e) {
-            devrootPropValue = null;
-        }
-        devroot = devrootPropValue;
-
         // The quiet property is available because things like shell scripts may be parsing our System.out and they
         // don't
         // want to have to deal with these log messages
@@ -349,11 +323,6 @@ public class Configuration extends PropertyFile {
                 log.info("Configuration: " + WORKSPACE_PROPERTY + " is " + workspace);
             } else {
                 log.warn("Configuration: " + WORKSPACE_PROPERTY + " is undefined");
-            }
-            if (devroot != null) {
-                log.info("Configuration: " + DEVROOT_PROPERTY + " is " + devroot);
-            } else {
-                log.warn("Configuration: " + DEVROOT_PROPERTY + " is undefined");
             }
             log.info("Configuration: " + confFileProperty + " is " + confFileName);
         }
@@ -490,22 +459,6 @@ public class Configuration extends PropertyFile {
             f.mkdirs();
         }
         return f.getAbsolutePath();
-    }
-
-    private void checkDevRootDefined() {
-        if (devroot == null) {
-            throw new ConfigurationException(DEVROOT_PROPERTY + " property is not defined");
-        }
-    }
-
-    public String getDevRootPath(String propertyName) {
-        checkDevRootDefined();
-        return devroot + File.separator + getProperty(propertyName);
-    }
-
-    public String getDevRootPath() {
-        checkDevRootDefined();
-        return devroot;
     }
 
     /**

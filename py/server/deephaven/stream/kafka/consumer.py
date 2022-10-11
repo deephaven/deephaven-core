@@ -4,7 +4,7 @@
 
 """ The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table. """
 from enum import Enum
-from typing import Dict, Tuple, List, Callable
+from typing import Dict, Tuple, List, Callable, Union
 
 import jpy
 
@@ -14,7 +14,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dherror import DHError
 from deephaven.dtypes import DType
-from deephaven.table import Table
+from deephaven.table import Table, PartitionedTable
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
@@ -59,6 +59,7 @@ KeyValueSpec.FROM_PROPERTIES = KeyValueSpec(_JKafkaTools.FROM_PROPERTIES)
 in the properties as "key.column.name" or "value.column.name" in the config, and otherwise default to "key" or "value".
 """
 
+
 class TableType(JObjectWrapper):
     """An Enum that defines the supported Table Type for consuming Kafka."""
 
@@ -76,7 +77,7 @@ class TableType(JObjectWrapper):
         return TableType(TableType.j_object_type.append())
 
     @staticmethod
-    def ring(capacity : int):
+    def ring(capacity: int):
         """ Consume all partitions into a single in-memory ring table."""
         return TableType(TableType.j_object_type.ring(capacity))
 
@@ -94,6 +95,7 @@ present only newly-available rows to downstream operations and visualizations.""
 
 TableType.Append = TableType.append()
 """ Deprecated, prefer TableType.append(). Consume all partitions into a single interleaved in-memory append-only table."""
+
 
 def j_partitions(partitions):
     if partitions is None:
@@ -161,6 +163,67 @@ def consume(
         DHError
     """
 
+    return _consume(kafka_config, topic, partitions, offsets, key_spec, value_spec, table_type, to_partitioned=False)
+
+
+def consume_to_partitioned_table(
+        kafka_config: Dict,
+        topic: str,
+        partitions: List[int] = None,
+        offsets: Dict[int, int] = None,
+        key_spec: KeyValueSpec = None,
+        value_spec: KeyValueSpec = None,
+        table_type: TableType = TableType.stream(),
+) -> PartitionedTable:
+    """Consume from Kafka to a Deephaven partitioned table.
+
+    Args:
+        kafka_config (Dict): configuration for the associated Kafka consumer and also the resulting table.
+            Once the table-specific properties are stripped, the remaining one is used to call the constructor of
+            org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
+        topic (str): the Kafka topic name
+        partitions (List[int]) : a list of integer partition numbers, default is None which means all partitions
+        offsets (Dict[int, int]) : a mapping between partition numbers and offset numbers, and can be one of the
+            predefined ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
+            The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
+            of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
+        key_spec (KeyValueSpec): specifies how to map the Key field in Kafka messages to Deephaven column(s).
+            It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
+            module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
+            works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
+            for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
+            column name and type
+        value_spec (KeyValueSpec): specifies how to map the Value field in Kafka messages to Deephaven column(s).
+            It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
+            module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
+            works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
+            for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
+            column name and type
+        table_type (TableType): a TableType enum, specifying the type of the expected result's constituent tables,
+            default is TableType.stream()
+
+    Returns:
+        a Deephaven live partitioned table that will update based on Kafka messages consumed for the given topic,
+        the keys of this partitioned table are the partition numbers of the topic, and its constituents are tables per
+        topic partition.
+
+    Raises:
+        DHError
+    """
+
+    return _consume(kafka_config, topic, partitions, offsets, key_spec, value_spec, table_type, to_partitioned=True)
+
+
+def _consume(
+        kafka_config: Dict,
+        topic: str,
+        partitions: List[int] = None,
+        offsets: Dict[int, int] = None,
+        key_spec: KeyValueSpec = None,
+        value_spec: KeyValueSpec = None,
+        table_type: TableType = TableType.stream(),
+        to_partitioned: bool = False,
+) -> Union[Table, PartitionedTable]:
     try:
         partitions = j_partitions(partitions)
 
@@ -184,8 +247,20 @@ def consume(
             raise ValueError("at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE")
 
         kafka_config = j_properties(kafka_config)
-        return Table(
-            j_table=_JKafkaTools.consumeToTable(
+        if not to_partitioned:
+            return Table(
+                j_table=_JKafkaTools.consumeToTable(
+                    kafka_config,
+                    topic,
+                    partitions,
+                    offsets,
+                    key_spec.j_object,
+                    value_spec.j_object,
+                    table_type.j_object,
+                )
+            )
+        else:
+            return PartitionedTable(j_partitioned_table=_JKafkaTools.consumeToPartitionedTable(
                 kafka_config,
                 topic,
                 partitions,
@@ -193,8 +268,7 @@ def consume(
                 key_spec.j_object,
                 value_spec.j_object,
                 table_type.j_object,
-            )
-        )
+            ))
     except Exception as e:
         raise DHError(e, "failed to consume a Kafka stream.") from e
 

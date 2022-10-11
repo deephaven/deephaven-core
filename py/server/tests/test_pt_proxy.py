@@ -13,6 +13,7 @@ from tests.testbase import BaseTestCase
 
 class PartitionedTableProxyTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c"])
         self.pt_proxy = self.partitioned_table.proxy()
@@ -20,6 +21,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
     def tearDown(self):
         self.partitioned_table = None
         self.test_table = None
+        super().tearDown()
 
     def test_target(self):
         self.assertEqual(self.partitioned_table, self.pt_proxy.target)
@@ -151,7 +153,6 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 right_proxy = self.test_table.drop_columns(["b", "d"]).partition_by("c").proxy()
                 joined_pt_proxy = pt_proxy.natural_join(right_proxy, on="a", joins="e")
             self.assertIn("join keys found in multiple constituents", str(cm.exception))
-            print(cm.exception)
 
             with self.assertRaises(DHError) as cm:
                 pt_proxy = self.test_table.drop_columns(["d", "e"]).partition_by("c").proxy(sanity_check_joins=False)

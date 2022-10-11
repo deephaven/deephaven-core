@@ -43,6 +43,18 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING
     }
 
+    public static void initializeSelectColumns(
+            final Map<String, ColumnDefinition<?>> parentColumnMap,
+            final SelectColumn[] selectColumns) {
+        final Map<String, ColumnDefinition<?>> targetColumnMap = new HashMap<>(parentColumnMap);
+        for (SelectColumn column : selectColumns) {
+            column.initDef(targetColumnMap);
+            final ColumnDefinition<?> columnDefinition =
+                    ColumnDefinition.fromGenericType(column.getName(), column.getReturnedType());
+            targetColumnMap.put(column.getName(), columnDefinition);
+        }
+    }
+
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
             SelectColumn... selectColumns) {

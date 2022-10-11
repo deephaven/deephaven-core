@@ -655,4 +655,29 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 wavgBy(String weightColumn, Collection<String> groupByColumns) {
         return adapt(delegate.wavgBy(weightColumn, groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 ungroup() {
+        return adapt(delegate.ungroup());
+    }
+
+    @Override
+    public final TOPS_1 ungroup(boolean nullFill) {
+        return adapt(delegate.ungroup(nullFill));
+    }
+
+    @Override
+    public final TOPS_1 ungroup(String... columnsToUngroup) {
+        return adapt(delegate.ungroup(columnsToUngroup));
+    }
+
+    @Override
+    public final TOPS_1 ungroup(boolean nullFill, String... columnsToUngroup) {
+        return adapt(delegate.ungroup(nullFill, columnsToUngroup));
+    }
+
+    @Override
+    public final TOPS_1 ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+        return adapt(delegate.ungroup(nullFill, columnsToUngroup));
+    }
 }

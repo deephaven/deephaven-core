@@ -37,8 +37,8 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     private WritableIntChunk<ChunkPositions> offsets;
     private ChunkInputStreamGenerator innerGenerator;
 
-    VarListChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk) {
-        super(chunk, 0);
+    VarListChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk, final long rowOffset) {
+        super(chunk, 0, rowOffset);
         this.type = type;
     }
 
@@ -55,7 +55,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
         innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, myType, myComponentType, innerChunk);
+                chunkType, myType, myComponentType, innerChunk, 0);
     }
 
     @Override

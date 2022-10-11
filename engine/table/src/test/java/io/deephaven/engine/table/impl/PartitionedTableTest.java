@@ -244,7 +244,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final PartitionedTable partitionedTable = sourceTable.partitionBy("Key");
 
-        final ExecutionContext executionContext = ExecutionContext.makeSystemicExecutionContext();
+        final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     @Override
@@ -753,11 +753,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         ExecutionContext.getContext().getQueryLibrary().importStatic(TableTools.class);
 
         final Table underlying;
-        try (final SafeCloseable ignored = ExecutionContext.newBuilder()
-                .captureQueryLibrary()
-                .captureQueryCompiler()
-                .captureQueryScope()
-                .build().open()) {
+        try (final SafeCloseable ignored = ExecutionContext.makeExecutionContext(false).open()) {
             underlying = base.update(
                     "Constituent=emptyTable(1000 * step.longValue()).update(\"JJ=ii * \" + II + \" * step.longValue()\")");
         }
@@ -855,6 +851,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 newExecutionContextNugget(table, src -> src.select("K = queryScopeVar", "indices", "intCol")),
                 newExecutionContextNugget(table, src -> src.view("K = queryScopeVar", "indices", "intCol")),
                 newExecutionContextNugget(table, src -> src.where("intCol > queryScopeFilter")),
+                newExecutionContextNugget(table, src -> src.update("X = 0", "Y = X")),
         };
 
         for (int i = 0; i < 100; i++) {

@@ -367,7 +367,7 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    public Table ungroup(boolean nullFill, String... columnsToUngroup) {
+    public Table ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
         return coalesce().ungroup(nullFill, columnsToUngroup);
     }
 

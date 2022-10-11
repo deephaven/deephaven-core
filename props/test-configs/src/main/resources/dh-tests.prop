@@ -28,8 +28,6 @@ QueryLibrary.defaultPackageImportList=default_package_imports.txt
 QueryLibrary.defaultClassImportList=default_class_imports.txt
 QueryLibrary.defaultStaticImportList=default_static_imports.txt
 
-GroovyDeephavenSession.defaultScriptPath=<devroot>
-
 StringUtils.cacheSize=0
 
 TrackedFileHandleFactory.maxOpenFiles=1024
@@ -50,7 +48,6 @@ default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnviro
 jpy.pythonLib=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so,/System/Library/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib,/usr/lib64/libpython2.7.so
 jpy.jpyLib=/usr/local/lib/python2.7/dist-packages/jpy.so,/Library/Python/2.7/site-packages/jpy.so,/usr/lib64/python2.7/site-packages/jpy.so,~/.local/lib/python2.7/site-packages/jpy.so
 jpy.jdlLib=/usr/local/lib/python2.7/dist-packages/jdl.so,/Library/Python/2.7/site-packages/jdl.so,/usr/lib64/python2.7/site-packages/jdl.so,~/.local/lib/python2.7/site-packages/jpy.so
-WorkerPythonEnvironment.defaultScriptPath=<devroot>/engine/table/python
 
 Comm.fatalErrorHandlerFactoryClass=io.deephaven.console.utils.ProcessEnvironmentRedirectFactory
 
@@ -61,13 +58,9 @@ QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
 ########## Deephaven Groovy and Python Session defaults ##########
 
-GroovyDeephavenSession.defaultScriptPath=<devroot>
 GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
 
-PythonDeephavenSession.defaultScriptPath=<devroot>
 PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
-
-WorkerPythonEnvironment.defaultScriptPath=<devroot>
 
 ###### Server's timezone #####
 server.timezone=America/New_York

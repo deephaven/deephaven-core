@@ -29,19 +29,17 @@ def copySphinxLib = tasks.register('copySphinxLib', Sync) {
 def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     destFile.set layout.buildDirectory.file('sphinx-image/Dockerfile')
     // Deephaven server python API requires that the wheel be installed to build, so we share this image
-    from 'deephaven/server:local-build'
+    from 'deephaven/server-netty:local-build'
 
     copyFile "./wheel", "/wheel"
     copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.7/site-packages/'
 
     environmentVariable 'DEEPHAVEN_CLASSPATH', "/opt/deephaven/server/lib/*.jar"
     environmentVariable 'DEEPHAVEN_WORKSPACE', '/tmp/workspace'
-    environmentVariable 'DEEPHAVEN_DEVROOT', '/tmp/devroot'
     environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
     environmentVariable 'DEEPHAVEN_VERSION', project.version
 
     runCommand '''set -eux; \\
-                  mkdir /tmp/devroot; \\
                   mkdir /tmp/workspace; \\
                   python -m pip install sphinx==4.0.3 sphinx-autodoc-typehints==1.12.0 pyarrow==7.0.0 protobuf==3.20.1 grpcio==1.46.0 bitstring==3.1.9 /wheel/*.whl breathe==4.31.0 furo==2021.9.8
                   '''
@@ -52,7 +50,7 @@ def sphinxImage = Docker.registerDockerImage(project, 'sphinx') {
     inputs.files copyPyClientWhl.get().outputs.files
     inputs.files copySphinxLib.get().outputs.files
     inputDir.set layout.buildDirectory.dir('sphinx-image')
-    inputs.files project(':docker-server').tasks.findByName('buildDocker-server').outputs.files // deephaven/server
+    inputs.files project(':docker-server').tasks.findByName('buildDocker-server-netty').outputs.files // deephaven/server-netty
     images.add('deephaven/sphinx:local-build')
 }
 
@@ -101,7 +99,7 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
     }
     dockerfile {
         // share the common base image to keep it simple
-        from 'deephaven/server:local-build'
+        from 'deephaven/server-netty:local-build'
 
         runCommand('''set -eux; \\
                       apt-get update; \\
@@ -116,7 +114,7 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
                       doxygen
                       ''')
     }
-    parentContainers = [project(':docker-server').tasks.findByName('buildDocker-server')] // deephaven/server
+    parentContainers = [project(':docker-server').tasks.findByName('buildDocker-server-netty')] // deephaven/server-netty
     containerOutPath = '/project/doc/doxygenoutput'
     copyOut {
         into "$buildDir/cppClientDoxygen"

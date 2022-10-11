@@ -56,12 +56,6 @@ public class ServerBuilderInProcessModule {
         return InProcessChannelBuilder.forName(serverName);
     }
 
-    @Provides
-    @Named("client.sslConfig")
-    static SSLConfig providesSSLConfigForClient() {
-        return SSLConfig.empty();
-    }
-
     /**
      * Deephaven has some defensive implementations of Drainable / InputStream that don't actually implement the read
      * methods of InputStream. This works when going over the wire, but when doing an in-process exchange, the defensive

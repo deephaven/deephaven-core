@@ -11,7 +11,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.GroovyDeephavenSession;
@@ -24,23 +23,19 @@ import io.deephaven.test.types.SerialTest;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Category(SerialTest.class)
 public class FuzzerTest {
-    private static final String TEST_ROOT = System.getProperty("devroot", ".");
-    private static final String OUTPUT_ROOT = TEST_ROOT + "/tmp/" + FuzzerTest.class.getSimpleName() + "output";
     private static final boolean REALTIME_FUZZER_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("FuzzerTest.realTime", false);
 
@@ -72,26 +67,6 @@ public class FuzzerTest {
         }
     };
 
-    private void cleanupPersistence() {
-        FileUtils.deleteRecursively(new File(OUTPUT_ROOT));
-    }
-
-    private void setupPersistence() {
-        cleanupPersistence();
-        // noinspection ResultOfMethodCallIgnored
-        new File(OUTPUT_ROOT).mkdirs();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        setupPersistence();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        cleanupPersistence();
-    }
-
     private GroovyDeephavenSession getGroovySession() throws IOException {
         return getGroovySession(null);
     }
@@ -104,13 +79,16 @@ public class FuzzerTest {
 
     @Test
     public void testFuzzer() throws IOException, InterruptedException {
-        testFuzzerScriptFile(0, "/engine/table/src/test/java/io/deephaven/engine/table/impl/fuzzertest.groovy", true);
+        testFuzzerScriptFile(0, "fuzzertest.groovy", true);
     }
 
     private void testFuzzerScriptFile(final long timeSeed, String s, boolean realtime)
             throws IOException, InterruptedException {
         final Random timeRandom = new Random(timeSeed);
-        final String groovyString = FileUtils.readTextFile(new File(Configuration.getInstance().getDevRootPath() + s));
+        final String groovyString;
+        try (final InputStream in = FuzzerTest.class.getResourceAsStream(s)) {
+            groovyString = FileUtils.readTextFile(in);
+        }
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
         final MutableLong now = new MutableLong(fakeStart.getNanos());
@@ -336,7 +314,7 @@ public class FuzzerTest {
 
     private void validateBindingPartitionedTableConstituents(
             GroovyDeephavenSession session, Map<String, Object> hardReferences) {
-        final ExecutionContext executionContext = ExecutionContext.makeSystemicExecutionContext();
+        final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
         // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof PartitionedTable) {

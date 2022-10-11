@@ -5,8 +5,8 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.compress.Compressor;
-import io.deephaven.parquet.compress.DeephavenCodecFactory;
+import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import io.deephaven.util.datastructures.LazyCachingSupplier;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -38,7 +38,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final ColumnChunk columnChunk;
     private final SeekableChannelsProvider channelsProvider;
     private final Path rootPath;
-    private final Compressor decompressor;
+    private final CompressorAdapter decompressor;
     private final ColumnDescriptor path;
     private final OffsetIndex offsetIndex;
     private final List<Type> fieldTypes;
@@ -56,9 +56,10 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.path = type
                 .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
-            decompressor = DeephavenCodecFactory.getInstance().getByName(columnChunk.getMeta_data().getCodec().name());
+            decompressor = DeephavenCompressorAdapterFactory.getInstance()
+                    .getByName(columnChunk.getMeta_data().getCodec().name());
         } else {
-            decompressor = Compressor.PASSTHRU;
+            decompressor = CompressorAdapter.PASSTHRU;
         }
         this.offsetIndex = offsetIndex;
         this.fieldTypes = fieldTypes;

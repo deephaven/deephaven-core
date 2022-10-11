@@ -58,7 +58,9 @@ project.tasks.withType(Test).all { Test t ->
         }
 
         systemProperty 'Configuration.rootFile', 'dh-tests.prop'
-        systemProperty 'devroot', "$rootDir"
+        systemProperty 'GroovyDeephavenSession.defaultScriptPath', "$rootDir"
+        systemProperty 'PythonDeephavenSession.defaultScriptPath', "$rootDir"
+        systemProperty 'WorkerPythonEnvironment.defaultScriptPath', "$rootDir"
         systemProperty 'workspace', "$rootDir/tmp/workspace"
         systemProperty 'configuration.quiet', 'true'
 

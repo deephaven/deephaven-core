@@ -33,6 +33,7 @@ import io.deephaven.qst.table.TableSpec.Visitor;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UngroupTable;
 import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
@@ -308,6 +309,12 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
                     updateByTable.operations(),
                     updateByTable.groupByColumns()));
         }
+    }
+
+    @Override
+    public void visit(UngroupTable ungroupTable) {
+        addOp(ungroupTable, parentOps(ungroupTable)
+                .ungroup(ungroupTable.nullFill(), ungroupTable.ungroupColumns()));
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

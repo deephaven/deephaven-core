@@ -4,12 +4,14 @@ plugins {
 }
 
 dependencies {
-    api project(':ParquetHadoop')
+    api project(':ParquetHadoop'),
+        project(':Util')
+
     implementation project(':Configuration')
 
     implementation depCommonsIo
 
-    implementation 'com.google.guava:guava:19.0'
+    Classpaths.inheritGuava(project)
 
     runtimeOnly('org.lz4:lz4-java:1.8.0') {
         // also consider lz4-pure-java to avoid native code

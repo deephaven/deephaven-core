@@ -8,14 +8,14 @@ from numba import vectorize, int64
 
 from deephaven import empty_table
 from deephaven.html import to_html
-
+from tests.testbase import BaseTestCase
 
 @vectorize([int64(int64, int64)])
 def vectorized_func(x, y):
     return x % 3 + y
 
 
-class TestClass(unittest.TestCase):
+class TestClass(BaseTestCase):
 
     def test_part_of_expr(self):
         with self.assertRaises(Exception):

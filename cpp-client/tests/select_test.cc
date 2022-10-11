@@ -32,6 +32,62 @@ using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
 
 namespace deephaven::client::tests {
+TEST_CASE("Support all types", "[select]") {
+  auto tm = TableMakerForTests::create();
+
+  // std::vector<bool> boolData;
+  std::vector<char16_t> charData;
+  std::vector<int8_t> byteData;
+  std::vector<int16_t> shortData;
+  std::vector<int32_t> intData;
+  std::vector<int64_t> longData;
+  std::vector<float> floatData;
+  std::vector<double> doubleData;
+  std::vector<std::string> stringData;
+
+  const int startValue = -8;
+  const int endValue = 8;
+  for (auto i = startValue; i != endValue; ++i) {
+    // boolData.push_back((i % 2) == 0);
+    charData.push_back(i * 10);
+    byteData.push_back(i * 11);
+    shortData.push_back(i * 1000);
+    intData.push_back(i * 1'000'000);
+    longData.push_back(i * 1'000'000'000);
+    floatData.push_back(i * 123.456f);
+    doubleData.push_back(i * 987654.321);
+    stringData.push_back(stringf("test %o", i));
+  }
+
+  TableMaker maker;
+  // maker.addColumn("boolData", boolData);
+  maker.addColumn("charData", charData);
+  maker.addColumn("byteData", byteData);
+  maker.addColumn("shortData", shortData);
+  maker.addColumn("intData", intData);
+  maker.addColumn("longData", longData);
+  maker.addColumn("floatData", floatData);
+  maker.addColumn("doubleData", doubleData);
+  maker.addColumn("stringData", stringData);
+
+  auto t = maker.makeTable(tm.client().getManager());
+
+  std::cout << t.stream(true) << '\n';
+
+  compareTable(
+      t,
+      // "boolData", boolData,
+      "charData", charData,
+      "byteData", byteData,
+      "shortData", shortData,
+      "intData", intData,
+      "longData", longData,
+      "floatData", floatData,
+      "doubleData", doubleData,
+      "stringData", stringData
+  );
+}
+
 TEST_CASE("Create / update / fetch a table", "[select]") {
   auto tm = TableMakerForTests::create();
 
@@ -67,30 +123,6 @@ TEST_CASE("Create / update / fetch a table", "[select]") {
       );
 }
 
-TEST_CASE("Simple where", "[select]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
-  auto updated = table.update("QQQ = i");
-  // Symbolically
-  auto importDate = updated.getStrCol("ImportDate");
-  auto ticker = updated.getStrCol("Ticker");
-  auto volume = updated.getNumCol("Volume");
-  // if we allowed C++17 we could do something like
-  // auto [importDate, ticker, volume] = table.getCol<StrCol, StrCol, NumCol>("ImportDate", "Ticker", "Volume");
-
-  auto t2 = updated.where(importDate == "2017-11-01" && ticker == "IBM")
-      .select(ticker, volume);
-  std::cout << t2.stream(true) << '\n';
-
-  std::vector<std::string> tickerData = {"IBM"};
-  std::vector<int64_t> volData = {138000};
-
-  compareTable(
-      t2,
-      "Ticker", tickerData,
-      "Volume", volData
-      );
-}
 
 TEST_CASE("Select a few columns", "[select]") {
   auto tm = TableMakerForTests::create();
@@ -119,22 +151,6 @@ TEST_CASE("Select a few columns", "[select]") {
       "Close", closeData,
       "Volume", volData
       );
-}
-
-TEST_CASE("Simple 'where' with syntax error", "[select]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
-
-  try {
-    // String literal
-    auto t1 = table.where(")))))");
-    std::cout << t1.stream(true) << '\n';
-  } catch (const std::exception &e) {
-    // Expected
-    streamf(std::cerr, "Caught *expected* exception %o\n", e.what());
-    return;
-  }
-  throw std::runtime_error("Expected a failure, but didn't experience one");
 }
 
 TEST_CASE("LastBy + Select", "[select]") {
@@ -166,35 +182,6 @@ TEST_CASE("LastBy + Select", "[select]") {
       );
 }
 
-TEST_CASE("Formula Formula in the where clause", "[select]") {
-  auto tm = TableMakerForTests::create();
-  auto table = tm.table();
-
-  auto t1 = table.where("ImportDate == `2017-11-01` && Ticker == `AAPL` && Volume % 10 == Volume % 100")
-      .select("Ticker", "Volume");
-  std::cout << t1.stream(true) << '\n';
-
-  // Symbolically
-  auto importDate = table.getStrCol("ImportDate");
-  auto ticker = table.getStrCol("Ticker");
-  auto volume = table.getNumCol("Volume");
-  auto t2 = table.where(importDate == "2017-11-01" && ticker == "AAPL" && volume % 10 == volume % 100)
-      .select(ticker, volume);
-  std::cout << t2.stream(true) << '\n';
-
-  std::vector<std::string> tickerData = {"AAPL", "AAPL", "AAPL"};
-  std::vector<int64_t> volData = {100000, 250000, 19000};
-
-  const TableHandle *tables[] = {&t1, &t2};
-  for (const auto *t : tables) {
-    compareTable(
-        *t,
-        "Ticker", tickerData,
-        "Volume", volData
-        );
-  }
-}
-
 TEST_CASE("New columns", "[select]") {
   auto tm = TableMakerForTests::create();
   auto table = tm.table();
@@ -223,7 +210,77 @@ TEST_CASE("New columns", "[select]") {
         *t,
         "MV1", mv1Data,
         "V_plus_12", mv2Data
+    );
+  }
+}
+
+TEST_CASE("Simple where", "[select]") {
+  auto tm = TableMakerForTests::create();
+  auto table = tm.table();
+  auto updated = table.update("QQQ = i");
+  // Symbolically
+  auto importDate = updated.getStrCol("ImportDate");
+  auto ticker = updated.getStrCol("Ticker");
+  auto volume = updated.getNumCol("Volume");
+  // if we allowed C++17 we could do something like
+  // auto [importDate, ticker, volume] = table.getCol<StrCol, StrCol, NumCol>("ImportDate", "Ticker", "Volume");
+
+  auto t2 = updated.where(importDate == "2017-11-01" && ticker == "IBM")
+      .select(ticker, volume);
+  std::cout << t2.stream(true) << '\n';
+
+  std::vector<std::string> tickerData = {"IBM"};
+  std::vector<int64_t> volData = {138000};
+
+  compareTable(
+      t2,
+      "Ticker", tickerData,
+      "Volume", volData
+  );
+}
+
+TEST_CASE("Formula in the where clause", "[select]") {
+  auto tm = TableMakerForTests::create();
+  auto table = tm.table();
+
+  auto t1 = table.where("ImportDate == `2017-11-01` && Ticker == `AAPL` && Volume % 10 == Volume % 100")
+      .select("Ticker", "Volume");
+  std::cout << t1.stream(true) << '\n';
+
+  // Symbolically
+  auto importDate = table.getStrCol("ImportDate");
+  auto ticker = table.getStrCol("Ticker");
+  auto volume = table.getNumCol("Volume");
+  auto t2 = table.where(importDate == "2017-11-01" && ticker == "AAPL" && volume % 10 == volume % 100)
+      .select(ticker, volume);
+  std::cout << t2.stream(true) << '\n';
+
+  std::vector<std::string> tickerData = {"AAPL", "AAPL", "AAPL"};
+  std::vector<int64_t> volData = {100000, 250000, 19000};
+
+  const TableHandle *tables[] = {&t1, &t2};
+  for (const auto *t : tables) {
+    compareTable(
+        *t,
+        "Ticker", tickerData,
+        "Volume", volData
         );
   }
+}
+
+TEST_CASE("Simple 'where' with syntax error", "[select]") {
+  auto tm = TableMakerForTests::create();
+  auto table = tm.table();
+
+  try {
+    // String literal
+    auto t1 = table.where(")))))");
+    std::cout << t1.stream(true) << '\n';
+  } catch (const std::exception &e) {
+    // Expected
+    streamf(std::cerr, "Caught *expected* exception %o\n", e.what());
+    return;
+  }
+  throw std::runtime_error("Expected a failure, but didn't experience one");
 }
 }  // namespace deephaven::client::tests

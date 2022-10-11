@@ -51,13 +51,13 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server
+            ghcr.io/${{ github.repository_owner }}/server-netty
           flavor: |
             latest=false
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server nltk
@@ -65,13 +65,13 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-nltk
+            ghcr.io/${{ github.repository_owner }}/server-nltk-netty
           flavor: |
             latest=false
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server pytorch
@@ -79,13 +79,13 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-pytorch
+            ghcr.io/${{ github.repository_owner }}/server-pytorch-netty
           flavor: |
             latest=false
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server sklearn
@@ -93,13 +93,13 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-sklearn
+            ghcr.io/${{ github.repository_owner }}/server-sklearn-netty
           flavor: |
             latest=false
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server tensorflow
@@ -107,13 +107,27 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-tensorflow
+            ghcr.io/${{ github.repository_owner }}/server-tensorflow-netty
           flavor: |
             latest=false
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
+            type=ref,event=branch
+
+      - name: Docker meta server all-ai
+        id: docker_meta_server_all_ai
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/server-all-ai-netty
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server slim
@@ -121,13 +135,13 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-slim
+            ghcr.io/${{ github.repository_owner }}/server-slim-netty
           flavor: |
             latest=false
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -165,7 +179,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/server-base:local-build
-            SERVER=server
+            SERVER=server-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -177,7 +191,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/nltk-base:local-build
-            SERVER=server-nltk
+            SERVER=server-nltk-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -189,7 +203,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/pytorch-base:local-build
-            SERVER=server-pytorch
+            SERVER=server-pytorch-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_pytorch.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -201,7 +215,7 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/sklearn-base:local-build
-            SERVER=server-sklearn
+            SERVER=server-sklearn-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_sklearn.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
@@ -213,9 +227,21 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/tensorflow-base:local-build
-            SERVER=server-tensorflow
+            SERVER=server-tensorflow-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./docker/server/build/context/
+          push: ${{ github.event_name != 'pull_request' }}
+
+      - name: Docker build server all-ai
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            BASE=deephaven/all-ai-base:local-build
+            SERVER=server-all-ai-netty
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta_server_all_ai.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
@@ -234,7 +260,6 @@ jobs:
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
-          ./docker/registry/python-dev-base/build/crane/retag.sh
           ./docker/registry/protoc-base/build/crane/retag.sh
           ./docker/registry/slim-base/build/crane/retag.sh
           ./docker/registry/server-base/build/crane/retag.sh
@@ -242,6 +267,7 @@ jobs:
           ./docker/registry/pytorch-base/build/crane/retag.sh
           ./docker/registry/sklearn-base/build/crane/retag.sh
           ./docker/registry/tensorflow-base/build/crane/retag.sh
+          ./docker/registry/all-ai-base/build/crane/retag.sh
 
   grpc-proxy:
     runs-on: ubuntu-22.04
@@ -290,7 +316,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -377,7 +403,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -440,7 +466,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Setup JDK 11
@@ -511,7 +537,7 @@ jobs:
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
-          ./docker/registry/nginx-base/build/crane/retag.sh
+          ./docker/registry/nginx-noroot-base/build/crane/retag.sh
 
   web-plugin-packager:
     runs-on: ubuntu-22.04
@@ -536,7 +562,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.17.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.18.') }},value=latest
             type=ref,event=branch
 
       - name: Setup JDK 11

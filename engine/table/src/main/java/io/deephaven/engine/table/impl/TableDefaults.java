@@ -542,35 +542,12 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table ungroup(String... columnsToUngroup) {
-        return ungroup(false, columnsToUngroup);
-    }
-
-    @Override
-    @FinalDefault
     default Table ungroupAllBut(String... columnsNotToUngroup) {
         final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
         return ungroup(getDefinition().getColumnStream()
                 .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
                         && (c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType())))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
-    }
-
-    @Override
-    @FinalDefault
-    default Table ungroup() {
-        return ungroup(getDefinition().getColumnStream()
-                .filter(c -> c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType()))
-                .map(ColumnDefinition::getName).toArray(String[]::new));
-    }
-
-    @Override
-    @FinalDefault
-    default Table ungroup(boolean nullFill) {
-        return ungroup(nullFill,
-                getDefinition().getColumnStream()
-                        .filter(c -> c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType()))
-                        .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

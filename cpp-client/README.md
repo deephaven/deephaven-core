@@ -1,10 +1,10 @@
-# Building the C++ client from a base Ubuntu 20.04 image
+# Building the C++ client from a base Ubuntu 20.04 or 22.04 image
 
 These instructions show how to install and run the Deephaven C++ client, its dependencies,
-and its unit tests. We have tested these instructions in Ubuntu 20.04 with the default
+and its unit tests. We have tested these instructions in Ubuntu 20.04 and 22.04 with the default
 C++ compiler and tool suite (cmake etc).
 
-1. Start with an Ubuntu 20.04 install
+1. Start with an Ubuntu 20.04 or 22.04 install
 
 2. Get Deephaven running by following the instructions here: https://deephaven.io/core/docs/how-to-guides/launch-build/
 
@@ -49,7 +49,7 @@ C++ compiler and tool suite (cmake etc).
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
    export PFX=$HOME/dhcpp/local  # This should reflect your selection in the previous point.
-   export CMAKE_PREFIX_PATH=${PFX}/abseil:${PFX}/cares:${PFX}/flatbuffers:${PFX}/gflags:${PFX}/protobuf:${PFX}/re2:${PFX}/zlib:${PFX}/grpc:${PFX}/arrow:${PFX}/deephaven
+   export CMAKE_PREFIX_PATH=${PFX}/abseil:${PFX}/boost:${PFX}/cares:${PFX}/flatbuffers:${PFX}/gflags:${PFX}/immer:${PFX}/protobuf:${PFX}/re2:${PFX}/zlib:${PFX}/grpc:${PFX}/arrow:${PFX}/deephaven
    export NCPUS=$(getconf _NPROCESSORS_ONLN)
    cmake -DCMAKE_INSTALL_PREFIX=${PFX}/deephaven .. && make -j$NCPUS install
    ```

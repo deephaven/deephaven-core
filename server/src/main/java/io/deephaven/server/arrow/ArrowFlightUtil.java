@@ -260,6 +260,7 @@ public class ArrowFlightUtil {
         private final TicketRouter ticketRouter;
         private final StreamObserver<Flight.PutResult> observer;
 
+        private long totalRowsRead = 0;
         private BarrageTable resultTable;
         private SessionState.ExportBuilder<Table> resultExportBuilder;
         private Flight.FlightDescriptor flightDescriptor;
@@ -376,10 +377,10 @@ public class ArrowFlightUtil {
                     acd.componentType = componentTypes[ci];
                 }
 
-                msg.rowsAdded =
-                        RowSetFactory.fromRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
+                msg.rowsAdded = RowSetFactory.fromRange(totalRowsRead, totalRowsRead + numRowsAdded - 1);
                 msg.rowsIncluded = msg.rowsAdded.copy();
                 msg.modColumnData = ZERO_MOD_COLUMNS;
+                totalRowsRead += numRowsAdded;
 
                 resultTable.handleBarrageMessage(msg);
 

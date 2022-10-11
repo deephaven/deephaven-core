@@ -9,16 +9,17 @@ plugins {
 def targetArch = Architecture.targetArchitecture(project)
 
 def baseMapAmd64 = [
-        'server-base': 'server',
-        'nltk-base': 'server-nltk',
-        'pytorch-base': 'server-pytorch',
-        'sklearn-base': 'server-sklearn',
-        'tensorflow-base': 'server-tensorflow',
+        'server-base': 'server-netty',
+        'nltk-base': 'server-nltk-netty',
+        'pytorch-base': 'server-pytorch-netty',
+        'sklearn-base': 'server-sklearn-netty',
+        'tensorflow-base': 'server-tensorflow-netty',
+        'all-ai-base': 'server-all-ai-netty'
 ]
 
 // Only the server image is supported on arm64
 // TODO(deephaven-core#1702): Support arm64 builds for applicable extended images
-def baseMapArm64 = baseMapAmd64.findAll { key, value -> value == 'server' }
+def baseMapArm64 = baseMapAmd64.findAll { key, value -> value == 'server-netty' }
 
 def baseMap = targetArch == Architecture.AMD64 ? baseMapAmd64 : baseMapArm64
 

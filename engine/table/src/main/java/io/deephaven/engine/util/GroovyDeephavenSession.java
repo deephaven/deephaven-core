@@ -61,9 +61,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private static final String SCRIPT_PREFIX = "io.deephaven.engine.util.Script";
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
-            .getProperty("GroovyDeephavenSession.defaultScriptPath")
-            .replace("<devroot>", Configuration.getInstance().getDevRootPath())
-            .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
+            .getStringWithDefault("GroovyDeephavenSession.defaultScriptPath", ".");
 
     private static final boolean ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS = Configuration.getInstance()
             .getBooleanForClassWithDefault(GroovyDeephavenSession.class, "allowUnknownGroovyPackageImports", false);

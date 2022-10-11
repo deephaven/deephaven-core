@@ -244,10 +244,6 @@ public class ModifiedColumnSet {
          * @param output result table's columns to propagate dirty columns to
          */
         default void transform(final ModifiedColumnSet input, final ModifiedColumnSet output) {
-            if (input == ALL) {
-                output.setAllDirty();
-                return;
-            }
             if (input == null || input.empty()) {
                 return;
             }
@@ -302,6 +298,11 @@ public class ModifiedColumnSet {
      */
     public Transformer newTransformer(final String[] columnNames, final ModifiedColumnSet[] columnSets) {
         Assert.eq(columnNames.length, "columnNames.length", columnSets.length, "columnSets.length");
+        if (columnNames.length == 0) {
+            return (input, output) -> {
+            };
+        }
+
         final int[] columnBits = new int[columnNames.length];
         for (int i = 0; i < columnNames.length; ++i) {
             final int bitIndex = idMap.get(columnNames[i]);
@@ -313,7 +314,16 @@ public class ModifiedColumnSet {
             Assert.eq(columnSets[0].columns, "columnSets[0].columns", columnSets[i].columns, "columnSets[i].columns");
         }
 
+        final ModifiedColumnSet allColumns = new ModifiedColumnSet(columnSets[0]);
+        for (int i = 0; i < columnNames.length; ++i) {
+            allColumns.setAll(columnSets[i]);
+        }
+
         return (input, output) -> {
+            if (input == ALL) {
+                output.setAll(allColumns);
+                return;
+            }
             verifyCompatibilityWith(input);
             for (int i = 0; i < columnBits.length; ++i) {
                 if (input.dirtyColumns.get(columnBits[i])) {
@@ -339,6 +349,10 @@ public class ModifiedColumnSet {
         }
 
         return (input, output) -> {
+            if (input == ALL) {
+                output.setAllDirty();
+                return;
+            }
             if (input.columns != columns || output.columns != newColumns) {
                 throw new IllegalArgumentException(
                         "Provided ModifiedColumnSets are not compatible with this Transformer!");
