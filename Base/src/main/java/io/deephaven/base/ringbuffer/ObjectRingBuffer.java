@@ -181,11 +181,14 @@ public class ObjectRingBuffer implements Serializable {
     }
 
     public Object[] getAll() {
-        int n = size(), h = head;
-        Object[] result = new Object[n];
-        for (int i = 0; i < n; ++i) {
-            result[i] = storage[h];
-            h = (h + 1) % storage.length;
+        Object[] result = new Object[size()];
+        if (result.length > 0) {
+            if (tail > head) {
+                System.arraycopy(storage, head, result, 0, tail - head);
+            } else {
+                System.arraycopy(storage, head, result, 0, storage.length - head);
+                System.arraycopy(storage, 0, result, storage.length - head, tail);
+            }
         }
         return result;
     }

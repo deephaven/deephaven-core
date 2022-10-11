@@ -1,30 +1,21 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.base.ringbuffer.LongRingBuffer;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-
-import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class UpdateByWindow {
     @Nullable
@@ -252,16 +243,14 @@ public abstract class UpdateByWindow {
 
     protected static int hashCode(boolean windowed, @Nullable String timestampColumnName, long prevUnits,
             long fwdUnits) {
-        // treat all cumulative as identical, even if they rely on timestamps
+        // treat all cumulative ops as identical, even if they rely on timestamps
         if (!windowed) {
-            return Boolean.hashCode(windowed);
+            return Boolean.hashCode(false);
         }
 
-        // windowed are unique per timestamp column and window-size
-        int hash = Boolean.hashCode(windowed);
-        if (timestampColumnName != null) {
-            hash = 31 * hash + timestampColumnName.hashCode();
-        }
+        // windowed ops are unique per type (ticks/time-based) and window dimensions
+        int hash = Boolean.hashCode(true);
+        hash = 31 * hash + Boolean.hashCode(timestampColumnName != null);
         hash = 31 * hash + Long.hashCode(prevUnits);
         hash = 31 * hash + Long.hashCode(fwdUnits);
         return hash;
@@ -272,5 +261,29 @@ public abstract class UpdateByWindow {
                 op.getTimestampColumnName(),
                 op.getPrevWindowUnits(),
                 op.getPrevWindowUnits());
+    }
+
+    public static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
+        final boolean aWindowed = opA instanceof UpdateByWindowedOperator;
+        final boolean bWindowed = opB instanceof UpdateByWindowedOperator;
+
+        // equivalent if both are cumulative, not equivalent if only one is cumulative
+        if (!aWindowed && !bWindowed) {
+            return true;
+        } else if (!aWindowed) {
+            return false;
+        } else if (!bWindowed) {
+            return false;
+        }
+
+        final boolean aTimeWindowed = opA.getTimestampColumnName() != null;
+        final boolean bTimeWindowed = opB.getTimestampColumnName() != null;
+
+        // must have same time/tick base to be equivalent
+        if (aTimeWindowed != bTimeWindowed) {
+            return false;
+        }
+        return opA.getPrevWindowUnits() == opB.getPrevWindowUnits() &&
+                opB.getFwdWindowUnits() == opB.getFwdWindowUnits();
     }
 }

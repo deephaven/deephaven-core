@@ -23,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -163,14 +162,28 @@ public abstract class UpdateBy {
         TIntObjectHashMap<TIntArrayList> windowHashToOperatorIndicesMap = new TIntObjectHashMap<>();
 
         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            // get the hash
-            final int hash = UpdateByWindow.hashCodeFromOperator(operators[opIdx]);
+            int hash = UpdateByWindow.hashCodeFromOperator(operators[opIdx]);
+            boolean added = false;
 
-            // add this if not found
-            if (!windowHashToOperatorIndicesMap.containsKey(hash)) {
-                windowHashToOperatorIndicesMap.put(hash, new TIntArrayList());
+            // rudimentary linear probing for collisions
+            while (!added) {
+                if (!windowHashToOperatorIndicesMap.containsKey(hash)) {
+                    // does not exist, can add immediately
+                    windowHashToOperatorIndicesMap.put(hash, new TIntArrayList());
+                    windowHashToOperatorIndicesMap.get(hash).add(opIdx);
+                    added = true;
+                } else {
+                    final int existingOpIdx = windowHashToOperatorIndicesMap.get(hash).get(0);
+                    if (UpdateByWindow.isEquivalentWindow(operators[existingOpIdx], operators[opIdx])) {
+                        // no collision, can add immediately
+                        windowHashToOperatorIndicesMap.get(hash).add(opIdx);
+                        added = true;
+                    } else {
+                        // there is a collision, increment hash and try again
+                        hash++;
+                    }
+                }
             }
-            windowHashToOperatorIndicesMap.get(hash).add(opIdx);
         }
 
         // store the operator information into the windows

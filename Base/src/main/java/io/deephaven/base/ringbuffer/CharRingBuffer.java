@@ -176,11 +176,14 @@ public class CharRingBuffer implements Serializable {
     }
 
     public char[] getAll() {
-        int n = size(), h = head;
-        char[] result = new char[n];
-        for (int i = 0; i < n; ++i) {
-            result[i] = storage[h];
-            h = (h + 1) % storage.length;
+        char[] result = new char[size()];
+        if (result.length > 0) {
+            if (tail > head) {
+                System.arraycopy(storage, head, result, 0, tail - head);
+            } else {
+                System.arraycopy(storage, head, result, 0, storage.length - head);
+                System.arraycopy(storage, 0, result, storage.length - head, tail);
+            }
         }
         return result;
     }

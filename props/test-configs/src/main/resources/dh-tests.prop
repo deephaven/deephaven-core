@@ -95,8 +95,3 @@ BarrageMessageProducer.targetSnapshotPercentage=0.1
 BarrageMessageProducer.minSnapshotCellCount=50
 BarrageMessageProducer.maxSnapshotCellCount=50
 BarrageStreamGenerator.batchSize=4
-
-#BarrageTable.debug=true
-#BarrageMessageProducer.debug=true
-
-ReleaseTracker.captureStackTraces=true

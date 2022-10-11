@@ -181,11 +181,14 @@ public class FloatRingBuffer implements Serializable {
     }
 
     public float[] getAll() {
-        int n = size(), h = head;
-        float[] result = new float[n];
-        for (int i = 0; i < n; ++i) {
-            result[i] = storage[h];
-            h = (h + 1) % storage.length;
+        float[] result = new float[size()];
+        if (result.length > 0) {
+            if (tail > head) {
+                System.arraycopy(storage, head, result, 0, tail - head);
+            } else {
+                System.arraycopy(storage, head, result, 0, storage.length - head);
+                System.arraycopy(storage, 0, result, storage.length - head, tail);
+            }
         }
         return result;
     }

@@ -17,7 +17,7 @@ import java.util.*;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 /**
- * An implementation of {@link UpdateBy} dedicated to zero key computation.
+ * An implementation of {@link UpdateBy} dedicated to bucketed computation.
  */
 class BucketedPartitionedUpdateBy extends UpdateBy {
     private final BucketedPartitionedUpdateByListener listener;
@@ -25,12 +25,13 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
     private final QueryTable resultTable;
 
     /**
-     * Perform an updateBy without any key columns.
+     * Perform a bucketed updateBy using {@code byColumns} as the keys
      *
      * @param description the operation description
      * @param source the source table
      * @param ops the operations to perform
      * @param resultSources the result sources
+     * @param byColumns the columns to use for the bucket keys
      * @param redirContext the row redirection shared context
      * @param control the control object.
      * @return the result table
@@ -111,7 +112,7 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
                     RowSetFactory.empty(),
                     RowSetFactory.empty(),
                     RowSetShiftData.EMPTY,
-                    ModifiedColumnSet.ALL);
+                    ModifiedColumnSet.EMPTY);
             redirContext.processUpdateForRedirection(fakeUpdate, source.getRowSet());
         }
 
@@ -191,9 +192,8 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
                 if (lr.getModified().isNonempty()) {
                     modifiedRowSet.insert(lr.getModified());
                 }
-                // Transform any untouched modified columns to the output.
+                // always transform, ZeroKey listener sets this independently of the modified rowset
                 lr.modifiedColumnsTransformer.transform(lr.getModifiedColumnSet(), downstream.modifiedColumnSet);
-
             });
             // should not include actual adds as modifies
             modifiedRowSet.remove(downstream.added);
