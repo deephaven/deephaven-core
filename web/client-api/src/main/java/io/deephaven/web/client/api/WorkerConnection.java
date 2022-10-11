@@ -438,8 +438,11 @@ public class WorkerConnection {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                             return;
+                        } else {
+                            info.notifyConnectionError(Js.cast(fail));
                         }
                     }
+                    assert success != null;
 
                     // welp; the server is gone -- let everyone know
                     info.notifyConnectionError(new ResponseStreamWrapper.Status() {

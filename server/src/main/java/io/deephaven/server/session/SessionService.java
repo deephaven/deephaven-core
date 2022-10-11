@@ -5,6 +5,7 @@ package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
+import com.google.rpc.Code;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.configuration.Configuration;
@@ -383,6 +384,9 @@ public class SessionService {
 
         @Override
         void onClose() {
+            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
+                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Session has ended"));
+            });
             terminationListeners.remove(this);
         }
 
