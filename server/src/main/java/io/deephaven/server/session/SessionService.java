@@ -7,7 +7,6 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
-import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
@@ -31,7 +30,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -63,19 +61,15 @@ public class SessionService {
 
     private final List<TerminationNotificationListener> terminationListeners = new CopyOnWriteArrayList<>();
 
-    private final BasicAuthMarshaller basicAuthMarshaller;
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
 
-    @Inject()
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @Inject
     public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
             @Named("session.tokenExpireMs") final long tokenExpireMs,
-            final Optional<BasicAuthMarshaller> basicAuthMarshaller,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.scheduler = scheduler;
         this.sessionFactory = sessionFactory;
         this.tokenExpireMs = tokenExpireMs;
-        this.basicAuthMarshaller = basicAuthMarshaller.orElse(null);
         this.authRequestHandlers = authRequestHandlers;
 
         if (tokenExpireMs < MIN_COOKIE_EXPIRE_MS) {
@@ -243,21 +237,16 @@ public class SessionService {
             }
         }
 
-        Optional<AuthContext> context = Optional.empty();
-        if (token.startsWith(Auth2Constants.BASIC_PREFIX) && basicAuthMarshaller != null) {
-            final String payload = token.substring(Auth2Constants.BASIC_PREFIX.length());
-            context = basicAuthMarshaller.login(payload, SessionServiceGrpcImpl::insertCallHeader);
-        } else {
-            int offset = token.indexOf(' ');
-            final String key = token.substring(0, offset < 0 ? token.length() : offset);
-            final String payload = offset < 0 ? "" : token.substring(offset + 1);
-            AuthenticationRequestHandler handler = authRequestHandlers.get(key);
-            if (handler != null) {
-                context = handler.login(payload, SessionServiceGrpcImpl::insertCallHeader);
-            }
+        int offset = token.indexOf(' ');
+        final String key = token.substring(0, offset < 0 ? token.length() : offset);
+        final String payload = offset < 0 ? "" : token.substring(offset + 1);
+        AuthenticationRequestHandler handler = authRequestHandlers.get(key);
+        if (handler == null) {
+            throw new AuthenticationException();
         }
-
-        return context.map(this::newSession).orElse(null);
+        return handler.login(payload, SessionServiceGrpcImpl::insertCallHeader)
+                .map(this::newSession)
+                .orElseThrow(AuthenticationException::new);
     }
 
     /**

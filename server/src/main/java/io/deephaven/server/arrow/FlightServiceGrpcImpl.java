@@ -44,23 +44,19 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private final TicketRouter ticketRouter;
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
 
-    private final BasicAuthMarshaller basicAuthMarshaller;
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Inject
     public FlightServiceGrpcImpl(
             @Nullable final ScheduledExecutorService executorService,
             final SessionService sessionService,
             final TicketRouter ticketRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,
-            final Optional<BasicAuthMarshaller> basicAuthMarshaller,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.executorService = executorService;
         this.sessionService = sessionService;
         this.ticketRouter = ticketRouter;
         this.doExchangeFactory = doExchangeFactory;
-        this.basicAuthMarshaller = basicAuthMarshaller.orElse(null);
         this.authRequestHandlers = authRequestHandlers;
     }
 
@@ -100,19 +96,12 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
             final ByteString payload = value.getPayload();
             final long protocolVersion = value.getProtocolVersion();
-            Optional<AuthContext> auth = Optional.empty();
+            Optional<AuthContext> auth;
             try {
-                if (basicAuthMarshaller != null) {
-                    auth = basicAuthMarshaller.login(protocolVersion, payload.asReadOnlyByteBuffer(),
-                            handshakeResponseListener);
-                }
+                auth = login(BasicAuthMarshaller.AUTH_TYPE, protocolVersion, payload, handshakeResponseListener);
                 if (auth.isEmpty()) {
                     final WrappedAuthenticationRequest req = WrappedAuthenticationRequest.parseFrom(payload);
-                    final AuthenticationRequestHandler handler = authRequestHandlers.get(req.getType());
-                    if (handler != null) {
-                        auth = handler.login(protocolVersion, req.getPayload().asReadOnlyByteBuffer(),
-                                handshakeResponseListener);
-                    }
+                    auth = login(req.getType(), protocolVersion, req.getPayload(), handshakeResponseListener);
                 }
             } catch (final AuthenticationException | InvalidProtocolBufferException err) {
                 log.error().append("Authentication failed: ").append(err).endl();
@@ -127,6 +116,15 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
             session = sessionService.newSession(auth.get());
             respondWithAuthTokenBin(session);
+        }
+
+        private Optional<AuthContext> login(String type, long version, ByteString payload,
+                AuthenticationRequestHandler.HandshakeResponseListener listener) throws AuthenticationException {
+            AuthenticationRequestHandler handler = authRequestHandlers.get(type);
+            if (handler == null) {
+                return Optional.empty();
+            }
+            return handler.login(version, payload.asReadOnlyByteBuffer(), listener);
         }
 
         /** send the bearer token as an AuthTokenBin, as headers might have already been sent */

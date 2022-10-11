@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-@Module()
+@Module
 public class AuthTestModule {
     public static class BasicAuthTestImpl implements BasicAuthMarshaller.Handler {
         public Map<String, String> validLogins = new HashMap<>();
@@ -45,14 +45,10 @@ public class AuthTestModule {
 
     @Provides
     @Singleton
-    public Optional<BasicAuthMarshaller> bindBasicAuthProvider(BasicAuthMarshaller marshaller) {
-        return Optional.of(marshaller);
-    }
-
-    @Provides
-    @Singleton
-    public Map<String, AuthenticationRequestHandler> bindAuthHandlerMap() {
+    public Map<String, AuthenticationRequestHandler> bindAuthHandlerMap(BasicAuthMarshaller basicAuthMarshaller) {
         // note this is mutable
-        return new HashMap<>();
+        HashMap<String, AuthenticationRequestHandler> map = new HashMap<>();
+        map.put(basicAuthMarshaller.getAuthType(), basicAuthMarshaller);
+        return map;
     }
 }
