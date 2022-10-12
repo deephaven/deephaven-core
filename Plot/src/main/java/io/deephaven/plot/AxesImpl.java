@@ -249,7 +249,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     private void configureOHLCPlot() {
         this.setDimension(2);
-        chart.setChartType(ChartType.OHLC);
+        chart.setChartType(ChartType.XY);
         xAxis().setType(AxisImpl.Type.NUMBER);
         yAxis().setType(AxisImpl.Type.NUMBER);
         initialize();
