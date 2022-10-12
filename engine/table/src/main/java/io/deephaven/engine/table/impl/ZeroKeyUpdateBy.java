@@ -141,22 +141,24 @@ class ZeroKeyUpdateBy extends UpdateBy {
                     upstream.modified().intSize() + Math.max(upstream.added().intSize(), upstream.removed().intSize()),
                     (int) upstream.shifted().getEffectiveSize());
             try (final RowSet fullPrevRowSet = source.getRowSet().copyPrev();
-                    final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+                    final WritableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
                     final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
+
+                // no need to consider upstream removals
+                previousToShift.remove(upstream.removed());
 
                 final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                 while (sit.hasNext()) {
                     sit.next();
-                    try (final RowSet subRowSet = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
-                            final RowSet rowSetToShift = subRowSet.minus(upstream.removed())) {
-                        if (rowSetToShift.isEmpty()) {
+                    try (final RowSet subRowSet = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
+                        if (subRowSet.isEmpty()) {
                             continue;
                         }
 
                         final LongChunk<? extends Values> shiftValues =
-                                timestampColumnSource.getPrevChunk(getContext, rowSetToShift).asLongChunk();
+                                timestampColumnSource.getPrevChunk(getContext, subRowSet).asLongChunk();
 
-                        timestampSsa.applyShiftReverse(shiftValues, rowSetToShift.asRowKeyChunk(), sit.shiftDelta());
+                        timestampSsa.applyShiftReverse(shiftValues, subRowSet.asRowKeyChunk(), sit.shiftDelta());
                     }
                 }
             }

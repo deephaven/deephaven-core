@@ -71,7 +71,7 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
     }
 
     /**
-     * An operator that computes an EMA from a int column using an exponential decay function.
+     * An operator that computes an EMA from a BigDecimal column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema

@@ -102,14 +102,14 @@ public class IntRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertContents(rb, new int[] { A,B,C });
+        assertContents(rb, new int[] {A, B, C});
         assertFull(rb);
 
         assertRemove(rb, 3, A);
-        assertContents(rb, new int[] { B,C });
+        assertContents(rb, new int[] {B, C});
 
         assertRemove(rb, 2, B);
-        assertContents(rb, new int[] { C });
+        assertContents(rb, new int[] {C});
 
         assertRemove(rb, 1, C);
         assertContents(rb, new int[0]);
@@ -117,16 +117,16 @@ public class IntRingBufferTest extends TestCase {
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
-        assertContents(rb, new int[] { A,B });
+        assertContents(rb, new int[] {A, B});
 
         assertRemove(rb, 2, A);
-        assertContents(rb, new int[] { B });
+        assertContents(rb, new int[] {B});
 
         assertAdd(rb, C, 2, B);
-        assertContents(rb, new int[] { B,C });
+        assertContents(rb, new int[] {B, C});
 
         assertRemove(rb, 2, B);
-        assertContents(rb, new int[] { C });
+        assertContents(rb, new int[] {C});
 
         assertRemove(rb, 1, C);
         assertContents(rb, new int[0]);
@@ -156,13 +156,13 @@ public class IntRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertContents(rb, new int[] { A,B,C });
+        assertContents(rb, new int[] {A, B, C});
         assertFull(rb);
 
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
         assertAdd(rb, F, 6, A);
-        assertContents(rb, new int[] { A,B,C,D,E,F });
+        assertContents(rb, new int[] {A, B, C, D, E, F});
 
         assertRemove(rb, 6, A);
         assertRemove(rb, 5, B);

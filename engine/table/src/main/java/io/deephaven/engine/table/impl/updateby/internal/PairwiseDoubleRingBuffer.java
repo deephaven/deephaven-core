@@ -16,15 +16,18 @@ import io.deephaven.util.SafeCloseable;
 import java.util.NoSuchElementException;
 
 /***
- * Store this data in the form of a binary tree where the latter half of the chunk is treated as a ring buffer and pairwise results of the `DoubleFunction` are stored in the parent nodes.  We do lazy evaluation by maintaining a 'dirty' `BitSet` and compute the ultimate pairwise result only when requested by `evaluate()'
+ * Store this data in the form of a binary tree where the latter half of the chunk is treated as a ring buffer and
+ * pairwise results of the `DoubleFunction` are stored in the parent nodes.  We do lazy evaluation by maintaining a
+ * 'dirty' index list and computing the ultimate pairwise result only when requested by `evaluate()'
  *
- * To keep the parent-node finding math easy and consistent between the ring buffer and the computation tree, the binary tree is shifted by one index so the root (and final result of computation) ends up in index 1 (instead of 0 which is un-used)
+ * To keep the parent-node finding math easy and consistent between the ring buffer and the computation tree, the binary
+ * tree is shifted by one index so the root (and final result of computation) ends up in index 1 (instead of 0 which is
+ * un-used)
  */
 
 public class PairwiseDoubleRingBuffer implements SafeCloseable {
     // use a sized double chunk for underlying storage
     private WritableDoubleChunk<Values> storageChunk;
-//    private final BitSet dirtyBits;
     private final TIntArrayList dirtyIndices;
     private boolean allDirty;
 
@@ -51,11 +54,16 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
     }
 
     /**
-     * Create a ring buffer for Double values that will perform pairwise evaluation of the internal data values using an efficient binary-tree implementation to compute only changed values.  The buffer will grow exponentially as items are pushed into it but will not shrink as values are removed
+     * Create a ring buffer for double values that will perform pairwise evaluation of the internal data values using
+     * an efficient binary-tree implementation to compute only changed values.  The buffer will grow exponentially as
+     * items are pushed into it but will not shrink as values are removed
      *
      * @param initialSize the minimum size for the structure to hold
-     * @param emptyVal an innocuous value that will not affect the user-provided function results. for example, 0.0f for performing addition/subtraction, 1.0f for performing multiplication/division
-     * @param pairwiseFunction the user provided function for evaluation, takes two double parameters and returns a double. This function will be applied repeatedly to pairs of data values until the final result is available
+     * @param emptyVal an innocuous value that will not affect the user-provided function results. for example, 0.0f
+     *                 for performing addition/subtraction, 1.0f for performing multiplication/division
+     * @param pairwiseFunction the user provided function for evaluation, takes two double parameters and returns a
+     *                         double. This function will be applied repeatedly to pairs of data values until the final
+     *                         result is available
      */
     public PairwiseDoubleRingBuffer(int initialSize, double emptyVal, DoubleFunction pairwiseFunction) {
         // increase to next power of two
@@ -72,7 +80,7 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
     }
 
     private void evaluateRangeFast(int start, int end) {
-        // everything in this range needs recomputed
+        // everything in this range needs to be reevaluated
         for (int left = start & 0xFFFFFFFE; left < end; left += 2) {
             final int right = left + 1;
             final int parent = left / 2;
@@ -81,7 +89,7 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
             final double leftVal = storageChunk.get(left);
             final double rightVal = storageChunk.get(right);
 
-            // compute & stpre
+            // compute & store
             final double computeVal = pairwiseFunction.apply(leftVal, rightVal);
             storageChunk.set(parent, computeVal);
 
@@ -99,12 +107,9 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
                 evaluateRangeFast(head, chunkSize);
                 evaluateRangeFast(capacity, tail);
             }
-        } else {
-            // sort so consecutive values are adjacent
-            dirtyIndices.sort();
         }
 
-        // work through all the dirty bits from high to low until none remain
+        // work through all the dirty bits from high to low until none remain.
         int dirtyIndex = 0;
         while (dirtyIndex < dirtyIndices.size()) {
             final int left = dirtyIndices.get(dirtyIndex) & 0xFFFFFFFE; // clear the final bit to force evenness

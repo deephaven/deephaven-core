@@ -102,14 +102,14 @@ public class ShortRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertContents(rb, new short[] { A,B,C });
+        assertContents(rb, new short[] {A, B, C});
         assertFull(rb);
 
         assertRemove(rb, 3, A);
-        assertContents(rb, new short[] { B,C });
+        assertContents(rb, new short[] {B, C});
 
         assertRemove(rb, 2, B);
-        assertContents(rb, new short[] { C });
+        assertContents(rb, new short[] {C});
 
         assertRemove(rb, 1, C);
         assertContents(rb, new short[0]);
@@ -117,16 +117,16 @@ public class ShortRingBufferTest extends TestCase {
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
-        assertContents(rb, new short[] { A,B });
+        assertContents(rb, new short[] {A, B});
 
         assertRemove(rb, 2, A);
-        assertContents(rb, new short[] { B });
+        assertContents(rb, new short[] {B});
 
         assertAdd(rb, C, 2, B);
-        assertContents(rb, new short[] { B,C });
+        assertContents(rb, new short[] {B, C});
 
         assertRemove(rb, 2, B);
-        assertContents(rb, new short[] { C });
+        assertContents(rb, new short[] {C});
 
         assertRemove(rb, 1, C);
         assertContents(rb, new short[0]);
@@ -156,13 +156,13 @@ public class ShortRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertContents(rb, new short[] { A,B,C });
+        assertContents(rb, new short[] {A, B, C});
         assertFull(rb);
 
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
         assertAdd(rb, F, 6, A);
-        assertContents(rb, new short[] { A,B,C,D,E,F });
+        assertContents(rb, new short[] {A, B, C, D, E, F});
 
         assertRemove(rb, 6, A);
         assertRemove(rb, 5, B);

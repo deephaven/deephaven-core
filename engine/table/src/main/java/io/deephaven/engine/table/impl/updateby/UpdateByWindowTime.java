@@ -70,8 +70,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
             // determine which operators are affected by this update
             boolean anyAffected = false;
             boolean allAffected = upstream.added().isNonempty() ||
-                    upstream.removed().isNonempty() ||
-                    upstream.shifted().nonempty();
+                    upstream.removed().isNonempty();
 
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 opAffected[opIdx] = allAffected

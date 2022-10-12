@@ -57,8 +57,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
             // determine which operators are affected by this update
             boolean anyAffected = false;
             boolean allAffected = upstream.added().isNonempty() ||
-                    upstream.removed().isNonempty() ||
-                    upstream.shifted().nonempty();
+                    upstream.removed().isNonempty();
 
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 opAffected[opIdx] = allAffected
@@ -93,25 +92,30 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
 
             // find the key before the first affected row
             final long keyBefore;
-            try (final RowSet.SearchIterator sit = sourceRowSet.searchIterator()) {
-                keyBefore = sit.binarySearchValue(
-                        (compareTo, ignored) -> Long.compare(affectedRows.firstRowKey() - 1, compareTo), 1);
+            try (final RowSet.SearchIterator rIt = sourceRowSet.reverseIterator()) {
+                rIt.advance(affectedRows.firstRowKey());
+                if (rIt.hasNext()) {
+                    keyBefore = rIt.nextLong();
+                } else {
+                    keyBefore = NULL_ROW_KEY;
+                }
             }
 
             // and preload that data for these operators
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
                     UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
-                    if (cumOp.getTimestampColumnName() == null || keyBefore == -1) {
+                    if (cumOp.getTimestampColumnName() == null || keyBefore == NULL_ROW_KEY) {
+                        // this operator doesn't care about timestamps or we know we are at the beginning of the rowset
                         cumOp.initializeUpdate(opContext[opIdx], keyBefore, NULL_LONG);
                     } else {
+                        // this operator cares about timestamps, so make sure it is starting from a valid value and
+                        // valid timestamp by moving backward until the conditions are met
                         UpdateByCumulativeOperator.Context cumOpContext =
                                 (UpdateByCumulativeOperator.Context) opContext[opIdx];
-                        // make sure the time-based cumulative operators are starting from a valid value and timestamp
                         long potentialResetTimestamp = timestampColumnSource.getLong(keyBefore);
 
-                        if (potentialResetTimestamp == NULL_LONG ||
-                                !cumOpContext.isValueValid(keyBefore)) {
+                        if (potentialResetTimestamp == NULL_LONG || !cumOpContext.isValueValid(keyBefore)) {
                             try (final RowSet.SearchIterator rIt = sourceRowSet.reverseIterator()) {
                                 if (rIt.advance(keyBefore)) {
                                     while (rIt.hasNext()) {
