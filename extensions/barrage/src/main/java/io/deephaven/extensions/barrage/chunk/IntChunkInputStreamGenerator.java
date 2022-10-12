@@ -34,7 +34,8 @@ import static io.deephaven.util.QueryConstants.*;
 public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<IntChunk<Values>> {
     private static final String DEBUG_NAME = "IntChunkInputStreamGenerator";
 
-    public static IntChunkInputStreamGenerator convertBoxed(final ObjectChunk<Integer, Values> inChunk) {
+    public static IntChunkInputStreamGenerator convertBoxed(
+            final ObjectChunk<Integer, Values> inChunk, final long rowOffset) {
         // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
         WritableIntChunk<Values> outChunk = WritableIntChunk.makeWritableChunk(inChunk.size());
         for (int i = 0; i < inChunk.size(); ++i) {
@@ -44,11 +45,11 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
         if (inChunk instanceof PoolableChunk) {
             ((PoolableChunk) inChunk).close();
         }
-        return new IntChunkInputStreamGenerator(outChunk, Integer.BYTES);
+        return new IntChunkInputStreamGenerator(outChunk, Integer.BYTES, rowOffset);
     }
 
-    IntChunkInputStreamGenerator(final IntChunk<Values> chunk, final int elementSize) {
-        super(chunk, elementSize);
+    IntChunkInputStreamGenerator(final IntChunk<Values> chunk, final int elementSize, final long rowOffset) {
+        super(chunk, elementSize, rowOffset);
     }
 
     @Override

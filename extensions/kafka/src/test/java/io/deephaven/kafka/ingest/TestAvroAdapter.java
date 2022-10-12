@@ -4,7 +4,6 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -18,8 +17,9 @@ import org.apache.avro.generic.GenericData;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import java.io.File;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,15 +27,19 @@ import java.util.regex.Pattern;
 
 public class TestAvroAdapter {
     @NotNull
-    private File getSchemaFile(String name) {
-        final String avscPath =
-                Configuration.getInstance().getDevRootPath() + "/extensions/kafka/src/test/resources/avro-examples/";
-        return new File(avscPath + name);
+    private InputStream getSchemaFile(String name) {
+        return new BufferedInputStream(TestAvroAdapter.class.getResourceAsStream("/avro-examples/" + name));
+    }
+
+    private Schema getSchema(String name) throws IOException {
+        try (final InputStream in = getSchemaFile(name)) {
+            return new Schema.Parser().parse(in);
+        }
     }
 
     @Test
     public void testSimple() throws IOException {
-        final Schema avroSchema = new Schema.Parser().parse(getSchemaFile("pageviews.avc"));
+        final Schema avroSchema = getSchema("pageviews.avc");
 
         final String[] names = new String[] {"viewtime", "userid", "pageid"};
         final Class<?>[] types = new Class[] {long.class, String.class, String.class};
@@ -84,7 +88,7 @@ public class TestAvroAdapter {
 
     @Test
     public void testTimestamp() throws IOException {
-        final Schema avroSchema = new Schema.Parser().parse(getSchemaFile("fieldtest.avsc"));
+        final Schema avroSchema = getSchema("fieldtest.avsc");
 
         final String[] names = new String[] {"last_name", "number", "truthiness", "timestamp", "timestampMicros",
                 "timeMillis", "timeMicros"};

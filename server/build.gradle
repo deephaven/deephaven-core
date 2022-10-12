@@ -99,3 +99,7 @@ dependencies {
 }
 
 TestTools.addEngineOutOfBandTest(project)
+
+test {
+    systemProperty 'ApplicationConfigs.testAppDir', layout.projectDirectory.dir('src/test/app.d/').toString()
+}

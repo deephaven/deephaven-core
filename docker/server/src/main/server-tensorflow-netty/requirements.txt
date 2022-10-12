@@ -3,7 +3,7 @@ astunparse==1.6.3
 cachetools==5.2.0
 certifi==2022.9.24
 charset-normalizer==2.1.1
-deephaven-plugin==0.2.0
+deephaven-plugin==0.3.0
 flatbuffers==2.0.7
 gast==0.4.0
 google-auth==2.12.0
@@ -42,8 +42,8 @@ tensorflow==2.7.4
 tensorflow-estimator==2.7.0
 tensorflow-io-gcs-filesystem==0.27.0
 termcolor==2.0.1
-typing_extensions==4.3.0
+typing_extensions==4.4.0
 urllib3==1.26.12
 Werkzeug==2.2.2
 wrapt==1.14.1
-zipp==3.8.1
+zipp==3.9.0

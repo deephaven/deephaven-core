@@ -3,7 +3,6 @@
  */
 package io.deephaven.plot.util;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.DataSeries;
 import io.deephaven.plot.datasets.multiseries.MultiSeries;
@@ -1027,15 +1026,13 @@ public class GenerateFigureImmutable {
     public static void main(String[] args) throws ClassNotFoundException, IOException {
         String devroot = null;
         boolean assertNoChange = false;
-        if (args.length == 0) {
-            devroot = Configuration.getInstance().getDevRootPath();
-        } else if (args.length == 1) {
+        if (args.length == 1) {
             devroot = args[0];
         } else if (args.length == 2) {
             devroot = args[0];
             assertNoChange = Boolean.parseBoolean(args[1]);
         } else {
-            System.out.println("Usage: [<devroot> [assertNoChange]]");
+            System.out.println("Usage: <devroot> [assertNoChange]");
             System.exit(-1);
         }
 

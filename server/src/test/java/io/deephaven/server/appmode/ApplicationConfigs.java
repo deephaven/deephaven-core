@@ -50,7 +50,7 @@ public class ApplicationConfigs {
     }
 
     static Path testAppDir() {
-        return Paths.get(System.getProperty("devroot")).resolve("server/src/test/app.d");
+        return Paths.get(System.getProperty("ApplicationConfigs.testAppDir"));
     }
 
     public static class App00 implements Application.Factory {

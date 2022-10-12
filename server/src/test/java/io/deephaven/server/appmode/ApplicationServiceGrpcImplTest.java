@@ -44,7 +44,7 @@ public class ApplicationServiceGrpcImplTest {
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
                 authContext -> new SessionState(scheduler, ExecutionContext::createForUnitTests, authContext),
-                TOKEN_EXPIRE_MS, Optional.empty(), Collections.emptyMap());
+                TOKEN_EXPIRE_MS, Collections.emptyMap());
         applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(scheduler, sessionService,
                 new TypeLookup(ObjectTypeLookup.NoOp.INSTANCE));
     }

@@ -8,13 +8,13 @@ description 'Kafka: Integrating Engine tables with Kafka'
 dependencies {
     api project(':engine-table')
 
-    api 'org.apache.avro:avro:1.11.0'
+    api 'org.apache.avro:avro:1.11.1'
 
     // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
     // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central
     // version, but has a different version to make it easier to keep confluent dependencies aligned.
-    api 'org.apache.kafka:kafka-clients:7.1.1-ccs'
-    api 'io.confluent:kafka-avro-serializer:7.1.1'
+    api 'org.apache.kafka:kafka-clients:7.2.1-ccs'
+    api 'io.confluent:kafka-avro-serializer:7.2.1'
 
     implementation project(':Configuration')
     implementation project(':log-factory')

@@ -148,7 +148,7 @@ std::shared_ptr<SubscriptionHandle> SubscribeState::invokeHelper() {
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteMetadata(std::move(buffer))));
 
   // Run forever (until error or cancellation)
-  auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(colDefs_),
+  auto processor = UpdateProcessor::startThread(std::move(fsw), std::move(fsr), std::move(colDefs_),
       std::move(callback_));
   return std::make_shared<CancelWrapper>(std::move(processor));
 }

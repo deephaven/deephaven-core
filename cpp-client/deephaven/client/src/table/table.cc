@@ -28,20 +28,29 @@ void printTableData(std::ostream &stream, const Table &table,
     bool wantHeaders, bool wantRowNumbers, bool highlightCells);
 }  // namespace
 
-std::shared_ptr<ColumnSource> Table::getColumn(std::string_view name, bool strict) const {
+size_t Table::getColumnIndex(std::string_view name, bool strict) const {
   // TODO(kosak): improve linear search.
   const auto &cols = schema().columns();
   for (size_t i = 0; i < cols.size(); ++i) {
     if (cols[i].first == name) {
-      return getColumn(i);
+      return i;
     }
   }
+
   // Not found: check strictness flag.
   if (strict) {
     auto message = stringf("Column name '%o' not found", name);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
-  return {};
+  return (size_t)-1;
+}
+
+std::shared_ptr<ColumnSource> Table::getColumn(std::string_view name, bool strict) const {
+  auto index = getColumnIndex(name, strict);
+  if (index == (size_t)-1) {
+    return {};
+  }
+  return getColumn(index);
 }
 
 internal::TableStreamAdaptor Table::stream(bool wantHeaders, bool wantRowNumbers) const {
