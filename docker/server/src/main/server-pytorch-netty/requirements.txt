@@ -2,7 +2,7 @@ absl-py==1.2.0
 cachetools==5.2.0
 certifi==2022.9.24
 charset-normalizer==2.1.1
-deephaven-plugin==0.2.0
+deephaven-plugin==0.3.0
 google-auth==2.12.0
 google-auth-oauthlib==0.4.6
 grpcio==1.49.1
@@ -30,7 +30,7 @@ tensorboard==2.10.1
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 torch==1.10.2
-typing_extensions==4.3.0
+typing_extensions==4.4.0
 urllib3==1.26.12
 Werkzeug==2.2.2
-zipp==3.8.1
+zipp==3.9.0

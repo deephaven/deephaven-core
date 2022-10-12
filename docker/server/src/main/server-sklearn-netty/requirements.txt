@@ -1,4 +1,4 @@
-deephaven-plugin==0.2.0
+deephaven-plugin==0.3.0
 importlib-metadata==5.0.0
 java-utilities==0.2.0
 joblib==1.2.0
@@ -13,5 +13,5 @@ scikit-learn==0.24.2
 scipy==1.7.3
 six==1.16.0
 threadpoolctl==3.1.0
-typing_extensions==4.3.0
-zipp==3.8.1
+typing_extensions==4.4.0
+zipp==3.9.0
