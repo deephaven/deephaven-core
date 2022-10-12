@@ -170,7 +170,7 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asInteger.listenForUpdates(asIntegerListener);
+            asInteger.addUpdateListener(asIntegerListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() ->
@@ -213,7 +213,7 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asInteger.listenForUpdates(asIntegerListener);
+            asInteger.addUpdateListener(asIntegerListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

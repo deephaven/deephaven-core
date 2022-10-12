@@ -2996,7 +2996,7 @@ public class QueryTableAggregationTest {
             this.originalValue = e();
 
             ((QueryTable) originalValue)
-                    .listenForUpdates(new InstrumentedTableUpdateListener("Failure Listener") {
+                    .addUpdateListener(new InstrumentedTableUpdateListener("Failure Listener") {
                         @Override
                         public void onUpdate(final TableUpdate update) {}
 
@@ -3058,7 +3058,7 @@ public class QueryTableAggregationTest {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(), c("x", 1, 2, 3, 2));
         final QueryTable result = (QueryTable) (table.selectDistinct("x"));
         final io.deephaven.engine.table.impl.QueryTableTestBase.ListenerWithGlobals listener;
-        result.listenForUpdates(listener = base.newListenerWithGlobals(result));
+        result.addUpdateListener(listener = base.newListenerWithGlobals(result));
 
         // this should result in an new output row
         System.out.println("Adding key 4.");
@@ -3231,7 +3231,7 @@ public class QueryTableAggregationTest {
                         System.out.println(upstream);
                     }
                 };
-        reversedFlat.listenForUpdates(adapter);
+        reversedFlat.addUpdateListener(adapter);
 
         assertTableEquals(newTable(col("Sentinel", 0)), last);
 
@@ -3414,11 +3414,11 @@ public class QueryTableAggregationTest {
         assertTableEquals(subTable, table);
 
         final FuzzerPrintListener printListener = new FuzzerPrintListener("original", table, 0);
-        table.listenForUpdates(printListener);
+        table.addUpdateListener(printListener);
         final FuzzerPrintListener flatPrintListener = new FuzzerPrintListener("flat", flat, 0);
-        flat.listenForUpdates(flatPrintListener);
+        flat.addUpdateListener(flatPrintListener);
         final FuzzerPrintListener subPrintListener = new FuzzerPrintListener("subTable", subTable, 0);
-        subTable.listenForUpdates(subPrintListener);
+        subTable.addUpdateListener(subPrintListener);
 
         final int newSize = 5;
         final int[] sentinel2 = new int[newSize];
@@ -3521,16 +3521,16 @@ public class QueryTableAggregationTest {
         final QueryTable source = TstUtils.testRefreshingTable(i(9, 10).toTracking(),
                 col("Key", "A", "A"), intCol("Sentinel", 9, 10));
         final FuzzerPrintListener soucePrinter = new FuzzerPrintListener("source", source);
-        source.listenForUpdates(soucePrinter);
+        source.addUpdateListener(soucePrinter);
 
         final QueryTable exposedLastBy = (QueryTable) source.aggBy(Aggregation.AggLastRowKey("ExposedRowRedirection"),
                 "Key");
         final TableUpdateValidator validator = TableUpdateValidator.make(exposedLastBy);
         final QueryTable validatorResult = validator.getResultTable();
         final FailureListener validatorListener = new FailureListener();
-        validatorResult.listenForUpdates(validatorListener);
+        validatorResult.addUpdateListener(validatorListener);
         final FuzzerPrintListener printListener = new FuzzerPrintListener("exposedLastBy", exposedLastBy);
-        exposedLastBy.listenForUpdates(printListener);
+        exposedLastBy.addUpdateListener(printListener);
 
         System.out.println("Starting:");
         TableTools.showWithRowSet(exposedLastBy);

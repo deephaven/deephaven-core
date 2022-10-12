@@ -385,7 +385,7 @@ class TableListenerHandle:
                 if do_replay:
                     self.listener.replay()
 
-                self.t.j_table.listenForUpdates(self.listener)
+                self.t.j_table.addUpdateListener(self.listener)
 
             if do_replay:
                 _do_locked(_start, lock_type=replay_lock)

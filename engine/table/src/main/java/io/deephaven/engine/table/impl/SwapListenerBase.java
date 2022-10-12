@@ -179,7 +179,7 @@ public abstract class SwapListenerBase<T extends TableListener> extends Liveness
     }
 
     /**
-     * Invoke {@link QueryTable#listenForUpdates} for the appropriate subclass of {@link SwapListenerBase}.
+     * Invoke {@link QueryTable#addUpdateListener} for the appropriate subclass of {@link SwapListenerBase}.
      */
     public abstract void subscribeForUpdates();
 

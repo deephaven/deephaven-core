@@ -53,7 +53,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
@@ -111,7 +111,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
@@ -163,7 +163,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {

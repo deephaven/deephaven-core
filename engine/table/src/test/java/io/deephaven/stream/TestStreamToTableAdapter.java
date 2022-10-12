@@ -56,7 +56,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
@@ -232,7 +232,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
@@ -302,7 +302,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
@@ -361,7 +361,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
@@ -440,7 +440,7 @@ public class TestStreamToTableAdapter {
                 listenerFailed.setTrue();
             }
         };
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         streamPublisher.fail = true;
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);

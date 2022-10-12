@@ -59,7 +59,7 @@ void maybeAddValidator(ArrayList<TableUpdateValidator> list, String variable) {
             validator = TableUpdateValidator.make(variable, table)
             if(null != validator) {
                 list.add( validator )
-                validator.getResultTable().listenForUpdates(new FailureListener())
+                validator.getResultTable().addUpdateListener(new FailureListener())
             }
         }
     }
@@ -76,7 +76,7 @@ void maybeAddValidator(ArrayList<TableUpdateValidator> list, String variable) {
 void addPrintListener(String variable, List printListeners) {
     def table = getBinding().getVariable(variable)
     pl = new FuzzerPrintListener(variable, table)
-    table.listenForUpdates(pl)
+    table.addUpdateListener(pl)
     printListeners.add(pl);
 }
 

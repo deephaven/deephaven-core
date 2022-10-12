@@ -37,7 +37,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         this.cKey = new ArrayTuple("C", 3);
         this.keyedTableListener = new KeyedTableListener(table, "Key1", "Key2");
         // enable immediately
-        UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(() -> this.keyedTableListener.listenForUpdates());
+        UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(() -> this.keyedTableListener.addUpdateListener());
     }
 
     @Override

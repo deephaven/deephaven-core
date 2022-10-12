@@ -79,7 +79,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     {
         // subscribe before the validator in case we are printing table updates
         if (originalValue instanceof QueryTable) {
-            ((QueryTable) originalValue).listenForUpdates(failureListener);
+            ((QueryTable) originalValue).addUpdateListener(failureListener);
         }
     }
 
@@ -87,7 +87,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     {
         if (originalValue instanceof QueryTable && ((QueryTable) originalValue).isRefreshing()) {
             validator = TableUpdateValidator.make((QueryTable) originalValue);
-            validator.getResultTable().listenForUpdates(failureListener);
+            validator.getResultTable().addUpdateListener(failureListener);
         } else {
             validator = null;
         }

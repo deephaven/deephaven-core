@@ -47,7 +47,7 @@ public class GroupingValidator extends InstrumentedTableUpdateListenerAdapter {
         validateGroupings(groupingColumns, source.getRowSet());
         validatePrevGroupings(groupingColumns, source.getRowSet());
 
-        source.listenForUpdates(this);
+        source.addUpdateListener(this);
     }
 
     private void validateGroupings(Collection<String[]> groupingColumns, RowSet rowSet) {

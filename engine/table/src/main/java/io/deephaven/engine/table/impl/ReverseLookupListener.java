@@ -174,7 +174,7 @@ public class ReverseLookupListener extends LivenessArtifact
         final ShiftObliviousSwapListener swapListener;
         if (source.isRefreshing()) {
             swapListener = new ShiftObliviousSwapListener(source);
-            source.listenForUpdates(swapListener);
+            source.addUpdateListener(swapListener);
         } else {
             swapListener = null;
         }
@@ -205,7 +205,7 @@ public class ReverseLookupListener extends LivenessArtifact
     public static ReverseLookupListener makeReverseLookupListenerWithLock(Table source, String... columns) {
         UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         final ReverseLookupListener result = new ReverseLookupListener(source, columns);
-        source.listenForUpdates(result.listener);
+        source.addUpdateListener(result.listener);
         return result;
     }
 

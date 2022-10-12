@@ -298,7 +298,7 @@ public class FuzzerTest {
         System.out.println();
         if (table.isRefreshing()) {
             final FuzzerPrintListener listener = new FuzzerPrintListener(variable, table);
-            table.listenForUpdates(listener);
+            table.addUpdateListener(listener);
             hardReferences.put("print_" + System.identityHashCode(table), listener);
         }
     }
@@ -336,7 +336,7 @@ public class FuzzerTest {
     private void addValidator(Map<String, Object> hardReferences, String description, QueryTable v) {
         final TableUpdateValidator validator = TableUpdateValidator.make(description, v);
         final FailureListener listener = new FailureListener();
-        validator.getResultTable().listenForUpdates(listener);
+        validator.getResultTable().addUpdateListener(listener);
         hardReferences.put(description, listener);
     }
 }

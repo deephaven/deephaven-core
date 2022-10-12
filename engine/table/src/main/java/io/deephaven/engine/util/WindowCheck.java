@@ -92,7 +92,7 @@ public class WindowCheck {
         final TimeWindowListener timeWindowListener =
                 new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, table, result);
         recorder.setMergedListener(timeWindowListener);
-        table.listenForUpdates(recorder);
+        table.addUpdateListener(recorder);
         table.getRowSet().forAllRowKeys(timeWindowListener::addIndex);
         result.addParentReference(timeWindowListener);
         result.manage(table);

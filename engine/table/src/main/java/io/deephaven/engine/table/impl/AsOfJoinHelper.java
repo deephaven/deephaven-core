@@ -303,7 +303,7 @@ public class AsOfJoinHelper {
         final ModifiedColumnSet.Transformer leftTransformer =
                 leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
 
-        leftTable.listenForUpdates(new BaseTable.ListenerImpl(makeListenerDescription(columnsToMatch,
+        leftTable.addUpdateListener(new BaseTable.ListenerImpl(makeListenerDescription(columnsToMatch,
                 stampPair, columnsToAdd, order == SortingOrder.Descending, disallowExactMatch), leftTable, result) {
             @Override
             public void onUpdate(TableUpdate upstream) {
@@ -616,7 +616,7 @@ public class AsOfJoinHelper {
         final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders =
                 new ObjectArraySource<>(RowSetBuilderSequential.class);
 
-        rightTable.listenForUpdates(new BaseTable.ListenerImpl(
+        rightTable.addUpdateListener(new BaseTable.ListenerImpl(
                 makeListenerDescription(columnsToMatch, stampPair, columnsToAdd, reverse, disallowExactMatch),
                 rightTable, result) {
             @Override
@@ -1029,8 +1029,8 @@ public class AsOfJoinHelper {
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
 
-        leftTable.listenForUpdates(leftRecorder);
-        rightTable.listenForUpdates(rightRecorder);
+        leftTable.addUpdateListener(leftRecorder);
+        rightTable.addUpdateListener(rightRecorder);
 
         result.addParentReference(mergedJoinListener);
 
@@ -1076,8 +1076,8 @@ public class AsOfJoinHelper {
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
 
-        leftTable.listenForUpdates(leftRecorder);
-        rightTable.listenForUpdates(rightRecorder);
+        leftTable.addUpdateListener(leftRecorder);
+        rightTable.addUpdateListener(rightRecorder);
 
         result.addParentReference(mergedJoinListener);
 
@@ -1166,7 +1166,7 @@ public class AsOfJoinHelper {
         final ChunkEquals stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
         final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType);
 
-        rightTable.listenForUpdates(
+        rightTable.addUpdateListener(
                 new BaseTable.ListenerImpl(makeListenerDescription(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
                         stampPair, columnsToAdd, reverse, disallowExactMatch), rightTable, result) {
                     @Override
@@ -1461,7 +1461,7 @@ public class AsOfJoinHelper {
             }
 
             leftTable
-                    .listenForUpdates(
+                    .addUpdateListener(
                             new BaseTable.ListenerImpl(
                                     makeListenerDescription(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, stampPair,
                                             columnsToAdd, order == SortingOrder.Descending, disallowExactMatch),

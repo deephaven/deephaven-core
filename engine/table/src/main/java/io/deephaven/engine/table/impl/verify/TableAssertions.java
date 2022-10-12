@@ -66,7 +66,7 @@ public class TableAssertions {
                             coalesced.getColumnSourceMap());
                     final TableUpdateListener listener =
                             new AppendOnlyAssertionInstrumentedListenerAdapter(description, coalesced, result);
-                    coalesced.listenForUpdates(listener);
+                    coalesced.addUpdateListener(listener);
 
                     return result;
                 });
@@ -124,7 +124,7 @@ public class TableAssertions {
                             new QueryTable(coalesced.getRowSet(), coalesced.getColumnSourceMap());
                     final TableUpdateListener listener = new SortedAssertionInstrumentedListenerAdapter(description,
                             coalesced, result, column, order);
-                    coalesced.listenForUpdates(listener);
+                    coalesced.addUpdateListener(listener);
                     ((BaseTable) table).copyAttributes(result, s -> true);
                     SortedColumnsAttribute.setOrderForColumn(result, column, order);
                     return result;

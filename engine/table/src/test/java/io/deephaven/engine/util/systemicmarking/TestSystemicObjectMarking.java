@@ -35,7 +35,7 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
         assertFalse(updated2.isFailed());
 
         final ErrorListener errorListener2 = new ErrorListener((QueryTable)updated2);
-        ((QueryTable) updated2).listenForUpdates(errorListener2);
+        ((QueryTable) updated2).addUpdateListener(errorListener2);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(4, 5), c("Str", "e", "f"), c("Str2", "E", null));
@@ -48,14 +48,14 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
         assertEquals("In formula: LC = Str2.toLowerCase()", errorListener2.originalException().getMessage());
 
         try {
-            updated2.listenForUpdates(new ErrorListener(updated2));
+            updated2.addUpdateListener(new ErrorListener(updated2));
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
         }
 
         final ErrorListener errorListener = new ErrorListener((QueryTable)updated);
-        ((QueryTable) updated).listenForUpdates(errorListener);
+        ((QueryTable) updated).addUpdateListener(errorListener);
 
         allowingError(() -> {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

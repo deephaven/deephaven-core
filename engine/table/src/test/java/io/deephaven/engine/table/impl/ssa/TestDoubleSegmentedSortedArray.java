@@ -170,7 +170,7 @@ public class TestDoubleSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asDouble.listenForUpdates(asDoubleListener);
+            asDouble.addUpdateListener(asDoubleListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() ->
@@ -213,7 +213,7 @@ public class TestDoubleSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asDouble.listenForUpdates(asDoubleListener);
+            asDouble.addUpdateListener(asDoubleListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

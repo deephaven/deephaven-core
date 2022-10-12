@@ -125,7 +125,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     }
                 }
             };
-            setTable.listenForUpdates(setUpdateListener);
+            setTable.addUpdateListener(setUpdateListener);
 
             manage(setUpdateListener);
         } else {

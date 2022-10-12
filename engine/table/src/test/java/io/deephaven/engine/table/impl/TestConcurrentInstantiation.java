@@ -898,7 +898,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                                 }
                             };
                     listeners.add(listener);
-                    dynamicTable.listenForUpdates(listener);
+                    dynamicTable.addUpdateListener(listener);
                 }
                 lastResultSize = results.size();
                 UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
