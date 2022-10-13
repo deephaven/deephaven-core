@@ -246,8 +246,9 @@ public class ConstructSnapshot {
          *         inconsistent
          */
         private void failIfConcurrentAttemptInconsistent() {
-            if (concurrentAttemptInconsistent())
+            if (concurrentAttemptInconsistent()) {
                 throw new SnapshotInconsistentException();
+            }
         }
 
         /**
