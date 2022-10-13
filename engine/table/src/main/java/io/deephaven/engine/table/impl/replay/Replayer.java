@@ -213,6 +213,11 @@ public class Replayer implements ReplayerInterface, Runnable {
         return Instant.ofEpochSecond(0, resultNanos);
     }
 
+    @Override
+    public long nanoTime() {
+        return currentTimeNanos();
+    }
+
     /**
      * Sets the current replay time.
      *

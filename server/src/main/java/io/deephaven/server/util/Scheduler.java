@@ -91,6 +91,11 @@ public interface Scheduler extends TimeProvider {
         }
 
         @Override
+        public long nanoTime() {
+            return DateTimeUtils.nanoTime();
+        }
+
+        @Override
         public void runAtTime(@NotNull final DateTime absoluteTime, final @NotNull Runnable command) {
             runAfterDelay(absoluteTime.getMillis() - currentTimeMillis(), command);
         }

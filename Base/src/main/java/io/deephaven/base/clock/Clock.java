@@ -6,7 +6,7 @@ package io.deephaven.base.clock;
 import java.time.Instant;
 
 /**
- * Provides epoch-based timestamps.
+ * Provides time methods.
  */
 public interface Clock {
 
@@ -40,4 +40,21 @@ public interface Clock {
      * @return the instant
      */
     Instant currentTimeInstant();
+
+    /**
+     * Provides a nanosecond timer for measuring elapsed time. This may not be related to any notion of system or
+     * wall-clock time, so the results should only be compared with results from like-calls.
+     *
+     * <p>
+     * For example, to measure how long some code takes to execute:
+     * 
+     * <pre>
+     *     long startNanoTime = clock.nanoTime();
+     *     // ... the code being measured ...
+     *     long elapsedNanos = clock.nanoTime() - startNanoTime;
+     * </pre>
+     * 
+     * @return the nano time
+     */
+    long nanoTime();
 }

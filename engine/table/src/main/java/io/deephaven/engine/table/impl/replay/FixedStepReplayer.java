@@ -44,6 +44,11 @@ public class FixedStepReplayer extends Replayer {
     }
 
     @Override
+    public long nanoTime() {
+        return currentTime.getNanos();
+    }
+
+    @Override
     public void run() {
         currentTime = DateTimeUtils.plus(currentTime, incrementNanos);
         if (currentTime.getNanos() > endTime.getNanos()) {

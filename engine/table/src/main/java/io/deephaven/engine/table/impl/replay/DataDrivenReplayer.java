@@ -46,6 +46,11 @@ public class DataDrivenReplayer extends Replayer {
         return currentTime.getInstant();
     }
 
+    @Override
+    public long nanoTime() {
+        return currentTime.getNanos();
+    }
+
     TLongArrayList allTimestamp = new TLongArrayList();
 
     @Override

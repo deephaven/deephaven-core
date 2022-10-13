@@ -1272,6 +1272,13 @@ public class DateTimeUtils {
         return RealTimeClock.INSTANCE.currentTimeInstant();
     }
 
+    public static long nanoTime() {
+        if (timeProvider != null) {
+            return timeProvider.nanoTime();
+        }
+        return RealTimeClock.INSTANCE.nanoTime();
+    }
+
     public static TimeProvider currentTimeProvider() {
         return TimeProviderImpl.INSTANCE;
     }
@@ -2396,6 +2403,11 @@ public class DateTimeUtils {
         @Override
         public Instant currentTimeInstant() {
             return DateTimeUtils.currentTimeInstant();
+        }
+
+        @Override
+        public long nanoTime() {
+            return DateTimeUtils.nanoTime();
         }
     }
 }

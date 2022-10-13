@@ -37,4 +37,9 @@ public enum RealTimeClock implements Clock {
     public Instant currentTimeInstant() {
         return java.time.Clock.systemUTC().instant();
     }
+
+    @Override
+    public long nanoTime() {
+        return System.nanoTime();
+    }
 }
