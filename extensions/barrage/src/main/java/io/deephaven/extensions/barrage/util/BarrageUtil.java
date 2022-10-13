@@ -175,7 +175,7 @@ public class BarrageUtil {
             putMetadata(schemaMetadata, "unsent." + ATTR_ATTR_TAG + "." + unsentAttribute, "");
         }
 
-        final Map<String, Field> fields = new LinkedHashMap<>();
+        final List<Field> fields = new ArrayList<>();
         for (final ColumnDefinition<?> column : table.getColumns()) {
             final String colName = column.getName();
             final Map<String, String> extraMetadata = getExtraMetadata.apply(colName);
@@ -192,12 +192,12 @@ public class BarrageUtil {
                 putMetadata(extraMetadata, "dateFormatColumn", colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
             }
 
-            // TODO-RWC: Use a list, not a map, and add constituent=true metadata for secondary definition
+            // TODO-RWC: Add constituent=true metadata for secondary definition
             // TODO-RWC: Remember to reinterpret to primitive when chunk filling.
-            fields.put(colName, arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
+            fields.add(arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
         }
 
-        return new Schema(new ArrayList<>(fields.values()), schemaMetadata).getSchema(builder);
+        return new Schema(fields, schemaMetadata).getSchema(builder);
     }
 
     private static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
