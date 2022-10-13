@@ -27,3 +27,7 @@ dependencies {
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
+
+test {
+    jvmArgs '--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED'
+}

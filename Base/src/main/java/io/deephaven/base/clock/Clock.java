@@ -14,6 +14,9 @@ public interface Clock {
     long currentTimeNanos();
 
     final class Null implements Clock {
+
+        private Null() {}
+
         @Override
         public long currentTimeMillis() {
             return 0;
@@ -33,6 +36,8 @@ public interface Clock {
     Null NULL = new Null();
 
     final class SystemClock implements Clock {
+
+        private SystemClock() {}
 
         RealTimeClock REAL_TIME_CLOCK = RealTimeClock.loadImpl();
 

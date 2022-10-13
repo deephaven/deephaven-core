@@ -45,7 +45,7 @@ if (!hasProperty('excludeClockImpl')) {
     dependencies {
         runtimeOnly project(':clock-impl')
     }
-    extraJvmArgs += ['--add-opens', 'java.management/sun.management=ALL-UNNAMED']
+    extraJvmArgs += ['--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED']
 }
 
 if (hasProperty('devCerts') || hasProperty('devMTLS')) {

@@ -19,5 +19,6 @@ public interface RealTimeClock {
     default long currentTimeMicros() {
         return currentTimeNanos() / 1000L;
     }
+
     long currentTimeNanos();
 }

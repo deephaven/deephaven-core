@@ -82,6 +82,8 @@ Finally, Gradle can be used to update the build and run the application in a sin
 `--add-opens java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `includeHotspotImpl`
 to `false`.
 
+... also clockImpl and java.base/jdk.internal.misc=ALL-UNNAMED
+
 ### Configuration / SSL
 
 By default, the server starts up on all interfaces with plaintext port 10000 (port 443 when SSL is enabled), a token

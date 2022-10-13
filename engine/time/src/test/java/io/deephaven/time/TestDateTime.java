@@ -211,7 +211,6 @@ public class TestDateTime extends BaseArrayTestCase {
 
         isAfter(
                 nowDateTime,
-                DateTimeUtils.nanosToTime(nowInstant.getEpochSecond() * 1000000000 + nowInstant.getNano())
-        );
+                DateTimeUtils.nanosToTime(nowInstant.getEpochSecond() * 1000000000 + nowInstant.getNano()));
     }
 }

@@ -3,11 +3,11 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.time.ClockTimeProvider;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.time.TimeProvider;
@@ -182,7 +182,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
 
     @NotNull
     private static ClockTimeProvider getRealTimeProvider() {
-        return new ClockTimeProvider(new RealTimeClock());
+        return new ClockTimeProvider(Clock.SYSTEM);
     }
 
     /**

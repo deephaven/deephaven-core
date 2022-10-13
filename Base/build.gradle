@@ -9,6 +9,7 @@ dependencies {
     compileOnlyApi depAnnotations
     implementation depCommonsLang3
     implementation project(':clock')
+    testRuntimeOnly project(':clock-impl')
 
     api 'io.deephaven:hash:0.1.0'
 
