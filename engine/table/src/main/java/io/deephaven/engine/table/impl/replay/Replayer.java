@@ -18,6 +18,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -206,6 +207,18 @@ public class Replayer implements ReplayerInterface, Runnable {
             return endTime;
         }
         return new DateTime(resultNanos);
+    }
+
+    @Override
+    public Instant currentTimeInstant() {
+        if (delta == Long.MAX_VALUE) {
+            return startTime.getInstant();
+        }
+        final long resultNanos = System.currentTimeMillis() * 1_000_000_000 - delta;
+        if (resultNanos >= endTime.getNanos()) {
+            return endTime.getInstant();
+        }
+        return Instant.ofEpochSecond(0, resultNanos);
     }
 
     /**

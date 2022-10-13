@@ -158,9 +158,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return a Java Instant representing this DateTime
      */
     public Instant getInstant() {
-        long epochSecond = nanos / 1000000000;
-        long nanoAdjustment = nanos % 1000000000;
-        return Instant.ofEpochSecond(epochSecond, nanoAdjustment);
+        return Instant.ofEpochSecond(0, nanos);
     }
 
     @Override

@@ -3,34 +3,41 @@
  */
 package io.deephaven.base.clock;
 
+import java.time.Instant;
+
+/**
+ * Provides epoch-based timestamps.
+ */
 public interface Clock {
 
+    /**
+     * Milliseconds since the epoch, 1970-01-01T00:00:00Z.
+     *
+     * @return epoch millis
+     */
     long currentTimeMillis();
 
+    /**
+     * Microseconds since the epoch, 1970-01-01T00:00:00Z.
+     *
+     * @return epoch microseconds
+     */
     long currentTimeMicros();
 
+    /**
+     * Nanoseconds since the epoch, 1970-01-01T00:00:00Z.
+     *
+     * <p>
+     * Note: this value will overflow in the year 2292.
+     *
+     * @return epoch nanoseconds
+     */
     long currentTimeNanos();
 
-    interface Factory {
-        Clock getClock();
-    }
-
-    class Null implements Clock {
-        @Override
-        public long currentTimeMillis() {
-            return 0;
-        }
-
-        @Override
-        public long currentTimeMicros() {
-            return 0;
-        }
-
-        @Override
-        public long currentTimeNanos() {
-            return 0;
-        }
-    }
-
-    Null NULL = new Null();
+    /**
+     * The instant.
+     *
+     * @return the instant
+     */
+    Instant currentTimeInstant();
 }

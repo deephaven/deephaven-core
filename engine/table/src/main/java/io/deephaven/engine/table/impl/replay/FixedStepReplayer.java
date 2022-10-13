@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 
+import java.time.Instant;
+
 public class FixedStepReplayer extends Replayer {
     private long incrementNanos;
     private DateTime currentTime;
@@ -34,6 +36,11 @@ public class FixedStepReplayer extends Replayer {
     @Override
     public long currentTimeNanos() {
         return currentTime.getNanos();
+    }
+
+    @Override
+    public Instant currentTimeInstant() {
+        return currentTime.getInstant();
     }
 
     @Override

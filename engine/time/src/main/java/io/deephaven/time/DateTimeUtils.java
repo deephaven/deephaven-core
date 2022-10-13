@@ -1265,6 +1265,13 @@ public class DateTimeUtils {
         return RealTimeClock.INSTANCE.currentTimeNanos();
     }
 
+    public static Instant currentTimeInstant() {
+        if (timeProvider != null) {
+            return timeProvider.currentTimeInstant();
+        }
+        return RealTimeClock.INSTANCE.currentTimeInstant();
+    }
+
     public static TimeProvider currentTimeProvider() {
         return TimeProviderImpl.INSTANCE;
     }
@@ -2384,6 +2391,11 @@ public class DateTimeUtils {
         @Override
         public DateTime currentTime() {
             return DateTimeUtils.currentTime();
+        }
+
+        @Override
+        public Instant currentTimeInstant() {
+            return DateTimeUtils.currentTimeInstant();
         }
     }
 }

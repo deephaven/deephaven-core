@@ -9,12 +9,15 @@ import java.time.Instant;
 
 /**
  * This is the simplest possible "real" clock implementation.
+ *
+ * @see java.time.Clock#systemUTC()
  */
 public enum RealTimeClock implements Clock {
     INSTANCE;
 
     @Override
     public long currentTimeMillis() {
+        // See note in java.time.Clock.SystemClock#millis, this is the same source as java.time.Clock.systemUTC()
         return System.currentTimeMillis();
     }
 
@@ -28,5 +31,10 @@ public enum RealTimeClock implements Clock {
     public long currentTimeNanos() {
         final Instant now = java.time.Clock.systemUTC().instant();
         return now.getEpochSecond() * 1_000_000_000 + now.getNano();
+    }
+
+    @Override
+    public Instant currentTimeInstant() {
+        return java.time.Clock.systemUTC().instant();
     }
 }

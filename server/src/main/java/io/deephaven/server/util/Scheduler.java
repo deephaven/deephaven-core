@@ -8,6 +8,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -82,6 +83,11 @@ public interface Scheduler extends TimeProvider {
         @Override
         public long currentTimeNanos() {
             return DateTimeUtils.currentTimeNanos();
+        }
+
+        @Override
+        public Instant currentTimeInstant() {
+            return DateTimeUtils.currentTimeInstant();
         }
 
         @Override

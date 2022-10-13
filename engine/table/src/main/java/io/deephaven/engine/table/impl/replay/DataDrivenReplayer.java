@@ -9,6 +9,8 @@ import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.rowset.RowSet;
 
+import java.time.Instant;
+
 public class DataDrivenReplayer extends Replayer {
     private DateTime currentTime;
     private int pos;
@@ -37,6 +39,11 @@ public class DataDrivenReplayer extends Replayer {
     @Override
     public long currentTimeNanos() {
         return currentTime.getNanos();
+    }
+
+    @Override
+    public Instant currentTimeInstant() {
+        return currentTime.getInstant();
     }
 
     TLongArrayList allTimestamp = new TLongArrayList();
