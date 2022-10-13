@@ -94,13 +94,21 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
-        // Set up websockets for grpc-web - we register both in case we encounter a client using "vanilla"
+        // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
+        // client using "vanilla"
         // grpc-websocket, that can't multiplex all streams on a single socket
-        if (config.websocketsOrDefault()) {
+        if (config.websocketsOrDefault() != JettyConfig.WebsocketsSupport.NONE) {
             JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
-                Map<String, Supplier<Endpoint>> endpoints = Map.of(
-                        "grpc-websockets", () -> filter.create(WebSocketServerStream::new),
-                        "grpc-websockets-multiplex", () -> filter.create(MultiplexedWebSocketServerStream::new));
+                final Map<String, Supplier<Endpoint>> endpoints = new HashMap<>();
+                if (config.websocketsOrDefault() == JettyConfig.WebsocketsSupport.BOTH
+                        || config.websocketsOrDefault() == JettyConfig.WebsocketsSupport.GRPC_WEBSOCKET) {
+                    endpoints.put("grpc-websockets", () -> filter.create(WebSocketServerStream::new));
+                }
+                if (config.websocketsOrDefault() == JettyConfig.WebsocketsSupport.BOTH
+                        || config.websocketsOrDefault() == JettyConfig.WebsocketsSupport.GRPC_WEBSOCKET_MULTIPLEXED) {
+                    endpoints.put("grpc-websockets-multiplex",
+                            () -> filter.create(MultiplexedWebSocketServerStream::new));
+                }
                 container.addEndpoint(ServerEndpointConfig.Builder.create(GrpcWebsocket.class, "/{service}/{method}")
                         .configurator(new ServerEndpointConfig.Configurator() {
                             @Override
