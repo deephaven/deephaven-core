@@ -17,7 +17,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.table.impl.replay.Replayer;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -89,7 +88,7 @@ public class TimeTable extends QueryTable implements Runnable {
 
         public QueryTable build() {
             return new TimeTable(registrar,
-                    timeProvider == null ? Replayer.getTimeProvider(null) : timeProvider,
+                    timeProvider == null ? DateTimeUtils.currentTimeProvider() : timeProvider,
                     startTime, period, streamTable);
         }
     }

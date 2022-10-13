@@ -2107,6 +2107,11 @@ public class TstUtils {
         }
 
         @Override
+        public long currentTimeNanos() {
+            return nanoTimes[step];
+        }
+
+        @Override
         public void run() {
             step = Math.min(step + 1, nanoTimes.length - 1);
         }

@@ -80,7 +80,7 @@ public class SessionServiceTest {
         // let's advance by some reasonable amount and ensure that the token now refreshes
         scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
         final SessionService.TokenExpiration newToken = sessionService.refreshToken(session);
-        final long timeToNewExpiration = newToken.deadline.getMillis() - scheduler.currentTime().getMillis();
+        final long timeToNewExpiration = newToken.deadline.getMillis() - scheduler.currentTimeMillis();
         Assert.eq(timeToNewExpiration, "timeToNewExpiration", TOKEN_EXPIRE_MS);
 
         // ensure that the UUIDs are different so they may expire independently

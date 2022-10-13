@@ -70,8 +70,23 @@ public interface Scheduler extends TimeProvider {
         }
 
         @Override
+        public long currentTimeMillis() {
+            return DateTimeUtils.currentTimeMillis();
+        }
+
+        @Override
+        public long currentTimeMicros() {
+            return DateTimeUtils.currentTimeMicros();
+        }
+
+        @Override
+        public long currentTimeNanos() {
+            return DateTimeUtils.currentTimeNanos();
+        }
+
+        @Override
         public void runAtTime(@NotNull final DateTime absoluteTime, final @NotNull Runnable command) {
-            runAfterDelay(absoluteTime.getMillis() - currentTime().getMillis(), command);
+            runAfterDelay(absoluteTime.getMillis() - currentTimeMillis(), command);
         }
 
         @Override

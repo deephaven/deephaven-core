@@ -24,6 +24,21 @@ public class DataDrivenReplayer extends Replayer {
         return currentTime;
     }
 
+    @Override
+    public long currentTimeMillis() {
+        return currentTime.getMillis();
+    }
+
+    @Override
+    public long currentTimeMicros() {
+        return currentTime.getMicros();
+    }
+
+    @Override
+    public long currentTimeNanos() {
+        return currentTime.getNanos();
+    }
+
     TLongArrayList allTimestamp = new TLongArrayList();
 
     @Override

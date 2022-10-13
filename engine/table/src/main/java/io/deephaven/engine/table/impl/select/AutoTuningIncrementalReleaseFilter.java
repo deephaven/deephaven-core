@@ -182,7 +182,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
 
     @NotNull
     private static ClockTimeProvider getRealTimeProvider() {
-        return new ClockTimeProvider(new RealTimeClock());
+        return new ClockTimeProvider(RealTimeClock.INSTANCE);
     }
 
     /**

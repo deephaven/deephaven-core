@@ -22,6 +22,21 @@ public class FixedStepReplayer extends Replayer {
     }
 
     @Override
+    public long currentTimeMillis() {
+        return currentTime.getMillis();
+    }
+
+    @Override
+    public long currentTimeMicros() {
+        return currentTime.getMicros();
+    }
+
+    @Override
+    public long currentTimeNanos() {
+        return currentTime.getNanos();
+    }
+
+    @Override
     public void run() {
         currentTime = DateTimeUtils.plus(currentTime, incrementNanos);
         if (currentTime.getNanos() > endTime.getNanos()) {

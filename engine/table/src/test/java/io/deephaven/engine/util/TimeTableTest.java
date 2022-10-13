@@ -22,6 +22,7 @@ import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
+import io.deephaven.time.TimeProviderNanoBase;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,7 +44,12 @@ public class TimeTableTest extends RefreshingTableTestCase {
         super.setUp();
 
         now = new MutableLong(0);
-        timeProvider = () -> new DateTime(now.longValue());
+        timeProvider = new TimeProviderNanoBase() {
+            @Override
+            public long currentTimeNanos() {
+                return now.longValue();
+            }
+        };
         updateSourceCombiner = new UpdateSourceCombiner();
     }
 

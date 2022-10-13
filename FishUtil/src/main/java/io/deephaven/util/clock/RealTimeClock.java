@@ -5,10 +5,13 @@ package io.deephaven.util.clock;
 
 import io.deephaven.base.clock.Clock;
 
+import java.time.Instant;
+
 /**
  * This is the simplest possible "real" clock implementation.
  */
-public class RealTimeClock implements Clock {
+public enum RealTimeClock implements Clock {
+    INSTANCE;
 
     @Override
     public long currentTimeMillis() {
@@ -17,6 +20,13 @@ public class RealTimeClock implements Clock {
 
     @Override
     public long currentTimeMicros() {
-        return MicroTimer.currentTimeMicros();
+        final Instant now = java.time.Clock.systemUTC().instant();
+        return now.getEpochSecond() * 1_000_000 + now.getNano() / 1_000;
+    }
+
+    @Override
+    public long currentTimeNanos() {
+        final Instant now = java.time.Clock.systemUTC().instant();
+        return now.getEpochSecond() * 1_000_000_000 + now.getNano();
     }
 }

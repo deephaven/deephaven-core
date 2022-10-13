@@ -30,8 +30,6 @@ TrackedFileHandleFactory.maxOpenFiles=1024
 Calendar.default=USNYSE
 Calendar.importPath=/default_calendar_imports.txt
 
-NIO.wireLagClock.native=false
-
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
 ########## Deephaven Groovy and Python Session defaults ##########

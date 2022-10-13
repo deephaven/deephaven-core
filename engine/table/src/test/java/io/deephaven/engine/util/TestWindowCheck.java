@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.time.TimeProvider;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.TimeProviderNanoBase;
 import junit.framework.TestCase;
 
 import java.io.PrintWriter;
@@ -142,12 +143,12 @@ public class TestWindowCheck {
 
     }
 
-    private static class TestTimeProvider implements TimeProvider {
+    private static class TestTimeProvider extends TimeProviderNanoBase {
         long now = 0;
 
         @Override
-        public DateTime currentTime() {
-            return new DateTime(now);
+        public long currentTimeNanos() {
+            return now;
         }
     }
 

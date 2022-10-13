@@ -13,6 +13,7 @@ import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
+import io.deephaven.util.clock.RealTimeClock;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTimeZone;
@@ -1243,6 +1244,31 @@ public class DateTimeUtils {
         return DateTime.now();
     }
 
+    public static long currentTimeMillis() {
+        if (timeProvider != null) {
+            return timeProvider.currentTimeMillis();
+        }
+        return System.currentTimeMillis();
+    }
+
+    public static long currentTimeMicros() {
+        if (timeProvider != null) {
+            return timeProvider.currentTimeMicros();
+        }
+        return RealTimeClock.INSTANCE.currentTimeMicros();
+    }
+
+    public static long currentTimeNanos() {
+        if (timeProvider != null) {
+            return timeProvider.currentTimeNanos();
+        }
+        return RealTimeClock.INSTANCE.currentTimeNanos();
+    }
+
+    public static TimeProvider currentTimeProvider() {
+        return TimeProviderImpl.INSTANCE;
+    }
+
     // TODO: Revoke public access to these fields and retire them! Use getCurrentDate(), maybe hold on to the
     // CachedCurrentDate to skip a map lookup.
     public static String currentDateNy = null;
@@ -2335,5 +2361,29 @@ public class DateTimeUtils {
             return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
         }
         return dateTimeFormatter.format(Instant.ofEpochMilli(timestampSeconds * 1_000));
+    }
+
+    private enum TimeProviderImpl implements TimeProvider {
+        INSTANCE;
+
+        @Override
+        public long currentTimeMillis() {
+            return DateTimeUtils.currentTimeMillis();
+        }
+
+        @Override
+        public long currentTimeMicros() {
+            return DateTimeUtils.currentTimeMicros();
+        }
+
+        @Override
+        public long currentTimeNanos() {
+            return DateTimeUtils.currentTimeNanos();
+        }
+
+        @Override
+        public DateTime currentTime() {
+            return DateTimeUtils.currentTime();
+        }
     }
 }

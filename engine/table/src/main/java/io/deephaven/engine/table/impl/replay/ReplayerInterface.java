@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.replay;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.TimeProvider;
 
 import java.io.IOException;
 import java.util.TimerTask;
@@ -12,7 +12,7 @@ import java.util.TimerTask;
 /**
  * An interface for replaying historical data as simulated real-time data.
  */
-public interface ReplayerInterface {
+public interface ReplayerInterface extends TimeProvider {
     /**
      * Starts replaying data.
      */
@@ -57,13 +57,6 @@ public interface ReplayerInterface {
      * @param period frequency in milliseconds to execute the task.
      */
     void schedule(TimerTask task, long delay, long period);
-
-    /**
-     * Simulated time.
-     *
-     * @return simulated time.
-     */
-    DateTime currentTime() throws IOException;
 
     /**
      * Prepares a historical table for replaying.

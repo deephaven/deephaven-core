@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.time.TimeProvider;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
+import io.deephaven.time.TimeProviderNanoBase;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
@@ -92,7 +93,12 @@ public class FuzzerTest {
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
         final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final TimeProvider timeProvider = realtime ? null : () -> new DateTime(now.longValue());
+        final TimeProvider timeProvider = realtime ? null : new TimeProviderNanoBase() {
+            @Override
+            public long currentTimeNanos() {
+                return now.longValue();
+            }
+        };
 
         final GroovyDeephavenSession session = getGroovySession(timeProvider);
 
@@ -210,7 +216,12 @@ public class FuzzerTest {
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
         final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final TimeProvider timeProvider = () -> new DateTime(now.longValue());
+        final TimeProvider timeProvider = new TimeProviderNanoBase() {
+            @Override
+            public long currentTimeNanos() {
+                return now.longValue();
+            }
+        };
         final long start = System.currentTimeMillis();
 
         final GroovyDeephavenSession session = getGroovySession(realtime ? null : timeProvider);

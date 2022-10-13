@@ -121,7 +121,7 @@ public class MemoryTableLoggers {
         }
         final boolean fdStatsLoggingEnabled = Configuration.getInstance().getBooleanWithDefault(
                 "fdStatsLoggingEnabled", false);
-        Driver.start(new RealTimeClock(), MemoryTableLoggers.getInstance().getStatsLogger(), fdStatsLoggingEnabled);
+        Driver.start(RealTimeClock.INSTANCE, MemoryTableLoggers.getInstance().getStatsLogger(), fdStatsLoggingEnabled);
         return true;
     }
 }

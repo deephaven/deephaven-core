@@ -40,8 +40,6 @@ Calendar.importPath=/default_calendar_imports.txt
 
 columnsFile=DeephavenColumns.xml
 
-NIO.wireLagClock.native=false
-
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
 
 # Python configuration

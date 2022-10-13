@@ -23,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
+import static io.deephaven.time.DateTimeUtils.currentTimeProvider;
 import static io.deephaven.time.DateTimeUtils.millisToNanos;
 import static io.deephaven.time.DateTimeUtils.nanosToTime;
 
@@ -163,21 +164,17 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @return time provider that returns the current replay time.
      */
     public static TimeProvider getTimeProvider(final ReplayerInterface replayer) {
-        return replayer == null ? new TimeProvider() {
-            @Override
-            public DateTime currentTime() {
-                return DateTimeUtils.currentTime();
-            }
-        } : new TimeProvider() {
-            @Override
-            public DateTime currentTime() {
-                try {
-                    return replayer.currentTime();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
+        return replayer == null ? currentTimeProvider() : replayer;
+    }
+
+    @Override
+    public long currentTimeMillis() {
+        return currentTimeNanos() / 1_000_000;
+    }
+
+    @Override
+    public long currentTimeMicros() {
+        return currentTimeNanos() / 1_000;
     }
 
     /**
@@ -185,8 +182,13 @@ public class Replayer implements ReplayerInterface, Runnable {
      *
      * @return simulated time in nanoseconds.
      */
+    @Override
     public long currentTimeNanos() {
-        return currentTime().getNanos();
+        if (delta == Long.MAX_VALUE) {
+            return startTime.getNanos();
+        }
+        final long resultNanos = System.currentTimeMillis() * 1_000_000_000 - delta;
+        return Math.min(resultNanos, endTime.getNanos());
     }
 
     /**
@@ -196,13 +198,14 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public DateTime currentTime() {
-        if (delta == Long.MAX_VALUE)
+        if (delta == Long.MAX_VALUE) {
             return startTime;
-        final DateTime result = DateTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
-        if (result.getNanos() > endTime.getNanos()) {
+        }
+        final long resultNanos = System.currentTimeMillis() * 1_000_000_000 - delta;
+        if (resultNanos >= endTime.getNanos()) {
             return endTime;
         }
-        return result;
+        return new DateTime(resultNanos);
     }
 
     /**

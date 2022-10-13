@@ -341,11 +341,11 @@ public class SessionService {
     private final class SessionCleanupJob implements Runnable {
         @Override
         public void run() {
-            final DateTime now = scheduler.currentTime();
+            final long nowMillis = scheduler.currentTimeMillis();
 
             do {
                 final TokenExpiration next = outstandingCookies.peek();
-                if (next == null || next.deadline.getMillis() > now.getMillis()) {
+                if (next == null || next.deadline.getMillis() > nowMillis) {
                     break;
                 }
 
@@ -357,7 +357,7 @@ public class SessionService {
 
                 synchronized (next.session) {
                     final TokenExpiration tokenExpiration = next.session.getExpiration();
-                    if (tokenExpiration != null && tokenExpiration.deadline.getMillis() <= now.getMillis()) {
+                    if (tokenExpiration != null && tokenExpiration.deadline.getMillis() <= nowMillis) {
                         next.session.onExpired();
                     }
                 }

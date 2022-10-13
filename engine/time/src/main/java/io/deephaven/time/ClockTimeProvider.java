@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Adapter to allow a Clock to serve as a TimeProvider.
  */
-public class ClockTimeProvider implements TimeProvider {
+public final class ClockTimeProvider implements TimeProvider {
 
     private final Clock clock;
 
@@ -21,6 +21,21 @@ public class ClockTimeProvider implements TimeProvider {
     @Override
     public DateTime currentTime() {
         // TODO: Consider adding last-value caching.
-        return DateTimeUtils.microsToTime(clock.currentTimeMicros());
+        return new DateTime(clock.currentTimeNanos());
+    }
+
+    @Override
+    public long currentTimeMillis() {
+        return clock.currentTimeMillis();
+    }
+
+    @Override
+    public long currentTimeMicros() {
+        return clock.currentTimeMicros();
+    }
+
+    @Override
+    public long currentTimeNanos() {
+        return clock.currentTimeNanos();
     }
 }

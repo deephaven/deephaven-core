@@ -963,7 +963,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // copy lastUpdateTime so we are not duped by the re-read
         final long localLastUpdateTime = lastUpdateTime;
-        final long now = scheduler.currentTime().getMillis();
+        final long now = scheduler.currentTimeMillis();
         final long msSinceLastUpdate = now - localLastUpdateTime;
         if (lastScheduledUpdateTime != 0 && lastScheduledUpdateTime > lastUpdateTime) {
             // an already scheduled update is coming up
@@ -1093,7 +1093,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      */
 
     private void updateSubscriptionsSnapshotAndPropagate() {
-        lastUpdateTime = scheduler.currentTime().getMillis();
+        lastUpdateTime = scheduler.currentTimeMillis();
         if (DEBUG) {
             log.info().append(logPrefix).append("Starting update job at " + lastUpdateTime).endl();
         }
@@ -1504,7 +1504,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             updatePropagationJob.scheduleImmediately();
         }
 
-        lastUpdateTime = scheduler.currentTime().getMillis();
+        lastUpdateTime = scheduler.currentTimeMillis();
         if (DEBUG) {
             log.info().append(logPrefix).append("Completed Propagation: " + lastUpdateTime);
         }

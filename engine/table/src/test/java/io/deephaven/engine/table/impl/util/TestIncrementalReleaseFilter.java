@@ -93,7 +93,8 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         final Table source = TableTools.emptyTable(1_000_000);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
-                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true,
+                        new ClockTimeProvider(RealTimeClock.INSTANCE));
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 
@@ -117,7 +118,8 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         TableTools.show(source);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
-                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true,
+                        new ClockTimeProvider(RealTimeClock.INSTANCE));
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 

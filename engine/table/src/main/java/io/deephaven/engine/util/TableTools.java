@@ -857,7 +857,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(null),
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, DateTimeUtils.currentTimeProvider(),
                 startTime, periodNanos, false);
     }
 

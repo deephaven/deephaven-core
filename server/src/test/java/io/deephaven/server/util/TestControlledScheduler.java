@@ -9,12 +9,13 @@ import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.time.TimeProviderNanoBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Map;
 
-public class TestControlledScheduler implements Scheduler {
+public class TestControlledScheduler extends TimeProviderNanoBase implements Scheduler {
 
     private static final Logger log = LoggerFactory.getLogger(TestControlledScheduler.class);
 
@@ -108,8 +109,8 @@ public class TestControlledScheduler implements Scheduler {
     }
 
     @Override
-    public DateTime currentTime() {
-        return DateTimeUtils.nanosToTime(currentTimeInNs);
+    public long currentTimeNanos() {
+        return currentTimeInNs;
     }
 
     @Override
