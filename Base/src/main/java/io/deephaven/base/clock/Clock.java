@@ -49,9 +49,9 @@ public interface Clock {
      * For example, to measure how long some code takes to execute:
      * 
      * <pre>
-     *     long startNanoTime = clock.nanoTime();
-     *     // ... the code being measured ...
-     *     long elapsedNanos = clock.nanoTime() - startNanoTime;
+     * long startNanoTime = clock.nanoTime();
+     * // ... the code being measured ...
+     * long elapsedNanos = clock.nanoTime() - startNanoTime;
      * </pre>
      * 
      * @return the nano time

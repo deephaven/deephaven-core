@@ -215,7 +215,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
         this.logger = logger;
         this.targetFactor = targetFactor;
         this.verbose = verbose;
-        this.lastRefreshNanos = clock.currentTimeNanos();
+        this.lastRefreshNanos = clock.nanoTime();
         this.initialRelease = Math.max(1, initialRelease);
         this.clock = clock;
     }
@@ -231,8 +231,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
         if (releasedAll) {
             throw new IllegalStateException();
         }
-        // TODO: this should be improved to use a interface around System.nanoTime()
-        final long nowNanos = clock.currentTimeNanos();
+        final long nowNanos = clock.nanoTime();
         if (nextSize == 0) {
             firstCycleNanos = nowNanos;
             nextSize = initialRelease;
@@ -264,7 +263,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
 
             @Override
             public void run() {
-                cycleEndNanos = clock.currentTimeNanos();
+                cycleEndNanos = clock.nanoTime();
                 UpdateGraphProcessor.DEFAULT.requestRefresh();
                 if (!captureReleasedAll && releasedAll) {
                     final DecimalFormat decimalFormat = new DecimalFormat("###,###.##");
