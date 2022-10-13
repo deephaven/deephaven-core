@@ -67,7 +67,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void start() {
-        delta = nanosToTime(millisToNanos(System.currentTimeMillis())).getNanos() - startTime.getNanos();
+        delta = System.currentTimeMillis() * 1_000_000 - startTime.getNanos();
         for (Runnable currentTable : currentTables) {
             UpdateGraphProcessor.DEFAULT.addSource(currentTable);
         }
@@ -188,7 +188,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (delta == Long.MAX_VALUE) {
             return startTime.getNanos();
         }
-        final long resultNanos = System.currentTimeMillis() * 1_000_000_000 - delta;
+        final long resultNanos = System.currentTimeMillis() * 1_000_000 - delta;
         return Math.min(resultNanos, endTime.getNanos());
     }
 
@@ -202,7 +202,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (delta == Long.MAX_VALUE) {
             return startTime;
         }
-        final long resultNanos = System.currentTimeMillis() * 1_000_000_000 - delta;
+        final long resultNanos = System.currentTimeMillis() * 1_000_000 - delta;
         if (resultNanos >= endTime.getNanos()) {
             return endTime;
         }
@@ -214,7 +214,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (delta == Long.MAX_VALUE) {
             return startTime.getInstant();
         }
-        final long resultNanos = System.currentTimeMillis() * 1_000_000_000 - delta;
+        final long resultNanos = System.currentTimeMillis() * 1_000_000 - delta;
         if (resultNanos >= endTime.getNanos()) {
             return endTime.getInstant();
         }
@@ -231,7 +231,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (delta == Long.MAX_VALUE) {
             startTime = DateTimeUtils.millisToTime(updatedTime);
         } else {
-            long adjustment = updatedTime - currentTime().getMillis();
+            long adjustment = updatedTime - currentTimeMillis();
             if (adjustment > 0) {
                 delta = delta - adjustment * 1000000;
             }
