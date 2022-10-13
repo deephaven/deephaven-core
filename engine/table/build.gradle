@@ -131,6 +131,7 @@ test {
 
     def props = project.properties.subMap(["jpy.pythonLib", "jpy.jpyLib", "jpy.jdlLib"])
     systemProperties props
+    systemProperty 'ModelFileGenerator.testSource', layout.projectDirectory.dir('src/test/java/').toString()
 }
 
 // Adds a custom testParallel task which is allowed to run tests in parallel.

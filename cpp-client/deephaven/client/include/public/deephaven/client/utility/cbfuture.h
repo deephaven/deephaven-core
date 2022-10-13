@@ -9,18 +9,16 @@
 #include <optional>
 #include "deephaven/client/utility/callbacks.h"
 
-namespace deephaven {
-namespace client {
-namespace utility {
+namespace deephaven::client::utility {
 namespace internal {
 class PromiseStateBase {
 public:
   bool valid();
 
 protected:
-  void checkValidLocked(bool expected);
+  void checkValidLocked(const std::unique_lock<std::mutex> &guard, bool expected);
   void waitValidLocked(std::unique_lock<std::mutex> *guard);
-  virtual bool validLocked() = 0;
+  virtual bool validLocked(const std::unique_lock<std::mutex> &/*guard*/) = 0;
 
   std::mutex mutex_;
   std::condition_variable condVar_;
@@ -38,13 +36,13 @@ public:
     return *value_;
   }
 
-  // oops. need to invoke all the waiters
   void setValue(T value) {
-    std::unique_lock<std::mutex> guard(mutex_);
-    checkValidLocked(false);
+    // Need to invoke all the waiters.
+    std::unique_lock guard(mutex_);
+    checkValidLocked(guard, false);
     value_ = std::move(value);
 
-    std::vector<std::shared_ptr<SFCallback<const T&>>> cbs;
+    std::vector<std::shared_ptr<SFCallback<T>>> cbs;
     cbs.swap(callbacks_);
     guard.unlock();
 
@@ -56,11 +54,12 @@ public:
 
   // oops. need to invoke all the waiters
   void setError(std::exception_ptr ep) {
-    std::unique_lock<std::mutex> guard(mutex_);
-    checkValidLocked(false);
+    // Need to invoke all the waiters.
+    std::unique_lock guard(mutex_);
+    checkValidLocked(guard, false);
     eptr_ = std::move(ep);
 
-    std::vector<std::shared_ptr<SFCallback<const T&>>> cbs;
+    std::vector<std::shared_ptr<SFCallback<T>>> cbs;
     cbs.swap(callbacks_);
     guard.unlock();
     condVar_.notify_all();
@@ -69,13 +68,11 @@ public:
     }
   }
 
-  // Returns true if cb is the first-ever callback waiting for a result from this future.
-  // (Can be used to trigger deferred work that eventually sets the promise).
-  bool invoke(std::shared_ptr<SFCallback<const T&>> cb) {
+  void invoke(std::shared_ptr<SFCallback<T>> cb) {
     std::unique_lock<std::mutex> guard(mutex_);
-    if (!validLocked()) {
+    if (!validLocked(guard)) {
       callbacks_.push_back(std::move(cb));
-      return callbacks_.size() == 1;
+      return;
     }
     guard.unlock();
 
@@ -84,16 +81,15 @@ public:
     } else {
       cb->onFailure(eptr_);
     }
-    return false;
   }
 
 private:
-  bool validLocked() final {
+  bool validLocked(const std::unique_lock<std::mutex> &/*guard*/) final {
     return value_.has_value() || eptr_ != nullptr;
   }
 
   std::optional<T> value_;
-  std::vector<std::shared_ptr<SFCallback<const T&>>> callbacks_;
+  std::vector<std::shared_ptr<SFCallback<T>>> callbacks_;
 };
 }
 
@@ -125,10 +121,11 @@ public:
   CBFuture(CBFuture &&other) noexcept = default;
 
   bool valid() { return state_->valid(); }
+
   const T &value() { return state_->value(); }
 
-  bool invoke(std::shared_ptr<SFCallback<const T&>> cb) {
-    return state_->invoke(std::move(cb));
+  void invoke(std::shared_ptr<SFCallback<T>> cb) {
+    state_->invoke(std::move(cb));
   }
 
 private:
@@ -144,6 +141,4 @@ template<typename T>
 CBFuture<T> CBPromise<T>::makeFuture() {
   return CBFuture<T>(state_);
 }
-}  // namespace utility
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::utility

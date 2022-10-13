@@ -16,11 +16,13 @@ class UpdateProcessor final {
   struct Private {};
 public:
   static std::shared_ptr<UpdateProcessor> startThread(
+      std::unique_ptr<arrow::flight::FlightStreamWriter> fsw,
       std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
       std::shared_ptr<ColumnDefinitions> colDefs,
       std::shared_ptr<TickingCallback> callback);
 
-  UpdateProcessor(std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
+  UpdateProcessor(std::unique_ptr<arrow::flight::FlightStreamWriter> fsw,
+      std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs, std::shared_ptr<TickingCallback> callback);
   ~UpdateProcessor();
 
@@ -31,6 +33,7 @@ private:
   void runForeverHelper();
 
 public:
+  std::unique_ptr<arrow::flight::FlightStreamWriter> fsw_;
   std::unique_ptr<arrow::flight::FlightStreamReader> fsr_;
   std::shared_ptr<ColumnDefinitions> colDefs_;
   std::shared_ptr<TickingCallback> callback_;

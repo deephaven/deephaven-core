@@ -22,11 +22,19 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SessionServiceClient interface {
+	// Deprecated: Do not use.
+	//
 	// Handshake between client and server to create a new session. The response includes a metadata header name and the
 	// token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
+	//
+	// Deprecated: Please use Flight's Handshake or http authorization headers instead.
 	NewSession(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
 	// token that should replace the existing token for subsequent requests.
+	//
+	// Deprecated: Please use Flight's Handshake with an empty payload.
 	RefreshSessionToken(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
 	// Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
 	// unreleased exports will be automatically released.
@@ -58,6 +66,7 @@ func NewSessionServiceClient(cc grpc.ClientConnInterface) SessionServiceClient {
 	return &sessionServiceClient{cc}
 }
 
+// Deprecated: Do not use.
 func (c *sessionServiceClient) NewSession(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error) {
 	out := new(HandshakeResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.SessionService/NewSession", in, out, opts...)
@@ -67,6 +76,7 @@ func (c *sessionServiceClient) NewSession(ctx context.Context, in *HandshakeRequ
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *sessionServiceClient) RefreshSessionToken(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error) {
 	out := new(HandshakeResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.SessionService/RefreshSessionToken", in, out, opts...)
@@ -148,11 +158,19 @@ func (c *sessionServiceClient) TerminationNotification(ctx context.Context, in *
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility
 type SessionServiceServer interface {
+	// Deprecated: Do not use.
+	//
 	// Handshake between client and server to create a new session. The response includes a metadata header name and the
 	// token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
+	//
+	// Deprecated: Please use Flight's Handshake or http authorization headers instead.
 	NewSession(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
 	// token that should replace the existing token for subsequent requests.
+	//
+	// Deprecated: Please use Flight's Handshake with an empty payload.
 	RefreshSessionToken(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
 	// Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
 	// unreleased exports will be automatically released.

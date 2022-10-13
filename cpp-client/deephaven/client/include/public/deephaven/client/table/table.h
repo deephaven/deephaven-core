@@ -59,21 +59,66 @@ public:
   Table() = default;
   virtual ~Table() = default;
 
+  /**
+   * Get the RowSequence (in position space) that underlies this Table.
+   */
   virtual std::shared_ptr<RowSequence> getRowSequence() const = 0;
+  /**
+   * Gets a ColumnSource from the table by index.
+   * @param columnIndex Must be in the range [0, numColumns).
+   */
   virtual std::shared_ptr<ColumnSource> getColumn(size_t columnIndex) const = 0;
 
+  /**
+   * Gets a ColumnSource from the table by name. 'strict' controls whether the method
+   * must succeed.
+   * @param name The name of the column.
+   * @param strict Whether the method must succeed.
+   * @return If 'name' was found, returns the ColumnSource. If 'name' was not found and 'strict'
+   * is true, throws an exception. If 'name' was not found and 'strict' is false, returns nullptr.
+   */
   std::shared_ptr<ColumnSource> getColumn(std::string_view name, bool strict) const;
+  /**
+   * Gets the index of a ColumnSource from the table by name. 'strict' controls whether the method
+   * must succeed.
+   * @param name The name of the column.
+   * @param strict Whether the method must succeed.
+   * @return If 'name' was found, returns the index of the ColumnSource. If 'name' was not found and
+   * 'strict' is true, throws an exception. If 'name' was not found and 'strict' is false, returns
+   * (size_t)-1.
+   */
+  size_t getColumnIndex(std::string_view name, bool strict) const;
 
+  /**
+   * Number of rows in the table.
+   */
   virtual size_t numRows() const = 0;
+  /**
+   * Number of columns in the table.
+   */
   virtual size_t numColumns() const = 0;
-
+  /**
+   * The table schema.
+   */
   virtual const Schema &schema() const = 0;
 
+  /**
+   * Creates an 'ostream adaptor' to use when printing the table. Example usage:
+   * std::cout << myTable.stream(true, false).
+   */
   internal::TableStreamAdaptor stream(bool wantHeaders, bool wantRowNumbers) const;
 
+  /**
+   * Creates an 'ostream adaptor' to use when printing the table. Example usage:
+   * std::cout << myTable.stream(true, false, rowSeq).
+   */
   internal::TableStreamAdaptor stream(bool wantHeaders, bool wantRowNumbers,
       std::shared_ptr<RowSequence> rowSequence) const;
 
+  /**
+   * Creates an 'ostream adaptor' to use when printing the table. Example usage:
+   * std::cout << myTable.stream(true, false, rowSequences).
+   */
   internal::TableStreamAdaptor stream(bool wantHeaders, bool wantRowNumbers,
       std::vector<std::shared_ptr<RowSequence>> rowSequences) const;
 };

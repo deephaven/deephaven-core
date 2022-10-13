@@ -84,20 +84,22 @@ private:
 }  // namespace
 
 std::shared_ptr<UpdateProcessor> UpdateProcessor::startThread(
+    std::unique_ptr<arrow::flight::FlightStreamWriter> fsw,
     std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs,
     std::shared_ptr<TickingCallback> callback) {
-  auto result = std::make_shared<UpdateProcessor>(std::move(fsr),
+  auto result = std::make_shared<UpdateProcessor>(std::move(fsw), std::move(fsr),
       std::move(colDefs), std::move(callback));
   std::thread t(&UpdateProcessor::runForever, result);
   t.detach();
   return result;
 }
 
-UpdateProcessor::UpdateProcessor(std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
+UpdateProcessor::UpdateProcessor(std::unique_ptr<arrow::flight::FlightStreamWriter> fsw,
+    std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs, std::shared_ptr<TickingCallback> callback) :
-    fsr_(std::move(fsr)), colDefs_(std::move(colDefs)), callback_(std::move(callback)),
-    cancelled_(false) {}
+    fsw_(std::move(fsw)), fsr_(std::move(fsr)), colDefs_(std::move(colDefs)),
+    callback_(std::move(callback)), cancelled_(false) {}
 
 UpdateProcessor::~UpdateProcessor() = default;
 
@@ -355,8 +357,7 @@ FlightStreamState::processModifies(const std::shared_ptr<Table> &beforeModifies)
       auto rowsAvailable = mr->take(numRowsAvailable);
       mr = mr->drop(numRowsAvailable);
 
-      auto indexRowsAvailable = tableState_->convertKeysToIndices(*rowsAvailable);
-      tableState_->modifyData(i, *cols[i], srcChunkOffset_[i], *indexRowsAvailable);
+      tableState_->modifyData(i, *cols[i], srcChunkOffset_[i], *rowsAvailable);
       // This doesn't *really* matter because it will be reset by the readNext().
       srcChunkOffset_[i] += numRowsAvailable;
     }

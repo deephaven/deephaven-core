@@ -5,6 +5,7 @@
 
 #include <memory>
 #include "deephaven/client/arrowutil/arrow_visitors.h"
+#include "deephaven/client/arrowutil/arrow_traits.h"
 #include "deephaven/client/chunk/chunk_filler.h"
 #include "deephaven/client/chunk/chunk_maker.h"
 #include "deephaven/client/column/column_source.h"

@@ -190,8 +190,9 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     VarBinaryChunkInputStreamGenerator(final ObjectChunk<T, Values> chunk,
+                                       final long rowOffset,
                                        final Appender<T> appendItem) {
-        super(chunk, 0);
+        super(chunk, 0, rowOffset);
         this.appendItem = appendItem;
     }
 

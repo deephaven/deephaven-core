@@ -65,9 +65,7 @@ public enum WorkerPythonEnvironment {
         }
 
         final String defaultScriptPath = Configuration.getInstance()
-                .getProperty("WorkerPythonEnvironment.defaultScriptPath")
-                .replace("<devroot>", Configuration.getInstance().getDevRootPath())
-                .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
+                .getStringWithDefault("WorkerPythonEnvironment.defaultScriptPath", ".");
 
         final ScriptFinder scriptFinder = new ScriptFinder(defaultScriptPath);
         final String initScript = Configuration.getInstance().getStringWithDefault("WorkerPythonEnvironment.initScript",
