@@ -332,6 +332,12 @@ project(':hotspot').projectDir = file('hotspot')
 include(':hotspot-impl')
 project(':hotspot-impl').projectDir = file('hotspot-impl')
 
+include(':clock')
+project(':clock').projectDir = file('clock')
+
+include(':clock-impl')
+project(':clock-impl').projectDir = file('clock-impl')
+
 include ':authentication'
 
 file("${rootDir}/docker/registry").list().each { name ->

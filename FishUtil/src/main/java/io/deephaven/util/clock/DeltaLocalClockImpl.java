@@ -21,14 +21,14 @@ public class DeltaLocalClockImpl implements Clock, Serializable {
     }
 
     public long currentTimeMillis() {
-        return (MicroTimer.clockRealtime() + deltaNanos) / 1000000;
+        return (Clock.SYSTEM.currentTimeNanos() + deltaNanos) / 1_000_000L;
     }
 
     public long currentTimeMicros() {
-        return (MicroTimer.clockRealtime() + deltaNanos) / 1000;
+        return (Clock.SYSTEM.currentTimeNanos() + deltaNanos) / 1_000L;
     }
 
     public long currentTimeNanos() {
-        return MicroTimer.clockRealtime() + deltaNanos;
+        return Clock.SYSTEM.currentTimeNanos() + deltaNanos;
     }
 }

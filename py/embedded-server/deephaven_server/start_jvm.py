@@ -83,6 +83,8 @@ def start_jvm(
         '--add-opens=java.base/java.nio=ALL-UNNAMED',
         # Allow our hotspotImpl project to access internals
         '--add-opens=java.management/sun.management=ALL-UNNAMED',
+        # Allow our clockImpl project to access jdk.internal.misc.VM
+        '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
     ]
     if jvm_args is None:
         jvm_args = required_jvm_args

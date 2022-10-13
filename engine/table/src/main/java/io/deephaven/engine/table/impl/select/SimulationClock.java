@@ -75,6 +75,11 @@ public class SimulationClock implements Clock {
         return now.getMicros();
     }
 
+    @Override
+    public long currentTimeNanos() {
+        return now.getNanos();
+    }
+
     /**
      * Start the simulation.
      */

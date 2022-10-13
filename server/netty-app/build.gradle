@@ -41,6 +41,13 @@ if (!hasProperty('excludeHotspotImpl')) {
     extraJvmArgs += ['--add-opens', 'java.management/sun.management=ALL-UNNAMED']
 }
 
+if (!hasProperty('excludeClockImpl')) {
+    dependencies {
+        runtimeOnly project(':clock-impl')
+    }
+    extraJvmArgs += ['--add-opens', 'java.management/sun.management=ALL-UNNAMED']
+}
+
 if (hasProperty('devCerts') || hasProperty('devMTLS')) {
     extraJvmArgs += [
             '-Dhttp.port=8443',

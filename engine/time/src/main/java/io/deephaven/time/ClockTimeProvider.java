@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ClockTimeProvider implements TimeProvider {
 
+    @NotNull
     private final Clock clock;
 
     public ClockTimeProvider(@NotNull final Clock clock) {
@@ -21,6 +22,6 @@ public class ClockTimeProvider implements TimeProvider {
     @Override
     public DateTime currentTime() {
         // TODO: Consider adding last-value caching.
-        return DateTimeUtils.microsToTime(clock.currentTimeMicros());
+        return DateTimeUtils.nanosToTime(clock.currentTimeNanos());
     }
 }

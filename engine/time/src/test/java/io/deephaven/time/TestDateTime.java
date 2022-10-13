@@ -11,11 +11,13 @@ import org.joda.time.DateTimeZone;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.zone.ZoneRulesException;
 import java.util.Date;
 
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
+import static io.deephaven.time.DateTimeUtils.isAfter;
 
 public class TestDateTime extends BaseArrayTestCase {
 
@@ -198,5 +200,18 @@ public class TestDateTime extends BaseArrayTestCase {
             TestCase.assertEquals("2016-11-05", dateTime.toDateString(zoneId));
             TestCase.assertEquals("2016-11-05", dateTime.toDateString(ZoneId.of(zoneId)));
         }
+    }
+
+    public void testCurrentTime() {
+        Instant nowInstant = Instant.now();
+        DateTime nowDateTime = DateTime.now();
+
+        System.out.println("Instant: " + nowInstant);
+        System.out.println("DateTime: " + nowDateTime);
+
+        isAfter(
+                nowDateTime,
+                DateTimeUtils.nanosToTime(nowInstant.getEpochSecond() * 1000000000 + nowInstant.getNano())
+        );
     }
 }

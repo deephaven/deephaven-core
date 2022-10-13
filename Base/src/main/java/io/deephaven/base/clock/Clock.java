@@ -3,17 +3,17 @@
  */
 package io.deephaven.base.clock;
 
+import io.deephaven.clock.RealTimeClock;
+
 public interface Clock {
 
     long currentTimeMillis();
 
     long currentTimeMicros();
 
-    interface Factory {
-        Clock getClock();
-    }
+    long currentTimeNanos();
 
-    class Null implements Clock {
+    final class Null implements Clock {
         @Override
         public long currentTimeMillis() {
             return 0;
@@ -23,67 +23,35 @@ public interface Clock {
         public long currentTimeMicros() {
             return 0;
         }
+
+        @Override
+        public long currentTimeNanos() {
+            return 0;
+        }
     }
 
     Null NULL = new Null();
 
-    /**
-     * This implementation just returns the last value passed to set(). It allows for precise control over when clock
-     * calls are made to the underlying system (e.g. AppClock.currentTimeMicros()).
-     */
-    class Cached implements Clock {
-        private long cachedNowMicros;
+    final class SystemClock implements Clock {
 
-        public void set(long nowMicros) {
-            cachedNowMicros = nowMicros;
+        RealTimeClock REAL_TIME_CLOCK = RealTimeClock.loadImpl();
+
+        @Override
+        public long currentTimeMillis() {
+            return REAL_TIME_CLOCK.currentTimeMillis();
         }
 
         @Override
-        public final long currentTimeMillis() {
-            return cachedNowMicros / 1000;
+        public long currentTimeMicros() {
+            return REAL_TIME_CLOCK.currentTimeMicros();
         }
 
         @Override
-        public final long currentTimeMicros() {
-            return cachedNowMicros;
+        public long currentTimeNanos() {
+            return REAL_TIME_CLOCK.currentTimeNanos();
         }
     }
 
-    /**
-     * This implementation is similar to cached, except that is calls set() itself on a the Clock instance given to the
-     * constructor exactly once between reset() calls.
-     */
-    class CachedOnDemand implements Clock {
-        private final Clock realClock;
-        private long cachedNowMicros;
+    SystemClock SYSTEM = new SystemClock();
 
-        public CachedOnDemand(Clock realClock) {
-            this.realClock = realClock;
-        }
-
-        public void set() {
-            cachedNowMicros = realClock.currentTimeMicros();
-        }
-
-        public void reset() {
-            cachedNowMicros = 0;
-        }
-
-        private long maybeUpdate() {
-            if (cachedNowMicros == 0) {
-                set();
-            }
-            return cachedNowMicros;
-        }
-
-        @Override
-        public final long currentTimeMillis() {
-            return maybeUpdate() / 1000;
-        }
-
-        @Override
-        public final long currentTimeMicros() {
-            return maybeUpdate();
-        }
-    }
 }

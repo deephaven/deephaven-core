@@ -77,7 +77,7 @@ public class UnsortedClockFilter extends ClockFilter {
 
         final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
 
-        final long nowNanos = clock.currentTimeMicros() * 1000L;
+        final long nowNanos = clock.currentTimeNanos();
         final RowSet.Iterator selectionIterator = selection.iterator();
 
         // Initial current range begins and ends at the first key in the selection (which must exist because we've
@@ -127,7 +127,7 @@ public class UnsortedClockFilter extends ClockFilter {
         if (rangesByNextTime.isEmpty()) {
             return null;
         }
-        final long nowNanos = clock.currentTimeMicros() * 1000L;
+        final long nowNanos = clock.currentTimeNanos();
         RowSetBuilderRandom addedBuilder = null;
         Range nextRange;
         RowSetBuilderRandom resultBuilder;

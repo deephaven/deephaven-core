@@ -2098,12 +2098,17 @@ public class TstUtils {
 
         @Override
         public long currentTimeMillis() {
-            return nanoTimes[step] / 1_000_000L;
+            return currentTimeNanos() / 1_000_000L;
         }
 
         @Override
         public long currentTimeMicros() {
-            return nanoTimes[step] / 1_000L;
+            return currentTimeNanos() / 1_000L;
+        }
+
+        @Override
+        public long currentTimeNanos() {
+            return nanoTimes[step];
         }
 
         @Override

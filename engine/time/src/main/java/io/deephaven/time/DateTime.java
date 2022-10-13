@@ -4,21 +4,16 @@
 package io.deephaven.time;
 
 import io.deephaven.base.StringUtils;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.clock.MicroTimer;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.type.TypeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.io.*;
+import java.time.*;
 import java.util.Date;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
@@ -65,7 +60,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return a new DateTime initialized to the current time.
      */
     public static DateTime now() {
-        return new DateTime(MicroTimer.currentTimeMicros() * 1000);
+        return new DateTime(Clock.SYSTEM.currentTimeNanos());
     }
 
     /**
