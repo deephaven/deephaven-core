@@ -86,7 +86,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testTreeTableFilter() throws ExecutionException, InterruptedException {
         // TODO (https://github.com/deephaven/deephaven-core/issues/64): Delete this, uncomment and fix the rest
         try {
-            emptyTable(10).treeTable("ABC", "DEF");
+            emptyTable(10).tree("ABC", "DEF");
             fail("Expected exception");
         } catch (UnsupportedOperationException expected) {
         }
@@ -96,7 +96,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
         // final Table treed =
         // UpdateGraphProcessor.DEFAULT.exclusiveLock()
-        // .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+        // .computeLocked(() -> source.tree("Sentinel", "Parent"));
         //
         // final Callable<Table> callable =
         // () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");

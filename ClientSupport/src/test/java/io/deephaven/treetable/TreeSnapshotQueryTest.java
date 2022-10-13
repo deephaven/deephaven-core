@@ -15,7 +15,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     public void testTreeTableNotImplemented() {
         // TODO (https://github.com/deephaven/deephaven-core/issues/64): Delete this, uncomment and fix the rest
         try {
-            emptyTable(10).treeTable("ABC", "DEF");
+            emptyTable(10).tree("ABC", "DEF");
             fail("Expected exception");
         } catch (UnsupportedOperationException expected) {
         }
@@ -201,7 +201,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // }
     //
     // private static Table makeNyMunisTreeTableFrom(Table t) {
-    // return t.treeTable("Path", "Direct");
+    // return t.tree("Path", "Direct");
     // }
     //
     // private static List<String> munisKey(String... path) {
@@ -464,7 +464,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // final Table sortThenTree = getRawNyMunis()
     // .sort("Town_Name")
     // .sortDescending("Type")
-    // .treeTable("Path", "Direct");
+    // .tree("Path", "Direct");
     //
     // state.setCompareToTable(sortThenTree);
     // List<SortDirective> directives = Arrays.asList(
@@ -486,7 +486,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // // so validates things nicely.
     // final Table filterAndSortThenTree = TreeTableFilter.filterTree(getRawNyMunis()
     // .sortDescending("County_Name", "Town_Name")
-    // .treeTable("Path", "Direct"),
+    // .tree("Path", "Direct"),
     // "!isNull(Website) && Website.contains(`ny`)");
     //
     // state.setCompareToTable(filterAndSortThenTree);
@@ -651,7 +651,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // c("Name", "Root", "0", "1", "2", "0-0", "1-0", "2-0", "0-0-0", "1-0-0", "2-0-0"));
     //
     // final Table lastBy = dataTable.lastBy("ID");
-    // final Table tree = lastBy.treeTable("ID", "Parent");
+    // final Table tree = lastBy.tree("ID", "Parent");
     //
     // final BitSet allCols = new BitSet(3);
     // allCols.set(0, 3);

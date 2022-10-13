@@ -9,7 +9,7 @@ import java.io.Serializable;
 
 /**
  * A class that contains information required for a particular Hierarchical table type, for example
- * {@link Table#treeTable(String, String) tree tables} or {@link Table#rollup rollups}.
+ * {@link Table#tree(String, String) tree tables} or {@link Table#rollup rollups}.
  */
 public interface HierarchicalTableInfo extends Serializable {
     /**

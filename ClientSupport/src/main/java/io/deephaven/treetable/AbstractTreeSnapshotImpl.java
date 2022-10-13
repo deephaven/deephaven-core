@@ -30,8 +30,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-import static io.deephaven.treetable.TreeTableConstants.RE_TREE_KEY;
-import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
+import static io.deephaven.treetable.TreeConstants.RE_TREE_KEY;
+import static io.deephaven.treetable.TreeConstants.ROOT_TABLE_KEY;
 
 /**
  * The basic implementation used to produce a viewport-ready snapshot of a tree table, taking into account the set of

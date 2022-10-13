@@ -393,8 +393,8 @@ public abstract class UncoalescedTable extends BaseTable {
 
     @Override
     @ConcurrentMethod
-    public Table treeTable(String idColumn, String parentColumn) {
-        return coalesce().treeTable(idColumn, parentColumn);
+    public Table tree(String idColumn, String parentColumn) {
+        return coalesce().tree(idColumn, parentColumn);
     }
 
     @Override

@@ -19,7 +19,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-public class TreeTableClientTableManagerTest extends QueryTableTestBase {
+public class TreeTableClientManagerTest extends QueryTableTestBase {
     private TreeTableClientTableManager.Client[] clients;
     private SnapshotState mockSnapshotState;
     private final ExecutorService pool = Executors.newFixedThreadPool(1);

@@ -145,7 +145,7 @@ public interface Table extends
      * {@link io.deephaven.api.agg.Partition partition} are used</li>
      * <li>{@link #rollup(Collection, boolean, ColumnName...) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
-     * <li>{@link #treeTable(String, String) treeTable()} is unsupported</li>
+     * <li>{@link #tree(String, String) tree()} is unsupported</li>
      * </ol>
      * <p>
      * To disable these semantics, a {@link #dropStream() dropStream} method is offered.
@@ -910,7 +910,7 @@ public interface Table extends
             Table initialGroups, String... keyColumnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Hierarchical table operations (rollup and treeTable).
+    // Hierarchical table operations (rollup and tree).
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
@@ -1009,7 +1009,7 @@ public interface Table extends
      * @return a hierarchical table grouped according to the parentColumn
      */
     @ConcurrentMethod
-    Table treeTable(String idColumn, String parentColumn);
+    Table tree(String idColumn, String parentColumn);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations

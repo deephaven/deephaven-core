@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static io.deephaven.treetable.TreeTableConstants.RE_TREE_KEY;
-import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
+import static io.deephaven.treetable.TreeConstants.RE_TREE_KEY;
+import static io.deephaven.treetable.TreeConstants.ROOT_TABLE_KEY;
 
 class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
     private static final boolean NODE_SORT_MODE =

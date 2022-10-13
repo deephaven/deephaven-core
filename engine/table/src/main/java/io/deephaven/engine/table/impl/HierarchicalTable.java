@@ -28,7 +28,7 @@ import java.util.function.Predicate;
 
 /**
  * This class is an extension of {@link QueryTable} that overrides many methods from {@link Table} which are not valid
- * to perform on hierarchical tables ({@link #rollup rollups} and {@link #treeTable(String, String) trees}).
+ * to perform on hierarchical tables ({@link #rollup rollups} and {@link #tree(String, String) trees}).
  */
 public class HierarchicalTable extends QueryTable {
     private final QueryTable rootTable;
@@ -275,8 +275,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table treeTable(String idColumn, String parentColumn) {
-        return throwUnsupported("treeTable()");
+    public Table tree(String idColumn, String parentColumn) {
+        return throwUnsupported("tree()");
     }
 
     @Override
@@ -311,7 +311,7 @@ public class HierarchicalTable extends QueryTable {
 
     private <T> T throwUnsupported(String opName) {
         throw new UnsupportedOperationException("Operation " + opName
-                + " may not be performed on hierarchical tables. Instead, apply it to table before treeTable() or rollup()");
+                + " may not be performed on hierarchical tables. Instead, apply it to table before tree() or rollup()");
     }
 
     /**

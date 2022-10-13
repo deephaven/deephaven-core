@@ -207,10 +207,10 @@ public class ReverseLookupListener extends LivenessArtifact
     }
 
     /**
-     * Prepare the parameter table for use with {@link Table#treeTable(String, String) tree table}
+     * Prepare the parameter table for use with {@link Table#tree(String, String) tree table}
      *
      * @param preTree The tree to prepare
-     * @param idColumn The column that will be used as the id for {@link Table#treeTable(String, String)}
+     * @param idColumn The column that will be used as the id for {@link Table#tree(String, String)}
      */
     @ScriptApi
     public static void prepareForTree(BaseTable preTree, String idColumn) {

@@ -104,14 +104,14 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
 
         private State(Table table, TableDefinition origTableDefinition) {
             if (!(table instanceof HierarchicalTable)) {
-                throw new IllegalArgumentException("Table is not a treeTable");
+                throw new IllegalArgumentException("Table is not a tree");
             }
             final HierarchicalTable hierarchicalTable = (HierarchicalTable) table;
 
             source = (QueryTable) hierarchicalTable.getSourceTable();
             final HierarchicalTableInfo sourceInfo = hierarchicalTable.getInfo();
             if (!(sourceInfo instanceof TreeTableInfo)) {
-                throw new IllegalArgumentException("Table is not a treeTable");
+                throw new IllegalArgumentException("Table is not a tree");
             }
             treeTableInfo = (TreeTableInfo) sourceInfo;
             reverseLookupListener =
@@ -151,7 +151,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
 
             filteredRaw = (QueryTable) source.getSubTable(resultRowSet);
             if (swapListener != null) {
-                treeListener = new TreeTableFilterListener("treeTable filter", source, filteredRaw);
+                treeListener = new TreeTableFilterListener("tree filter", source, filteredRaw);
                 swapListener.setListenerAndResult(treeListener, filteredRaw);
                 filteredRaw.addParentReference(treeListener);
             }
@@ -588,10 +588,10 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
     public static Table toTreeTable(Table rawTable, Table originalTree) {
         final Object sourceInfo = originalTree.getAttribute(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
         if (!(sourceInfo instanceof TreeTableInfo)) {
-            throw new IllegalArgumentException("Table is not a treeTable");
+            throw new IllegalArgumentException("Table is not a tree");
         }
         final TreeTableInfo treeTableInfo = (TreeTableInfo) sourceInfo;
-        return rawTable.treeTable(treeTableInfo.idColumn, treeTableInfo.parentColumn);
+        return rawTable.tree(treeTableInfo.idColumn, treeTableInfo.parentColumn);
     }
 
     public static Table rawFilterTree(Table tree, String... filters) {
