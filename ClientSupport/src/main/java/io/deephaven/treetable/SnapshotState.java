@@ -144,7 +144,7 @@ class SnapshotState {
 
         // Do any allocation required if we have to.
         // Update the final data matrix with the proper set of requeted columns.
-        if (ensureSpace(newViewportSize, tablesByKey.get(TreeTableConstants.ROOT_TABLE_KEY))
+        if (ensureSpace(newViewportSize, tablesByKey.get(TreeConstants.ROOT_TABLE_KEY))
                 || !requestedColumns.equals(columns)) {
             this.columns = requestedColumns;
 

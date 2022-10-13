@@ -95,8 +95,8 @@ public abstract class MemoizedOperationKey {
         return Reverse.REVERSE_INSTANCE;
     }
 
-    public static MemoizedOperationKey treeTable(String idColumn, String parentColumn) {
-        return new TreeTable(idColumn, parentColumn);
+    public static MemoizedOperationKey tree(String idColumn, String parentColumn) {
+        return new Tree(idColumn, parentColumn);
     }
 
     public static MemoizedOperationKey aggBy(
@@ -308,12 +308,12 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class TreeTable extends MemoizedOperationKey {
+    private static class Tree extends MemoizedOperationKey {
         private final String idColumn;
         private final String parentColumn;
 
 
-        private TreeTable(String idColumn, String parentColumn) {
+        private Tree(String idColumn, String parentColumn) {
             this.idColumn = idColumn;
             this.parentColumn = parentColumn;
         }
@@ -324,9 +324,9 @@ public abstract class MemoizedOperationKey {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            final TreeTable treeTable = (TreeTable) o;
-            return Objects.equals(idColumn, treeTable.idColumn) &&
-                    Objects.equals(parentColumn, treeTable.parentColumn);
+            final Tree tree = (Tree) o;
+            return Objects.equals(idColumn, tree.idColumn) &&
+                    Objects.equals(parentColumn, tree.parentColumn);
         }
 
         @Override

@@ -14,7 +14,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     public void testTreeTableNotImplemented() {
         // TODO (https://github.com/deephaven/deephaven-core/issues/64): Delete this, uncomment and fix the rest
         try {
-            emptyTable(10).treeTable("ABC", "DEF");
+            emptyTable(10).tree("ABC", "DEF");
             fail("Expected exception");
         } catch (UnsupportedOperationException expected) {
         }
@@ -41,7 +41,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // }
     //
     // private static Table makeNyMunisTreeTableFrom(Table t) {
-    // return t.treeTable("Path", "Direct");
+    // return t.tree("Path", "Direct");
     // }
     //
     // private static Table makeNyMunisTreeTable() throws CsvReaderException {
@@ -50,10 +50,10 @@ public class SnapshotStateTest extends QueryTableTestBase {
     //
     // @Test
     // public void testBounds() throws CsvReaderException {
-    // final HierarchicalTable treeTable = (HierarchicalTable) makeNyMunisTreeTable();
+    // final HierarchicalTable tree = (HierarchicalTable) makeNyMunisTreeTable();
     // final Map<Object, TableDetails> details = new HashMap<>();
     //
-    // final int columnCount = treeTable.getColumnSourceMap().size();
+    // final int columnCount = tree.getColumnSourceMap().size();
     //
     // // build a structure so we've got more to test than the trivial case
     // addTable(details, ROOT_TABLE_KEY, null, 7);
@@ -62,7 +62,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // addTable(details, "uncle", ROOT_TABLE_KEY, 2);
     //
     // // beginning of the tree, within bounds
-    // SnapshotState state = new SnapshotState(treeTable, "Path");
+    // SnapshotState state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 0, 4);
     // assertEquals(5, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -70,7 +70,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // assertEquals(5, state.tableKeyColumn.length);
     //
     // // from middle of the tree to the very end
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 12, 16);
     // assertEquals(5, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -78,7 +78,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // assertEquals(5, state.tableKeyColumn.length);
     //
     // // full range of the tree
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 0, 16);
     // assertEquals(17, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -86,7 +86,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // assertEquals(17, state.tableKeyColumn.length);
     //
     // // range in the middle of the tree
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 2, 8);
     // assertEquals(7, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -96,7 +96,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // // validation already exists in TSQ to prevent negative starts, so we skip that case
     //
     // // start midway, extend past the end
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 8, 20);
     // assertEquals(9, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -104,7 +104,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // assertEquals(9, state.tableKeyColumn.length);
     //
     // // start at the end, extend past the end
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 16, 20);
     // assertEquals(1, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -112,7 +112,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // assertEquals(1, state.tableKeyColumn.length);
     //
     // // start after the end, extend past the end
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 20, 30);
     // assertEquals(0, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -120,7 +120,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // assertEquals(0, state.tableKeyColumn.length);
     //
     // // start midway, extend way 2x past the end
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 8, 40);
     // assertEquals(9, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -128,7 +128,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // assertEquals(9, state.tableKeyColumn.length);
     //
     // // start at the end, extend 2x past the end
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 16, 40);
     // assertEquals(1, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);
@@ -136,7 +136,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
     // assertEquals(1, state.tableKeyColumn.length);
     //
     // // start past the end, extend 2x past the end
-    // state = new SnapshotState(treeTable, "Path");
+    // state = new SnapshotState(tree, "Path");
     // state.beginSnapshot(details, new BitSet(0), 20, 40);
     // assertEquals(0, state.actualViewportSize);
     // assertEquals(17, state.totalRowCount);

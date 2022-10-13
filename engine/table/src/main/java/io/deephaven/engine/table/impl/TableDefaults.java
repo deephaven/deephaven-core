@@ -561,7 +561,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Hierarchical table operations (rollup and treeTable).
+    // Hierarchical table operations (rollup and tree).
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override

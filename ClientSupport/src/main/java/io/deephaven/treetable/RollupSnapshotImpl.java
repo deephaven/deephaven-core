@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.deephaven.treetable.TreeTableConstants.RE_TREE_KEY;
+import static io.deephaven.treetable.TreeConstants.RE_TREE_KEY;
 
 class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
     private boolean rootTableChanged = false;
@@ -71,7 +71,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
     @Override
     Table prepareRootTable() {
         final HierarchicalTable baseTable = getBaseTable();
-        Table prepared = tryGetRetainedTable(TreeTableConstants.ROOT_TABLE_KEY);
+        Table prepared = tryGetRetainedTable(TreeConstants.ROOT_TABLE_KEY);
         if (prepared == null) {
             final HierarchicalTable filteredTable = applyFilters(baseTable);
             if (filteredTable != baseTable) {
@@ -80,7 +80,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
             }
 
             prepared = prepareTableInternal(filteredTable.getRawRootTable());
-            retainTable(TreeTableConstants.ROOT_TABLE_KEY, prepared);
+            retainTable(TreeConstants.ROOT_TABLE_KEY, prepared);
             rootTableChanged = true;
         }
 

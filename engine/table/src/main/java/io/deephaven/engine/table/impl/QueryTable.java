@@ -555,11 +555,11 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table treeTable(String idColumn, String parentColumn) {
+    public Table tree(String idColumn, String parentColumn) {
         if (isStream()) {
-            throw streamUnsupported("treeTable");
+            throw streamUnsupported("tree");
         }
-        return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
+        return memoizeResult(MemoizedOperationKey.tree(idColumn, parentColumn), () -> {
             final Table partitioned;
             {
                 final ColumnDefinition parentIdColumnDefinition = definition.getColumn(parentColumn);
@@ -584,7 +584,7 @@ public class QueryTable extends BaseTable {
                     final String listenerColError =
                             StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", ");
                     throw new IllegalStateException(
-                            "Table was prepared for treeTable with a different identifier column. Expected `" + idColumn
+                            "Table was prepared for tree with a different identifier column. Expected `" + idColumn
                                     + "`, Actual " + listenerColError);
                 }
             } else {
