@@ -104,8 +104,4 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
         // region constructor
         // endregion constructor
     }
-
-    @Override
-    public void initializeUpdate(@NotNull UpdateContext context) {
-    }
 }

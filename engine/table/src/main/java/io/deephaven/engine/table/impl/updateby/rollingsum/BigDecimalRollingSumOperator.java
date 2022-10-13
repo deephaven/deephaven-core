@@ -97,7 +97,4 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
                 redirContext, BigDecimal.class);
         this.mathContext = mathContext;
     }
-
-    @Override
-    public void initializeUpdate(@NotNull UpdateContext context) {}
 }

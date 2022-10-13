@@ -4,7 +4,10 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
@@ -25,6 +28,75 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
+        public void accumulate(RowSequence inputKeys,
+                               WritableChunk<Values> valueChunk,
+                               LongChunk<? extends Values> tsChunk,
+                               int len) {
+            setValuesChunk(valueChunk);
+            setTimestampChunk(tsChunk);
+
+            // chunk processing
+            if (timestampColumnName == null) {
+                // compute with ticks
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final float input = floatValueChunk.get(ii);
+                    final boolean isNull = input == NULL_FLOAT;
+                    final boolean isNan = Float.isNaN(input);
+
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan, false);
+                    } else {
+                        if (curVal == NULL_DOUBLE) {
+                            curVal = input;
+                        } else {
+                            curVal = alpha * curVal + (oneMinusAlpha * input);
+                        }
+                    }
+                    outputValues.set(ii, curVal);
+                }
+            } else {
+                // compute with time
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final float input = floatValueChunk.get(ii);
+                    final long timestamp = tsChunk.get(ii);
+                    final boolean isNull = input == NULL_FLOAT;
+                    final boolean isNan = Float.isNaN(input);
+                    final boolean isNullTime = timestamp == NULL_LONG;
+                    // Handle bad data first
+                    if (isNull || isNan || isNullTime) {
+                        handleBadData(this, isNull, isNan, isNullTime);
+                    } else if (curVal == NULL_DOUBLE) {
+                        // If the data looks good, and we have a null ema,  just accept the current value
+                        curVal = input;
+                        lastStamp = timestamp;
+                    } else {
+                        final boolean currentPoisoned = Double.isNaN(curVal);
+                        if (currentPoisoned && lastStamp == NULL_LONG) {
+                            // If the current EMA was a NaN, we should accept the first good timestamp so that
+                            // we can handle reset behavior properly in the following else
+                            lastStamp = timestamp;
+                        } else {
+                            final long dt = timestamp - lastStamp;
+                            if (dt <= 0) {
+                                handleBadTime(this, dt);
+                            } else if (!currentPoisoned) {
+                                final double alpha = Math.exp(-dt / timeScaleUnits);
+                                curVal = alpha * curVal + ((1 - alpha) * input);
+                                lastStamp = timestamp;
+                            }
+                        }
+                    }
+                    outputValues.set(ii, curVal);
+                }
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
         public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             floatValueChunk = valuesChunk.asFloatChunk();
         }
@@ -32,7 +104,7 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
         @Override
         public boolean isValueValid(long atKey) {
             final float value = valueSource.getFloat(atKey);
-            if(value == NULL_FLOAT) {
+            if (value == NULL_FLOAT) {
                 return false;
             }
 
@@ -44,53 +116,8 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public void push(long key, int pos) {
-            final float input = floatValueChunk.get(pos);
-            final boolean isNull = input == NULL_FLOAT;
-            final boolean isNan = Float.isNaN(input);
-
-            if (timestampColumnName == null) {
-                // compute with ticks
-                if(isNull || isNan) {
-                    handleBadData(this, isNull, isNan, false);
-                } else {
-                    if(curVal == NULL_DOUBLE) {
-                        curVal = input;
-                    } else {
-                        curVal = alpha * curVal + (oneMinusAlpha * input);
-                    }
-                }
-            } else {
-                // compute with time
-                final long timestamp = timestampValueChunk.get(pos);
-                final boolean isNullTime = timestamp == NULL_LONG;
-
-
-                // Handle bad data first
-                if (isNull || isNan || isNullTime) {
-                    handleBadData(this, isNull, isNan, isNullTime);
-                } else if (curVal == NULL_DOUBLE) {
-                    // If the data looks good, and we have a null ema,  just accept the current value
-                    curVal = input;
-                    lastStamp = timestamp;
-                } else {
-                    final boolean currentPoisoned = Double.isNaN(curVal);
-                    if (currentPoisoned && lastStamp == NULL_LONG) {
-                        // If the current EMA was a NaN, we should accept the first good timestamp so that
-                        // we can handle reset behavior properly in the following else
-                        lastStamp = timestamp;
-                    } else {
-                        final long dt = timestamp - lastStamp;
-                        if (dt <= 0) {
-                            handleBadTime(this, dt);
-                        } else if (!currentPoisoned) {
-                            final double alpha = Math.exp(-dt / timeScaleUnits);
-                            curVal = alpha * curVal + ((1 - alpha) * input);
-                            lastStamp = timestamp;
-                        }
-                    }
-                }
-            }
-        }        
+            throw new IllegalStateException("EMAOperator#push() is not used");
+        }
     }
 
     /**

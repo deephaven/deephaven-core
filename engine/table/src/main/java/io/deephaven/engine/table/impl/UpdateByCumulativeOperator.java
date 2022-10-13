@@ -2,8 +2,11 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedLongChunk;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.util.annotations.FinalDefault;
@@ -42,6 +45,11 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
         public void pop() {
             throw new UnsupportedOperationException("Cumulative operators should never call pop()");
         }
+
+        public abstract void accumulate(RowSequence inputKeys,
+                WritableChunk<Values> valueChunk,
+                LongChunk<? extends Values> tsChunk,
+                int len);
     }
 
     public UpdateByCumulativeOperator(@NotNull final MatchPair pair,

@@ -83,10 +83,10 @@ public abstract class UpdateByWindow {
 
             this.opAffected = new boolean[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
-            this.inputSourceFillContexts = new ChunkSource.FillContext[operators.length];
-            this.inputSourceChunkPopulated = new boolean[operators.length];
+            this.inputSourceFillContexts = new ChunkSource.FillContext[inputSources.length];
+            this.inputSourceChunkPopulated = new boolean[inputSources.length];
             // noinspection unchecked
-            this.inputSourceChunks = new WritableChunk[operators.length];
+            this.inputSourceChunks = new WritableChunk[inputSources.length];
 
             this.chunkSize = chunkSize;
             this.initialStep = initialStep;

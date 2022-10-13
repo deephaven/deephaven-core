@@ -8,6 +8,7 @@ package io.deephaven.engine.table.impl.updateby.internal;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
@@ -43,6 +44,25 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
             super(chunkSize);
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableDoubleChunk.makeWritableChunk(chunkSize);
+        }
+
+        @Override
+        public void accumulate(RowSequence inputKeys,
+                               WritableChunk<Values> valueChunk,
+                               LongChunk<? extends Values> tsChunk,
+                               int len) {
+
+            setValuesChunk(valueChunk);
+            setTimestampChunk(tsChunk);
+
+            // chunk processing
+            for (int ii = 0; ii < len; ii++) {
+                push(NULL_ROW_KEY, ii);
+                writeToOutputChunk(ii);
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
         }
 
         @Override

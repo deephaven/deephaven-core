@@ -38,6 +38,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             this.valueSource = inputSource;
         }
 
+
+
         @Override
         public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();

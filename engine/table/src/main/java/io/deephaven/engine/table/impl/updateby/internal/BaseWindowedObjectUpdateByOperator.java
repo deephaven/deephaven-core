@@ -108,6 +108,17 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
     // endregion extra-methods
 
     @Override
+    public void initializeUpdate(@NotNull UpdateContext context) {
+        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
+        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
+        // need to do anything with capacity.
+        if(redirContext.isRedirected()) {
+            // The redirection index does not use the 0th index for some reason.
+            outputSource.ensureCapacity(redirContext.requiredCapacity());
+        }
+    }
+
+    @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
         if (redirContext.isRedirected()) {

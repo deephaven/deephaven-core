@@ -104,10 +104,6 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
         // endregion constructor
     }
 
-    @Override
-    public void initializeUpdate(@NotNull UpdateContext context) {
-    }
-
     @NotNull
     @Override
     public Map<String, ColumnSource<?>> getOutputColumns() {

@@ -10,6 +10,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.UpdateByOperator;
+import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,16 +91,15 @@ public class UpdateByWindowTime extends UpdateByWindow {
 
             // need a writable rowset
             WritableRowSet tmpAffected = computeAffectedRowsTime(sourceRowSet, changed, prevUnits, fwdUnits,
-                    timestampColumnSource, timestampSsa);
+                    timestampColumnSource, timestampSsa, false);
 
             // other rows can be affected by removes
             if (upstream.removed().isNonempty()) {
                 try (final RowSet prev = sourceRowSet.copyPrev();
                         final WritableRowSet affectedByRemoves =
                                 computeAffectedRowsTime(prev, upstream.removed(), prevUnits, fwdUnits,
-                                        timestampColumnSource, timestampSsa)) {
-                    // apply shifts to get back to pos-shift space
-                    upstream.shifted().apply(affectedByRemoves);
+                                        timestampColumnSource, timestampSsa, true)) {
+                    // we used the SSA (post-shift) to get these keys, no need to shift
                     // retain only the rows that still exist in the sourceRowSet
                     affectedByRemoves.retain(sourceRowSet);
                     tmpAffected.insert(affectedByRemoves);
@@ -110,7 +110,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
 
             // now get influencer rows for the affected rows
             influencerRows = computeInfluencerRowsTime(sourceRowSet, affectedRows, prevUnits, fwdUnits,
-                    timestampColumnSource, timestampSsa);
+                    timestampColumnSource, timestampSsa, false);
 
             makeOperatorContexts();
             return true;
@@ -215,6 +215,14 @@ public class UpdateByWindowTime extends UpdateByWindow {
                 modifiedBuilder = RowSetFactory.builderSequential();
             }
 
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
+                    UpdateByWindowedOperator winOp = (UpdateByWindowedOperator) operators[opIdx];
+                    // call the specialized version of `intializeUpdate()` for these operators
+                    winOp.initializeUpdate(opContext[opIdx]);
+                }
+            }
+
             influencerIt = influencerRows.getRowSequenceIterator();
             try (final RowSequence.Iterator it = affectedRows.getRowSequenceIterator();
                     final ChunkSource.GetContext localTimestampContext =
@@ -285,13 +293,16 @@ public class UpdateByWindowTime extends UpdateByWindow {
     }
 
     private static WritableRowSet computeAffectedRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
-            long fwdNanos, final ColumnSource<?> timestampColumnSource, final LongSegmentedSortedArray timestampSsa) {
+            long fwdNanos, final ColumnSource<?> timestampColumnSource, final LongSegmentedSortedArray timestampSsa,
+            boolean usePrev) {
         // swap fwd/rev to get the affected windows
-        return computeInfluencerRowsTime(sourceSet, subset, fwdNanos, revNanos, timestampColumnSource, timestampSsa);
+        return computeInfluencerRowsTime(sourceSet, subset, fwdNanos, revNanos, timestampColumnSource, timestampSsa,
+                usePrev);
     }
 
     private static WritableRowSet computeInfluencerRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
-            long fwdNanos, final ColumnSource<?> timestampColumnSource, final LongSegmentedSortedArray timestampSsa) {
+            long fwdNanos, final ColumnSource<?> timestampColumnSource, final LongSegmentedSortedArray timestampSsa,
+            boolean usePrev) {
         if (sourceSet.size() == subset.size()) {
             return sourceSet.copy();
         }
@@ -303,7 +314,9 @@ public class UpdateByWindowTime extends UpdateByWindow {
             LongSegmentedSortedArray.Iterator ssaIt = timestampSsa.iterator(false, false);
             while (it.hasMore() && ssaIt.hasNext()) {
                 final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
-                LongChunk<? extends Values> timestamps = timestampColumnSource.getChunk(context, rs).asLongChunk();
+                LongChunk<? extends Values> timestamps = usePrev
+                        ? timestampColumnSource.getPrevChunk(context, rs).asLongChunk()
+                        : timestampColumnSource.getChunk(context, rs).asLongChunk();
 
                 for (int ii = 0; ii < rs.intSize(); ii++) {
                     // if the timestamp of the row is null, it won't belong to any set and we can ignore it

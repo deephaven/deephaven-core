@@ -14,6 +14,7 @@ import io.deephaven.test.types.ParallelTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.time.Duration;
 import java.util.*;
 
 import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
@@ -45,6 +46,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
 
     @Test
     public void testMixedGeneralZeroKey() {
+        doTestTicking(false, false, false, 20, 10, 12);
+
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
                 doTestTicking(seed > 15, false, false, 20, size, seed);
@@ -78,8 +81,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
-                    Table base;
-
                     @Override
                     protected Table e() {
                         TableDefaults base = result.t;
@@ -88,8 +89,13 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                         }
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
+                        // NOTE: I can't include the float/double based Rolling
                         final Collection<? extends UpdateByOperation> clauses = List.of(
                                 UpdateByOperation.Fill(),
+                                UpdateByOperation.RollingSum(100, 0,
+                                        makeOpColNames(columnNamesArray, "_rollsumticks", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                                        makeOpColNames(columnNamesArray, "_rollsumtime", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),

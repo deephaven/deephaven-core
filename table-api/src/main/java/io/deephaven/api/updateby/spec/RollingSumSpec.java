@@ -35,7 +35,7 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
                 TimeScale.ofTime(timestampCol, fwdWindowDuration));
     }
 
-    // general use contructors
+    // general use constructors
 
     public static RollingSumSpec of(TimeScale prevTimeScale) {
         return ImmutableRollingSumSpec.builder().prevTimeScale(prevTimeScale).build();

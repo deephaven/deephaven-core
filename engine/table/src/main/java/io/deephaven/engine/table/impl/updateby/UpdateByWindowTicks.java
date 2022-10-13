@@ -7,7 +7,9 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.UpdateByOperator;
+import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -15,6 +17,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 // this class is currently too big, should specialize into CumWindow, TickWindow, TimeWindow to simplify implementation
 public class UpdateByWindowTicks extends UpdateByWindow {
@@ -169,69 +174,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
             nextInfluencerKey = influencerKeyChunk.get(nextInfluencerIndex);
         }
 
-        private void fillWindowTicks(long currentPos) {
-            // compute the head and tail positions (inclusive)
-            final long head = Math.max(0, currentPos - prevUnits + 1);
-            final long tail = Math.min(sourceRowSet.size() - 1, currentPos + fwdUnits);
-
-            // pop out all values from the current window that are not in the new window
-            while (!currentWindowPositions.isEmpty() && currentWindowPositions.front() < head) {
-                // operator pop
-                for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                    if (opAffected[opIdx]) {
-                        opContext[opIdx].pop();
-                    }
-                }
-                currentWindowPositions.remove();
-            }
-
-            // if the window is empty, reset
-            if (currentWindowPositions.isEmpty()) {
-                for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                    if (opAffected[opIdx]) {
-                        opContext[opIdx].reset();
-                    }
-                }
-            }
-
-            // skip values until they match the window (this can only happen on the initial addition of rows to the
-            // table, because we short-circuit the precise building of the influencer rows for efficiency)
-            while (nextInfluencerPos < head) {
-                nextInfluencerIndex++;
-
-                if (nextInfluencerIndex < influencerPosChunk.size()) {
-                    nextInfluencerPos = LongSizedDataStructure.intSize(
-                            "updateBy window positions exceeded maximum size",
-                            influencerPosChunk.get(nextInfluencerIndex));
-                    nextInfluencerKey = influencerKeyChunk.get(nextInfluencerIndex);
-                } else {
-                    // try to bring in new data
-                    loadNextInfluencerValueChunks();
-                }
-            }
-
-            // push matching values
-            while (nextInfluencerPos <= tail) {
-                // operator push
-                for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                    if (opAffected[opIdx]) {
-                        opContext[opIdx].push(nextInfluencerKey, nextInfluencerIndex);
-                    }
-                }
-                currentWindowPositions.add(nextInfluencerPos);
-                nextInfluencerIndex++;
-
-                if (nextInfluencerIndex < influencerPosChunk.size()) {
-                    nextInfluencerPos = LongSizedDataStructure.intSize(
-                            "updateBy window positions exceeded maximum size",
-                            influencerPosChunk.get(nextInfluencerIndex));
-                    nextInfluencerKey = influencerKeyChunk.get(nextInfluencerIndex);
-                } else {
-                    // try to bring in new data
-                    loadNextInfluencerValueChunks();
-                }
-            }
-        }
+        private void fillWindowTicks(long currentPos, long sourceRowSetSize) {}
 
         // this function process the affected rows chunkwise, but will call fillWindowTicks() for each
         // new row. fillWindowTicks() will advance the moving window (which is the same for all operators in this
@@ -245,6 +188,14 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                 modifiedBuilder = RowSetFactory.builderSequential();
             }
 
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
+                    UpdateByWindowedOperator winOp = (UpdateByWindowedOperator) operators[opIdx];
+                    // call the specialized version of `intializeUpdate()` for these operators
+                    winOp.initializeUpdate(opContext[opIdx]);
+                }
+            }
+
             influencerIt = influencerRows.getRowSequenceIterator();
             influencerPosIt = influencerPositions.getRowSequenceIterator();
 
@@ -254,19 +205,83 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                 // load the first chunk of influencer values (fillWindowTicks() will call in future)
                 loadNextInfluencerValueChunks();
 
+                final long sourceRowSetSize = sourceRowSet.size();
+
                 while (it.hasMore()) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
                     final RowSequence posRs = posIt.getNextRowSequenceWithLength(chunkSize);
+                    final int size = rs.intSize();
 
                     final LongChunk<OrderedRowKeys> posChunk = posRs.asRowKeyChunk();
 
                     // chunk processing
-                    for (int ii = 0; ii < rs.size(); ii++) {
+                    for (int ii = 0; ii < size; ii++) {
                         // read the current position
                         final long currentPos = posChunk.get(ii);
 
                         // fill the operator windows (calls push/pop/reset as appropriate)
-                        fillWindowTicks(currentPos);
+                        // compute the head and tail positions (inclusive)
+                        final long head = Math.max(0, currentPos - prevUnits + 1);
+                        final long tail = Math.min(sourceRowSetSize - 1, currentPos + fwdUnits);
+
+                        // pop out all values from the current window that are not in the new window
+                        while (!currentWindowPositions.isEmpty() && currentWindowPositions.front() < head) {
+                            // operator pop
+                            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                                if (opAffected[opIdx]) {
+                                    opContext[opIdx].pop();
+                                }
+                            }
+                            currentWindowPositions.remove();
+                        }
+
+                        // if the window is empty, reset
+                        if (currentWindowPositions.isEmpty()) {
+                            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                                if (opAffected[opIdx]) {
+                                    opContext[opIdx].reset();
+                                }
+                            }
+                        }
+
+                        // skip values until they match the window (this can only happen on the initial addition of rows
+                        // to the
+                        // table, because we short-circuit the precise building of the influencer rows for efficiency)
+                        while (nextInfluencerPos < head) {
+                            nextInfluencerIndex++;
+
+                            if (nextInfluencerIndex < influencerPosChunk.size()) {
+                                nextInfluencerPos = LongSizedDataStructure.intSize(
+                                        "updateBy window positions exceeded maximum size",
+                                        influencerPosChunk.get(nextInfluencerIndex));
+                                nextInfluencerKey = influencerKeyChunk.get(nextInfluencerIndex);
+                            } else {
+                                // try to bring in new data
+                                loadNextInfluencerValueChunks();
+                            }
+                        }
+
+                        // push matching values
+                        while (nextInfluencerPos <= tail) {
+                            // operator push
+                            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                                if (opAffected[opIdx]) {
+                                    opContext[opIdx].push(nextInfluencerKey, nextInfluencerIndex);
+                                }
+                            }
+                            currentWindowPositions.add(nextInfluencerPos);
+                            nextInfluencerIndex++;
+
+                            if (nextInfluencerIndex < influencerPosChunk.size()) {
+                                nextInfluencerPos = LongSizedDataStructure.intSize(
+                                        "updateBy window positions exceeded maximum size",
+                                        influencerPosChunk.get(nextInfluencerIndex));
+                                nextInfluencerKey = influencerKeyChunk.get(nextInfluencerIndex);
+                            } else {
+                                // try to bring in new data
+                                loadNextInfluencerValueChunks();
+                            }
+                        }
 
                         // now the operators have seen the correct window data, write to the output chunk
                         for (int opIdx = 0; opIdx < operators.length; opIdx++) {

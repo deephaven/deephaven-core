@@ -140,6 +140,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
                             timestampColumnSource == null ? null : timestampColumnSource.makeGetContext(chunkSize)) {
                 while (it.hasMore()) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
+                    final int size = rs.intSize();
                     Arrays.fill(inputSourceChunkPopulated, false);
 
                     // create the timestamp chunk if needed
@@ -152,17 +153,13 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
 
                             // chunk prep
                             prepareValuesChunkForSource(srcIdx, rs);
-                            opContext[opIdx].setValuesChunk(inputSourceChunks[srcIdx]);
-                            opContext[opIdx].setTimestampChunk(tsChunk);
 
-                            // chunk processing
-                            for (int ii = 0; ii < rs.size(); ii++) {
-                                opContext[opIdx].push(NULL_ROW_KEY, ii);
-                                opContext[opIdx].writeToOutputChunk(ii);
-                            }
-
-                            // chunk output to column
-                            opContext[opIdx].writeToOutputColumn(rs);
+                            // make the specialized call for cumulative operators
+                            ((UpdateByCumulativeOperator.Context) opContext[opIdx]).accumulate(
+                                    rs,
+                                    inputSourceChunks[srcIdx],
+                                    tsChunk,
+                                    size);
                         }
                     }
 

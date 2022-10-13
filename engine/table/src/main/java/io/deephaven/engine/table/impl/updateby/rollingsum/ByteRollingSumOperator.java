@@ -107,8 +107,4 @@ public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
         this.nullValue = nullValue;
         // endregion constructor
     }
-
-    @Override
-    public void initializeUpdate(@NotNull UpdateContext context) {
-    }
 }

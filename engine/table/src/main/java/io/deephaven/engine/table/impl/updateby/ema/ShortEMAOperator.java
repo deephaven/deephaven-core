@@ -2,8 +2,11 @@ package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
@@ -25,6 +28,67 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
+        public void accumulate(RowSequence inputKeys,
+                               WritableChunk<Values> valueChunk,
+                               LongChunk<? extends Values> tsChunk,
+                               int len) {
+            setValuesChunk(valueChunk);
+            setTimestampChunk(tsChunk);
+
+            // chunk processing
+            if (timestampColumnName == null) {
+                // compute with ticks
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final short input = shortValueChunk.get(ii);
+
+                    if(input == NULL_SHORT) {
+                        handleBadData(this, true, false, false);
+                    } else {
+                        if(curVal == NULL_DOUBLE) {
+                            curVal = input;
+                        } else {
+                            curVal = alpha * curVal + (oneMinusAlpha * input);
+                        }
+                    }
+                    outputValues.set(ii, curVal);
+                }
+            } else {
+                // compute with time
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final short input = shortValueChunk.get(ii);
+                    final long timestamp = tsChunk.get(ii);
+                    //noinspection ConstantConditions
+                    final boolean isNull = input == NULL_SHORT;
+                    final boolean isNullTime = timestamp == NULL_LONG;
+                    if(isNull || isNullTime) {
+                        handleBadData(this, isNull, false, isNullTime);
+                    } else {
+                        if(curVal == NULL_DOUBLE) {
+                            curVal = input;
+                            lastStamp = timestamp;
+                        } else {
+                            final long dt = timestamp - lastStamp;
+                            if(dt <= 0) {
+                                handleBadTime(this, dt);
+                            } else {
+                                // alpha is dynamic, based on time
+                                final double alpha = Math.exp(-dt / timeScaleUnits);
+                                curVal = alpha * curVal + ((1 - alpha) * input);
+                                lastStamp = timestamp;
+                            }
+                        }
+                    }
+                    outputValues.set(ii, curVal);
+                }
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
         public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
             shortValueChunk = valuesChunk.asShortChunk();
         }
@@ -36,43 +100,7 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public void push(long key, int pos) {
-            final short input = shortValueChunk.get(pos);
-            if (timestampColumnName == null) {
-                // compute with ticks
-                if(input == NULL_SHORT) {
-                    handleBadData(this, true, false, false);
-                } else {
-                    if(curVal == NULL_DOUBLE) {
-                        curVal = input;
-                    } else {
-                        curVal = alpha * curVal + (oneMinusAlpha * input);
-                    }
-                }
-            } else {
-                // compute with time
-                final long timestamp = timestampValueChunk.get(pos);
-                //noinspection ConstantConditions
-                final boolean isNull = input == NULL_SHORT;
-                final boolean isNullTime = timestamp == NULL_LONG;
-                if(isNull || isNullTime) {
-                    handleBadData(this, isNull, false, isNullTime);
-                } else {
-                    if(curVal == NULL_DOUBLE) {
-                        curVal = input;
-                        lastStamp = timestamp;
-                    } else {
-                        final long dt = timestamp - lastStamp;
-                        if(dt <= 0) {
-                            handleBadTime(this, dt);
-                        } else {
-                            // alpha is dynamic, based on time
-                            final double alpha = Math.exp(-dt / timeScaleUnits);
-                            curVal = alpha * curVal + ((1 - alpha) * input);
-                            lastStamp = timestamp;
-                        }
-                    }
-                }
-            }
+            throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }
 

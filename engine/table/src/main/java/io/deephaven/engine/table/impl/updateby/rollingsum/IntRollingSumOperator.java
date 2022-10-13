@@ -104,8 +104,4 @@ public class IntRollingSumOperator extends BaseWindowedLongUpdateByOperator {
         // region constructor
         // endregion constructor
     }
-
-    @Override
-    public void initializeUpdate(@NotNull UpdateContext context) {
-    }
 }

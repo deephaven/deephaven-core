@@ -96,8 +96,4 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
         // region constructor
         // endregion constructor        
     }
-
-    @Override
-    public void initializeUpdate(@NotNull UpdateContext context) {
-    }
 }

@@ -165,7 +165,7 @@ public abstract class UpdateBy {
             int hash = UpdateByWindow.hashCodeFromOperator(operators[opIdx]);
             boolean added = false;
 
-            // rudimentary linear probing for collisions
+            // rudimentary collision detection and handling
             while (!added) {
                 if (!windowHashToOperatorIndicesMap.containsKey(hash)) {
                     // does not exist, can add immediately

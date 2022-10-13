@@ -4,7 +4,9 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
@@ -13,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -23,50 +26,74 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
         }
 
         @Override
-        public void push(long key, int pos) {
-            final BigDecimal input = objectValueChunk.get(pos);
+        public void accumulate(RowSequence inputKeys,
+                WritableChunk<Values> valueChunk,
+                LongChunk<? extends Values> tsChunk,
+                int len) {
+            setValuesChunk(valueChunk);
+            setTimestampChunk(tsChunk);
+
+            // chunk processing
             if (timestampColumnName == null) {
                 // compute with ticks
-                if (input == null) {
-                    handleBadData(this, true, false);
-                } else {
-                    if (curVal == null) {
-                        curVal = input;
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final BigDecimal input = objectValueChunk.get(ii);
+                    if (input == null) {
+                        handleBadData(this, true, false);
                     } else {
-                        curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
-                                        control.bigValueContextOrDefault());
-                    }
-                }
-            } else {
-                // compute with time
-                final long timestamp = timestampValueChunk.get(pos);
-                final boolean isNull = input == null;
-                final boolean isNullTime = timestamp == NULL_LONG;
-                if (isNull || isNullTime) {
-                    handleBadData(this, isNull, isNullTime);
-                } else {
-                    if (curVal == null) {
-                        curVal = input;
-                        lastStamp = timestamp;
-                    } else {
-                        final long dt = timestamp - lastStamp;
-                        if (dt <= 0) {
-                            handleBadTime(this, dt);
+                        if (curVal == null) {
+                            curVal = input;
                         } else {
-                            // alpha is dynamic, based on time
-                            BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
-                            BigDecimal oneMinusAlpha =
-                                    BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
-
                             curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
                                     .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
                                             control.bigValueContextOrDefault());
-                            lastStamp = timestamp;
                         }
                     }
+                    outputValues.set(ii, curVal);
+                }
+            } else {
+                // compute with time
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final BigDecimal input = objectValueChunk.get(ii);
+                    final long timestamp = tsChunk.get(ii);
+                    final boolean isNull = input == null;
+                    final boolean isNullTime = timestamp == NULL_LONG;
+                    if (isNull || isNullTime) {
+                        handleBadData(this, isNull, isNullTime);
+                    } else {
+                        if (curVal == null) {
+                            curVal = input;
+                            lastStamp = timestamp;
+                        } else {
+                            final long dt = timestamp - lastStamp;
+                            if (dt <= 0) {
+                                handleBadTime(this, dt);
+                            } else {
+                                // alpha is dynamic, based on time
+                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
+                                BigDecimal oneMinusAlpha =
+                                        BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+
+                                curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
+                                        .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
+                                                control.bigValueContextOrDefault());
+                                lastStamp = timestamp;
+                            }
+                        }
+                    }
+                    outputValues.set(ii, curVal);
                 }
             }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
+        public void push(long key, int pos) {
+            throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }
 
