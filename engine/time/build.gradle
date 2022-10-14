@@ -30,4 +30,6 @@ dependencies {
 
 test {
     jvmArgs '--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED'
+    systemProperty 'RealTimeClockLoader.timeSource', 'jdk-internals'
+//    systemProperty 'RealTimeClockLoader.timeSource', 'millis'
 }

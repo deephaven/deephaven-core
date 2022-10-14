@@ -45,7 +45,8 @@ if (!hasProperty('excludeClockImpl')) {
     dependencies {
         runtimeOnly project(':clock-impl')
     }
-    extraJvmArgs += ['--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED']
+    extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
+    extraJvmArgs += ['-DRealTimeClockLoader.timeSource=jdk-internals']
 }
 
 if (hasProperty('devCerts') || hasProperty('devMTLS')) {

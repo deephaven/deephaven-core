@@ -8,11 +8,11 @@ import java.util.ServiceLoader;
  */
 class RealTimeClockLoader {
 
-    private static final String REAL_TIME_CLOCK_SOURCE_PROPERTY = "RealTimeSource";
+    private static final String REAL_TIME_CLOCK_SOURCE_PROPERTY = "RealTimeClockLoader.timeSource";
 
     // TODO: this should probably default to 'instant' and get overrided wherever we do add-exports.
     private static final String REAL_TIME_CLOCK_SOURCE =
-            System.getProperty(REAL_TIME_CLOCK_SOURCE_PROPERTY, "jdk-internals").toLowerCase();
+            System.getProperty(REAL_TIME_CLOCK_SOURCE_PROPERTY, "instant").toLowerCase();
 
     private static final String JDK_INTERNALS_CLOCK_CLASS_NAME = "io.deephaven.clock.impl.JdkInternalsRealTimeClock";
 

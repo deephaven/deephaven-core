@@ -3,8 +3,10 @@
  */
 package io.deephaven.time;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.TimeZones;
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.time.calendar.Calendars;
 import junit.framework.TestCase;
 import org.joda.time.DateTimeZone;
@@ -203,14 +205,18 @@ public class TestDateTime extends BaseArrayTestCase {
     }
 
     public void testCurrentTime() {
+        System.out.println("System clock: " + Clock.SYSTEM.REAL_TIME_CLOCK.getClass().getName());
+
         Instant nowInstant = Instant.now();
-        DateTime nowDateTime = DateTime.now();
+        DateTime nowFromDatetime = DateTime.now();
 
         System.out.println("Instant: " + nowInstant);
-        System.out.println("DateTime: " + nowDateTime);
+        System.out.println("DateTime: " + nowFromDatetime);
 
-        isAfter(
-                nowDateTime,
-                DateTimeUtils.nanosToTime(nowInstant.getEpochSecond() * 1000000000 + nowInstant.getNano()));
+        final DateTime nowFromInstant =
+                DateTimeUtils.nanosToTime(nowInstant.getEpochSecond() * 1000000000 + nowInstant.getNano());
+        Assert.assertion(isAfter(nowFromDatetime, nowFromInstant), "isAfter(nowFromDatetime, nowFromInstant)",
+                nowFromDatetime, "nowFromDatetime",
+                nowFromInstant, "nowFromInstant");
     }
 }

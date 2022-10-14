@@ -4,6 +4,7 @@
 package io.deephaven.base.clock;
 
 import io.deephaven.clock.RealTimeClock;
+import org.jetbrains.annotations.NotNull;
 
 public interface Clock {
 
@@ -39,7 +40,8 @@ public interface Clock {
 
         private SystemClock() {}
 
-        RealTimeClock REAL_TIME_CLOCK = RealTimeClock.loadImpl();
+        @NotNull
+        public final RealTimeClock REAL_TIME_CLOCK = RealTimeClock.loadImpl();
 
         @Override
         public long currentTimeMillis() {

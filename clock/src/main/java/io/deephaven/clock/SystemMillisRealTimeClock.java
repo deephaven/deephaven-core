@@ -11,11 +11,11 @@ public final class SystemMillisRealTimeClock implements RealTimeClock {
 
     @Override
     public long currentTimeMicros() {
-        return currentTimeMillis() * 1000L;
+        return System.currentTimeMillis() * 1000L;
     }
 
     @Override
     public long currentTimeNanos() {
-        return currentTimeMillis() * 1000L;
+        return System.currentTimeMillis() * 1_000_000L;
     }
 }

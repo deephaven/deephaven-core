@@ -85,6 +85,8 @@ def start_jvm(
         '--add-opens=java.management/sun.management=ALL-UNNAMED',
         # Allow our clockImpl project to access jdk.internal.misc.VM
         '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+        # Use jdk-internals as the time source
+        '-DRealTimeClockLoader.timeSource=jdk-internals',
     ]
     if jvm_args is None:
         jvm_args = required_jvm_args
