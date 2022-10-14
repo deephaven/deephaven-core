@@ -70,15 +70,19 @@ public class TestControlledScheduler extends TimeProviderNanoBase implements Sch
         currentTimeInNs = Math.max(currentTimeInNs, untilTime.getNanos());
     }
 
+    public void runThrough(final long throughTimeMillis) {
+        runThroughNanos(throughTimeMillis * 1_000_000);
+    }
+
     /**
      * Will run commands until all work items that should be run through Max(currentTime, untilTime) have run. Does
      * execute events scheduled at the provided time.
      *
-     * @param throughTime time to run through
+     * @param throughTimeNanos time to run through
      */
-    public void runThrough(final DateTime throughTime) {
+    public void runThroughNanos(final long throughTimeNanos) {
         while (!workQueue.isEmpty()) {
-            final long now = Math.max(currentTimeInNs, throughTime.getNanos());
+            final long now = Math.max(currentTimeInNs, throughTimeNanos);
             if (workQueue.asMap().firstEntry().getKey().getNanos() > now) {
                 break;
             }
@@ -86,7 +90,7 @@ public class TestControlledScheduler extends TimeProviderNanoBase implements Sch
             runOne();
         }
 
-        currentTimeInNs = Math.max(currentTimeInNs, throughTime.getNanos());
+        currentTimeInNs = Math.max(currentTimeInNs, throughTimeNanos);
     }
 
     /**
@@ -114,8 +118,8 @@ public class TestControlledScheduler extends TimeProviderNanoBase implements Sch
     }
 
     @Override
-    public void runAtTime(final @NotNull DateTime absoluteTime, final @NotNull Runnable command) {
-        workQueue.put(absoluteTime, command);
+    public void runAtTime(long epochMillis, @NotNull Runnable command) {
+        workQueue.put(DateTimeUtils.millisToTime(epochMillis), command);
     }
 
     @Override

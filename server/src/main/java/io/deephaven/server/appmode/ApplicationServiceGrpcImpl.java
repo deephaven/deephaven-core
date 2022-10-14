@@ -195,7 +195,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 scheduler.runImmediately(this);
             } else {
                 lastScheduledMillis = nextMin;
-                scheduler.runAtTime(DateTimeUtils.millisToTime(nextMin), this);
+                scheduler.runAfterDelay(nextMin - now, this);
             }
             return true;
         }

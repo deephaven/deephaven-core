@@ -21,10 +21,10 @@ public interface Scheduler extends TimeProvider {
     /**
      * Schedule this task to run at the specified time.
      *
-     * @param absoluteTime when to run this task
+     * @param epochMillis when to run this task
      * @param command the task to run
      */
-    void runAtTime(@NotNull DateTime absoluteTime, @NotNull Runnable command);
+    void runAtTime(long epochMillis, @NotNull Runnable command);
 
     /**
      * Schedule this task to run at the specified time.
@@ -96,8 +96,8 @@ public interface Scheduler extends TimeProvider {
         }
 
         @Override
-        public void runAtTime(@NotNull final DateTime absoluteTime, final @NotNull Runnable command) {
-            runAfterDelay(absoluteTime.getMillis() - currentTimeMillis(), command);
+        public void runAtTime(long epochMillis, @NotNull Runnable command) {
+            runAfterDelay(epochMillis - currentTimeMillis(), command);
         }
 
         @Override
