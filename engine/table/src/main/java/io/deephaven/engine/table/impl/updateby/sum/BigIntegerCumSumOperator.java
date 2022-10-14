@@ -15,14 +15,14 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
 public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<BigInteger> {
     protected class Context extends BaseObjectUpdateByOperator<BigInteger>.Context {
-        public ObjectChunk<BigInteger, Values> objectValueChunk;
+        public ObjectChunk<BigInteger, ? extends Values> objectValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
         }
 

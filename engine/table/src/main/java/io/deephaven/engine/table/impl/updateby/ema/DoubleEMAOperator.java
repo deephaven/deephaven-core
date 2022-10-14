@@ -25,7 +25,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
     protected class Context extends BasePrimitiveEMAOperator.Context {
         private final ColumnSource<?> valueSource;
 
-        public DoubleChunk<Values> doubleValueChunk;
+        public DoubleChunk<? extends Values> doubleValueChunk;
 
         protected Context(int chunkSize, ColumnSource<?> inputSource) {
             super(chunkSize);
@@ -34,7 +34,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                               WritableChunk<Values> valueChunk,
+                               Chunk<? extends Values> valueChunk,
                                LongChunk<? extends Values> tsChunk,
                                int len) {
             setValuesChunk(valueChunk);
@@ -102,7 +102,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             doubleValueChunk = valuesChunk.asDoubleChunk();
         }
 

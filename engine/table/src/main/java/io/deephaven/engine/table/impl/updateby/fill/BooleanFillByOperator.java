@@ -28,14 +28,14 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseByteUpdateByOperator.Context {
-        public ByteChunk<Values> booleanValueChunk;
+        public ByteChunk<? extends Values> booleanValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             booleanValueChunk = valuesChunk.asByteChunk();
         }
 

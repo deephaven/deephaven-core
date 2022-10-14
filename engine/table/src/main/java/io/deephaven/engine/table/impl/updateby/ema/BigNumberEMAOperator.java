@@ -29,7 +29,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     public abstract class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         protected final ColumnSource<?> valueSource;
         public LongChunk<? extends Values> timestampValueChunk;
-        public ObjectChunk<T, Values> objectValueChunk;
+        public ObjectChunk<T, ? extends Values> objectValueChunk;
 
         long lastStamp = NULL_LONG;
 
@@ -41,7 +41,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
         }
 

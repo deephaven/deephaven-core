@@ -21,14 +21,14 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseLongUpdateByOperator.Context {
-        public ByteChunk<Values> byteValueChunk;
+        public ByteChunk<? extends Values> byteValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             byteValueChunk = valuesChunk.asByteChunk();
         }
 

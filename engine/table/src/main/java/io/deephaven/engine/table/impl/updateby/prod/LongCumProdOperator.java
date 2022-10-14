@@ -21,14 +21,14 @@ public class LongCumProdOperator extends BaseLongUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseLongUpdateByOperator.Context {
-        public LongChunk<Values> longValueChunk;
+        public LongChunk<? extends Values> longValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             longValueChunk = valuesChunk.asLongChunk();
         }
 

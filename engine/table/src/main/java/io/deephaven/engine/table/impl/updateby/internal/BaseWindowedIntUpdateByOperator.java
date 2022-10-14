@@ -7,6 +7,7 @@ package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -45,7 +46,41 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
+        public void accumulate(RowSequence inputKeys,
+                               Chunk<? extends Values> influencerValueChunk,
+                               IntChunk<? extends Values> pushChunk,
+                               IntChunk<? extends Values> popChunk,
+                               int len) {
+
+            setValuesChunk(influencerValueChunk);
+            int pushIndex = 0;
+
+            // chunk processing
+            for (int ii = 0; ii < len; ii++) {
+                final int pushCount = pushChunk.get(ii);
+                final int popCount = popChunk.get(ii);
+
+                // pop for this row
+                for (int count = 0; count < popCount; count++) {
+                    pop();
+                }
+
+                // push for this row
+                for (int count = 0; count < pushCount; count++) {
+                    push(NULL_ROW_KEY, pushIndex + count);
+                }
+                pushIndex += pushCount;
+
+                // write the results to the output chunk
+                writeToOutputChunk(ii);
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {}
 
         @Override
         public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}

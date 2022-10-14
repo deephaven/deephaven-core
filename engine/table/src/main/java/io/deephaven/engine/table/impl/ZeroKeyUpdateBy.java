@@ -258,10 +258,6 @@ class ZeroKeyUpdateBy extends UpdateBy {
         @SuppressWarnings("resource")
         UpdateContext(@NotNull final TableUpdate upstream,
                 final boolean isInitializeStep) {
-            final int updateSize = UpdateSizeCalculator.chunkSize(upstream, control.chunkCapacityOrDefault());
-
-            this.chunkSize =
-                    UpdateSizeCalculator.chunkSize(updateSize, upstream.shifted(), control.chunkCapacityOrDefault());
 
             this.windowContexts = new UpdateByWindow.UpdateByWindowContext[windows.length];
             this.windowAffected = new boolean[windows.length];
@@ -273,7 +269,7 @@ class ZeroKeyUpdateBy extends UpdateBy {
                         inputSources,
                         timestampColumnSource,
                         timestampSsa,
-                        chunkSize,
+                        control.chunkCapacityOrDefault(),
                         isInitializeStep);
 
                 // compute the affected/influenced operators and rowset within this window

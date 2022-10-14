@@ -36,10 +36,42 @@ public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowed
             this.outputValues = WritableFloatChunk.makeWritableChunk(chunkSize);
         }
 
-        public void storeWorkingChunk(@NotNull final Chunk<Values> valuesChunk) {}
+        @Override
+        public void accumulate(RowSequence inputKeys,
+                               Chunk<? extends Values> influencerValueChunk,
+                               IntChunk<? extends Values> pushChunk,
+                               IntChunk<? extends Values> popChunk,
+                               int len) {
+
+            setValuesChunk(influencerValueChunk);
+            int pushIndex = 0;
+
+            // chunk processing
+            for (int ii = 0; ii < len; ii++) {
+                final int pushCount = pushChunk.get(ii);
+                final int popCount = popChunk.get(ii);
+
+                // pop for this row
+                for (int count = 0; count < popCount; count++) {
+                    pop();
+                }
+
+                // push for this row
+                for (int count = 0; count < pushCount; count++) {
+                    push(NULL_ROW_KEY, pushIndex + count);
+                }
+                pushIndex += pushCount;
+
+                // write the results to the output chunk
+                writeToOutputChunk(ii);
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {}
 
         @Override
         public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}

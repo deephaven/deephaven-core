@@ -9,7 +9,6 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -25,7 +24,7 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
     protected class Context extends BasePrimitiveEMAOperator.Context {
         public final ColumnSource<?> valueSource;
 
-        public IntChunk<Values> intValueChunk;
+        public IntChunk<? extends Values> intValueChunk;
 
         protected Context(int chunkSize, ColumnSource<?> inputSource) {
             super(chunkSize);
@@ -34,7 +33,7 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                               WritableChunk<Values> valueChunk,
+                               Chunk<? extends Values> valueChunk,
                                LongChunk<? extends Values> tsChunk,
                                int len) {
             setValuesChunk(valueChunk);
@@ -94,7 +93,7 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             intValueChunk = valuesChunk.asIntChunk();
         }
 

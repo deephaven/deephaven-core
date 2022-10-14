@@ -16,14 +16,14 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseCharUpdateByOperator.Context {
-        public CharChunk<Values> charValueChunk;
+        public CharChunk<? extends Values> charValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             charValueChunk = valuesChunk.asCharChunk();
         }
 

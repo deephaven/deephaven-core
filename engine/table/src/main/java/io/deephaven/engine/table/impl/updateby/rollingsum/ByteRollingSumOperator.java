@@ -25,7 +25,7 @@ public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseWindowedLongUpdateByOperator.Context {
-        protected ByteChunk<Values> byteInfluencerValuesChunk;
+        protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
         protected ByteRingBuffer byteWindowValues;
 
 
@@ -42,7 +42,7 @@ public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             byteInfluencerValuesChunk = valuesChunk.asByteChunk();
         }
 

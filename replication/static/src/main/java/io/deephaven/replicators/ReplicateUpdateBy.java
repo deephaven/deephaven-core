@@ -36,7 +36,8 @@ public class ReplicateUpdateBy {
         fixupStandardObject(objectResult, "ObjectFillByOperator", false,
                 "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, redirContext\\);",
                 "super(fillPair, new String[] { fillPair.rightColumn }, redirContext, colType);",
-                " BaseObjectUpdateByOperator", " BaseObjectUpdateByOperator<T>");
+                " BaseObjectUpdateByOperator", " BaseObjectUpdateByOperator<T>",
+                "public ObjectChunk<Object,", "public ObjectChunk<T,");
 
         final String[] exemptions = new String[] {
                 "long singletonGroup = QueryConstants.NULL_LONG",

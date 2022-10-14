@@ -47,7 +47,7 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
         }
 
         public abstract void accumulate(RowSequence inputKeys,
-                WritableChunk<Values> valueChunk,
+                Chunk<? extends Values> valueChunk,
                 LongChunk<? extends Values> tsChunk,
                 int len);
     }

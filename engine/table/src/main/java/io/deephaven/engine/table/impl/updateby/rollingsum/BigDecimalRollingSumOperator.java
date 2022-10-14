@@ -20,7 +20,7 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
     private final MathContext mathContext;
 
     protected class Context extends BaseWindowedObjectUpdateByOperator<BigDecimal>.Context {
-        protected ObjectChunk<BigDecimal, Values> objectInfluencerValuesChunk;
+        protected ObjectChunk<BigDecimal, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigDecimal> objectWindowValues;
 
         protected Context(final int chunkSize) {
@@ -36,7 +36,7 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
         }
 

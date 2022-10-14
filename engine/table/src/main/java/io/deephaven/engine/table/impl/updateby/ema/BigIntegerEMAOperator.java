@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -24,7 +24,7 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                               WritableChunk<Values> valueChunk,
+                               Chunk<? extends Values> valueChunk,
                                LongChunk<? extends Values> tsChunk,
                                int len) {
             setValuesChunk(valueChunk);

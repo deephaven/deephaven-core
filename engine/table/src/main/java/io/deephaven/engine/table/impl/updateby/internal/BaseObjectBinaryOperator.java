@@ -17,14 +17,14 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOperator<T> {
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
-        public ObjectChunk<T, Values> objectValueChunk;
+        public ObjectChunk<T, ? extends Values> objectValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
         }
 

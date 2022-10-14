@@ -20,14 +20,14 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     // endregion extra-fields
 
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
-        public ObjectChunk<T, Values> ObjectValueChunk;
+        public ObjectChunk<T, ? extends Values> ObjectValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             ObjectValueChunk = valuesChunk.asObjectChunk();
         }
 

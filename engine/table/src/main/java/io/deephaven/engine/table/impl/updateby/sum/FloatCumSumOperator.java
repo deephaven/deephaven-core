@@ -16,14 +16,14 @@ public class FloatCumSumOperator extends BaseFloatUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseFloatUpdateByOperator.Context {
-        public FloatChunk<Values> floatValueChunk;
+        public FloatChunk<? extends Values> floatValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             floatValueChunk = valuesChunk.asFloatChunk();
         }
 

@@ -24,7 +24,7 @@ public class IntRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseWindowedLongUpdateByOperator.Context {
-        protected IntChunk<Values> intInfluencerValuesChunk;
+        protected IntChunk<? extends Values> intInfluencerValuesChunk;
         protected IntRingBuffer intWindowValues;
 
 
@@ -41,7 +41,7 @@ public class IntRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             intInfluencerValuesChunk = valuesChunk.asIntChunk();
         }
 

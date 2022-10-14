@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
@@ -14,8 +15,6 @@ import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.*;
 
 public abstract class UpdateByWindow {
     @Nullable
@@ -52,14 +51,16 @@ public abstract class UpdateByWindow {
         /** An array of ColumnSources for each underlying operator */
         protected final ColumnSource<?>[] inputSources;
 
-        /** An array of {@link ChunkSource.FillContext}s for each input column */
-        protected final ChunkSource.FillContext[] inputSourceFillContexts;
+        /** An array of {@link ChunkSource.GetContext}s for each input column */
+        protected final ChunkSource.GetContext[] inputSourceGetContexts;
 
         /** A set of chunks used to store working values */
-        protected final WritableChunk<Values>[] inputSourceChunks;
+        protected final Chunk<? extends Values>[] inputSourceChunks;
 
         /** An indicator of if each slot has been populated with data or not for this phase. */
         protected final boolean[] inputSourceChunkPopulated;
+
+        protected final boolean initialStep;
 
         /** the rows affected by this update */
         protected RowSet affectedRows;
@@ -70,8 +71,7 @@ public abstract class UpdateByWindow {
         protected RowSetBuilderSequential modifiedBuilder;
         protected RowSet newModified;
 
-        protected final int chunkSize;
-        protected final boolean initialStep;
+        protected int workingChunkSize;
 
         public UpdateByWindowContext(final TrackingRowSet sourceRowSet, final ColumnSource<?>[] inputSources,
                 @Nullable final ColumnSource<?> timestampColumnSource,
@@ -83,12 +83,12 @@ public abstract class UpdateByWindow {
 
             this.opAffected = new boolean[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
-            this.inputSourceFillContexts = new ChunkSource.FillContext[inputSources.length];
+            this.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
             this.inputSourceChunkPopulated = new boolean[inputSources.length];
             // noinspection unchecked
             this.inputSourceChunks = new WritableChunk[inputSources.length];
 
-            this.chunkSize = chunkSize;
+            this.workingChunkSize = chunkSize;
             this.initialStep = initialStep;
         }
 
@@ -96,25 +96,7 @@ public abstract class UpdateByWindow {
 
         public abstract void processRows();
 
-        protected void makeOperatorContexts() {
-            // use this to make which input sources are initialized
-            Arrays.fill(inputSourceChunkPopulated, false);
-
-            // create contexts for the affected operators
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if (opAffected[opIdx]) {
-                    // create the fill contexts for the input sources
-                    int sourceSlot = operatorSourceSlots[opIdx];
-                    if (!inputSourceChunkPopulated[sourceSlot]) {
-                        inputSourceChunks[sourceSlot] =
-                                inputSources[sourceSlot].getChunkType().makeWritableChunk(chunkSize);
-                        inputSourceFillContexts[sourceSlot] = inputSources[sourceSlot].makeFillContext(chunkSize);
-                        inputSourceChunkPopulated[sourceSlot] = true;
-                    }
-                    opContext[opIdx] = operators[opIdx].makeUpdateContext(chunkSize, inputSources[sourceSlot]);
-                }
-            }
-        }
+        protected abstract void makeOperatorContexts();
 
         public boolean anyModified() {
             return newModified != null && newModified.isNonempty();
@@ -141,11 +123,11 @@ public abstract class UpdateByWindow {
         }
 
         protected void prepareValuesChunkForSource(final int srcIdx, final RowSequence rs) {
+            if (rs.isEmpty()) {
+                return;
+            }
             if (!inputSourceChunkPopulated[srcIdx]) {
-                inputSources[srcIdx].fillChunk(
-                        inputSourceFillContexts[srcIdx],
-                        inputSourceChunks[srcIdx],
-                        rs);
+                inputSourceChunks[srcIdx] = inputSources[srcIdx].getChunk(inputSourceGetContexts[srcIdx], rs);
                 inputSourceChunkPopulated[srcIdx] = true;
             }
         }
@@ -163,13 +145,9 @@ public abstract class UpdateByWindow {
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
                     final int srcIdx = operatorSourceSlots[opIdx];
-                    if (inputSourceChunks[srcIdx] != null) {
-
-                        inputSourceChunks[srcIdx].close();
-                        inputSourceChunks[srcIdx] = null;
-
-                        inputSourceFillContexts[srcIdx].close();
-                        inputSourceFillContexts[srcIdx] = null;
+                    if (inputSourceGetContexts[srcIdx] != null) {
+                        inputSourceGetContexts[srcIdx].close();
+                        inputSourceGetContexts[srcIdx] = null;
                     }
                     opContext[opIdx].close();
                 }

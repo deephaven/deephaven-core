@@ -45,7 +45,7 @@ public interface UpdateByOperator {
      */
     interface UpdateContext extends SafeCloseable {
 
-        void setValuesChunk(@NotNull final Chunk<Values> valuesChunk);
+        void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk);
 
         void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk);
 
@@ -66,7 +66,7 @@ public interface UpdateByOperator {
         void pop();
 
         /**
-         * TODO: update doc
+         * Write the current value for this row to the output chunk
          */
         void writeToOutputChunk(int outIdx);
 
@@ -77,7 +77,7 @@ public interface UpdateByOperator {
         void reset();
 
         /**
-         * TODO: update doc
+         * Write the output chunk to the output column
          */
         void writeToOutputColumn(@NotNull final RowSequence inputKeys);
     }

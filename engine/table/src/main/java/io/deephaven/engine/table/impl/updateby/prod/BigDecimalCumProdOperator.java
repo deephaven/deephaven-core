@@ -19,14 +19,14 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
     private final MathContext mathContext;
 
     protected class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
-        public ObjectChunk<BigDecimal, Values> objectValueChunk;
+        public ObjectChunk<BigDecimal, ? extends Values> objectValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             objectValueChunk = valuesChunk.asObjectChunk();
         }
 

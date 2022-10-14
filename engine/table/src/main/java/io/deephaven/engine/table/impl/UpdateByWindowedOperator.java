@@ -1,6 +1,10 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.MatchPair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,37 +23,15 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
 
     public abstract class Context implements UpdateContext {
         public int nullCount = 0;
-        //
-        // protected long currentInfluencerKey;
-        //
-        // candidate data for the window
-        //
-        // // allocate some chunks for holding the key, position and timestamp data
-        // protected SizedLongChunk<RowKeys> influencerKeyChunk;
-        // protected SizedLongChunk<RowKeys> influencerPosChunk;
-        // protected SizedLongChunk<? extends Values> influencerTimestampChunk;
-        //
-        // // for use with a ticking window
-        // protected RowSet affectedRowPositions;
-        // protected RowSet influencerPositions;
-        //
-        // protected long currentInfluencerPosOrTimestamp;
-        // protected int currentInfluencerIndex;
-
-        // public abstract void loadInfluencerValueChunk();
-
-
 
         @Override
-        public void close() {
-            // try (final SizedLongChunk<RowKeys> ignoredChk1 = influencerKeyChunk;
-            // final SizedLongChunk<RowKeys> ignoredChk2 = influencerPosChunk;
-            // final SizedLongChunk<? extends Values> ignoredChk3 = influencerTimestampChunk;
-            // final RowSet ignoredRs3 = affectedRowPositions;
-            // final RowSet ignoredRs4 = influencerPositions;
-            // ) {
-            // }
-        }
+        public void close() {}
+
+        public abstract void accumulate(RowSequence inputKeys,
+                Chunk<? extends Values> influencerValueChunk,
+                IntChunk<? extends Values> pushChunk,
+                IntChunk<? extends Values> popChunk,
+                int len);
     }
 
     /**

@@ -25,7 +25,7 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
     // endregion extra-fields
 
     protected class Context extends BaseWindowedDoubleUpdateByOperator.Context {
-        protected DoubleChunk<Values> doubleInfluencerValuesChunk;
+        protected DoubleChunk<? extends Values> doubleInfluencerValuesChunk;
         protected PairwiseDoubleRingBuffer doublePairwiseSum;
 
         protected Context(final int chunkSize) {
@@ -50,7 +50,7 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             doubleInfluencerValuesChunk = valuesChunk.asDoubleChunk();
         }
 

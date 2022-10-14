@@ -48,7 +48,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                               WritableChunk<Values> valueChunk,
+                               Chunk<? extends Values> valueChunk,
                                LongChunk<? extends Values> tsChunk,
                                int len) {
 
@@ -73,7 +73,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {}
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {}
 
         @Override
         public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}

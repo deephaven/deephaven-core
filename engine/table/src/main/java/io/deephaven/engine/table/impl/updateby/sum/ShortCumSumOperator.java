@@ -15,14 +15,14 @@ public class ShortCumSumOperator extends BaseLongUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseLongUpdateByOperator.Context {
-        public ShortChunk<Values> shortValueChunk;
+        public ShortChunk<? extends Values> shortValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             shortValueChunk = valuesChunk.asShortChunk();
         }
 

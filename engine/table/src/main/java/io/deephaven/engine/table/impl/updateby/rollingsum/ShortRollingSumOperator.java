@@ -19,7 +19,7 @@ public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseWindowedLongUpdateByOperator.Context {
-        protected ShortChunk<Values> shortInfluencerValuesChunk;
+        protected ShortChunk<? extends Values> shortInfluencerValuesChunk;
         protected ShortRingBuffer shortWindowValues;
 
 
@@ -36,7 +36,7 @@ public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             shortInfluencerValuesChunk = valuesChunk.asShortChunk();
         }
 

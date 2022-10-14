@@ -17,7 +17,7 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdateByOperator<BigInteger> {
     protected class Context extends BaseWindowedObjectUpdateByOperator<BigInteger>.Context {
-        protected ObjectChunk<BigInteger, Values> objectInfluencerValuesChunk;
+        protected ObjectChunk<BigInteger, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigInteger> objectWindowValues;
 
         protected Context(final int chunkSize) {
@@ -33,7 +33,7 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
         }
 

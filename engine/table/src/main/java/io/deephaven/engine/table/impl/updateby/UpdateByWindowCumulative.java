@@ -1,23 +1,15 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.base.ringbuffer.LongRingBuffer;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.UpdateByOperator;
-import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,6 +30,28 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
         @Override
         public void close() {
             super.close();
+        }
+
+        @Override
+        protected void makeOperatorContexts() {
+            // use this to make which input sources are initialized
+            Arrays.fill(inputSourceChunkPopulated, false);
+
+            // working chunk size need not be larger than affectedRows.size()
+            workingChunkSize = Math.min(workingChunkSize, affectedRows.intSize());
+
+            // create contexts for the affected operators
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                if (opAffected[opIdx]) {
+                    // create the fill contexts for the input sources
+                    int sourceSlot = operatorSourceSlots[opIdx];
+                    if (!inputSourceChunkPopulated[sourceSlot]) {
+                        inputSourceGetContexts[sourceSlot] = inputSources[sourceSlot].makeGetContext(workingChunkSize);
+                        inputSourceChunkPopulated[sourceSlot] = true;
+                    }
+                    opContext[opIdx] = operators[opIdx].makeUpdateContext(workingChunkSize, inputSources[sourceSlot]);
+                }
+            }
         }
 
         @Override
@@ -137,9 +151,10 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
 
             try (final RowSequence.Iterator it = affectedRows.getRowSequenceIterator();
                     ChunkSource.GetContext tsGetCtx =
-                            timestampColumnSource == null ? null : timestampColumnSource.makeGetContext(chunkSize)) {
+                            timestampColumnSource == null ? null
+                                    : timestampColumnSource.makeGetContext(workingChunkSize)) {
                 while (it.hasMore()) {
-                    final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
+                    final RowSequence rs = it.getNextRowSequenceWithLength(workingChunkSize);
                     final int size = rs.intSize();
                     Arrays.fill(inputSourceChunkPopulated, false);
 

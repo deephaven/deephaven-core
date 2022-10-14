@@ -20,7 +20,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseWindowedFloatUpdateByOperator.Context {
-        protected FloatChunk<Values> floatInfluencerValuesChunk;
+        protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
         protected PairwiseFloatRingBuffer floatPairwiseSum;
 
         protected Context(final int chunkSize) {
@@ -45,7 +45,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             floatInfluencerValuesChunk = valuesChunk.asFloatChunk();
         }
 

@@ -3,19 +3,15 @@ package io.deephaven.engine.table.impl.updateby.ema;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -27,7 +23,7 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                WritableChunk<Values> valueChunk,
+                Chunk<? extends Values> valueChunk,
                 LongChunk<? extends Values> tsChunk,
                 int len) {
             setValuesChunk(valueChunk);

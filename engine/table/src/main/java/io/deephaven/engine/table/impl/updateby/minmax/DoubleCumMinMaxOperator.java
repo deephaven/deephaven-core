@@ -23,14 +23,14 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
-        public DoubleChunk<Values> doubleValueChunk;
+        public DoubleChunk<? extends Values> doubleValueChunk;
 
         protected Context(int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<Values> valuesChunk) {
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
             doubleValueChunk = valuesChunk.asDoubleChunk();
         }
 
