@@ -19,6 +19,7 @@ import io.deephaven.io.logger.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -157,7 +158,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @return time provider that returns the current replay time.
      */
     public static TimeProvider getTimeProvider(final ReplayerInterface replayer) {
-        return replayer == null ? DateTimeUtils.currentTimeProvider() : replayer;
+        return Objects.requireNonNullElse(replayer, DateTimeUtils.currentTimeProvider());
     }
 
     @Override

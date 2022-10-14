@@ -9,6 +9,7 @@ import io.deephaven.time.TimeProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -59,45 +60,48 @@ public interface Scheduler extends TimeProvider {
 
         private final ExecutorService serialDelegate;
         private final ScheduledExecutorService concurrentDelegate;
+        private final TimeProvider timeProvider;
 
-        public DelegatingImpl(final ExecutorService serialExecutor, final ScheduledExecutorService concurrentExecutor) {
-            this.serialDelegate = serialExecutor;
-            this.concurrentDelegate = concurrentExecutor;
+        public DelegatingImpl(ExecutorService serialExecutor, ScheduledExecutorService concurrentExecutor,
+                TimeProvider timeProvider) {
+            this.serialDelegate = Objects.requireNonNull(serialExecutor);
+            this.concurrentDelegate = Objects.requireNonNull(concurrentExecutor);
+            this.timeProvider = Objects.requireNonNull(timeProvider);
         }
 
         @Override
         public DateTime currentTime() {
-            return DateTimeUtils.currentTime();
+            return timeProvider.currentTime();
         }
 
         @Override
         public long currentTimeMillis() {
-            return DateTimeUtils.currentTimeMillis();
+            return timeProvider.currentTimeMillis();
         }
 
         @Override
         public long currentTimeMicros() {
-            return DateTimeUtils.currentTimeMicros();
+            return timeProvider.currentTimeMicros();
         }
 
         @Override
         public long currentTimeNanos() {
-            return DateTimeUtils.currentTimeNanos();
+            return timeProvider.currentTimeNanos();
         }
 
         @Override
         public Instant currentTimeInstant() {
-            return DateTimeUtils.currentTimeInstant();
+            return timeProvider.currentTimeInstant();
         }
 
         @Override
         public long nanoTime() {
-            return DateTimeUtils.nanoTime();
+            return timeProvider.nanoTime();
         }
 
         @Override
         public void runAtTime(long epochMillis, @NotNull Runnable command) {
-            runAfterDelay(epochMillis - currentTimeMillis(), command);
+            runAfterDelay(epochMillis - timeProvider.currentTimeMillis(), command);
         }
 
         @Override

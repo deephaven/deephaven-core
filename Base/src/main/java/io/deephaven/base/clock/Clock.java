@@ -11,6 +11,16 @@ import java.time.Instant;
 public interface Clock {
 
     /**
+     * The system clock.
+     *
+     * @return the system clock
+     * @see SystemClock
+     */
+    static Clock systemUTC() {
+        return SystemClock.INSTANCE;
+    }
+
+    /**
      * Milliseconds since the epoch, 1970-01-01T00:00:00Z.
      *
      * @return epoch millis

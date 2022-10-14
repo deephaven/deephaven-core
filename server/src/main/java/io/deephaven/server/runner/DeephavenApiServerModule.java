@@ -6,6 +6,7 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -24,6 +25,7 @@ import io.deephaven.server.table.TableModule;
 import io.deephaven.server.table.inputtables.InputTableModule;
 import io.deephaven.server.uri.UriModule;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.time.TimeProviderClock;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.grpc.BindableService;
@@ -119,7 +121,8 @@ public class DeephavenApiServerModule {
             }
         };
 
-        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor);
+        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor,
+                new TimeProviderClock(Clock.systemUTC()));
     }
 
     private static void report(final String executorType, final Throwable error) {

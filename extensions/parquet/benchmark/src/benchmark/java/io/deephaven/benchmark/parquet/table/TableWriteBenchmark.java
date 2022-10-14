@@ -56,7 +56,7 @@ public class TableWriteBenchmark {
         exContextCloseable = context.open();
 
         final QueryScope queryScope = context.getQueryScope();
-        queryScope.putParam("nowNanos", DateTimeUtils.currentTimeNanos());
+        queryScope.putParam("nowNanos", DateTimeUtils.currentTimeProvider().currentTimeNanos());
         queryScope.putParam("letters", LETTERS);
 
         QueryLibrary library = context.getQueryLibrary();

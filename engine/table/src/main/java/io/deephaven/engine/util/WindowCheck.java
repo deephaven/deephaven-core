@@ -418,7 +418,7 @@ public class WindowCheck {
         }
 
         long getTimeNanos() {
-            return DateTimeUtils.currentTimeNanos();
+            return DateTimeUtils.currentTimeProvider().currentTimeNanos();
         }
 
         @Override

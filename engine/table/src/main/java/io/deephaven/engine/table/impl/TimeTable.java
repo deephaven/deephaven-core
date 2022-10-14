@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.deephaven.util.type.TypeUtils.box;
 
@@ -88,7 +89,7 @@ public class TimeTable extends QueryTable implements Runnable {
 
         public QueryTable build() {
             return new TimeTable(registrar,
-                    timeProvider == null ? DateTimeUtils.currentTimeProvider() : timeProvider,
+                    Objects.requireNonNullElse(timeProvider, DateTimeUtils.currentTimeProvider()),
                     startTime, period, streamTable);
         }
     }

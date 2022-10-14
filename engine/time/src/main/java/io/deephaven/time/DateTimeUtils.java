@@ -4,6 +4,7 @@
 package io.deephaven.time;
 
 import io.deephaven.base.StringUtils;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.TimeConstants;
 import io.deephaven.base.clock.TimeZones;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -13,7 +14,6 @@ import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
-import io.deephaven.util.clock.RealTimeClock;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTimeZone;
@@ -27,6 +27,7 @@ import java.time.temporal.ChronoField;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -176,6 +177,8 @@ public class DateTimeUtils {
      * replay simulation.
      */
     public static TimeProvider timeProvider;
+
+    private static final TimeProvider timeProviderSystem = new TimeProviderClock(Clock.systemUTC());
 
     /**
      * Returns milliseconds since Epoch for a {@link DateTime} value.
@@ -1231,56 +1234,13 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date/time, or, if a custom {@link #timeProvider} has been configured, provides the current
-     * time according to the custom provider.
+     * Returns the current time provider. The current time provider is {@link #timeProvider} if set, otherwise a time
+     * provider based off of {@link Clock#systemUTC()}.
      *
-     * @return A {@link DateTime} of the current date and time from the system or from the configured alternate time
-     *         provider.
+     * @return the current time provider.
      */
-    public static DateTime currentTime() {
-        if (timeProvider != null) {
-            return timeProvider.currentTime();
-        }
-        return DateTime.now();
-    }
-
-    public static long currentTimeMillis() {
-        if (timeProvider != null) {
-            return timeProvider.currentTimeMillis();
-        }
-        return System.currentTimeMillis();
-    }
-
-    public static long currentTimeMicros() {
-        if (timeProvider != null) {
-            return timeProvider.currentTimeMicros();
-        }
-        return RealTimeClock.INSTANCE.currentTimeMicros();
-    }
-
-    public static long currentTimeNanos() {
-        if (timeProvider != null) {
-            return timeProvider.currentTimeNanos();
-        }
-        return RealTimeClock.INSTANCE.currentTimeNanos();
-    }
-
-    public static Instant currentTimeInstant() {
-        if (timeProvider != null) {
-            return timeProvider.currentTimeInstant();
-        }
-        return RealTimeClock.INSTANCE.currentTimeInstant();
-    }
-
-    public static long nanoTime() {
-        if (timeProvider != null) {
-            return timeProvider.nanoTime();
-        }
-        return RealTimeClock.INSTANCE.nanoTime();
-    }
-
     public static TimeProvider currentTimeProvider() {
-        return TimeProviderImpl.INSTANCE;
+        return Objects.requireNonNullElse(timeProvider, timeProviderSystem);
     }
 
     // TODO: Revoke public access to these fields and retire them! Use getCurrentDate(), maybe hold on to the
@@ -2375,39 +2335,5 @@ public class DateTimeUtils {
             return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
         }
         return dateTimeFormatter.format(Instant.ofEpochMilli(timestampSeconds * 1_000));
-    }
-
-    private enum TimeProviderImpl implements TimeProvider {
-        INSTANCE;
-
-        @Override
-        public long currentTimeMillis() {
-            return DateTimeUtils.currentTimeMillis();
-        }
-
-        @Override
-        public long currentTimeMicros() {
-            return DateTimeUtils.currentTimeMicros();
-        }
-
-        @Override
-        public long currentTimeNanos() {
-            return DateTimeUtils.currentTimeNanos();
-        }
-
-        @Override
-        public DateTime currentTime() {
-            return DateTimeUtils.currentTime();
-        }
-
-        @Override
-        public Instant currentTimeInstant() {
-            return DateTimeUtils.currentTimeInstant();
-        }
-
-        @Override
-        public long nanoTime() {
-            return DateTimeUtils.nanoTime();
-        }
     }
 }

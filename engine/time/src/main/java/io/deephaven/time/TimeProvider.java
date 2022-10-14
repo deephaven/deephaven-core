@@ -9,5 +9,6 @@ import io.deephaven.base.clock.Clock;
  * Interface for providing the current time.
  */
 public interface TimeProvider extends Clock {
+
     DateTime currentTime();
 }

@@ -7,7 +7,6 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.time.TimeProvider;
 import io.deephaven.util.annotations.ScriptApi;
@@ -159,7 +158,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(long initialSize, long initialRelease, double targetFactor,
             boolean verbose) {
-        this(initialSize, initialRelease, targetFactor, verbose, RealTimeClock.INSTANCE);
+        this(initialSize, initialRelease, targetFactor, verbose, Clock.systemUTC());
     }
 
     /**
@@ -176,7 +175,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(Logger logger, long initialSize, long initialRelease, double targetFactor,
             boolean verbose) {
-        this(logger, initialSize, initialRelease, targetFactor, verbose, RealTimeClock.INSTANCE);
+        this(logger, initialSize, initialRelease, targetFactor, verbose, Clock.systemUTC());
     }
 
     /**

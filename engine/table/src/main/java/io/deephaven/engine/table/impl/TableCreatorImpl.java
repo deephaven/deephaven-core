@@ -144,8 +144,6 @@ public enum TableCreatorImpl implements TableCreator<Table> {
             return provider.walk(new TimeProviderAdapter()).getOut();
         }
 
-        private static final io.deephaven.time.TimeProvider SYSTEM_PROVIDER = DateTimeUtils.currentTimeProvider();
-
         private io.deephaven.time.TimeProvider out;
 
         public io.deephaven.time.TimeProvider getOut() {
@@ -154,7 +152,7 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
         @Override
         public void visit(TimeProviderSystem system) {
-            out = SYSTEM_PROVIDER;
+            out = DateTimeUtils.currentTimeProvider();
         }
     }
 
