@@ -4,7 +4,6 @@
 package io.deephaven.server.util;
 
 import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
 import org.jetbrains.annotations.NotNull;
 

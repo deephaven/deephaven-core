@@ -179,8 +179,6 @@ public class DateTimeUtils {
      */
     public static TimeProvider timeProvider;
 
-    private static final TimeProvider timeProviderSystem = new TimeProviderClock(Clock.systemUTC());
-
     /**
      * Returns milliseconds since Epoch for a {@link DateTime} value.
      *
@@ -1235,13 +1233,13 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the current time provider. The current time provider is {@link #timeProvider} if set, otherwise a time
-     * provider based off of {@link Clock#systemUTC()}.
+     * Returns the current time provider. The current time provider is {@link #timeProvider} if set, otherwise
+     * {@link TimeProvider#systemUTC()}.
      *
      * @return the current time provider.
      */
     public static TimeProvider currentTimeProvider() {
-        return Objects.requireNonNullElse(timeProvider, timeProviderSystem);
+        return Objects.requireNonNullElse(timeProvider, TimeProvider.systemUTC());
     }
 
     @ScriptApi

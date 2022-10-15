@@ -10,5 +10,15 @@ import io.deephaven.base.clock.Clock;
  */
 public interface TimeProvider extends Clock {
 
+    /**
+     * The system time provider.
+     *
+     * @return the system time provider
+     * @see SystemTimeProvider
+     */
+    static TimeProvider systemUTC() {
+        return SystemTimeProvider.INSTANCE;
+    }
+
     DateTime currentTime();
 }

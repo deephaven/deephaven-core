@@ -15,7 +15,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -56,7 +55,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
-     * Create a new DateTime initialized to the current time.
+     * Create a new DateTime initialized to the current system time. Based on {@link TimeProvider#systemUTC()}.
      *
      * <p>
      * The precision of DateTime is nanoseconds, but the resolution of the this method depends on the JVM.
@@ -65,11 +64,9 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * Note: overflow checking is not performed - this method will overflow in the year 2262.
      *
      * @return a new DateTime initialized to the current time.
-     * @see Clock#systemUTC()
      */
     public static DateTime now() {
-        final Instant now = Clock.systemUTC().instant();
-        return new DateTime(now.getEpochSecond() * 1_000_000_000 + now.getNano());
+        return TimeProvider.systemUTC().currentTime();
     }
 
     /**
