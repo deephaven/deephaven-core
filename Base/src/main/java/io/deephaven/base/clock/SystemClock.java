@@ -31,7 +31,8 @@ public enum SystemClock implements Clock {
      * {@inheritDoc}
      *
      * <p>
-     * Calculates the time from {@link java.time.Clock#systemUTC()}.
+     * Calculates the time from {@link java.time.Clock#systemUTC()}. If you don't need need microsecond resolution,
+     * prefer {@link #currentTimeMillis()}.
      *
      * <p>
      * Note: this method may allocate.
@@ -46,7 +47,8 @@ public enum SystemClock implements Clock {
      * {@inheritDoc}
      *
      * <p>
-     * Calculates the time from {@link java.time.Clock#systemUTC()}.
+     * Calculates the time from {@link java.time.Clock#systemUTC()}. If you don't need nanosecond resolution, prefer
+     * {@link #currentTimeMillis()}.
      *
      * <p>
      * Note: this method may allocate.

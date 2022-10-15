@@ -14,6 +14,7 @@ import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
+import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTimeZone;
@@ -1241,6 +1242,11 @@ public class DateTimeUtils {
      */
     public static TimeProvider currentTimeProvider() {
         return Objects.requireNonNullElse(timeProvider, timeProviderSystem);
+    }
+
+    @ScriptApi
+    public static DateTime currentTime() {
+        return currentTimeProvider().currentTime();
     }
 
     // TODO: Revoke public access to these fields and retire them! Use getCurrentDate(), maybe hold on to the
