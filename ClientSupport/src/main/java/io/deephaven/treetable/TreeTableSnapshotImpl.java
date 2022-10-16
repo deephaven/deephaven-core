@@ -3,7 +3,6 @@
  */
 package io.deephaven.treetable;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
@@ -23,8 +22,6 @@ import static io.deephaven.treetable.TreeConstants.RE_TREE_KEY;
 import static io.deephaven.treetable.TreeConstants.ROOT_TABLE_KEY;
 
 class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
-    private static final boolean NODE_SORT_MODE =
-            Configuration.getInstance().getBooleanWithDefault("TreeTableSnapshotImpl.sortAtNodes", true);
 
     private ReverseLookup masterRll;
     private TableMap masterTableMap;
@@ -79,11 +76,6 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
                     prepared = baseTable.getSourceTable();
                 }
 
-                if (!NODE_SORT_MODE) {
-                    reTreeRequired = true;
-                    prepared = applySorts(prepared);
-                }
-
                 if (reTreeRequired) {
                     final HierarchicalTable reTreed =
                             (HierarchicalTable) TreeTableFilter.toTreeTable(prepared, baseTable);
@@ -132,7 +124,7 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
     @Override
     Table prepareTableInternal(Table t) {
         t = applyColumnFormats(t);
-        if (NODE_SORT_MODE && !getDirectives().isEmpty()) {
+        if (!getDirectives().isEmpty()) {
             t = attachReverseLookup(applySorts(t));
         }
 
