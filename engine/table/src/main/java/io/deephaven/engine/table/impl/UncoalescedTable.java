@@ -269,12 +269,6 @@ public abstract class UncoalescedTable extends BaseTable {
 
     @Override
     @ConcurrentMethod
-    public Table formatColumns(String... columnFormats) {
-        return coalesce().formatColumns(columnFormats);
-    }
-
-    @Override
-    @ConcurrentMethod
     public Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
         return coalesce().moveColumns(index, moveToEnd, columnsToMove);
     }

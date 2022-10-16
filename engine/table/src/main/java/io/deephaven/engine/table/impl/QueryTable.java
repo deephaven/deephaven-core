@@ -27,6 +27,7 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
@@ -35,7 +36,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.vector.Vector;
@@ -798,28 +798,6 @@ public class QueryTable extends BaseTable {
         } else {
             return dataType.getName();
         }
-    }
-
-    @Override
-    public Table formatColumns(String... columnFormats) {
-        final SelectColumn[] selectColumns = SelectColumnFactory.getFormatExpressions(columnFormats);
-
-        final Set<String> existingColumns = getDefinition().getColumnNames()
-                .stream()
-                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
-                .collect(Collectors.toSet());
-
-        final String[] unknownColumns = Arrays.stream(selectColumns)
-                .map(SelectColumnFactory::getFormatBaseColumn)
-                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
-                .toArray(String[]::new);
-
-        if (unknownColumns.length > 0) {
-            throw new RuntimeException(
-                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
-        }
-
-        return viewOrUpdateView(Flavor.UpdateView, selectColumns);
     }
 
     @Override
