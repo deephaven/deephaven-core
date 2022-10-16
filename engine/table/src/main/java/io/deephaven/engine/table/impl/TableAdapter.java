@@ -146,11 +146,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table formatColumns(String... columnFormats) {
-        return throwUnsupported();
-    }
-
-    @Override
     default Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
         return throwUnsupported();
     }
@@ -181,12 +176,14 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    default Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            AsOfMatchRule asOfMatchRule) {
         return throwUnsupported();
     }
 
     @Override
-    default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            AsOfMatchRule asOfMatchRule) {
         return throwUnsupported();
     }
 
@@ -196,7 +193,8 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve) {
+    default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            int numRightBitsToReserve) {
         return throwUnsupported();
     }
 
@@ -221,12 +219,14 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups, String... keyColumnNames) {
+    default PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
+            Table initialGroups, String... keyColumnNames) {
         return throwUnsupported();
     }
 
     @Override
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, Collection<? extends ColumnName> groupByColumns) {
+    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported();
     }
 
@@ -438,12 +438,14 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups, Collection<? extends ColumnName> groupByColumns) {
+    default Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
+            Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported();
     }
 
     @Override
-    default Table updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations, Collection<? extends ColumnName> byColumns) {
+    default Table updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
+            Collection<? extends ColumnName> byColumns) {
         return throwUnsupported();
     }
 

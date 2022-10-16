@@ -527,7 +527,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // testViewportAgainst(rollup, state, 0, 14, allColumns, directives, WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
     // ct -> {
     // final Table sortTarget =
-    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRootTable() : ct;
     // return sortTarget.sort("Bagel").sortDescending("Test");
     // }, true);
     //
@@ -536,7 +536,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // testViewportAgainst(filtered2, state, 0, 7, allColumns, directives, WhereFilterFactory.getExpressions("Bagel"),
     // ct -> {
     // final Table sortTarget =
-    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRootTable() : ct;
     // return sortTarget.sort("Bagel").sortDescending("Test");
     // }, true);
     // }
@@ -569,14 +569,14 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // testViewportAgainst(rollup, state, 0, 14, allColumns, directives, WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
     // ct -> {
     // final Table sortTarget =
-    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRootTable() : ct;
     // return sortTarget.sort("Bagel").sortDescending("Test");
     // }, true);
     //
     // testViewportAgainst(filtered, state, 0, 7, allColumns, directives, WhereFilterFactory.getExpressions("Bagel"),
     // ct -> {
     // final Table sortTarget =
-    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRootTable() : ct;
     // return sortTarget.sort("Bagel").sortDescending("Test");
     // }, true);
     //
@@ -584,7 +584,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // testViewportAgainst(rollup, state, 0, 17, allColumns, directives, WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
     // ct -> {
     // final Table sortTarget =
-    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRootTable() : ct;
     // return sortTarget.sort("Bagel").sortDescending("Test");
     // }, true);
     //
@@ -592,7 +592,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     // testViewportAgainst(filtered, state, 0, 24, allColumns, directives, WhereFilterFactory.getExpressions("Bagel"),
     // ct -> {
     // final Table sortTarget =
-    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
+    // ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRootTable() : ct;
     // return sortTarget.sort("Bagel").sortDescending("Test");
     // }, true);
     // }

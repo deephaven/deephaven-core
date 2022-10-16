@@ -2019,7 +2019,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // private static Table getDiffableTable(Table table) {
     // if (table instanceof HierarchicalTable) {
-    // return ((HierarchicalTable) table).getRawRootTable();
+    // return ((HierarchicalTable) table).getRootTable();
     // }
     //
     // return table;

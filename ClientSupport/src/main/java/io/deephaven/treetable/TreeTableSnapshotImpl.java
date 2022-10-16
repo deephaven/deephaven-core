@@ -6,6 +6,7 @@ package io.deephaven.treetable;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -67,7 +68,7 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
             final List<SortDirective> directives = getDirectives();
 
             if (filters.length == 0 && directives.isEmpty()) {
-                prepared = prepareTableInternal(baseTable.getRawRootTable());
+                prepared = prepareTableInternal(baseTable.getRootTable());
             } else {
                 boolean reTreeRequired = false;
 
@@ -89,9 +90,9 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
 
                     // We need to retain this reference or we will leak it.
                     retainTable(RE_TREE_KEY, reTreed);
-                    prepared = reTreed.getRawRootTable();
+                    prepared = reTreed.getRootTable();
                 } else {
-                    prepared = baseTable.getRawRootTable();
+                    prepared = baseTable.getRootTable();
                 }
 
                 prepared = prepareTableInternal(prepared);

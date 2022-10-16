@@ -8,7 +8,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.impl.ReverseLookup;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.TableMap;
@@ -79,7 +79,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
                 retainTable(RE_TREE_KEY, filteredTable);
             }
 
-            prepared = prepareTableInternal(filteredTable.getRawRootTable());
+            prepared = prepareTableInternal(filteredTable.getRootTable());
             retainTable(TreeConstants.ROOT_TABLE_KEY, prepared);
             rootTableChanged = true;
         }

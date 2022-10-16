@@ -4,7 +4,7 @@
 package io.deephaven.hierarchicaltable;
 
 import com.google.auto.service.AutoService;
-import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 

@@ -10,6 +10,8 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -325,6 +327,30 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return formatColumns(
                 columnName + " = (" + condition + ") ? io.deephaven.engine.util.ColorUtil.toLong(" + formula
                         + ") : io.deephaven.engine.util.ColorUtil.toLong(NO_FORMATTING)");
+    }
+
+    @Override
+    @ConcurrentMethod
+    @FinalDefault
+    default Table formatColumns(String... columnFormats) {
+        final SelectColumn[] selectColumns = SelectColumnFactory.getFormatExpressions(columnFormats);
+
+        final Set<String> existingColumns = getDefinition().getColumnNames()
+                .stream()
+                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
+                .collect(Collectors.toSet());
+
+        final String[] unknownColumns = Arrays.stream(selectColumns)
+                .map(SelectColumnFactory::getFormatBaseColumn)
+                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
+                .toArray(String[]::new);
+
+        if (unknownColumns.length > 0) {
+            throw new RuntimeException(
+                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
+        }
+
+        return updateView(selectColumns);
     }
 
     @Override

@@ -7,7 +7,7 @@ import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.util.ConcurrentMethod;
-import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.impl.HierarchicalTableInfo;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.impl.TreeTableInfo;
