@@ -37,6 +37,6 @@ public enum SystemTimeProvider implements TimeProvider {
 
     @Override
     public DateTime currentTime() {
-        return new DateTime(Clock.systemUTC().nanoTime());
+        return new DateTime(Clock.systemUTC().currentTimeNanos());
     }
 }
