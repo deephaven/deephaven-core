@@ -142,7 +142,7 @@ public interface Table extends
      * <li>{@link #partitionedAggBy(Collection, boolean, Table, String...) partitionedAggBy} is unsupported</li>
      * <li>{@link #aggBy} is unsupported if either of {@link io.deephaven.api.agg.spec.AggSpecGroup group} or
      * {@link io.deephaven.api.agg.Partition partition} are used</li>
-     * <li>{@link #rollup(Collection, boolean, ColumnName...) rollup()} is unsupported if
+     * <li>{@link #rollup(Collection, boolean, Collection) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
      * <li>{@link #tree(String, String) tree()} is unsupported</li>
      * </ol>
