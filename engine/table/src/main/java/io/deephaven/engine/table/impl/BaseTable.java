@@ -338,19 +338,6 @@ public abstract class BaseTable extends LivenessArtifact
 
         tempMap.put(SYSTEMIC_TABLE_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.None));
 
-        // Column renderers propagate for all operations that will not rename, remove, or change column types
-        tempMap.put(COLUMN_RENDERERS_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.Flatten,
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.Filter,
-                CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.PartitionBy,
-                CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.LastBy,
-                CopyAttributeOperation.FirstBy,
-                CopyAttributeOperation.Treetable,
-                CopyAttributeOperation.Preview));
-
         // Tree table attributes
         tempMap.put(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
@@ -1417,13 +1404,6 @@ public abstract class BaseTable extends LivenessArtifact
     public Table setTotalsTable(String directive) {
         final Table result = copy();
         result.setAttribute(TOTALS_TABLE_ATTRIBUTE, directive);
-        return result;
-    }
-
-    @Override
-    public Table setColumnRenderers(String directive) {
-        final Table result = copy();
-        result.setAttribute(COLUMN_RENDERERS_ATTRIBUTE, directive);
         return result;
     }
 

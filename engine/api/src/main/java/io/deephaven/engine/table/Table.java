@@ -122,7 +122,6 @@ public interface Table extends
     String LAYOUT_HINTS_ATTRIBUTE = "LayoutHints";
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
     String TABLE_DESCRIPTION_ATTRIBUTE = "TableDescription";
-    String COLUMN_RENDERERS_ATTRIBUTE = "ColumnRenderers";
     String COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions";
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
     /**
@@ -1187,15 +1186,6 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table setTotalsTable(String directive);
-
-    /**
-     * Set renderers for columns.
-     *
-     * @param directive A packed string of column rendering instructions
-     * @return A copy of this Table with the {@link #COLUMN_RENDERERS_ATTRIBUTE column renderers attribute} set
-     */
-    @ConcurrentMethod
-    Table setColumnRenderers(String directive);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Resource Management

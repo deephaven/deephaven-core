@@ -295,11 +295,6 @@ public interface TableAdapter extends TableDefaults {
         return throwUnsupported();
     }
 
-    @Override
-    default Table setColumnRenderers(String directive) {
-        return throwUnsupported();
-    }
-
     @SuppressWarnings("RedundantThrows")
     @Override
     default void awaitUpdate() throws InterruptedException {
