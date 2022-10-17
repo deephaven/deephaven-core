@@ -86,7 +86,7 @@ struct Visitor final : arrow::ArrayVisitor {
         ++destIndex;
       }
     };
-    keys_.forEachChunk(copyChunk);
+    keys_.forEachInterval(copyChunk);
     return arrow::Status::OK();
   }
 
