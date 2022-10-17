@@ -413,13 +413,6 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
-        tempMap.put(PREDEFINED_ROLLUP_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.Flatten,
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.Filter,
-                CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.Coalesce));
-
         tempMap.put(PREVIEW_PARENT_TABLE, EnumSet.of(CopyAttributeOperation.Flatten));
 
         // Key column and unique keys attributes
