@@ -13,11 +13,10 @@ import javax.inject.Inject;
 /**
  * A no-op {@link JsPluginRegistration}.
  */
-public final class JsPluginRegistrationNoOp implements JsPluginRegistration {
-    private static final Logger log = LoggerFactory.getLogger(JsPluginRegistrationNoOp.class);
+public enum JsPluginRegistrationNoOp implements JsPluginRegistration {
+    INSTANCE;
 
-    @Inject
-    public JsPluginRegistrationNoOp() {}
+    private static final Logger log = LoggerFactory.getLogger(JsPluginRegistrationNoOp.class);
 
     @Override
     public void register(JsPlugin jsPlugin) {

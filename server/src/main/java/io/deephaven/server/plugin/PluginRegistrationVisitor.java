@@ -10,6 +10,8 @@ import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeRegistration;
 
 import javax.inject.Inject;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 final class PluginRegistrationVisitor
@@ -38,7 +40,11 @@ final class PluginRegistrationVisitor
 
     @Override
     public PluginRegistrationVisitor visit(JsPlugin jsPlugin) {
-        jsPluginRegistration.register(jsPlugin);
+        try {
+            jsPluginRegistration.register(jsPlugin);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         return this;
     }
 }

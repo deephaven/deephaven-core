@@ -17,6 +17,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
 
@@ -28,6 +29,22 @@ public final class JsPluginDistribution extends JsPluginBase {
     private static final String PACKAGE_JSON = "package.json";
 
     /**
+     * Creates a new js plugin distribution.
+     *
+     * <p>
+     * Note: unlike {@link #fromPackageJsonDistribution(Path)}, {@code distributionDir} does not need to contain
+     * {@value PACKAGE_JSON}.
+     *
+     * @param distributionDir the distribution directory
+     * @param name the name, see {@link JsPlugin#name()}
+     * @param version the version, see {@link JsPlugin#version()}
+     * @param main the main, see {@link JsPlugin#main()}
+     */
+    public static JsPluginDistribution of(Path distributionDir, String name, String version, String main) {
+        return new JsPluginDistribution(distributionDir, name, version, main);
+    }
+
+    /**
      * Creates a new js plugin distribution. Assumes that {@value PACKAGE_JSON} exists in {@code distributionDir}. The
      * {@link #name() name}, {@link #version() version}, and {@link #main() main} from {@value PACKAGE_JSON} will be
      * used.
@@ -35,8 +52,9 @@ public final class JsPluginDistribution extends JsPluginBase {
      * @param distributionDir the distribution directory
      * @return the js plugin distribution
      * @throws IOException if an I/O exception occurs
+     * @see <a href="https://github.com/deephaven/js-plugin-template">js-plugin-template</a>
      */
-    public static JsPluginDistribution fromDistribution(Path distributionDir) throws IOException {
+    public static JsPluginDistribution fromPackageJsonDistribution(Path distributionDir) throws IOException {
         final Path packageJson = distributionDir.resolve(PACKAGE_JSON);
         try (final InputStream in = new BufferedInputStream(Files.newInputStream(packageJson))) {
             final PackageJson p = new ObjectMapper()
@@ -53,19 +71,7 @@ public final class JsPluginDistribution extends JsPluginBase {
     private final String version;
     private final String main;
 
-    /**
-     * Creates a new js plugin distribution.
-     *
-     * <p>
-     * Note: unlike {@link #fromDistribution(Path)}, {@code distributionDir} does not need to contain
-     * {@value PACKAGE_JSON}.
-     *
-     * @param distributionDir the distribution directory
-     * @param name the name, see {@link JsPlugin#name()}
-     * @param version the version, see {@link JsPlugin#version()}
-     * @param main the main, see {@link JsPlugin#main()}
-     */
-    public JsPluginDistribution(Path distributionDir, String name, String version, String main) {
+    private JsPluginDistribution(Path distributionDir, String name, String version, String main) {
         this.distributionDir = Objects.requireNonNull(distributionDir);
         this.name = Objects.requireNonNull(name);
         this.version = Objects.requireNonNull(version);
@@ -124,13 +130,15 @@ public final class JsPluginDistribution extends JsPluginBase {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            Files.copy(dir, dst.resolve(src.relativize(dir).toString()));
+            // Note: toString() necessary for src/dst that don't share the same root FS
+            Files.copy(dir, dst.resolve(src.relativize(dir).toString()), StandardCopyOption.COPY_ATTRIBUTES);
             return FileVisitResult.CONTINUE;
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            Files.copy(file, dst.resolve(src.relativize(file).toString()));
+            // Note: toString() necessary for src/dst that don't share the same root FS
+            Files.copy(file, dst.resolve(src.relativize(file).toString()), StandardCopyOption.COPY_ATTRIBUTES);
             return FileVisitResult.CONTINUE;
         }
     }

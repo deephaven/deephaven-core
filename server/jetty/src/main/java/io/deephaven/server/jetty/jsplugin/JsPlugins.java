@@ -19,7 +19,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +31,12 @@ import java.util.Objects;
  */
 public final class JsPlugins implements JsPluginRegistration {
 
+    public static final String PLUGINS = "plugins";
+    private static final String NAME = "name";
+    private static final String VERSION = "version";
+    private static final String MAIN = "main";
+    private static final String MANIFEST_JSON = "manifest.json";
+
     /**
      * Creates a new js plugins instance with an in-memory filesystem.
      *
@@ -39,18 +44,18 @@ public final class JsPlugins implements JsPluginRegistration {
      * @throws IOException if an I/O exception occurs
      */
     public static JsPlugins create() throws IOException {
-        final FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
-        final JsPlugins jsPlugins = new JsPlugins(fs.getPath("/"));
+        final FileSystem fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
+        final JsPlugins jsPlugins = new JsPlugins(fs.getRootDirectories().iterator().next());
         jsPlugins.writeManifest(); // empty manifest
         return jsPlugins;
     }
 
     private final Path path;
-    private final Map<String, JsPlugin> plugins;
+    private final List<Map<String, String>> plugins;
 
     private JsPlugins(Path path) {
         this.path = Objects.requireNonNull(path);
-        this.plugins = new LinkedHashMap<>();
+        this.plugins = new ArrayList<>();
     }
 
     /**
@@ -64,41 +69,28 @@ public final class JsPlugins implements JsPluginRegistration {
         jsPlugins.setInitParameter("resourceBase", path.toUri().toString());
         jsPlugins.setInitParameter("pathInfoOnly", "true");
         jsPlugins.setInitParameter("dirAllowed", "false");
+        jsPlugins.setInitParameter("etags", "true");
         jsPlugins.setAsyncSupported(true);
         return jsPlugins;
     }
 
     @Override
-    public synchronized void register(JsPlugin jsPlugin) {
-        if (plugins.containsKey(jsPlugin.name())) {
-            throw new IllegalArgumentException(
-                    String.format("js plugin with name '%s' already exists", jsPlugin.name()));
+    public synchronized void register(JsPlugin jsPlugin) throws IOException {
+        for (Map<String, String> plugin : plugins) {
+            if (jsPlugin.name().equals(plugin.get(NAME))) {
+                throw new IllegalArgumentException(
+                        String.format("js plugin with name '%s' already exists", jsPlugin.name()));
+            }
         }
-        try {
-            jsPlugin.copyTo(path.resolve(jsPlugin.name()));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        plugins.put(jsPlugin.name(), jsPlugin);
-        try {
-            writeManifest();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        jsPlugin.copyTo(path.resolve(jsPlugin.name()));
+        plugins.add(Map.of(NAME, jsPlugin.name(), VERSION, jsPlugin.version(), MAIN, jsPlugin.main()));
+        writeManifest();
     }
 
     private void writeManifest() throws IOException {
         // note: would this be better as a custom servlet instead? (this current way is certainly easy...)
-        try (final OutputStream out = new BufferedOutputStream(Files.newOutputStream(path.resolve("manifest.json")))) {
-            final List<Map<String, String>> pluginsList = new ArrayList<>(plugins.size());
-            for (JsPlugin value : plugins.values()) {
-                final Map<String, String> p = new LinkedHashMap<>(3);
-                p.put("name", value.name());
-                p.put("version", value.version());
-                p.put("main", value.main());
-                pluginsList.add(p);
-            }
-            new ObjectMapper().writeValue(out, Collections.singletonMap("plugins", pluginsList));
+        try (final OutputStream out = new BufferedOutputStream(Files.newOutputStream(path.resolve(MANIFEST_JSON)))) {
+            new ObjectMapper().writeValue(out, Map.of(PLUGINS, plugins));
             out.flush();
         }
     }

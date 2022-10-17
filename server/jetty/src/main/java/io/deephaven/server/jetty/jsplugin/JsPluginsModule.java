@@ -23,7 +23,7 @@ public interface JsPluginsModule {
 
     @Provides
     static JsPluginRegistration providesRegistration(JettyConfig config, JsPlugins plugins) {
-        return config.jsPluginsOrDefault() ? plugins : new JsPluginRegistrationNoOp();
+        return config.jsPluginsOrDefault() ? plugins : JsPluginRegistrationNoOp.INSTANCE;
     }
 
     @Provides

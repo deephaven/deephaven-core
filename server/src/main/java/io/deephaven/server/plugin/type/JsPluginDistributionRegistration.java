@@ -13,8 +13,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * A {@link Registration} that sources {@link JsPluginDistribution#fromDistribution(Path)} from the system property
- * {@value PROPERTY}. Multiple values can be specified by using a comma as a separator.
+ * A {@link Registration} that sources {@link JsPluginDistribution#fromPackageJsonDistribution(Path)} from the system
+ * property {@value PROPERTY}. Multiple values can be specified by using a comma as a separator.
  *
  * <p>
  * Potentially useful for development purposes while developing JS plugins.
@@ -39,7 +39,7 @@ public final class JsPluginDistributionRegistration implements Registration {
         while (it.hasNext()) {
             final String distributionDir = it.next();
             try {
-                callback.register(JsPluginDistribution.fromDistribution(Path.of(distributionDir)));
+                callback.register(JsPluginDistribution.fromPackageJsonDistribution(Path.of(distributionDir)));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

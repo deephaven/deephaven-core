@@ -3,6 +3,8 @@
  */
 package io.deephaven.plugin.type;
 
+import java.io.IOException;
+
 /**
  * The {@link JsPlugin} specific registration.
  */
@@ -13,5 +15,5 @@ public interface JsPluginRegistration {
      *
      * @param jsPlugin the js plugin
      */
-    void register(JsPlugin jsPlugin);
+    void register(JsPlugin jsPlugin) throws IOException;
 }
