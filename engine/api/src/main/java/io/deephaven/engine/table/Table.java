@@ -167,7 +167,6 @@ public interface Table extends
     String HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo";
     String REVERSE_LOOKUP_ATTRIBUTE = "ReverseLookup";
     String PREPARED_RLL_ATTRIBUTE = "PreparedRll";
-    String PREDEFINED_ROLLUP_ATTRIBUTE = "PredefinedRollup";
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
     /**
      * This attribute is used internally by TableTools.merge to detect successive merges. Its presence indicates that it
