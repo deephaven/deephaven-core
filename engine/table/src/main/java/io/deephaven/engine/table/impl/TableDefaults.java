@@ -118,17 +118,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Attributes
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Map<String, Object> getAttributes() {
-        return getAttributes(Collections.emptySet());
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key
     // -----------------------------------------------------------------------------------------------------------------
 

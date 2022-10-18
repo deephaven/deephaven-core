@@ -35,6 +35,7 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllTable;
@@ -280,7 +281,7 @@ public class QueryTable extends BaseTable {
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which is not copied.
      * @param modifiedColumnSet Optional {@link ModifiedColumnSet} that should be re-used if supplied
-     * @param attributes Optional value to use for {@link #attributes}
+     * @param attributes Optional value to use for initial attributes
      */
     private QueryTable(
             @NotNull final TableDefinition definition,
@@ -347,7 +348,7 @@ public class QueryTable extends BaseTable {
 
     private Map<String, IndexedDataColumn<?>> ensureIndexedDataColumns() {
         // noinspection unchecked
-        return ensureField(INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS, ConcurrentHashMap::new);
+        return FieldUtils.ensureField(this, INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS, ConcurrentHashMap::new);
     }
 
     /**
@@ -359,7 +360,7 @@ public class QueryTable extends BaseTable {
      * @return the modified column set for this table
      */
     public ModifiedColumnSet getModifiedColumnSetForUpdates() {
-        return ensureField(MODIFIED_COLUMN_SET_UPDATER, null, () -> new ModifiedColumnSet(columns));
+        return FieldUtils.ensureField(this, MODIFIED_COLUMN_SET_UPDATER, null, () -> new ModifiedColumnSet(columns));
     }
 
     /**
@@ -2982,11 +2983,11 @@ public class QueryTable extends BaseTable {
      * @return an identical table; but with a new set of attributes
      */
     @Override
-    public Table copy() {
+    public QueryTable copy() {
         return copy(StandardOptions.COPY_ALL);
     }
 
-    public Table copy(Predicate<String> shouldCopy) {
+    public QueryTable copy(Predicate<String> shouldCopy) {
         return copy(definition, shouldCopy);
     }
 
@@ -3005,9 +3006,9 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    public Table copy(TableDefinition definition, Predicate<String> shouldCopy) {
+    public QueryTable copy(TableDefinition definition, Predicate<String> shouldCopy) {
         return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
-            final Mutable<Table> result = new MutableObject<>();
+            final Mutable<QueryTable> result = new MutableObject<>();
 
             final SwapListener swapListener = createSwapListenerIfRefreshing(SwapListener::new);
             initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
@@ -3054,7 +3055,7 @@ public class QueryTable extends BaseTable {
             final Supplier<R> computeCachedOperation = attributesCompatible ? () -> {
                 final R parentResult = parent.memoizeResult(memoKey, operation);
                 if (parentResult instanceof QueryTable) {
-                    final Table myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
+                    final QueryTable myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
                     copyAttributes((QueryTable) parentResult, myResult, memoKey.getParentCopyType());
                     copyAttributes(myResult, memoKey.copyType());
                     // noinspection unchecked
@@ -3114,7 +3115,7 @@ public class QueryTable extends BaseTable {
 
     private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {
         // noinspection unchecked
-        return ensureField(CACHED_OPERATIONS_UPDATER, EMPTY_CACHED_OPERATIONS, ConcurrentHashMap::new);
+        return FieldUtils.ensureField(this, CACHED_OPERATIONS_UPDATER, EMPTY_CACHED_OPERATIONS, ConcurrentHashMap::new);
     }
 
     @NotNull
@@ -3130,15 +3131,13 @@ public class QueryTable extends BaseTable {
         R getOrCompute(Supplier<R> operation) {
             final R cachedResult = getIfValid();
             if (cachedResult != null) {
-                maybeMarkSystemic(cachedResult);
-                return cachedResult;
+                return maybeMarkSystemic(cachedResult);
             }
 
             synchronized (this) {
                 final R cachedResultLocked = getIfValid();
                 if (cachedResultLocked != null) {
-                    maybeMarkSystemic(cachedResultLocked);
-                    return cachedResultLocked;
+                    return maybeMarkSystemic(cachedResultLocked);
                 }
 
                 final R result;
@@ -3150,9 +3149,10 @@ public class QueryTable extends BaseTable {
             }
         }
 
-        private void maybeMarkSystemic(R cachedResult) {
+        private R maybeMarkSystemic(R cachedResult) {
             if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                ((SystemicObject) cachedResult).markSystemic();
+                //noinspection unchecked
+                return (R) ((SystemicObject) cachedResult).markSystemic();
             }
         }
 

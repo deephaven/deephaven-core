@@ -50,7 +50,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
                             .setAttribute((String) args[0], args[1]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttribute", String.class), (proxy, method,
                     args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttribute((String) args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributeNames"),
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributeKeys"),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttributeNames());
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasAttribute", String.class), (proxy, method,
                     args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).hasAttribute((String) args[0]));
