@@ -5,6 +5,7 @@ package io.deephaven.server.plugin.type;
 
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
 import io.deephaven.plugin.type.JsPluginRegistration;
 
 /**
@@ -12,6 +13,12 @@ import io.deephaven.plugin.type.JsPluginRegistration;
  */
 @Module
 public interface JsPluginsNoOpModule {
+
+    @Provides
+    static JsPluginRegistrationNoOp providesJsPluginRegistrationNoOp() {
+        return JsPluginRegistrationNoOp.INSTANCE;
+    }
+
     @Binds
     JsPluginRegistration bindsRegistration(JsPluginRegistrationNoOp noop);
 }
