@@ -481,6 +481,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     @Override
+    @Nullable
     public Object getAttribute(@NotNull String key) {
         final Object localAttribute = super.getAttribute(key);
         if (localAttribute != null) {

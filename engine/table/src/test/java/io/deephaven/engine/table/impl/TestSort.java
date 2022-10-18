@@ -119,7 +119,7 @@ public class TestSort extends BaseArrayTestCase {
         assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
                 NotSortableException.class);
 
-        temp.clearSortingRestrictions();
+        temp = (QueryTable) temp.clearSortingRestrictions();
         temp.assertSortable(temp.getDefinition().getColumnNamesArray());
         temp.sort(temp.getDefinition().getColumnNamesArray());
 

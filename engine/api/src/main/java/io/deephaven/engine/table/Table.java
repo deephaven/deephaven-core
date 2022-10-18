@@ -15,7 +15,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
@@ -29,8 +28,9 @@ public interface Table extends
         LivenessNode,
         NotificationQueue.Dependency,
         DynamicNode,
-        SystemicObject,
-        TableOperations<Table, Table> {
+        SystemicObject<Table>,
+        TableOperations<Table, Table>,
+        AttributeMap<Table> {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
@@ -174,16 +174,6 @@ public interface Table extends
      */
     String MERGED_TABLE_ATTRIBUTE = "MergedTable";
     /**
-     * <p>
-     * This attribute is applied to source tables, and takes on Boolean values.
-     * <ul>
-     * <li>True for post-{@link #coalesce()} source tables and their children if the source table is empty.</li>
-     * <li>False for post-{@link #coalesce()} source tables and their children if the source table is non-empty.</li>
-     * <li>Missing for all other tables.</li>
-     * </ul>
-     */
-    String EMPTY_SOURCE_TABLE_ATTRIBUTE = "EmptySourceTable";
-    /**
      * This attribute stores a reference to a table that is the parent table for a Preview Table.
      */
     String PREVIEW_PARENT_TABLE = "PreviewParentTable";
@@ -199,60 +189,6 @@ public interface Table extends
      * Set this attribute to enable collection of barrage performance stats.
      */
     String BARRAGE_PERFORMANCE_KEY_ATTRIBUTE = "BarragePerformanceTableKey";
-
-    /**
-     * Set the value of an attribute.
-     *
-     * @param key The name of the attribute; must not be {@code null}
-     * @param object The value to be assigned; must not be {@code null}
-     */
-    @ConcurrentMethod
-    void setAttribute(@NotNull String key, @NotNull Object object);
-
-    /**
-     * Get the value of the specified attribute.
-     *
-     * @param key the name of the attribute
-     * @return the value, or null if there was none.
-     */
-    @ConcurrentMethod
-    @Nullable
-    Object getAttribute(@NotNull String key);
-
-    /**
-     * Get a set of all the attributes that have values for this table.
-     *
-     * @return a set of names
-     */
-    @ConcurrentMethod
-    @NotNull
-    Set<String> getAttributeNames();
-
-    /**
-     * Check if the specified attribute exists in this table.
-     *
-     * @param name the name of the attribute
-     * @return true if the attribute exists
-     */
-    @ConcurrentMethod
-    boolean hasAttribute(@NotNull String name);
-
-    /**
-     * Get all attributes from this Table.
-     *
-     * @return An unmodifiable map containing all attributes from this Table
-     */
-    @ConcurrentMethod
-    Map<String, Object> getAttributes();
-
-    /**
-     * Get all attributes from this Table except the items that appear in {@code excluded}.
-     *
-     * @param excluded A set of attributes to exclude from the result
-     * @return An unmodifiable map containing Table's attributes, except the ones present in {@code excluded}
-     */
-    @ConcurrentMethod
-    Map<String, Object> getAttributes(Collection<String> excluded);
 
     // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key
@@ -1132,7 +1068,7 @@ public interface Table extends
     /**
      * Set the table's key columns.
      *
-     * @return The same table this method was invoked on, with the keyColumns attribute set
+     * @return A copy of this table with the key columns specified, or this if no change was needed
      */
     @ConcurrentMethod
     Table withKeys(String... columns);
@@ -1140,7 +1076,7 @@ public interface Table extends
     /**
      * Set the table's key columns and indicate that each key set will be unique.
      *
-     * @return The same table this method was invoked on, with the keyColumns and unique attributes set
+     * @return A copy of this table with the unique key columns specified, or this if no change was needed
      */
     @ConcurrentMethod
     Table withUniqueKeys(String... columns);

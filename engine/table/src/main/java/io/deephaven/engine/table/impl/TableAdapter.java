@@ -79,19 +79,34 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default void setAttribute(@NotNull String key, @NotNull Object object) {
-        throwUnsupported();
+    default Table withAttributes(@NotNull Map<String, Object> toAdd, @NotNull Collection<String> toRemove) {
+        return throwUnsupported();
     }
 
-    @Nullable
     @Override
+    default Table withAttributes(@NotNull Map<String, Object> toAdd) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table withoutAttributes(@NotNull Collection<String> toRemove) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table retainingAttributes(@NotNull Collection<String> toRetain) {
+        return throwUnsupported();
+    }
+
+    @Override
+    @Nullable
     default Object getAttribute(@NotNull String key) {
         return throwUnsupported();
     }
 
-    @NotNull
     @Override
-    default Set<String> getAttributeNames() {
+    @NotNull
+    default Set<String> getAttributeKeys() {
         return throwUnsupported();
     }
 
@@ -101,7 +116,14 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Map<String, Object> getAttributes(Collection<String> excluded) {
+    @NotNull
+    default Map<String, Object> getAttributes() {
+        return throwUnsupported();
+    }
+
+    @Override
+    @NotNull
+    default Map<String, Object> getAttributes(@Nullable Collection<String> excluded) {
         return throwUnsupported();
     }
 
