@@ -45,6 +45,8 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
 
 public class JettyBackedGrpcServer implements GrpcServer {
 
+    private static final String JS_PLUGINS_PATH_SPEC = "/js-plugins/*";
+
     private final Server jetty;
 
     @Inject
@@ -69,6 +71,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // https://create-react-app.dev/docs/production-build/#static-file-caching
         context.addFilter(NoCacheFilter.class, "/ide/*", EnumSet.noneOf(DispatcherType.class));
         context.addFilter(NoCacheFilter.class, "/jsapi/*", EnumSet.noneOf(DispatcherType.class));
+        context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
         context.addFilter(CacheFilter.class, "/ide/static/*", EnumSet.noneOf(DispatcherType.class));
 
         // Always add eTags
@@ -88,7 +91,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Set up /js-plugins/*
-        context.addServlet(jsPlugins.servletHolder("js-plugins"), "/js-plugins/*");
+        context.addServlet(jsPlugins.servletHolder("js-plugins"), JS_PLUGINS_PATH_SPEC);
 
         // Set up websocket for grpc-web
         if (config.websocketsOrDefault()) {
