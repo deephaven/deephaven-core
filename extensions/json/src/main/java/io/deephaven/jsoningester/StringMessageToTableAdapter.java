@@ -12,8 +12,10 @@ import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
 
@@ -261,4 +263,26 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
                 StringMessageHolder::getSendTimeMicros,
                 StringMessageHolder::getRecvTimeMicros);
     }
+
+    public static BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> buildFactoryWithSubtables(
+            Logger log, JSONToTableWriterAdapterBuilder adapterBuilder) {
+        return (tablewriter, subtableWriters) -> {
+            // create the string-to-tablewriter adapter
+            final StringToTableWriterAdapter stringToTableWriterAdapter =
+                    adapterBuilder.makeAdapter(log, tablewriter, subtableWriters);
+
+            // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
+            // adapter
+            return new StringMessageToTableAdapter<>(tablewriter,
+                    adapterBuilder.sendTimestampColumnName,
+                    adapterBuilder.receiveTimestampColumnName,
+                    adapterBuilder.timestampColumnName,
+                    adapterBuilder.messageIdColumnName,
+                    stringToTableWriterAdapter,
+                    StringMessageHolder::getMsg,
+                    StringMessageHolder::getSendTimeMicros,
+                    StringMessageHolder::getRecvTimeMicros);
+        };
+    }
+
 }

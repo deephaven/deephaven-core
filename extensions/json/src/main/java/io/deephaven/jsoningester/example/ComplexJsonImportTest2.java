@@ -1,16 +1,14 @@
 package io.deephaven.jsoningester.example;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
-import io.deephaven.engine.table.impl.util.DynamicTableWriter;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.ProcessStreamLoggerImpl;
-import io.deephaven.jsoningester.*;
+import io.deephaven.jsoningester.JSONToInMemoryTableAdapterBuilder;
+import io.deephaven.jsoningester.JSONToTableWriterAdapter;
 import io.deephaven.qst.column.header.ColumnHeader;
-import io.deephaven.qst.table.TableHeader;
-import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.clock.MicroTimer;
@@ -20,11 +18,9 @@ import io.deephaven.util.type.TypeUtils;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 /**
  * Created by rbasralian on 9/28/22
@@ -44,126 +40,83 @@ public class ComplexJsonImportTest2 {
         // https://api.weather.gov/stations/kcos/observations
 
 
-        JSONToTableWriterAdapterBuilder featuresBuilder = new JSONToTableWriterAdapterBuilder();
+        JSONToInMemoryTableAdapterBuilder featuresBuilder = new JSONToInMemoryTableAdapterBuilder();
         featuresBuilder.autoValueMapping(false);
         // featuresBuilder.processArrays(true)
-        featuresBuilder.addColumnFromField("FeatureId", "id");
-        featuresBuilder.addColumnFromField("Type", "type");
-
-        List<ColumnHeader<?>> mainTableColHeaders = new ArrayList<>(32);
-
-        mainTableColHeaders.add(ColumnHeader.ofString("FeatureId"));
-        mainTableColHeaders.add(ColumnHeader.ofString("Type"));
-        mainTableColHeaders.add(ColumnHeader.of("Timestamp", DateTime.class));
+        featuresBuilder.addColumnFromField("FeatureId", "id", String.class);
+        featuresBuilder.addColumnFromField("Type", "type", String.class);
 
         // builder for 'properties', which has all the actual observations
-        JSONToTableWriterAdapterBuilder propertiesBuilder = new JSONToTableWriterAdapterBuilder();
+        JSONToInMemoryTableAdapterBuilder propertiesBuilder = new JSONToInMemoryTableAdapterBuilder();
         propertiesBuilder.autoValueMapping(false);
 
-        mainTableColHeaders.add(ColumnHeader.ofString("PropertiesId"));
-        mainTableColHeaders.add(ColumnHeader.ofString("Station"));
-        mainTableColHeaders.add(ColumnHeader.ofString("Description"));
-        mainTableColHeaders.add(ColumnHeader.ofString("RawMessage"));
-
-        propertiesBuilder.addColumnFromField("Station", "station");
+        propertiesBuilder.addColumnFromField("Station", "station", String.class);
         propertiesBuilder.addColumnFromFunction("Timestamp", DateTime.class, value -> DateTimeUtils.instantToTime(
                 Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value.get("timestamp").textValue()))));
         // propertiesBuilder.addColumnFromField("timestamp", "Timestamp");
-        propertiesBuilder.addColumnFromField("Description", "textDescription");
-        propertiesBuilder.addColumnFromField("RawMessage", "rawMessage");
-        propertiesBuilder.addColumnFromField("PropertiesId", "@id");
+        propertiesBuilder.addColumnFromField("Description", "textDescription", String.class);
+        propertiesBuilder.addColumnFromField("RawMessage", "rawMessage", String.class);
+        propertiesBuilder.addColumnFromField("PropertiesId", "@id", String.class);
 
-        mainTableColHeaders.addAll(
-                addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "elevation", Integer.class));
-        mainTableColHeaders.addAll(
-                addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "temperature", Double.class));
-        mainTableColHeaders
-                .addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "dewpoint", Double.class));
-        mainTableColHeaders.addAll(
-                addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windDirection", Double.class));
-        mainTableColHeaders
-                .addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windSpeed", Double.class));
-        mainTableColHeaders
-                .addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windGust", Double.class));
-        mainTableColHeaders.addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
-                "barometricPressure", Integer.class));
-        mainTableColHeaders.addAll(
-                addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "seaLevelPressure", Integer.class));
-        mainTableColHeaders.addAll(
-                addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "visibility", Integer.class));
-        mainTableColHeaders.addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
-                "maxTemperatureLast24Hours", Double.class));
-        mainTableColHeaders.addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
-                "minTemperatureLast24Hours", Double.class));
-        mainTableColHeaders.addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
-                "precipitationLastHour", Double.class));
-        mainTableColHeaders.addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
-                "precipitationLast3Hours", Double.class));
-        mainTableColHeaders.addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
-                "precipitationLast6Hours", Double.class));
-        mainTableColHeaders.addAll(
-                addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "relativeHumidity", Double.class));
-        mainTableColHeaders
-                .addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windChill", Double.class));
-        mainTableColHeaders
-                .addAll(addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "heatIndex", Double.class));
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "elevation", Integer.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "temperature", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "dewpoint", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windDirection", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windSpeed", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windGust", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
+                "barometricPressure", Integer.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "seaLevelPressure", Integer.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "visibility", Integer.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
+                "maxTemperatureLast24Hours", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
+                "minTemperatureLast24Hours", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
+                "precipitationLastHour", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
+                "precipitationLast3Hours", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder,
+                "precipitationLast6Hours", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "relativeHumidity", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "windChill", Double.class);
+        addObservationNestedFieldBuilderAndGetColHeaders(propertiesBuilder, "heatIndex", Double.class);
 
 
-        // Add ID to cloudLayers rows
-        mainTableColHeaders.add(ColumnHeader.ofLong("cloudLayers_id"));
-
-
-        // Add a subtable ID col (since this is nested under the outer builder)
-        mainTableColHeaders.add(
-                // TODO: figure out something beter for these record IDs
-                ColumnHeader.ofLong(JSONToTableWriterAdapter.SUBTABLE_RECORD_ID_COL));
-
-        final JSONToTableWriterAdapterBuilder cloudLayersBuilder = new JSONToTableWriterAdapterBuilder();
+        final JSONToInMemoryTableAdapterBuilder cloudLayersBuilder = new JSONToInMemoryTableAdapterBuilder();
         cloudLayersBuilder.autoValueMapping(false);
         cloudLayersBuilder.processArrays(true);
 
-        final JSONToTableWriterAdapterBuilder cloudLayersBaseBuilder = new JSONToTableWriterAdapterBuilder();
+        final JSONToInMemoryTableAdapterBuilder cloudLayersBaseBuilder = new JSONToInMemoryTableAdapterBuilder();
         cloudLayersBaseBuilder.autoValueMapping(false);
         cloudLayersBaseBuilder.allowNullValues(true);
         // cloudLayersBaseBuilder.allowMissingKeys(true);
-        cloudLayersBaseBuilder.addColumnFromField("base_unitCode", "unitCode");
-        cloudLayersBaseBuilder.addColumnFromField("base", "value");
+        cloudLayersBaseBuilder.addColumnFromField("base_unitCode", "unitCode", String.class);
+        cloudLayersBaseBuilder.addColumnFromField("base", "value", int.class);
 
         cloudLayersBuilder.addNestedField("base", cloudLayersBaseBuilder);
-        cloudLayersBuilder.addColumnFromField("amount", "amount");
+        cloudLayersBuilder.addColumnFromField("amount", "amount", String.class);
 
-        DynamicTableWriter cloudLayersWriter = new DynamicTableWriter(TableHeader.of(
-                // TODO: figure out something beter for these record IDs
-                ColumnHeader.ofLong(JSONToTableWriterAdapter.SUBTABLE_RECORD_ID_COL),
-                ColumnHeader.ofInt("base"),
-                ColumnHeader.ofString("base_unitCode"),
-                ColumnHeader.ofString("amount")));
-
-        propertiesBuilder.addFieldToSubTableMapping("cloudLayers", cloudLayersBuilder, cloudLayersWriter);
+        propertiesBuilder.addFieldToSubTableMapping("cloudLayers", cloudLayersBuilder);
 
         // The 'properties' (i.e. actual observations) are nested under each element of the 'features' array.
         featuresBuilder.addNestedField("properties", propertiesBuilder);
 
 
         // Create DynamicTableWriter for the main table (now that we've defined all its columns)
-        DynamicTableWriter mainObservationsWriter =
-                new DynamicTableWriter(TableHeader.of(mainTableColHeaders.toArray(new ColumnHeader[0])));
 
-        JSONToTableWriterAdapterBuilder outerBuilder = new JSONToTableWriterAdapterBuilder();
-        outerBuilder.addFieldToSubTableMapping("features", featuresBuilder, mainObservationsWriter);
-        outerBuilder.addColumnFromField("Type", "type");
-
-        DynamicTableWriter outerObservationsWriter = new DynamicTableWriter(TableHeader.of(
-                ColumnHeader.ofString("Type"),
-                ColumnHeader.ofLong("features_id")));
+        JSONToInMemoryTableAdapterBuilder outerBuilder = new JSONToInMemoryTableAdapterBuilder();
+        outerBuilder.addFieldToSubTableMapping("features", featuresBuilder);
+        outerBuilder.addColumnFromField("Type", "type", String.class);
 
         // Create the actual adapter:
-        final JSONToTableWriterAdapter adapter = outerBuilder.makeAdapter(log, outerObservationsWriter);
+        final JSONToInMemoryTableAdapterBuilder.TableAndAdapterBuilderResult result = outerBuilder.build(log);
+        final JSONToTableWriterAdapter adapter = result.tableWriterAdapter;
 
         // Get the output tables:
-        final UpdateSourceQueryTable observationsTable = outerObservationsWriter.getTable();
-        final UpdateSourceQueryTable featuresTable = mainObservationsWriter.getTable();
-        final UpdateSourceQueryTable cloudsTable = cloudLayersWriter.getTable();
+        final Table observationsTable = result.resultTables.get("MAIN_TABLE");
+        final Table featuresTable = result.resultTables.get("features");
+        final Table cloudsTable = result.resultTables.get("cloudLayers");
 
         TableTools.show(observationsTable);
         TableTools.show(featuresTable);
@@ -239,15 +192,16 @@ public class ComplexJsonImportTest2 {
     }
 
     public static List<ColumnHeader<?>> addObservationNestedFieldBuilderAndGetColHeaders(
-            JSONToTableWriterAdapterBuilder parentBuilder,
+            JSONToInMemoryTableAdapterBuilder parentBuilder,
             String fieldName,
             Class<?> type) {
+        // noinspection UnnecessaryLocalVariable
         final String observationName = fieldName;
 
-        JSONToTableWriterAdapterBuilder nestedBuilder = new JSONToTableWriterAdapterBuilder();
-        nestedBuilder.addColumnFromField(observationName, "value");
-        nestedBuilder.addColumnFromField(observationName + '_' + "unitCode", "unitCode");
-        nestedBuilder.addColumnFromField(observationName + '_' + "qualityControl", "qualityControl");
+        JSONToInMemoryTableAdapterBuilder nestedBuilder = new JSONToInMemoryTableAdapterBuilder();
+        nestedBuilder.addColumnFromField(observationName, "value", type);
+        nestedBuilder.addColumnFromField(observationName + '_' + "unitCode", "unitCode", String.class);
+        nestedBuilder.addColumnFromField(observationName + '_' + "qualityControl", "qualityControl", String.class);
         nestedBuilder.allowMissingKeys(true);
         nestedBuilder.allowNullValues(true);
         nestedBuilder.autoValueMapping(false);

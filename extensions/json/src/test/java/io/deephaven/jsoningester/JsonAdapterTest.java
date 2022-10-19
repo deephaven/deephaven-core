@@ -27,8 +27,10 @@ import org.junit.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -720,11 +722,11 @@ public class JsonAdapterTest {
                 Type.fromClasses(long.class, String.class, long.class));
         final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
-                        .addFieldToSubTableMapping("c", factorySubtableDe, subtableWriter)
+                        .addFieldToSubTableMapping("c", factorySubtableDe)
                         .autoValueMapping(false)
                         .nConsumerThreads(0));
 
@@ -736,7 +738,7 @@ public class JsonAdapterTest {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable resultMain = writer.getTable();
 
-        adapter = factory.apply(writer);
+        adapter = factory.apply(writer, Map.of("c", subtableWriter));
 
         injectJson(
                 "{\"a\": \"test\", \"b\": 42.2, \"c\": [ {\"d\": 123, \"e\": \"Foo\"}, {\"d\": 456, \"e\": \"Bar\"} ]}",
@@ -803,11 +805,11 @@ public class JsonAdapterTest {
                 Type.fromClasses(long.class, String.class, long.class));
         final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
-                        .addFieldToSubTableMapping("c", factorySubtableDe, subtableWriter)
+                        .addFieldToSubTableMapping("c", factorySubtableDe)
                         .autoValueMapping(false)
                         .nConsumerThreads(0));
 
@@ -819,7 +821,7 @@ public class JsonAdapterTest {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable resultMain = writer.getTable();
 
-        adapter = factory.apply(writer);
+        adapter = factory.apply(writer, Map.of("c", subtableWriter));
 
         try {
             injectJson(

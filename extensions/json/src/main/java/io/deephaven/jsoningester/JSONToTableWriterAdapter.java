@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.Row;
@@ -151,7 +152,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             final Map<String, JSONToTableWriterAdapterBuilder> nestedFieldBuilders,
             final Map<String, String> columnToParallelField,
             final Map<String, JSONToTableWriterAdapterBuilder> parallelNestedFieldBuilders,
-            final Map<String, Pair<JSONToTableWriterAdapterBuilder, TableWriter<?>>> fieldToSubtableBuilders,
+            final Map<String, TableWriter<?>> fieldToSubtableWriters,
+            final Map<String, JSONToTableWriterAdapterBuilder> fieldToSubtableBuilders,
             final Set<String> columnsUnmapped,
             final boolean autoValueMapping,
             final boolean createHolders) {
@@ -165,6 +167,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 nestedFieldBuilders,
                 columnToParallelField,
                 parallelNestedFieldBuilders,
+                fieldToSubtableWriters,
                 fieldToSubtableBuilders,
                 columnsUnmapped,
                 autoValueMapping,
@@ -189,28 +192,31 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param nestedFieldBuilders
      * @param columnToParallelField
      * @param parallelNestedFieldBuilders
+     * @param fieldToSubtableWriters The map of subtable fields to writers is used when building child adapters.
      * @param fieldToSubtableBuilders
      * @param allowedUnmappedColumns
      * @param autoValueMapping
      * @param createHolders Whether to create the InMemmoryRowHolders and associated thread pool.
      * @param subtableProcessingQueueThreadLocal
      */
-    JSONToTableWriterAdapter(final TableWriter<?> writer,
+    JSONToTableWriterAdapter(
+            @NotNull final TableWriter<?> writer,
             @NotNull final Logger log,
             final boolean allowMissingKeys,
             final boolean allowNullValues,
             final boolean processArrays,
             final int nThreads,
-            final Map<String, String> columnToJsonField,
-            final Map<String, ToIntFunction<JsonNode>> columnToIntFunctions,
-            final Map<String, ToLongFunction<JsonNode>> columnToLongFunctions,
-            final Map<String, ToDoubleFunction<JsonNode>> columnToDoubleFunctions,
-            final Map<String, Pair<Class<?>, Function<JsonNode, ?>>> columnToObjectFunctions,
-            final Map<String, JSONToTableWriterAdapterBuilder> nestedFieldBuilders,
-            final Map<String, String> columnToParallelField,
-            final Map<String, JSONToTableWriterAdapterBuilder> parallelNestedFieldBuilders,
-            final Map<String, Pair<JSONToTableWriterAdapterBuilder, TableWriter<?>>> fieldToSubtableBuilders,
-            final Set<String> allowedUnmappedColumns,
+            @NotNull final Map<String, String> columnToJsonField,
+            @NotNull final Map<String, ToIntFunction<JsonNode>> columnToIntFunctions,
+            @NotNull final Map<String, ToLongFunction<JsonNode>> columnToLongFunctions,
+            @NotNull final Map<String, ToDoubleFunction<JsonNode>> columnToDoubleFunctions,
+            @NotNull final Map<String, Pair<Class<?>, Function<JsonNode, ?>>> columnToObjectFunctions,
+            @NotNull final Map<String, JSONToTableWriterAdapterBuilder> nestedFieldBuilders,
+            @NotNull final Map<String, String> columnToParallelField,
+            @NotNull final Map<String, JSONToTableWriterAdapterBuilder> parallelNestedFieldBuilders,
+            @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
+            @NotNull final Map<String, JSONToTableWriterAdapterBuilder> fieldToSubtableBuilders,
+            @NotNull final Set<String> allowedUnmappedColumns,
             final boolean autoValueMapping,
             final boolean createHolders,
             final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal,
@@ -287,28 +293,46 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
         // This is the only part of this method/class that works in the sense of mapping JSON fields to DH outputs.
         // Everything else maps DH outputs to the corresponding JSON source field.
-        for (Map.Entry<String, Pair<JSONToTableWriterAdapterBuilder, TableWriter<?>>> subtableEntry : fieldToSubtableBuilders
+        for (Map.Entry<String, JSONToTableWriterAdapterBuilder> subtableEntry : fieldToSubtableBuilders
                 .entrySet()) {
             final String fieldName = subtableEntry.getKey();
             outputColumnNames.remove(getSubtableRowIdColName(fieldName));
-            final Pair<JSONToTableWriterAdapterBuilder, TableWriter<?>> adapterBuilderAndWriter =
+            final JSONToTableWriterAdapterBuilder adapterBuilder =
                     subtableEntry.getValue();
-            final JSONToTableWriterAdapterBuilder builder = adapterBuilderAndWriter.first;
-            outputColumnNames.removeAll(builder.getDefinedColumns());
+            outputColumnNames.removeAll(adapterBuilder.getDefinedColumns());
 
-            makeSubtableFieldProcessor(fieldName, builder, adapterBuilderAndWriter.second);
+            try {
+                final TableWriter<?> subtableWriter =
+                        Require.neqNull(fieldToSubtableWriters.get(fieldName), "subtableWriter");
+                makeSubtableFieldProcessor(fieldName, adapterBuilder, subtableWriter, fieldToSubtableWriters);
+            } catch (RuntimeException ex) {
+                throw new JSONIngesterException(
+                        "Failed creating field processor for subtable field \"" + fieldName + '"', ex);
+            }
         }
 
-        for (final Map.Entry<String, JSONToTableWriterAdapterBuilder> nestedFieldEntry : nestedFieldBuilders
-                .entrySet()) {
+        for (Map.Entry<String, JSONToTableWriterAdapterBuilder> nestedFieldEntry : nestedFieldBuilders.entrySet()) {
             outputColumnNames.removeAll(nestedFieldEntry.getValue().getDefinedColumns());
-            makeCompositeFieldProcessor(writer, allColumns, nestedFieldEntry.getKey(), nestedFieldEntry.getValue());
+            final String fieldName = nestedFieldEntry.getKey();
+            try {
+                makeCompositeFieldProcessor(writer, fieldToSubtableWriters, allColumns, fieldName,
+                        nestedFieldEntry.getValue());
+            } catch (RuntimeException ex) {
+                throw new JSONIngesterException(
+                        "Failed creating field processor for nested field \"" + fieldName + '"', ex);
+            }
         }
-        for (final Map.Entry<String, JSONToTableWriterAdapterBuilder> nestedFieldEntry : parallelNestedFieldBuilders
+        for (Map.Entry<String, JSONToTableWriterAdapterBuilder> nestedParallelFieldEntry : parallelNestedFieldBuilders
                 .entrySet()) {
-            outputColumnNames.removeAll(nestedFieldEntry.getValue().getDefinedColumns());
-            makeCompositeParallelFieldProcessor(writer, allColumns, nestedFieldEntry.getKey(),
-                    nestedFieldEntry.getValue());
+            outputColumnNames.removeAll(nestedParallelFieldEntry.getValue().getDefinedColumns());
+            final String fieldName = nestedParallelFieldEntry.getKey();
+            try {
+                makeCompositeParallelFieldProcessor(writer, fieldToSubtableWriters, allColumns,
+                        fieldName, nestedParallelFieldEntry.getValue());
+            } catch (RuntimeException ex) {
+                throw new JSONIngesterException("Failed creating field processor for nested parallel field \""
+                        + fieldName + '"', ex);
+            }
         }
 
         if (!missingColumns.isEmpty()) {
@@ -462,6 +486,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     private void makeCompositeFieldProcessor(final TableWriter<?> writer,
+            final Map<String, TableWriter<?>> subtableWriters,
             final List<String> allColumns,
             final String fieldName,
             final JSONToTableWriterAdapterBuilder nestedBuilder) {
@@ -477,7 +502,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         // newAllowedUnmapped.removeAll(subtableFieldsToAdapters.keySet());
 
         final JSONToTableWriterAdapter nestedAdapter =
-                nestedBuilder.makeNestedAdapter(log, writer, newAllowedUnmapped, subtableProcessingQueueThreadLocal);
+                nestedBuilder.makeNestedAdapter(log, writer, subtableWriters, newAllowedUnmapped,
+                        subtableProcessingQueueThreadLocal);
         nestedAdapters.add(nestedAdapter);
 
         // we make a single field processor that in turn calls the nested adapter's field processors after extracting
@@ -518,6 +544,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     private void makeCompositeParallelFieldProcessor(final TableWriter<?> writer,
+            final Map<String, TableWriter<?>> subtableWriters,
             final List<String> allColumns,
             final String fieldName,
             final JSONToTableWriterAdapterBuilder nestedBuilder) {
@@ -525,7 +552,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         newUnmapped.removeAll(nestedBuilder.getDefinedColumns());
 
         final JSONToTableWriterAdapter nestedAdapter =
-                nestedBuilder.makeNestedAdapter(log, writer, newUnmapped, subtableProcessingQueueThreadLocal);
+                nestedBuilder.makeNestedAdapter(log, writer, subtableWriters, newUnmapped,
+                        subtableProcessingQueueThreadLocal);
         nestedAdapters.add(nestedAdapter);
 
         arrayFieldNames.add(fieldName);
@@ -552,9 +580,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param subtableBuilder
      * @param subtableWriter
      */
-    private void makeSubtableFieldProcessor(String fieldName,
-            JSONToTableWriterAdapterBuilder subtableBuilder,
-            TableWriter<?> subtableWriter) {
+    private void makeSubtableFieldProcessor(
+            @NotNull String fieldName,
+            @NotNull JSONToTableWriterAdapterBuilder subtableBuilder,
+            @NotNull TableWriter<?> subtableWriter,
+            @NotNull Map<String, TableWriter<?>> allSubtableWriters) {
 
         // Subtable record counter, mapping each row of the parent table to the corresponding rows of the subtable.
         // TODO: it would be better to use a unique parent message ID if available
@@ -570,6 +600,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 .makeSubtableAdapter(
                         log,
                         subtableWriter,
+                        allSubtableWriters,
                         Collections.emptySet(),
                         subtableProcessingQueueThreadLocal,
                         subtableRecordIdThreadLocal);
