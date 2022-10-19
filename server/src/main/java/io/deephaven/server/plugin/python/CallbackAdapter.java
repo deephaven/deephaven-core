@@ -4,6 +4,7 @@
 package io.deephaven.server.plugin.python;
 
 import io.deephaven.plugin.Registration.Callback;
+import io.deephaven.plugin.type.JsPluginInfo;
 import io.deephaven.server.plugin.type.JsPluginDistribution;
 import org.jpy.PyObject;
 
@@ -28,7 +29,7 @@ class CallbackAdapter {
     @SuppressWarnings("unused")
     public void registerJsPlugin(String path, String name, String version, String main) throws IOException {
         try {
-            callback.register(JsPluginDistribution.of(Path.of(path), name, version, main));
+            callback.register(JsPluginDistribution.of(Path.of(path), JsPluginInfo.of(name, version, main)));
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }

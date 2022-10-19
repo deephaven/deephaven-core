@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.jetty.jsplugin;
 
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.plugin.type.JsPluginRegistration;
@@ -14,25 +15,33 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 /**
- * Binds {@link JsPlugins} as {@link JsPluginRegistration}. Provides {@link JsPlugins} as a {@link Singleton} via
- * {@link JsPlugins#create()}. If {@link JettyConfig#jsPluginsOrDefault()} is {@code true}, then the plugin is provided
- * as the {@link JsPluginRegistration}; otherwise, a {@link JsPluginRegistrationNoOp} is provided.
+ * Provides {@link JsPluginsZipFilesystem} as a {@link Singleton}.
+ *
+ * <p>
+ * If {@link JettyConfig#jsPluginsOrDefault()} is {@code true}, then {@link JsPluginsZipFilesystem} is provided as the
+ * {@link JsPluginRegistration}; otherwise, a {@link JsPluginRegistrationNoOp} is provided.
+ *
+ * <p>
+ * Binds {@link JsPluginsZipFilesystem} as {@link JsPlugins}.
  */
 @Module
 public interface JsPluginsModule {
 
     @Provides
-    static JsPluginRegistration providesRegistration(JettyConfig config, JsPlugins plugins) {
-        return config.jsPluginsOrDefault() ? plugins : JsPluginRegistrationNoOp.INSTANCE;
-    }
-
-    @Provides
     @Singleton
-    static JsPlugins providesJsPlugins() {
+    static JsPluginsZipFilesystem providesJsPluginsZipFilesystem() {
         try {
-            return JsPlugins.create();
+            return JsPluginsZipFilesystem.create();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
+
+    @Provides
+    static JsPluginRegistration providesRegistration(JettyConfig config, JsPluginsZipFilesystem plugins) {
+        return config.jsPluginsOrDefault() ? plugins : JsPluginRegistrationNoOp.INSTANCE;
+    }
+
+    @Binds
+    JsPlugins bindsJsPluginsZipFilesystem(JsPluginsZipFilesystem plugins);
 }

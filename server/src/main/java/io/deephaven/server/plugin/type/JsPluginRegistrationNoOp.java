@@ -21,7 +21,7 @@ public enum JsPluginRegistrationNoOp implements JsPluginRegistration {
     @Override
     public void register(JsPlugin jsPlugin) {
         log.info().append("No-op registration for js plugin '")
-                .append(jsPlugin.name()).append('@').append(jsPlugin.version())
+                .append(jsPlugin.info().name()).append('@').append(jsPlugin.info().version())
                 .append('\'')
                 .endl();
     }

@@ -156,6 +156,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     private GrpcServer server;
+    protected int port;
 
     private FlightClient client;
 
@@ -173,13 +174,13 @@ public abstract class FlightMessageRoundTripTest {
 
         server = component.server();
         server.start();
-        int actualPort = server.getPort();
+        port = server.getPort();
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
         executionContext = component.executionContext().open();
 
-        serverLocation = Location.forGrpcInsecure("localhost", actualPort);
+        serverLocation = Location.forGrpcInsecure("localhost", port);
         currentSession = sessionService.newSession(new AuthContext.SuperUser());
         client = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {

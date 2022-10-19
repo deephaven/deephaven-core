@@ -4,3 +4,10 @@ plugins {
 }
 
 description = 'The Deephaven plugin interface'
+
+dependencies {
+    Classpaths.inheritImmutables(project)
+
+    Classpaths.inheritJacksonPlatform(project, 'compileOnly')
+    compileOnly 'com.fasterxml.jackson.core:jackson-annotations'
+}

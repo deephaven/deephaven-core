@@ -67,7 +67,7 @@ public final class PluginRegistration {
         @Override
         public Counting visit(JsPlugin jsPlugin) {
             log.info().append("Registering js plugin: ")
-                    .append(jsPlugin.name()).append('@').append(jsPlugin.version()).append(" / ")
+                    .append(jsPlugin.info().name()).append('@').append(jsPlugin.info().version()).append(" / ")
                     .append(jsPlugin.toString())
                     .endl();
             callback.register(jsPlugin);

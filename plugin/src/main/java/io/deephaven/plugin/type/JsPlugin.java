@@ -16,25 +16,9 @@ import java.nio.file.Path;
 public interface JsPlugin extends Plugin {
 
     /**
-     * The name of the plugin.
-     *
-     * @return the name
+     * The js plugin info.
      */
-    String name();
-
-    /**
-     * The version of the plugin.
-     *
-     * @return the version
-     */
-    String version();
-
-    /**
-     * The main js file; the relative path with respect to {@link #copyTo(Path)} destination.
-     *
-     * @return the main entrypoint.
-     */
-    String main();
+    JsPluginInfo info();
 
     /**
      * Copy all distribution files into the directory {@code destination}.
