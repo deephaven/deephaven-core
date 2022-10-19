@@ -9,7 +9,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.kafka.StreamPublisherImpl;
+import io.deephaven.stream.StreamPublisherImpl;
 import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;

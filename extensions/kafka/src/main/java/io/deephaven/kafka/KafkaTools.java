@@ -36,6 +36,7 @@ import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Stream;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
+import io.deephaven.stream.StreamPublisherImpl;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -1439,11 +1440,8 @@ public class KafkaTools {
 
         final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
             final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
-            final StreamToTableAdapter streamToTableAdapter =
-                    new StreamToTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar,
-                            "Kafka-" + topic + '-' + partitionFilter);
-            streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
-                    streamToTableAdapter::chunkTypeForIndex);
+            final StreamToTableAdapter streamToTableAdapter = streamPublisher.createStreamToTableAdapter(
+                    tableDefinition, updateSourceRegistrar, "Kafka-" + topic + '-' + partitionFilter);
 
             final KeyOrValueProcessor keyProcessor =
                     getProcessor(keySpec, tableDefinition, streamToTableAdapter, keyIngestData);

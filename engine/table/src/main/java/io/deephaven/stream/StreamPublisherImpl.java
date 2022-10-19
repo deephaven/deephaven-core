@@ -1,18 +1,19 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.kafka;
+package io.deephaven.stream;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.stream.StreamConsumer;
-import io.deephaven.stream.StreamPublisher;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 public class StreamPublisherImpl implements StreamPublisher {
+    private static final int CHUNK_SIZE = 4096;
     private StreamConsumer streamConsumer;
     private WritableChunk[] chunks;
     private Supplier<WritableChunk[]> chunkFactory;
@@ -68,5 +69,26 @@ public class StreamPublisherImpl implements StreamPublisher {
      */
     public synchronized void doLocked(Runnable runnable) {
         runnable.run();
+    }
+
+    /**
+     * Create a StreamToTableAdapter from this StreamPublisher, {@link #register} the adapter rwith this publisher, and
+     * set this publisher's chunk factory to create the appropriate chunks for the result table.
+     * 
+     * @param tableDefinition Table definition for destiniation table.
+     * @param updateSourceRegistrar Update source registrar (e.g.
+     *        {@link io.deephaven.engine.updategraph.UpdateGraphProcessor#DEFAULT}).
+     * @param name The name of the StreamToTableAdapter.
+     * @return A StreamToTableAdapter to which this StreamPublisher will publish data.
+     */
+    public StreamToTableAdapter createStreamToTableAdapter(TableDefinition tableDefinition,
+            UpdateSourceRegistrar updateSourceRegistrar, String name) {
+        final StreamToTableAdapter streamToTableAdapter =
+                new StreamToTableAdapter(tableDefinition, this, updateSourceRegistrar, name);
+
+        setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
+                streamToTableAdapter::chunkTypeForIndex);
+
+        return streamToTableAdapter;
     }
 }
