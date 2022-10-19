@@ -206,6 +206,9 @@ public abstract class BaseTable extends LiveAttributeMap<Table, QueryTable>
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.View));
 
+        tempMap.put(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(
+                CopyAttributeOperation.Rollup,
+                CopyAttributeOperation.Treetable)));
         tempMap.put(SORTABLE_COLUMNS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Sort,
