@@ -72,6 +72,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     @Nullable
     private StringMessageToTableAdapter<?> owner;
 
+    /**
+     * TableWriter to write data to.
+     * TODO: replace this with a io.deephaven.stream.StreamPublisherImpl. Be mindful of transactions -- flush() all
+     * rows at once. Maybe ensure that subtables are updated at the same time too.
+     */
     private final TableWriter<?> writer;
     private final Logger log;
     private final boolean allowMissingKeys;
