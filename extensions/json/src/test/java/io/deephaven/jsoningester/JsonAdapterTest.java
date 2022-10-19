@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.DynamicTableWriter;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.function.Random;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
@@ -1700,38 +1701,48 @@ public class JsonAdapterTest {
             }
         }
 
-        final int numMessages = numThreads * 25_000;
-        final TextMessage[] messages = new TextMessage[numMessages];
+        final int warmupMessages = 20_000;
 
+        final int numMessages = numThreads * 25_000;
+        final TextMessage[] messages = new TextMessage[warmupMessages + numMessages];
+
+        System.out.println("Generating test messages...");
         final int mgGroupSize = 30;
+        final StringBuilder builder = new StringBuilder(1024);
         for (int i = 0; i < messages.length; i++) {
-            final StringBuilder builder = new StringBuilder("{" + System.lineSeparator());
+            builder.setLength(0);
+            builder.append('{').append(System.lineSeparator());
             for (int mg = 0; mg < 210; mg++) {
                 if (mg < mgGroupSize) {
-                    builder.append("\"" + strCol).append(mg % mgGroupSize).append("\": \"test\",")
+                    builder.append("\"" + strCol).append(mg % mgGroupSize).append("\": \"test").append(i).append("\",")
                             .append(System.lineSeparator());
                 } else if (mg < 2 * mgGroupSize) {
-                    builder.append("\"" + dblCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append(".2,")
+                    builder.append("\"" + dblCol).append(mg % mgGroupSize).append("\": ").append(Random.random())
+                            .append(',')
                             .append(System.lineSeparator());
                 } else if (mg < 3 * mgGroupSize) {
-                    builder.append("\"" + intCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append("23,")
+                    builder.append("\"" + intCol).append(mg % mgGroupSize).append("\": ")
+                            .append(Random.randomInt(0, Integer.MAX_VALUE)).append(',')
                             .append(System.lineSeparator());
                 } else if (mg < 4 * mgGroupSize) {
-                    builder.append("\"" + shortCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append(",")
+                    builder.append("\"" + shortCol).append(mg % mgGroupSize).append("\": ").append(mg + 1).append(',')
                             .append(System.lineSeparator());
                 } else if (mg < 5 * mgGroupSize) {
-                    builder.append("\"" + longCol).append(mg % mgGroupSize).append("\": ").append(i + 1)
-                            .append("23456789,").append(System.lineSeparator());
+                    builder.append("\"" + longCol).append(mg % mgGroupSize).append("\": ")
+                            .append(Random.randomLong(-Long.MAX_VALUE, Long.MAX_VALUE))
+                            .append(',').append(System.lineSeparator());
                 } else if (mg < 6 * mgGroupSize) {
-                    builder.append("\"" + byteCol).append(mg % mgGroupSize).append("\": 3,")
+                    builder.append("\"" + byteCol).append(mg % mgGroupSize).append("\": ")
+                            .append(Random.randomInt(Byte.MIN_VALUE, Byte.MAX_VALUE + 1)).append(',')
                             .append(System.lineSeparator());
                 } else {
-                    builder.append("\"" + floatCol).append(mg % mgGroupSize).append("\": 98765.4321,")
+                    builder.append("\"" + floatCol).append(mg % mgGroupSize).append("\": ")
+                            .append(Random.randomFloat(-10000, 10000)).append(',')
                             .append(System.lineSeparator());
                 }
             }
             builder.deleteCharAt(builder.length() - 2); // Remove trailing comma
-            builder.append("}");
+            builder.append('}');
 
             messages[i] = new TextMessage();
             messages[i].setText(builder.toString());
@@ -1742,17 +1753,20 @@ public class JsonAdapterTest {
 
         adapter = factory.apply(writer);
 
+        int msgIdx = 0;
+
+        System.out.println("Warming up...");
         // Give time for the adapter to get set up, including a few initial messages so the setters exist on each thread
-        adapter.consumeMessage("id", messages[0]);
-        adapter.consumeMessage("id", messages[1]);
-        adapter.consumeMessage("id", messages[2]);
-        adapter.consumeMessage("id", messages[3]);
+        for (; msgIdx < warmupMessages; msgIdx++) {
+            adapter.consumeMessage("id", messages[msgIdx]);
+        }
 
         adapter.waitForProcessing(MAX_WAIT_MILLIS);
 
+        System.out.println("Running test...");
         long before = System.nanoTime();
-        for (int i = 4; i < messages.length; i++) {
-            adapter.consumeMessage("id", messages[i]);
+        for (; msgIdx < messages.length; msgIdx++) {
+            adapter.consumeMessage("id", messages[msgIdx]);
         }
         long after = System.nanoTime();
         long intervalNanos = after - before;
