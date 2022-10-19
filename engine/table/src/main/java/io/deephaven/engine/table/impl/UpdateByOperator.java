@@ -83,12 +83,12 @@ public interface UpdateByOperator {
     }
 
     /**
-     * Get the name of the input column this operator depends on.
+     * Get the name of the input column(s) this operator depends on.
      *
      * @return the name of the input column
      */
     @NotNull
-    String getInputColumnName();
+    String[] getInputColumnNames();
 
     /**
      * Get the name of the timestamp column this operator depends on.
@@ -142,14 +142,14 @@ public interface UpdateByOperator {
     void startTrackingPrev();
 
     /**
-     * Make an {@link UpdateContext} suitable for use with non-bucketed updates.
+     * Make an {@link UpdateContext} suitable for use with updates.
      *
      * @param chunkSize The expected size of chunks that will be provided during the update,
-     * @param inputSource The column source that contains the input values needed by the operator
+     * @param inputSourceArr The column sources that contains the input values needed by the operator
      * @return a new context
      */
     @NotNull
-    UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?> inputSource);
+    UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?>[] inputSourceArr);
 
     /**
      * Perform and bookkeeping required at the end of a single part of the update. This is always preceded with a call

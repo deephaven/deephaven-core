@@ -11,7 +11,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
-import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -35,6 +34,9 @@ class ZeroKeyUpdateBy extends UpdateBy {
     final ColumnSource<?> timestampColumnSource;
     final ModifiedColumnSet timestampColumnSet;
 
+    // individual output modifiedColumnSets for the operators
+    protected final ModifiedColumnSet[][] windowOperatorOutputModifiedColumnSets;
+
     /**
      * Perform an updateBy without any key columns.
      *
@@ -49,12 +51,18 @@ class ZeroKeyUpdateBy extends UpdateBy {
     public static Table compute(@NotNull final String description,
             @NotNull final QueryTable source,
             @NotNull final UpdateByOperator[] ops,
+            @NotNull final UpdateByWindow[] windows,
+            @NotNull final ColumnSource<?>[] inputSources,
+            @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final UpdateByRedirectionContext redirContext,
             @NotNull final UpdateByControl control,
             final boolean applyShifts) {
+
         final QueryTable result = new QueryTable(source.getRowSet(), resultSources);
-        final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(ops, source, redirContext, control, applyShifts);
+        final ZeroKeyUpdateBy updateBy = new ZeroKeyUpdateBy(ops, windows, inputSources, operatorInputSourceSlots,
+                source, redirContext, control, applyShifts);
+
         updateBy.doInitialAdditions();
 
         if (source.isRefreshing()) {
@@ -67,11 +75,14 @@ class ZeroKeyUpdateBy extends UpdateBy {
     }
 
     protected ZeroKeyUpdateBy(@NotNull final UpdateByOperator[] operators,
+            @NotNull final UpdateByWindow[] windows,
+            @NotNull final ColumnSource<?>[] inputSources,
+            @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final QueryTable source,
             @NotNull final UpdateByRedirectionContext redirContext,
             @NotNull final UpdateByControl control,
             final boolean applyShifts) {
-        super(operators, source, redirContext, control);
+        super(operators, windows, inputSources, operatorInputSourceSlots, source, redirContext, control);
 
         // do we need a timestamp SSA?
         this.timestampColumnName = Arrays.stream(operators)
@@ -90,6 +101,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
             this.timestampColumnSet = null;
         }
         this.applyShifts = applyShifts;
+        this.windowOperatorOutputModifiedColumnSets = new ModifiedColumnSet[windows.length][];
+
     }
 
     ZeroKeyUpdateByListener newListener(@NotNull final String description, @NotNull final QueryTable result) {
@@ -331,8 +344,15 @@ class ZeroKeyUpdateBy extends UpdateBy {
 
             for (int ii = 0; ii < windows.length; ii++) {
                 windows[ii].startTrackingModifications(source, result);
-            }
+                final UpdateByOperator[] windowOps = windows[ii].getOperators();
+                windowOperatorOutputModifiedColumnSets[ii] = new ModifiedColumnSet[windowOps.length];
 
+                // these must be created here and relate to the local result table
+                for (int winOpIdx = 0; winOpIdx < windowOps.length; winOpIdx++) {
+                    windowOperatorOutputModifiedColumnSets[ii][winOpIdx] =
+                            result.newModifiedColumnSet(windowOps[winOpIdx].getOutputColumnNames());
+                }
+            }
             this.transformer =
                     source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
         }
@@ -407,7 +427,8 @@ class ZeroKeyUpdateBy extends UpdateBy {
                 // set the modified columns if any operators made changes (add/rem/modify)
                 for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                     if (ctx.windowAffected[winIdx]) {
-                        ctx.windowContexts[winIdx].updateOutputModifiedColumnSet(downstream.modifiedColumnSet);
+                        ctx.windowContexts[winIdx].updateOutputModifiedColumnSet(downstream.modifiedColumnSet,
+                                windowOperatorOutputModifiedColumnSets[winIdx]);
                     }
                 }
 

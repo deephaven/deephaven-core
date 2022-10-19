@@ -68,7 +68,7 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?>[] inputSourceArr) {
         return new Context(chunkSize);
     }
 

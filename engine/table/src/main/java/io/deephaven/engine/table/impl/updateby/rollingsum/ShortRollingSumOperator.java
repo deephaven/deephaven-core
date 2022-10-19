@@ -81,7 +81,7 @@ public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?> inputSource) {
+    public UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?>[] inputSourceArr) {
         return new Context(chunkSize);
     }
 

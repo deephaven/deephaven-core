@@ -54,11 +54,11 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                               Chunk<? extends Values> valueChunk,
+                               Chunk<? extends Values>[] valueChunkArr,
                                LongChunk<? extends Values> tsChunk,
                                int len) {
 
-            setValuesChunk(valueChunk);
+            setValuesChunk(valueChunkArr[0]);
             setTimestampChunk(tsChunk);
 
             // chunk processing

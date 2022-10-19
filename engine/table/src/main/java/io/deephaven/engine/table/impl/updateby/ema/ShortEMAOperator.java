@@ -21,17 +21,17 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
 
         public ShortChunk<? extends Values> shortValueChunk;
 
-        protected Context(int chunkSize, ColumnSource<?> inputSource) {
+        protected Context(int chunkSize, ColumnSource<?> inputSourceArr[]) {
             super(chunkSize);
-            this.valueSource = inputSource;
+            this.valueSource = inputSourceArr[0];
         }
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                               Chunk<? extends Values> valueChunk,
+                               Chunk<? extends Values>[] valueChunkArr,
                                LongChunk<? extends Values> tsChunk,
                                int len) {
-            setValuesChunk(valueChunk);
+            setValuesChunk(valueChunkArr[0]);
             setTimestampChunk(tsChunk);
 
             // chunk processing
@@ -128,7 +128,7 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?> inputSource) {
-        return new Context(chunkSize, inputSource);
+    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?>[] inputSourceArr) {
+        return new Context(chunkSize, inputSourceArr);
     }
 }

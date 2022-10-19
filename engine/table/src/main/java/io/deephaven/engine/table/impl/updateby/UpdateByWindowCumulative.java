@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
@@ -44,12 +45,18 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
                     // create the fill contexts for the input sources
-                    int sourceSlot = operatorSourceSlots[opIdx];
-                    if (!inputSourceChunkPopulated[sourceSlot]) {
-                        inputSourceGetContexts[sourceSlot] = inputSources[sourceSlot].makeGetContext(workingChunkSize);
-                        inputSourceChunkPopulated[sourceSlot] = true;
+                    final int[] sourceIndices = operatorInputSourceSlots[opIdx];
+                    final ColumnSource<?>[] inputSourceArr = new ColumnSource[sourceIndices.length];
+                    for (int ii = 0; ii < sourceIndices.length; ii++) {
+                        int sourceSlot = sourceIndices[ii];
+                        if (!inputSourceChunkPopulated[sourceSlot]) {
+                            inputSourceGetContexts[sourceSlot] =
+                                    inputSources[sourceSlot].makeGetContext(workingChunkSize);
+                            inputSourceChunkPopulated[sourceSlot] = true;
+                        }
+                        inputSourceArr[ii] = inputSources[sourceSlot];
                     }
-                    opContext[opIdx] = operators[opIdx].makeUpdateContext(workingChunkSize, inputSources[sourceSlot]);
+                    opContext[opIdx] = operators[opIdx].makeUpdateContext(workingChunkSize, inputSourceArr);
                 }
             }
         }
@@ -164,15 +171,20 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
 
                     for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                         if (opAffected[opIdx]) {
-                            final int srcIdx = operatorSourceSlots[opIdx];
-
-                            // chunk prep
-                            prepareValuesChunkForSource(srcIdx, rs);
+                            // prep the chunk array needed by the accumulate call
+                            final int[] srcIndices = operatorInputSourceSlots[opIdx];
+                            Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
+                            for (int ii = 0; ii < srcIndices.length; ii++) {
+                                int srcIdx = srcIndices[ii];
+                                // chunk prep
+                                prepareValuesChunkForSource(srcIdx, rs);
+                                chunkArr[ii] = inputSourceChunks[srcIdx];
+                            }
 
                             // make the specialized call for cumulative operators
                             ((UpdateByCumulativeOperator.Context) opContext[opIdx]).accumulate(
                                     rs,
-                                    inputSourceChunks[srcIdx],
+                                    chunkArr,
                                     tsChunk,
                                     size);
                         }
@@ -207,16 +219,6 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
         return new UpdateByWindowCumulativeContext(sourceRowSet, inputSources, timestampColumnSource, timestampSsa,
                 chunkSize,
                 isInitializeStep);
-    }
-
-    public void startTrackingModifications(@NotNull final QueryTable source, @NotNull final QueryTable result) {
-        trackModifications = true;
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            operatorInputModifiedColumnSets[opIdx] =
-                    source.newModifiedColumnSet(operators[opIdx].getAffectingColumnNames());
-            operatorOutputModifiedColumnSets[opIdx] =
-                    result.newModifiedColumnSet(operators[opIdx].getOutputColumnNames());
-        }
     }
 
     /**
@@ -293,16 +295,8 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
         return smallestModifiedKey;
     }
 
-    public UpdateByWindowCumulative(UpdateByOperator[] operators, int[] operatorSourceSlots,
+    public UpdateByWindowCumulative(UpdateByOperator[] operators, int[][] operatorSourceSlots,
             @Nullable String timestampColumnName) {
         super(operators, operatorSourceSlots, timestampColumnName);
-    }
-
-    @Override
-    public int hashCode() {
-        return hashCode(false,
-                timestampColumnName,
-                0L,
-                0L);
     }
 }

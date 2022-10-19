@@ -43,12 +43,12 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                               Chunk<? extends Values> influencerValueChunk,
+                               Chunk<? extends Values> influencerValueChunkArr[],
                                IntChunk<? extends Values> pushChunk,
                                IntChunk<? extends Values> popChunk,
                                int len) {
 
-            setValuesChunk(influencerValueChunk);
+            setValuesChunk(influencerValueChunkArr[0]);
             int pushIndex = 0;
 
             // chunk processing

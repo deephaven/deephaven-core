@@ -33,12 +33,10 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
         long lastStamp = NULL_LONG;
 
-        protected Context(int chunkSize, ColumnSource<?> inputSource) {
+        protected Context(int chunkSize, ColumnSource<?>[] inputSourceArr) {
             super(chunkSize);
-            this.valueSource = inputSource;
+            this.valueSource = inputSourceArr[0];
         }
-
-
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {

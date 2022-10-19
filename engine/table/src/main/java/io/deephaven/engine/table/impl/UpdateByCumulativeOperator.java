@@ -47,7 +47,7 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
         }
 
         public abstract void accumulate(RowSequence inputKeys,
-                Chunk<? extends Values> valueChunk,
+                Chunk<? extends Values>[] valueChunkArr,
                 LongChunk<? extends Values> tsChunk,
                 int len);
     }
@@ -87,8 +87,8 @@ public abstract class UpdateByCumulativeOperator implements UpdateByOperator {
 
     @NotNull
     @Override
-    public String getInputColumnName() {
-        return pair.rightColumn;
+    public String[] getInputColumnNames() {
+        return new String[] {pair.rightColumn};
     }
 
     @NotNull

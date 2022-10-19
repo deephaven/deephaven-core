@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -74,14 +75,18 @@ public class UpdateByWindowTime extends UpdateByWindow {
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
                     // create the fill contexts for the input sources
-                    int sourceSlot = operatorSourceSlots[opIdx];
-                    if (!inputSourceChunkPopulated[sourceSlot]) {
-                        // we are going to grab all the influencer rows as one chunk, make sure it's large enough
-                        inputSourceGetContexts[sourceSlot] =
-                                inputSources[sourceSlot].makeGetContext(currentGetContextSize);
-                        inputSourceChunkPopulated[sourceSlot] = true;
+                    final int[] sourceIndices = operatorInputSourceSlots[opIdx];
+                    final ColumnSource<?>[] inputSourceArr = new ColumnSource[sourceIndices.length];
+                    for (int ii = 0; ii < sourceIndices.length; ii++) {
+                        int sourceSlot = sourceIndices[ii];
+                        if (!inputSourceChunkPopulated[sourceSlot]) {
+                            inputSourceGetContexts[sourceSlot] =
+                                    inputSources[sourceSlot].makeGetContext(currentGetContextSize);
+                            inputSourceChunkPopulated[sourceSlot] = true;
+                        }
+                        inputSourceArr[ii] = inputSources[sourceSlot];
                     }
-                    opContext[opIdx] = operators[opIdx].makeUpdateContext(workingChunkSize, inputSources[sourceSlot]);
+                    opContext[opIdx] = operators[opIdx].makeUpdateContext(workingChunkSize, inputSourceArr);
                 }
             }
         }
@@ -101,15 +106,17 @@ public class UpdateByWindowTime extends UpdateByWindow {
 
                 for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                     if (opAffected[opIdx]) {
-                        int sourceSlot = operatorSourceSlots[opIdx];
-                        if (!inputSourceChunkPopulated[sourceSlot]) {
-                            // close the existing context
-                            inputSourceGetContexts[sourceSlot].close();
+                        final int[] sourceIndices = operatorInputSourceSlots[opIdx];
+                        for (int sourceSlot : sourceIndices) {
+                            if (!inputSourceChunkPopulated[sourceSlot]) {
+                                // close the existing context
+                                inputSourceGetContexts[sourceSlot].close();
 
-                            // create a new context of the larger size
-                            inputSourceGetContexts[sourceSlot] =
-                                    inputSources[sourceSlot].makeGetContext(currentGetContextSize);
-                            inputSourceChunkPopulated[sourceSlot] = true;
+                                // create a new context of the larger size
+                                inputSourceGetContexts[sourceSlot] =
+                                        inputSources[sourceSlot].makeGetContext(currentGetContextSize);
+                                inputSourceChunkPopulated[sourceSlot] = true;
+                            }
                         }
                     }
                 }
@@ -316,13 +323,20 @@ public class UpdateByWindowTime extends UpdateByWindow {
                         Arrays.fill(inputSourceChunkPopulated, false);
                         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                             if (opAffected[opIdx]) {
-                                final int srcIdx = operatorSourceSlots[opIdx];
-                                prepareValuesChunkForSource(srcIdx, chunkInfluencerRs);
+                                // prep the chunk array needed by the accumulate call
+                                final int[] srcIndices = operatorInputSourceSlots[opIdx];
+                                Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
+                                for (int ii = 0; ii < srcIndices.length; ii++) {
+                                    int srcIdx = srcIndices[ii];
+                                    // chunk prep
+                                    prepareValuesChunkForSource(srcIdx, chunkInfluencerRs);
+                                    chunkArr[ii] = inputSourceChunks[srcIdx];
+                                }
 
                                 // make the specialized call for windowed operators
                                 ((UpdateByWindowedOperator.Context) opContext[opIdx]).accumulate(
                                         chunkRs,
-                                        inputSourceChunks[srcIdx],
+                                        chunkArr,
                                         pushChunk,
                                         popChunk,
                                         chunkRsSize);
@@ -426,18 +440,10 @@ public class UpdateByWindowTime extends UpdateByWindow {
         }
     }
 
-    UpdateByWindowTime(UpdateByOperator[] operators, int[] operatorSourceSlots, @Nullable String timestampColumnName,
+    UpdateByWindowTime(UpdateByOperator[] operators, int[][] operatorSourceSlots, @Nullable String timestampColumnName,
             long prevUnits, long fwdUnits) {
         super(operators, operatorSourceSlots, timestampColumnName);
         this.prevUnits = prevUnits;
         this.fwdUnits = fwdUnits;
-    }
-
-    @Override
-    public int hashCode() {
-        return hashCode(true,
-                timestampColumnName,
-                prevUnits,
-                fwdUnits);
     }
 }

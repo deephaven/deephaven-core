@@ -39,6 +39,9 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
     public static Table compute(@NotNull final String description,
             @NotNull final QueryTable source,
             @NotNull final UpdateByOperator[] ops,
+            @NotNull final UpdateByWindow[] windows,
+            @NotNull final ColumnSource<?>[] inputSources,
+            @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByRedirectionContext redirContext,
@@ -46,6 +49,9 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
 
         final BucketedPartitionedUpdateBy updateBy = new BucketedPartitionedUpdateBy(description,
                 ops,
+                windows,
+                inputSources,
+                operatorInputSourceSlots,
                 source,
                 resultSources,
                 byColumns,
@@ -57,12 +63,15 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
 
     protected BucketedPartitionedUpdateBy(@NotNull final String description,
             @NotNull final UpdateByOperator[] operators,
+            @NotNull final UpdateByWindow[] windows,
+            @NotNull final ColumnSource<?>[] inputSources,
+            @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final QueryTable source,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByRedirectionContext redirContext,
             @NotNull final UpdateByControl control) {
-        super(operators, source, redirContext, control);
+        super(operators, windows, inputSources, operatorInputSourceSlots, source, redirContext, control);
 
         // create a source-listener that will listen to the source updates and apply the shifts to the output columns
         final QueryTable sourceListenerTable = new QueryTable(source.getRowSet(), source.getColumnSourceMap());
@@ -96,9 +105,9 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
 
             // create a listener and recorder for the source table as first entry
             BucketedPartitionedUpdateByListenerRecorder recorder =
-                    new BucketedPartitionedUpdateByListenerRecorder(description, source, resultTable);
+                    new BucketedPartitionedUpdateByListenerRecorder(description, sourceListenerTable, resultTable);
             recorder.setMergedListener(listener);
-            source.listenForUpdates(recorder);
+            sourceListenerTable.listenForUpdates(recorder);
 
             recorders.offerLast(recorder);
         } else {
@@ -123,6 +132,9 @@ class BucketedPartitionedUpdateBy extends UpdateBy {
                     description,
                     (QueryTable) t,
                     operators,
+                    windows,
+                    inputSources,
+                    operatorInputSourceSlots,
                     resultSources,
                     redirContext,
                     control,

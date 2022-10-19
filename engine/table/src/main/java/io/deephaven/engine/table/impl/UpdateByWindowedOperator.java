@@ -28,7 +28,7 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         public void close() {}
 
         public abstract void accumulate(RowSequence inputKeys,
-                Chunk<? extends Values> influencerValueChunk,
+                Chunk<? extends Values> influencerValueChunkArr[],
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
                 int len);
@@ -81,10 +81,11 @@ public abstract class UpdateByWindowedOperator implements UpdateByOperator {
         return forwardTimeScaleUnits;
     }
 
+    /*** Mostly will be a single input column, but some accept multiple input (WAvg for example) */
     @NotNull
     @Override
-    public String getInputColumnName() {
-        return pair.rightColumn;
+    public String[] getInputColumnNames() {
+        return new String[] {pair.rightColumn};
     }
 
     @NotNull

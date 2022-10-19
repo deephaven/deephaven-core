@@ -19,14 +19,12 @@ import org.jetbrains.annotations.Nullable;
 public abstract class UpdateByWindow {
     @Nullable
     protected final String timestampColumnName;
-
     // store the operators for this window
     protected final UpdateByOperator[] operators;
     // store the index in the {@link UpdateBy.inputSources}
-    protected final int[] operatorSourceSlots;
-    // individual input/output modifiedColumnSets for the operators
+    protected final int[][] operatorInputSourceSlots;
+    // individual input modifiedColumnSets for the operators
     protected final ModifiedColumnSet[] operatorInputModifiedColumnSets;
-    protected final ModifiedColumnSet[] operatorOutputModifiedColumnSets;
 
     protected boolean trackModifications;
 
@@ -106,7 +104,8 @@ public abstract class UpdateByWindow {
             return newModified;
         }
 
-        public void updateOutputModifiedColumnSet(ModifiedColumnSet outputModifiedColumnSet) {
+        public void updateOutputModifiedColumnSet(ModifiedColumnSet outputModifiedColumnSet,
+                ModifiedColumnSet[] operatorOutputModifiedColumnSets) {
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
                     outputModifiedColumnSet.setAll(operatorOutputModifiedColumnSets[opIdx]);
@@ -144,12 +143,13 @@ public abstract class UpdateByWindow {
             }
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
-                    final int srcIdx = operatorSourceSlots[opIdx];
-                    if (inputSourceGetContexts[srcIdx] != null) {
-                        inputSourceGetContexts[srcIdx].close();
-                        inputSourceGetContexts[srcIdx] = null;
-                    }
                     opContext[opIdx].close();
+                }
+            }
+            for (int srcIdx = 0; srcIdx < inputSources.length; srcIdx++) {
+                if (inputSourceGetContexts[srcIdx] != null) {
+                    inputSourceGetContexts[srcIdx].close();
+                    inputSourceGetContexts[srcIdx] = null;
                 }
             }
         }
@@ -167,24 +167,21 @@ public abstract class UpdateByWindow {
         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
             operatorInputModifiedColumnSets[opIdx] =
                     source.newModifiedColumnSet(operators[opIdx].getAffectingColumnNames());
-            operatorOutputModifiedColumnSets[opIdx] =
-                    result.newModifiedColumnSet(operators[opIdx].getOutputColumnNames());
         }
     }
 
-    protected UpdateByWindow(UpdateByOperator[] operators, int[] operatorSourceSlots,
+    protected UpdateByWindow(UpdateByOperator[] operators, int[][] operatorInputSourceSlots,
             @Nullable String timestampColumnName) {
         this.operators = operators;
-        this.operatorSourceSlots = operatorSourceSlots;
+        this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.timestampColumnName = timestampColumnName;
 
         operatorInputModifiedColumnSets = new ModifiedColumnSet[operators.length];
-        operatorOutputModifiedColumnSets = new ModifiedColumnSet[operators.length];
         trackModifications = false;
     }
 
     public static UpdateByWindow createFromOperatorArray(final UpdateByOperator[] operators,
-            final int[] operatorSourceSlots) {
+            final int[][] operatorSourceSlots) {
         // review operators to extract timestamp column (if one exists)
         String timestampColumnName = null;
         for (UpdateByOperator operator : operators) {
@@ -219,15 +216,27 @@ public abstract class UpdateByWindow {
         return timestampColumnName;
     }
 
-    protected static int hashCode(boolean windowed, @Nullable String timestampColumnName, long prevUnits,
+    public UpdateByOperator[] getOperators() {
+        return operators;
+    }
+
+    protected static int hashCode(boolean windowed, @NotNull String[] inputColumnNames,
+            @Nullable String timestampColumnName, long prevUnits,
             long fwdUnits) {
-        // treat all cumulative ops as identical, even if they rely on timestamps
+
+        // hash the input column names
+        int hash = 0;
+        for (String s : inputColumnNames) {
+            hash = 31 * hash + s.hashCode();
+        }
+
+        // treat all cumulative ops with the same input columns as identical, even if they rely on timestamps
         if (!windowed) {
-            return Boolean.hashCode(false);
+            return 31 * hash + Boolean.hashCode(false);
         }
 
         // windowed ops are unique per type (ticks/time-based) and window dimensions
-        int hash = Boolean.hashCode(true);
+        hash = 31 * hash + Boolean.hashCode(true);
         hash = 31 * hash + Boolean.hashCode(timestampColumnName != null);
         hash = 31 * hash + Long.hashCode(prevUnits);
         hash = 31 * hash + Long.hashCode(fwdUnits);
@@ -236,6 +245,7 @@ public abstract class UpdateByWindow {
 
     public static int hashCodeFromOperator(final UpdateByOperator op) {
         return hashCode(op instanceof UpdateByWindowedOperator,
+                op.getInputColumnNames(),
                 op.getTimestampColumnName(),
                 op.getPrevWindowUnits(),
                 op.getPrevWindowUnits());
@@ -244,6 +254,19 @@ public abstract class UpdateByWindow {
     public static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
         final boolean aWindowed = opA instanceof UpdateByWindowedOperator;
         final boolean bWindowed = opB instanceof UpdateByWindowedOperator;
+
+        // verify input columns
+        String[] opAInput = opA.getInputColumnNames();
+        String[] opBInput = opB.getInputColumnNames();
+
+        if (opAInput.length != opBInput.length) {
+            return false;
+        }
+        for (int ii = 0; ii < opAInput.length; ii++) {
+            if (!opAInput[ii].equals(opBInput[ii])) {
+                return false;
+            }
+        }
 
         // equivalent if both are cumulative, not equivalent if only one is cumulative
         if (!aWindowed && !bWindowed) {

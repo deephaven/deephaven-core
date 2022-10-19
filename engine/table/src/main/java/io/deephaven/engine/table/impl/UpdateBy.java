@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -31,9 +32,10 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  */
 public abstract class UpdateBy {
     protected final ColumnSource<?>[] inputSources;
-    protected final int[] inputSourceSlots;
-    protected final UpdateByWindow[] windows;
+    // some columns will have multiple inputs, such as time-based and Weighted computations
+    protected final int[][] operatorInputSourceSlots;
     protected final UpdateByOperator[] operators;
+    protected final UpdateByWindow[] windows;
     protected final QueryTable source;
 
     protected final UpdateByRedirectionContext redirContext;
@@ -127,6 +129,9 @@ public abstract class UpdateBy {
     }
 
     protected UpdateBy(@NotNull final UpdateByOperator[] operators,
+            @NotNull final UpdateByWindow[] windows,
+            @NotNull final ColumnSource<?>[] inputSources,
+            @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final QueryTable source,
             @NotNull final UpdateByRedirectionContext redirContext,
             UpdateByControl control) {
@@ -139,70 +144,9 @@ public abstract class UpdateBy {
 
         this.source = source;
         this.operators = operators;
-
-        // the next bit is complicated but the goal is simple. We don't want to have duplicate input column sources, so
-        // we will store each one only once in inputSources and setup some mapping from the opIdx to the input column.
-        // noinspection unchecked
-        inputSources = new ColumnSource[operators.length];
-        inputSourceSlots = new int[operators.length];
-        final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            final ColumnSource<?> input = source.getColumnSource(operators[opIdx].getInputColumnName());
-            final int maybeExistingSlot = sourceToSlotMap.get(input);
-            if (maybeExistingSlot == sourceToSlotMap.getNoEntryValue()) {
-                inputSourceSlots[opIdx] = opIdx;
-                sourceToSlotMap.put(input, opIdx);
-                inputSources[opIdx] = ReinterpretUtils.maybeConvertToPrimitive(input);
-            } else {
-                inputSourceSlots[opIdx] = maybeExistingSlot;
-            }
-        }
-
-        // now we want to divide the operators into similar windows for efficient processing
-        TIntObjectHashMap<TIntArrayList> windowHashToOperatorIndicesMap = new TIntObjectHashMap<>();
-
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            int hash = UpdateByWindow.hashCodeFromOperator(operators[opIdx]);
-            boolean added = false;
-
-            // rudimentary collision detection and handling
-            while (!added) {
-                if (!windowHashToOperatorIndicesMap.containsKey(hash)) {
-                    // does not exist, can add immediately
-                    windowHashToOperatorIndicesMap.put(hash, new TIntArrayList());
-                    windowHashToOperatorIndicesMap.get(hash).add(opIdx);
-                    added = true;
-                } else {
-                    final int existingOpIdx = windowHashToOperatorIndicesMap.get(hash).get(0);
-                    if (UpdateByWindow.isEquivalentWindow(operators[existingOpIdx], operators[opIdx])) {
-                        // no collision, can add immediately
-                        windowHashToOperatorIndicesMap.get(hash).add(opIdx);
-                        added = true;
-                    } else {
-                        // there is a collision, increment hash and try again
-                        hash++;
-                    }
-                }
-            }
-        }
-
-        // store the operator information into the windows
-        this.windows = new UpdateByWindow[windowHashToOperatorIndicesMap.size()];
-        final MutableInt winIdx = new MutableInt(0);
-
-        windowHashToOperatorIndicesMap.forEachEntry((final int hash, final TIntArrayList opIndices) -> {
-            final UpdateByOperator[] windowOperators =
-                    Arrays.stream(opIndices.toArray())
-                            .mapToObj(idx -> operators[idx])
-                            .toArray(UpdateByOperator[]::new);
-            final int[] windowOperatorSourceSlots =
-                    Arrays.stream(opIndices.toArray())
-                            .map(idx -> inputSourceSlots[idx])
-                            .toArray();
-            this.windows[winIdx.getAndIncrement()] =
-                    UpdateByWindow.createFromOperatorArray(windowOperators, windowOperatorSourceSlots);
-            return true;
-        });
+        this.windows = windows;
+        this.inputSources = inputSources;
+        this.operatorInputSourceSlots = operatorInputSourceSlots;
     }
 
     // region UpdateBy implementation
@@ -280,6 +224,79 @@ public abstract class UpdateBy {
 
         final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
 
+        // the next bit is complicated but the goal is simple. We don't want to have duplicate input column sources, so
+        // we will store each one only once in inputSources and setup some mapping from the opIdx to the input column.
+        // noinspection unchecked
+
+        final ArrayList<ColumnSource<?>> inputSourceList = new ArrayList<>();
+        final int[][] operatorInputSourceSlotArr = new int[opArr.length][];
+        final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
+
+        for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
+            final String[] inputColumnNames = opArr[opIdx].getInputColumnNames();
+            for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
+                final ColumnSource<?> input = source.getColumnSource(inputColumnNames[colIdx]);
+                final int maybeExistingSlot = sourceToSlotMap.get(input);
+                // add a new entry for this operator
+                operatorInputSourceSlotArr[opIdx] = new int[inputColumnNames.length];
+                if (maybeExistingSlot == sourceToSlotMap.getNoEntryValue()) {
+                    int srcIdx = inputSourceList.size();
+                    // create a new input source and map the operator to it
+                    inputSourceList.add(ReinterpretUtils.maybeConvertToPrimitive(input));
+                    sourceToSlotMap.put(input, srcIdx);
+                    operatorInputSourceSlotArr[opIdx][colIdx] = srcIdx;
+                } else {
+                    operatorInputSourceSlotArr[opIdx][colIdx] = maybeExistingSlot;
+                }
+            }
+        }
+        final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(new ColumnSource<?>[0]);
+
+        // now we want to divide the operators into similar windows for efficient processing
+        TIntObjectHashMap<TIntArrayList> windowHashToOperatorIndicesMap = new TIntObjectHashMap<>();
+
+        for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
+            int hash = UpdateByWindow.hashCodeFromOperator(opArr[opIdx]);
+            boolean added = false;
+
+            // rudimentary collision detection and handling
+            while (!added) {
+                if (!windowHashToOperatorIndicesMap.containsKey(hash)) {
+                    // does not exist, can add immediately
+                    windowHashToOperatorIndicesMap.put(hash, new TIntArrayList());
+                    windowHashToOperatorIndicesMap.get(hash).add(opIdx);
+                    added = true;
+                } else {
+                    final int existingOpIdx = windowHashToOperatorIndicesMap.get(hash).get(0);
+                    if (UpdateByWindow.isEquivalentWindow(opArr[existingOpIdx], opArr[opIdx])) {
+                        // no collision, can add immediately
+                        windowHashToOperatorIndicesMap.get(hash).add(opIdx);
+                        added = true;
+                    } else {
+                        // there is a collision, increment hash and try again
+                        hash++;
+                    }
+                }
+            }
+        }
+        // store the operators into the windows
+        final UpdateByWindow[] windowArr = new UpdateByWindow[windowHashToOperatorIndicesMap.size()];
+        final MutableInt winIdx = new MutableInt(0);
+
+        windowHashToOperatorIndicesMap.forEachEntry((final int hash, final TIntArrayList opIndices) -> {
+            final UpdateByOperator[] windowOperators = new UpdateByOperator[opIndices.size()];
+            final int[][] windowOperatorSourceSlots = new int[opIndices.size()][];
+
+            for (int ii = 0; ii < opIndices.size(); ii++) {
+                final int opIdx = opIndices.get(ii);
+                windowOperators[ii] = opArr[opIdx];
+                windowOperatorSourceSlots[ii] = operatorInputSourceSlotArr[opIdx];
+            }
+            windowArr[winIdx.getAndIncrement()] =
+                    UpdateByWindow.createFromOperatorArray(windowOperators, windowOperatorSourceSlots);
+            return true;
+        });
+
         // noinspection rawtypes
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
         resultSources.putAll(opResultSources);
@@ -290,6 +307,9 @@ public abstract class UpdateBy {
                     descriptionBuilder.toString(),
                     source,
                     opArr,
+                    windowArr,
+                    inputSourceArr,
+                    operatorInputSourceSlotArr,
                     resultSources,
                     ctx,
                     control,
@@ -323,6 +343,9 @@ public abstract class UpdateBy {
                 descriptionBuilder.toString(),
                 source,
                 opArr,
+                windowArr,
+                inputSourceArr,
+                operatorInputSourceSlotArr,
                 resultSources,
                 byColumns,
                 ctx,

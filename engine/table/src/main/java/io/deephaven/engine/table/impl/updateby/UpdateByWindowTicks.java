@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.ringbuffer.IntRingBuffer;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -79,14 +80,21 @@ public class UpdateByWindowTicks extends UpdateByWindow {
 
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 if (opAffected[opIdx]) {
-                    // create the fill contexts for the input sources
-                    int sourceSlot = operatorSourceSlots[opIdx];
-                    if (!inputSourceChunkPopulated[sourceSlot]) {
-                        inputSourceGetContexts[sourceSlot] =
-                                inputSources[sourceSlot].makeGetContext(currentGetContextSize);
-                        inputSourceChunkPopulated[sourceSlot] = true;
+                    if (opAffected[opIdx]) {
+                        // create the fill contexts for the input sources
+                        final int[] sourceIndices = operatorInputSourceSlots[opIdx];
+                        final ColumnSource<?>[] inputSourceArr = new ColumnSource[sourceIndices.length];
+                        for (int ii = 0; ii < sourceIndices.length; ii++) {
+                            int sourceSlot = sourceIndices[ii];
+                            if (!inputSourceChunkPopulated[sourceSlot]) {
+                                inputSourceGetContexts[sourceSlot] =
+                                        inputSources[sourceSlot].makeGetContext(currentGetContextSize);
+                                inputSourceChunkPopulated[sourceSlot] = true;
+                            }
+                            inputSourceArr[ii] = inputSources[sourceSlot];
+                        }
+                        opContext[opIdx] = operators[opIdx].makeUpdateContext(workingChunkSize, inputSourceArr);
                     }
-                    opContext[opIdx] = operators[opIdx].makeUpdateContext(workingChunkSize, inputSources[sourceSlot]);
                 }
             }
         }
@@ -106,15 +114,17 @@ public class UpdateByWindowTicks extends UpdateByWindow {
 
                 for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                     if (opAffected[opIdx]) {
-                        int sourceSlot = operatorSourceSlots[opIdx];
-                        if (!inputSourceChunkPopulated[sourceSlot]) {
-                            // close the existing context
-                            inputSourceGetContexts[sourceSlot].close();
+                        final int[] sourceIndices = operatorInputSourceSlots[opIdx];
+                        for (int sourceSlot : sourceIndices) {
+                            if (!inputSourceChunkPopulated[sourceSlot]) {
+                                // close the existing context
+                                inputSourceGetContexts[sourceSlot].close();
 
-                            // create a new context of the larger size
-                            inputSourceGetContexts[sourceSlot] =
-                                    inputSources[sourceSlot].makeGetContext(currentGetContextSize);
-                            inputSourceChunkPopulated[sourceSlot] = true;
+                                // create a new context of the larger size
+                                inputSourceGetContexts[sourceSlot] =
+                                        inputSources[sourceSlot].makeGetContext(currentGetContextSize);
+                                inputSourceChunkPopulated[sourceSlot] = true;
+                            }
                         }
                     }
                 }
@@ -339,13 +349,20 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                         Arrays.fill(inputSourceChunkPopulated, false);
                         for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                             if (opAffected[opIdx]) {
-                                final int srcIdx = operatorSourceSlots[opIdx];
-                                prepareValuesChunkForSource(srcIdx, chunkInfluencerRs);
+                                // prep the chunk array needed by the accumulate call
+                                final int[] srcIndices = operatorInputSourceSlots[opIdx];
+                                Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
+                                for (int ii = 0; ii < srcIndices.length; ii++) {
+                                    int srcIdx = srcIndices[ii];
+                                    // chunk prep
+                                    prepareValuesChunkForSource(srcIdx, chunkInfluencerRs);
+                                    chunkArr[ii] = inputSourceChunks[srcIdx];
+                                }
 
                                 // make the specialized call for windowed operators
                                 ((UpdateByWindowedOperator.Context) opContext[opIdx]).accumulate(
                                         chunkRs,
-                                        inputSourceChunks[srcIdx],
+                                        chunkArr,
                                         pushChunk,
                                         popChunk,
                                         chunkRsSize);
@@ -384,16 +401,6 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                 isInitializeStep);
     }
 
-    public void startTrackingModifications(@NotNull final QueryTable source, @NotNull final QueryTable result) {
-        trackModifications = true;
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            operatorInputModifiedColumnSets[opIdx] =
-                    source.newModifiedColumnSet(operators[opIdx].getAffectingColumnNames());
-            operatorOutputModifiedColumnSets[opIdx] =
-                    result.newModifiedColumnSet(operators[opIdx].getOutputColumnNames());
-        }
-    }
-
     private static WritableRowSet computeAffectedRowsTicks(final RowSet sourceSet, final RowSet subset,
             final RowSet invertedSubSet, long revTicks, long fwdTicks) {
         // swap fwd/rev to get the influencer windows
@@ -423,17 +430,9 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         }
     }
 
-    UpdateByWindowTicks(UpdateByOperator[] operators, int[] operatorSourceSlots, long prevUnits, long fwdUnits) {
+    UpdateByWindowTicks(UpdateByOperator[] operators, int[][] operatorSourceSlots, long prevUnits, long fwdUnits) {
         super(operators, operatorSourceSlots, null);
         this.prevUnits = prevUnits;
         this.fwdUnits = fwdUnits;
-    }
-
-    @Override
-    public int hashCode() {
-        return hashCode(true,
-                null,
-                prevUnits,
-                fwdUnits);
     }
 }
