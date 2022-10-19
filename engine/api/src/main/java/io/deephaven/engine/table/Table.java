@@ -174,6 +174,18 @@ public interface Table extends
      */
     String MERGED_TABLE_ATTRIBUTE = "MergedTable";
     /**
+     * <p>
+     * This attribute is applied to the descendants of source tables, and takes on Boolean values.
+     * <ul>
+     * <li>True for the result of {@link #coalesce()} on source tables and their children if the source table was
+     * initially empty on coalesce.</li>
+     * <li>Missing for all other tables.</li>
+     * </ul>
+     * This effectively serves as a hint that filters may have been poorly selected, resulting in an empty result. If
+     * {@code size() > 0}, this hint should be disregarded.
+     */
+    String INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE = "EmptySourceTable";
+    /**
      * This attribute stores a reference to a table that is the parent table for a Preview Table.
      */
     String PREVIEW_PARENT_TABLE = "PreviewParentTable";

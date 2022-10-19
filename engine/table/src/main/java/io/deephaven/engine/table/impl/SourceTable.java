@@ -260,6 +260,9 @@ public abstract class SourceTable extends RedefinableTable {
         initializeWithSnapshot("SourceTable.coalesce", swapListener, (usePrev, beforeClockValue) -> {
             final QueryTable resultTable = new QueryTable(definition, rowSet, columnSourceManager.getColumnSources());
             copyAttributes(resultTable, CopyAttributeOperation.Coalesce);
+            if (rowSet.isEmpty()) {
+                resultTable.setAttribute(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, true);
+            }
 
             if (swapListener != null) {
                 final ListenerImpl listener =
