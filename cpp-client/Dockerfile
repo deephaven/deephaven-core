@@ -17,7 +17,8 @@ RUN apt-get update && \
             make \
             build-essential \
             zlib1g-dev \
-            libssl-dev
+            libssl-dev && \
+    apt-get clean
 
 #
 # Download and build dependent libraries.
