@@ -49,7 +49,7 @@ message RollupRequest {
 }
 
 message RollupResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_view_id ticket.
 }
 
 message TreeRequest {
@@ -64,7 +64,7 @@ message TreeRequest {
 }
 
 message TreeResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_view_id ticket.
 }
 
 message HierarchicalTableSourceExportRequest {
@@ -75,7 +75,7 @@ message HierarchicalTableSourceExportRequest {
 }
 
 message HierarchicalTableSourceExportResponse {
-  // Deliberately empty response, the result is encoded in the result_id ticket
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_id ticket.
 }
 
 enum RollupLeafType {
@@ -117,5 +117,5 @@ message HierarchicalTableViewRequest {
 }
 
 message HierarchicalTableViewResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_view_id ticket.
 }
