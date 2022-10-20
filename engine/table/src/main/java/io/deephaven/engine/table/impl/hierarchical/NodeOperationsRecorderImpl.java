@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.hierarchical;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.engine.table.NodeOperationsRecorder;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableAdapter;
 import io.deephaven.engine.table.impl.select.SelectColumn;

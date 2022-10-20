@@ -78,9 +78,9 @@ message HierarchicalTableSourceExportResponse {
   // Deliberately empty response, use /ObjectService/FetchObject to access the result_id ticket.
 }
 
-enum RollupLeafType {
+enum RollupNodeType {
   UNDEFINED = 0;
-  NORMAL = 1;
+  AGGREGATED = 1;
   CONSTITUENT = 2;
 }
 
@@ -93,8 +93,8 @@ message HierarchicalTableViewDescriptor {
   // The name of a column that signifies the "width" (in defined columns) for a rollup key. Must be included along
   // with expanded columns in a rollup key table.
   optional string rollup_key_width_column = 2;
-  // Whether this rollup's leaf nodes are "normal" first level aggregations or constituents
-  optional RollupLeafType rollup_leaf_type = 3;
+  // Whether this rollup's leaf nodes are first level aggregations or constituents
+  optional RollupNodeType rollup_leaf_type = 3;
   // '='-delimited pairs from output (aggregation) column name to input (constituent) column name
   repeated string rollup_output_input_column_pairs = 4;
 
