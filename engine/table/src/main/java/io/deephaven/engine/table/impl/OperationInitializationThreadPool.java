@@ -13,8 +13,17 @@ import java.util.concurrent.Executors;
 
 public class OperationInitializationThreadPool {
 
-    public static final int NUM_THREADS =
-            Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", 1);
+    public static final int NUM_THREADS;
+
+    static {
+        final int numThreads =
+                Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", 1);
+        if (numThreads <= 0) {
+            NUM_THREADS = Runtime.getRuntime().availableProcessors();
+        } else {
+            NUM_THREADS = numThreads;
+        }
+    }
 
     private static final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
 

@@ -232,9 +232,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * The number of threads in our executor service for dispatching notifications. If 1, then we don't actually use the
      * executor service; but instead dispatch all the notifications on the UpdateGraphProcessor run thread.
      */
-    private final int updateThreads = Require.geq(
-            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", 1), "updateThreads",
-            1);
+    private final int updateThreads;
 
     /**
      * Is this one of the threads engaged in notification processing? (Either the solitary run thread, or one of the
@@ -280,6 +278,14 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             }
         };
         refreshThread.setDaemon(true);
+
+        final int updateThreads =
+                Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", 1);
+        if (updateThreads <= 0) {
+            this.updateThreads = Runtime.getRuntime().availableProcessors();
+        } else {
+            this.updateThreads = updateThreads;
+        }
     }
 
     @Override

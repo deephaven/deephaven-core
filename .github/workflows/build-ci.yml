@@ -44,7 +44,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta server
         id: docker_meta_server
@@ -169,7 +169,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       # TODO: switch to new GitHub cache backend when available
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
@@ -304,7 +304,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
@@ -344,7 +344,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
         uses: docker/build-push-action@v2
@@ -391,7 +391,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
@@ -431,7 +431,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Build
         uses: docker/build-push-action@v2
@@ -454,7 +454,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
@@ -522,7 +522,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
         uses: docker/build-push-action@v2
@@ -550,7 +550,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
@@ -607,7 +607,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
         uses: docker/build-push-action@v2
