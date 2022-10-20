@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -418,7 +417,7 @@ public class WindowCheck {
         }
 
         long getTimeNanos() {
-            return DateTimeUtils.currentTimeProvider().currentTimeNanos();
+            return DateTimeUtils.currentClock().currentTimeNanos();
         }
 
         @Override

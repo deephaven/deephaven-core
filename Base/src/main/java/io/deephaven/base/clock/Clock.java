@@ -23,12 +23,22 @@ public interface Clock {
     /**
      * Milliseconds since the epoch, 1970-01-01T00:00:00Z.
      *
+     * <p>
+     * The resolution is dependent on the JVM and underlying implementation.
+     *
      * @return epoch millis
      */
     long currentTimeMillis();
 
     /**
      * Microseconds since the epoch, 1970-01-01T00:00:00Z.
+     *
+     * <p>
+     * The resolution is dependent on the JVM and underlying implementation. The resolution is greater than or equal to
+     * {@link #currentTimeMillis()}.
+     *
+     * <p>
+     * If you don't need microsecond resolution, prefer {@link #currentTimeMillis()}.
      *
      * @return epoch microseconds
      */
@@ -38,7 +48,11 @@ public interface Clock {
      * Nanoseconds since the epoch, 1970-01-01T00:00:00Z.
      *
      * <p>
-     * Note: this value will overflow in the year 2292.
+     * The resolution is dependent on the JVM and underlying implementation. The resolution is greater than or equal to
+     * {@link #currentTimeMicros()} and {@link #currentTimeMillis()}.
+     *
+     * <p>
+     * If you don't need nanosecond resolution, prefer {@link #currentTimeMillis()}.
      *
      * @return epoch nanoseconds
      */
@@ -47,9 +61,22 @@ public interface Clock {
     /**
      * The instant.
      *
+     * <p>
+     * Has resolution equal to {@link #currentTimeNanos()}.
+     *
      * @return the instant
      */
-    Instant currentTimeInstant();
+    Instant instantNanos();
+
+    /**
+     * The instant.
+     *
+     * <p>
+     * Has resolution greater than or equal to {@link #currentTimeMillis()}.
+     *
+     * @return the instant.
+     */
+    Instant instantMillis();
 
     /**
      * Provides a nanosecond timer for measuring elapsed time. This may not be related to any notion of system or
@@ -63,7 +90,10 @@ public interface Clock {
      * // ... the code being measured ...
      * long elapsedNanos = clock.nanoTime() - startNanoTime;
      * </pre>
-     * 
+     *
+     * <p>
+     * The resolution is dependent on the JVM and underlying implementation.
+     *
      * @return the nano time
      */
     long nanoTime();

@@ -6,7 +6,7 @@ package io.deephaven.qst.table;
 /**
  * The system time provider.
  */
-public enum TimeProviderSystem implements TimeProvider {
+public enum ClockSystem implements Clock {
     INSTANCE;
 
     @Override

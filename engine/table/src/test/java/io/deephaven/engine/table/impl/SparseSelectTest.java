@@ -42,7 +42,7 @@ public class SparseSelectTest {
         }
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
-                System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
+                System.out.println(DateTime.nowMillis() + ": Size = " + size + ", seed=" + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                     testSparseSelect(size, seed);
                 }

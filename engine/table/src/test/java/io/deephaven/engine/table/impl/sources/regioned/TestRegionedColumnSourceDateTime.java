@@ -21,8 +21,8 @@ public class TestRegionedColumnSourceDateTime
 
     private static final DateTime[] TEST_DATES = new DateTime[] {
             null,
-            DateTimeUtils.currentTimeProvider().currentTime(),
-            DateTimeUtils.dateAtMidnight(DateTimeUtils.currentTimeProvider().currentTime(), TimeZone.TZ_NY),
+            DateTimeUtils.currentTime(),
+            DateTimeUtils.dateAtMidnight(DateTimeUtils.currentTime(), TimeZone.TZ_NY),
             DateTimeUtils.convertDateTime("2013-01-15T12:19:32.000 NY"),
             DateTimeUtils.convertDateTime("2013-01-15T09:30:00.000 NY"),
             DateTimeUtils.convertDateTime("2013-01-15T16:00:00.000 NY"),

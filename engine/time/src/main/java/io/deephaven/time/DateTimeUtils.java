@@ -174,10 +174,10 @@ public class DateTimeUtils {
     public static String lastBusinessDayNyOverride;
 
     /**
-     * Allows setting a custom time provider instead of actual current time. This is mainly used when setting up for a
-     * replay simulation.
+     * Allows setting a custom clock instead of actual current time. This is mainly used when setting up for a replay
+     * simulation.
      */
-    public static TimeProvider timeProvider;
+    public static Clock clock;
 
     /**
      * Returns milliseconds since Epoch for a {@link DateTime} value.
@@ -1233,18 +1233,31 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the current time provider. The current time provider is {@link #timeProvider} if set, otherwise
-     * {@link TimeProvider#systemUTC()}.
+     * Returns the current clock. The current clock is {@link #clock} if set, otherwise {@link Clock#systemUTC()}.
      *
-     * @return the current time provider.
+     * @return the current clock
      */
-    public static TimeProvider currentTimeProvider() {
-        return Objects.requireNonNullElse(timeProvider, TimeProvider.systemUTC());
+    public static Clock currentClock() {
+        return Objects.requireNonNullElse(clock, Clock.systemUTC());
     }
 
+    /**
+     * Equivalent to {@code DateTime.of(currentClock())}.
+     *
+     * @return the current date time
+     */
     @ScriptApi
     public static DateTime currentTime() {
-        return currentTimeProvider().currentTime();
+        return DateTime.of(currentClock());
+    }
+
+    /**
+     * Equivalent to {@code DateTime.ofMillis(currentClock())}.
+     *
+     * @return the current date time
+     */
+    public static DateTime currentTimeMillis() {
+        return DateTime.ofMillis(currentClock());
     }
 
     // TODO: Revoke public access to these fields and retire them! Use getCurrentDate(), maybe hold on to the

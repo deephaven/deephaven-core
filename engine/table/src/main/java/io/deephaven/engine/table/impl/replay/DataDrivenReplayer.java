@@ -22,11 +22,6 @@ public class DataDrivenReplayer extends Replayer {
     }
 
     @Override
-    public DateTime currentTime() {
-        return currentTime;
-    }
-
-    @Override
     public long currentTimeMillis() {
         return currentTime.getMillis();
     }
@@ -42,7 +37,12 @@ public class DataDrivenReplayer extends Replayer {
     }
 
     @Override
-    public Instant currentTimeInstant() {
+    public Instant instantNanos() {
+        return currentTime.getInstant();
+    }
+
+    @Override
+    public Instant instantMillis() {
         return currentTime.getInstant();
     }
 

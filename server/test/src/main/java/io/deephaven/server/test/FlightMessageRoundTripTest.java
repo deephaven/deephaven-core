@@ -14,6 +14,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -36,7 +37,6 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
 import io.grpc.ServerInterceptor;
@@ -110,7 +110,7 @@ public abstract class FlightMessageRoundTripTest {
             return new Scheduler.DelegatingImpl(
                     Executors.newSingleThreadExecutor(),
                     Executors.newScheduledThreadPool(1),
-                    TimeProvider.systemUTC());
+                    Clock.systemUTC());
         }
 
         @Provides

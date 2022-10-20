@@ -2275,7 +2275,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 return;
             }
 
-            final DateTime now = scheduler.currentTime();
+            final DateTime now = DateTime.ofMillis(scheduler);
             scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
 
             final BarrageSubscriptionPerformanceLogger logger =

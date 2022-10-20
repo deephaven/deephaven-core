@@ -5,17 +5,17 @@ package io.deephaven.server.util;
 
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
+import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.TimeProviderNanoBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Map;
 
-public class TestControlledScheduler extends TimeProviderNanoBase implements Scheduler {
+public class TestControlledScheduler extends ClockNanoBase implements Scheduler {
 
     private static final Logger log = LoggerFactory.getLogger(TestControlledScheduler.class);
 
@@ -129,7 +129,7 @@ public class TestControlledScheduler extends TimeProviderNanoBase implements Sch
 
     @Override
     public void runImmediately(final @NotNull Runnable command) {
-        workQueue.put(currentTime(), command);
+        workQueue.put(DateTime.of(this), command);
     }
 
     @Override

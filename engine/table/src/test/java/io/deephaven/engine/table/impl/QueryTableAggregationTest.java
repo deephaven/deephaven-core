@@ -149,7 +149,7 @@ public class QueryTableAggregationTest {
     @Test
     public void testStaticReinterpretableKeyByWithChunks() {
         final String nowName = "__now_" + Thread.currentThread().hashCode() + "__";
-        QueryScope.addParam(nowName, DateTime.now());
+        QueryScope.addParam(nowName, DateTime.nowMillis());
         final Table input = emptyTable(10000).update("A=ii % 100 == 0 ? null : plus(" + nowName + ", (long) (ii / 5))",
                 "B=ii % 100 == 0 ? null : (ii & 1) == 0");
 
@@ -268,7 +268,7 @@ public class QueryTableAggregationTest {
         final long mergeChunkMultiple = UnionRedirection.ALLOCATION_UNIT_ROW_KEYS;
 
         final String nowName = "__now_" + Thread.currentThread().hashCode() + "__";
-        QueryScope.addParam(nowName, DateTime.now());
+        QueryScope.addParam(nowName, DateTime.nowMillis());
         final String tableIndexName = "__tableIndex_" + Thread.currentThread().hashCode() + "__";
 
         final QueryTable[] parents = IntStream.range(0, 20).mapToObj((final int tableIndex) -> {

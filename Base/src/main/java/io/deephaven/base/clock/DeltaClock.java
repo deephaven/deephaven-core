@@ -61,8 +61,13 @@ public final class DeltaClock implements Clock {
     }
 
     @Override
-    public Instant currentTimeInstant() {
-        return delegate.currentTimeInstant().plusNanos(deltaNanos);
+    public Instant instantNanos() {
+        return delegate.instantNanos().plusNanos(deltaNanos);
+    }
+
+    @Override
+    public Instant instantMillis() {
+        return delegate.instantMillis().plusNanos(deltaNanos);
     }
 
     @Override

@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.MatchPair;
@@ -1305,7 +1306,7 @@ public class QueryTableAjTest {
         final Random random = new Random(0);
         final int size = 100;
         final int scale = 1000;
-        final long timeOffset = DateTime.now().getNanos();
+        final long timeOffset = Clock.systemUTC().currentTimeNanos();
         final String[] columnNames = {"MyBoolean", "MyChar"};
 
         QueryScope.addParam("random", random);

@@ -3,8 +3,8 @@
  */
 package io.deephaven.engine.table.impl.replay;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.TimeProvider;
 
 import java.io.IOException;
 import java.util.TimerTask;
@@ -12,7 +12,7 @@ import java.util.TimerTask;
 /**
  * An interface for replaying historical data as simulated real-time data.
  */
-public interface ReplayerInterface extends TimeProvider {
+public interface ReplayerInterface extends Clock {
     /**
      * Starts replaying data.
      */

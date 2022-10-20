@@ -17,7 +17,12 @@ public abstract class ClockNanoBase implements Clock {
     }
 
     @Override
-    public final Instant currentTimeInstant() {
+    public final Instant instantNanos() {
+        return Instant.ofEpochSecond(0, currentTimeNanos());
+    }
+
+    @Override
+    public final Instant instantMillis() {
         return Instant.ofEpochSecond(0, currentTimeNanos());
     }
 

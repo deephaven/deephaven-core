@@ -3,8 +3,7 @@
  */
 package io.deephaven.server.util;
 
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeProvider;
+import io.deephaven.base.clock.Clock;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -16,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * The Scheduler is used to schedule tasks that should execute at a future time.
  */
-public interface Scheduler extends TimeProvider {
+public interface Scheduler extends Clock {
 
     /**
      * Schedule this task to run at the specified time.
@@ -59,48 +58,48 @@ public interface Scheduler extends TimeProvider {
 
         private final ExecutorService serialDelegate;
         private final ScheduledExecutorService concurrentDelegate;
-        private final TimeProvider timeProvider;
+        private final Clock clock;
 
         public DelegatingImpl(ExecutorService serialExecutor, ScheduledExecutorService concurrentExecutor,
-                TimeProvider timeProvider) {
+                Clock clock) {
             this.serialDelegate = Objects.requireNonNull(serialExecutor);
             this.concurrentDelegate = Objects.requireNonNull(concurrentExecutor);
-            this.timeProvider = Objects.requireNonNull(timeProvider);
-        }
-
-        @Override
-        public DateTime currentTime() {
-            return timeProvider.currentTime();
+            this.clock = Objects.requireNonNull(clock);
         }
 
         @Override
         public long currentTimeMillis() {
-            return timeProvider.currentTimeMillis();
+            return clock.currentTimeMillis();
         }
 
         @Override
         public long currentTimeMicros() {
-            return timeProvider.currentTimeMicros();
+            return clock.currentTimeMicros();
         }
 
         @Override
         public long currentTimeNanos() {
-            return timeProvider.currentTimeNanos();
+            return clock.currentTimeNanos();
         }
 
         @Override
-        public Instant currentTimeInstant() {
-            return timeProvider.currentTimeInstant();
+        public Instant instantNanos() {
+            return clock.instantNanos();
+        }
+
+        @Override
+        public Instant instantMillis() {
+            return clock.instantMillis();
         }
 
         @Override
         public long nanoTime() {
-            return timeProvider.nanoTime();
+            return clock.nanoTime();
         }
 
         @Override
         public void runAtTime(long epochMillis, @NotNull Runnable command) {
-            runAfterDelay(epochMillis - timeProvider.currentTimeMillis(), command);
+            runAfterDelay(epochMillis - clock.currentTimeMillis(), command);
         }
 
         @Override

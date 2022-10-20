@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.replay;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
@@ -13,7 +14,6 @@ import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
@@ -83,7 +83,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void shutdown() throws IOException {
-        endTime = currentTime();
+        endTime = DateTime.of(this);
         if (done) {
             return;
         }
@@ -157,8 +157,8 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @param replayer replayer
      * @return time provider that returns the current replay time.
      */
-    public static TimeProvider getTimeProvider(final ReplayerInterface replayer) {
-        return Objects.requireNonNullElse(replayer, DateTimeUtils.currentTimeProvider());
+    public static Clock getClock(final ReplayerInterface replayer) {
+        return Objects.requireNonNullElse(replayer, DateTimeUtils.currentClock());
     }
 
     @Override
@@ -185,25 +185,8 @@ public class Replayer implements ReplayerInterface, Runnable {
         return Math.min(resultNanos, endTime.getNanos());
     }
 
-    /**
-     * Simulated time.
-     *
-     * @return simulated time.
-     */
     @Override
-    public DateTime currentTime() {
-        if (deltaNanos == Long.MAX_VALUE) {
-            return startTime;
-        }
-        final long resultNanos = System.currentTimeMillis() * MILLIS_TO_NANOS_FACTOR - deltaNanos;
-        if (resultNanos >= endTime.getNanos()) {
-            return endTime;
-        }
-        return new DateTime(resultNanos);
-    }
-
-    @Override
-    public Instant currentTimeInstant() {
+    public Instant instantNanos() {
         if (deltaNanos == Long.MAX_VALUE) {
             return startTime.getInstant();
         }
@@ -212,6 +195,11 @@ public class Replayer implements ReplayerInterface, Runnable {
             return endTime.getInstant();
         }
         return Instant.ofEpochSecond(0, resultNanos);
+    }
+
+    @Override
+    public Instant instantMillis() {
+        return instantNanos();
     }
 
     @Override
@@ -310,7 +298,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void run() {
         for (PeriodicTask timerTask : timerTasks) {
-            timerTask.next(currentTime());
+            timerTask.next(DateTime.of(this));
         }
 
         if (lastLap) {
@@ -320,7 +308,7 @@ public class Replayer implements ReplayerInterface, Runnable {
                 e.printStackTrace();
             }
         }
-        if (currentTime().compareTo(endTime) >= 0) {
+        if (DateTime.of(this).compareTo(endTime) >= 0) {
             lastLap = true;
         }
     }

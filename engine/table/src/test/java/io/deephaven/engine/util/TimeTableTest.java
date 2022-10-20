@@ -3,6 +3,8 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.base.clock.Clock;
+import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
@@ -21,8 +23,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeProvider;
-import io.deephaven.time.TimeProviderNanoBase;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,7 +33,7 @@ import java.util.Map;
 public class TimeTableTest extends RefreshingTableTestCase {
 
     private MutableLong now;
-    private TimeProvider timeProvider;
+    private Clock clock;
     private UpdateSourceCombiner updateSourceCombiner;
     private QueryTable timeTable;
     private TableUpdateValidator validator;
@@ -44,7 +44,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
         super.setUp();
 
         now = new MutableLong(0);
-        timeProvider = new TimeProviderNanoBase() {
+        clock = new ClockNanoBase() {
             @Override
             public long currentTimeNanos() {
                 return now.longValue();
@@ -58,7 +58,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
         validator.deepValidation();
 
         now = null;
-        timeProvider = null;
+        clock = null;
         updateSourceCombiner = null;
         timeTable = null;
         validator = null;
@@ -70,7 +70,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     private void build(TimeTable.Builder builder) {
         timeTable = builder
                 .registrar(updateSourceCombiner)
-                .timeProvider(timeProvider)
+                .clock(clock)
                 .build();
         column = timeTable.getColumnSource("Timestamp").reinterpret(long.class);
         validator = TableUpdateValidator.make(timeTable);

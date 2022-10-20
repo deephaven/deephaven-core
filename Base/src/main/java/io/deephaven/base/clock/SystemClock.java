@@ -66,8 +66,20 @@ public enum SystemClock implements Clock {
      * Equivalent to {@code java.time.Clock.systemUTC().instant()}.
      */
     @Override
-    public Instant currentTimeInstant() {
+    public Instant instantNanos() {
         return java.time.Clock.systemUTC().instant();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Equivalent to {@code Instant.ofEpochMilli(System.currentTimeMillis())}.
+     */
+    @Override
+    public Instant instantMillis() {
+        // See note in java.time.Clock.SystemClock#millis, this is the same source as java.time.Clock.systemUTC()
+        return Instant.ofEpochMilli(System.currentTimeMillis());
     }
 
     /**

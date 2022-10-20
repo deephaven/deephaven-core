@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.base.clock.Clock;
+import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -17,10 +19,8 @@ import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
-import io.deephaven.time.TimeProviderNanoBase;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
@@ -72,7 +72,7 @@ public class FuzzerTest {
         return getGroovySession(null);
     }
 
-    private GroovyDeephavenSession getGroovySession(@Nullable TimeProvider timeProvider) throws IOException {
+    private GroovyDeephavenSession getGroovySession(@Nullable Clock clock) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(NoOp.INSTANCE, RunScripts.serviceLoader());
         session.getExecutionContext().open();
         return session;
@@ -93,14 +93,14 @@ public class FuzzerTest {
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
         final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final TimeProvider timeProvider = realtime ? null : new TimeProviderNanoBase() {
+        final Clock clock = realtime ? null : new ClockNanoBase() {
             @Override
             public long currentTimeNanos() {
                 return now.longValue();
             }
         };
 
-        final GroovyDeephavenSession session = getGroovySession(timeProvider);
+        final GroovyDeephavenSession session = getGroovySession(clock);
 
         System.out.println(groovyString);
 
@@ -183,12 +183,12 @@ public class FuzzerTest {
     @Test
     public void testLargeSetOfFuzzerQueriesRealtime() throws IOException, InterruptedException {
         Assume.assumeTrue("Realtime Fuzzer can have a positive feedback loop.", REALTIME_FUZZER_ENABLED);
-        runLargeFuzzerSetWithSeed(DateTime.now().getNanos(), 0, 99, true, 120, 1000);
+        runLargeFuzzerSetWithSeed(Clock.systemUTC().currentTimeNanos(), 0, 99, true, 120, 1000);
     }
 
     @Test
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
-        final long seed1 = DateTime.now().getNanos();
+        final long seed1 = Clock.systemUTC().currentTimeNanos();
         final int iterations = TstUtils.SHORT_TESTS ? 1 : 5;
         for (long iteration = 0; iteration < iterations; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
@@ -216,7 +216,7 @@ public class FuzzerTest {
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
         final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final TimeProvider timeProvider = new TimeProviderNanoBase() {
+        final Clock clock = new ClockNanoBase() {
             @Override
             public long currentTimeNanos() {
                 return now.longValue();
@@ -224,7 +224,7 @@ public class FuzzerTest {
         };
         final long start = System.currentTimeMillis();
 
-        final GroovyDeephavenSession session = getGroovySession(realtime ? null : timeProvider);
+        final GroovyDeephavenSession session = getGroovySession(realtime ? null : clock);
 
         System.out.println(tableQuery);
 

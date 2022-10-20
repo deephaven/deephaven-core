@@ -8,7 +8,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
@@ -196,7 +195,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     }
 
     /**
-     * Create an auto tuning release filter using the provided {@link TimeProvider}.
+     * Create an auto tuning release filter using the provided {@link Clock}.
      *
      * @param logger the logger to report progress (if verbose is set) and the final row/second calculations
      * @param initialSize the initial table size
