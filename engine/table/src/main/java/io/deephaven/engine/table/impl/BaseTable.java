@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 /**
  * Base abstract class all standard table implementations.
  */
-public abstract class BaseTable extends LiveAttributeMap<Table, QueryTable>
+public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
         implements TableDefaults, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
@@ -298,7 +298,7 @@ public abstract class BaseTable extends LiveAttributeMap<Table, QueryTable>
                 CopyAttributeOperation.TreetableCopy,
                 CopyAttributeOperation.Preview));
 
-        tempMap.put(TABLE_DESCRIPTION_ATTRIBUTE, EnumSet.of(
+        tempMap.put(DESCRIPTION_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Filter,
@@ -954,33 +954,21 @@ public abstract class BaseTable extends LiveAttributeMap<Table, QueryTable>
         if (columns == null || columns.length == 0) {
             throw new IllegalArgumentException("withKeys() must be called with at least one key column");
         }
-        checkAvailableColumns(columns);
+        checkAvailableColumns(Arrays.asList(columns));
         return StringUtils.joinStrings(columns, ",");
     }
 
     @Override
-    public Table restrictSortTo(String... allowedSortingColumns) {
-        Assert.neqNull(allowedSortingColumns, "allowedSortingColumns");
-        checkAvailableColumns(allowedSortingColumns);
-        return withAttributes(
-                Map.of(Table.SORTABLE_COLUMNS_ATTRIBUTE, StringUtils.joinStrings(allowedSortingColumns, ",")));
-    }
-
-    @Override
-    public Table clearSortingRestrictions() {
-        return withoutAttributes(List.of(SORTABLE_COLUMNS_ATTRIBUTE));
-    }
-
-    private void checkAvailableColumns(String[] columns) {
+    public void checkAvailableColumns(@NotNull final Collection<String> columns) {
         final Map<String, ? extends ColumnSource<?>> sourceMap = getColumnSourceMap();
         final String[] missingColumns =
-                Arrays.stream(columns).filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
-
+                columns.stream().filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
         if (missingColumns.length > 0) {
             throw new NoSuchColumnException(sourceMap.keySet(), Arrays.asList(missingColumns));
         }
     }
 
+    // TODO-RWC: Delete?
     void maybeUpdateSortableColumns(Table destination) {
         final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
         if (currentSortableColumns == null) {
@@ -1078,7 +1066,7 @@ public abstract class BaseTable extends LiveAttributeMap<Table, QueryTable>
      */
     void assertSortable(String... columns) throws NotSortableException {
         // Does this table actually have the requested columns?
-        checkAvailableColumns(columns);
+        checkAvailableColumns(Arrays.asList(columns));
 
         final String sortable = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
 
@@ -1282,11 +1270,6 @@ public abstract class BaseTable extends LiveAttributeMap<Table, QueryTable>
     }
 
     @Override
-    public Table setLayoutHints(String hints) {
-        return withAttributes(Map.of(Table.LAYOUT_HINTS_ATTRIBUTE, hints));
-    }
-
-    @Override
     public Table setTotalsTable(String directive) {
         return withAttributes(Map.of(TOTALS_TABLE_ATTRIBUTE, directive));
     }
@@ -1351,36 +1334,5 @@ public abstract class BaseTable extends LiveAttributeMap<Table, QueryTable>
         // happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
         childListenerReferences.clear();
         parents.clear();
-    }
-
-    @Override
-    public Table withTableDescription(String description) {
-        return withAttributes(Map.of(TABLE_DESCRIPTION_ATTRIBUTE, description));
-    }
-
-    @Override
-    public Table withColumnDescription(Map<String, String> descriptions) {
-        if (!hasColumns(descriptions.keySet())) {
-            final Map<String, ColumnDefinition<?>> existingColumns = getDefinition().getColumnNameMap();
-            throw new IllegalArgumentException(
-                    "Cannot set column descriptions.  The table does not contain the following columns [ " +
-                            descriptions.keySet().stream()
-                                    .filter(col -> !existingColumns.containsKey(col))
-                                    .collect(Collectors.joining(", "))
-                            + " ]");
-        }
-        //noinspection unchecked
-        final Map<String, String> existingDescriptions =
-                (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
-        if (existingDescriptions != null && existingDescriptions.entrySet().containsAll(descriptions.entrySet())) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
-        }
-        final Map<String, Object> resultDescriptions =
-                existingDescriptions == null ? new HashMap<>(descriptions.size()) : new HashMap<>(existingDescriptions);
-        resultDescriptions.putAll(descriptions);
-        return withAttributes(Map.of(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, resultDescriptions));
     }
 }

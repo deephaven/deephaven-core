@@ -133,7 +133,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         return toRetain.containsAll(attributes.keySet());
     }
 
-    private IFACE_TYPE prepareReturnThis() {
+    protected IFACE_TYPE prepareReturnThis() {
         if (DynamicNode.notDynamicOrIsRefreshing(this)) {
             manageWithCurrentScope();
         }
@@ -141,7 +141,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         return (IFACE_TYPE) this;
     }
 
-    private IFACE_TYPE prepareReturnCopy() {
+    protected IFACE_TYPE prepareReturnCopy() {
         expectAttributes().values().forEach(av -> {
             if (av instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(av)) {
                 manage((LivenessReferent) av);

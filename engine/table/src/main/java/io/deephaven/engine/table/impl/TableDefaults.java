@@ -663,13 +663,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         }
     }
 
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table withColumnDescription(String column, String description) {
-        return withColumnDescription(Collections.singletonMap(column, description));
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Resource Management
     // -----------------------------------------------------------------------------------------------------------------

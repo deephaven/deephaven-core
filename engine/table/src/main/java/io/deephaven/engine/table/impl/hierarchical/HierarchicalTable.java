@@ -9,10 +9,7 @@ import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.HierarchicalTableInfo;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.ReverseLookup;
-import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -28,7 +25,7 @@ import java.util.function.Function;
  * Base result class for operations that produce hierarchical tables, for example {@link Table#rollup rollup} and
  * {@link Table#tree(String, String) tree}.
  */
-public class HierarchicalTable<TYPE extends HierarchicalTable> extends LivenessArtifact {
+public abstract class HierarchicalTable<TYPE extends HierarchicalTable> extends BaseGridAttributes<TYPE, TYPE> {
 
     /**
      * The source table that operations were applied to in order to produce this hierarchical table.
