@@ -595,7 +595,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE, partitioned);
             result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-            copyAttributes(result, CopyAttributeOperation.Treetable);
+            copyAttributes(result, CopyAttributeOperation.Tree);
             maybeUpdateSortableColumns(result);
 
             return result;
