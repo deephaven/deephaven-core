@@ -1,14 +1,13 @@
-package io.deephaven.engine.table.impl.hierarchical;
+package io.deephaven.engine.table;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.engine.table.Table;
 
 import java.util.Collection;
 
 /**
- * Records operations to be applied to individual nodes of a {@link HierarchicalTable} for presentation. Supports
- * a subset of the {@link Table} API, including formatting, filtering, and sorting.
+ * Records operations to be applied to individual nodes of a hierarchical table for presentation. Supports a subset of
+ * the {@link Table} API, including formatting, filtering, and sorting.
  */
 public interface NodeOperationsRecorder {
 
