@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -64,6 +65,25 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             manage((LivenessReferent) object);
         }
         ensureAttributes().put(key, object);
+    }
+
+    /**
+     * Copy attributes between AttributeMaps, filtered by a predicate.
+     *
+     * @param source The AttributeMap to copy attributes from
+     * @param destination The LiveAttributeMap to copy attributes to
+     * @param shouldCopy Should we copy this attribute key?
+     */
+    protected static void copyAttributes(
+            @NotNull final AttributeMap<?> source,
+            @NotNull final LiveAttributeMap<?, ?> destination,
+            @NotNull final Predicate<String> shouldCopy) {
+        for (final Map.Entry<String, Object> attrEntry : source.getAttributes().entrySet()) {
+            final String attrName = attrEntry.getKey();
+            if (shouldCopy.test(attrName)) {
+                destination.setAttribute(attrName, attrEntry.getValue());
+            }
+        }
     }
 
     /**

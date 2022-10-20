@@ -29,7 +29,7 @@ import java.util.Collection;
 /**
  * Basic uncoalesced table that only adds keys.
  */
-public abstract class SourceTable extends RedefinableTable {
+public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> extends RedefinableTable<IMPL_TYPE> {
 
     /**
      * Component factory. Mostly held for redefinitions.

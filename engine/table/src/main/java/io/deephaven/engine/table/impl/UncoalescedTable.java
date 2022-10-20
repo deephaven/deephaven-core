@@ -31,7 +31,7 @@ import java.util.function.Function;
  * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
  * on.
  */
-public abstract class UncoalescedTable extends BaseTable {
+public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_TYPE>> extends BaseTable<IMPL_TYPE> {
 
     private final Object coalescingLock = new Object();
 

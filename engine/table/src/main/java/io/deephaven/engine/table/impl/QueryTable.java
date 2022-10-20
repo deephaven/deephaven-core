@@ -89,7 +89,7 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
 /**
  * Primary coalesced table implementation.
  */
-public class QueryTable extends BaseTable {
+public class QueryTable extends BaseTable<QueryTable> {
 
     public interface Operation<T extends DynamicNode & NotificationStepReceiver> {
 
@@ -1880,7 +1880,7 @@ public class QueryTable extends BaseTable {
                             .view(columnsToAddSelectColumns.values());
                     final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
-                    final Table ungroupedResult = naturalJoinResult
+                    final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
                             .ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
                     maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
@@ -2923,6 +2923,24 @@ public class QueryTable extends BaseTable {
     }
 
     /**
+     * <p>
+     * If this table is flat, then set the result table flat.
+     * </p>
+     *
+     * <p>
+     * This function is for use when the result table shares a RowSet; such that if this table is flat, the result table
+     * must also be flat.
+     * </p>
+     *
+     * @param result the table derived from this table
+     */
+    public void propagateFlatness(QueryTable result) {
+        if (isFlat()) {
+            result.setFlat();
+        }
+    }
+
+    /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
      *
@@ -2958,7 +2976,7 @@ public class QueryTable extends BaseTable {
      * @param rowSet The result's {@link #getRowSet() row set}
      * @param resultModifiedColumnSet The result's {@link #getModifiedColumnSetForUpdates() modified column set}, or
      *        {@code null} for default initialization
-     * @param attributes The result's {@link #attributes}, * or {@code null} for default initialization
+     * @param attributes The result's {@link #getAttributes() attributes}, or {@code null} for default initialization
      * @param parents Parent references for the result table
      * @return A new table sharing this table's column sources with the specified row set
      */
@@ -3051,7 +3069,7 @@ public class QueryTable extends BaseTable {
                 return operation.get();
             }
 
-            final boolean attributesCompatible = memoKey.attributesCompatible(parent.attributes, attributes);
+            final boolean attributesCompatible = memoKey.attributesCompatible(parent.getAttributes(), getAttributes());
             final Supplier<R> computeCachedOperation = attributesCompatible ? () -> {
                 final R parentResult = parent.memoizeResult(memoKey, operation);
                 if (parentResult instanceof QueryTable) {
@@ -3154,6 +3172,7 @@ public class QueryTable extends BaseTable {
                 //noinspection unchecked
                 return (R) ((SystemicObject) cachedResult).markSystemic();
             }
+            return cachedResult;
         }
 
         R getIfValid() {
@@ -3346,5 +3365,4 @@ public class QueryTable extends BaseTable {
     public Table wouldMatch(WouldMatchPair... matchers) {
         return getResult(new WouldMatchOperation(this, matchers));
     }
-
 }

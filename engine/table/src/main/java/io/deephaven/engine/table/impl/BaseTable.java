@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
@@ -34,9 +33,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
-import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,7 +50,7 @@ import java.util.stream.Stream;
 /**
  * Base abstract class all standard table implementations.
  */
-public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
+public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends BaseGridAttributes<Table, IMPL_TYPE>
         implements TableDefaults, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
@@ -375,7 +372,7 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
      * @param dest The table to copy attributes to
      * @param copyType The operation being performed that requires attributes to be copied.
      */
-    public void copyAttributes(QueryTable dest, CopyAttributeOperation copyType) {
+    public void copyAttributes(BaseTable<?> dest, CopyAttributeOperation copyType) {
         copyAttributes(this, dest, copyType);
     }
 
@@ -385,7 +382,7 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
      * @param dest The table to copy attributes to
      * @param shouldCopy should we copy this attribute?
      */
-    public void copyAttributes(QueryTable dest, Predicate<String> shouldCopy) {
+    public void copyAttributes(BaseTable<?> dest, Predicate<String> shouldCopy) {
         copyAttributes(this, dest, shouldCopy);
     }
 
@@ -395,24 +392,8 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
      * @param dest The table to copy attributes to
      * @param copyType The operation being performed that requires attributes to be copied.
      */
-    static void copyAttributes(Table source, QueryTable dest, CopyAttributeOperation copyType) {
+    static void copyAttributes(Table source, BaseTable<?> dest, CopyAttributeOperation copyType) {
         copyAttributes(source, dest, attrName -> shouldCopyAttribute(attrName, copyType));
-    }
-
-    /**
-     * Copy attributes between tables. Attributes are copied based on a predicate.
-     *
-     * @param source The table to copy attributes from
-     * @param dest The table to copy attributes to
-     * @param shouldCopy should we copy this attribute?
-     */
-    private static void copyAttributes(Table source, QueryTable dest, Predicate<String> shouldCopy) {
-        for (final Map.Entry<String, Object> attrEntry : source.getAttributes().entrySet()) {
-            final String attrName = attrEntry.getKey();
-            if (shouldCopy.test(attrName)) {
-                dest.setAttribute(attrName, attrEntry.getValue());
-            }
-        }
     }
 
     /**
@@ -1102,7 +1083,7 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
      *
      * @param destination the table which shall possibly have a column-description attribute created
      */
-    void maybeCopyColumnDescriptions(final QueryTable destination) {
+    void maybeCopyColumnDescriptions(final BaseTable<?> destination) {
         // noinspection unchecked
         final Map<String, String> sourceDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
@@ -1116,7 +1097,7 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
      * @param destination the table which shall possibly have a column-description attribute created
      * @param renamedColumns an array of the columns which have been renamed
      */
-    void maybeCopyColumnDescriptions(final QueryTable destination, final MatchPair[] renamedColumns) {
+    void maybeCopyColumnDescriptions(final BaseTable<?> destination, final MatchPair[] renamedColumns) {
         // noinspection unchecked
         final Map<String, String> oldDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
@@ -1146,7 +1127,7 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
      * @param destination the table which shall possibly have a column-description attribute created
      * @param selectColumns columns which may be changed during this operation, and have their descriptions invalidated
      */
-    void maybeCopyColumnDescriptions(final QueryTable destination, final SelectColumn[] selectColumns) {
+    void maybeCopyColumnDescriptions(final BaseTable<?> destination, final SelectColumn[] selectColumns) {
         // noinspection unchecked
         final Map<String, String> oldDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
@@ -1177,7 +1158,7 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
      * @param addColumns the right-table's columns which are being added by the join operation
      */
     void maybeCopyColumnDescriptions(
-            final QueryTable destination,
+            final BaseTable<?> destination,
             final Table rightTable,
             final MatchPair[] joinedColumns,
             final MatchPair[] addColumns) {
@@ -1219,7 +1200,7 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
      * @param sourceDescriptions column name->description mapping
      */
     private static void maybeCopyColumnDescriptions(
-            final QueryTable destination,
+            final BaseTable<?> destination,
             final Map<String, String> sourceDescriptions) {
         if (sourceDescriptions == null || sourceDescriptions.isEmpty()) {
             return; // short-circuit; there are no column-descriptions in this operation
@@ -1236,37 +1217,6 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
             // only add if any column-descriptions have survived to this point
             destination.setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, destDescriptions);
         }
-    }
-
-    /**
-     * Copies this table, but with a new set of attributes.
-     *
-     * @return an identical table; but with a new set of attributes
-     */
-    @Override
-    public QueryTable copy() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/3003): Can we copy a parent to avoid lengthy chains
-        // when attributes are added serially?
-        return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
-            final Mutable<QueryTable> result = new MutableObject<>();
-
-            final SwapListener swapListener = createSwapListenerIfRefreshing(SwapListener::new);
-            initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
-                final QueryTable resultTable = (QueryTable) getSubTable(getRowSet());
-                propagateFlatness(resultTable);
-                copyAttributes(resultTable, a -> true);
-
-                if (swapListener != null) {
-                    final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
-                    swapListener.setListenerAndResult(listener, resultTable);
-                }
-
-                result.setValue(resultTable);
-                return true;
-            });
-
-            return result.getValue();
-        });
     }
 
     @Override
@@ -1303,24 +1253,6 @@ public abstract class BaseTable extends BaseGridAttributes<Table, QueryTable>
         final T swapListener = factory.newListener(this);
         swapListener.subscribeForUpdates();
         return swapListener;
-    }
-
-    /**
-     * <p>
-     * If this table is flat, then set the result table flat.
-     * </p>
-     *
-     * <p>
-     * This function is for use when the result table shares a RowSet; such that if this table is flat, the result table
-     * must also be flat.
-     * </p>
-     *
-     * @param result the table derived from this table
-     */
-    public void propagateFlatness(QueryTable result) {
-        if (isFlat()) {
-            result.setFlat();
-        }
     }
 
     // ------------------------------------------------------------------------------------------------------------------
