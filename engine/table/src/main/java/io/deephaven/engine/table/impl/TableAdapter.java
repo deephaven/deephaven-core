@@ -258,16 +258,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table restrictSortTo(String... allowedSortingColumns) {
-        return throwUnsupported();
-    }
-
-    @Override
-    default Table clearSortingRestrictions() {
-        return throwUnsupported();
-    }
-
-    @Override
     default Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
         return throwUnsupported();
     }
@@ -294,21 +284,6 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default Table withUniqueKeys(String... columns) {
-        return throwUnsupported();
-    }
-
-    @Override
-    default Table withTableDescription(String description) {
-        return throwUnsupported();
-    }
-
-    @Override
-    default Table withColumnDescription(Map<String, String> descriptions) {
-        return throwUnsupported();
-    }
-
-    @Override
-    default Table setLayoutHints(String hints) {
         return throwUnsupported();
     }
 
@@ -473,6 +448,36 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default Table ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table restrictSortTo(String... allowedSortingColumns) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table clearSortingRestrictions() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table withDescription(String description) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table withColumnDescription(String column, String description) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table withColumnDescription(Map<String, String> descriptions) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table setLayoutHints(String hints) {
         return throwUnsupported();
     }
 }

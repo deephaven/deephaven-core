@@ -30,7 +30,8 @@ public interface Table extends
         DynamicNode,
         SystemicObject<Table>,
         TableOperations<Table, Table>,
-        AttributeMap<Table> {
+        AttributeMap<Table>,
+        GridAttributes<Table> {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
@@ -117,12 +118,8 @@ public interface Table extends
     String INPUT_TABLE_ATTRIBUTE = "InputTable";
     String KEY_COLUMNS_ATTRIBUTE = "keyColumns";
     String UNIQUE_KEYS_ATTRIBUTE = "uniqueKeys";
-    String SORTABLE_COLUMNS_ATTRIBUTE = "SortableColumns";
     String FILTERABLE_COLUMNS_ATTRIBUTE = "FilterableColumns";
-    String LAYOUT_HINTS_ATTRIBUTE = "LayoutHints";
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
-    String TABLE_DESCRIPTION_ATTRIBUTE = "TableDescription";
-    String COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions";
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
     /**
      * <p>
@@ -961,37 +958,6 @@ public interface Table extends
     // Sort Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    /**
-     * <p>
-     * Disallow sorting on all but the specified columns.
-     * </p>
-     *
-     * @param allowedSortingColumns The columns on which sorting is allowed.
-     * @return The same table this was invoked on.
-     */
-    @ConcurrentMethod
-    Table restrictSortTo(String... allowedSortingColumns);
-
-    /**
-     * <p>
-     * Clear all sorting restrictions that was applied to the current table.
-     * </p>
-     *
-     * <p>
-     * Note that this table operates on the table it was invoked on and does not create a new table. So in the following
-     * code <code>T1 = baseTable.where(...)
-     * T2 = T1.restrictSortTo("C1")
-     * T3 = T2.clearSortingRestrictions()
-     * </code>
-     * <p>
-     * T1 == T2 == T3 and the result has no restrictions on sorting.
-     * </p>
-     *
-     * @return The same table this was invoked on.
-     */
-    @ConcurrentMethod
-    Table clearSortingRestrictions();
-
     // -----------------------------------------------------------------------------------------------------------------
     // Snapshot Operations
     // -----------------------------------------------------------------------------------------------------------------
@@ -1092,38 +1058,6 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table withUniqueKeys(String... columns);
-
-    @ConcurrentMethod
-    Table withTableDescription(String description);
-
-    /**
-     * Add a description for a specific column. You may use {@link #withColumnDescription(Map)} to set several
-     * descriptions at once.
-     *
-     * @param column the name of the column
-     * @param description the column description
-     * @return a copy of the source table with the description applied
-     */
-    @ConcurrentMethod
-    Table withColumnDescription(String column, String description);
-
-    /**
-     * Add a set of column descriptions to the table.
-     *
-     * @param descriptions a map of Column name to Column description.
-     * @return a copy of the table with the descriptions applied.
-     */
-    @ConcurrentMethod
-    Table withColumnDescription(Map<String, String> descriptions);
-
-    /**
-     * Set layout hints.
-     *
-     * @param hints A packed string of layout hints
-     * @return A copy of this Table with the {@link #LAYOUT_HINTS_ATTRIBUTE layout hints attribute} set
-     */
-    @ConcurrentMethod
-    Table setLayoutHints(String hints);
 
     /**
      * Set a totals table for this Table.
