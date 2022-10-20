@@ -243,4 +243,12 @@ if [ "$BUILD_IMMER" = "yes" ]; then
 fi
 
 echo DONE.
-echo "Use CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH"
+echo
+
+echo -n "Creating env.sh..."
+cd $DHDEPS_HOME
+(echo "export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH"
+ echo "export NCPUS=$NCPUS") > env.sh
+echo DONE.
+
+exit 0

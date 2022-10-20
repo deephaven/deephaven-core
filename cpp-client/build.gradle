@@ -1,5 +1,7 @@
 plugins {
+    id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
     id 'license'
 }
 
@@ -19,3 +21,19 @@ tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.h
 })
 
 project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
+
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    containerName.set "dh-server-for-cpp-${randomSuffix}"
+    networkName.set "cpp-test-network-${randomSuffix}"
+}
+
+def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
+    dockerfile(new File('Dockerfile'))
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    entrypoint = ['bash', '-c', 'mkdir -p /out && cd /cpp-client && ./cpp-test-to-junit.sh /out/cpp-test.xml /out/cpp-test.log']
+}
+tasks.check.dependsOn(testCppClient)

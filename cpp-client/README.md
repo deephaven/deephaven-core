@@ -27,7 +27,7 @@ C++ compiler and tool suite (cmake etc).
 6. Build and install dependencies for Deephaven C++ client.
 
    Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
-   Create that directory and copy the `$DHSRC/deephaven-core/cpp-client/deephaven/client/build-dependencies.sh`
+   Create that directory and copy the `$DHSRC/deephaven-core/cpp-client/build-dependencies.sh`
    to it.  Edit the script if necessary to reflect your selection of build tools and build target
    (defaults point to Ubuntu system's g++, cmake, and a Debug build target for cmake).
    Run the script from the same directory you copied it to.
@@ -38,7 +38,7 @@ C++ compiler and tool suite (cmake etc).
    ```
    mkdir -p $HOME/dhcpp
    cd $HOME/dhcpp
-   cp $DHSRC/deephaven-core/cpp-client/deephaven/client/build-dependencies.sh .
+   cp $DHSRC/deephaven-core/cpp-client/build-dependencies.sh .
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target
    ./build-dependencies.sh
    ```
