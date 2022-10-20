@@ -30,10 +30,25 @@ deephavenDocker {
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
-    dockerfile(new File('Dockerfile'))
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'build-dependencies.sh'
+            include 'cpp-test-to-junit.sh'
+            include 'deephaven/CMakeLists.txt'
+            include 'deephaven/client/**'
+            include 'deephaven/tests/CMakeLists.txt'
+            include 'deephaven/tests/*.cc'
+            include 'deephaven/tests/*.h'
+            include 'deephaven/tests/third_party/**'
+        }
+    }
+    copyOut {}
+    dockerfile file('Dockerfile')
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
-    entrypoint = ['bash', '-c', 'mkdir -p /out && cd /cpp-client && ./cpp-test-to-junit.sh /out/cpp-test.xml /out/cpp-test.log']
+    entrypoint = ['bash', '-c', 'mkdir -p /out && cd /cpp-client && ' +
+                  'DH_HOST=' + deephavenDocker.containerName.get() +
+                  'DH_PORT=8080 ./cpp-test-to-junit.sh /out/cpp-test.xml /out/cpp-test.log']
 }
 tasks.check.dependsOn(testCppClient)

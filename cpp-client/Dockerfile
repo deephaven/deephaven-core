@@ -3,8 +3,6 @@
 #
 
 FROM ubuntu:jammy AS dh-cpp-client
-ARG NCPU=4
-ARG ARCH=amd64
 
 #
 # Install system dependencies (eg, build tools) for build.
