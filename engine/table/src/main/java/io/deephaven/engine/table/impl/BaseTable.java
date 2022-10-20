@@ -167,10 +167,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         PartitionBy, Coalesce, WouldMatch, LastBy, FirstBy,
 
         // Hierarchical attributes
-        Rollup, Treetable,
+        Rollup, Tree,
 
         // Copy attributes
-        RollupCopy, TreetableCopy,
+        RollupCopy, TreeCopy,
 
         Preview
     }
@@ -205,7 +205,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         tempMap.put(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(
                 CopyAttributeOperation.Rollup,
-                CopyAttributeOperation.Treetable)));
+                CopyAttributeOperation.Tree)));
         tempMap.put(SORTABLE_COLUMNS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Sort,
@@ -291,8 +291,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.LastBy,
-                CopyAttributeOperation.Treetable,
-                CopyAttributeOperation.TreetableCopy,
+                CopyAttributeOperation.Tree,
+                CopyAttributeOperation.TreeCopy,
                 CopyAttributeOperation.Preview));
 
         tempMap.put(DESCRIPTION_ATTRIBUTE, EnumSet.of(
@@ -302,8 +302,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.Treetable,
-                CopyAttributeOperation.TreetableCopy,
+                CopyAttributeOperation.Tree,
+                CopyAttributeOperation.TreeCopy,
                 CopyAttributeOperation.Preview));
 
         tempMap.put(SNAPSHOT_VIEWPORT_TYPE, EnumSet.allOf(CopyAttributeOperation.class));
