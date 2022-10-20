@@ -28,13 +28,6 @@ DEFAULT_JVM_PROPERTIES = {
     # 'deephaven.console.disable': 'true',
 }
 DEFAULT_JVM_ARGS = [
-    # Uee the G1 GC
-    '-XX:+UseG1GC',
-    # G1GC: Set a goal for the max duration of a GC pause
-    '-XX:MaxGCPauseMillis=100',
-    # G1GC: Try to deduplicate strings on the Java heap
-    '-XX:+UseStringDeduplication',
-
     # Disable the JVM's signal handling for interactive python consoles - if python will
     # not be handling signals like ctrl-c (for KeyboardInterrupt), this should be safe to
     # remove for a small performance gain.

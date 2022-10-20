@@ -24,9 +24,6 @@ distributions {
 
 def extraJvmArgs = [
         '-server',
-        '-XX:+UseG1GC',
-        '-XX:MaxGCPauseMillis=100',
-        '-XX:+UseStringDeduplication',
         '-XshowSettings:vm',
 ]
 
