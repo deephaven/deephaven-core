@@ -36,10 +36,10 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
             include 'cpp-test-to-junit.sh'
             include 'deephaven/CMakeLists.txt'
             include 'deephaven/client/**'
-            include 'deephaven/tests/CMakeLists.txt'
-            include 'deephaven/tests/*.cc'
-            include 'deephaven/tests/*.h'
-            include 'deephaven/tests/third_party/**'
+            include 'tests/CMakeLists.txt'
+            include 'tests/*.cc'
+            include 'tests/*.h'
+            include 'tests/third_party/**'
         }
     }
     copyOut {}
