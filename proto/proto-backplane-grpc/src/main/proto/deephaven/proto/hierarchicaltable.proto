@@ -94,7 +94,7 @@ message HierarchicalTableViewDescriptor {
   // with expanded columns in a rollup key table.
   optional string rollup_key_width_column = 2;
   // Whether this rollup's leaf nodes are first level aggregations or constituents
-  optional RollupNodeType rollup_leaf_type = 3;
+  optional RollupNodeType rollup_leaf_node_type = 3;
   // '='-delimited pairs from output (aggregation) column name to input (constituent) column name
   repeated string rollup_output_input_column_pairs = 4;
 
