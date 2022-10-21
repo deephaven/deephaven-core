@@ -50,10 +50,8 @@ public class SimpleStringAdapterTest {
 
         final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-
         final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
-        msg.setText(input);
+        final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
@@ -99,14 +97,12 @@ public class SimpleStringAdapterTest {
 
         final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-
-        final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
-        msg.setText(input);
         final DateTime sendTime = DateTime.now();
         final long sendTimeMillis = sendTime.getMillis();
         final DateTime sendTimeTruncated = DateTimeUtils.millisToTime(sendTimeMillis);
-        msg.setSenderTimestamp(sendTimeMillis);
+
+        final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
+        final StringMessageHolder msg = new StringMessageHolder(sendTimeMillis * 1000L, input);
         adapter.consumeMessage("id", msg);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
@@ -137,10 +133,8 @@ public class SimpleStringAdapterTest {
 
         final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-
         final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
-        msg.setText(input);
+        final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
@@ -173,10 +167,8 @@ public class SimpleStringAdapterTest {
 
         final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-
         final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
-        msg.setText(input);
+        final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
@@ -206,10 +198,8 @@ public class SimpleStringAdapterTest {
 
         final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-
         final String input = "<blah>{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}</blah>";
-        msg.setText(input);
+        final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
@@ -234,10 +224,8 @@ public class SimpleStringAdapterTest {
 
         final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-
         final String input = "<blah>{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}</blah>";
-        msg.setText(input);
+        final StringMessageHolder msg = new StringMessageHolder(input);
         adapter.consumeMessage("id", msg);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);

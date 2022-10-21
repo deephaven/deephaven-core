@@ -5,7 +5,7 @@ import io.deephaven.util.clock.MicroTimer;
 /**
  * Created by rbasralian on 10/3/22
  */
-// TODO: replace this with TextMessageMetadata?
+// TODO: replace this with TextMessage?
 public class StringMessageHolder {
     private final long sendTimeMicros;
     private final long recvTimeMicros;

@@ -29,13 +29,13 @@ public class SimpleStringToTableWriterAdapter implements StringToTableWriterAdap
 
 
     @Override
-    public void consumeString(final TextMessageMetadata metadata) throws IOException {
-        valueColumnSetter.set(metadata.getText());
+    public void consumeString(final TextMessage msg) throws IOException {
+        valueColumnSetter.set(msg.getText());
 
-        owner.setSendTime(metadata.getSentTime());
-        owner.setReceiveTime(metadata.getReceiveTime());
+        owner.setSendTime(msg.getSentTime());
+        owner.setReceiveTime(msg.getReceiveTime());
         owner.setNow(DateTime.now());
-        owner.setMessageId(metadata.getMessageId());
+        owner.setMessageId(msg.getMessageId());
 
         writer.writeRow();
     }

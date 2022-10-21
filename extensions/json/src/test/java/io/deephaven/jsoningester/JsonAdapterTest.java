@@ -48,7 +48,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class JsonAdapterTest {
     private static final double NANOS_PER_SECOND = 1000000000.0;
     private static final long MAX_WAIT_MILLIS = TimeUnit.SECONDS.toMillis(30);
-    private static final long MESSAGE_TIMESTAMP = 1601578523551L;
+    private static final long MESSAGE_TIMESTAMP_MILLIS = 1601578523551L;
 
     private final Logger log = LoggerFactory.getLogger(JsonAdapterTest.class);
 
@@ -218,21 +218,21 @@ public class JsonAdapterTest {
 
         adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-        msg.setText("{\"" + strCol + "\": \"test\", \""
-                + dblCol + "\": 42.2, \""
-                + intCol + "\": 123, \""
-                + shortCol + "\": 6, \""
-                + longCol + "\": 123456789, \""
-                + byteCol + "\": 3, \""
-                + floatColName + "\": 98765.4321, \""
-                + boolColName + "\": true, \""
-                + charColName + "\": \"c\""
-                + "}");
         final DateTime sendTime = DateTime.now();
         final long sendTimeMillis = sendTime.getMillis();
-        final DateTime sendTimeTruncated = DateTimeUtils.millisToTime(sendTimeMillis);
-        msg.setSenderTimestamp(sendTimeMillis);
+
+        final StringMessageHolder msg = new StringMessageHolder(sendTimeMillis * 1000L,
+                "{\"" + strCol + "\": \"test\", \""
+                        + dblCol + "\": 42.2, \""
+                        + intCol + "\": 123, \""
+                        + shortCol + "\": 6, \""
+                        + longCol + "\": 123456789, \""
+                        + byteCol + "\": 3, \""
+                        + floatColName + "\": 98765.4321, \""
+                        + boolColName + "\": true, \""
+                        + charColName + "\": \"c\""
+                        + "}");
+
         adapter.consumeMessage("id", msg);
 
         // Because the message will be consumed almost instantly, then actually processed separately, we have to wait to
@@ -251,7 +251,7 @@ public class JsonAdapterTest {
                 floatCol(floatColName, (float) 98765.4321),
                 col(boolColName, true),
                 col(charColName, 'c'),
-                col(sendCol, sendTimeTruncated));
+                col(sendCol, DateTimeUtils.millisToTime(sendTimeMillis)));
 
         Assert.assertEquals("", diff(result, expected, 10));
     }
@@ -298,10 +298,10 @@ public class JsonAdapterTest {
 
         adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-        msg.setText("{\"" + strCol + "\": \"test\", \""
+        final StringMessageHolder msg = new StringMessageHolder("{\"" + strCol + "\": \"test\", \""
                 + boolColName + "\": null "
                 + "}");
+
         adapter.consumeMessage("id", msg);
 
         // Because the message will be consumed almost instantly, then actually processed separately, we have to wait to
@@ -446,9 +446,10 @@ public class JsonAdapterTest {
 
         adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-        msg.setText("{\"StringVal\": \"" + reference + "\", \"Nanos\": " + reference.getNanos() + ", \"Millis\": "
-                + reference.getMillis() + ", \"Micros\":" + reference.getMicros() + "}");
+        final StringMessageHolder msg = new StringMessageHolder(
+                "{\"StringVal\": \"" + reference + "\", \"Nanos\": " + reference.getNanos() + ", \"Millis\": "
+                        + reference.getMillis() + ", \"Micros\":" + reference.getMicros() + "}");
+
         adapter.consumeMessage("id", msg);
 
         adapter.waitForProcessing(MAX_WAIT_MILLIS);
@@ -885,7 +886,8 @@ public class JsonAdapterTest {
                 shortCol("G", (short) 456, (short) 1011),
                 floatCol("H", 3.14f, 2.71f),
                 doubleCol("I", 42.2, 42.2),
-                col("TM", new DateTime(MESSAGE_TIMESTAMP * 1_000_000L), new DateTime(MESSAGE_TIMESTAMP * 1_000_000L)));
+                col("TM", new DateTime(MESSAGE_TIMESTAMP_MILLIS * 1_000_000L),
+                        new DateTime(MESSAGE_TIMESTAMP_MILLIS * 1_000_000L)));
         TableTools.show(result);
         Assert.assertEquals("", diff(result, expected, 10));
     }
@@ -1212,8 +1214,8 @@ public class JsonAdapterTest {
 
         adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-        msg.setText("{\"a\": \"test\", \"b\": 42.2, \"c\": 123}");
+        final StringMessageHolder msg = new StringMessageHolder("{\"a\": \"test\", \"b\": 42.2, \"c\": 123}");
+
         adapter.consumeMessage("id", msg);
 
         try {
@@ -1447,9 +1449,8 @@ public class JsonAdapterTest {
      */
     private void injectJson(final String jsonStr, final String msgId, final UpdateSourceQueryTable... tablesToRefresh)
             throws IOException, InterruptedException, TimeoutException {
-        final TextMessage msg = new TextMessage();
-        msg.setText(jsonStr);
-        msg.setSenderTimestamp(MESSAGE_TIMESTAMP);
+        final StringMessageHolder msg = new StringMessageHolder(MESSAGE_TIMESTAMP_MILLIS * 1000L, jsonStr);
+
         adapter.consumeMessage(msgId, msg);
 
         adapter.waitForProcessing(MAX_WAIT_MILLIS);
@@ -1571,7 +1572,7 @@ public class JsonAdapterTest {
             }
         }
 
-        final TextMessage[] messages = new TextMessage[200000];
+        final StringMessageHolder[] messages = new StringMessageHolder[200000];
 
         final int mgGroupSize = 1;
         for (int i = 0; i < messages.length; i++) {
@@ -1610,8 +1611,7 @@ public class JsonAdapterTest {
             builder.deleteCharAt(builder.length() - 2); // Remove trailing comma
             builder.append("}");
 
-            messages[i] = new TextMessage();
-            messages[i].setText(builder.toString());
+            messages[i] = new StringMessageHolder(builder.toString());
         }
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
@@ -1704,7 +1704,7 @@ public class JsonAdapterTest {
         final int warmupMessages = 20_000;
 
         final int numMessages = numThreads * 25_000;
-        final TextMessage[] messages = new TextMessage[warmupMessages + numMessages];
+        final StringMessageHolder[] messages = new StringMessageHolder[warmupMessages + numMessages];
 
         System.out.println("Generating test messages...");
         final int mgGroupSize = 30;
@@ -1744,8 +1744,7 @@ public class JsonAdapterTest {
             builder.deleteCharAt(builder.length() - 2); // Remove trailing comma
             builder.append('}');
 
-            messages[i] = new TextMessage();
-            messages[i].setText(builder.toString());
+            messages[i] = new StringMessageHolder(builder.toString());
         }
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
@@ -1840,10 +1839,10 @@ public class JsonAdapterTest {
 
         adapter = factory.apply(writer);
 
-        final TextMessage msg = new TextMessage();
-        msg.setText("{\"" + strCol + "\": \"test\", \""
+        final StringMessageHolder msg = new StringMessageHolder("{\"" + strCol + "\": \"test\", \""
                 + boolColName + "\": null "
                 + "}");
+
         adapter.consumeMessage("id", msg);
 
         // Because the message will be consumed almost instantly, then actually processed separately, we have to wait to
@@ -1861,12 +1860,10 @@ public class JsonAdapterTest {
         Assert.assertEquals("", baos.toString(StandardCharsets.UTF_8));
         baos.reset();
 
-        final TextMessage msg2 = new TextMessage();
-        msg2.setText("~x=y;b=c");
+        final StringMessageHolder msg2 = new StringMessageHolder("~x=y;b=c");
         adapter.consumeMessage("id", msg2);
 
-        final TextMessage msg3 = new TextMessage();
-        msg3.setText("{\"" + strCol + "\": \"Yikes\", \""
+        final StringMessageHolder msg3 = new StringMessageHolder("{\"" + strCol + "\": \"Yikes\", \""
                 + boolColName + "\": false "
                 + "}");
         adapter.consumeMessage("id", msg3);

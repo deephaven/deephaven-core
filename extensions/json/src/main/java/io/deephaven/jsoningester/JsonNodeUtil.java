@@ -15,6 +15,8 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
@@ -23,10 +25,20 @@ public class JsonNodeUtil {
             .setNodeFactory(JsonNodeFactory.withExactBigDecimals(true))
             .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
+    @Nullable
     public static JsonNode makeJsonNode(final String json) {
         try {
             return objectMapper.readTree(json);
         } catch (JsonProcessingException ex) {
+            throw new JsonStringParseException("Failed to parse JSON string.", ex);
+        }
+    }
+
+    @Nullable
+    public static JsonNode makeJsonNode(final InputStream json) {
+        try {
+            return objectMapper.readTree(json);
+        } catch (IOException ex) {
             throw new JsonStringParseException("Failed to parse JSON string.", ex);
         }
     }
@@ -748,7 +760,7 @@ public class JsonNodeUtil {
     }
 
     public static class JsonStringParseException extends IllegalArgumentException {
-        public JsonStringParseException(String message, JsonProcessingException cause) {
+        public JsonStringParseException(String message, IOException cause) {
             super(message, cause);
         }
     }

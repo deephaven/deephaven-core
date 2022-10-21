@@ -94,17 +94,17 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
         DateTime ingestTime = null;
 
         if (sendTimeSetter != null) {
-            final long senderTimestamp = messageToSendTimeMicros.applyAsLong(msg);
-            if (senderTimestamp != 0) {
-                sentTime = new DateTime(senderTimestamp * MILLIS_TO_NANOS);
+            final long sendTimeMicros = messageToSendTimeMicros.applyAsLong(msg);
+            if (sendTimeMicros != 0) {
+                sentTime = new DateTime(sendTimeMicros * 1000L);
             }
             // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
             // threads
         }
         if (receiveTimeSetter != null) {
-            final long timestamp = messageToRecvTimeMicros.applyAsLong(msg);
-            if (timestamp != 0) {
-                receiveTime = new DateTime(timestamp * MILLIS_TO_NANOS);
+            final long recvTimeMicros = messageToRecvTimeMicros.applyAsLong(msg);
+            if (recvTimeMicros != 0) {
+                receiveTime = new DateTime(recvTimeMicros * 1000L);
             }
             // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
             // threads
@@ -116,7 +116,7 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
             // threads
         }
 
-        final TextMessageMetadata metadata = new TextMessageMetadata(sentTime, receiveTime, ingestTime, msgId,
+        final TextMessage metadata = new TextMessage(sentTime, receiveTime, ingestTime, msgId,
                 messageNumber.getAndIncrement(), msgText);
 
         stringAdapter.consumeString(metadata);

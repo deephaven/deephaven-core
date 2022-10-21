@@ -10,7 +10,7 @@ import io.deephaven.time.DateTime;
  * An internal storage for text message contents plus metadata in a standardized format for this plugin to further
  * process.
  **/
-public class TextMessageMetadata extends BaseMessageMetadata {
+public class TextMessage extends BaseMessageMetadata {
     private final String text;
 
     /**
@@ -23,7 +23,7 @@ public class TextMessageMetadata extends BaseMessageMetadata {
      * @param messageNumber The sequential number indicating the sequence this message was received in by the ingester.
      * @param text The String message body.
      */
-    public TextMessageMetadata(final DateTime sentTime, final DateTime receiveTime, final DateTime ingestTime,
+    public TextMessage(final DateTime sentTime, final DateTime receiveTime, final DateTime ingestTime,
             final String messageId, final long messageNumber, final String text) {
         super(sentTime, receiveTime, ingestTime, messageId, messageNumber);
         this.text = text;

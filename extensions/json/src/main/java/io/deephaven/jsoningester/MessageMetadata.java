@@ -31,7 +31,7 @@ public interface MessageMetadata {
     /**
      * Gets the unique, monotonically-increasing ID for this message.
      *
-     * @return he unique, monotonically-increasing ID for this message.
+     * @return the unique, monotonically-increasing ID for this message.
      */
     String getMessageId();
 

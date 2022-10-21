@@ -73,9 +73,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private StringMessageToTableAdapter<?> owner;
 
     /**
-     * TableWriter to write data to.
-     * TODO: replace this with a io.deephaven.stream.StreamPublisherImpl. Be mindful of transactions -- flush() all
-     * rows at once. Maybe ensure that subtables are updated at the same time too.
+     * TableWriter to write data to. TODO: replace this with a io.deephaven.stream.StreamPublisherImpl. Be mindful of
+     * transactions -- flush() all rows at once. Maybe ensure that subtables are updated at the same time too.
      */
     private final TableWriter<?> writer;
     private final Logger log;
@@ -100,7 +99,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      */
     private final CountDownLatch consumerThreadsCountDownLatch;
 
-    private final BlockingQueue<TextMessageMetadata> waitingMessages = new LinkedBlockingQueue<>();
+    private final BlockingQueue<JsonMessage> waitingMessages = new LinkedBlockingQueue<>();
     private final BlockingQueue<InMemoryRowHolder> processedMessages = new LinkedBlockingQueue<>();
     private final int CONSUMER_WAIT_INTERVAL_MS =
             Configuration.getInstance().getIntegerWithDefault("JSONToTableWriterAdapter.consumerWaitInterval", 100);
@@ -405,6 +404,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 {
                     // Start a thread to flush the adapter occasionally occasionally
                     // TODO: this is really the responsibility of whoever owns the TableWriters (i.e. some ingester)
+                    // TODO: move this to the io.deephaven.jsoningester.JSONToInMemoryTableAdapterBuilder.
                     final Thread cleanupThread = new Thread(consumerThreadGroup, () -> {
                         final long flushIntervalMillis = 5000L;
                         long lastFlush = 0L;
@@ -979,9 +979,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     /**
-     * Consumes a string and wraps it into a {@link TextMessageMetadata} with its timestamps and msgId set
-     * automatically. This method should never be used if {@link #consumeString(TextMessageMetadata)} is used
-     * 
+     * Consumes a string and wraps it into a {@link TextMessage} with its timestamps and msgId set automatically. This
+     * method should never be used if {@link #consumeString(TextMessage)} or {@link #consumeJson} is used.
+     *
      * @param json The input JSON string
      * @return The {@link BaseMessageMetadata#getMsgNo() message number} assigned to the message. This is automatically
      *         set to the current value of {@link #messagesQueued}.
@@ -990,29 +990,41 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     public long consumeString(final String json) throws IOException {
         long msgId = messagesQueued.get();
         final DateTime now = DateTime.now();
-        final TextMessageMetadata msg = new TextMessageMetadata(now, now, now, null, msgId, json);
+        final TextJsonMessage msg = new TextJsonMessage(now, now, now, null, msgId, json);
         consumeString(msg);
         return msgId;
     }
 
     @Override
-    public void consumeString(final TextMessageMetadata msgData) {
+    public void consumeString(TextMessage msg) {
+        consumeJson(
+                new TextJsonMessage(
+                        msg.getSentTime(),
+                        msg.getReceiveTime(),
+                        msg.getIngestTime(),
+                        msg.getMessageId(),
+                        msg.getMsgNo(),
+                        msg.getText()));
+    }
+
+    public void consumeJson(final JsonMessage msg) {
         if (isShutdown.get()) {
             throw new IllegalStateException("Message received after adapter shutdown!");
         }
         if (numThreads == 0) {
             // process synchronously
-            processSingleMessage(0, msgData);
+            processSingleMessage(0, msg);
 
             // note: cleanup() must be run manually
             return;
         }
         final long queuedMessages = messagesQueued.getAndIncrement();
-        if (queuedMessages != msgData.getMsgNo()) {
-            throw new IllegalStateException("Unexpected message number " + msgData.getMsgNo()
+
+        if (queuedMessages != msg.getMsgNo()) {
+            throw new IllegalStateException("Unexpected message number " + msg.getMsgNo()
                     + ", previously queued messages " + queuedMessages);
         }
-        waitingMessages.add(msgData);
+        waitingMessages.add(msg);
     }
 
     @Override
@@ -1245,7 +1257,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
     @SuppressWarnings("RedundantThrows")
     private void pollOnce(final int holder, final Duration timeout) throws IOException, JSONIngesterException {
-        final TextMessageMetadata msgData;
+        final JsonMessage msgData;
         synchronized (waitingMessages) {
             try {
                 msgData = waitingMessages.poll(timeout.toNanos(), TimeUnit.NANOSECONDS);
@@ -1260,16 +1272,28 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         processSingleMessage(holder, msgData);
     }
 
-    private void processSingleMessage(final int holder, final TextMessageMetadata msgData) {
-        final String msg = msgData.getText();
-        holders[holder].setMessageNumber(msgData.getMsgNo());
+    /**
+     * Process one message, using the specified message holder.
+     *
+     * @param holder Index of the message holder into which the {@code msgData} should be processed.
+     * @param msg The message.
+     */
+    private void processSingleMessage(final int holder, final JsonMessage msg) {
+        holders[holder].setMessageNumber(msg.getMsgNo());
         // The JSON parsing is time-consuming, so we can multi-thread that.
         final JsonNode record;
         try {
-            record = JsonNodeUtil.makeJsonNode(msg);
+            record = msg.getJson();
         } catch (final JsonNodeUtil.JsonStringParseException parseException) {
+            final String msgText;
+            if (msg instanceof TextMessage) {
+                msgText = ((TextMessage) msg).getText();
+            } else {
+                msgText = null;
+            }
+
             // handle JSON parse exception and keep going
-            processExceptionRecord(holder, parseException, msgData, msg);
+            processExceptionRecord(holder, parseException, msg, msgText);
             return;
         }
         if (processArrays && record.isArray()) {
@@ -1278,17 +1302,27 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 addEmptyHolder(holder);
             } else {
                 for (int ii = 0; ii < arraySize; ++ii) {
-                    holders[holder].setMessageNumber(msgData.getMsgNo());
-                    processOneRecordTopLevel(holder, msgData, record.get(ii), ii == 0, ii == arraySize - 1);
+                    holders[holder].setMessageNumber(msg.getMsgNo());
+                    processOneRecordTopLevel(holder, msg, record.get(ii), ii == 0, ii == arraySize - 1);
                 }
             }
         } else {
-            processOneRecordTopLevel(holder, msgData, record, true, true);
+            processOneRecordTopLevel(holder, msg, record, true, true);
         }
     }
 
-    private void processExceptionRecord(final int holder, final IllegalArgumentException iae,
-            final TextMessageMetadata msgData, final String messageText) {
+    /**
+     * Handle an exception while processing a message.
+     *
+     * @param holder Index of the holder into which the exception should be processed
+     * @param iae The exception the occurred while processing the message
+     * @param msgData The message metadata
+     * @param messageText The message text, if available
+     */
+    private void processExceptionRecord(final int holder,
+            @NotNull final IllegalArgumentException iae,
+            @NotNull final MessageMetadata msgData,
+            @Nullable final String messageText) {
         holders[holder].setParseException(iae);
         holders[holder].setOriginalText(messageText);
         if (!isSubtableAdapter) {
@@ -1520,7 +1554,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private InMemoryRowHolder createRowHolder() {
         // the row holder needs to have room for the message metadata as well
         // (these setters are stored in this adapter's 'owner'
-        return new InMemoryRowHolder(fieldSetters.size() + TextMessageMetadata.numberOfMetadataFields());
+        return new InMemoryRowHolder(fieldSetters.size() + TextMessage.numberOfMetadataFields());
     }
 
     @Override
@@ -1553,8 +1587,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param holderIdx The index of the target message holder.
      */
     private void processMetadata(final MessageMetadata metadata, final int holderIdx) {
-        final InMemoryRowHolder holder = holders[holderIdx];
         if (owner != null) {
+            final InMemoryRowHolder holder = holders[holderIdx];
             if (owner.getMessageIdColumn() != null) {
                 holder.getSetter(owner.getMessageIdColumn(), String.class).set(metadata.getMessageId());
             }
