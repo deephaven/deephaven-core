@@ -58,7 +58,8 @@ WORKDIR /cpp-client/tests/build
 RUN /bin/bash -c "set -eux; source /cpp-client/deps/env.sh; \
   cmake -DCMAKE_PREFIX_PATH=/cpp-client/install:\$CMAKE_PREFIX_PATH ..;\
   make -j\$NCPUS; \
-  cp /cpp-client/tests/build/tests /cpp-client/install/bin
+  cp /cpp-client/tests/build/tests /cpp-client/install/bin; \
+  rm -fr /cpp-client/tests/build"
 
 COPY cpp-tests-to-junit.sh /cpp-client/install/bin
 RUN mkdir -p /out
