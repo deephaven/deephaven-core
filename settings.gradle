@@ -241,6 +241,9 @@ project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
 include(':plugin-gc-app')
 project(':plugin-gc-app').projectDir = file('plugin/gc-app')
 
+include(':plugin-thread-app')
+project(':plugin-thread-app').projectDir = file('plugin/thread-app')
+
 include(':envoy')
 
 include(':grpc-proxy')
