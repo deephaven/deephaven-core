@@ -63,10 +63,10 @@ public interface RollupTable extends AttributeMap<RollupTable>, GridAttributes<R
     /**
      * Get the {@link NodeType} at this RollupTable's leaf level.
      *
-     * @return The leaf type
+     * @return The leaf node type
      */
     @FinalDefault
-    default NodeType getLeafType() {
+    default NodeType getLeafNodeType() {
         return includesConstituents() ? NodeType.Constituent : NodeType.Aggregated;
     }
 
@@ -109,21 +109,24 @@ public interface RollupTable extends AttributeMap<RollupTable>, GridAttributes<R
     NodeOperationsRecorder makeNodeOperationsRecorder();
 
     /**
-     * Get a new RollupTable that will apply the {@link NodeOperationsRecorder recorded} operations to node snapshots.
+     * Get a new RollupTable that will apply the {@link NodeOperationsRecorder recorded} operations to nodes when
+     * gathering snapshots.
      *
      * @param nodeTypes The node types to apply {@code nodeOperations} to
-     * @param nodeOperations The node-level operations to apply
-     * @return The new RollupTable with the recorded node operations applied
+     * @param nodeOperations The node-level operations to apply. Must have been initially supplied by
+     *        {@link #makeNodeOperationsRecorder()} from {@code this} RollupTable.
+     * @return The new RollupTable
      */
     RollupTable withNodeOperations(
             @NotNull Collection<NodeType> nodeTypes,
             @NotNull NodeOperationsRecorder nodeOperations);
 
     /**
-     * Get a new RollupTable with {@code columns} designated for flat filtering. This means that UI-driven filters on
-     * those columns will be applied to the nodes during snapshots. If no node-filter columns are designated, all
-     * filters will be handled in the default way (by filtering the source table and re-applying the rollup operation to
-     * the result).
+     * Get a new RollupTable with {@code columns} designated for node-level filtering. This means that UI-driven filters
+     * on those columns will be applied to the nodes during snapshots. If no node-filter columns are designated, all
+     * filters will be handled by filtering the source table and re-applying the rollup operation to the result to
+     * produce a new RollupTable. Otherwise, only filters that include non-node-filter columns will be handled in this
+     * way.
      *
      * @param columns The columns to designate
      * @return The new RollupTable
@@ -132,7 +135,9 @@ public interface RollupTable extends AttributeMap<RollupTable>, GridAttributes<R
 
     /**
      * Apply a transformation to the source table, e.g. for filtering, and re-apply the rollup operation to produce a
-     * new RollupTable.
+     * new RollupTable inheriting the same node operations and node-filter columns. Transformations that change the
+     * source table's {@link Table#getDefinition() definition}, e.g. {@link Table#dropColumns drop columns}, are not
+     * supported. This is intended for use in applying {@link Table#sort sorts} and {@link Table#where filters}.
      * 
      * @param sourceTransformer The source transformation to apply
      * @return The new RollupTable
