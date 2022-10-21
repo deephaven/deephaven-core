@@ -58,7 +58,7 @@ class NodeOperationsRecorderImpl implements NodeOperationsRecorder {
 
     private NodeOperationsRecorderImpl withFilters(@NotNull final Collection<? extends Filter> filters) {
         final WhereFilter[] addedWhereFilters = WhereFilter.from(filters);
-        for (@NotNull final WhereFilter wf : addedWhereFilters) {
+        for (final WhereFilter wf : addedWhereFilters) {
             wf.init(definition);
         }
         return new NodeOperationsRecorderImpl(

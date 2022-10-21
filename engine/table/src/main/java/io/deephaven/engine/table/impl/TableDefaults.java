@@ -582,28 +582,28 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations) {
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations) {
         return rollup(aggregations, Collections.emptyList());
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
         return rollup(aggregations, includeConstituents, Collections.emptyList());
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
         return rollup(aggregations, ColumnName.from(groupByColumns));
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             String... groupByColumns) {
         return rollup(aggregations, includeConstituents, ColumnName.from(groupByColumns));
     }
@@ -611,7 +611,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations,
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations,
             Collection<? extends ColumnName> groupByColumns) {
         return rollup(aggregations, false, groupByColumns);
     }

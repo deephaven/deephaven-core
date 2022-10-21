@@ -23,7 +23,7 @@ public interface SystemicObject<TYPE> {
      * Mark this object as systemically important.
      */
     default TYPE markSystemic() {
-        //noinspection unchecked
+        // noinspection unchecked
         return (TYPE) this;
     }
 }

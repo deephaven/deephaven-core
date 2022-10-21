@@ -168,8 +168,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
     @Override
     protected PartitionAwareSourceTable copy() {
-        final PartitionAwareSourceTable result = newInstance(definition, description, componentFactory, locationProvider,
-                updateSourceRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
+        final PartitionAwareSourceTable result =
+                newInstance(definition, description, componentFactory, locationProvider,
+                        updateSourceRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
     }

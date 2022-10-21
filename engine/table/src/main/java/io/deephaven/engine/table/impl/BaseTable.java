@@ -501,7 +501,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     private Condition ensureCondition() {
-        return FieldUtils.ensureField(this, CONDITION_UPDATER, null, () -> UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition());
+        return FieldUtils.ensureField(this, CONDITION_UPDATER, null,
+                () -> UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition());
     }
 
     private void maybeSignal() {

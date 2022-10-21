@@ -865,7 +865,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations);
+    RollupTable rollup(Collection<? extends Aggregation> aggregations);
 
     /**
      * Create a rollup table.
@@ -877,7 +877,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents);
+    RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents);
 
     /**
      * Create a rollup table.
@@ -891,7 +891,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns);
+    RollupTable rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -906,7 +906,8 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, String... groupByColumns);
+    RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            String... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -920,7 +921,8 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns);
+    RollupTable rollup(Collection<? extends Aggregation> aggregations,
+            Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Create a rollup table.
@@ -935,7 +937,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @ConcurrentMethod
-    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+    RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Collection<? extends ColumnName> groupByColumns);
 
     /**
@@ -952,7 +954,7 @@ public interface Table extends
      * @return a hierarchical table grouped according to the parentColumn
      */
     @ConcurrentMethod
-    Table tree(String idColumn, String parentColumn);
+    TreeTable tree(String idColumn, String parentColumn);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations

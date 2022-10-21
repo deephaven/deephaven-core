@@ -380,14 +380,14 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+    public RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Collection<? extends ColumnName> groupByColumns) {
         return coalesce().rollup(aggregations, includeConstituents, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table tree(String idColumn, String parentColumn) {
+    public TreeTable tree(String idColumn, String parentColumn) {
         return coalesce().tree(idColumn, parentColumn);
     }
 
