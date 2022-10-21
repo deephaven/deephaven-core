@@ -65,6 +65,8 @@ public class JSONToInMemoryTableAdapterBuilder {
         final JSONToTableWriterAdapter jsonAdapter =
                 jsonAdpaterBuilder.makeAdapter(log, thisTableWriter, subtableWriters);
 
+        jsonAdapter.createCleanupThread(5000L);
+
         return new TableAndAdapterBuilderResult(resultTables, resultTableWriters, jsonAdapter);
     }
 
