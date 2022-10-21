@@ -66,7 +66,7 @@ else
   BUILD_GRPC=no
   BUILD_ARROW=no
   BUILD_IMMER=no
-  GENERATE_ENV=no    
+  GENERATE_ENV=no
   case "$step" in
       protobuf)
           BUILD_PROTOBUF=yes
@@ -102,7 +102,7 @@ else
           GENERATE_ENV=yes
           ;;
       *)
-          echo "$0: unrecognized option: $step"
+          echo "$0: unrecognized option: $step" 1>&2
           exit 1
           ;;
   esac
@@ -193,6 +193,7 @@ if [ "$BUILD_RE2" = "yes" ]; then
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/re2"
   fi
+  echo "*** re2 DONE"
 fi
 
 ### gflags
@@ -229,7 +230,7 @@ if [ "$BUILD_ABSL" = "yes" ]; then
   make install
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/abseil"
-  fi 
+  fi
   echo "*** abseil DONE"
 fi
 
@@ -248,7 +249,7 @@ if [ "$BUILD_FLATBUFFERS" = "yes" ]; then
   make install
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/flatbuffers"
-  fi 
+  fi
   echo "*** flatbuffers DONE"
 fi
 
@@ -267,7 +268,7 @@ if [ "$BUILD_CARES" = "yes" ]; then
   make install
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/c-ares"
-  fi 
+  fi
   echo "*** ares DONE"
 fi
 
@@ -286,7 +287,7 @@ if [ "$BUILD_ZLIB" = "yes" ]; then
   make install
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/zlib"
-  fi 
+  fi
   echo "*** zlib DONE"
 fi
 
@@ -307,8 +308,8 @@ if [ "$BUILD_GRPC" = "yes" ]; then
   make install
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/grpc"
-  fi 
-  echo "grpc DONE"
+  fi
+  echo "*** grpc DONE"
 fi
 
 ### arrow
@@ -350,8 +351,8 @@ EOF
   make install
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/arrow"
-  fi 
-  echo "DONE"
+  fi
+  echo "*** arrow DONE"
 fi
 
 ### immer
@@ -370,7 +371,7 @@ if [ "$BUILD_IMMER" = "yes" ]; then
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/immer"
   fi
-  echo "DONE"
+  echo "*** immer DONE"
 fi
 
 echo DONE.

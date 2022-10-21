@@ -6,4 +6,4 @@ set -o xtrace
 
 XML="${1}";
 
-cd ./tests/build && ./tests --reporter XML --out "$XML";
+./tests --reporter XML --out "$XML";

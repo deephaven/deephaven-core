@@ -1,0 +1,65 @@
+#
+# Copyright (c) Deephaven Data Labs. All rights reserved.
+#
+
+FROM ubuntu:22.04
+
+#
+# Install system dependencies (eg, build tools) for build.
+#
+ENV DEBIAN_FRONTEND=noninteractive
+RUN set -eux; \
+    apt-get -qq update; \
+    apt-get -qq -y --no-install-recommends install \
+            locales \
+            ca-certificates \
+            curl \
+            git \
+            g++ \
+            cmake \
+            make \
+            build-essential \
+            zlib1g-dev \
+            libssl-dev; \
+    apt-get clean; \
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen; \
+    locale-gen en_US.UTF-8; \
+    rm -rf /var/lib/apt/lists/*
+#
+# Download and build dependent libraries.
+#
+RUN --mount=type=bind,source=build-dependencies.sh,target=/build-dependencies.sh \
+    set -eux; mkdir -p /cpp-client/deps; cd /cpp-client/deps; \
+    /build-dependencies.sh --clean
+
+#
+# Build client library.
+#
+RUN mkdir -p /cpp-client/deephaven/client
+COPY deephaven/CMakeLists.txt /cpp-client/deephaven
+COPY deephaven/client /cpp-client/deephaven/client/
+
+RUN mkdir -p /cpp-client/deephaven/build
+WORKDIR /cpp-client/deephaven/build
+RUN /bin/bash -c "set -eux; source /cpp-client/deps/env.sh; \
+  cmake -DCMAKE_INSTALL_PREFIX=/cpp-client/install ..; \
+  make -j\$NCPUS install clean; \
+  cd ..; \
+  rm -fr /cpp-client/deephaven/build"
+
+#
+# Build tests.
+#
+COPY tests/*.cc tests/*.h tests/CMakeLists.txt /cpp-client/tests/
+COPY tests/third_party /cpp-client/tests/third_party/
+
+RUN mkdir -p /cpp-client/tests/build /cpp-client/install/bin
+WORKDIR /cpp-client/tests/build
+RUN /bin/bash -c "set -eux; source /cpp-client/deps/env.sh; \
+  cmake -DCMAKE_PREFIX_PATH=/cpp-client/install:\$CMAKE_PREFIX_PATH ..;\
+  make -j\$NCPUS; \
+  cp /cpp-client/tests/build/tests /cpp-client/install/bin
+
+COPY cpp-tests-to-junit.sh /cpp-client/install/bin
+RUN mkdir -p /out
+#ENTRYPOINT bash -c "cd /cpp-client/install/bin && ./cpp-tests-to-junit.sh /out/test-output.xml 2>&1 | tee /out/test.log"
