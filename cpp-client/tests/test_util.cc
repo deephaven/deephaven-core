@@ -115,8 +115,8 @@ TableMakerForTests TableMakerForTests::create() {
 }
 
 Client TableMakerForTests::createClient() {
-  const char* hostptr = std::getenv("DH_HOST");
-  const char* portptr = std::getenv("DH_PORT");
+  const char *hostptr = std::getenv("DH_HOST");
+  const char *portptr = std::getenv("DH_PORT");
   std::string host = (hostptr == nullptr) ? "localhost" : hostptr;
   std::string port = (portptr == nullptr) ? "10000" : portptr;
   std::string connectionString(host + ":" + port);
