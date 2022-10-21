@@ -348,7 +348,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Map<String, IndexedDataColumn<?>> ensureIndexedDataColumns() {
         // noinspection unchecked
-        return FieldUtils.ensureField(this, INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS, ConcurrentHashMap::new);
+        return FieldUtils.ensureField(this, INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS,
+                ConcurrentHashMap::new);
     }
 
     /**
@@ -512,7 +513,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
+    public RollupTable rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
             final Collection<? extends ColumnName> groupByColumns) {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
@@ -556,7 +557,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table tree(String idColumn, String parentColumn) {
+    public TreeTable tree(String idColumn, String parentColumn) {
         if (isStream()) {
             throw streamUnsupported("tree");
         }
@@ -3169,7 +3170,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         private R maybeMarkSystemic(R cachedResult) {
             if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                //noinspection unchecked
+                // noinspection unchecked
                 return (R) ((SystemicObject) cachedResult).markSystemic();
             }
             return cachedResult;

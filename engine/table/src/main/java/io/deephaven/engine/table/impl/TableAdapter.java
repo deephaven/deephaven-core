@@ -247,13 +247,13 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported();
     }
 
     @Override
-    default Table tree(String idColumn, String parentColumn) {
+    default TreeTable tree(String idColumn, String parentColumn) {
         return throwUnsupported();
     }
 

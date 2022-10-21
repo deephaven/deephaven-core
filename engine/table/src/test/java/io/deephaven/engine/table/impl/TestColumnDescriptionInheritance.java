@@ -175,8 +175,9 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
         final Table fonlydesc = t.withColumnDescription("Fib", "Fibonnaci2");
         assertNull(t.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
         assertEquals(Collections.singletonMap("Str", "Fruit"), sdesc.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
-        assertEquals(Collections.singletonMap("Fib", "Fibonnaci2"), fonlydesc.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
-        final Map<String, String> ex  = new TreeMap<>();
+        assertEquals(Collections.singletonMap("Fib", "Fibonnaci2"),
+                fonlydesc.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+        final Map<String, String> ex = new TreeMap<>();
         ex.put("Fib", "Fibonnaci");
         ex.put("Str", "Fruit");
         assertEquals(ex, fdesc.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
