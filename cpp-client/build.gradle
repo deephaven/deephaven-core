@@ -65,7 +65,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         // Build tests.
         //
-        runCommand('mkdir -p /cpp-client/tests/build /cpp-client/install/bin')
+        runCommand('mkdir -p /cpp-client/tests/build /cpp-client/install/bin /out')
         copyFile('cpp-tests-to-junit.sh', '/cpp-client/install/bin')
         copyFile('tests/*.cc', '/cpp-client/tests/')
         copyFile('tests/*.h', '/cpp-client/tests/')
@@ -91,7 +91,6 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
-    entrypoint = ['bash', '-c', 'set -eux; mkdir -p /out; cd /cpp-client/install/bin; ' +
-                  './cpp-tests-to-junit.sh /out/cpp-test.xml 2>&1 | tee /out/cpp-test.log']
+    entrypoint = ['/cpp-client/install/bin/cpp-tests-to-junit.sh', '/out/cpp-test.xml', '/out/cpp-test.log']
 }
 tasks.check.dependsOn(testCppClient)
