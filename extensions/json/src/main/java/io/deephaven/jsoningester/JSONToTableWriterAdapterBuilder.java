@@ -444,35 +444,6 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 createHolders);
     }
 
-    @NotNull
-    private Map<String, Pair<JSONToTableWriterAdapterBuilder, TableWriter<?>>> makeSubtableBuilderAndWriterMap(
-            @NotNull final Map<String, TableWriter<?>> subtableFieldToTableWriters) {
-        final Map<String, Pair<JSONToTableWriterAdapterBuilder, TableWriter<?>>> fieldToSubtableBuildersAndWriters =
-                new LinkedHashMap<>(fieldToSubtableBuilders.size());
-
-
-        // Iterate over the expected subtable field names and their builders, and create a map of the
-        // subtable field names to a Pair of the builder and the tablewriter
-        for (Map.Entry<String, JSONToTableWriterAdapterBuilder> entry : fieldToSubtableBuilders.entrySet()) {
-            final String fieldName = entry.getKey();
-            final JSONToTableWriterAdapterBuilder subtableAdapterBuilder = entry.getValue();
-
-            // Make sure a TableWriter is provided in the argument map for every expected subtable
-            final TableWriter<?> subtableTableWriter = subtableFieldToTableWriters.get(fieldName);
-            if (subtableTableWriter == null) {
-                throw new IllegalArgumentException(
-                        "subtableFieldToTableWriters is missing expected subtable key \"" + fieldName + '"');
-            }
-
-            fieldToSubtableBuildersAndWriters.put(fieldName, new Pair<>(subtableAdapterBuilder, subtableTableWriter));
-        }
-
-        // it's ok to ignore "extra" subtable writers passed in the argument map -- they might correspond to a
-        // nested adapter or a subtable's subtable.
-
-        return fieldToSubtableBuildersAndWriters;
-    }
-
     /**
      * Creates an adapter to be used as a nested adapter. Nested adapters always have a single consumer thread, must use
      * the same subtableProcessingQueue as the parent adapter, and always create new holders.
