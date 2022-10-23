@@ -1096,17 +1096,18 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                             }
 
 
-                            /* TODO: how should we replace this in StreamPublisher world?
-                            we could do something similar to DynamicTableWriter.DynamicTableRow.writeRow, where rows
-                            from an incomplete transaction are essentially ignored until the transaction is complete,
-                            but we're not set up to do that because StreamPublisherImpl.flush() turns over the entire
-                            existing chunks to the table
-
-                            we could also StreamPublisherImpl.flush()/StreamPublisherImpl.getChunks() before and after
-                            every transaction, but that could get expensive if there are lots of transactions (e.g. from
-                            subtables or expanded arrays)
-
-
+                            /*
+                             * TODO: how should we replace this in StreamPublisher world? we could do something similar
+                             * to DynamicTableWriter.DynamicTableRow.writeRow, where rows from an incomplete transaction
+                             * are essentially ignored until the transaction is complete, but we're not set up to do
+                             * that because StreamPublisherImpl.flush() turns over the entire existing chunks to the
+                             * table
+                             * 
+                             * we could also StreamPublisherImpl.flush()/StreamPublisherImpl.getChunks() before and
+                             * after every transaction, but that could get expensive if there are lots of transactions
+                             * (e.g. from subtables or expanded arrays)
+                             * 
+                             * 
                              */
                             writer.setFlags(finalHolder.getFlags());
                             writer.writeRow();
