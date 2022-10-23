@@ -310,7 +310,9 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
             }
         }
 
+        // TODO: this happens automatically under UGP? seems like it should be up to owner of publisher
         streamPublisher.flush();
+
         // Switch columns, update RowSet, deliver notification
 
         final long oldSize = rowSet.size();

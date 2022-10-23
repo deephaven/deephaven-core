@@ -1080,6 +1080,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                         if (!finalHolder.getIsEmpty()) {
 
                             // First, set all the fields for which there is a 1-1 message/row ratio.
+                            // TODO: change the fieldSetters to write to writablechunks instead
                             fieldSetters.forEach(fp -> fp.accept(finalHolder));
 
                             // Then run cleanup() for any subtable adapters before, we commit this row
@@ -1094,6 +1095,19 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                                 cleanupMetadata(finalHolder);
                             }
 
+
+                            /* TODO: how should we replace this in StreamPublisher world?
+                            we could do something similar to DynamicTableWriter.DynamicTableRow.writeRow, where rows
+                            from an incomplete transaction are essentially ignored until the transaction is complete,
+                            but we're not set up to do that because StreamPublisherImpl.flush() turns over the entire
+                            existing chunks to the table
+
+                            we could also StreamPublisherImpl.flush()/StreamPublisherImpl.getChunks() before and after
+                            every transaction, but that could get expensive if there are lots of transactions (e.g. from
+                            subtables or expanded arrays)
+
+
+                             */
                             writer.setFlags(finalHolder.getFlags());
                             writer.writeRow();
                             writer.flush();
