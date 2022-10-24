@@ -1463,8 +1463,11 @@ public class AsOfJoinHelper {
             leftTable
                     .addUpdateListener(
                             new BaseTable.ListenerImpl(
-                                    makeListenerDescription(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, stampPair,
-                                            columnsToAdd, order == SortingOrder.Descending, disallowExactMatch),
+                                    makeListenerDescription(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                            stampPair,
+                                            columnsToAdd,
+                                            order == SortingOrder.Descending,
+                                            disallowExactMatch),
                                     leftTable, result) {
                                 @Override
                                 public void onUpdate(TableUpdate upstream) {

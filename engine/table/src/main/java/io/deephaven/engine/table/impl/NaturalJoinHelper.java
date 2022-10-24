@@ -177,11 +177,17 @@ class NaturalJoinHelper {
 
                     final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
 
-                    rightTable
-                            .addUpdateListener(
-                                    new RightTickingListener(bucketingContext.listenerDescription, rightTable,
-                                            columnsToMatch, columnsToAdd, result, rowRedirection, jsm,
-                                            bucketingContext.rightSources, exactMatch));
+                    rightTable.addUpdateListener(
+                            new RightTickingListener(
+                                    bucketingContext.listenerDescription,
+                                    rightTable,
+                                    columnsToMatch,
+                                    columnsToAdd,
+                                    result,
+                                    rowRedirection,
+                                    jsm,
+                                    bucketingContext.rightSources,
+                                    exactMatch));
                     return result;
                 }
             } else {
@@ -251,8 +257,15 @@ class NaturalJoinHelper {
                     final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
 
                     leftTable.addUpdateListener(
-                            new LeftTickingListener(bucketingContext.listenerDescription, columnsToMatch, columnsToAdd,
-                                    leftTable, result, rowRedirection, jsm, bucketingContext.leftSources));
+                            new LeftTickingListener(
+                                    bucketingContext.listenerDescription,
+                                    columnsToMatch,
+                                    columnsToAdd,
+                                    leftTable,
+                                    result,
+                                    rowRedirection,
+                                    jsm,
+                                    bucketingContext.leftSources));
                     return result;
                 }
             }
