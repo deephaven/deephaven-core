@@ -786,6 +786,63 @@ public class Basic {
         return ifelseObj(new BooleanVectorDirect(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
     }
 
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of T whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be trueCase if the condition element is true;
+     *         falseCase if the condition element is false; or null if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static <T> T[] ifelseObj(BooleanVector condition, T trueCase, T falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+        @SuppressWarnings("unchecked") final T[] result;
+
+        if ( trueCase == null && falseCase == null ) {
+            throw new IllegalArgumentException("trueCase and falseCase are null.  Can not resolve a return type.");
+        } else if ( trueCase == null ) {
+            result = (T[])Array.newInstance(falseCase.getClass(), n_c);
+        } else if ( falseCase == null ) {
+            result = (T[])Array.newInstance(trueCase.getClass(), n_c);
+        } else if (!trueCase.getClass().equals(falseCase.getClass())) {
+            throw new IllegalArgumentException("Inputs have different types. trueCase=" + trueCase.getClass() + " falseCase=" + falseCase.getClass());
+        } else {
+            result = (T[])Array.newInstance(trueCase.getClass(), n_c);
+        }
+
+        for (int i=0; i < n_c; i++) {
+            result[i] = condition.get(i) == null ? null : (condition.get(i) ? trueCase : falseCase);
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of T whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be trueCase if the condition element is true;
+     *         falseCase if the condition element is false; or null if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static <T> T[] ifelseObj(Boolean[] condition, T trueCase, T falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        return ifelseObj(new BooleanVectorDirect(condition), trueCase, falseCase);
+    }
+
     <#list primitiveTypes as pt>
     <#if !pt.valueType.isBoolean >
 
@@ -1583,6 +1640,52 @@ public class Basic {
         }
 
         return ifelse(new BooleanVectorDirect(condition), new ${pt.dbArrayDirect}(trueCase), new ${pt.dbArrayDirect}(falseCase));
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of ${pt.primitive} whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be trueCase if the condition element is true;
+     *         falseCase if the condition element is false; or the Deephaven null constant if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+
+        final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
+
+        for (int i=0; i < n_c; i++) {
+            result[i] = condition.get(i) == null ? ${pt.null} : (condition.get(i) ? trueCase : falseCase);
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of ${pt.primitive} whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be trueCase if the condition element is true;
+     *         falseCase if the condition element is false; or the Deephaven null constant if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static ${pt.primitive}[] ifelse(Boolean[] condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        return ifelse(new BooleanVectorDirect(condition), trueCase, falseCase);
     }
 
     public static ${pt.primitive}[] forwardFill(${pt.primitive}... values){
