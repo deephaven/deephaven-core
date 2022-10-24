@@ -10,7 +10,7 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
 /**
- * A marker interface for {@link Clock} that designates implementations as returning real system time.
+ * A marker interface for {@link Clock} that designates implementations as system clocks.
  */
 public interface SystemClock extends Clock {
 

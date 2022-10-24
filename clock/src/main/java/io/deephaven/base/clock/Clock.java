@@ -6,7 +6,10 @@ package io.deephaven.base.clock;
 import java.time.Instant;
 
 /**
- * Provides time methods.
+ * Provides time-based methods. Callers should prefer the methods most appropriate for their use-case and desired
+ * resolution. The performance of the methods may differ depending on the resolution they provide.
+ *
+ * @see SystemClock
  */
 public interface Clock {
 
