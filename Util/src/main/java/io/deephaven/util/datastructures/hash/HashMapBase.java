@@ -283,7 +283,7 @@ public abstract class HashMapBase implements TNullableLongLongMap {
     /*
      * The strategy used in this class is to keep track of: - The current position (which could be any valid position as
      * well as one before the start) - The next position (which could be any valid position as well as one after the
-     * end). Java iterator semantics makes this annoying. Because it's Java!™ We also have to make sure we un-redirect
+     * end). Java iterator semantics makes this annoying. Because it's Java!&trade; We also have to make sure we un-redirect
      * the REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0.
      */
     private static class Iterator implements TLongLongIterator {

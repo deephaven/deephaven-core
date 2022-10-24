@@ -40,4 +40,4 @@ publishing {
 
 PublishingConstants.setupRepositories(project)
 PublishingConstants.setupMavenPublication(project, publishing.publications.mavenJava)
-PublishingConstants.setupSigning(project, publishing.publications.mavenJava)
+//PublishingConstants.setupSigning(project, publishing.publications.mavenJava)
