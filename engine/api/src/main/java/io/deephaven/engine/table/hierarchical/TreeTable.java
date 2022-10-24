@@ -1,9 +1,7 @@
-package io.deephaven.engine.table;
+package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Pair;
-import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -12,21 +10,7 @@ import java.util.function.UnaryOperator;
 /**
  * Interface for the result of {@link Table#tree(String, String)} tree} operations.
  */
-public interface TreeTable extends AttributeMap<TreeTable>, GridAttributes<TreeTable> {
-
-    /**
-     * Get the source {@link Table} that was aggregated to make this tree.
-     *
-     * @return The source table
-     */
-    Table getSource();
-
-    /**
-     * Get the root {@link Table} that represents the top level of this tree.
-     *
-     * @return The root table
-     */
-    Table getRoot();
+public interface TreeTable extends HierarchicalTable<TreeTable> {
 
     /**
      * Get the identifier column from the {@link Table#tree(String, String) tree} operation.
@@ -48,6 +32,15 @@ public interface TreeTable extends AttributeMap<TreeTable>, GridAttributes<TreeT
      * @return The tree column name
      */
     ColumnName getTreeColumn();
+
+    /**
+     * Recorder for node-level operations to be applied when gathering snapshots.
+     */
+    interface NodeOperationsRecorder extends
+            FormatOperationsRecorder<NodeOperationsRecorder>,
+            SortOperationsRecorder<NodeOperationsRecorder>,
+            FilterOperationsRecorder<NodeOperationsRecorder> {
+    }
 
     /**
      * Get a {@link NodeOperationsRecorder recorder} for per-node operations to apply during snapshots.

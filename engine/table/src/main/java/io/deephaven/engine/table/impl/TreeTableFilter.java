@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
+import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.internal.log.LoggerFactory;
@@ -104,10 +104,10 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
         private final TreeTableInfo treeTableInfo;
 
         private State(Table table, TableDefinition origTableDefinition) {
-            if (!(table instanceof HierarchicalTable)) {
+            if (!(table instanceof BaseHierarchicalTable)) {
                 throw new IllegalArgumentException("Table is not a tree");
             }
-            final HierarchicalTable hierarchicalTable = (HierarchicalTable) table;
+            final BaseHierarchicalTable hierarchicalTable = (BaseHierarchicalTable) table;
 
             source = (QueryTable) hierarchicalTable.getSourceTable();
             final HierarchicalTableInfo sourceInfo = hierarchicalTable.getInfo();

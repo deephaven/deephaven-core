@@ -12,7 +12,7 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
+import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.Table;
@@ -55,7 +55,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     private final Set<TreeSnapshotQuery.Operation> includedOps;
 
     private final TreeTableClientTableManager.Client client;
-    private final HierarchicalTable baseTable;
+    private final BaseHierarchicalTable baseTable;
     private final int baseTableId;
     private final INFO_TYPE info;
     private final TreeTableClientTableManager.ClientState clientState;
@@ -78,7 +78,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
      * @param includedOps The set of operations the client has performed before submitting this TSQ.
      */
     AbstractTreeSnapshotImpl(int baseTableId,
-            HierarchicalTable baseTable,
+            BaseHierarchicalTable baseTable,
             Map<Object, TableDetails> tablesByKey,
             long firstRow, long lastRow,
             BitSet columns,
@@ -778,7 +778,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         return preparedSort.directives;
     }
 
-    HierarchicalTable getBaseTable() {
+    BaseHierarchicalTable getBaseTable() {
         return baseTable;
     }
 

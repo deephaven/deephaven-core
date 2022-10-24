@@ -8,6 +8,8 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.updategraph.DynamicNode;

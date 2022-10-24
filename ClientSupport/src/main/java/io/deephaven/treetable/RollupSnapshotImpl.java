@@ -5,10 +5,10 @@ package io.deephaven.treetable;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.impl.ReverseLookup;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.TableMap;
@@ -44,7 +44,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
      * @param includedOps The set of operations performed by the client since the last TSQ.
      */
     RollupSnapshotImpl(int baseTableId,
-            HierarchicalTable baseTable,
+            BaseHierarchicalTable baseTable,
             Map<Object, TableDetails> tablesByKey,
             long firstRow,
             long lastRow,
@@ -70,10 +70,10 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
 
     @Override
     Table prepareRootTable() {
-        final HierarchicalTable baseTable = getBaseTable();
+        final BaseHierarchicalTable baseTable = getBaseTable();
         Table prepared = tryGetRetainedTable(TreeConstants.ROOT_TABLE_KEY);
         if (prepared == null) {
-            final HierarchicalTable filteredTable = applyFilters(baseTable);
+            final BaseHierarchicalTable filteredTable = applyFilters(baseTable);
             if (filteredTable != baseTable) {
                 // We need to retain this reference or we will leak it.
                 retainTable(RE_TREE_KEY, filteredTable);
@@ -84,7 +84,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
             rootTableChanged = true;
         }
 
-        HierarchicalTable treeForDisplay = (HierarchicalTable) tryGetRetainedTable(RE_TREE_KEY);
+        BaseHierarchicalTable treeForDisplay = (BaseHierarchicalTable) tryGetRetainedTable(RE_TREE_KEY);
         if (treeForDisplay == null) {
             treeForDisplay = baseTable;
         }
@@ -127,7 +127,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
     SelectColumn[] processFormatColumns(Table t, SelectColumn[] initial) {
         if (getInfo().includesConstituents() && t.hasAttribute(Table.ROLLUP_LEAF_ATTRIBUTE)) {
             final Map<String, ? extends ColumnSource> currentColumns = t.getColumnSourceMap();
-            final HierarchicalTable baseTable = getBaseTable();
+            final BaseHierarchicalTable baseTable = getBaseTable();
             return Arrays.stream(initial)
                     .filter(col -> {
                         col.initDef(t.getDefinition().getColumnNameMap());
@@ -155,14 +155,14 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
         return true;
     }
 
-    private HierarchicalTable applyFilters(@NotNull HierarchicalTable table) {
+    private BaseHierarchicalTable applyFilters(@NotNull BaseHierarchicalTable table) {
         final WhereFilter[] filters = getFilters();
         if (filters.length == 0) {
             return table;
         }
         final Table source = Require.neqNull(table.getSourceTable(), "Hierarchical source table");
         final RollupInfo info = getInfo();
-        return (HierarchicalTable) source.where(filters).rollup(info.aggregations,
+        return (BaseHierarchicalTable) source.where(filters).rollup(info.aggregations,
                 info.getLeafType() == RollupInfo.LeafType.Constituent, info.getGroupByColumns());
     }
 

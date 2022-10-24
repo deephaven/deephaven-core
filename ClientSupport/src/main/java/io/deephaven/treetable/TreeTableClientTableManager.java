@@ -58,10 +58,10 @@ public enum TreeTableClientTableManager {
      */
     public static class ClientState {
         // TODO-RWC:
-        //   1. This becomes the holder for all "properties" of the snapshot
-        //      Includes: hierarchical table (Ticket), key table (Ticket), filters, sorts
-        //   2. Snapshots should be applied to a Ticket representing an exported ClientState, not the Table directly.
-        //   3. ClientState + TreeState becomes one object
+        // 1. This becomes the holder for all "properties" of the snapshot
+        // Includes: hierarchical table (Ticket), key table (Ticket), filters, sorts
+        // 2. Snapshots should be applied to a Ticket representing an exported ClientState, not the Table directly.
+        // 3. ClientState + TreeState becomes one object
 
         final Client client;
 

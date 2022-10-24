@@ -9,6 +9,7 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;

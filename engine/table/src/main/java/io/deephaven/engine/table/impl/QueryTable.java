@@ -27,7 +27,9 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
@@ -514,7 +516,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public RollupTable rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
-            final Collection<? extends ColumnName> groupByColumns) {
+                              final Collection<? extends ColumnName> groupByColumns) {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
         }
@@ -546,7 +548,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
             finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
 
-            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, groupByColumns,
+            final Table result = BaseHierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, groupByColumns,
                     includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
             result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             copyAttributes(result, CopyAttributeOperation.Rollup);
@@ -574,7 +576,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             // This is "safe" because we rely on the implementation details of aggregation and the partition operator.
             final QueryTable rootTable = (QueryTable) partitioned.getColumnSource(CONSTITUENT.name()).get(0);
 
-            final Table result = HierarchicalTable.createFrom((QueryTable) rootTable.copy(),
+            final Table result = BaseHierarchicalTable.createFrom((QueryTable) rootTable.copy(),
                     new TreeTableInfo(idColumn, parentColumn));
 
             // If the parent table has an RLL attached to it, we can re-use it.
