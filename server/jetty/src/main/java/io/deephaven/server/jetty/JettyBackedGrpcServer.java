@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -152,6 +153,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
     @Override
     public void stopWithTimeout(long timeout, TimeUnit unit) {
         jetty.setStopTimeout(unit.toMillis(timeout));
+        Graceful.shutdown(jetty);
         Thread shutdownThread = new Thread(() -> {
             try {
                 jetty.stop();

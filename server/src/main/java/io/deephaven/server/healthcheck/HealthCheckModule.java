@@ -9,6 +9,7 @@ import dagger.multibindings.IntoSet;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.grpc.BindableService;
+import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.protobuf.services.HealthStatusManager;
 
 import javax.inject.Singleton;
@@ -19,6 +20,12 @@ public class HealthCheckModule {
     @Singleton
     public HealthStatusManager bindHealthStatusManager() {
         HealthStatusManager healthStatusManager = new HealthStatusManager();
+
+        // As we start to shut down, first notify all watchers of the health service
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(
+                ShutdownManager.OrderingCategory.FIRST,
+                healthStatusManager::enterTerminalState);
+
         return healthStatusManager;
     }
 
