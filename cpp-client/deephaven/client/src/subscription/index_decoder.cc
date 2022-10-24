@@ -44,7 +44,7 @@ std::shared_ptr<RowSequence> IndexDecoder::readExternalCompressedDelta(DataInput
     } else if (v < 0) {
       auto begin = (uint64_t)s;
       auto end = ((uint64_t)-v) + 1;
-      builder.addRange(begin, end);
+      builder.addInterval(begin, end);
       pending = -1;
     } else {
       builder.add(s);

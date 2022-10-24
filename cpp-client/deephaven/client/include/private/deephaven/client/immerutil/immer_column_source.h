@@ -7,6 +7,7 @@
 #include "deephaven/client/arrowutil/arrow_traits.h"
 #include "deephaven/client/arrowutil/arrow_visitors.h"
 #include "deephaven/client/chunk/chunk.h"
+#include "deephaven/client/chunk/chunk_traits.h"
 #include "deephaven/client/column/column_source.h"
 #include "deephaven/client/types.h"
 #include "deephaven/client/utility/utility.h"
@@ -86,13 +87,13 @@ struct ImmerColumnSourceImpls {
         }
       }
     };
-    rows.forEachChunk(copyOuter);
+    rows.forEachInterval(copyOuter);
   }
 
   template<typename T>
   static void fillChunkUnordered(const immer::flex_vector<T> &srcData,
       const immer::flex_vector<bool> *srcNullFlags,
-      const UInt64Chunk &rowKeys, Chunk *destData, BooleanChunk *optionalDestNullFlags) {
+      const UInt64Chunk &rows, Chunk *destData, BooleanChunk *optionalDestNullFlags) {
     using deephaven::client::chunk::TypeToChunk;
     using deephaven::client::utility::trueOrThrow;
     using deephaven::client::utility::verboseCast;
@@ -102,9 +103,9 @@ struct ImmerColumnSourceImpls {
     constexpr bool typeIsNumeric = deephaven::client::arrowutil::isNumericType<T>();
 
     auto *typedDest = verboseCast<chunkType_t*>(DEEPHAVEN_EXPR_MSG(destData));
-    trueOrThrow(DEEPHAVEN_EXPR_MSG(rowKeys.size() <= typedDest->size()));
+    trueOrThrow(DEEPHAVEN_EXPR_MSG(rows.size() <= typedDest->size()));
     trueOrThrow(DEEPHAVEN_EXPR_MSG(optionalDestNullFlags == nullptr ||
-        rowKeys.size() <= optionalDestNullFlags->size()));
+        rows.size() <= optionalDestNullFlags->size()));
     if (!typeIsNumeric) {
       trueOrThrow(DEEPHAVEN_EXPR_MSG(srcNullFlags != nullptr));
     }
@@ -113,7 +114,7 @@ struct ImmerColumnSourceImpls {
 
     // Note: Uses random access with Immer, which is significantly more expensive than iterating
     // over contiguous Immer ranges.
-    for (auto key : rowKeys) {
+    for (auto key : rows) {
       auto value = srcData[key];
       *destp++ = value;
       if (destNullp != nullptr) {
@@ -156,18 +157,14 @@ public:
         optionalDestNullFlags);
   }
 
-  void fillChunkUnordered(const UInt64Chunk &rowKeys, Chunk *destData,
+  void fillChunkUnordered(const UInt64Chunk &rows, Chunk *destData,
       BooleanChunk *optionalDestNullFlags) const final {
-    internal::ImmerColumnSourceImpls::fillChunkUnordered(data_, nullptr, rowKeys, destData,
+    internal::ImmerColumnSourceImpls::fillChunkUnordered(data_, nullptr, rows, destData,
         optionalDestNullFlags);
   }
 
   void acceptVisitor(ColumnSourceVisitor *visitor) const final {
     visitor->visit(*this);
-  }
-
-  std::any backdoor() const final {
-    return &data_;
   }
 
 private:
@@ -195,18 +192,14 @@ public:
         optionalDestNullFlags);
   }
 
-  void fillChunkUnordered(const UInt64Chunk &rowKeys, Chunk *dest,
+  void fillChunkUnordered(const UInt64Chunk &rows, Chunk *dest,
       BooleanChunk *optionalDestNullFlags) const final {
-    internal::ImmerColumnSourceImpls::fillChunkUnordered(data_, &nullFlags_, rowKeys, dest,
+    internal::ImmerColumnSourceImpls::fillChunkUnordered(data_, &nullFlags_, rows, dest,
         optionalDestNullFlags);
   }
 
   void acceptVisitor(ColumnSourceVisitor *visitor) const final {
     visitor->visit(*this);
-  }
-
-  std::any backdoor() const final {
-    return &data_;
   }
 
 private:

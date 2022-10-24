@@ -126,7 +126,7 @@ void ImmerTableState::addData(const std::vector<std::shared_ptr<arrow::Array>> &
       fv->inPlaceAppend(std::move(fvTemp));
     }
   };
-  rowsToAddIndexSpace.forEachChunk(addChunk);
+  rowsToAddIndexSpace.forEachInterval(addChunk);
 }
 
 std::shared_ptr<RowSequence> ImmerTableState::erase(const RowSequence &rowsToRemoveKeySpace) {
@@ -144,7 +144,7 @@ std::shared_ptr<RowSequence> ImmerTableState::erase(const RowSequence &rowsToRem
       fv->inPlaceAppend(std::move(fvTemp));
     }
   };
-  rowsToRemoveKeySpace.forEachChunk(eraseChunk);
+  rowsToRemoveKeySpace.forEachInterval(eraseChunk);
   return result;
 }
 
@@ -173,7 +173,7 @@ void ImmerTableState::modifyData(size_t colNum, const arrow::Array &data,
     // Append the residual items back from 'fvTemp'.
     fv->inPlaceAppend(std::move(fvTemp));
   };
-  rowsToModifyIndexSpace.forEachChunk(modifyChunk);
+  rowsToModifyIndexSpace.forEachInterval(modifyChunk);
 }
 
 void ImmerTableState::applyShifts(const RowSequence &firstIndex, const RowSequence &lastIndex,
@@ -204,7 +204,7 @@ MyTable::~MyTable() = default;
 std::shared_ptr<RowSequence> MyTable::getRowSequence() const {
   // Need a utility for this
   RowSequenceBuilder rb;
-  rb.addRange(0, numRows_);
+  rb.addInterval(0, numRows_);
   return rb.build();
 }
 
