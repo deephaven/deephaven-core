@@ -22,6 +22,7 @@ String[] mods = [
         'qst',
         'go',
         'authentication',
+        'cpp-client',
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
