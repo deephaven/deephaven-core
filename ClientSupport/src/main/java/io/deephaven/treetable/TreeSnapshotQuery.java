@@ -7,7 +7,7 @@ import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.util.ConcurrentMethod;
-import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
+import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.engine.table.impl.HierarchicalTableInfo;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.impl.TreeTableInfo;
@@ -27,11 +27,11 @@ public class TreeSnapshotQuery implements Function<Table, TreeSnapshotResult> {
     private final TreeTableClientTableManager.Client client;
 
     // TODO-RWC:
-    //   1. We can assume that viewports are a single range.
-    //   2. Columns can be sparse.
-    //   3. baseTableId is the Ticket (export) for the hierarchical table
-    //   4. How best to communicate rolled up vs. constituent columns (rollup-specific)
-    //   5. Replace tablesByKey with a Ticket for a Table of expanded rows.
+    // 1. We can assume that viewports are a single range.
+    // 2. Columns can be sparse.
+    // 3. baseTableId is the Ticket (export) for the hierarchical table
+    // 4. How best to communicate rolled up vs. constituent columns (rollup-specific)
+    // 5. Replace tablesByKey with a Ticket for a Table of expanded rows.
     private final long firstViewportRow;
     private final long lastViewportRow;
     private final int baseTableId;
@@ -82,16 +82,16 @@ public class TreeSnapshotQuery implements Function<Table, TreeSnapshotResult> {
     @Override
     @ConcurrentMethod
     public TreeSnapshotResult apply(Table arg) {
-        if (!(arg instanceof HierarchicalTable)) {
+        if (!(arg instanceof BaseHierarchicalTable)) {
             throw new IllegalArgumentException("Input table was not a hierarchical table");
         }
 
-        final HierarchicalTableInfo sourceInfoAttr = ((HierarchicalTable) arg).getInfo();
+        final HierarchicalTableInfo sourceInfoAttr = ((BaseHierarchicalTable) arg).getInfo();
         if (sourceInfoAttr instanceof TreeTableInfo) {
-            return new TreeTableSnapshotImpl(baseTableId, (HierarchicalTable) arg, tablesByKey,
+            return new TreeTableSnapshotImpl(baseTableId, (BaseHierarchicalTable) arg, tablesByKey,
                     firstViewportRow, lastViewportRow, columns, filters, directives, client, includedOps).getSnapshot();
         } else if (sourceInfoAttr instanceof RollupInfo) {
-            return new RollupSnapshotImpl(baseTableId, (HierarchicalTable) arg, tablesByKey,
+            return new RollupSnapshotImpl(baseTableId, (BaseHierarchicalTable) arg, tablesByKey,
                     firstViewportRow, lastViewportRow, columns, filters, directives, client, includedOps).getSnapshot();
         }
 

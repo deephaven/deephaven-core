@@ -16,6 +16,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
@@ -381,7 +383,7 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     @Override
     @ConcurrentMethod
     public RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Collection<? extends ColumnName> groupByColumns) {
+                              Collection<? extends ColumnName> groupByColumns) {
         return coalesce().rollup(aggregations, includeConstituents, groupByColumns);
     }
 

@@ -1,8 +1,9 @@
-package io.deephaven.engine.table;
+package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Pair;
+import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,21 +13,7 @@ import java.util.function.UnaryOperator;
 /**
  * Interface for the result of {@link Table#rollup rollup} operations.
  */
-public interface RollupTable extends AttributeMap<RollupTable>, GridAttributes<RollupTable> {
-
-    /**
-     * Get the source {@link Table} that was aggregated to make this rollup.
-     *
-     * @return The source table
-     */
-    Table getSource();
-
-    /**
-     * Get the root {@link Table} that represents the top level of this rollup.
-     *
-     * @return The root table
-     */
-    Table getRoot();
+public interface RollupTable extends HierarchicalTable<RollupTable> {
 
     /**
      * Get the aggregations for the {@link Table#rollup rollup} operation.
@@ -102,36 +89,34 @@ public interface RollupTable extends AttributeMap<RollupTable>, GridAttributes<R
     Collection<? extends Pair> getColumnPairs();
 
     /**
-     * Get a {@link NodeOperationsRecorder recorder} for per-node operations to apply during snapshots.
-     *
-     * @return The new recorder
+     * Recorder for node-level operations to be applied when gathering snapshots.
      */
-    NodeOperationsRecorder makeNodeOperationsRecorder();
+    interface NodeOperationsRecorder extends
+            FormatOperationsRecorder<NodeOperationsRecorder>,
+            SortOperationsRecorder<NodeOperationsRecorder> {
+    }
+
+    /**
+     * Get a {@link NodeOperationsRecorder recorder} for per-node operations to apply during snapshots of the requested
+     * {@link NodeType}.
+     *
+     * @param nodeType The {@link NodeType node type} that operations will be applied to
+     * @return The new recorder
+     * @throws IllegalArgumentException If {@link NodeType#Constituent Constituent} is specified when
+     *         {@code includesConstituents() == false}
+     */
+    NodeOperationsRecorder makeNodeOperationsRecorder(@NotNull NodeType nodeType);
 
     /**
      * Get a new RollupTable that will apply the {@link NodeOperationsRecorder recorded} operations to nodes when
-     * gathering snapshots.
+     * gathering snapshots. Operations will be applied only to the {@link NodeType node type} supplied when
+     * {@code nodeOperations} was initially {@link #makeNodeOperationsRecorder(NodeType) created}.
      *
-     * @param nodeTypes The node types to apply {@code nodeOperations} to
      * @param nodeOperations The node-level operations to apply. Must have been initially supplied by
-     *        {@link #makeNodeOperationsRecorder()} from {@code this} RollupTable.
+     *        {@link #makeNodeOperationsRecorder(NodeType)} from {@code this} RollupTable.
      * @return The new RollupTable
      */
-    RollupTable withNodeOperations(
-            @NotNull Collection<NodeType> nodeTypes,
-            @NotNull NodeOperationsRecorder nodeOperations);
-
-    /**
-     * Get a new RollupTable with {@code columns} designated for node-level filtering. This means that UI-driven filters
-     * on those columns will be applied to the nodes during snapshots. If no node-filter columns are designated, all
-     * filters will be handled by filtering the source table and re-applying the rollup operation to the result to
-     * produce a new RollupTable. Otherwise, only filters that include non-node-filter columns will be handled in this
-     * way.
-     *
-     * @param columns The columns to designate
-     * @return The new RollupTable
-     */
-    RollupTable withNodeFilterColumns(@NotNull Collection<? extends ColumnName> columns);
+    RollupTable withNodeOperations(@NotNull NodeOperationsRecorder nodeOperations);
 
     /**
      * Apply a transformation to the source table, e.g. for filtering, and re-apply the rollup operation to produce a
@@ -143,4 +128,7 @@ public interface RollupTable extends AttributeMap<RollupTable>, GridAttributes<R
      * @return The new RollupTable
      */
     RollupTable reapply(@NotNull UnaryOperator<Table> sourceTransformer);
+
+    // TODO-RWC: Filters can only be applied to group-by columns. We can apply them to the first level and re-rollup
+    // when recomputing.
 }

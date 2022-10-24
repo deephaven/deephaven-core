@@ -13,6 +13,8 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -248,7 +250,7 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Collection<? extends ColumnName> groupByColumns) {
+                               Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported();
     }
 

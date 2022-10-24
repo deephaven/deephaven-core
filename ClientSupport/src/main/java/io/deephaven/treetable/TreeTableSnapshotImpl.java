@@ -5,7 +5,7 @@ package io.deephaven.treetable;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
+import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -44,7 +44,7 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
      * @param includedOps The set of operations performed by the client since the last TSQ.
      */
     TreeTableSnapshotImpl(int baseTableId,
-            HierarchicalTable baseTable,
+            BaseHierarchicalTable baseTable,
             Map<Object, TableDetails> tablesByKey,
             long firstRow,
             long lastRow,
@@ -58,7 +58,7 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
 
     @Override
     Table prepareRootTable() {
-        final HierarchicalTable baseTable = getBaseTable();
+        final BaseHierarchicalTable baseTable = getBaseTable();
         Table prepared = tryGetRetainedTable(ROOT_TABLE_KEY);
         if (prepared == null) {
             final WhereFilter[] filters = getFilters();
@@ -77,8 +77,8 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
                 }
 
                 if (reTreeRequired) {
-                    final HierarchicalTable reTreed =
-                            (HierarchicalTable) TreeTableFilter.toTreeTable(prepared, baseTable);
+                    final BaseHierarchicalTable reTreed =
+                            (BaseHierarchicalTable) TreeTableFilter.toTreeTable(prepared, baseTable);
 
                     // We need to retain this reference or we will leak it.
                     retainTable(RE_TREE_KEY, reTreed);
@@ -94,7 +94,7 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
             rootTableChanged = true;
         }
 
-        HierarchicalTable treeForDisplay = (HierarchicalTable) tryGetRetainedTable(RE_TREE_KEY);
+        BaseHierarchicalTable treeForDisplay = (BaseHierarchicalTable) tryGetRetainedTable(RE_TREE_KEY);
         if (treeForDisplay == null) {
             treeForDisplay = baseTable;
         }

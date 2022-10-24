@@ -13,12 +13,12 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.ColumnFormattingValues;
-import io.deephaven.engine.table.impl.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.impl.HierarchicalTableInfo;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.TableMap;
@@ -32,7 +32,7 @@ class SnapshotState {
     @SuppressWarnings("unchecked")
     private static final Pair<String, Object>[] EMPTY_CONSTITUENT_ARRAY = new Pair[0];
 
-    private final HierarchicalTable baseTable;
+    private final BaseHierarchicalTable baseTable;
     private final int childColumnIndex;
 
     /**
@@ -97,7 +97,7 @@ class SnapshotState {
                 TableMap tableMap, BitSet childPresenceColumn);
     }
 
-    SnapshotState(HierarchicalTable baseTable, String hierarchicalColumnName) {
+    SnapshotState(BaseHierarchicalTable baseTable, String hierarchicalColumnName) {
         this.baseTable = baseTable;
         this.info = baseTable.getInfo();
         includeConstituents =

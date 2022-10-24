@@ -3,8 +3,9 @@ package io.deephaven.engine.table.impl.hierarchical;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.engine.table.NodeOperationsRecorder;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.hierarchical.FormatOperationsRecorder;
 import io.deephaven.engine.table.impl.TableAdapter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -17,9 +18,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Implementation of {@link NodeOperationsRecorder}.
+ * Implementations of {@link io.deephaven.engine.table.hierarchical.RollupTable.NodeOperationsRecorder} and
+ * {@link io.deephaven.engine.table.hierarchical.TreeTable.NodeOperationsRecorder}.
  */
-class NodeOperationsRecorderImpl implements NodeOperationsRecorder {
+abstract class NodeOperationsRecorderImpl<IMPL_TYPE extends NodeOperationsRecorderImpl<IMPL_TYPE>>
+        implements FormatOperationsRecorder {
 
     private final TableDefinition definition;
 
@@ -42,8 +45,9 @@ class NodeOperationsRecorderImpl implements NodeOperationsRecorder {
         this.recordedSorts = recordedSorts;
     }
 
-    private RecordingTableAdapter makeAdapter() {
-        return new RecordingTableAdapter(this);
+    private RecordingTableAdapter<IMPL_TYPE> makeAdapter() {
+        // noinspection unchecked
+        return new RecordingTableAdapter<>((IMPL_TYPE) this);
     }
 
     private NodeOperationsRecorderImpl withFormats(@NotNull final Collection<? extends Selectable> formats) {
@@ -77,102 +81,134 @@ class NodeOperationsRecorderImpl implements NodeOperationsRecorder {
     }
 
     @Override
-    public NodeOperationsRecorder formatColumns(String... columnFormats) {
+    public IMPL_TYPE formatColumns(String... columnFormats) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.formatColumns(columnFormats);
         return adapter.getRecorder();
     }
 
     @Override
-    public NodeOperationsRecorder formatRowWhere(String condition, String formula) {
+    public IMPL_TYPE formatRowWhere(String condition, String formula) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.formatRowWhere(condition, formula);
         return adapter.getRecorder();
     }
 
     @Override
-    public NodeOperationsRecorder formatColumnWhere(String columnName, String condition, String formula) {
+    public IMPL_TYPE formatColumnWhere(String columnName, String condition, String formula) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.formatColumnWhere(columnName, condition, formula);
         return adapter.getRecorder();
     }
 
     @Override
-    public NodeOperationsRecorder sort(String... columnsToSortBy) {
+    public IMPL_TYPE sort(String... columnsToSortBy) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.sort(columnsToSortBy);
         return adapter.getRecorder();
     }
 
     @Override
-    public NodeOperationsRecorder sortDescending(String... columnsToSortBy) {
+    public IMPL_TYPE sortDescending(String... columnsToSortBy) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.sort(columnsToSortBy);
         return adapter.getRecorder();
     }
 
     @Override
-    public NodeOperationsRecorder sort(Collection<SortColumn> columnsToSortBy) {
+    public IMPL_TYPE sort(Collection<SortColumn> columnsToSortBy) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.sort(columnsToSortBy);
         return adapter.getRecorder();
     }
 
     @Override
-    public NodeOperationsRecorder where(String... filters) {
+    public IMPL_TYPE where(String... filters) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.where(filters);
         return adapter.getRecorder();
     }
 
     @Override
-    public NodeOperationsRecorder where(Collection<? extends Filter> filters) {
+    public IMPL_TYPE where(Collection<? extends Filter> filters) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.where(filters);
         return adapter.getRecorder();
     }
 
     @Override
-    public NodeOperationsRecorder where(Filter... filters) {
+    public IMPL_TYPE where(Filter... filters) {
         final RecordingTableAdapter adapter = makeAdapter();
         adapter.where(filters);
         return adapter.getRecorder();
     }
 
-    private static final class RecordingTableAdapter implements TableAdapter {
+    private static abstract class RecordingTableAdapter implements TableAdapter {
 
-        private NodeOperationsRecorderImpl recorder;
+        private final TableDefinition definition;
 
-        RecordingTableAdapter(@NotNull final NodeOperationsRecorderImpl recorder) {
-            this.recorder = recorder;
+        RecordingTableAdapter(@NotNull final TableDefinition definition) {
+            this.definition = definition;
         }
+    }
 
-        private NodeOperationsRecorderImpl getRecorder() {
-            return recorder;
-        }
+    private static final class FormatRecordingTableAdapter extends RecordingTableAdapter {
 
-        @Override
-        public TableDefinition getDefinition() {
-            return recorder.definition;
-        }
+        private Collection<? extends Selectable> formatColumns;
 
-        @Override
-        public RecordingTableAdapter sort(Collection<SortColumn> columnsToSortBy) {
-            recorder = recorder.withSorts(columnsToSortBy);
-            return this;
+        private FormatRecordingTableAdapter(@NotNull final TableDefinition definition) {
+            super(definition);
         }
 
         @Override
-        public RecordingTableAdapter where(Collection<? extends Filter> filters) {
-            recorder = recorder.withFilters(filters);
-            return this;
-        }
-
-        @Override
-        public RecordingTableAdapter updateView(Collection<? extends Selectable> columns) {
+        public Table updateView(@NotNull final Collection<? extends Selectable> columns) {
             // NB: This is only reachable from formatColumns right now.
-            recorder = recorder.withFormats(columns);
+            this.formatColumns = columns;
             return this;
+        }
+
+        private Stream<? extends SelectColumn> selectColumns() {
+            final SelectColumn[] selectColumns = SelectColumn.from(formatColumns);
+            SelectAndViewAnalyzer.initializeSelectColumns(getDefinition().getColumnNameMap(), selectColumns);
+            return Stream.of(selectColumns);
+        }
+    }
+
+    private static final class SortRecordingTableAdapter extends RecordingTableAdapter {
+
+        private Collection<SortColumn> sortColumns;
+
+        private SortRecordingTableAdapter(@NotNull TableDefinition definition) {
+            super(definition);
+        }
+
+        @Override
+        public Table sort(@NotNull final Collection<SortColumn> columnsToSortBy) {
+            this.sortColumns = columnsToSortBy;
+            return this;
+        }
+
+        private Stream<SortColumn> sortColumns() {
+            return sortColumns.stream();
+        }
+    }
+
+    private static final class FilterRecordingTableAdapter extends RecordingTableAdapter {
+
+        private Collection<? extends Filter> filters;
+
+        FilterRecordingTableAdapter(@NotNull final TableDefinition definition) {
+            super(definition);
+        }
+
+        @Override
+        public Table where(@NotNull final Collection<? extends Filter> filters) {
+            this.filters = filters;
+            return this;
+        }
+
+        private Stream<? extends WhereFilter> whereFilters() {
+            return Stream.of(WhereFilter.from(filters)).peek(wf -> wf.init(getDefinition()));
         }
     }
 }
