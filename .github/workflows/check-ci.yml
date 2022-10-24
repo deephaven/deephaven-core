@@ -51,7 +51,7 @@ jobs:
           name: check-ci-results
           path: |
             **/build/test-results/**
-            !**/test*/binary/**
+            !**/build/test-results/**/binary/**
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@v3

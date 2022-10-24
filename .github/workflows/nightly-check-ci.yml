@@ -68,7 +68,7 @@ jobs:
           path: |
             **/build/test-results/**
             **/build/reports/tests/**
-            !**/test*/binary/**
+            !**/build/test-results/**/binary/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v3
