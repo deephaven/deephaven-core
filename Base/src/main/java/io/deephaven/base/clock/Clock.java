@@ -37,9 +37,6 @@ public interface Clock {
      * The resolution is dependent on the JVM and underlying implementation. The resolution is greater than or equal to
      * {@link #currentTimeMillis()}.
      *
-     * <p>
-     * If you don't need microsecond resolution, prefer {@link #currentTimeMillis()}.
-     *
      * @return epoch microseconds
      */
     long currentTimeMicros();
@@ -51,9 +48,6 @@ public interface Clock {
      * The resolution is dependent on the JVM and underlying implementation. The resolution is greater than or equal to
      * {@link #currentTimeMicros()} and {@link #currentTimeMillis()}.
      *
-     * <p>
-     * If you don't need nanosecond resolution, prefer {@link #currentTimeMillis()}.
-     *
      * @return epoch nanoseconds
      */
     long currentTimeNanos();
@@ -63,6 +57,9 @@ public interface Clock {
      *
      * <p>
      * Has resolution equal to {@link #currentTimeNanos()}.
+     *
+     * <p>
+     * If you don't need the resolution provided by {@link #currentTimeNanos()}, prefer {@link #instantMillis()}.
      *
      * @return the instant
      */
