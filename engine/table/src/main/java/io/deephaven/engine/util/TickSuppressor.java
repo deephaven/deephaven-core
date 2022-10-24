@@ -64,7 +64,7 @@ public class TickSuppressor {
                 resultTable.notifyListeners(downstream);
             }
         };
-        input.listenForUpdates(listener);
+        input.addUpdateListener(listener);
         return resultTable;
     }
 
@@ -222,7 +222,7 @@ public class TickSuppressor {
                         resultTable.notifyListeners(downstream);
                     }
                 };
-        coalesced.listenForUpdates(listener);
+        coalesced.addUpdateListener(listener);
 
         return resultTable;
     }

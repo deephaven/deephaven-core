@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Test;
@@ -234,9 +233,9 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             this.sourceTable = (QueryTable) sourceTable;
             listener = factory.newListener(this.sourceTable);
             if (listener instanceof ShiftObliviousListener) {
-                this.sourceTable.listenForUpdates((ShiftObliviousListener) listener);
+                this.sourceTable.addUpdateListener((ShiftObliviousListener) listener);
             } else if (listener instanceof SimpleListener) {
-                this.sourceTable.listenForUpdates((TableUpdateListener) listener);
+                this.sourceTable.addUpdateListener((TableUpdateListener) listener);
             } else {
                 throw new IllegalArgumentException("Listener type unsupported: " + listener.getClass().getName());
             }
@@ -253,7 +252,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                             TestCase.fail(originalException.getMessage());
                         }
                     };
-            validatorTable.listenForUpdates(validatorTableListener);
+            validatorTable.addUpdateListener(validatorTableListener);
 
             showWithRowSet(sourceTable);
         }

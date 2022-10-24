@@ -10,6 +10,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.ByteUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,10 +22,13 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -228,34 +232,34 @@ public class QueryCompiler {
             @NotNull final String packageNameRoot,
             @Nullable final StringBuilder codeLog,
             @NotNull final Map<String, Class<?>> parameterClasses) {
-        CompletableFuture<Class<?>> promise;
-        final boolean promiseAlreadyMade;
+        CompletableFuture<Class<?>> future;
+        final boolean alreadyExists;
 
         synchronized (this) {
-            promise = knownClasses.get(classBody);
-            if (promise != null) {
-                promiseAlreadyMade = true;
+            future = knownClasses.get(classBody);
+            if (future != null) {
+                alreadyExists = true;
             } else {
-                promise = new CompletableFuture<>();
-                knownClasses.put(classBody, promise);
-                promiseAlreadyMade = false;
+                future = new CompletableFuture<>();
+                knownClasses.put(classBody, future);
+                alreadyExists = false;
             }
         }
 
-        // Someone else has already made the promise. I'll just wait for the answer.
-        if (promiseAlreadyMade) {
+        // Someone else has already made the future. I'll just wait for the answer.
+        if (alreadyExists) {
             try {
-                return promise.get();
+                return future.get();
             } catch (InterruptedException | ExecutionException error) {
                 throw new UncheckedDeephavenException(error);
             }
         }
 
-        // It's my job to fulfill the promise
+        // It's my job to fulfill the future.
         try {
-            return compileHelper(className, classBody, packageNameRoot, codeLog, parameterClasses);
+            return compileHelper(className, classBody, packageNameRoot, codeLog, parameterClasses, future);
         } catch (RuntimeException e) {
-            promise.completeExceptionally(e);
+            future.completeExceptionally(e);
             throw e;
         }
     }
@@ -409,23 +413,23 @@ public class QueryCompiler {
         return sb.toString();
     }
 
-    private WritableURLClassLoader getClassLoader() {
-        return ucl;
-    }
-
     private Class<?> compileHelper(@NotNull final String className,
             @NotNull final String classBody,
             @NotNull final String packageNameRoot,
             @Nullable final StringBuilder codeLog,
-            @NotNull final Map<String, Class<?>> parameterClasses) {
-        // NB: We include class name hash in order to (hopefully) account for case insensitive file systems.
-        final int classNameHash = className.hashCode();
-        final int classBodyHash = classBody.hashCode();
+            @NotNull final Map<String, Class<?>> parameterClasses,
+            @NotNull final CompletableFuture<Class<?>> resultFuture) {
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Unable to create SHA-256 hashing digest", e);
+        }
+        final String basicHashText =
+                ByteUtils.byteArrToHex(digest.digest(classBody.getBytes(StandardCharsets.UTF_8)));
 
         for (int pi = 0; pi < MAX_CLASS_COLLISIONS; ++pi) {
-            final String packageNameSuffix = "c"
-                    + (classBodyHash < 0 ? "m" : "") + (classBodyHash & Integer.MAX_VALUE)
-                    + (classNameHash < 0 ? "n" : "") + (classNameHash & Integer.MAX_VALUE)
+            final String packageNameSuffix = "c_" + basicHashText
                     + (pi == 0 ? "" : ("p" + pi))
                     + "v" + JAVA_CLASS_VERSION;
             final String packageName = (packageNameRoot.isEmpty()
@@ -468,35 +472,22 @@ public class QueryCompiler {
 
             final String identifyingFieldValue = loadIdentifyingField(result);
 
-            // We have a class. It either contains the formula we are looking for (cases 2, A, and B) or a different
-            // formula with the same name (cases 3 and C). In either case, we should store the result in our cache,
-            // either fulfilling an existing promise or making a new, fulfilled promise.
-            synchronized (this) {
-                // Note we are doing something kind of subtle here. We are removing an entry whose key was matched by
-                // value equality and replacing it with a value-equal but reference-different string that is a static
-                // member of the class we just loaded. This should be easier on the garbage collector because we are
-                // replacing a calculated value with a classloaded value and so in effect we are "canonicalizing" the
-                // string. This is important because these long strings stay in knownClasses forever.
-                CompletableFuture<Class<?>> p = knownClasses.remove(identifyingFieldValue);
-                if (p == null) {
-                    // If we encountered a different class than the one we're looking for, make a fresh promise and
-                    // immediately fulfill it. This is for the purpose of populating the cache in case someone comes
-                    // looking for that class later. Rationale: we already did all the classloading work; no point in
-                    // throwing it away now, even though this is not the class we're looking for.
-                    p = new CompletableFuture<>();
-                }
-                knownClasses.put(identifyingFieldValue, p);
-                // It's also possible that some other code has already fulfilled this promise with exactly the same
-                // class. That's ok though: the promise code does not reject multiple sets to the identical value.
-                p.complete(result);
-            }
-
-            // If the class we found was indeed the class we were looking for, then return it
+            // If the class we found was indeed the class we were looking for, then complete the future and return it.
             if (classBody.equals(identifyingFieldValue)) {
-                // Cases 2, A, and B.
                 if (codeLog != null) {
                     // If the caller wants a textual copy of the code we either made, or just found in the cache.
                     codeLog.append(makeFinalCode(className, classBody, packageName));
+                }
+                resultFuture.complete(result);
+                synchronized (this) {
+                    // Note we are doing something kind of subtle here. We are removing an entry whose key was matched
+                    // by value equality and replacing it with a value-equal but reference-different string that is a
+                    // static member of the class we just loaded. This should be easier on the garbage collector because
+                    // we are replacing a calculated value with a classloaded value and so in effect we are
+                    // "canonicalizing" the string. This is important because these long strings stay in knownClasses
+                    // forever.
+                    knownClasses.remove(identifyingFieldValue);
+                    knownClasses.put(identifyingFieldValue, resultFuture);
                 }
                 return result;
             }
@@ -504,7 +495,7 @@ public class QueryCompiler {
         }
         throw new IllegalStateException("Found too many collisions for package name root " + packageNameRoot
                 + ", class name=" + className
-                + ", class body hash=" + classBodyHash + " - contact Deephaven support!");
+                + ", class body hash=" + basicHashText + " - contact Deephaven support!");
     }
 
     private Class<?> tryLoadClassByFqName(String fqClassName, Map<String, Class<?>> parameterClasses) {

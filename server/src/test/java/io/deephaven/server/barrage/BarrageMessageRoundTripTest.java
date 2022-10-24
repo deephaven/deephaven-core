@@ -69,6 +69,7 @@ import static io.deephaven.engine.table.impl.TstUtils.c;
 import static io.deephaven.engine.table.impl.TstUtils.getTable;
 import static io.deephaven.engine.table.impl.TstUtils.i;
 import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 
 @Category(OutOfBandTest.class)
 public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
@@ -204,7 +205,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (viewport == null) {
                 replicatedTUV = TableUpdateValidator.make(barrageTable);
                 replicatedTUVListener = new FailureListener("Replicated Table Update Validator");
-                replicatedTUV.getResultTable().listenForUpdates(replicatedTUVListener);
+                replicatedTUV.getResultTable().addUpdateListener(replicatedTUVListener);
             } else {
                 // the TUV is unaware of the viewport and gets confused about which data should be valid.
                 // instead we rely on the validation of the content in the viewport between the consumer and expected
@@ -363,7 +364,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
             originalTUV = TableUpdateValidator.make(originalTable);
             originalTUVListener = new FailureListener("Original Table Update Validator");
-            originalTUV.getResultTable().listenForUpdates(originalTUVListener);
+            originalTUV.getResultTable().addUpdateListener(originalTUVListener);
         }
 
         @Override
@@ -738,7 +739,6 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     // These test mid-cycle subscription changes and snapshot content
-
     private abstract class SubscriptionChangingHelper extends SharedProducerForAllClients {
         SubscriptionChangingHelper(final int numProducerCoalesce, final int numConsumerCoalesce, final int size,
                 final int seed, final MutableInt numSteps) {
@@ -1194,6 +1194,83 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         remoteNugget.flushClientEvents();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         remoteNugget.validate("new viewport with modification");
+    }
+
+    public void testCoalescingLargeUpdates() {
+        final BitSet allColumns = new BitSet(1);
+        allColumns.set(0);
+
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(0).toTracking(), c("intCol", 0));
+        TstUtils.removeRows(queryTable, i(0));
+
+        final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
+
+        // Create a few interesting clients around the mapping boundary.
+        final int mb = SNAPSHOT_CHUNK_SIZE;
+        final int sz = 2 * mb;
+        final RemoteClient[] remoteClients = new RemoteClient[] {
+                remoteNugget.newClient(null, allColumns, "full"),
+                remoteNugget.newClient(RowSetFactory.fromRange(0, 100), allColumns, "start"),
+                remoteNugget.newClient(RowSetFactory.fromRange(mb - 100, mb + 100), allColumns, "middle"),
+                remoteNugget.newClient(RowSetFactory.fromRange(sz - 100, sz + 100), allColumns, "end"),
+        };
+
+        // Obtain snapshot of original viewport.
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("original viewport");
+
+        // Add all of our new rows spread over multiple deltas.
+        final int numDeltas = 4;
+        for (int ii = 0; ii < numDeltas; ++ii) {
+            final RowSetBuilderSequential newRowsBuilder = RowSetFactory.builderSequential();
+            final Integer[] values = new Integer[sz / numDeltas];
+            for (int jj = ii; jj < sz; jj += numDeltas) {
+                newRowsBuilder.appendKey(jj);
+                values[jj / numDeltas] = ii;
+            }
+            final RowSet newRows = newRowsBuilder.build();
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(queryTable, newRows, c("intCol", values));
+                queryTable.notifyListeners(new TableUpdateImpl(
+                        newRows,
+                        RowSetFactory.empty(),
+                        RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+            });
+        }
+
+        // Coalesce these to ensure mappings larger than a single chunk are handled correctly.
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("large add rows update");
+
+        // Modify all of our rows spread over multiple deltas.
+        for (int ii = 0; ii < numDeltas; ++ii) {
+            final RowSetBuilderSequential modRowsBuilder = RowSetFactory.builderSequential();
+            final Integer[] values = new Integer[sz / numDeltas];
+            for (int jj = ii; jj < sz; jj += numDeltas) {
+                modRowsBuilder.appendKey(jj);
+                values[jj / numDeltas] = numDeltas + ii;
+            }
+            final RowSet modRows = modRowsBuilder.build();
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(queryTable, modRows, c("intCol", values));
+                queryTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(),
+                        RowSetFactory.empty(),
+                        modRows,
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+            });
+        }
+
+        // Coalesce these to ensure mappings larger than a single chunk are handled correctly.
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("large mod rows update");
     }
 
     public void testAllUniqueChunkTypeColumnSourcesWithValidityBuffers() {

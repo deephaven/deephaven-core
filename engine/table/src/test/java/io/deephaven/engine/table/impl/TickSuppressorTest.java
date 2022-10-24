@@ -124,7 +124,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
 
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(suppressed);
-        suppressed.listenForUpdates(listener);
+        suppressed.addUpdateListener(listener);
 
         assertEquals(0, listener.getCount());
 

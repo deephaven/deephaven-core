@@ -194,7 +194,6 @@ public class BarrageStreamReader implements StreamReader {
                 // noinspection UnstableApiUsage
                 try (final LittleEndianDataInputStream ois =
                         new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size))) {
-                    final MutableInt bufferOffset = new MutableInt();
                     final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                                     i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
@@ -209,7 +208,6 @@ public class BarrageStreamReader implements StreamReader {
                             // our parsers handle overhanging buffers
                             length += Math.max(0, nextOffset - offset - length);
                         }
-                        bufferOffset.setValue(offset + length);
                         bufferInfo.add(length);
                     }
                     final TLongIterator bufferInfoIter = bufferInfo.iterator();
@@ -270,7 +268,9 @@ public class BarrageStreamReader implements StreamReader {
                             final int chunkOffset;
                             long rowOffset = numModRowsRead - lastModStartIndex;
                             // this batch might overflow the chunk
-                            if (rowOffset + Math.min(remaining, batch.length()) > chunkSize) {
+                            final int numRowsToRead = LongSizedDataStructure.intSize("BarrageStreamReader",
+                                    Math.min(remaining, batch.length()));
+                            if (rowOffset + numRowsToRead > chunkSize) {
                                 lastModStartIndex += chunkSize;
 
                                 // create a new chunk before trying to write again
@@ -288,7 +288,7 @@ public class BarrageStreamReader implements StreamReader {
                             mcd.data.set(lastChunkIndex,
                                     ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
                                             columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
-                                            chunk, chunkOffset, chunkSize));
+                                            chunk, chunkOffset, numRowsToRead));
                         }
                         numModRowsRead += batch.length();
                     }

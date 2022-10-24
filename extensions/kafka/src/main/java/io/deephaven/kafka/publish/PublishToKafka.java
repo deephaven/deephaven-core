@@ -105,7 +105,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
         // Install a listener to publish subsequent updates
         if (table.isRefreshing()) {
-            table.listenForUpdates(publishListener = new PublishListener(
+            table.addUpdateListener(publishListener = new PublishListener(
                     getModifiedColumnSet(table, keyColumns),
                     getModifiedColumnSet(table, valueColumns)));
             manage(publishListener);

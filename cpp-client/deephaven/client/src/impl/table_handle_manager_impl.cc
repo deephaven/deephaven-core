@@ -10,7 +10,6 @@
 
 using deephaven::client::utility::Callback;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::FailureCallback;
 using deephaven::client::utility::SFCallback;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;

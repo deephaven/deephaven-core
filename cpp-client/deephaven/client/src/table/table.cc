@@ -99,7 +99,7 @@ public:
 
   std::shared_ptr<RowSequence> take(size_t size) const final;
   std::shared_ptr<RowSequence> drop(size_t size) const final;
-  void forEachChunk(const std::function<void(uint64_t, uint64_t)> &f) const final;
+  void forEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const final;
 
   size_t size() const final {
     return end_ - begin_;
@@ -283,7 +283,7 @@ std::shared_ptr<RowSequence> ArrayRowSequence::drop(size_t size) const {
   return create(data_, begin_ + sizeToUse, end_);
 }
 
-void ArrayRowSequence::forEachChunk(const std::function<void(uint64_t, uint64_t)> &f) const {
+void ArrayRowSequence::forEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const {
   const auto *rangeStart = begin_;
   while (rangeStart != end_) {
     auto beginKey = *rangeStart;

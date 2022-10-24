@@ -258,7 +258,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 }
             };
 
-            resultTable.listenForUpdates(listener);
+            resultTable.addUpdateListener(listener);
 
             if (blockUntilComplete) {
                 while (!completed && exceptionWhileCompleting == null) {

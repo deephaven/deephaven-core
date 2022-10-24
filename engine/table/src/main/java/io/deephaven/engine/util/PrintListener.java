@@ -55,7 +55,7 @@ public class PrintListener extends InstrumentedTableUpdateListener {
         this.description = description;
         this.table = table;
         this.rowCount = rowCount;
-        table.listenForUpdates(this);
+        table.addUpdateListener(this);
     }
 
     @Override

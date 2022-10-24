@@ -600,7 +600,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 cj2);
 
         final ErrorListener listener = new ErrorListener(cj2);
-        cj2.listenForUpdates(listener);
+        cj2.addUpdateListener(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -643,7 +643,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 cj2);
 
         final ErrorListener listener = new ErrorListener(cj2);
-        cj2.listenForUpdates(listener);
+        cj2.addUpdateListener(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
