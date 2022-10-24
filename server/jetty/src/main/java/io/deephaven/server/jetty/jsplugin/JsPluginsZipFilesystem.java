@@ -71,8 +71,6 @@ public final class JsPluginsZipFilesystem implements JsPlugins, JsPluginRegistra
         jsPlugins.setInitParameter("resourceBase", filesystem.toString());
         jsPlugins.setInitParameter("pathInfoOnly", "true");
         jsPlugins.setInitParameter("dirAllowed", "false");
-        // etag support picked up via io.deephaven.server.jetty.JettyBackedGrpcServer
-        // jsPlugins.setInitParameter("etags", "true");
         jsPlugins.setAsyncSupported(true);
         return jsPlugins;
     }

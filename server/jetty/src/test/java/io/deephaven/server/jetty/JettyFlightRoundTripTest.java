@@ -59,7 +59,6 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                     client.GET(String.format("http://localhost:%d/js-plugins/manifest.json", port));
             assertThat(response.getStatus()).isEqualTo(200);
             assertThat(response.getContentAsString()).isEqualTo("{\"plugins\":[]}");
-            assertThat(response.getHeaders().contains("ETag")).isTrue();
         } finally {
             client.stop();
         }
