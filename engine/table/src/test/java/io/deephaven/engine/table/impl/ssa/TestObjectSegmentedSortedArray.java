@@ -170,7 +170,7 @@ public class TestObjectSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asObject.listenForUpdates(asObjectListener);
+            asObject.addUpdateListener(asObjectListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() ->
@@ -213,7 +213,7 @@ public class TestObjectSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asObject.listenForUpdates(asObjectListener);
+            asObject.addUpdateListener(asObjectListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

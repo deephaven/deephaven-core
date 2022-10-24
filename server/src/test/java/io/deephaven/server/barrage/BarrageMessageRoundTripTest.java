@@ -205,7 +205,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (viewport == null) {
                 replicatedTUV = TableUpdateValidator.make(barrageTable);
                 replicatedTUVListener = new FailureListener("Replicated Table Update Validator");
-                replicatedTUV.getResultTable().listenForUpdates(replicatedTUVListener);
+                replicatedTUV.getResultTable().addUpdateListener(replicatedTUVListener);
             } else {
                 // the TUV is unaware of the viewport and gets confused about which data should be valid.
                 // instead we rely on the validation of the content in the viewport between the consumer and expected
@@ -364,7 +364,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
             originalTUV = TableUpdateValidator.make(originalTable);
             originalTUVListener = new FailureListener("Original Table Update Validator");
-            originalTUV.getResultTable().listenForUpdates(originalTUVListener);
+            originalTUV.getResultTable().addUpdateListener(originalTUVListener);
         }
 
         @Override

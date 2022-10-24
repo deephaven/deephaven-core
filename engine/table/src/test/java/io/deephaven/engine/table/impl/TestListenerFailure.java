@@ -41,7 +41,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         assertTrue(updated.isFailed());
 
         try {
-            updated.listenForUpdates(new ErrorListener((QueryTable) updated));
+            updated.addUpdateListener(new ErrorListener((QueryTable) updated));
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
@@ -49,7 +49,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         try {
             updated
-                    .listenForUpdates(
+                    .addUpdateListener(
                             new ShiftObliviousInstrumentedListenerAdapter("Dummy", (QueryTable) updated, false) {
                                 @Override
                                 public void onUpdate(RowSet added, RowSet removed, RowSet modified) {}

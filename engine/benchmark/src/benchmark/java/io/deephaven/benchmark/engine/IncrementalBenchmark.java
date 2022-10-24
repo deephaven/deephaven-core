@@ -10,7 +10,6 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.RollingReleaseFilter;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -93,7 +92,7 @@ class IncrementalBenchmark {
                             System.exit(1);
                         }
                     };
-            ((Table) result).listenForUpdates(failureListener);
+            ((Table) result).addUpdateListener(failureListener);
         } else {
             failureListener = null;
         }

@@ -36,7 +36,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
-        tuv.getResultTable().listenForUpdates(failureListener);
+        tuv.getResultTable().addUpdateListener(failureListener);
 
         assertTableEquals(inputUpdated, frozen);
         assertEquals(String.class, frozen.getDefinition().getColumn("SStr").getDataType());
@@ -90,7 +90,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
-        tuv.getResultTable().listenForUpdates(failureListener);
+        tuv.getResultTable().addUpdateListener(failureListener);
 
         assertTableEquals(input, frozen);
 
@@ -117,7 +117,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
-        tuv.getResultTable().listenForUpdates(failureListener);
+        tuv.getResultTable().addUpdateListener(failureListener);
         assertTableEquals(input, frozen);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

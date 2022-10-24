@@ -690,8 +690,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default void listenForUpdates(ShiftObliviousListener listener) {
-        listenForUpdates(listener, false);
+    default void addUpdateListener(ShiftObliviousListener listener) {
+        addUpdateListener(listener, false);
     }
 
     @Override

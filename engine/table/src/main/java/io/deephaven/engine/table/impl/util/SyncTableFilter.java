@@ -153,7 +153,7 @@ public class SyncTableFilter {
 
             final ListenerRecorder listenerRecorder =
                     new ListenerRecorder("SyncTableFilter(" + std.name + ")", std.table, results[ii]);
-            std.table.listenForUpdates(listenerRecorder);
+            std.table.addUpdateListener(listenerRecorder);
             recorders.add(listenerRecorder);
 
             consumeRows(ii, std.table.getRowSet());

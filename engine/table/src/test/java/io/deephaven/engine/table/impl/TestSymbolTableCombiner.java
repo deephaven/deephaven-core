@@ -82,7 +82,7 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
                         super.onFailureInternal(originalException, sourceEntry);
                     }
                 };
-        symbolTable.listenForUpdates(symbolTableListener);
+        symbolTable.addUpdateListener(symbolTableListener);
 
         for (int step = 0; step < 750; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {

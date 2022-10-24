@@ -93,7 +93,7 @@ public class UnionSourceManager {
             resultTable.addParentReference(mergedListener);
 
             constituentChangesListener = new ConstituentChangesListenerRecorder(coalescedPartitions);
-            coalescedPartitions.listenForUpdates(constituentChangesListener);
+            coalescedPartitions.addUpdateListener(constituentChangesListener);
             listenerRecorders.offer(constituentChangesListener);
 
             updateCommitter = new UpdateCommitter<>(this, usm -> usm.unionRedirection.copyCurrToPrev());
@@ -112,7 +112,7 @@ public class UnionSourceManager {
                     assert refreshing;
                     final ConstituentListenerRecorder constituentListener =
                             new ConstituentListenerRecorder(constituent);
-                    constituent.listenForUpdates(constituentListener);
+                    constituent.addUpdateListener(constituentListener);
                     listenerRecorders.offer(constituentListener);
                 }
             });
@@ -464,7 +464,7 @@ public class UnionSourceManager {
         private void processAdd(@NotNull final Table addedConstituent) {
             if (addedConstituent.isRefreshing()) {
                 final ConstituentListenerRecorder addedListener = new ConstituentListenerRecorder(addedConstituent);
-                addedConstituent.listenForUpdates(addedListener);
+                addedConstituent.addUpdateListener(addedListener);
                 synchronized (listenerRecorders) {
                     listenerRecorders.insertBefore(addedListener, nextListener);
                 }

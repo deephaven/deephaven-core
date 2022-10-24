@@ -93,23 +93,23 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
                         intCol("SFB", 2, 1, 2, 1, 2), intCol("Sentinel", 1, 2, 3, 4, 5),
                         col("DummyBucket", "A", "A", "A", "A", "A"));
         // final FuzzerPrintListener pl = new FuzzerPrintListener("source", source);
-        // source.listenForUpdates(pl);
+        // source.addUpdateListener(pl);
 
         final QueryTable sfb = (QueryTable) source.aggAllBy(AggSpec.sortedFirst("SFB"));
         final QueryTable bucketed = (QueryTable) source.aggAllBy(AggSpec.sortedFirst("SFB"), "DummyBucket");
         // final FuzzerPrintListener plsfb = new FuzzerPrintListener("sfb", sfb);
-        // sfb.listenForUpdates(plsfb);
+        // sfb.addUpdateListener(plsfb);
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("source validator", source);
         final FailureListener failureListener = new FailureListener();
-        tuv.getResultTable().listenForUpdates(failureListener);
+        tuv.getResultTable().addUpdateListener(failureListener);
         final TableUpdateValidator tuvsfb = TableUpdateValidator.make("sfb validator", sfb);
         final FailureListener failureListenerSfb = new FailureListener();
-        tuvsfb.getResultTable().listenForUpdates(failureListenerSfb);
+        tuvsfb.getResultTable().addUpdateListener(failureListenerSfb);
 
         final TableUpdateValidator tuvbuck = TableUpdateValidator.make("sfb validator", bucketed);
         final FailureListener failureListenerBuck = new FailureListener();
-        tuvbuck.getResultTable().listenForUpdates(failureListenerBuck);
+        tuvbuck.getResultTable().addUpdateListener(failureListenerBuck);
 
         showWithRowSet(sfb);
         TestCase.assertEquals(2, sfb.getColumn("Sentinel").get(0));
