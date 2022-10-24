@@ -786,10 +786,12 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(2.0, percentile(0.00, new ${pt.primitive}[]{4,2,3}));
         assertEquals(3.0, percentile(0.50, new ${pt.primitive}[]{4,2,3}));
         assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.primitive}[])null));
+        assertEquals(NULL_DOUBLE, percentile(0.25, new ${pt.primitive}[]{}));
 
         assertEquals(2.0, percentile(0.00, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{4,2,3})));
         assertEquals(3.0, percentile(0.50, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{4,2,3})));
         assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.dbArray}) null));
+        assertEquals(NULL_DOUBLE, percentile(0.50, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{})));
 
         try {
             percentile(-1, new ${pt.primitive}[]{4,2,3});
