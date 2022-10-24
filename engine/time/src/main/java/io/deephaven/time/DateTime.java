@@ -68,13 +68,13 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * Create a new date time via {@link Clock#currentTimeMillis()}.
      *
      * <p>
-     * Equivalent to {@code new DateTime(clock.currentTimeMillis() * 1_000_000)}.
+     * Equivalent to {@code new DateTime(Math.multiplyExact(clock.currentTimeMillis(), 1_000_000))}.
      *
      * @param clock the clock
      * @return the date time
      */
     public static DateTime ofMillis(Clock clock) {
-        return new DateTime(clock.currentTimeMillis() * 1_000_000);
+        return new DateTime(Math.multiplyExact(clock.currentTimeMillis(), 1_000_000));
     }
 
     /**

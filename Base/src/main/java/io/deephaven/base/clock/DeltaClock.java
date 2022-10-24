@@ -47,17 +47,17 @@ public final class DeltaClock implements Clock {
 
     @Override
     public long currentTimeMillis() {
-        return delegate.currentTimeMillis() + deltaNanos / 1_000_000;
+        return Math.addExact(delegate.currentTimeMillis(), deltaNanos / 1_000_000);
     }
 
     @Override
     public long currentTimeMicros() {
-        return delegate.currentTimeMicros() + deltaNanos / 1_000;
+        return Math.addExact(delegate.currentTimeMicros(), deltaNanos / 1_000);
     }
 
     @Override
     public long currentTimeNanos() {
-        return delegate.currentTimeNanos() + deltaNanos;
+        return Math.addExact(delegate.currentTimeNanos(), deltaNanos);
     }
 
     @Override
