@@ -335,6 +335,7 @@ project(':hotspot-impl').projectDir = file('hotspot-impl')
 include ':authentication'
 
 include ':clock'
+include ':clock-impl'
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {

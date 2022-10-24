@@ -1,0 +1,20 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+description 'Implementation for the Clock service to obtain allocation-free precise time.'
+
+dependencies {
+    implementation project(':clock')
+    Classpaths.inheritAutoService(project)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
+    // Explicitly set the source compatibility so gradle will invoke javac with `-source 11` instead of `--release`
+    sourceCompatibility = 11
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('-add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED')
+}

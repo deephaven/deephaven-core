@@ -81,8 +81,10 @@ def start_jvm(
     required_jvm_args = [
         # Allow netty to access java.nio.Buffer fields
         '--add-opens=java.base/java.nio=ALL-UNNAMED',
-        # Allow our hotspotImpl project to access internals
+        # Allow our hotspot-impl project to access internals
         '--add-opens=java.management/sun.management=ALL-UNNAMED',
+        # Allow our clock-impl project to access internals
+        '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED',
     ]
     if jvm_args is None:
         jvm_args = required_jvm_args

@@ -3,93 +3,121 @@
  */
 package io.deephaven.base.clock;
 
-import java.time.Instant;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
 
 /**
- * A clock based off of the current system time.
- *
- * @see java.time.Clock#systemUTC()
+ * A marker interface for {@link Clock} that designates implementations as returning real system time.
  */
-public enum SystemClock implements Clock {
-    INSTANCE;
+public interface SystemClock extends Clock {
+
+    String KEY = "deephaven.systemClock";
+    String DEFAULT = "default";
+    String SERVICE_LOADER = "serviceLoader";
+    String SYSTEM = "system";
+    String SYSTEM_MILLIS = "systemMillis";
 
     /**
-     * {@inheritDoc}
+     * Creates a new system clock, or returns the singleton instance, based on system property {@value KEY} (uses
+     * {@value DEFAULT} if not present).
+     * <table border="1">
+     * <tr>
+     * <th>Property Value</th>
+     * <th>Logic</th>
+     * </tr>
+     * <tr>
+     * <td>{@value DEFAULT}</td>
+     * <td>{@code serviceLoader().orElse(system())}</td>
+     * </tr>
+     * <tr>
+     * <td>{@value SERVICE_LOADER}</td>
+     * <td>{@code serviceLoader().orElseThrow()}</td>
+     * </tr>
+     * <tr>
+     * <td>{@value SYSTEM}</td>
+     * <td>{@code system()}</td>
+     * </tr>
+     * <tr>
+     * <td>{@value SYSTEM_MILLIS}</td>
+     * <td>{@code systemMillis()}</td>
+     * </tr>
+     * <tr>
+     * <td>value</td>
+     * <td>{@code (SystemClock) Class.forName(value).getDeclaredConstructor().newInstance()}</td>
+     * </tr>
+     * </table>
      *
-     * <p>
-     * Equivalent to {@link System#currentTimeMillis()}. This is the same source as {@link java.time.Clock#systemUTC()}.
-     *
-     * @return the current system time in epoch millis
+     * @return a new instance of the system clock
+     * @see #system()
+     * @see #systemMillis()
+     * @see #serviceLoader()
      */
-    @Override
-    public long currentTimeMillis() {
-        // See note in java.time.Clock.SystemClock#millis, this is the same source as java.time.Clock.systemUTC()
-        return System.currentTimeMillis();
+    static SystemClock of() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
+            InstantiationException, IllegalAccessException {
+        final String value = System.getProperty(KEY, DEFAULT);
+        switch (value) {
+            case DEFAULT:
+                return serviceLoader().orElse(system());
+            case SERVICE_LOADER:
+                return serviceLoader().orElseThrow();
+            case SYSTEM:
+                return system();
+            case SYSTEM_MILLIS:
+                return systemMillis();
+            default:
+                return (SystemClock) Class.forName(value).getDeclaredConstructor().newInstance();
+        }
     }
 
     /**
-     * {@inheritDoc}
+     * The system clock, based off of {@link java.time.Clock#systemUTC()}.
      *
-     * <p>
-     * Calculates the time from {@link java.time.Clock#systemUTC()}. If you don't need need microsecond resolution,
-     * prefer {@link #currentTimeMillis()}.
-     *
-     * <p>
-     * Note: this method may allocate.
+     * @return the system clock
+     * @see SystemClockImpl
      */
-    @Override
-    public long currentTimeMicros() {
-        final Instant now = java.time.Clock.systemUTC().instant();
-        return now.getEpochSecond() * 1_000_000 + now.getNano() / 1_000;
+    static SystemClock system() {
+        return SystemClockImpl.INSTANCE;
     }
 
     /**
-     * {@inheritDoc}
+     * The system clock, based off of {@link System#currentTimeMillis()}.
      *
-     * <p>
-     * Calculates the time from {@link java.time.Clock#systemUTC()}. If you don't need nanosecond resolution, prefer
-     * {@link #currentTimeMillis()}.
-     *
-     * <p>
-     * Note: this method may allocate.
+     * @return the millis-based system clock
+     * @see SystemClockMillisImpl
      */
-    @Override
-    public long currentTimeNanos() {
-        final Instant now = java.time.Clock.systemUTC().instant();
-        return now.getEpochSecond() * 1_000_000_000 + now.getNano();
+    static SystemClock systemMillis() {
+        return SystemClockMillisImpl.INSTANCE;
     }
 
     /**
-     * {@inheritDoc}
+     * Uses {@link ServiceLoader#load(Class)} with {@link SystemClock SystemClock.class} to load a system clock.
      *
      * <p>
-     * Equivalent to {@code java.time.Clock.systemUTC().instant()}.
-     */
-    @Override
-    public Instant instantNanos() {
-        return java.time.Clock.systemUTC().instant();
-    }
-
-    /**
-     * {@inheritDoc}
+     * If a {@link ServiceConfigurationError} is thrown, the error will be logged to {@link System#err} and
+     * {@link Optional#empty()} will be returned.
      *
-     * <p>
-     * Equivalent to {@code Instant.ofEpochMilli(System.currentTimeMillis())}.
+     * @return the service loader system clock
+     * @throws IllegalStateException if more than one system clock is registered
      */
-    @Override
-    public Instant instantMillis() {
-        // See note in java.time.Clock.SystemClock#millis, this is the same source as java.time.Clock.systemUTC()
-        return Instant.ofEpochMilli(System.currentTimeMillis());
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>
-     * Equivalent to {@link System#nanoTime()}.
-     */
-    @Override
-    public long nanoTime() {
-        return System.nanoTime();
+    static Optional<SystemClock> serviceLoader() {
+        final Iterator<SystemClock> it = ServiceLoader.load(SystemClock.class).iterator();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        final SystemClock impl;
+        try {
+            impl = it.next();
+        } catch (ServiceConfigurationError e) {
+            e.printStackTrace(System.err);
+            return Optional.empty();
+        }
+        if (it.hasNext()) {
+            throw new IllegalStateException(
+                    "More than one SystemClock has been registered as ServiceLoader implementation");
+        }
+        return Optional.of(impl);
     }
 }

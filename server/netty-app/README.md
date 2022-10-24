@@ -43,6 +43,10 @@ Finally, Gradle can be used to update the build and run the application in a sin
 `--add-opens java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `includeHotspotImpl`
 to `false`.
 
+`server-netty-app` is configured by default to include code that depends on JVM internals via
+`--add-opens java.base/jdk.internal.misc=ALL-UNNAMED`. To disable this, set the gradle property `includeClockImpl`
+to `false`.
+
 ### Configuration / SSL
 
 By default, the server starts up on all interfaces with plaintext port 8080 (port 443 when SSL is enabled), a token

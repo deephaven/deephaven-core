@@ -11,13 +11,12 @@ import java.time.Instant;
 public interface Clock {
 
     /**
-     * The system clock.
+     * The {@link SystemClock}. Provides singleton semantics around {@link SystemClock#of()}.
      *
      * @return the system clock
-     * @see SystemClock
      */
-    static Clock systemUTC() {
-        return SystemClock.INSTANCE;
+    static SystemClock systemUTC() {
+        return SystemClockInstance.INSTANCE;
     }
 
     /**
