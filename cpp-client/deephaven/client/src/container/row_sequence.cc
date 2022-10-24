@@ -18,7 +18,7 @@ public:
 
   std::shared_ptr<RowSequence> take(size_t size) const final;
   std::shared_ptr<RowSequence> drop(size_t size) const final;
-  void forEachChunk(const std::function<void(uint64_t, uint64_t)> &f) const final;
+  void forEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const final;
 
   size_t size() const final {
     return end_ - begin_;
@@ -31,7 +31,7 @@ private:
 }  // namespace
 
 std::shared_ptr<RowSequence> RowSequence::createEmpty() {
-  return RowSequenceBuilder().build();
+  return SequentialRowSequence::create(0, 0);
 }
 
 std::shared_ptr<RowSequence> RowSequence::createSequential(uint64_t begin, uint64_t end) {
@@ -94,7 +94,7 @@ void RowSequenceIterator::refillRanges() {
   auto addRange = [this](uint64_t beginKey, uint64_t endKey) {
     ranges_.emplace_back(beginKey, endKey);
   };
-  thisChunk->forEachChunk(addRange);
+  thisChunk->forEachInterval(addRange);
 }
 
 namespace {
@@ -109,7 +109,7 @@ public:
   std::shared_ptr<RowSequence> take(size_t size) const final;
   std::shared_ptr<RowSequence> drop(size_t size) const final;
 
-  void forEachChunk(const std::function<void(uint64_t beginKey, uint64_t endKey)> &f) const final;
+  void forEachInterval(const std::function<void(uint64_t beginKey, uint64_t endKey)> &f) const final;
 
   size_t size() const final {
     return size_;
@@ -126,7 +126,7 @@ private:
 RowSequenceBuilder::RowSequenceBuilder() = default;
 RowSequenceBuilder::~RowSequenceBuilder() = default;
 
-void RowSequenceBuilder::addRange(uint64_t begin, uint64_t end) {
+void RowSequenceBuilder::addInterval(uint64_t begin, uint64_t end) {
   if (begin > end) {
     auto message = stringf("Malformed range [%o,%o)", begin, end);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
@@ -254,7 +254,7 @@ std::shared_ptr<RowSequence> MyRowSequence::drop(size_t size) const {
   return std::make_shared<MyRowSequence>(ranges_, current, currentOffset, newSize);
 }
 
-void MyRowSequence::forEachChunk(const std::function<void(uint64_t beginKey, uint64_t endKey)> &f)
+void MyRowSequence::forEachInterval(const std::function<void(uint64_t beginKey, uint64_t endKey)> &f)
     const {
   // The code is similar to "drop"
   auto current = beginp_;
@@ -291,7 +291,7 @@ std::shared_ptr<RowSequence> SequentialRowSequence::drop(size_t size) const {
   return create(begin_ + sizeToUse, end_);
 }
 
-void SequentialRowSequence::forEachChunk(const std::function<void(uint64_t, uint64_t)> &f) const {
+void SequentialRowSequence::forEachInterval(const std::function<void(uint64_t, uint64_t)> &f) const {
   f(begin_, end_);
 }
 }  // namespace

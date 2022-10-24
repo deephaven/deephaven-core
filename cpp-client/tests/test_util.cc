@@ -4,6 +4,7 @@
 #include "test_util.h"
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/client/utility/utility.h"
+#include <cstdlib>
 
 using deephaven::client::TableHandle;
 using deephaven::client::utility::okOrThrow;
@@ -114,7 +115,11 @@ TableMakerForTests TableMakerForTests::create() {
 }
 
 Client TableMakerForTests::createClient() {
-  std::string connectionString("localhost:10000");
+  const char *hostptr = std::getenv("DH_HOST");
+  const char *portptr = std::getenv("DH_PORT");
+  std::string host = (hostptr == nullptr) ? "localhost" : hostptr;
+  std::string port = (portptr == nullptr) ? "10000" : portptr;
+  std::string connectionString(host + ":" + port);
   streamf(std::cerr, "Connecting to %o\n", connectionString);
   auto client = Client::connect(connectionString);
   return client;

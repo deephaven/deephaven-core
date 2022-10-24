@@ -428,15 +428,17 @@ bool Server::processNextCompletionQueueItem() {
     std::unique_ptr<CompletionQueueCallback> cqcb(static_cast<CompletionQueueCallback *>(tag));
 
     if (!ok) {
-      cqcb->failureCallback_->onFailure(
-          std::make_exception_ptr(std::runtime_error("Some GRPC network or connection error")));
+      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+          "Some GRPC network or connection error")));
+      cqcb->onFailure(std::move(eptr));
       return true;
     }
 
     const auto &stat = cqcb->status_;
     if (!stat.ok()) {
       auto message = stringf("Error %o. Message: %o", stat.error_code(), stat.error_message());
-      cqcb->failureCallback_->onFailure(std::make_exception_ptr(std::runtime_error(message)));
+      auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(message)));
+      cqcb->onFailure(std::move(eptr));
       return true;
     }
 
@@ -451,9 +453,7 @@ bool Server::processNextCompletionQueueItem() {
   return true;
 }
 
-CompletionQueueCallback::CompletionQueueCallback(std::shared_ptr<FailureCallback> failureCallback) :
-    failureCallback_(std::move(failureCallback)) {}
-
+CompletionQueueCallback::CompletionQueueCallback() = default;
 CompletionQueueCallback::~CompletionQueueCallback() = default;
 
 namespace {

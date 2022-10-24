@@ -72,7 +72,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(NoCacheFilter.class, "/ide/*", EnumSet.noneOf(DispatcherType.class));
         context.addFilter(NoCacheFilter.class, "/jsapi/*", EnumSet.noneOf(DispatcherType.class));
         context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
-        context.addFilter(CacheFilter.class, "/ide/static/*", EnumSet.noneOf(DispatcherType.class));
+        context.addFilter(CacheFilter.class, "/ide/assets/*", EnumSet.noneOf(DispatcherType.class));
 
         // Always add eTags
         context.setInitParameter("org.eclipse.jetty.servlet.Default.etags", "true");
