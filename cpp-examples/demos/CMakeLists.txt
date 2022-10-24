@@ -9,7 +9,6 @@ add_subdirectory(../../cpp-client/deephaven deephaven_dir)
 add_executable(chapter1 chapter1.cc)
 add_executable(chapter2 chapter2.cc)
 add_executable(chapter3 chapter3.cc)
-add_executable(crypto crypto.cc)
 
 target_link_libraries(chapter1 deephaven::client)
 target_link_libraries(chapter2 deephaven::client)
