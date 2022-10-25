@@ -12,6 +12,7 @@ import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.servlet.web.websocket.GrpcWebsocket;
 import io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream;
+import io.grpc.servlet.web.websocket.MultiplexedWebsocketStreamImpl;
 import io.grpc.servlet.web.websocket.WebSocketServerStream;
 import io.grpc.servlet.jakarta.web.GrpcWebFilter;
 import jakarta.servlet.DispatcherType;
@@ -41,6 +42,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -49,6 +51,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream.GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL;
+import static io.grpc.servlet.web.websocket.WebSocketServerStream.GRPC_WEBSOCKETS_PROTOCOL;
 import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
 
 public class JettyBackedGrpcServer implements GrpcServer {
@@ -102,11 +106,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 final Map<String, Supplier<Endpoint>> endpoints = new HashMap<>();
                 if (config.websocketsOrDefault() == JettyConfig.WebsocketsSupport.BOTH
                         || config.websocketsOrDefault() == JettyConfig.WebsocketsSupport.GRPC_WEBSOCKET) {
-                    endpoints.put("grpc-websockets", () -> filter.create(WebSocketServerStream::new));
+                    endpoints.put(GRPC_WEBSOCKETS_PROTOCOL, () -> filter.create(WebSocketServerStream::new));
                 }
                 if (config.websocketsOrDefault() == JettyConfig.WebsocketsSupport.BOTH
                         || config.websocketsOrDefault() == JettyConfig.WebsocketsSupport.GRPC_WEBSOCKET_MULTIPLEXED) {
-                    endpoints.put("grpc-websockets-multiplex",
+                    endpoints.put(GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL,
                             () -> filter.create(MultiplexedWebSocketServerStream::new));
                 }
                 container.addEndpoint(ServerEndpointConfig.Builder.create(GrpcWebsocket.class, "/{service}/{method}")
@@ -117,7 +121,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
                                 return (T) new GrpcWebsocket(endpoints);
                             }
                         })
-                        .subprotocols(Arrays.asList("grpc-websockets", "grpc-websockets-multiplex"))
+                        .subprotocols(new ArrayList<>(endpoints.keySet()))
                         .build()
 
                 );

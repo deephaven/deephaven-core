@@ -31,6 +31,8 @@ public class WebSocketServerStream extends AbstractWebSocketServerStream {
 
     private final InternalLogId logId = InternalLogId.allocate(WebSocketServerStream.class, null);
 
+    public static final String GRPC_WEBSOCKETS_PROTOCOL = "grpc-websockets";
+
     // fields set after headers are decoded
     private WebsocketStreamImpl stream;
     private boolean headersProcessed = false;
@@ -42,6 +44,7 @@ public class WebSocketServerStream extends AbstractWebSocketServerStream {
         super(transportListener, streamTracerFactories, maxInboundMessageSize, attributes);
     }
 
+    @Override
     public void onMessage(String message) {
         if (stream != null) {
             // This means the stream opened correctly, then sent a text payload, which doesn't make sense.
@@ -56,6 +59,7 @@ public class WebSocketServerStream extends AbstractWebSocketServerStream {
         }
     }
 
+    @Override
     public void onMessage(ByteBuffer message) throws IOException {
         if (message.remaining() == 0) {
             // message is empty (no control flow, no data), error

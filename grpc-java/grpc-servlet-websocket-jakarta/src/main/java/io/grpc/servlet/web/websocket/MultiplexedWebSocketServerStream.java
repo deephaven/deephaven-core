@@ -28,11 +28,15 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
 /**
  * Each instance of this type represents a single active websocket, which can allow several concurrent/overlapping gRPC
  * streams. This is in contrast to the {@link WebSocketServerStream} type, which supports one websocket per gRPC stream.
- *
- * To achieve this, each frame starts with a 32 bit integer indicating the ID of the stream. If the MSB of that int is
- * 1, then the request must be closed by this frame, and that MSB is set to zero to read the ID of the stream. On the
- * initial request, an extra header is sent from the client, indicating the path to the service method, and each frame
- *
+ * <p>
+ * </p>
+ * To achieve this, each grpc message starts with a 32 bit integer indicating the ID of the stream. If the MSB of that
+ * int is 1, then the request must be closed by this message, and that MSB is set to zero to read the ID of the stream.
+ * On the initial request, an extra header is sent from the client, indicating the path to the service method.
+ * Technically, this makes it possible for a grpc message to split across several websocket frames, but at this time
+ * each grpc message is exactly one websocket frame.
+ * <p>
+ * </p>
  * JSR356 websockets always handle their incoming messages in a serial manner, so we don't need to worry here about
  * runOnTransportThread while in onMessage, as we're already in the transport thread.
  */
@@ -41,6 +45,8 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
     /** Custom metadata to hold the path requested by the incoming stream */
     public static final Metadata.Key<String> PATH =
             Metadata.Key.of("grpc-websockets-path", Metadata.ASCII_STRING_MARSHALLER);
+
+    public static final String GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL = "grpc-websockets-multiplex";
 
     private final InternalLogId logId = InternalLogId.allocate(MultiplexedWebSocketServerStream.class, null);
 

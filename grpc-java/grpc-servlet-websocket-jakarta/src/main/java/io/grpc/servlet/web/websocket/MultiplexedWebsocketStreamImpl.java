@@ -32,6 +32,9 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
             Session websocketSession, InternalLogId logId, Attributes attributes, int streamId) {
         super(ByteArrayWritableBuffer::new, statsTraceCtx, maxInboundMessageSize, websocketSession, logId, attributes,
                 logger);
+        if (streamId < 0) {
+            throw new IllegalStateException("Can't create stream with negative id");
+        }
         this.streamId = streamId;
     }
 
@@ -97,9 +100,9 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
                         onSendingBytes(numBytes);
                     }
 
-                    ByteBuffer payload = ByteBuffer.allocate(frame.readableBytes() + 4);
+                    ByteBuffer payload = ByteBuffer.allocate(numBytes + 4);
                     payload.putInt(streamId);
-                    payload.put(((ByteArrayWritableBuffer) frame).bytes, 0, frame.readableBytes());
+                    payload.put(((ByteArrayWritableBuffer) frame).bytes, 0, numBytes);
                     payload.flip();
 
                     websocketSession.getBasicRemote().sendBinary(payload);

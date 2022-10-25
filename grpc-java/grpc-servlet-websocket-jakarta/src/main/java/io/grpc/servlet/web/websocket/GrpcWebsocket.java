@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * Supports both grpc-websockets and grpc-websockets-multiplex subprotocols, and delegates to the correct implementation
- * after protocol negotiation.
+ * Supports multiple endpoints, based on the negotiated sub-protocol. If a protocol isn't supported, an error will be
+ * sent to the client.
  */
 public class GrpcWebsocket extends Endpoint {
     private final Map<String, Supplier<Endpoint>> endpointFactories = new HashMap<>();
