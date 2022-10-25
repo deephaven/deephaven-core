@@ -66,8 +66,9 @@ jobs:
         with:
           name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-results
           path: |
-            **/build/test-results/*/TEST-*.xml
+            **/build/test-results/**
             **/build/reports/tests/**
+            !**/build/test-results/**/binary/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v3
