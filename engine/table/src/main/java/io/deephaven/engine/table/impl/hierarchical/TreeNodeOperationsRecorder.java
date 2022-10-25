@@ -26,10 +26,11 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
         this(definition, List.of(), List.of(), List.of());
     }
 
-    private TreeNodeOperationsRecorder(@NotNull final TableDefinition definition,
-                                       @NotNull final Collection<? extends SelectColumn> recordedFormats,
-                                       @NotNull final Collection<SortColumn> recordedSorts,
-                                       @NotNull final Collection<? extends WhereFilter> recordedFilters) {
+    private TreeNodeOperationsRecorder(
+            @NotNull final TableDefinition definition,
+            @NotNull final Collection<? extends SelectColumn> recordedFormats,
+            @NotNull final Collection<SortColumn> recordedSorts,
+            @NotNull final Collection<? extends WhereFilter> recordedFilters) {
         super(definition, recordedFormats, recordedSorts);
         this.recordedFilters = recordedFilters;
     }
@@ -50,6 +51,22 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
     TreeTable.NodeOperationsRecorder withFilters(@NotNull final Stream<? extends WhereFilter> filters) {
         return new TreeNodeOperationsRecorder(definition, recordedFormats, recordedSorts,
                 Stream.concat(recordedFilters.stream(), filters).collect(Collectors.toList()));
+    }
+
+    TreeNodeOperationsRecorder withOperations(@NotNull final TreeNodeOperationsRecorder other) {
+        if (!definition.equals(other.definition)) {
+            throw new IllegalArgumentException(
+                    "Incompatible operation recorders; compatible recorders must be created from the same table");
+        }
+        return new TreeNodeOperationsRecorder(definition,
+                Stream.concat(recordedFormats.stream(), other.getRecordedFormats().stream())
+                        .collect(Collectors.toList()),
+                Stream.concat(other.getRecordedSorts().stream(), recordedSorts.stream()).collect(Collectors.toList()),
+                Stream.concat(recordedFilters.stream(), other.recordedFilters.stream()).collect(Collectors.toList()));
+    }
+
+    Collection<? extends WhereFilter> getRecordedFilters() {
+        return recordedFilters;
     }
 
     @Override

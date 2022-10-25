@@ -36,6 +36,14 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
 
     abstract TYPE withSorts(@NotNull Stream<SortColumn> sorts);
 
+    Collection<? extends SelectColumn> getRecordedFormats() {
+        return recordedFormats;
+    }
+
+    Collection<SortColumn> getRecordedSorts() {
+        return recordedSorts;
+    }
+
     public TYPE formatColumns(String... columnFormats) {
         final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(definition);
         adapter.formatColumns(columnFormats);

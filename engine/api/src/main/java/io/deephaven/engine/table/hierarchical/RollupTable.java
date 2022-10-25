@@ -109,14 +109,14 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
 
     /**
      * Get a new RollupTable that will apply the {@link NodeOperationsRecorder recorded} operations to nodes when
-     * gathering snapshots. Operations will be applied only to the {@link NodeType node type} supplied when
-     * {@code nodeOperations} was initially {@link #makeNodeOperationsRecorder(NodeType) created}.
+     * gathering snapshots. Operations will be applied only to the {@link NodeType node type} supplied when the elements
+     * of {@code nodeOperations} were initially {@link #makeNodeOperationsRecorder(NodeType) created}.
      *
-     * @param nodeOperations The node-level operations to apply. Must have been initially supplied by
+     * @param nodeOperations The node-level operations to apply. Elements must have been initially supplied by
      *        {@link #makeNodeOperationsRecorder(NodeType)} from {@code this} RollupTable.
      * @return The new RollupTable
      */
-    RollupTable withNodeOperations(@NotNull NodeOperationsRecorder nodeOperations);
+    RollupTable withNodeOperations(@NotNull NodeOperationsRecorder... nodeOperations);
 
     /**
      * Apply a transformation to the source table, e.g. for filtering, and re-apply the rollup operation to produce a
