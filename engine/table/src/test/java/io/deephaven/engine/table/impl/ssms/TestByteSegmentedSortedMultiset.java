@@ -177,7 +177,7 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
                     }
                 }
             };
-            asByte.listenForUpdates(asByteListener);
+            asByte.addUpdateListener(asByteListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

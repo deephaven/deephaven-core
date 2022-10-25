@@ -118,7 +118,7 @@ public class SelectOverheadLimiter {
 
         final MutableObject<ListenerRecorder> inputRecorder =
                 new MutableObject<>(new ListenerRecorder("clampSelectOverhead.input()", input, result));
-        input.listenForUpdates(inputRecorder.getValue());
+        input.addUpdateListener(inputRecorder.getValue());
         final List<ListenerRecorder> recorders = Collections.synchronizedList(new ArrayList<>());
         recorders.add(inputRecorder.getValue());
 
@@ -174,7 +174,7 @@ public class SelectOverheadLimiter {
                 flatTransformer = ((QueryTable) flatResult).newModifiedColumnSetTransformer(result,
                         result.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-                flatResult.listenForUpdates(flatRecorder);
+                flatResult.addUpdateListener(flatRecorder);
                 synchronized (recorders) {
                     recorders.clear();
                     recorders.add(flatRecorder);

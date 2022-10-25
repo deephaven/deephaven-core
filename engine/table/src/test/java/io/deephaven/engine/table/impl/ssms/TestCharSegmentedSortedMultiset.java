@@ -172,7 +172,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                     }
                 }
             };
-            asCharacter.listenForUpdates(asCharacterListener);
+            asCharacter.addUpdateListener(asCharacterListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

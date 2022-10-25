@@ -269,7 +269,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             try {
                 coalesced = SUT.coalesce();
                 coalesced.retainReference();
-                ((QueryTable) coalesced).listenForUpdates(listener);
+                ((QueryTable) coalesced).addUpdateListener(listener);
                 if (throwException) {
                     fail("Expected exception");
                 }

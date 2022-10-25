@@ -61,8 +61,8 @@ public class KeyedTableListener {
         this.parentColumnSourceMap = table.getColumnSourceMap();
     }
 
-    public void listenForUpdates() {
-        this.table.listenForUpdates(tableListener, true);
+    public void addUpdateListener() {
+        this.table.addUpdateListener(tableListener, true);
     }
 
     public void close() {

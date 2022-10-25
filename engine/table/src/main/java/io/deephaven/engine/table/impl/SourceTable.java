@@ -18,11 +18,8 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.util.process.ProcessEnvironment;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -260,7 +257,7 @@ public abstract class SourceTable extends RedefinableTable {
 
                     @Override
                     public void subscribeForUpdates() {
-                        listenForUpdatesUncoalesced(this);
+                        addUpdateListenerUncoalesced(this);
                     }
                 });
 

@@ -65,8 +65,9 @@ class NaturalJoinHelper {
 
                 final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
 
-                leftTable.listenForUpdates(new LeftTickingListener(bucketingContext.listenerDescription, columnsToMatch,
-                        columnsToAdd, leftTable, result, rowRedirection, jsm, bucketingContext.leftSources));
+                leftTable
+                        .addUpdateListener(new LeftTickingListener(bucketingContext.listenerDescription, columnsToMatch,
+                                columnsToAdd, leftTable, result, rowRedirection, jsm, bucketingContext.leftSources));
 
                 return result;
             }
@@ -121,8 +122,8 @@ class NaturalJoinHelper {
                     leftRecorder.setMergedListener(mergedJoinListener);
                     rightRecorder.setMergedListener(mergedJoinListener);
 
-                    leftTable.listenForUpdates(leftRecorder);
-                    rightTable.listenForUpdates(rightRecorder);
+                    leftTable.addUpdateListener(leftRecorder);
+                    rightTable.addUpdateListener(rightRecorder);
 
                     result.addParentReference(mergedJoinListener);
 
@@ -176,10 +177,17 @@ class NaturalJoinHelper {
 
                     final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
 
-                    rightTable
-                            .listenForUpdates(new RightTickingListener(bucketingContext.listenerDescription, rightTable,
-                                    columnsToMatch, columnsToAdd, result, rowRedirection, jsm,
-                                    bucketingContext.rightSources, exactMatch));
+                    rightTable.addUpdateListener(
+                            new RightTickingListener(
+                                    bucketingContext.listenerDescription,
+                                    rightTable,
+                                    columnsToMatch,
+                                    columnsToAdd,
+                                    result,
+                                    rowRedirection,
+                                    jsm,
+                                    bucketingContext.rightSources,
+                                    exactMatch));
                     return result;
                 }
             } else {
@@ -248,9 +256,16 @@ class NaturalJoinHelper {
 
                     final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
 
-                    leftTable.listenForUpdates(
-                            new LeftTickingListener(bucketingContext.listenerDescription, columnsToMatch, columnsToAdd,
-                                    leftTable, result, rowRedirection, jsm, bucketingContext.leftSources));
+                    leftTable.addUpdateListener(
+                            new LeftTickingListener(
+                                    bucketingContext.listenerDescription,
+                                    columnsToMatch,
+                                    columnsToAdd,
+                                    leftTable,
+                                    result,
+                                    rowRedirection,
+                                    jsm,
+                                    bucketingContext.leftSources));
                     return result;
                 }
             }
@@ -341,13 +356,13 @@ class NaturalJoinHelper {
 
                 leftRecorder.setMergedListener(mergedListener);
                 rightRecorder.setMergedListener(mergedListener);
-                leftTable.listenForUpdates(leftRecorder);
-                rightTable.listenForUpdates(rightRecorder);
+                leftTable.addUpdateListener(leftRecorder);
+                rightTable.addUpdateListener(rightRecorder);
                 result.addParentReference(mergedListener);
 
             } else {
                 leftTable
-                        .listenForUpdates(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
+                        .addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 checkRightTableSizeZeroKeys(leftTable, rightTable, exactMatch);
@@ -361,7 +376,7 @@ class NaturalJoinHelper {
             }
         } else if (rightTable.isRefreshing()) {
             if (leftTable.size() > 0) {
-                rightTable.listenForUpdates(
+                rightTable.addUpdateListener(
                         new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {

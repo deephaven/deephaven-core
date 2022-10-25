@@ -88,7 +88,7 @@ public class QueryTableSelectUpdateTest {
                 intCol("p", 11, 12, 13)), table3);
 
         final ShiftObliviousListener table2Listener = base.newListenerWithGlobals(table2);
-        table2.listenForUpdates(table2Listener);
+        table2.addUpdateListener(table2Listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -165,7 +165,7 @@ public class QueryTableSelectUpdateTest {
                 intCol("t", -1, 0, 1)), table7);
 
         final ShiftObliviousListener table7Listener2 = base.newListenerWithGlobals(table7);
-        table7.listenForUpdates(table7Listener2);
+        table7.addUpdateListener(table7Listener2);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table6, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -315,10 +315,10 @@ public class QueryTableSelectUpdateTest {
         PartialEvalNugget(Table sourceTable, boolean indexPositionChangesAllowed) {
             this.sourceTable = sourceTable;
             listener1 = new UpdateListener();
-            sourceTable.listenForUpdates(listener1);
+            sourceTable.addUpdateListener(listener1);
 
             listener2 = new UpdateListener();
-            originalValue.listenForUpdates(listener2);
+            originalValue.addUpdateListener(listener2);
 
             this.indexPositionChangesAllowed = indexPositionChangesAllowed;
         }
@@ -740,7 +740,7 @@ public class QueryTableSelectUpdateTest {
         QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         QueryTable table2 = (QueryTable) table.update("x = i*3", "y = \"\" + k");
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
-        table2.listenForUpdates(listener);
+        table2.addUpdateListener(listener);
 
         TestCase.assertEquals(0, table.size());
         TestCase.assertEquals(0, table2.size());
@@ -771,7 +771,7 @@ public class QueryTableSelectUpdateTest {
         QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         QueryTable table2 = (QueryTable) table.update("Position=i", "Key=\"\" + k");
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
-        table2.listenForUpdates(listener);
+        table2.addUpdateListener(listener);
 
         TestCase.assertEquals(0, table.size());
         TestCase.assertEquals(0, table2.size());
@@ -810,7 +810,7 @@ public class QueryTableSelectUpdateTest {
         QueryTable table2 = (QueryTable) table.update("Position=i", "PrevI=Position_[i-1]");
         // QueryTable table2 = (QueryTable) table.update("Position=i", "Key=\"\" + k", "PrevI=Position_[i-1]");
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
-        table2.listenForUpdates(listener);
+        table2.addUpdateListener(listener);
 
         TestCase.assertEquals(0, table.size());
         TestCase.assertEquals(0, table2.size());

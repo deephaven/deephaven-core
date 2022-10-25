@@ -17,5 +17,5 @@ perf_tag = os.environ.get('PERF_TAG', None)
 plistener = jpy.get_type('io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter')
 if perf_tag is not None:
     log = open(f'/logs/{perf_tag}/{now_str}_dh_sample_dt.log', 'w')
-    pageviews_summary.j_table.listenForUpdates(plistener(None, pageviews_summary.j_table, True, onUpdate), False)
+    pageviews_summary.j_table.addUpdateListener(plistener(None, pageviews_summary.j_table, True, onUpdate), False)
 
