@@ -81,15 +81,14 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish Test Results
-        uses: scacap/action-surefire-report@v1
+        uses: mikepenz/action-junit-report@v3
         if: ${{ github.repository_owner == 'deephaven' }}
-        env:
-          NODE_OPTIONS: '--max_old_space_size=4096'
         with:
           # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
           check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
+          include_passed: true
 
       - name: Slack Nightly Failure
         uses: slackapi/slack-github-action@v1.18.0
