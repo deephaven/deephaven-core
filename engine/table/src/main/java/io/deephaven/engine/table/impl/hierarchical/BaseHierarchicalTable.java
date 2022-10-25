@@ -10,8 +10,6 @@ import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,93 +19,86 @@ import java.util.Collection;
  * Base result class for operations that produce hierarchical tables, for example {@link Table#rollup rollup} and
  * {@link Table#tree(String, String) tree}.
  */
-public abstract class BaseHierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends BaseHierarchicalTable<IFACE_TYPE, IMPL_TYPE>>
+abstract class BaseHierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends BaseHierarchicalTable<IFACE_TYPE, IMPL_TYPE>>
         extends BaseGridAttributes<IFACE_TYPE, IMPL_TYPE>
         implements HierarchicalTable<IFACE_TYPE> {
 
     /**
      * The source table that operations were applied to in order to produce this hierarchical table.
      */
-    private final QueryTable sourceTable;
+    final QueryTable source;
 
     /**
      * The root node of the hierarchy.
      */
-    private final QueryTable rootTable;
+    final QueryTable root;
 
     /**
-     * The "base" BaseHierarchicalTable for this instance, which may be {@code this}. UI-driven user operations should
-     * be applied to the base in order to create new results.
+     * Whether the data in this can change.
      */
-    private final IMPL_TYPE base;
+    final boolean isRefreshing;
 
     protected BaseHierarchicalTable(
-            @NotNull final QueryTable sourceTable,
-            @NotNull final QueryTable rootTable,
-            @Nullable final IMPL_TYPE base) {
-        super(base == null ? null : base.getAttributes());
-        this.sourceTable = sourceTable;
-        this.rootTable = rootTable;
-        if (sourceTable.isRefreshing()) {
-            Assert.assertion(rootTable.isRefreshing(), "rootTable.isRefreshing()");
-            manage(sourceTable);
-        }
-        if (rootTable.isRefreshing()) {
-            manage(rootTable);
-        }
-        if (base == null) {
-            //noinspection unchecked
-            this.base = (IMPL_TYPE) this;
-        } else {
-            manage(base);
-            this.base = base;
+            @NotNull final QueryTable source,
+            @NotNull final QueryTable root) {
+        super(null);
+        this.source = source;
+        this.root = root;
+
+        final boolean sourceRefreshing = source.isRefreshing();
+        final boolean rootRefreshing = root.isRefreshing();
+        Assert.eq(sourceRefreshing, "source.isRefreshing()", rootRefreshing, "root.isRefreshing()");
+        isRefreshing = sourceRefreshing;
+        if (isRefreshing) {
+            manage(source);
+            manage(root);
         }
     }
 
-// TODO-RWC: Be sure to take format columns into account for table definitions. Prune formats appied to both for leafs?
+    @Override
+    public Table getSource() {
+        return source;
+    }
+
+    @Override
+    public Table getRoot() {
+        return root;
+    }
+
+    // TODO-RWC: Be sure to take format columns into account for table definitions. Prune formats applied to both for
+    // leafs?
 
     public final class ClientView extends LivenessArtifact {
-        final Collection<SortColumn> sorts;
-        final Collection<WhereFilter> filters;
 
-        public ClientView(Collection<SortColumn> sorts, Collection<WhereFilter> filters) {
+        /**
+         * The "base" BaseHierarchicalTable for this instance, which may be {@code this}. UI-driven user operations
+         * should be applied to the base in order to create new results.
+         */
+        private final IMPL_TYPE base;
+        private final Table keyTable;
+        private final Collection<SortColumn> sorts;
+        private final Collection<? extends WhereFilter> filters;
+
+        public ClientView(
+                @Nullable final IMPL_TYPE base,
+                @NotNull final Table keyTable,
+                @NotNull final Collection<SortColumn> sorts,
+                @NotNull final Collection<? extends WhereFilter> filters) {
+            this.keyTable = keyTable;
             this.sorts = sorts;
             this.filters = filters;
-        }
-
-
-    }
-
-    /**
-     * Create a BaseHierarchicalTable from the specified root (top level) table and {@link HierarchicalTableInfo info}
-     * that describes the hierarchy type.
-     *
-     * @param rootTable the root table of the hierarchy
-     * @param info the info that describes the hierarchy type
-     *
-     * @return A new Hierarchical table. The table itself is a view of the root of the hierarchy.
-     */
-    @NotNull
-    static BaseHierarchicalTable createFrom(@NotNull QueryTable rootTable, @NotNull HierarchicalTableInfo info) {
-        final Mutable<BaseHierarchicalTable> resultHolder = new MutableObject<>();
-
-        final SwapListener swapListener =
-                rootTable.createSwapListenerIfRefreshing(SwapListener::new);
-        initializeWithSnapshot("-hierarchicalTable", swapListener, (usePrev, beforeClockValue) -> {
-            final BaseHierarchicalTable table = new BaseHierarchicalTable(sourceTable, rootTable, info);
-            rootTable.copyAttributes(table, a -> true);
-
-            if (swapListener != null) {
-                final ListenerImpl listener =
-                        new ListenerImpl("hierarchicalTable()", rootTable, table);
-                swapListener.setListenerAndResult(listener, table);
-                table.addParentReference(swapListener);
+            if (isRefreshing) {
+                manage(BaseHierarchicalTable.this);
             }
-
-            resultHolder.setValue(table);
-            return true;
-        });
-
-        return resultHolder.getValue();
+            if (base == null) {
+                // noinspection unchecked
+                this.base = (IMPL_TYPE) BaseHierarchicalTable.this;
+            } else {
+                if (base.isRefreshing) {
+                    manage(base);
+                }
+                this.base = base;
+            }
+        }
     }
 }
