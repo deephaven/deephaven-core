@@ -79,12 +79,12 @@ def start_jvm(
     # Append args that, if missing, could cause the jvm to be misconfigured for deephaven and its dependencies
     # TODO make these less required (i.e. at your own risk, remove them)
     required_jvm_args = [
-        # Allow netty to access java.nio.Buffer fields
+        # Allow netty to (reflectively) access java.nio.Buffer fields
         '--add-opens=java.base/java.nio=ALL-UNNAMED',
         # Allow our hotspot-impl project to access internals
-        '--add-opens=java.management/sun.management=ALL-UNNAMED',
+        '--add-exports=java.management/sun.management=ALL-UNNAMED',
         # Allow our clock-impl project to access internals
-        '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED',
+        '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
     ]
     if jvm_args is None:
         jvm_args = required_jvm_args

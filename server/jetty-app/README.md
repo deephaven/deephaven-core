@@ -79,12 +79,10 @@ Finally, Gradle can be used to update the build and run the application in a sin
 ### Internals
 
 `server-jetty-app` is configured by default to include code that depends on JVM internals via
-`--add-opens java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `includeHotspotImpl`
-to `false`.
+`--add-exports java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `-PexcludeHotspotImpl`.
 
 `server-jetty-app` is configured by default to include code that depends on JVM internals via
-`--add-opens java.base/jdk.internal.misc=ALL-UNNAMED`. To disable this, set the gradle property `includeClockImpl`
-to `false`.
+`--add-exports java.base/jdk.internal.misc=ALL-UNNAMED`. To disable this, set the gradle property `-PexcludeClockImpl`.
 
 ### Configuration / SSL
 
