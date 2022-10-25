@@ -1662,8 +1662,8 @@ public class Basic {
         final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
 
         for (int i=0; i < n_c; i++) {
-        final Boolean c = condition.get(i);
-        result[i] = c == null ? ${pt.null} : (c ? trueCase : falseCase);
+            final Boolean c = condition.get(i);
+            result[i] = c == null ? ${pt.null} : (c ? trueCase : falseCase);
         }
 
         return result;
