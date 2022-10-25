@@ -4,14 +4,9 @@ Deephaven C++ Client API Reference
 Introduction
 ------------
 
-The Deephaven C++ Client is used to manipulate tables and access data running on a remote
-Deephaven server from native C++. This document provides the major abstractions and entry
-points provided in C++. To start, create a
-:cpp:class:`Client <deephaven::client::Client>`
-with the
-:cpp:func:`connect <deephaven::client::Client::connect>`
-factory method. To get started, see :doc:`main`.
-
+The Deephaven C++ Client library is used to manipulate tables and access data running on a remote
+Deephaven server using native C++. This document provides the major abstractions and entry
+points provided by the library. To get started, see :doc:`main`.
 
 Table of Contents
 -----------------

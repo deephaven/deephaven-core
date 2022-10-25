@@ -14,7 +14,7 @@ or
 The concrete implementing classes are defined by the templated class
 :cpp:class:`GenericChunk <deephaven::client::chunk::GenericChunk>`.
 For convenience we provide typedefs which instantiate
-:cpp:class:`GenericChunk <deephaven::client::chunk::GenericChunk>`.
+:cpp:class:`GenericChunk <deephaven::client::chunk::GenericChunk>`
 on all the Deephaven types:
 :cpp:type:`Int8Chunk <deephaven::client::chunk::BooleanChunk>`,
 :cpp:type:`Int16Chunk <deephaven::client::chunk::BooleanChunk>`,
@@ -27,7 +27,7 @@ on all the Deephaven types:
 :cpp:type:`DateTimeChunk <deephaven::client::chunk::BooleanChunk>`.
 
 :cpp:class:`GenericChunk <deephaven::client::chunk::GenericChunk>`
-also supports
+also supports the methods
 :cpp:func:`take <deephaven::client::chunk::GenericChunk::take>` and
 :cpp:func:`drop <deephaven::client::chunk::GenericChunk::drop>` to take slices of the
 :cpp:class:`GenericChunk <deephaven::client::chunk::GenericChunk>`.
@@ -39,14 +39,17 @@ The
 :cpp:class:`AnyChunk <deephaven::client::chunk::AnyChunk>`
 class is a variant value type that can hold one of the concrete Chunk types described above.
 :cpp:class:`AnyChunk <deephaven::client::chunk::AnyChunk>` is useful in certain limited cases
-where a utility method needs to create a
+where a factory method needs to create a
 :cpp:class:`Chunk <deephaven::client::chunk::Chunk>`
-with a dynamically-determined type. The rationale for using the variant approach rather than a
+having a dynamically-determined type, not known at compile time. Of course this could also be
+accomplished by returning a heap-allocated pointer to a
+:cpp:class:`Chunk <deephaven::client::chunk::Chunk>`.
+The rationale for using the variant approach rather than the
 heap-allocated object approach is for the sake of simplicity and efficiency when using these
 small objects. One example method that returns an
 :cpp:class:`AnyChunk <deephaven::client::chunk::AnyChunk>`
 is
-:cpp:func:`createChunkFor <deephaven::client::column::ChunkMaker::createChunkFor>`,
+:cpp:func:`createChunkFor <deephaven::client::chunk::ChunkMaker::createChunkFor>`,
 which creates a
 :cpp:class:`Chunk <deephaven::client::chunk::Chunk>`
 with a type appropriate to the passed-in
@@ -88,4 +91,7 @@ Utility Declarations
    :members:
 
 .. doxygenclass:: deephaven::client::chunk::ChunkVisitor
+   :members:
+
+.. doxygenclass:: deephaven::client::chunk::ChunkMaker
    :members:
