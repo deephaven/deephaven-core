@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
@@ -221,32 +222,33 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {ema.timeScale().timestampCol(), pair.rightColumn};
             }
 
-            // use the correct units from the EmaSpec (depending on was Time or Tick based)
+            // use the correct units from the EmaSpec (depending on if Time or Tick based)
             final long timeScaleUnits = ema.timeScale().timescaleUnits();
+            final OperationControl control = ema.controlOrDefault();
 
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
+                return new ByteEMAOperator(pair, affectingColumns, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
+                return new ShortEMAOperator(pair, affectingColumns, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
+                return new IntEMAOperator(pair, affectingColumns, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
+                return new LongEMAOperator(pair, affectingColumns, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
+                return new FloatEMAOperator(pair, affectingColumns, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
+                return new DoubleEMAOperator(pair, affectingColumns, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
+                return new BigDecimalEMAOperator(pair, affectingColumns, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             } else if (csType == BigInteger.class) {
-                return new BigIntegerEMAOperator(pair, affectingColumns, ema.controlOrDefault(),
+                return new BigIntegerEMAOperator(pair, affectingColumns, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, redirContext);
             }
 

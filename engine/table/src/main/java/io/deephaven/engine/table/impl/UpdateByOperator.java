@@ -1,15 +1,15 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,27 +23,36 @@ import java.util.Map;
  * <ol>
  * <li>Reprocess
  * <ul>
- * <li>{@link #initializeFor(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #reprocessChunkBucketed(UpdateContext, RowSequence, Chunk, LongChunk, IntChunk, IntChunk, IntChunk)}</li>
- * <li>{@link #finishFor(UpdateContext, UpdateBy.UpdateType)}</li>
+ * <li>{@link #initializeUpdate(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
+ * <li>{@link #UpdateByWindow.processRows}</li>
+ * <li>{@link #finishUpdate(UpdateContext)}</li>
  * </ul>
  * </li>
  * </ol>
- *
- * <p>
- * Additionally, implementations are responsible for notifying the update model if any rows have been modified beyond
- * what was passed through in the upstream update via the {@link #anyModified(UpdateContext)} and
- * {@link #getAdditionalModifications(UpdateContext)} methods
- * </p>
  */
-public interface UpdateByOperator {
-    UpdateByWindow[] ZERO_LENGTH_WINDOW_ARRAY = new UpdateByWindow[0];
-    UpdateByOperator[] ZERO_LENGTH_OP_ARRAY = new UpdateByOperator[0];
+public abstract class UpdateByOperator {
+    public static UpdateByOperator[] ZERO_LENGTH_OP_ARRAY = new UpdateByOperator[0];
+
+    protected final MatchPair pair;
+    protected final String[] affectingColumns;
+    protected final UpdateBy.UpdateByRedirectionContext redirContext;
+
+
+    // these will be used by the timestamp-aware operators (EMA for example)
+    protected OperationControl control;
+    protected long reverseTimeScaleUnits;
+    protected long forwardTimeScaleUnits;
+    protected String timestampColumnName;
+
+    // individual input modifiedColumnSet for this operator
+    protected ModifiedColumnSet inputModifiedColumnSet;
+    // individual output modifiedColumnSet for this operators
+    protected ModifiedColumnSet outputModifiedColumnSet;
 
     /**
      * A context item for use with updateBy operators
      */
-    interface UpdateContext extends SafeCloseable {
+    public interface UpdateContext extends SafeCloseable {
 
         void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk);
 
@@ -82,13 +91,32 @@ public interface UpdateByOperator {
         void writeToOutputColumn(@NotNull final RowSequence inputKeys);
     }
 
+
+    public UpdateByOperator(@NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final long reverseTimeScaleUnits,
+            final long forwardTimeScaleUnits,
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
+        this.pair = pair;
+        this.affectingColumns = affectingColumns;
+        this.redirContext = redirContext;
+        this.timestampColumnName = timestampColumnName;
+        this.control = control;
+        this.reverseTimeScaleUnits = reverseTimeScaleUnits;
+        this.forwardTimeScaleUnits = forwardTimeScaleUnits;
+    }
+
     /**
      * Get the name of the input column(s) this operator depends on.
      *
      * @return the name of the input column
      */
     @NotNull
-    String[] getInputColumnNames();
+    public String[] getInputColumnNames() {
+        return new String[] {pair.rightColumn};
+    }
 
     /**
      * Get the name of the timestamp column this operator depends on.
@@ -96,21 +124,27 @@ public interface UpdateByOperator {
      * @return the name of the input column
      */
     @Nullable
-    String getTimestampColumnName();
+    public String getTimestampColumnName() {
+        return timestampColumnName;
+    }
 
     /**
      * Get the value of the backward-looking window (might be nanos or ticks).
      *
      * @return the name of the input column
      */
-    long getPrevWindowUnits();
+    public long getPrevWindowUnits() {
+        return reverseTimeScaleUnits;
+    }
 
     /**
      * Get the value of the forward-looking window (might be nanos or ticks).
      *
      * @return the name of the input column
      */
-    long getFwdWindowUnits();
+    public long getFwdWindowUnits() {
+        return forwardTimeScaleUnits;
+    }
 
     /**
      * Get an array of column names that, when modified, affect the result of this computation.
@@ -118,7 +152,9 @@ public interface UpdateByOperator {
      * @return an array of column names that affect this operator.
      */
     @NotNull
-    String[] getAffectingColumnNames();
+    public String[] getAffectingColumnNames() {
+        return affectingColumns;
+    }
 
     /**
      * Get an array of the output column names.
@@ -126,7 +162,9 @@ public interface UpdateByOperator {
      * @return the output column names.
      */
     @NotNull
-    String[] getOutputColumnNames();
+    public String[] getOutputColumnNames() {
+        return new String[] {pair.leftColumn};
+    }
 
     /**
      * Get a map of outputName to output {@link ColumnSource} for this operation.
@@ -134,12 +172,12 @@ public interface UpdateByOperator {
      * @return a map of output column name to output column source
      */
     @NotNull
-    Map<String, ColumnSource<?>> getOutputColumns();
+    public abstract Map<String, ColumnSource<?>> getOutputColumns();
 
     /**
      * Indicate that the operation should start tracking previous values for ticking updates.
      */
-    void startTrackingPrev();
+    public abstract void startTrackingPrev();
 
     /**
      * Make an {@link UpdateContext} suitable for use with updates.
@@ -149,7 +187,7 @@ public interface UpdateByOperator {
      * @return a new context
      */
     @NotNull
-    UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?>[] inputSourceArr);
+    public abstract UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?>[] inputSourceArr);
 
     /**
      * Perform and bookkeeping required at the end of a single part of the update. This is always preceded with a call
@@ -157,11 +195,43 @@ public interface UpdateByOperator {
      *
      * @param context the context object
      */
-    void finishUpdate(@NotNull final UpdateContext context);
+    public abstract void finishUpdate(@NotNull final UpdateContext context);
 
     /**
      * Apply a shift to the operation.
      *
      */
-    void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta);
+    public abstract void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta);
+
+    /**
+     * Create the modified column set for the input columns of this operator.
+     *
+     */
+    public void createInputModifiedColumnSet(@NotNull final QueryTable source) {
+        inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames());
+    }
+
+    /**
+     * Create the modified column set for the output columns from this operator.
+     *
+     */
+    public void createOutputModifiedColumnSet(@NotNull final QueryTable result) {
+        outputModifiedColumnSet = result.newModifiedColumnSet(getOutputColumnNames());
+    }
+
+    /**
+     * Return the modified column set for the input columns of this operator.
+     *
+     */
+    public ModifiedColumnSet getInputModifiedColumnSet() {
+        return inputModifiedColumnSet;
+    }
+
+    /**
+     * Return the modified column set for the output columns from this operator.
+     *
+     */
+    public ModifiedColumnSet getOutputModifiedColumnSet() {
+        return outputModifiedColumnSet;
+    }
 }

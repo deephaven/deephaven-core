@@ -1,5 +1,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -19,16 +21,21 @@ import org.jetbrains.annotations.Nullable;
 public abstract class UpdateByWindow {
     @Nullable
     protected final String timestampColumnName;
+
     // store the operators for this window
     protected final UpdateByOperator[] operators;
+
     // store the index in the {@link UpdateBy.inputSources}
     protected final int[][] operatorInputSourceSlots;
-    // individual input modifiedColumnSets for the operators
-    protected final ModifiedColumnSet[] operatorInputModifiedColumnSets;
 
-    protected boolean trackModifications;
-
+    /** This context will store the necessary info to process a single window for a single bucket */
     public abstract class UpdateByWindowContext implements SafeCloseable {
+        /** Indicates this bucket window needs to be processed */
+        protected boolean isDirty;
+
+        /** Indicates this operator needs to be processed */
+        protected final boolean[] operatorIsDirty;
+
         /** store a reference to the source rowset */
         protected final TrackingRowSet sourceRowSet;
 
@@ -39,9 +46,6 @@ public abstract class UpdateByWindow {
         /** the timestamp SSA providing fast lookup for time windows */
         @Nullable
         protected final LongSegmentedSortedArray timestampSsa;
-
-        /** An array of boolean denoting which operators are affected by the current update. */
-        protected final boolean[] opAffected;
 
         /** An array of context objects for each underlying operator */
         protected final UpdateByOperator.UpdateContext[] opContext;
@@ -65,10 +69,6 @@ public abstract class UpdateByWindow {
         /** the rows that contain values used to compute affected row values */
         protected RowSet influencerRows;
 
-        /** keep track of what rows were modified (we'll use a single set for all operators sharing a window) */
-        protected RowSetBuilderSequential modifiedBuilder;
-        protected RowSet newModified;
-
         protected int workingChunkSize;
 
         public UpdateByWindowContext(final TrackingRowSet sourceRowSet, final ColumnSource<?>[] inputSources,
@@ -79,7 +79,7 @@ public abstract class UpdateByWindow {
             this.timestampColumnSource = timestampColumnSource;
             this.timestampSsa = timestampSsa;
 
-            this.opAffected = new boolean[operators.length];
+            this.operatorIsDirty = new boolean[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
             this.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
             this.inputSourceChunkPopulated = new boolean[inputSources.length];
@@ -88,48 +88,32 @@ public abstract class UpdateByWindow {
 
             this.workingChunkSize = chunkSize;
             this.initialStep = initialStep;
+            this.isDirty = false;
         }
 
-        public abstract boolean computeAffectedRowsAndOperators(@NotNull final TableUpdate upstream);
 
-        public abstract void processRows();
 
-        protected abstract void makeOperatorContexts();
-
-        public boolean anyModified() {
-            return newModified != null && newModified.isNonempty();
-        }
-
-        public RowSet getModifiedRows() {
-            return newModified;
-        }
-
-        public void updateOutputModifiedColumnSet(ModifiedColumnSet outputModifiedColumnSet,
-                ModifiedColumnSet[] operatorOutputModifiedColumnSets) {
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if (opAffected[opIdx]) {
-                    outputModifiedColumnSet.setAll(operatorOutputModifiedColumnSets[opIdx]);
-                }
-            }
-        }
-
-        public RowSet getAffectedRows() {
-            return affectedRows;
-        }
-
-        public RowSet getInfluencerRows() {
-            return influencerRows;
-        }
-
-        protected void prepareValuesChunkForSource(final int srcIdx, final RowSequence rs) {
-            if (rs.isEmpty()) {
-                return;
-            }
-            if (!inputSourceChunkPopulated[srcIdx]) {
-                inputSourceChunks[srcIdx] = inputSources[srcIdx].getChunk(inputSourceGetContexts[srcIdx], rs);
-                inputSourceChunkPopulated[srcIdx] = true;
-            }
-        }
+        // public boolean anyModified() {
+        // return newModified != null && newModified.isNonempty();
+        // }
+        //
+        // public void updateOutputModifiedColumnSet(ModifiedColumnSet outputModifiedColumnSet,
+        // ModifiedColumnSet[] operatorOutputModifiedColumnSets) {
+        // for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+        // if (operatorIsDirty[opIdx]) {
+        // outputModifiedColumnSet.setAll(operatorOutputModifiedColumnSets[opIdx]);
+        // }
+        // }
+        // }
+        //
+        // public RowSet getAffectedRows() {
+        // return affectedRows;
+        // }
+        //
+        // public RowSet getInfluencerRows() {
+        // return influencerRows;
+        // }
+        //
 
         @Override
         public void close() {
@@ -138,11 +122,10 @@ public abstract class UpdateByWindow {
                 influencerRows.close();
                 influencerRows = null;
             }
-            try (final RowSet ignoredRs1 = affectedRows;
-                    final RowSet ignoredRs2 = newModified) {
+            try (final RowSet ignoredRs1 = affectedRows) {
             }
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if (opAffected[opIdx]) {
+                if (opContext[opIdx] != null) {
                     opContext[opIdx].close();
                 }
             }
@@ -162,22 +145,11 @@ public abstract class UpdateByWindow {
             final int chunkSize,
             final boolean isInitializeStep);
 
-    public void startTrackingModifications(@NotNull final QueryTable source, @NotNull final QueryTable result) {
-        trackModifications = true;
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            operatorInputModifiedColumnSets[opIdx] =
-                    source.newModifiedColumnSet(operators[opIdx].getAffectingColumnNames());
-        }
-    }
-
     protected UpdateByWindow(UpdateByOperator[] operators, int[][] operatorInputSourceSlots,
             @Nullable String timestampColumnName) {
         this.operators = operators;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.timestampColumnName = timestampColumnName;
-
-        operatorInputModifiedColumnSets = new ModifiedColumnSet[operators.length];
-        trackModifications = false;
     }
 
     public static UpdateByWindow createFromOperatorArray(final UpdateByOperator[] operators,
@@ -220,6 +192,43 @@ public abstract class UpdateByWindow {
         return operators;
     }
 
+    // region context-based functions
+
+    public abstract void computeAffectedRowsAndOperators(final UpdateByWindowContext context,
+            @NotNull final TableUpdate upstream);
+
+    protected abstract void makeOperatorContexts(final UpdateByWindowContext context);
+
+    protected void prepareValuesChunkForSource(final UpdateByWindowContext context, final int srcIdx,
+            final RowSequence rs) {
+        if (rs.isEmpty()) {
+            return;
+        }
+        if (!context.inputSourceChunkPopulated[srcIdx]) {
+            context.inputSourceChunks[srcIdx] =
+                    context.inputSources[srcIdx].getChunk(context.inputSourceGetContexts[srcIdx], rs);
+            context.inputSourceChunkPopulated[srcIdx] = true;
+        }
+    }
+
+    public abstract void processRows(final UpdateByWindowContext context,
+            final ColumnSource<?>[] inputSources,
+            final boolean initialStep);
+
+    public boolean isWindowDirty(final UpdateByWindowContext context) {
+        return context.isDirty;
+    }
+
+    public boolean isOperatorDirty(final UpdateByWindowContext context, int winOpIdx) {
+        return context.operatorIsDirty[winOpIdx];
+    }
+
+    public RowSet getModifiedRows(final UpdateByWindowContext context) {
+        return context.affectedRows;
+    }
+
+    // endregion
+
     protected static int hashCode(boolean windowed, @NotNull String[] inputColumnNames,
             @Nullable String timestampColumnName, long prevUnits,
             long fwdUnits) {
@@ -252,10 +261,7 @@ public abstract class UpdateByWindow {
     }
 
     public static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
-        final boolean aWindowed = opA instanceof UpdateByWindowedOperator;
-        final boolean bWindowed = opB instanceof UpdateByWindowedOperator;
-
-        // verify input columns
+        // verify input columns match
         String[] opAInput = opA.getInputColumnNames();
         String[] opBInput = opB.getInputColumnNames();
 
@@ -267,6 +273,9 @@ public abstract class UpdateByWindow {
                 return false;
             }
         }
+
+        final boolean aWindowed = opA instanceof UpdateByWindowedOperator;
+        final boolean bWindowed = opB instanceof UpdateByWindowedOperator;
 
         // equivalent if both are cumulative, not equivalent if only one is cumulative
         if (!aWindowed && !bWindowed) {

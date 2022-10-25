@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
@@ -17,13 +18,14 @@ import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
 import io.deephaven.engine.table.impl.util.InverseRowRedirectionImpl;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -37,10 +39,56 @@ public abstract class UpdateBy {
     protected final UpdateByOperator[] operators;
     protected final UpdateByWindow[] windows;
     protected final QueryTable source;
-
     protected final UpdateByRedirectionContext redirContext;
-
     protected final UpdateByControl control;
+    protected final String timestampColumnName;
+
+    protected final LinkedList<UpdateByBucketHelper> buckets;
+
+    // column-caching management
+
+    /** Whether caching benefits this UpdateBy operation */
+    protected final boolean inputCacheNeeded;
+    /** Whether caching benefits this input source */
+    protected final boolean[] inputSourceCacheNeeded;
+    /** The cached input sources for this update */
+    protected final CachedInputSource[] cachedInputSources;
+
+    /** The output table for this UpdateBy operation */
+    protected QueryTable result;
+    protected LinkedList<ListenerRecorder> recorders;
+    protected UpdateByListener listener;
+
+    protected static class CachedInputSource implements SafeCloseable {
+        public boolean isPopulated;
+        public final AtomicInteger referenceCount;
+        public WritableRowSet rowSet;
+        public ColumnSource<?>[] source;
+
+        public CachedInputSource() {
+            this.referenceCount = new AtomicInteger(1);
+            isPopulated = false;
+        }
+
+        public void addReference() {
+            referenceCount.incrementAndGet();
+        }
+
+        public void addRowSet(final RowSet inputRowSet) {
+            if (rowSet == null) {
+                rowSet = inputRowSet.copy();
+            } else {
+                // testing shows this union-ing is very efficient
+                rowSet.insert(inputRowSet);
+            }
+        }
+
+        @Override
+        public void close() {
+            try (final RowSet ignored = rowSet) {
+            }
+        }
+    }
 
     public static class UpdateByRedirectionContext implements Context {
         @Nullable
@@ -128,15 +176,16 @@ public abstract class UpdateBy {
         }
     }
 
-    protected UpdateBy(@NotNull final UpdateByOperator[] operators,
+    protected UpdateBy(@NotNull final String description,
+            @NotNull final QueryTable source,
+            @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final int[][] operatorInputSourceSlots,
-            @NotNull final QueryTable source,
+            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @Nullable String timestampColumnName,
             @NotNull final UpdateByRedirectionContext redirContext,
-            UpdateByControl control) {
-        this.control = control;
-        this.redirContext = redirContext;
+            @NotNull final UpdateByControl control) {
 
         if (operators.length == 0) {
             throw new IllegalArgumentException("At least one operator must be specified");
@@ -147,6 +196,136 @@ public abstract class UpdateBy {
         this.windows = windows;
         this.inputSources = inputSources;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
+        this.timestampColumnName = timestampColumnName;
+        this.redirContext = redirContext;
+        this.control = control;
+
+        this.inputSourceCacheNeeded = new boolean[inputSources.length];
+        this.cachedInputSources = new CachedInputSource[inputSources.length];
+
+        boolean cacheNeeded = false;
+        for (int ii = 0; ii < inputSources.length; ii++) {
+            inputSourceCacheNeeded[ii] = !FillUnordered.providesFillUnordered(inputSources[ii]);
+            cacheNeeded |= inputSourceCacheNeeded[ii];
+        }
+        this.inputCacheNeeded = cacheNeeded;
+
+        buckets = new LinkedList<>();
+    }
+
+    protected void shiftOutputColumns(TableUpdate upstream) {
+        if (redirContext.isRedirected()) {
+            redirContext.processUpdateForRedirection(upstream, source.getRowSet());
+        } else if (upstream.shifted().nonempty()) {
+            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                upstream.shifted().apply((begin, end, delta) -> {
+                    try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
+                        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                            operators[opIdx].applyOutputShift(subRowSet, delta);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    protected void processBuckets(UpdateByBucketHelper[] dirtyBuckets, final boolean initialStep) {
+        // if (inputCacheNeeded) {
+        // computeCachedColumnContents(buckets, initialStep);
+        // }
+
+        // let's start processing windows
+        for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+            // maybeCacheInputSources();
+            for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                bucket.processWindow(winIdx, inputSources, initialStep);
+            }
+            // maybeReleaseInputSources()
+        }
+    }
+
+    protected void finalizeBuckets(UpdateByBucketHelper[] dirtyBuckets) {
+        for (UpdateByBucketHelper bucket : dirtyBuckets) {
+            bucket.finalizeUpdate();
+        }
+    }
+
+    /**
+     * The Listener for apply to the constituent table updates
+     */
+    class UpdateByListener extends MergedListener {
+        public UpdateByListener(@Nullable String description) {
+            super(UpdateBy.this.recorders, List.of(), description, UpdateBy.this.result);
+        }
+
+        @Override
+        protected void process() {
+            UpdateByBucketHelper[] dirtyBuckets = buckets.stream().filter(b -> b.isDirty())
+                    .toArray(UpdateByBucketHelper[]::new);
+
+            // do the actual computations
+            processBuckets(dirtyBuckets, false);
+
+            final TableUpdateImpl downstream = new TableUpdateImpl();
+
+            // get the adds/removes/shifts from the first (source) entry, make a copy since TableUpdateImpl#reset will
+            // close them with the upstream update
+            ListenerRecorder sourceRecorder = recorders.peekFirst();
+            downstream.added = sourceRecorder.getAdded().copy();
+            downstream.removed = sourceRecorder.getRemoved().copy();
+            downstream.shifted = sourceRecorder.getShifted();
+
+            // union the modifies from all the tables (including source)
+            downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+            downstream.modifiedColumnSet.clear();
+
+            WritableRowSet modifiedRowSet = RowSetFactory.empty();
+            downstream.modified = modifiedRowSet;
+
+            if (sourceRecorder.getModified().isNonempty()) {
+                modifiedRowSet.insert(sourceRecorder.getModified());
+                downstream.modifiedColumnSet.setAll(sourceRecorder.getModifiedColumnSet());
+            }
+
+            for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                // retrieve the modified row and column sets from the windows
+                for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                    UpdateByWindow win = windows[winIdx];
+                    UpdateByWindow.UpdateByWindowContext winCtx = bucket.windowContexts[winIdx];
+
+                    if (win.isWindowDirty(winCtx)) {
+                        // add the window modified rows to this set
+                        modifiedRowSet.insert(win.getModifiedRows(winCtx));
+                        // add the modified output column sets to the downstream set
+                        final UpdateByOperator[] winOps = win.getOperators();
+                        for (int winOpIdx = 0; winOpIdx < winOps.length; winOpIdx++) {
+                            if (win.isOperatorDirty(winCtx, winOpIdx)) {
+                                // these were created directly from the result output columns so no transformer needed
+                                downstream.modifiedColumnSet.setAll(winOps[winOpIdx].outputModifiedColumnSet);
+                            }
+                        }
+                    }
+                }
+
+            }
+            // should not include upstream adds as modifies
+            modifiedRowSet.remove(downstream.added);
+
+            finalizeBuckets(dirtyBuckets);
+
+            result.notifyListeners(downstream);
+        }
+
+        @Override
+        protected boolean canExecute(final long step) {
+            synchronized (recorders) {
+                return recorders.stream().allMatch(lr -> lr.satisfied(step));
+            }
+        }
+    }
+
+    public UpdateByListener newListener(@NotNull final String description) {
+        return new UpdateByListener(description);
     }
 
     // region UpdateBy implementation
@@ -193,36 +372,53 @@ public abstract class UpdateBy {
             rowRedirection = null;
         }
 
-        // create an UpdateByRedirectionContext for use by the UpdateBy objects
-        UpdateByRedirectionContext ctx = new UpdateByRedirectionContext(rowRedirection);
+        // create an UpdateByRedirectionContext for use by the UpdateByBucketHelper objects
+        UpdateByRedirectionContext redirContext = new UpdateByRedirectionContext(rowRedirection);
 
-        // TODO(deephaven-core#2693): Improve UpdateBy implementation for ColumnName
+        // TODO(deephaven-core#2693): Improve UpdateByBucketHelper implementation for ColumnName
         // generate a MatchPair array for use by the existing algorithm
         MatchPair[] pairs = MatchPair.fromPairs(byColumns);
 
         final UpdateByOperatorFactory updateByOperatorFactory =
-                new UpdateByOperatorFactory(source, pairs, ctx, control);
+                new UpdateByOperatorFactory(source, pairs, redirContext, control);
         final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
+
+        final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
+
+        if (opArr.length == 0) {
+            throw new IllegalArgumentException("At least one operator must be specified");
+        }
 
         final StringBuilder descriptionBuilder = new StringBuilder("updateBy(ops={")
                 .append(updateByOperatorFactory.describe(clauses))
                 .append("}");
 
+        String timestampColumnName = null;
         final Set<String> problems = new LinkedHashSet<>();
         // noinspection rawtypes
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
-        ops.forEach(op -> op.getOutputColumns().forEach((name, col) -> {
-            if (opResultSources.putIfAbsent(name, col) != null) {
-                problems.add(name);
+        for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
+            final UpdateByOperator op = opArr[opIdx];
+            op.getOutputColumns().forEach((name, col) -> {
+                if (opResultSources.putIfAbsent(name, col) != null) {
+                    problems.add(name);
+                }
+            });
+            // verify zero or one timestamp column names
+            if (op.getTimestampColumnName() != null) {
+                if (timestampColumnName == null) {
+                    timestampColumnName = op.getTimestampColumnName();
+                } else {
+                    if (!timestampColumnName.equals(op.getTimestampColumnName())) {
+                        throw new UncheckedTableException(
+                                "Cannot reference more than one timestamp source on a single UpdateByBucketHelper operation {"
+                                        +
+                                        timestampColumnName + ", " + op.getTimestampColumnName() + "}");
+                    }
+                }
             }
-        }));
 
-        if (!problems.isEmpty()) {
-            throw new UncheckedTableException("Multiple Operators tried to produce the same output columns {" +
-                    String.join(", ", problems) + "}");
         }
-
-        final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
 
         // the next bit is complicated but the goal is simple. We don't want to have duplicate input column sources, so
         // we will store each one only once in inputSources and setup some mapping from the opIdx to the input column.
@@ -303,7 +499,7 @@ public abstract class UpdateBy {
 
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
-            Table ret = ZeroKeyUpdateBy.compute(
+            Table ret = ZeroKeyUpdateByManager.compute(
                     descriptionBuilder.toString(),
                     source,
                     opArr,
@@ -311,9 +507,9 @@ public abstract class UpdateBy {
                     inputSourceArr,
                     operatorInputSourceSlotArr,
                     resultSources,
-                    ctx,
-                    control,
-                    true);
+                    timestampColumnName,
+                    redirContext,
+                    control);
 
             if (source.isRefreshing()) {
                 // start tracking previous values
@@ -339,7 +535,7 @@ public abstract class UpdateBy {
                     String.join(", ", problems) + "}");
         }
 
-        Table ret = BucketedPartitionedUpdateBy.compute(
+        Table ret = BucketedPartitionedUpdateByManager.compute(
                 descriptionBuilder.toString(),
                 source,
                 opArr,
@@ -348,7 +544,8 @@ public abstract class UpdateBy {
                 operatorInputSourceSlotArr,
                 resultSources,
                 byColumns,
-                ctx,
+                timestampColumnName,
+                redirContext,
                 control);
 
         if (source.isRefreshing()) {
