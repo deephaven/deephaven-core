@@ -10,6 +10,7 @@ import io.deephaven.proto.backplane.grpc.ConfigPair;
 import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
+import io.deephaven.server.session.SessionService;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
@@ -30,9 +31,11 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
     private static final String CLIENT_CONFIG_PROPERTY = "client.configuration.list";
 
     private final Configuration configuration = Configuration.getInstance();
+    private final SessionService sessionService;
 
     @Inject
-    public ConfigServiceGrpcImpl() {
+    public ConfigServiceGrpcImpl(SessionService sessionService) {
+        this.sessionService = sessionService;
         // On startup, lookup the versions to make available.
         for (String pair : configuration.getStringArrayFromProperty(VERSION_LIST_PROPERTY)) {
             pair = pair.trim();
@@ -72,6 +75,9 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
     public void getConfigurationConstants(ConfigurationConstantsRequest request,
             StreamObserver<ConfigurationConstantsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            // Read the current session so we throw if not authenticated
+            sessionService.getCurrentSession();
+
             ConfigurationConstantsResponse.Builder builder = ConfigurationConstantsResponse.newBuilder();
             collectConfigs(builder::addConfigValues, CLIENT_CONFIG_PROPERTY);
             responseObserver.onNext(builder.build());
