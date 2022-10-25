@@ -14,6 +14,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Base result class for operations that produce hierarchical tables, for example {@link Table#rollup rollup} and
@@ -63,6 +66,16 @@ abstract class BaseHierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_
     @Override
     public Table getRoot() {
         return root;
+    }
+
+    @Override
+    protected void checkAvailableColumns(@NotNull final Collection<String> columns) {
+        final Set<String> availableColumns = root.getDefinition().getColumnNameMap().keySet();
+        final List<String> missingColumns =
+                columns.stream().filter(column -> !availableColumns.contains(column)).collect(Collectors.toList());
+        if (!missingColumns.isEmpty()) {
+            throw new NoSuchColumnException(availableColumns, missingColumns);
+        }
     }
 
     // TODO-RWC: Be sure to take format columns into account for table definitions. Prune formats applied to both for
