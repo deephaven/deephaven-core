@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -250,7 +251,6 @@ class UpdateByBucketHelper {
         for (int winIdx = 0; winIdx < windows.length; winIdx++) {
             windowContexts[winIdx] = windows[winIdx].makeWindowContext(
                     sourceRowSet,
-                    inputSources,
                     timestampColumnSource,
                     timestampSsa,
                     control.chunkCapacityOrDefault(),
@@ -272,13 +272,15 @@ class UpdateByBucketHelper {
         return isDirty;
     }
 
-    public void processWindow(final int winIdx,
-            final ColumnSource<?>[] inputSources,
-            final boolean initialStep) {
-        // call the window.process() with the correct context for this bucket
-        if (windows[winIdx].isWindowDirty(windowContexts[winIdx])) {
-            windows[winIdx].processRows(windowContexts[winIdx], inputSources, initialStep);
+    public void assignInputSources(final int winIdx, final ColumnSource<?>[] inputSources) {
+        windows[winIdx].assignInputSources(windowContexts[winIdx], inputSources);
+    }
+
+    public void processWindow(final int winIdx, final boolean initialStep) {
+        if (!windows[winIdx].isWindowDirty(windowContexts[winIdx])) {
+            return; // no work to do for this bucket window
         }
+        windows[winIdx].processRows(windowContexts[winIdx], initialStep);
     }
 
     public void finalizeUpdate() {

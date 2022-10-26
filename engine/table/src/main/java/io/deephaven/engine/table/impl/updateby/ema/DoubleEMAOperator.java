@@ -22,14 +22,13 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.*;
 
 public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
-    protected class Context extends BasePrimitiveEMAOperator.Context {
-        private final ColumnSource<?> valueSource;
+    private final ColumnSource<?> valueSource;
 
+    protected class Context extends BasePrimitiveEMAOperator.Context {
         public DoubleChunk<? extends Values> doubleValueChunk;
 
-        protected Context(int chunkSize, ColumnSource<?>[] inputSourceArr) {
+        protected Context(int chunkSize) {
             super(chunkSize);
-            this.valueSource = inputSourceArr[0];
         }
 
         @Override
@@ -139,18 +138,20 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
                             @NotNull final OperationControl control,
                             @Nullable final String timestampColumnName,
                             final long timeScaleUnits,
-                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+                            final ColumnSource<?> valueSource
                             // region extra-constructor-args
                             // endregion extra-constructor-args
                             ) {
         super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirContext);
+        this.valueSource = valueSource;
         // region constructor
         // endregion constructor
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?>[] inputSourceArr) {
-        return new Context(chunkSize, inputSourceArr);
+    public UpdateContext makeUpdateContext(int chunkSize) {
+        return new Context(chunkSize);
     }
 }

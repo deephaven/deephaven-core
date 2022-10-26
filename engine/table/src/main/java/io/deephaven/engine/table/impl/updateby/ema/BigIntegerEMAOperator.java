@@ -18,8 +18,8 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
     public class Context extends BigNumberEMAOperator<BigInteger>.Context {
-        protected Context(int chunkSize, ColumnSource<?>[] inputSourceArr) {
-            super(chunkSize, inputSourceArr);
+        protected Context(int chunkSize) {
+            super(chunkSize);
         }
 
         @Override
@@ -112,14 +112,14 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                                  @NotNull final OperationControl control,
                                  @Nullable final String timestampColumnName,
                                  final long timeScaleUnits,
-                                 @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
-    ) {
-        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirContext);
+                                 @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+                                 final ColumnSource<?> valueSource) {
+        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirContext, valueSource);
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?>[] inputSourceArr) {
-        return new Context(chunkSize, inputSourceArr);
+    public UpdateContext makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 }

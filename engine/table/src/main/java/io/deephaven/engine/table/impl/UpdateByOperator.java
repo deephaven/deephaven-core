@@ -183,11 +183,10 @@ public abstract class UpdateByOperator {
      * Make an {@link UpdateContext} suitable for use with updates.
      *
      * @param chunkSize The expected size of chunks that will be provided during the update,
-     * @param inputSourceArr The column sources that contains the input values needed by the operator
      * @return a new context
      */
     @NotNull
-    public abstract UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?>[] inputSourceArr);
+    public abstract UpdateContext makeUpdateContext(final int chunkSize);
 
     /**
      * Perform and bookkeeping required at the end of a single part of the update. This is always preceded with a call

@@ -1,5 +1,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
@@ -19,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -43,10 +46,10 @@ public class UpdateByWindowTime extends UpdateByWindow {
         protected long influencerTimestampChunkSize;
         protected int currentGetContextSize;
 
-        public UpdateByWindowTimeContext(final TrackingRowSet sourceRowSet, final ColumnSource<?>[] inputSources,
+        public UpdateByWindowTimeContext(final TrackingRowSet sourceRowSet,
                 @NotNull final ColumnSource<?> timestampColumnSource,
                 @Nullable final LongSegmentedSortedArray timestampSsa, final int chunkSize, final boolean initialStep) {
-            super(sourceRowSet, inputSources, timestampColumnSource, timestampSsa, chunkSize, initialStep);
+            super(sourceRowSet, timestampColumnSource, timestampSsa, chunkSize, initialStep);
 
             influencerTimestampContext = timestampColumnSource.makeGetContext(WINDOW_CHUNK_SIZE);
             currentWindowTimestamps = new LongRingBuffer(512, true);
@@ -63,13 +66,32 @@ public class UpdateByWindowTime extends UpdateByWindow {
 
     }
 
+    UpdateByWindowTime(UpdateByOperator[] operators, int[][] operatorSourceSlots, @Nullable String timestampColumnName,
+                       long prevUnits, long fwdUnits) {
+        super(operators, operatorSourceSlots, timestampColumnName);
+        this.prevUnits = prevUnits;
+        this.fwdUnits = fwdUnits;
+    }
+
+    @Override
+    protected void makeOperatorContexts(UpdateByWindowContext context) {
+        UpdateByWindowTimeContext ctx = (UpdateByWindowTimeContext) context;
+
+        ctx.workingChunkSize = UpdateByWindowTimeContext.WINDOW_CHUNK_SIZE;
+        ctx.currentGetContextSize = ctx.workingChunkSize;
+
+        // create contexts for the affected operators
+        for (int opIdx : context.dirtyOperatorIndices) {
+            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize);
+        }
+    }
+
     public UpdateByWindowContext makeWindowContext(final TrackingRowSet sourceRowSet,
-            final ColumnSource<?>[] inputSources,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
             final boolean isInitializeStep) {
-        return new UpdateByWindowTimeContext(sourceRowSet, inputSources, timestampColumnSource, timestampSsa, chunkSize,
+        return new UpdateByWindowTimeContext(sourceRowSet, timestampColumnSource, timestampSsa, chunkSize,
                 isInitializeStep);
     }
 
@@ -152,19 +174,17 @@ public class UpdateByWindowTime extends UpdateByWindow {
             // use this to determine which input sources are initialized
             Arrays.fill(ctx.inputSourceChunkPopulated, false);
 
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if (ctx.operatorIsDirty[opIdx]) {
-                    final int[] sourceIndices = operatorInputSourceSlots[opIdx];
-                    for (int sourceSlot : sourceIndices) {
-                        if (!ctx.inputSourceChunkPopulated[sourceSlot]) {
-                            // close the existing context
-                            ctx.inputSourceGetContexts[sourceSlot].close();
+            for (int opIdx : ctx.dirtyOperatorIndices) {
+                final int[] sourceIndices = operatorInputSourceSlots[opIdx];
+                for (int sourceSlot : sourceIndices) {
+                    if (!ctx.inputSourceChunkPopulated[sourceSlot]) {
+                        // close the existing context
+                        ctx.inputSourceGetContexts[sourceSlot].close();
 
-                            // create a new context of the larger size
-                            ctx.inputSourceGetContexts[sourceSlot] =
-                                    ctx.inputSources[sourceSlot].makeGetContext(ctx.currentGetContextSize);
-                            ctx.inputSourceChunkPopulated[sourceSlot] = true;
-                        }
+                        // create a new context of the larger size
+                        ctx.inputSourceGetContexts[sourceSlot] =
+                                ctx.inputSources[sourceSlot].makeGetContext(ctx.currentGetContextSize);
+                        ctx.inputSourceChunkPopulated[sourceSlot] = true;
                     }
                 }
             }
@@ -209,7 +229,8 @@ public class UpdateByWindowTime extends UpdateByWindow {
             ctx.influencerRows = ctx.affectedRows;
 
             // mark all operators as affected by this update
-            Arrays.fill(ctx.operatorIsDirty, true);
+            context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
+            context.dirtySourceIndices = getUniqueSourceIndices();
 
             makeOperatorContexts(ctx);
             ctx.isDirty = true;
@@ -221,13 +242,26 @@ public class UpdateByWindowTime extends UpdateByWindow {
         boolean allAffected = upstream.added().isNonempty() ||
                 upstream.removed().isNonempty();
 
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            ctx.operatorIsDirty[opIdx] = allAffected
-                    || (upstream.modifiedColumnSet().nonempty() && (operators[opIdx].getInputModifiedColumnSet() == null
-                            || upstream.modifiedColumnSet().containsAny(operators[opIdx].getInputModifiedColumnSet())));
-            if (ctx.operatorIsDirty[opIdx]) {
-                ctx.isDirty = true;
+        if (allAffected) {
+            // mark all operators as affected by this update
+            context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
+            context.dirtySourceIndices = getUniqueSourceIndices();
+            context.isDirty = true;
+        } else {
+            // determine which operators are affected by this update
+            TIntArrayList dirtyOperatorList = new TIntArrayList(operators.length);
+            TIntHashSet inputSourcesSet = new TIntHashSet(getUniqueSourceIndices().length);
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                UpdateByOperator op = operators[opIdx];
+                if (upstream.modifiedColumnSet().nonempty() && (op.getInputModifiedColumnSet() == null
+                        || upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()))) {
+                    dirtyOperatorList.add(opIdx);
+                    inputSourcesSet.addAll(operatorInputSourceSlots[opIdx]);
+                    context.isDirty = true;
+                }
             }
+            context.dirtyOperatorIndices = dirtyOperatorList.toArray();
+            context.dirtySourceIndices = inputSourcesSet.toArray();
         }
 
         if (!ctx.isDirty) {
@@ -263,39 +297,6 @@ public class UpdateByWindowTime extends UpdateByWindow {
         makeOperatorContexts(ctx);
     }
 
-    @Override
-    protected void makeOperatorContexts(UpdateByWindowContext context) {
-        UpdateByWindowTimeContext ctx = (UpdateByWindowTimeContext) context;
-
-        // use this to make which input sources are initialized
-        Arrays.fill(ctx.inputSourceChunkPopulated, false);
-
-        // create contexts for the affected operators
-        ctx.currentGetContextSize = UpdateByWindowTimeContext.WINDOW_CHUNK_SIZE;
-
-        // working chunk size need not be larger than affectedRows.size()
-        ctx.workingChunkSize = Math.min(ctx.workingChunkSize, ctx.affectedRows.intSize());
-
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            if (ctx.operatorIsDirty[opIdx]) {
-                // create the fill contexts for the input sources
-                final int[] sourceIndices = operatorInputSourceSlots[opIdx];
-                final ColumnSource<?>[] inputSourceArr = new ColumnSource[sourceIndices.length];
-                for (int ii = 0; ii < sourceIndices.length; ii++) {
-                    int sourceSlot = sourceIndices[ii];
-                    if (!ctx.inputSourceChunkPopulated[sourceSlot]) {
-                        ctx.inputSourceGetContexts[sourceSlot] =
-                                ctx.inputSources[sourceSlot].makeGetContext(ctx.currentGetContextSize);
-                        ctx.inputSourceChunkPopulated[sourceSlot] = true;
-                    }
-                    inputSourceArr[ii] = ctx.inputSources[sourceSlot];
-                }
-                ctx.opContext[opIdx] = operators[opIdx].makeUpdateContext(ctx.workingChunkSize, inputSourceArr);
-            }
-        }
-    }
-
-
     /***
      * This function process the affected rows chunkwise, and will advance the moving window (which is the same for all
      * operators in this collection). For each row in the dataset the sliding window will adjust and instructions for
@@ -306,15 +307,13 @@ public class UpdateByWindowTime extends UpdateByWindow {
      * calls do not provide the popped data
      */
     @Override
-    public void processRows(UpdateByWindowContext context, ColumnSource<?>[] inputSources, boolean initialStep) {
+    public void processRows(UpdateByWindowContext context, boolean initialStep) {
         UpdateByWindowTimeContext ctx = (UpdateByWindowTimeContext) context;
 
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            if (ctx.operatorIsDirty[opIdx]) {
-                UpdateByWindowedOperator winOp = (UpdateByWindowedOperator) operators[opIdx];
-                // call the specialized version of `intializeUpdate()` for these operators
-                winOp.initializeUpdate(ctx.opContext[opIdx]);
-            }
+        for (int opIdx : context.dirtyOperatorIndices) {
+            UpdateByWindowedOperator winOp = (UpdateByWindowedOperator) operators[opIdx];
+            // call the specialized version of `intializeUpdate()` for these operators
+            winOp.initializeUpdate(ctx.opContext[opIdx]);
         }
 
         ctx.influencerIt = ctx.influencerRows.getRowSequenceIterator();
@@ -402,8 +401,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
                     ensureGetContextSize(ctx, chunkInfluencerRs.size());
 
                     Arrays.fill(ctx.inputSourceChunkPopulated, false);
-                    for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                        if (ctx.operatorIsDirty[opIdx]) {
+                    for (int opIdx : context.dirtyOperatorIndices) {
                             // prep the chunk array needed by the accumulate call
                             final int[] srcIndices = operatorInputSourceSlots[opIdx];
                             Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
@@ -424,21 +422,11 @@ public class UpdateByWindowTime extends UpdateByWindow {
                         }
                     }
                 }
-            }
         }
 
         // call `finishUpdate()` function for each operator
-        for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-            if (ctx.operatorIsDirty[opIdx]) {
-                operators[opIdx].finishUpdate(ctx.opContext[opIdx]);
-            }
+        for (int opIdx : context.dirtyOperatorIndices) {
+            operators[opIdx].finishUpdate(context.opContext[opIdx]);
         }
-    }
-
-    UpdateByWindowTime(UpdateByOperator[] operators, int[][] operatorSourceSlots, @Nullable String timestampColumnName,
-            long prevUnits, long fwdUnits) {
-        super(operators, operatorSourceSlots, timestampColumnName);
-        this.prevUnits = prevUnits;
-        this.fwdUnits = fwdUnits;
     }
 }

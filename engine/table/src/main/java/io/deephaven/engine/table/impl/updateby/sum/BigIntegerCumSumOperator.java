@@ -54,7 +54,7 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize, ColumnSource<?>[] inputSourceArr) {
+    public UpdateContext makeUpdateContext(int chunkSize) {
         return new Context(chunkSize);
     }
 }

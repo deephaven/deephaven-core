@@ -20,6 +20,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
+    protected final ColumnSource<?> valueSource;
     protected final OperationControl control;
     protected final double timeScaleUnits;
     protected final BigDecimal alpha;
@@ -27,15 +28,13 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
 
     public abstract class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
-        protected final ColumnSource<?> valueSource;
         public LongChunk<? extends Values> timestampValueChunk;
         public ObjectChunk<T, ? extends Values> objectValueChunk;
 
         long lastStamp = NULL_LONG;
 
-        protected Context(int chunkSize, ColumnSource<?>[] inputSourceArr) {
+        protected Context(int chunkSize) {
             super(chunkSize);
-            this.valueSource = inputSourceArr[0];
         }
 
         @Override
@@ -74,12 +73,14 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+            final ColumnSource<?> valueSource) {
         super(pair, affectingColumns, redirContext, BigDecimal.class);
 
         this.control = control;
         this.timestampColumnName = timestampColumnName;
         this.timeScaleUnits = (double) timeScaleUnits;
+        this.valueSource = valueSource;
 
         alpha = BigDecimal.valueOf(Math.exp(-1.0 / (double) timeScaleUnits));
         oneMinusAlpha =

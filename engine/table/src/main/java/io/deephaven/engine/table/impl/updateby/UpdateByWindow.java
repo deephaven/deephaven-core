@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
@@ -8,9 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
@@ -28,14 +25,10 @@ public abstract class UpdateByWindow {
     // store the index in the {@link UpdateBy.inputSources}
     protected final int[][] operatorInputSourceSlots;
 
+    protected int[] uniqueInputSourceIndices;
+
     /** This context will store the necessary info to process a single window for a single bucket */
     public abstract class UpdateByWindowContext implements SafeCloseable {
-        /** Indicates this bucket window needs to be processed */
-        protected boolean isDirty;
-
-        /** Indicates this operator needs to be processed */
-        protected final boolean[] operatorIsDirty;
-
         /** store a reference to the source rowset */
         protected final TrackingRowSet sourceRowSet;
 
@@ -50,19 +43,19 @@ public abstract class UpdateByWindow {
         /** An array of context objects for each underlying operator */
         protected final UpdateByOperator.UpdateContext[] opContext;
 
+        protected final boolean initialStep;
+
         /** An array of ColumnSources for each underlying operator */
-        protected final ColumnSource<?>[] inputSources;
+        protected ColumnSource<?>[] inputSources;
 
         /** An array of {@link ChunkSource.GetContext}s for each input column */
-        protected final ChunkSource.GetContext[] inputSourceGetContexts;
+        protected ChunkSource.GetContext[] inputSourceGetContexts;
 
         /** A set of chunks used to store working values */
-        protected final Chunk<? extends Values>[] inputSourceChunks;
+        protected Chunk<? extends Values>[] inputSourceChunks;
 
         /** An indicator of if each slot has been populated with data or not for this phase. */
-        protected final boolean[] inputSourceChunkPopulated;
-
-        protected final boolean initialStep;
+        protected boolean[] inputSourceChunkPopulated;
 
         /** the rows affected by this update */
         protected RowSet affectedRows;
@@ -71,49 +64,28 @@ public abstract class UpdateByWindow {
 
         protected int workingChunkSize;
 
-        public UpdateByWindowContext(final TrackingRowSet sourceRowSet, final ColumnSource<?>[] inputSources,
+        /** Indicates this bucket window needs to be processed */
+        protected boolean isDirty;
+
+        /** Indicates which operators need to be processed */
+        protected int[] dirtyOperatorIndices;
+
+        /** Not actually dity, but indicates which sources are need to process this window context */
+        protected int[] dirtySourceIndices;
+
+        public UpdateByWindowContext(final TrackingRowSet sourceRowSet,
                 @Nullable final ColumnSource<?> timestampColumnSource,
                 @Nullable final LongSegmentedSortedArray timestampSsa, final int chunkSize, final boolean initialStep) {
             this.sourceRowSet = sourceRowSet;
-            this.inputSources = inputSources;
             this.timestampColumnSource = timestampColumnSource;
             this.timestampSsa = timestampSsa;
 
-            this.operatorIsDirty = new boolean[operators.length];
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
-            this.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
-            this.inputSourceChunkPopulated = new boolean[inputSources.length];
-            // noinspection unchecked
-            this.inputSourceChunks = new WritableChunk[inputSources.length];
 
             this.workingChunkSize = chunkSize;
             this.initialStep = initialStep;
             this.isDirty = false;
         }
-
-
-
-        // public boolean anyModified() {
-        // return newModified != null && newModified.isNonempty();
-        // }
-        //
-        // public void updateOutputModifiedColumnSet(ModifiedColumnSet outputModifiedColumnSet,
-        // ModifiedColumnSet[] operatorOutputModifiedColumnSets) {
-        // for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-        // if (operatorIsDirty[opIdx]) {
-        // outputModifiedColumnSet.setAll(operatorOutputModifiedColumnSets[opIdx]);
-        // }
-        // }
-        // }
-        //
-        // public RowSet getAffectedRows() {
-        // return affectedRows;
-        // }
-        //
-        // public RowSet getInfluencerRows() {
-        // return influencerRows;
-        // }
-        //
 
         @Override
         public void close() {
@@ -129,17 +101,18 @@ public abstract class UpdateByWindow {
                     opContext[opIdx].close();
                 }
             }
-            for (int srcIdx = 0; srcIdx < inputSources.length; srcIdx++) {
-                if (inputSourceGetContexts[srcIdx] != null) {
-                    inputSourceGetContexts[srcIdx].close();
-                    inputSourceGetContexts[srcIdx] = null;
+            if (inputSources != null) {
+                for (int srcIdx = 0; srcIdx < inputSources.length; srcIdx++) {
+                    if (inputSourceGetContexts[srcIdx] != null) {
+                        inputSourceGetContexts[srcIdx].close();
+                        inputSourceGetContexts[srcIdx] = null;
+                    }
                 }
             }
         }
     }
 
     public abstract UpdateByWindowContext makeWindowContext(final TrackingRowSet sourceRowSet,
-            final ColumnSource<?>[] inputSources,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
@@ -192,12 +165,40 @@ public abstract class UpdateByWindow {
         return operators;
     }
 
+    public int[][] getOperatorInputSourceSlots() {
+        return operatorInputSourceSlots;
+    }
+
+    public int[] getUniqueSourceIndices() {
+        if (uniqueInputSourceIndices == null) {
+            final TIntHashSet set = new TIntHashSet();
+            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
+                set.addAll(operatorInputSourceSlots[opIdx]);
+            }
+            uniqueInputSourceIndices = set.toArray();
+        }
+        return uniqueInputSourceIndices;
+    }
+
     // region context-based functions
 
     public abstract void computeAffectedRowsAndOperators(final UpdateByWindowContext context,
             @NotNull final TableUpdate upstream);
 
     protected abstract void makeOperatorContexts(final UpdateByWindowContext context);
+
+    public void assignInputSources(final UpdateByWindowContext context, final ColumnSource<?>[] inputSources) {
+        context.inputSources = inputSources;
+        context.inputSourceChunkPopulated = new boolean[inputSources.length];
+        context.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
+        // noinspection unchecked
+        context.inputSourceChunks = new WritableChunk[inputSources.length];
+
+        for (int srcIdx : context.dirtySourceIndices) {
+            context.inputSourceGetContexts[srcIdx] =
+                    context.inputSources[srcIdx].makeGetContext(context.workingChunkSize);
+        }
+    }
 
     protected void prepareValuesChunkForSource(final UpdateByWindowContext context, final int srcIdx,
             final RowSequence rs) {
@@ -211,20 +212,26 @@ public abstract class UpdateByWindow {
         }
     }
 
-    public abstract void processRows(final UpdateByWindowContext context,
-            final ColumnSource<?>[] inputSources,
-            final boolean initialStep);
+    public abstract void processRows(final UpdateByWindowContext context, final boolean initialStep);
 
     public boolean isWindowDirty(final UpdateByWindowContext context) {
         return context.isDirty;
     }
 
-    public boolean isOperatorDirty(final UpdateByWindowContext context, int winOpIdx) {
-        return context.operatorIsDirty[winOpIdx];
+    public int[] getDirtyOperators(final UpdateByWindowContext context) {
+        return context.dirtyOperatorIndices;
     }
 
-    public RowSet getModifiedRows(final UpdateByWindowContext context) {
+    public int[] getDirtySources(final UpdateByWindowContext context) {
+        return context.dirtySourceIndices;
+    }
+
+    public RowSet getAffectedRows(final UpdateByWindowContext context) {
         return context.affectedRows;
+    }
+
+    public RowSet getInfluencerRows(final UpdateByWindowContext context) {
+        return context.influencerRows;
     }
 
     // endregion

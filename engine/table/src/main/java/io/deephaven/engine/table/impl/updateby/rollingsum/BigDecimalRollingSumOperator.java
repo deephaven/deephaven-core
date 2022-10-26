@@ -81,7 +81,7 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
 
     @NotNull
     @Override
-    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize, ColumnSource<?>[] inputSourceArr) {
+    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize) {
         return new Context(chunkSize);
     }
 

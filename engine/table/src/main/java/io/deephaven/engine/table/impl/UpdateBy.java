@@ -6,6 +6,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
@@ -13,6 +14,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
 import io.deephaven.engine.table.impl.util.InverseRowRedirectionImpl;
@@ -47,48 +49,21 @@ public abstract class UpdateBy {
 
     // column-caching management
 
-    /** Whether caching benefits this UpdateBy operation */
+    /**
+     * Whether caching benefits this UpdateBy operation
+     */
     protected final boolean inputCacheNeeded;
-    /** Whether caching benefits this input source */
+    /**
+     * Whether caching benefits this input source
+     */
     protected final boolean[] inputSourceCacheNeeded;
-    /** The cached input sources for this update */
-    protected final CachedInputSource[] cachedInputSources;
 
-    /** The output table for this UpdateBy operation */
+    /**
+     * The output table for this UpdateBy operation
+     */
     protected QueryTable result;
     protected LinkedList<ListenerRecorder> recorders;
     protected UpdateByListener listener;
-
-    protected static class CachedInputSource implements SafeCloseable {
-        public boolean isPopulated;
-        public final AtomicInteger referenceCount;
-        public WritableRowSet rowSet;
-        public ColumnSource<?>[] source;
-
-        public CachedInputSource() {
-            this.referenceCount = new AtomicInteger(1);
-            isPopulated = false;
-        }
-
-        public void addReference() {
-            referenceCount.incrementAndGet();
-        }
-
-        public void addRowSet(final RowSet inputRowSet) {
-            if (rowSet == null) {
-                rowSet = inputRowSet.copy();
-            } else {
-                // testing shows this union-ing is very efficient
-                rowSet.insert(inputRowSet);
-            }
-        }
-
-        @Override
-        public void close() {
-            try (final RowSet ignored = rowSet) {
-            }
-        }
-    }
 
     public static class UpdateByRedirectionContext implements Context {
         @Nullable
@@ -161,7 +136,7 @@ public abstract class UpdateBy {
         }
 
         private boolean shiftRedirectedKey(@NotNull final RowSet.SearchIterator iterator, final long delta,
-                final long key) {
+                                           final long key) {
             final long inner = rowRedirection.remove(key);
             if (inner != NULL_ROW_KEY) {
                 rowRedirection.put(key + delta, inner);
@@ -177,15 +152,15 @@ public abstract class UpdateBy {
     }
 
     protected UpdateBy(@NotNull final String description,
-            @NotNull final QueryTable source,
-            @NotNull final UpdateByOperator[] operators,
-            @NotNull final UpdateByWindow[] windows,
-            @NotNull final ColumnSource<?>[] inputSources,
-            @NotNull final int[][] operatorInputSourceSlots,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @Nullable String timestampColumnName,
-            @NotNull final UpdateByRedirectionContext redirContext,
-            @NotNull final UpdateByControl control) {
+                       @NotNull final QueryTable source,
+                       @NotNull final UpdateByOperator[] operators,
+                       @NotNull final UpdateByWindow[] windows,
+                       @NotNull final ColumnSource<?>[] inputSources,
+                       @NotNull final int[][] operatorInputSourceSlots,
+                       @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+                       @Nullable String timestampColumnName,
+                       @NotNull final UpdateByRedirectionContext redirContext,
+                       @NotNull final UpdateByControl control) {
 
         if (operators.length == 0) {
             throw new IllegalArgumentException("At least one operator must be specified");
@@ -201,7 +176,6 @@ public abstract class UpdateBy {
         this.control = control;
 
         this.inputSourceCacheNeeded = new boolean[inputSources.length];
-        this.cachedInputSources = new CachedInputSource[inputSources.length];
 
         boolean cacheNeeded = false;
         for (int ii = 0; ii < inputSources.length; ii++) {
@@ -211,6 +185,125 @@ public abstract class UpdateBy {
         this.inputCacheNeeded = cacheNeeded;
 
         buckets = new LinkedList<>();
+    }
+
+    private ColumnSource<?> getCachedColumn(ColumnSource<?> inputSource, final RowSet inputRowSet) {
+        final SparseArrayColumnSource<?> outputSource = SparseArrayColumnSource
+                .getSparseMemoryColumnSource(inputSource.getType(), inputSource.getComponentType());
+
+        final int CHUNK_SIZE = 1 << 16;
+
+        try (final RowSequence.Iterator rsIt = inputRowSet.getRowSequenceIterator();
+             final ChunkSink.FillFromContext ffc =
+                     outputSource.makeFillFromContext(CHUNK_SIZE);
+             final ChunkSource.GetContext gc = inputSource.makeGetContext(CHUNK_SIZE)) {
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+                final Chunk<? extends Values> values = inputSource.getChunk(gc, chunkOk);
+                outputSource.fillFromChunk(ffc, values, chunkOk);
+            }
+        }
+
+        return outputSource;
+    }
+
+    /**
+     * Examine the buckets and identify the input sources that will benefit from caching. Accumulate the bucket
+     * rowsets for each source independently so the caches are as efficient as possible
+     */
+    private void computeCachedColumnContents(UpdateByBucketHelper[] buckets, boolean initialStep, WritableRowSet[] inputSourceRowSets, AtomicInteger[] inputSourceReferenceCounts) {
+        // on the initial step, everything is dirty and we can optimize
+        if (initialStep) {
+            for (int srcIdx = 0; srcIdx < inputSources.length; srcIdx++) {
+                if (inputSourceCacheNeeded[srcIdx]) {
+                    inputSourceRowSets[srcIdx] = source.getRowSet().copy();
+                }
+            }
+
+            // add reference counts for each window
+            for (final UpdateByWindow win : windows) {
+                final int[] uniqueWindowSources = win.getUniqueSourceIndices();
+                for (int srcIdx : uniqueWindowSources) {
+                    if (inputSourceCacheNeeded[srcIdx]) {
+                        // increment the reference count for this input source
+                        if (inputSourceReferenceCounts[srcIdx] == null) {
+                            inputSourceReferenceCounts[srcIdx] = new AtomicInteger(1);
+                        } else {
+                            inputSourceReferenceCounts[srcIdx].incrementAndGet();
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
+        // on update steps, we can be more precise and cache exactly what is needed by the update
+        final boolean[] cacheNeeded = new boolean[inputSources.length];
+
+        for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+            final UpdateByWindow win = windows[winIdx];
+            final int[] uniqueWindowSources = win.getUniqueSourceIndices();
+
+            Arrays.fill(cacheNeeded, false);
+
+            // for each bucket, need to accumulate the rowset if this window is dirty
+            for (UpdateByBucketHelper bucket : buckets) {
+                UpdateByWindow.UpdateByWindowContext winCtx = bucket.windowContexts[winIdx];
+                if (win.isWindowDirty(winCtx)) {
+                    //
+                    for (int srcIdx : uniqueWindowSources) {
+                        if (inputSourceCacheNeeded[srcIdx]) {
+                            // record that this window requires this input source
+                            cacheNeeded[srcIdx] = true;
+                            // add this rowset to the running total
+                            if (inputSourceRowSets[srcIdx] == null) {
+                                inputSourceRowSets[srcIdx] = win.getInfluencerRows(winCtx).copy();
+                            } else {
+                                inputSourceRowSets[srcIdx].insert(win.getInfluencerRows(winCtx));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // add one to all the reference counts this windows
+            for (int srcIdx : uniqueWindowSources) {
+                if (cacheNeeded[srcIdx]) {
+                    // increment the reference count for this input source
+                    if (inputSourceReferenceCounts[srcIdx] == null) {
+                        inputSourceReferenceCounts[srcIdx] = new AtomicInteger(1);
+                    } else {
+                        inputSourceReferenceCounts[srcIdx].incrementAndGet();
+                    }
+                }
+            }
+        }
+    }
+
+    private void cacheInputSources(int winIdx, ColumnSource<?>[] maybeCachedInputSources, WritableRowSet[] inputSourceRowSets) {
+        final UpdateByWindow win = windows[winIdx];
+        final int[] uniqueWindowSources = win.getUniqueSourceIndices();
+        for (int srcIdx : uniqueWindowSources) {
+            if (maybeCachedInputSources[srcIdx] == null) {
+                maybeCachedInputSources[srcIdx] = getCachedColumn(inputSources[srcIdx], inputSourceRowSets[srcIdx]);
+            }
+        }
+    }
+
+    private void releaseInputSources(int winIdx, ColumnSource<?>[] maybeCachedInputSources, WritableRowSet[] inputSourceRowSets, AtomicInteger[] inputSourceReferenceCounts) {
+        final UpdateByWindow win = windows[winIdx];
+        final int[] uniqueWindowSources = win.getUniqueSourceIndices();
+        for (int srcIdx : uniqueWindowSources) {
+            if (inputSourceReferenceCounts[srcIdx] != null) {
+                if (inputSourceReferenceCounts[srcIdx].decrementAndGet() == 0) {
+                    // do the cleanup immediately
+                    inputSourceRowSets[srcIdx].close();
+                    inputSourceRowSets[srcIdx] = null;
+
+                    maybeCachedInputSources[srcIdx] = null;
+                }
+            }
+        }
     }
 
     protected void shiftOutputColumns(TableUpdate upstream) {
@@ -230,17 +323,38 @@ public abstract class UpdateBy {
     }
 
     protected void processBuckets(UpdateByBucketHelper[] dirtyBuckets, final boolean initialStep) {
-        // if (inputCacheNeeded) {
-        // computeCachedColumnContents(buckets, initialStep);
-        // }
+        if (inputCacheNeeded) {
+            // this will store the input sources needed for processing
+            final ColumnSource<?>[] maybeCachedInputSources = new ColumnSource[inputSources.length];
+            final WritableRowSet[] inputSourceRowSets = new WritableRowSet[inputSources.length];
+            final AtomicInteger[] inputSourceReferenceCounts = new AtomicInteger[inputSources.length];
 
-        // let's start processing windows
-        for (int winIdx = 0; winIdx < windows.length; winIdx++) {
-            // maybeCacheInputSources();
-            for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                bucket.processWindow(winIdx, inputSources, initialStep);
+            computeCachedColumnContents(dirtyBuckets, initialStep, inputSourceRowSets, inputSourceReferenceCounts);
+
+            // `null` marks columns that need to be cached
+            for (int srcIdx = 0; srcIdx < inputSources.length; srcIdx++) {
+                maybeCachedInputSources[srcIdx] = inputSourceCacheNeeded[srcIdx] ? null : inputSources[srcIdx];
             }
-            // maybeReleaseInputSources()
+
+            for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                // cache the sources needed for this window
+                cacheInputSources(winIdx, maybeCachedInputSources, inputSourceRowSets);
+                // process the window
+                for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                    bucket.assignInputSources(winIdx, maybeCachedInputSources);
+                    bucket.processWindow(winIdx, initialStep);
+                }
+                // release the cached sources that are no longer needed
+                releaseInputSources(winIdx, maybeCachedInputSources, inputSourceRowSets, inputSourceReferenceCounts);
+            }
+        } else {
+            // no caching needed, process immediately
+            for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                    bucket.assignInputSources(winIdx, inputSources);
+                    bucket.processWindow(winIdx, initialStep);
+                }
+            }
         }
     }
 
@@ -295,14 +409,12 @@ public abstract class UpdateBy {
 
                     if (win.isWindowDirty(winCtx)) {
                         // add the window modified rows to this set
-                        modifiedRowSet.insert(win.getModifiedRows(winCtx));
+                        modifiedRowSet.insert(win.getAffectedRows(winCtx));
                         // add the modified output column sets to the downstream set
                         final UpdateByOperator[] winOps = win.getOperators();
-                        for (int winOpIdx = 0; winOpIdx < winOps.length; winOpIdx++) {
-                            if (win.isOperatorDirty(winCtx, winOpIdx)) {
-                                // these were created directly from the result output columns so no transformer needed
-                                downstream.modifiedColumnSet.setAll(winOps[winOpIdx].outputModifiedColumnSet);
-                            }
+                        for (int winOpIdx : win.getDirtyOperators(winCtx)) {
+                            // these were created directly from the result output columns so no transformer needed
+                            downstream.modifiedColumnSet.setAll(winOps[winOpIdx].outputModifiedColumnSet);
                         }
                     }
                 }
@@ -329,20 +441,20 @@ public abstract class UpdateBy {
     }
 
     // region UpdateBy implementation
+
     /**
      * Apply the specified operations to each group of rows in the source table and produce a result table with the same
      * index as the source with each operator applied.
      *
-     * @param source the source to apply to.
-     * @param clauses the operations to apply.
+     * @param source    the source to apply to.
+     * @param clauses   the operations to apply.
      * @param byColumns the columns to group by before applying operations
-     *
      * @return a new table with the same index as the source with all the operations applied.
      */
     public static Table updateBy(@NotNull final QueryTable source,
-            @NotNull final Collection<? extends UpdateByOperation> clauses,
-            @NotNull final Collection<? extends ColumnName> byColumns,
-            @NotNull final UpdateByControl control) {
+                                 @NotNull final Collection<? extends UpdateByOperation> clauses,
+                                 @NotNull final Collection<? extends ColumnName> byColumns,
+                                 @NotNull final UpdateByControl control) {
 
         // create the rowRedirection if instructed
         final WritableRowRedirection rowRedirection;
