@@ -1,6 +1,7 @@
 package io.deephaven.jsoningester;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.DynamicTableWriter;
 import io.deephaven.io.logger.Logger;
@@ -10,6 +11,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
@@ -19,6 +21,10 @@ import java.util.function.ToLongFunction;
  * Created by rbasralian on 10/14/22
  */
 public class JSONToInMemoryTableAdapterBuilder {
+
+    private static final AtomicLong adapterCounter = new AtomicLong(0);
+
+    private final String mainResultTableName;
 
     private final JSONToTableWriterAdapterBuilder jsonAdpaterBuilder = new JSONToTableWriterAdapterBuilder();
 
@@ -43,17 +49,36 @@ public class JSONToInMemoryTableAdapterBuilder {
         }
     }
 
+    public JSONToInMemoryTableAdapterBuilder() {
+        this.mainResultTableName = null;
+    }
+
+    public JSONToInMemoryTableAdapterBuilder(final String mainResultTableName) {
+        Require.neqNull(mainResultTableName, "mainResultTableName");
+        this.mainResultTableName = mainResultTableName;
+    }
 
     public TableAndAdapterBuilderResult build(Logger log) {
-        final Map<String, Table> resultTables = new LinkedHashMap<>();
+        final String mainResultTableName;
+        if (this.mainResultTableName == null) {
+            mainResultTableName = "tableFromJSON_" + adapterCounter.getAndIncrement();
+        } else {
+            mainResultTableName = this.mainResultTableName;
+        }
 
+        final Map<String, Table> resultTables = new LinkedHashMap<>();
         final Map<String, TableWriter<?>> resultTableWriters = new LinkedHashMap<>();
+
+        // Map of all subtable writers for the main builder and its nested/subtable builders. Note that since this
+        // is keyed off of a field name and is a global map for the entire JSON tree, it means a given key (i.e. field
+        // name) can only be used for one subtable anywhere in the tree. So, if two nested fields both have an array
+        // field of the same name, only one of them would be able to be used as a subtable.
         final Map<String, TableWriter<?>> subtableWriters = new LinkedHashMap<>();
 
         // Make this table's tablewriter
         final DynamicTableWriter thisTableWriter = getTableWriter(false);
-        resultTableWriters.put("MAIN_TABLE", thisTableWriter);
-        resultTables.put("MAIN_TABLE", thisTableWriter.getTable());
+        resultTableWriters.put(mainResultTableName, thisTableWriter);
+        resultTables.put(mainResultTableName, thisTableWriter.getTable());
 
         subtableFieldsToBuilders.forEach((k, v) -> {
             final DynamicTableWriter subtableTableWriter = v.getTableWriter(true);
