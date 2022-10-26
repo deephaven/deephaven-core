@@ -526,30 +526,16 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         fieldProcessors.add(((jsonRecord, holder) -> {
             try {
                 final Object field = JsonNodeUtil.getValue(jsonRecord, fieldName, allowMissingKeys, allowNullValues);
+                final JsonNode record;
                 if (field == null) {
-                    final JsonNode record = NullNode.getInstance();
-                    nestedAdapter.fieldProcessors.forEach(fc -> fc.accept(record, holder));
-                } else if (field instanceof ObjectNode) {
-                    final JsonNode record = (ObjectNode) field;
-                    nestedAdapter.fieldProcessors.forEach(fc -> fc.accept(record, holder));
-
-                    // TODO: think this can be deleted -- is handled by makeSubtableAdatper() now
-                    // for (Map.Entry<String, JSONToTableWriterAdapter> nestedSubtableEntry :
-                    // nestedAdapter.subtableFieldsToAdapters.entrySet()) {
-                    // final String nestedSubtableFieldName = nestedSubtableEntry.getKey();
-                    // final JSONToTableWriterAdapter nestedSubtableAdapter = nestedSubtableEntry.getValue();
-                    // final JsonNode nestedSubtableFieldValue = ((ObjectNode) field).get(nestedSubtableFieldName);
-                    //
-                    // // Enqueue the subtable node to be processed by the subtable adapter (this happens after all the
-                    // main
-                    // // fieldProcessors have been processed)
-                    // nestedSubtableProcessingQueue.add(new SubtableData(fieldName, nestedSubtableAdapter,
-                    // nestedSubtableFieldValue));
-                    // }
+                    record = NullNode.getInstance();
+                } else if (field instanceof JsonNode) {
+                    record = (JsonNode) field;
                 } else {
-                    throw new JSONIngesterException(
-                            "Field is of unexpected type " + field.getClass() + ", expected ObjectNode");
+                    throw new JSONIngesterException("Field \"" + fieldName + "\" is of unexpected type "
+                            + field.getClass() + ", expected JsonNode");
                 }
+                nestedAdapter.fieldProcessors.forEach(fc -> fc.accept(record, holder));
             } catch (Exception ex) {
                 throw new JSONIngesterException("Exception while processing nested field \"" + fieldName + "\"", ex);
             }
@@ -572,16 +558,13 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
         arrayFieldNames.add(fieldName);
         arrayFieldProcessors.add(((jsonNode, holder) -> {
+            final JsonNode record;
             if (jsonNode == null || jsonNode.isNull()) {
-                final JsonNode record = NullNode.getInstance();
-                nestedAdapter.fieldProcessors.forEach(fc -> fc.accept(record, holder));
-            } else if (jsonNode.isObject()) {
-                final JsonNode record = jsonNode;
-                nestedAdapter.fieldProcessors.forEach(fc -> fc.accept(record, holder));
+                record = NullNode.getInstance();
             } else {
-                throw new JSONIngesterException("Nested parallel array field \"" + fieldName
-                        + "\" is of unexpected type " + jsonNode.getClass() + ", expected ObjectNode");
+                record = jsonNode;
             }
+            nestedAdapter.fieldProcessors.forEach(fc -> fc.accept(record, holder));
         }));
         fieldSetters.addAll(nestedAdapter.fieldSetters);
     }
