@@ -187,15 +187,18 @@ public class JSONToInMemoryTableAdapterBuilder {
         return this;
     }
 
-    public void autoValueMapping(boolean autoValueMapping) {
+    public JSONToInMemoryTableAdapterBuilder autoValueMapping(boolean autoValueMapping) {
         jsonAdpaterBuilder.autoValueMapping(autoValueMapping);
+        return this;
     }
 
-    public void allowMissingKeys(boolean allowMissingKeys) {
+    public JSONToInMemoryTableAdapterBuilder allowMissingKeys(boolean allowMissingKeys) {
         jsonAdpaterBuilder.allowMissingKeys(allowMissingKeys);
+        return this;
     }
 
-    public void allowNullValues(boolean allowNullValues) {
+    public JSONToInMemoryTableAdapterBuilder allowNullValues(boolean allowNullValues) {
         jsonAdpaterBuilder.allowNullValues(allowNullValues);
+        return this;
     }
 }
