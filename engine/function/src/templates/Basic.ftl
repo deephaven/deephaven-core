@@ -843,12 +843,12 @@ public class Basic {
     }
 
     /**
-     * Returns an array with null values replaced with preceding non-null value
+     * Returns an array with {@code null} values replaced with preceding non-{@code null} value.
      *
-     * @param values values.
-     * @return An array of T whose values are determined by the preceding elements.
-     *         most recently encountered non-null value where one exists
-     *         null if all preceding values were null
+     * @param values Input values
+     * @return An array of {@code T} with values determined by the preceding elements in {@code values}.
+     *         Each element will take on the most recently encountered non-{@code null} value where one exists,
+     *         or {@code null} if all preceding values were {@code null}.
      */
     public static <T> T[] forwardFillObj(final T[] values) {
         if(values == null) {
