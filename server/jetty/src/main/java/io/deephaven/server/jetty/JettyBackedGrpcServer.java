@@ -70,8 +70,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(NoCacheFilter.class, "/jsapi/*", EnumSet.noneOf(DispatcherType.class));
         context.addFilter(CacheFilter.class, "/ide/assets/*", EnumSet.noneOf(DispatcherType.class));
 
-        // Always add eTags
-        context.setInitParameter("org.eclipse.jetty.servlet.Default.etags", "true");
         context.setSecurityHandler(new ConstraintSecurityHandler());
 
         // Add an extra filter to redirect from / to /ide/
