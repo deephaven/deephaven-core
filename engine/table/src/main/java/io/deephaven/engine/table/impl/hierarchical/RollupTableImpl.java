@@ -7,6 +7,7 @@ import io.deephaven.api.agg.Pair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.impl.LiveAttributeMap;
 import io.deephaven.engine.table.impl.QueryTable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +20,7 @@ import java.util.stream.Stream;
 /**
  * {@link RollupTable} implementation.
  */
-public class RollupTableImpl extends BaseHierarchicalTable<RollupTable, RollupTableImpl> implements RollupTable {
+public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTableImpl> implements RollupTable {
 
     public static final ColumnName KEY_WIDTH_COLUMN_NAME = ColumnName.of("__KEY_WIDTH__");
     public static final ColumnName ROLLUP_COLUMN_NAME = ColumnName.of("__ROLLUP_HIERARCHY__");
@@ -146,13 +147,17 @@ public class RollupTableImpl extends BaseHierarchicalTable<RollupTable, RollupTa
                             source.getDefinition().getDifferenceDescription(
                                     newSource.getDefinition(), "original source", "new source", ", "));
         }
+        // TODO-RWC: Attribute copies?
         final RollupTable rollup = newSource.rollup(aggregations, includesConstituents, groupByColumns);
         return rollup.withNodeOperations(aggregatedNodeOperations, constituentNodeOperations);
     }
 
     @Override
     protected RollupTableImpl copy() {
-        return new RollupTableImpl(source, root, aggregations, includesConstituents, groupByColumns,
-                aggregatedNodeOperations, constituentNodeOperations);
+        final RollupTableImpl result =
+                new RollupTableImpl(source, root, aggregations, includesConstituents, groupByColumns,
+                        aggregatedNodeOperations, constituentNodeOperations);
+        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        return result;
     }
 }
