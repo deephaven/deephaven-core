@@ -55,7 +55,7 @@ produces
 The above artifacts can be uncompressed and their `bin/start` script can be executed:
 
 ```shell
- JAVA_OPTS="-Ddeephaven.console.type=groovy" bin/start
+START_OPTS="-Ddeephaven.console.type=groovy" bin/start
 ```
 
 Alternatively, the uncompressed installation can be built directly by gradle:
@@ -67,7 +67,7 @@ Alternatively, the uncompressed installation can be built directly by gradle:
 And then run via:
 
 ```shell
-JAVA_OPTS="-Ddeephaven.console.type=groovy" ./server/jetty-app/build/install/server-jetty/bin/start
+START_OPTS="-Ddeephaven.console.type=groovy" ./server/jetty-app/build/install/server-jetty/bin/start
 ```
 
 Finally, Gradle can be used to update the build and run the application in a single step:

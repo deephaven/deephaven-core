@@ -66,10 +66,6 @@ def start_jvm(jvm_props: Dict[str, str] = None):
             jvm_properties.update(jvm_props)
 
         jvm_options = {
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication',
-
             '-XX:InitialRAMPercentage=25.0',
             '-XX:MinRAMPercentage=70.0',
             '-XX:MaxRAMPercentage=80.0',
