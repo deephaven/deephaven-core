@@ -4,7 +4,6 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.Pair;
-import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -140,15 +139,6 @@ public class TestWindowCheck {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(windowed.second::run);
 
-    }
-
-    private static class TestClock extends ClockNanoBase {
-        long now = 0;
-
-        @Override
-        public long currentTimeNanos() {
-            return now;
-        }
     }
 
     private static class WindowEvalNugget implements EvalNuggetInterface {

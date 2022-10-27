@@ -17,7 +17,7 @@ public interface SystemClock extends Clock {
     String KEY = "deephaven.systemClock";
     String DEFAULT = "default";
     String SERVICE_LOADER = "serviceLoader";
-    String SYSTEM = "system";
+    String SYSTEM_UTC = "systemUTC";
     String SYSTEM_MILLIS = "systemMillis";
 
     /**
@@ -30,15 +30,15 @@ public interface SystemClock extends Clock {
      * </tr>
      * <tr>
      * <td>{@value DEFAULT}</td>
-     * <td>{@code serviceLoader().orElse(system())}</td>
+     * <td>{@code serviceLoader().orElse(systemUTC())}</td>
      * </tr>
      * <tr>
      * <td>{@value SERVICE_LOADER}</td>
      * <td>{@code serviceLoader().orElseThrow()}</td>
      * </tr>
      * <tr>
-     * <td>{@value SYSTEM}</td>
-     * <td>{@code system()}</td>
+     * <td>{@value SYSTEM_UTC}</td>
+     * <td>{@code systemUTC()}</td>
      * </tr>
      * <tr>
      * <td>{@value SYSTEM_MILLIS}</td>
@@ -51,7 +51,7 @@ public interface SystemClock extends Clock {
      * </table>
      *
      * @return a new instance of the system clock
-     * @see #system()
+     * @see #systemUTC()
      * @see #systemMillis()
      * @see #serviceLoader()
      */
@@ -60,11 +60,11 @@ public interface SystemClock extends Clock {
         final String value = System.getProperty(KEY, DEFAULT);
         switch (value) {
             case DEFAULT:
-                return serviceLoader().orElse(system());
+                return serviceLoader().orElse(systemUTC());
             case SERVICE_LOADER:
                 return serviceLoader().orElseThrow();
-            case SYSTEM:
-                return system();
+            case SYSTEM_UTC:
+                return systemUTC();
             case SYSTEM_MILLIS:
                 return systemMillis();
             default:
@@ -76,20 +76,20 @@ public interface SystemClock extends Clock {
      * The system clock, based off of {@link java.time.Clock#systemUTC()}.
      *
      * @return the system clock
-     * @see SystemClockImpl
+     * @see SystemClockUtc
      */
-    static SystemClock system() {
-        return SystemClockImpl.INSTANCE;
+    static SystemClock systemUTC() {
+        return SystemClockUtc.INSTANCE;
     }
 
     /**
      * The system clock, based off of {@link System#currentTimeMillis()}.
      *
      * @return the millis-based system clock
-     * @see SystemClockMillisImpl
+     * @see SystemClockMillis
      */
     static SystemClock systemMillis() {
-        return SystemClockMillisImpl.INSTANCE;
+        return SystemClockMillis.INSTANCE;
     }
 
     /**

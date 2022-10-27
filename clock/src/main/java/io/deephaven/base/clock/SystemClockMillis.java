@@ -9,9 +9,9 @@ import java.time.Instant;
  * A clock based off of {@link System#currentTimeMillis()}.
  *
  * <p>
- * This clock differs from {@link SystemClockImpl} in that all timestamp methods have millisecond-level resolution.
+ * This clock differs from {@link SystemClockUtc} in that all timestamp methods have millisecond-level resolution.
  */
-public enum SystemClockMillisImpl implements SystemClock {
+public enum SystemClockMillis implements SystemClock {
     INSTANCE;
 
     /**

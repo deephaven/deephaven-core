@@ -10,7 +10,7 @@ import java.time.Instant;
  * A clock based off of the current system time, as exposed via {@link VM#getNanoTimeAdjustment(long)}.
  *
  * <p>
- * Equivalent semantics to {@link SystemClockImpl}, but without the {@link Instant} allocation.
+ * Equivalent semantics to {@link SystemClockUtc}, but without the {@link Instant} allocation.
  */
 @AutoService(SystemClock.class)
 public final class SystemClockJdkInternalMiscVm implements SystemClock {
@@ -27,12 +27,7 @@ public final class SystemClockJdkInternalMiscVm implements SystemClock {
 
     @Override
     public long currentTimeMicros() {
-        final long adj = VM.getNanoTimeAdjustment(0);
-        if (adj == -1) {
-            throw new IllegalStateException(
-                    "VM.getNanoTimeAdjustment bounds have been broken - current time is too large to work with this implementation.");
-        }
-        return adj / 1_000;
+        return currentTimeNanos() / 1_000;
     }
 
     @Override

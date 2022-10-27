@@ -10,7 +10,7 @@ import java.time.Instant;
  *
  * @see java.time.Clock#systemUTC()
  */
-public enum SystemClockImpl implements SystemClock {
+public enum SystemClockUtc implements SystemClock {
     INSTANCE;
 
     /**

@@ -13,7 +13,7 @@ import java.util.Objects;
 public final class DeltaClock implements Clock {
 
     /**
-     * Constructs a clock delta with a {@link Clock#systemUTC()} clock.
+     * Constructs a delta clock with a {@link Clock#systemUTC()} clock.
      *
      * @param duration the duration
      * @return the clock

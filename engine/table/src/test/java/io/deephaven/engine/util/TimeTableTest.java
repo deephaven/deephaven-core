@@ -3,8 +3,6 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.base.clock.Clock;
-import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
@@ -23,7 +21,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,8 +29,7 @@ import java.util.Map;
 
 public class TimeTableTest extends RefreshingTableTestCase {
 
-    private MutableLong now;
-    private Clock clock;
+    private TestClock clock;
     private UpdateSourceCombiner updateSourceCombiner;
     private QueryTable timeTable;
     private TableUpdateValidator validator;
@@ -43,13 +39,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     protected void setUp() throws Exception {
         super.setUp();
 
-        now = new MutableLong(0);
-        clock = new ClockNanoBase() {
-            @Override
-            public long currentTimeNanos() {
-                return now.longValue();
-            }
-        };
+        clock = new TestClock(0);
         updateSourceCombiner = new UpdateSourceCombiner();
     }
 
@@ -57,7 +47,6 @@ public class TimeTableTest extends RefreshingTableTestCase {
     protected void tearDown() throws Exception {
         validator.deepValidation();
 
-        now = null;
         clock = null;
         updateSourceCombiner = null;
         timeTable = null;
@@ -77,7 +66,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     }
 
     private void tick(long tm) {
-        now.setValue(tm);
+        clock.now = tm;
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         validator.validate();
     }

@@ -5,11 +5,11 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.clock.Clock;
-import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.util.TestClock;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Rule;
@@ -92,13 +91,7 @@ public class FuzzerTest {
         }
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
-        final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final Clock clock = realtime ? null : new ClockNanoBase() {
-            @Override
-            public long currentTimeNanos() {
-                return now.longValue();
-            }
-        };
+        final TestClock clock = realtime ? null : new TestClock(fakeStart.getNanos());
 
         final GroovyDeephavenSession session = getGroovySession(clock);
 
@@ -114,7 +107,7 @@ public class FuzzerTest {
 
         // so the first tick has a duration related to our initialization time
         if (!realtime) {
-            now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+            clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
         }
 
         final TimeTable timeTable = (TimeTable) session.getVariable("tt");
@@ -130,7 +123,7 @@ public class FuzzerTest {
             if (realtime) {
                 Thread.sleep(1000);
             } else {
-                now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+                clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
             }
         }
     }
@@ -215,13 +208,8 @@ public class FuzzerTest {
         final Random timeRandom = new Random(mainTestSeed + 1);
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
-        final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final Clock clock = new ClockNanoBase() {
-            @Override
-            public long currentTimeNanos() {
-                return now.longValue();
-            }
-        };
+        final TestClock clock = new TestClock(fakeStart.getNanos());
+
         final long start = System.currentTimeMillis();
 
         final GroovyDeephavenSession session = getGroovySession(realtime ? null : clock);
@@ -247,7 +235,7 @@ public class FuzzerTest {
         annotateBinding(session);
 
         if (!realtime) {
-            now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+            clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
         }
 
         final DecimalFormat commaFormat = new DecimalFormat();
@@ -277,7 +265,7 @@ public class FuzzerTest {
             if (realtime) {
                 Thread.sleep(sleepTime);
             } else {
-                now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+                clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
             }
             if (maxTableSize > 500_000L) {
                 System.out.println("Tables have grown too large, quitting fuzzer run.");
@@ -288,7 +276,7 @@ public class FuzzerTest {
         final long loopEnd = System.currentTimeMillis();
         System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
                 + (realtime ? ""
-                        : (", sim: " + (double) (now.longValue() - fakeStart.getNanos()) / DateTimeUtils.SECOND))
+                        : (", sim: " + (double) (clock.now - fakeStart.getNanos()) / DateTimeUtils.SECOND))
                 + ", ttSize: " + timeTable.size());
     }
 

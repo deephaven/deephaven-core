@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 public class TestSimulationClock extends RefreshingTableTestCase {
 
     public void testSignal() {
-        final DateTime start = DateTime.nowMillis();
+        final DateTime start = DateTime.now();
         final SimulationClock clock = new SimulationClock(start, DateTimeUtils.plus(start, 1), 1);
         clock.start();
         for (int ci = 0; ci < 2; ++ci) {

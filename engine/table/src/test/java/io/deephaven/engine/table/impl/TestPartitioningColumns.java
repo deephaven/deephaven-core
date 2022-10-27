@@ -49,8 +49,8 @@ public class TestPartitioningColumns {
                 longCol("Lo", 1L << 36, 2L << 36, 3L << 36),
                 floatCol("Fl", 0.1f, 0.2f, 0.3f),
                 doubleCol("Do", 0.1, 0.2, 0.3),
-                dateTimeCol("DT", DateTime.nowMillis(), DateTimeUtils.plus(DateTime.nowMillis(), 1),
-                        DateTimeUtils.plus(DateTime.nowMillis(), 2)),
+                dateTimeCol("DT", DateTime.now(), DateTimeUtils.plus(DateTime.now(), 1),
+                        DateTimeUtils.plus(DateTime.now(), 2)),
                 stringCol("St", "ABC", "DEF", "GHI"),
                 col("Bo", Boolean.TRUE, Boolean.FALSE, Boolean.TRUE));
 

@@ -81,9 +81,6 @@ public class DateTimeUtils {
             "\\-?([0-9]+[Yy])?([0-9]+[Mm])?([0-9]+[Ww])?([0-9]+[Dd])?(T([0-9]+[Hh])?([0-9]+[Mm])?([0-9]+[Ss])?)?");
     private static final String DATE_COLUMN_PARTITION_FORMAT_STRING = "yyyy-MM-dd";
 
-    private static final boolean ENABLE_MICROTIME_HACK =
-            Configuration.getInstance().getBooleanWithDefault("DateTimeUtils.enableMicrotimeHack", false);
-
     /**
      * Date formatting styles for use in conversion functions such as {@link #convertDateQuiet(String, DateStyle)}.
      */
@@ -1165,12 +1162,7 @@ public class DateTimeUtils {
         if (millis == io.deephaven.util.QueryConstants.NULL_LONG) {
             return io.deephaven.util.QueryConstants.NULL_LONG;
         }
-        if (ENABLE_MICROTIME_HACK) {
-            // hack hack, check to see if this is actually microtime
-            if (millis > TimeConstants.MICROTIME_THRESHOLD) {
-                return millis * 1000;
-            }
-        } else if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
+        if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
             throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
         }
         return millis * 1000000;

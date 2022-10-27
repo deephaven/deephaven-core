@@ -30,7 +30,6 @@ import java.util.concurrent.locks.Condition;
  */
 public class Replayer implements ReplayerInterface, Runnable {
     private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
-    private static final int MILLIS_TO_NANOS_FACTOR = 1_000_000;
 
     protected DateTime startTime;
     protected DateTime endTime;
@@ -60,7 +59,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void start() {
-        deltaNanos = System.currentTimeMillis() * MILLIS_TO_NANOS_FACTOR - startTime.getNanos();
+        deltaNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - startTime.getNanos();
         for (Runnable currentTable : currentTables) {
             UpdateGraphProcessor.DEFAULT.addSource(currentTable);
         }
@@ -163,12 +162,12 @@ public class Replayer implements ReplayerInterface, Runnable {
 
     @Override
     public long currentTimeMillis() {
-        return currentTimeNanos() / MILLIS_TO_NANOS_FACTOR;
+        return DateTimeUtils.nanosToMillis(currentTimeNanos());
     }
 
     @Override
     public long currentTimeMicros() {
-        return currentTimeNanos() / 1_000;
+        return DateTimeUtils.nanosToMicros(currentTimeNanos());
     }
 
     /**
@@ -181,7 +180,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (deltaNanos == Long.MAX_VALUE) {
             return startTime.getNanos();
         }
-        final long resultNanos = System.currentTimeMillis() * MILLIS_TO_NANOS_FACTOR - deltaNanos;
+        final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
         return Math.min(resultNanos, endTime.getNanos());
     }
 
@@ -190,7 +189,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (deltaNanos == Long.MAX_VALUE) {
             return startTime.getInstant();
         }
-        final long resultNanos = System.currentTimeMillis() * MILLIS_TO_NANOS_FACTOR - deltaNanos;
+        final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
         if (resultNanos >= endTime.getNanos()) {
             return endTime.getInstant();
         }
@@ -219,7 +218,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         } else {
             long adjustment = updatedTime - currentTimeMillis();
             if (adjustment > 0) {
-                deltaNanos = deltaNanos - adjustment * MILLIS_TO_NANOS_FACTOR;
+                deltaNanos = deltaNanos - DateTimeUtils.millisToNanos(adjustment);
             }
         }
     }
@@ -328,12 +327,12 @@ public class Replayer implements ReplayerInterface, Runnable {
 
         public void next(DateTime currentTime) {
             if (nextTime == null) {
-                nextTime = DateTimeUtils.plus(currentTime, delayMillis * MILLIS_TO_NANOS_FACTOR);
+                nextTime = DateTimeUtils.plus(currentTime, DateTimeUtils.millisToNanos(delayMillis));
             } else {
                 if (nextTime.getNanos() < currentTime.getNanos()) {
                     try {
                         task.run();
-                        nextTime = DateTimeUtils.plus(currentTime, periodMillis * MILLIS_TO_NANOS_FACTOR);
+                        nextTime = DateTimeUtils.plus(currentTime, DateTimeUtils.millisToNanos(periodMillis));
                     } catch (Error e) {
                         log.error(e).append("Error").endl();
                     }
