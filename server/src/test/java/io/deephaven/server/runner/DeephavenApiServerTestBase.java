@@ -14,7 +14,7 @@ import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
-import io.deephaven.server.plugin.type.JsPluginsNoOpModule;
+import io.deephaven.server.plugin.type.ContentPluginsNoOpModule;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -41,7 +41,7 @@ public abstract class DeephavenApiServerTestBase {
             NoConsoleSessionModule.class,
             ServerBuilderInProcessModule.class,
             ExecutionContextUnitTestModule.class,
-            JsPluginsNoOpModule.class,
+            ContentPluginsNoOpModule.class,
     })
     public interface TestComponent {
 

@@ -7,7 +7,7 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.config.ServerConfig;
-import io.deephaven.server.jetty.jsplugin.JsPluginsModule;
+import io.deephaven.server.jetty.jsplugin.ContentPluginsModule;
 import io.deephaven.server.runner.GrpcServer;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
@@ -17,7 +17,7 @@ import io.grpc.servlet.jakarta.ServletServerBuilder;
 import javax.inject.Named;
 import java.util.Set;
 
-@Module(includes = {JsPluginsModule.class})
+@Module(includes = {ContentPluginsModule.class})
 public interface JettyServerModule {
 
     @Binds

@@ -6,7 +6,7 @@ package io.deephaven.plugin;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
-import io.deephaven.plugin.type.JsPlugin;
+import io.deephaven.plugin.type.ContentPlugin;
 import io.deephaven.plugin.type.ObjectType;
 
 import java.util.ServiceLoader;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 /**
  * Provides the set of {@link Registration} from {@link ServiceLoader#load(Class)} against the classes
- * {@link Registration}, {@link Plugin}, {@link ObjectType}, and {@link JsPlugin}.
+ * {@link Registration}, {@link Plugin}, {@link ObjectType}, and {@link ContentPlugin}.
  */
 @Module
 public interface PluginModule {
@@ -41,7 +41,7 @@ public interface PluginModule {
 
     @Provides
     @ElementsIntoSet
-    static Set<Registration> providesServiceLoaderJsPlugins() {
-        return ServiceLoader.load(JsPlugin.class).stream().map(Provider::get).collect(Collectors.toSet());
+    static Set<Registration> providesServiceLoaderContentPlugins() {
+        return ServiceLoader.load(ContentPlugin.class).stream().map(Provider::get).collect(Collectors.toSet());
     }
 }

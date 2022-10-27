@@ -3,12 +3,13 @@
  */
 package io.deephaven.server.jetty.jsplugin;
 
+import io.deephaven.plugin.type.ContentPlugin;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 /**
- * The jetty interface for creating {@link io.deephaven.plugin.type.JsPlugin} servlets.
+ * The jetty interface for creating {@link ContentPlugin} servlets.
  */
-public interface JsPlugins {
+public interface ContentPlugins {
 
     ServletHolder servletHolder(String name);
 }

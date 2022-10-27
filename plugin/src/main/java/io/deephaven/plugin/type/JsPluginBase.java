@@ -1,15 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.plugin.type;
 
-import io.deephaven.plugin.Plugin;
-import io.deephaven.plugin.PluginBase;
-
-public abstract class JsPluginBase extends PluginBase implements JsPlugin {
+public abstract class JsPluginBase extends ContentPluginBase implements JsPlugin {
 
     @Override
-    public final <T, V extends Plugin.Visitor<T>> T walk(V visitor) {
+    public final <T> T walk(ContentPlugin.Visitor<T> visitor) {
         return visitor.visit(this);
     }
 }

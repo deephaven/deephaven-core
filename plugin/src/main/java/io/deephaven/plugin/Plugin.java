@@ -3,14 +3,14 @@
  */
 package io.deephaven.plugin;
 
-import io.deephaven.plugin.type.JsPlugin;
+import io.deephaven.plugin.type.ContentPlugin;
 import io.deephaven.plugin.type.ObjectType;
 
 /**
  * A plugin is a structured extension point for user-definable behavior.
  *
  * @see ObjectType
- * @see JsPlugin
+ * @see ContentPlugin
  */
 public interface Plugin extends Registration {
 
@@ -27,6 +27,6 @@ public interface Plugin extends Registration {
     interface Visitor<T> {
         T visit(ObjectType objectType);
 
-        T visit(JsPlugin jsPlugin);
+        T visit(ContentPlugin contentPlugin);
     }
 }

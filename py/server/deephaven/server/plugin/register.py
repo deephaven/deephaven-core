@@ -8,7 +8,7 @@ import deephaven.plugin
 from typing import Union, Type
 from deephaven.plugin import Plugin, Registration
 from deephaven.plugin.object import ObjectType
-from deephaven.plugin.js import JsPlugin
+from deephaven.plugin.content import ContentPlugin
 from .object import ObjectTypeAdapter
 
 _JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
@@ -28,9 +28,14 @@ class RegistrationAdapter(Registration.Callback):
             plugin = plugin()
         if isinstance(plugin, ObjectType):
             self._callback.registerObjectTypePlugin(plugin.name, ObjectTypeAdapter(plugin))
-        elif isinstance(plugin, JsPlugin):
+        elif isinstance(plugin, ContentPlugin):
+            if plugin.type != "js":
+                raise NotImplementedError("Server implementation only support 'js' plugin type at the moment")
+            name = plugin.metadata["name"]
+            version = plugin.metadata["version"]
+            main = plugin.metadata["main"]
             with plugin.distribution_path() as distribution_path:
-                self._callback.registerJsPlugin(str(distribution_path), plugin.name, plugin.version, plugin.main)
+                self._callback.registerJsPlugin(str(distribution_path), name, version, main)
         else:
             raise NotImplementedError
 

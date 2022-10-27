@@ -4,9 +4,10 @@
 package io.deephaven.server.jetty.jsplugin;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.deephaven.plugin.type.ContentPlugin;
+import io.deephaven.plugin.type.ContentPluginRegistration;
 import io.deephaven.plugin.type.JsPlugin;
 import io.deephaven.plugin.type.JsPluginInfo;
-import io.deephaven.plugin.type.JsPluginRegistration;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 
@@ -24,9 +25,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@link JsPlugins} and {@link JsPluginRegistration} zip-based filesystem implementation for Jetty.
+ * A {@link ContentPlugins} and {@link ContentPluginRegistration} zip-based filesystem implementation for Jetty.
  */
-public final class JsPluginsZipFilesystem implements JsPlugins, JsPluginRegistration {
+public final class ContentPluginsZipFilesystem
+        implements ContentPlugins, ContentPluginRegistration, ContentPlugin.Visitor<IOException> {
 
     private static final String PLUGINS = "plugins";
     private static final String MANIFEST_JSON = "manifest.json";
@@ -37,13 +39,13 @@ public final class JsPluginsZipFilesystem implements JsPlugins, JsPluginRegistra
      * @return the js plugins
      * @throws IOException if an I/O exception occurs
      */
-    public static JsPluginsZipFilesystem create() throws IOException {
-        final Path tempDir = Files.createTempDirectory(JsPluginsZipFilesystem.class.getName());
+    public static ContentPluginsZipFilesystem create() throws IOException {
+        final Path tempDir = Files.createTempDirectory(ContentPluginsZipFilesystem.class.getName());
         tempDir.toFile().deleteOnExit();
         final Path fsZip = tempDir.resolve("deephaven-js-plugins.zip");
         fsZip.toFile().deleteOnExit();
         final URI uri = URI.create(String.format("jar:file:%s!/", fsZip));
-        final JsPluginsZipFilesystem jsPlugins = new JsPluginsZipFilesystem(uri);
+        final ContentPluginsZipFilesystem jsPlugins = new ContentPluginsZipFilesystem(uri);
         jsPlugins.init();
         return jsPlugins;
     }
@@ -51,7 +53,7 @@ public final class JsPluginsZipFilesystem implements JsPlugins, JsPluginRegistra
     private final URI filesystem;
     private final List<JsPluginInfo> plugins;
 
-    private JsPluginsZipFilesystem(URI filesystem) {
+    private ContentPluginsZipFilesystem(URI filesystem) {
         this.filesystem = Objects.requireNonNull(filesystem);
         this.plugins = new ArrayList<>();
     }
@@ -76,11 +78,21 @@ public final class JsPluginsZipFilesystem implements JsPlugins, JsPluginRegistra
     }
 
     @Override
-    public synchronized void register(JsPlugin jsPlugin) throws IOException {
+    public void register(ContentPlugin contentPlugin) throws IOException {
+        final IOException e = contentPlugin.walk(this);
+        if (e != null) {
+            throw e;
+        }
+    }
+
+    @Override
+    public synchronized IOException visit(JsPlugin jsPlugin) {
         for (JsPluginInfo info : plugins) {
             if (jsPlugin.info().name().equals(info.name())) {
-                throw new IllegalArgumentException(
-                        String.format("js plugin with name '%s' already exists", jsPlugin.info().name()));
+                // TODO(deephaven-core#3048): Improve JS plugin support around plugins with conflicting names
+                throw new IllegalArgumentException(String.format(
+                        "js plugin with name '%s' already exists. See https://github.com/deephaven/deephaven-core/issues/3048",
+                        jsPlugin.info().name()));
             }
         }
         // TODO(deephaven-core#3005): js-plugins checksum-based caching
@@ -89,7 +101,10 @@ public final class JsPluginsZipFilesystem implements JsPlugins, JsPluginRegistra
             jsPlugin.copyTo(pluginPath);
             plugins.add(jsPlugin.info());
             writeManifest(fs);
+        } catch (IOException e) {
+            return e;
         }
+        return null;
     }
 
     private void init() throws IOException {

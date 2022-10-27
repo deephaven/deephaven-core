@@ -3,7 +3,7 @@
  */
 package io.deephaven.server.jetty;
 
-import io.deephaven.server.jetty.jsplugin.JsPlugins;
+import io.deephaven.server.jetty.jsplugin.ContentPlugins;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.CiphersIntermediate;
 import io.deephaven.ssl.config.ProtocolsIntermediate;
@@ -42,8 +42,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,7 +62,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
     public JettyBackedGrpcServer(
             final JettyConfig config,
             final GrpcFilter filter,
-            final JsPlugins jsPlugins) {
+            final ContentPlugins contentPlugins) {
         jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
 
@@ -102,7 +100,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Set up /js-plugins/*
-        context.addServlet(jsPlugins.servletHolder("js-plugins"), JS_PLUGINS_PATH_SPEC);
+        context.addServlet(contentPlugins.servletHolder("js-plugins"), JS_PLUGINS_PATH_SPEC);
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"

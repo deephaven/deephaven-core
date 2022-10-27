@@ -42,7 +42,7 @@ public abstract class JsPluginInfo {
     public abstract String version();
 
     /**
-     * The main js file; the relative path with respect to {@link JsPlugin#copyTo(Path)} destination.
+     * The main js file; the relative path with respect to {@link ContentPlugin#copyTo(Path)} destination.
      */
     @Parameter
     @JsonProperty(MAIN)
