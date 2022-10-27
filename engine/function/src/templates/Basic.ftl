@@ -842,6 +842,32 @@ public class Basic {
         return ifelseObj(new BooleanVectorDirect(condition), trueCase, falseCase);
     }
 
+    /**
+     * Returns an array with null values replaced with preceding non-null value
+     *
+     * @param values values.
+     * @return An array of T whose values are determined by the preceding elements.
+     *         most recently encountered non-null value where one exists
+     *         null if all preceding values were null
+     */
+    public static <T> T[] forwardFillObj(final T[] values) {
+        if(values == null) {
+            return null;
+        }
+
+        final T[] result = Arrays.copyOf(values, values.length);
+
+        T lastGood = null;
+        for(int ii = 0; ii < values.length; ii++) {
+            if(!isNull(values[ii])) {
+                lastGood = values[ii];
+            }
+
+            result[ii] = lastGood;
+        }
+        return result;
+    }
+
     <#list primitiveTypes as pt>
     <#if !pt.valueType.isBoolean >
 
@@ -1688,6 +1714,14 @@ public class Basic {
         return ifelse(new BooleanVectorDirect(condition), trueCase, falseCase);
     }
 
+    /**
+     * Returns an array with null values replaced with preceding non-null value
+     *
+     * @param values values.
+     * @return An array of ${pt.primitive} whose values are determined by the preceding elements.
+     *         most recently encountered non-null value where one exists
+     *         null if all preceding values were null
+     */
     public static ${pt.primitive}[] forwardFill(${pt.primitive}... values){
         if(values == null){
             return null;
@@ -1696,6 +1730,14 @@ public class Basic {
         return forwardFill(new ${pt.dbArrayDirect}(values));
     }
 
+    /**
+     * Returns an array with null values replaced with preceding non-null value
+     *
+     * @param values values.
+     * @return An array of ${pt.primitive} whose values are determined by the preceding elements.
+     *         most recently encountered non-null value where one exists
+     *         null if all preceding values were null
+     */
     public static ${pt.primitive}[] forwardFill(${pt.dbArray} values){
         if(values == null) {
             return null;
@@ -1717,22 +1759,4 @@ public class Basic {
 
     </#if>
     </#list>
-
-    public static <T> T[] forwardFill(final T[] values) {
-        if(values == null) {
-            return null;
-        }
-
-        final T[] result = Arrays.copyOf(values, values.length);
-
-        T lastGood = null;
-        for(int ii = 0; ii < values.length; ii++) {
-            if(!isNull(values[ii])) {
-                lastGood = values[ii];
-            }
-
-            result[ii] = lastGood;
-        }
-        return result;
-    }
 }

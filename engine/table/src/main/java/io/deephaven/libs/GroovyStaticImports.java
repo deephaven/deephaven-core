@@ -1262,30 +1262,30 @@ public class GroovyStaticImports {
     public static  double cov( io.deephaven.vector.ShortVector values0, io.deephaven.vector.LongVector values1 ) {return Numeric.cov( values0, values1 );}
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ShortVector,io.deephaven.vector.ShortVector) */
     public static  double cov( io.deephaven.vector.ShortVector values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cov( values0, values1 );}
-    /** @see io.deephaven.function.Numeric#cumMax(byte[]) */
-    public static  byte[] cumMax( byte[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(double[]) */
-    public static  double[] cumMax( double[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(float[]) */
-    public static  float[] cumMax( float[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(int[]) */
-    public static  int[] cumMax( int[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(long[]) */
-    public static  long[] cumMax( long[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(short[]) */
-    public static  short[] cumMax( short[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(byte[]) */
-    public static  byte[] cumMin( byte[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(double[]) */
-    public static  double[] cumMin( double[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(float[]) */
-    public static  float[] cumMin( float[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(int[]) */
-    public static  int[] cumMin( int[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(long[]) */
-    public static  long[] cumMin( long[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(short[]) */
-    public static  short[] cumMin( short[] values ) {return Numeric.cumMin( values );}
+    /** @see io.deephaven.function.Numeric#cummax(byte[]) */
+    public static  byte[] cummax( byte[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(double[]) */
+    public static  double[] cummax( double[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(float[]) */
+    public static  float[] cummax( float[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(int[]) */
+    public static  int[] cummax( int[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(long[]) */
+    public static  long[] cummax( long[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(short[]) */
+    public static  short[] cummax( short[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummin(byte[]) */
+    public static  byte[] cummin( byte[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(double[]) */
+    public static  double[] cummin( double[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(float[]) */
+    public static  float[] cummin( float[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(int[]) */
+    public static  int[] cummin( int[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(long[]) */
+    public static  long[] cummin( long[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(short[]) */
+    public static  short[] cummin( short[] values ) {return Numeric.cummin( values );}
     /** @see io.deephaven.function.Numeric#cumprod(byte[]) */
     public static  byte[] cumprod( byte[] values ) {return Numeric.cumprod( values );}
     /** @see io.deephaven.function.Numeric#cumprod(double[]) */
@@ -1524,8 +1524,6 @@ public class GroovyStaticImports {
     public static  double floor( long value ) {return Numeric.floor( value );}
     /** @see io.deephaven.function.Numeric#floor(short) */
     public static  double floor( short value ) {return Numeric.floor( value );}
-    /** @see io.deephaven.function.Basic#forwardFill(T[]) */
-    public static <T> T[] forwardFill( T[] values ) {return Basic.forwardFill( values );}
     /** @see io.deephaven.function.Basic#forwardFill(byte[]) */
     public static  byte[] forwardFill( byte[] values ) {return Basic.forwardFill( values );}
     /** @see io.deephaven.function.Basic#forwardFill(char[]) */
@@ -1554,6 +1552,8 @@ public class GroovyStaticImports {
     public static  long[] forwardFill( io.deephaven.vector.LongVector values ) {return Basic.forwardFill( values );}
     /** @see io.deephaven.function.Basic#forwardFill(io.deephaven.vector.ShortVector) */
     public static  short[] forwardFill( io.deephaven.vector.ShortVector values ) {return Basic.forwardFill( values );}
+    /** @see io.deephaven.function.Basic#forwardFillObj(T[]) */
+    public static <T> T[] forwardFillObj( T[] values ) {return Basic.forwardFillObj( values );}
     /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],byte,byte) */
     public static  byte[] ifelse( java.lang.Boolean[] condition, byte trueCase, byte falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],char,char) */
