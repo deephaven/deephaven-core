@@ -6,8 +6,8 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.AuthenticationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse;
-import io.deephaven.proto.backplane.grpc.ConfigPair;
 import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc;
+import io.deephaven.proto.backplane.grpc.ConfigValue;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.server.session.SessionService;
@@ -15,8 +15,9 @@ import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Serves specified configuration properties to gRPC clients.
@@ -65,7 +66,7 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
             StreamObserver<AuthenticationConstantsResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             AuthenticationConstantsResponse.Builder builder = AuthenticationConstantsResponse.newBuilder();
-            collectConfigs(builder::addConfigValues, AUTH_CLIENT_CONFIG_PROPERTY);
+            builder.putAllConfigValues(collectConfigs(AUTH_CLIENT_CONFIG_PROPERTY));
             responseObserver.onNext(builder.build());
             responseObserver.onCompleted();
         });
@@ -79,14 +80,14 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
             sessionService.getCurrentSession();
 
             ConfigurationConstantsResponse.Builder builder = ConfigurationConstantsResponse.newBuilder();
-            collectConfigs(builder::addConfigValues, CLIENT_CONFIG_PROPERTY);
+            builder.putAllConfigValues(collectConfigs(CLIENT_CONFIG_PROPERTY));
             responseObserver.onNext(builder.build());
             responseObserver.onCompleted();
         });
     }
 
-    private void collectConfigs(Consumer<ConfigPair> addConfigValues, String clientConfigProperty) {
-        Arrays.stream(configuration.getStringWithDefault(clientConfigProperty, "").split(","))
+    private Map<String, ConfigValue> collectConfigs(String clientConfigProperty) {
+        return Arrays.stream(configuration.getStringWithDefault(clientConfigProperty, "").split(","))
                 .map(String::trim)
                 .filter(key -> !key.isEmpty())
                 .map(key -> {
@@ -94,12 +95,9 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
                     if (value == null) {
                         return null;
                     }
-                    return ConfigPair.newBuilder()
-                            .setKey(key)
-                            .setStringValue(value)
-                            .build();
+                    return Map.entry(key, ConfigValue.newBuilder().setStringValue(value).build());
                 })
                 .filter(Objects::nonNull)
-                .forEach(addConfigValues);
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

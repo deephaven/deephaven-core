@@ -22,14 +22,14 @@ service ConfigService {
 message AuthenticationConstantsRequest {}
 message ConfigurationConstantsRequest {}
 message AuthenticationConstantsResponse {
-  repeated ConfigPair config_values = 1;
+  map<string, ConfigValue> config_values = 1;
 }
 message ConfigurationConstantsResponse {
-  repeated ConfigPair config_values = 1;
+  map<string, ConfigValue> config_values = 1;
 }
-message ConfigPair {
-  string key = 1;
-  oneof value {//leave room for more types
+
+message ConfigValue {
+  oneof kind {//leave room for more types
     string string_value = 2;
   }
 }
