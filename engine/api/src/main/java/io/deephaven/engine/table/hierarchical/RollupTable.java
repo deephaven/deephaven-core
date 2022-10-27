@@ -120,9 +120,9 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
 
     /**
      * Apply a transformation to the source table, e.g. for filtering, and re-apply the rollup operation to produce a
-     * new RollupTable inheriting the same node operations and node-filter columns. Transformations that change the
-     * source table's {@link Table#getDefinition() definition}, e.g. {@link Table#dropColumns drop columns}, are not
-     * supported. This is intended for use in applying {@link Table#sort sorts} and {@link Table#where filters}.
+     * new RollupTable inheriting the same node operations. Transformations that change the source table's
+     * {@link Table#getDefinition() definition}, e.g. {@link Table#dropColumns drop columns}, are not supported. This is
+     * intended for use in applying {@link Table#sort sorts} and {@link Table#where filters}.
      * 
      * @param sourceTransformer The source transformation to apply
      * @return The new RollupTable

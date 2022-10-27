@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * Base result class for operations that produce hierarchical tables, for example {@link Table#rollup rollup} and
  * {@link Table#tree(String, String) tree}.
  */
-abstract class BaseHierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends BaseHierarchicalTable<IFACE_TYPE, IMPL_TYPE>>
+abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends HierarchicalTableImpl<IFACE_TYPE, IMPL_TYPE>>
         extends BaseGridAttributes<IFACE_TYPE, IMPL_TYPE>
         implements HierarchicalTable<IFACE_TYPE> {
 
@@ -41,7 +41,7 @@ abstract class BaseHierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_
      */
     final boolean isRefreshing;
 
-    protected BaseHierarchicalTable(
+    protected HierarchicalTableImpl(
             @NotNull final QueryTable source,
             @NotNull final QueryTable root) {
         super(null);
@@ -84,11 +84,21 @@ abstract class BaseHierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_
     public final class ClientView extends LivenessArtifact {
 
         /**
-         * The "base" BaseHierarchicalTable for this instance, which may be {@code this}. UI-driven user operations
+         * The "base" HierarchicalTableImpl for this instance, which may be {@code this}. UI-driven user operations
          * should be applied to the base in order to create new results.
          */
         private final IMPL_TYPE base;
+
+        private final IMPL_TYPE hierarchicalTable;
+
+        /**
+         * The table of keys to expand.
+         */
         private final Table keyTable;
+
+        /**
+         * Client-driven sorts that were applied to {@code} base
+         */
         private final Collection<SortColumn> sorts;
         private final Collection<? extends WhereFilter> filters;
 
@@ -101,11 +111,11 @@ abstract class BaseHierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_
             this.sorts = sorts;
             this.filters = filters;
             if (isRefreshing) {
-                manage(BaseHierarchicalTable.this);
+                manage(HierarchicalTableImpl.this);
             }
             if (base == null) {
                 // noinspection unchecked
-                this.base = (IMPL_TYPE) BaseHierarchicalTable.this;
+                this.base = (IMPL_TYPE) HierarchicalTableImpl.this;
             } else {
                 if (base.isRefreshing) {
                     manage(base);
