@@ -20,9 +20,9 @@ and
 methods. Likewise, you can store data into a
 :cpp:class:`MutableColumnSource <deephaven::client::column::MutableColumnSource>`
 via its
-:cpp:func:`fillFromChunk <deephaven::client::column::ColumnSource::fillFromChunk>`
+:cpp:func:`fillFromChunk <deephaven::client::column::MutableColumnSource::fillFromChunk>`
 and
-:cpp:func:`fillFromChunkUnordered <deephaven::client::column::ColumnSource::fillFromChunkUnordered>`
+:cpp:func:`fillFromChunkUnordered <deephaven::client::column::MutableColumnSource::fillFromChunkUnordered>`
 methods. These methods provide "bulk transfer" of data into and out of a
 :cpp:class:`ColumnSource <deephaven::client::column::ColumnSource>`.
 We do not provide any methods to access single elements of a

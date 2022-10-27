@@ -13,6 +13,7 @@ import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
@@ -61,8 +62,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final LogBuffer logBuffer;
-
-    private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
 
     private final Provider<ScriptSession> scriptSessionProvider;
 
@@ -185,6 +184,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     @Override
     public void getHeapInfo(GetHeapInfoRequest request, StreamObserver<GetHeapInfoResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            // Only authenticated users can query this
+            sessionService.getCurrentSession();
+
             final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
             final Sample sample = new Sample();
             runtimeMemory.read(sample);
@@ -259,99 +261,144 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    private CompletionParser ensureParserForSession(SessionState session) {
-        return parsers.computeIfAbsent(session, s -> {
-            CompletionParser parser = new CompletionParser();
-            s.addOnCloseCallback(() -> {
-                parsers.remove(s);
-                parser.close();
-            });
-            return parser;
-        });
-    }
-
     @Override
     public StreamObserver<AutoCompleteRequest> autoCompleteStream(
             StreamObserver<AutoCompleteResponse> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            CompletionParser parser = ensureParserForSession(session);
-            return new StreamObserver<AutoCompleteRequest>() {
+            if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
+                return new NoopAutoCompleteObserver(responseObserver);
+            }
 
-                @Override
-                public void onNext(AutoCompleteRequest value) {
-                    switch (value.getRequestCase()) {
-                        case OPEN_DOCUMENT: {
-                            final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
-
-                            parser.open(doc.getText(), doc.getUri(), Integer.toString(doc.getVersion()));
-                            break;
-                        }
-                        case CHANGE_DOCUMENT: {
-                            ChangeDocumentRequest request = value.getChangeDocument();
-                            final VersionedTextDocumentIdentifier text = request.getTextDocument();
-                            parser.update(text.getUri(), Integer.toString(text.getVersion()),
-                                    request.getContentChangesList());
-                            break;
-                        }
-                        case GET_COMPLETION_ITEMS: {
-                            GetCompletionItemsRequest request = value.getGetCompletionItems();
-                            SessionState.ExportObject<ScriptSession> exportedConsole =
-                                    session.getExport(request.getConsoleId(), "consoleId");
-                            session.nonExport()
-                                    .require(exportedConsole)
-                                    .onError(responseObserver)
-                                    .submit(() -> {
-                                        getCompletionItems(request, exportedConsole, parser, responseObserver);
-                                    });
-                            break;
-                        }
-                        case CLOSE_DOCUMENT: {
-                            CloseDocumentRequest request = value.getCloseDocument();
-                            parser.remove(request.getTextDocument().getUri());
-                            break;
-                        }
-                        case REQUEST_NOT_SET: {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                    "Autocomplete command missing request");
-                        }
-                    }
-                }
-
-                @Override
-                public void onError(Throwable t) {
-                    // ignore, client doesn't need us, will be cleaned up later
-                }
-
-                @Override
-                public void onCompleted() {
-                    // just hang up too, browser will reconnect if interested
-                    synchronized (responseObserver) {
-                        responseObserver.onCompleted();
-                    }
-                }
-            };
+            return new JavaAutoCompleteObserver(session, responseObserver);
         });
     }
 
-    private void getCompletionItems(GetCompletionItemsRequest request,
-            SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
-            StreamObserver<AutoCompleteResponse> responseObserver) {
-        final ScriptSession scriptSession = exportedConsole.get();
-        try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
-            final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-            final VariableProvider vars = scriptSession.getVariableProvider();
-            final CompletionLookups h = CompletionLookups.preload(scriptSession);
-            // The only stateful part of a completer is the CompletionLookups, which are already once-per-session-cached
-            // so, we'll just create a new completer for each request. No need to hang onto these guys.
-            final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
+    /**
+     * Autocomplete handling for JVM languages, that directly can interact with Java instances without any name
+     * mangling, and are able to use our flexible parser.
+     */
+    private static class JavaAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
+        private final CompletionParser parser;
+        private final SessionState session;
+        private final StreamObserver<AutoCompleteResponse> responseObserver;
 
-            final ParsedDocument parsed;
-            try {
-                parsed = parser.finish(doc.getUri());
-            } catch (CompletionCancelled exception) {
-                if (log.isTraceEnabled()) {
-                    log.trace().append("Completion canceled").append(exception).endl();
+        private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
+
+        private CompletionParser ensureParserForSession(SessionState session) {
+            return parsers.computeIfAbsent(session, s -> {
+                CompletionParser parser = new CompletionParser();
+                s.addOnCloseCallback(() -> {
+                    parsers.remove(s);
+                    parser.close();
+                });
+                return parser;
+            });
+        }
+
+
+        public JavaAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
+            this.session = session;
+            this.responseObserver = responseObserver;
+            parser = ensureParserForSession(session);
+        }
+
+        @Override
+        public void onNext(AutoCompleteRequest value) {
+            switch (value.getRequestCase()) {
+                case OPEN_DOCUMENT: {
+                    final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
+
+                    parser.open(doc.getText(), doc.getUri(), Integer.toString(doc.getVersion()));
+                    break;
+                }
+                case CHANGE_DOCUMENT: {
+                    ChangeDocumentRequest request = value.getChangeDocument();
+                    final VersionedTextDocumentIdentifier text = request.getTextDocument();
+                    parser.update(text.getUri(), Integer.toString(text.getVersion()),
+                            request.getContentChangesList());
+                    break;
+                }
+                case GET_COMPLETION_ITEMS: {
+                    GetCompletionItemsRequest request = value.getGetCompletionItems();
+                    SessionState.ExportObject<ScriptSession> exportedConsole =
+                            session.getExport(request.getConsoleId(), "consoleId");
+                    session.nonExport()
+                            .require(exportedConsole)
+                            .onError(responseObserver)
+                            .submit(() -> {
+                                getCompletionItems(request, exportedConsole, parser, responseObserver);
+                            });
+                    break;
+                }
+                case CLOSE_DOCUMENT: {
+                    CloseDocumentRequest request = value.getCloseDocument();
+                    parser.remove(request.getTextDocument().getUri());
+                    break;
+                }
+                case REQUEST_NOT_SET: {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Autocomplete command missing request");
+                }
+            }
+        }
+
+        private void getCompletionItems(GetCompletionItemsRequest request,
+                SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
+                StreamObserver<AutoCompleteResponse> responseObserver) {
+            final ScriptSession scriptSession = exportedConsole.get();
+            try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
+                final VersionedTextDocumentIdentifier doc = request.getTextDocument();
+                final VariableProvider vars = scriptSession.getVariableProvider();
+                final CompletionLookups h = CompletionLookups.preload(scriptSession);
+                // The only stateful part of a completer is the CompletionLookups, which are already
+                // once-per-session-cached
+                // so, we'll just create a new completer for each request. No need to hang onto these guys.
+                final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
+
+                final ParsedDocument parsed;
+                try {
+                    parsed = parser.finish(doc.getUri());
+                } catch (CompletionCancelled exception) {
+                    if (log.isTraceEnabled()) {
+                        log.trace().append("Completion canceled").append(exception).endl();
+                    }
+                    safelyExecuteLocked(responseObserver,
+                            () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                                    .setCompletionItems(GetCompletionItemsResponse.newBuilder()
+                                            .setSuccess(false)
+                                            .setRequestId(request.getRequestId()))
+                                    .build()));
+                    return;
+                }
+
+                int offset = LspTools.getOffsetFromPosition(parsed.getSource(),
+                        request.getPosition());
+                final Collection<CompletionItem.Builder> results =
+                        completer.runCompletion(parsed, request.getPosition(), offset);
+                final GetCompletionItemsResponse mangledResults =
+                        GetCompletionItemsResponse.newBuilder()
+                                .setSuccess(true)
+                                .setRequestId(request.getRequestId())
+                                .addAllItems(results.stream().map(
+                                        // insertTextFormat is a default we used to set in constructor; for now, we'll
+                                        // just
+                                        // process the objects before sending back to client
+                                        item -> item.setInsertTextFormat(2).build())
+                                        .collect(Collectors.toSet()))
+                                .build();
+
+                safelyExecuteLocked(responseObserver,
+                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                                .setCompletionItems(mangledResults)
+                                .build()));
+            } catch (Exception exception) {
+                if (QUIET_AUTOCOMPLETE_ERRORS) {
+                    if (log.isTraceEnabled()) {
+                        log.trace().append("Exception occurred during autocomplete").append(exception).endl();
+                    }
+                } else {
+                    log.error().append("Exception occurred during autocomplete").append(exception).endl();
                 }
                 safelyExecuteLocked(responseObserver,
                         () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
@@ -359,44 +406,58 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                         .setSuccess(false)
                                         .setRequestId(request.getRequestId()))
                                 .build()));
-                return;
             }
+        }
 
-            int offset = LspTools.getOffsetFromPosition(parsed.getSource(),
-                    request.getPosition());
-            final Collection<CompletionItem.Builder> results =
-                    completer.runCompletion(parsed, request.getPosition(), offset);
-            final GetCompletionItemsResponse mangledResults =
-                    GetCompletionItemsResponse.newBuilder()
-                            .setSuccess(true)
-                            .setRequestId(request.getRequestId())
-                            .addAllItems(results.stream().map(
-                                    // insertTextFormat is a default we used to set in constructor; for now, we'll just
-                                    // process the objects before sending back to client
-                                    item -> item.setInsertTextFormat(2).build())
-                                    .collect(Collectors.toSet()))
-                            .build();
+        @Override
+        public void onError(Throwable t) {
+            // ignore, client doesn't need us, will be cleaned up later
+        }
 
-            safelyExecuteLocked(responseObserver,
-                    () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                            .setCompletionItems(mangledResults)
-                            .build()));
-        } catch (Exception exception) {
-            if (QUIET_AUTOCOMPLETE_ERRORS) {
-                if (log.isTraceEnabled()) {
-                    log.trace().append("Exception occurred during autocomplete").append(exception).endl();
-                }
-            } else {
-                log.error().append("Exception occurred during autocomplete").append(exception).endl();
+        @Override
+        public void onCompleted() {
+            // just hang up too, browser will reconnect if interested
+            synchronized (responseObserver) {
+                responseObserver.onCompleted();
             }
-            safelyExecuteLocked(responseObserver,
-                    () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                            .setCompletionItems(GetCompletionItemsResponse.newBuilder()
-                                    .setSuccess(false)
-                                    .setRequestId(request.getRequestId()))
-                            .build()));
         }
     }
+
+    private static class NoopAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
+        private final StreamObserver<AutoCompleteResponse> responseObserver;
+
+        public NoopAutoCompleteObserver(StreamObserver<AutoCompleteResponse> responseObserver) {
+            this.responseObserver = responseObserver;
+        }
+
+        @Override
+        public void onNext(AutoCompleteRequest value) {
+            // This implementation only responds to autocomplete requests with "success, nothing found"
+            if (value.getRequestCase() == AutoCompleteRequest.RequestCase.GET_COMPLETION_ITEMS) {
+                safelyExecuteLocked(responseObserver, () -> {
+                    responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                            .setCompletionItems(
+                                    GetCompletionItemsResponse.newBuilder().setSuccess(true)
+                                            .setRequestId(value.getGetCompletionItems().getRequestId()))
+                            .build());
+                });
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            // ignore, client doesn't need us, will be cleaned up later
+        }
+
+        @Override
+        public void onCompleted() {
+            // just hang up too, browser will reconnect if interested
+            synchronized (responseObserver) {
+                responseObserver.onCompleted();
+            }
+        }
+    }
+
 
     private static class LogBufferStreamAdapter extends SessionCloseableObserver<LogSubscriptionData>
             implements LogBufferRecordListener {

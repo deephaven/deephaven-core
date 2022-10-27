@@ -49,7 +49,9 @@ jobs:
         if: always()
         with:
           name: check-ci-results
-          path: '**/build/test-results/*/TEST-*.xml'
+          path: |
+            **/build/test-results/**
+            !**/build/test-results/**/binary/**
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@v3

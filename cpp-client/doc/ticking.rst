@@ -4,8 +4,8 @@ Subscribing to Ticking Tables
 Description
 -----------
 
-Some C++ applications need to maintain a local copy of a table that stays in sync with a server
-table.  This is useful when your code is using custom libraries or other algorithms that are more
+Some C++ applications need to maintain a local copy of a table that stays in sync with the server
+side.  This is useful when your code is using custom libraries or other algorithms that are more
 natural to execute on the client rather than the server.
 
 To support this functionality,
@@ -47,6 +47,21 @@ callback, passing it the
 :cpp:class:`TickingUpdate <deephaven::client::TickingUpdate>`
 object.
 
+A skeleton of a user-defined callback object looks like this:
+
+.. code:: c++
+
+   class MyCallback final : public deephaven::client::TickingCallback {
+   public:
+     void onTick(deephaven::client::TickingUpdate update) final {
+       // handle the update message
+     }
+
+     void onFailure(std::exception_ptr ep) final {
+       // handle the failure
+     }
+   };
+
 Structure of updates from the server
 ------------------------------------
 
@@ -57,9 +72,9 @@ a high level, the purpose of the protocol is to efficiently transmit "diffs" bet
 as a table changes over time. Those diffs include:
 
 * removed rows
-* shifts
+* shifts (note 1)
 * added rows
-* modified cells
+* modified cells (note 2)
 
 Notes:
 
@@ -67,12 +82,15 @@ Notes:
 version of the client, we do not expose internal row keys to the caller. So you will not see shifts
 represented in the
 :cpp:class:`TickingUpdate <deephaven::client::TickingUpdate>`
-class.
+class in this version of the client.
 
 2. In the above we explicitly refer to modified *cells* rather than modified *rows*, because
-often when there is a change, only some cells within a row change and others stay the same.
+when a row is modified, typically only some cells within that row change but others stay the same.
 For the sake of efficiency, the Barrage protocol allows the server to specify the specific
-cells that have changed.
+cells that changed within a row. These modifications are represented on a per-column basis. That is,
+for each column, the library will indicate (via a
+:cpp:class:`RowSequence <deephaven::client::container::RowSequence>`)
+which rows of that column were modified.
 
 The TickingUpdate class
 -----------------------
@@ -92,7 +110,7 @@ as well as intermediate snapshots
 * before and after the modify operation.
 
 It also contains
-:cpp:class:`RowSequence <deephaven::client::RowSequence>`
+:cpp:class:`RowSequence <deephaven::client::container::RowSequence>`
 values representing the positions of the removed, added, and modified items.
 
 For some callers, the per-update
@@ -110,7 +128,7 @@ The per-update snapshots are:
 * :cpp:func:`prev <deephaven::client::TickingUpdate::prev>` - snapshot of the table before any of this cycle's updates were applied.
 * :cpp:func:`current <deephaven::client::TickingUpdate::current>` - snapshot of the table after all of this cycle's updates were applied.
 
-The per-operation snaphots are:
+The more fine-grained per-operation snaphots are:
 
 * :cpp:func:`beforeRemoves <deephaven::client::TickingUpdate::beforeRemoves>` - snapshot of the table as it appeared before the remove operation
 * :cpp:func:`afterRemoves <deephaven::client::TickingUpdate::afterRemoves>` - snapshot of the table as it appeared after the remove operation
@@ -145,9 +163,9 @@ project.
 The
 :cpp:class:`TickingUpdate <deephaven::client::TickingUpdate>`
 object also provides
-:cpp:class:`RowSequence <deephaven::client::RowSequence>`
+:cpp:class:`RowSequence <deephaven::client::container::RowSequence>`
 objects indicating which specific rows were changed. The provided
-:cpp:class:`RowSequence <deephaven::client::RowSequence>`
+:cpp:class:`RowSequence <deephaven::client::container::RowSequence>`
 objects are:
 
 * :cpp:func:`removedRows <deephaven::client::TickingUpdate::removedRows>` - indexes of rows removed from the
@@ -158,13 +176,13 @@ objects are:
   :cpp:func:`beforeAdds <deephaven::client::TickingUpdate::beforeAdds>`
   snapshot to form
   :cpp:func:`afterAdds <deephaven::client::TickingUpdate::afterAdds>`.
-* :cpp:func:`modifiedRows <deephaven::client::TickingUpdate::modifiedRows>` - a `std::vector` of
-  :cpp:class:`RowSequence <deephaven::client::RowSequence>`
+* :cpp:func:`modifiedRows <deephaven::client::TickingUpdate::modifiedRows>` - a ``std::vector`` of
+  :cpp:class:`RowSequence <deephaven::client::container::RowSequence>`
   shared_ptrs, which represents the modified data on a per-column basis.
   Each element of the vector is a
-  :cpp:class:`RowSequence <deephaven::client::RowSequence>`
+  :cpp:class:`RowSequence <deephaven::client::container::RowSequence>`
   shared_ptr representing the corresponding column. That
-  :cpp:class:`RowSequence <deephaven::client::RowSequence>`
+  :cpp:class:`RowSequence <deephaven::client::container::RowSequence>`
   provides the indexes of rows that were modified in the corresponding column of
   :cpp:func:`beforeModifies <deephaven::client::TickingUpdate::beforeModifies>`
   to form the corresponding column in

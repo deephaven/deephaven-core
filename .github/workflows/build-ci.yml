@@ -184,7 +184,7 @@ jobs:
           tags: ${{ steps.docker_meta_server.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Docker build server nltk
         uses: docker/build-push-action@v2
@@ -196,7 +196,7 @@ jobs:
           tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Docker build server pytorch
         uses: docker/build-push-action@v2
@@ -208,7 +208,7 @@ jobs:
           tags: ${{ steps.docker_meta_server_pytorch.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Docker build server sklearn
         uses: docker/build-push-action@v2
@@ -220,7 +220,7 @@ jobs:
           tags: ${{ steps.docker_meta_server_sklearn.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Docker build server tensorflow
         uses: docker/build-push-action@v2
@@ -232,7 +232,7 @@ jobs:
           tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Docker build server all-ai
         uses: docker/build-push-action@v2
@@ -244,7 +244,7 @@ jobs:
           tags: ${{ steps.docker_meta_server_all_ai.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       # Note: server-slim does not need BASE/SERVER build-args like the other server images
       - name: Docker build server slim
@@ -255,7 +255,7 @@ jobs:
           tags: ${{ steps.docker_meta_server_slim.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server-slim/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
@@ -354,7 +354,7 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./grpc-proxy/build/docker/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
   envoy:
     runs-on: ubuntu-22.04
@@ -441,7 +441,7 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./envoy/build/docker/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
   web:
     runs-on: ubuntu-22.04
@@ -532,7 +532,7 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/web/build/docker/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
@@ -617,7 +617,7 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/web-plugin-packager/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
 ### Notes about `driver: docker`
 ###

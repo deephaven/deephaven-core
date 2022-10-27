@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.grpc.servlet.web.websocket;
 
 import io.grpc.Attributes;
@@ -17,19 +20,26 @@ import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
-    private static final Logger logger = Logger.getLogger(WebsocketStreamImpl.class.getName());
+public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl {
+    private static final Logger logger = Logger.getLogger(MultiplexedWebsocketStreamImpl.class.getName());
 
     private final Sink sink = new Sink();
 
-    public WebsocketStreamImpl(StatsTraceContext statsTraceCtx, int maxInboundMessageSize, Session websocketSession,
-            InternalLogId logId, Attributes attributes) {
+    // Note that this isn't a "true" stream id in the h2 or grpc sense, this shouldn't be returned via streamId()
+    private final int streamId;
+
+    public MultiplexedWebsocketStreamImpl(StatsTraceContext statsTraceCtx, int maxInboundMessageSize,
+            Session websocketSession, InternalLogId logId, Attributes attributes, int streamId) {
         super(ByteArrayWritableBuffer::new, statsTraceCtx, maxInboundMessageSize, websocketSession, logId, attributes,
                 logger);
+        if (streamId < 0) {
+            throw new IllegalStateException("Can't create stream with negative id");
+        }
+        this.streamId = streamId;
     }
 
     @Override
-    protected Sink abstractServerStreamSink() {
+    protected AbstractServerStream.Sink abstractServerStreamSink() {
         return sink;
     }
 
@@ -37,24 +47,33 @@ public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
 
         @Override
         public void writeHeaders(Metadata headers) {
-            // headers/trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The
-            // trailer response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the length of the
-            // message
+            writeMetadataToStream(headers, false);
+        }
 
+        /**
+         * Usual multiplexing framing applies - before writing metadata, we write the 32-bit int streamId, with the top
+         * bit to represent if this stream (over the shared transport) should be closed or not.
+         * <p>
+         * </p>
+         * Headers/trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The trailer
+         * response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the length of the message.
+         */
+        private void writeMetadataToStream(Metadata headers, boolean closeBitSet) {
             byte[][] serializedHeaders = TransportFrameUtil.toHttp2Headers(headers);
-            // Total up the size of the payload: 5 bytes for the prefix, and each header needs a colon delimiter, and to
-            // end with \r\n
+            // Total up the size of the payload: 4 bytes for multiplexing framing, 5 bytes for the prefix, and each
+            // header needs a colon delimiter, and to end with \r\n
             int headerLength = Arrays.stream(serializedHeaders).mapToInt(arr -> arr.length + 2).sum();
-            ByteBuffer prefix = ByteBuffer.allocate(5);
-            prefix.put((byte) 0x80);
-            prefix.putInt(headerLength);
-            prefix.flip();
-            ByteBuffer message = ByteBuffer.allocate(headerLength);
+            ByteBuffer message = ByteBuffer.allocate(headerLength + 9);
+            // If this is the final write, set the highest bit on the streamid
+            message.putInt(closeBitSet ? streamId ^ (1 << 31) : streamId);
+            message.put((byte) 0x80);
+            message.putInt(headerLength);
             writeAsciiHeadersToMessage(serializedHeaders, message);
+            if (message.hasRemaining()) {
+                throw new IllegalStateException("Incorrectly sized buffer, header/trailer payload will be sized wrong");
+            }
             message.flip();
             try {
-                // send in two separate payloads
-                websocketSession.getBasicRemote().sendBinary(prefix);
                 websocketSession.getBasicRemote().sendBinary(message);
             } catch (IOException e) {
                 throw Status.fromThrowable(e).asRuntimeException();
@@ -81,8 +100,10 @@ public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
                         onSendingBytes(numBytes);
                     }
 
-                    ByteBuffer payload =
-                            ByteBuffer.wrap(((ByteArrayWritableBuffer) frame).bytes, 0, frame.readableBytes());
+                    ByteBuffer payload = ByteBuffer.allocate(numBytes + 4);
+                    payload.putInt(streamId);
+                    payload.put(((ByteArrayWritableBuffer) frame).bytes, 0, numBytes);
+                    payload.flip();
 
                     websocketSession.getBasicRemote().sendBinary(payload);
                     transportState.runOnTransportThread(() -> transportState.onSentBytes(numBytes));
@@ -104,29 +125,7 @@ public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
                         new Object[] {logId, trailers, headersSent, status});
             }
 
-            // Trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The
-            // trailer response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the size in a 4 byte int
-
-            byte[][] serializedTrailers = TransportFrameUtil.toHttp2Headers(trailers);
-            // Total up the size of the payload: 5 bytes for the prefix, and each trailer needs a colon+space delimiter,
-            // and to end with \r\n
-            int trailerLength = Arrays.stream(serializedTrailers).mapToInt(arr -> arr.length + 2).sum();
-            ByteBuffer prefix = ByteBuffer.allocate(5);
-            prefix.put((byte) 0x80);
-            prefix.putInt(trailerLength);
-            prefix.flip();
-            ByteBuffer message = ByteBuffer.allocate(trailerLength);
-            writeAsciiHeadersToMessage(serializedTrailers, message);
-            message.flip();
-            try {
-                // send in two separate messages
-                websocketSession.getBasicRemote().sendBinary(prefix);
-                websocketSession.getBasicRemote().sendBinary(message);
-
-                websocketSession.close();
-            } catch (IOException e) {
-                throw Status.fromThrowable(e).asRuntimeException();
-            }
+            writeMetadataToStream(trailers, true);
             transportState().runOnTransportThread(() -> {
                 transportState().complete();
             });
