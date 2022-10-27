@@ -75,7 +75,7 @@ public abstract class IncrementalSortRedirectionBase {
         ugp.startCycleForUnitTests();
         ms = create(componentSize, numBuckets, numParts, initialSize, cycleIncrement);
         listener = new BlackholeListener(blackhole);
-        ms.listenForUpdates(listener);
+        ms.addUpdateListener(listener);
         ugp.completeCycleForUnitTests();
 
     }

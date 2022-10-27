@@ -228,10 +228,10 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         final TableUpdateValidator tuvfa = TableUpdateValidator.make("fa", (QueryTable) fa);
         final FailureListener fla = new FailureListener();
-        tuvfa.getResultTable().listenForUpdates(fla);
+        tuvfa.getResultTable().addUpdateListener(fla);
         final TableUpdateValidator tuvfb = TableUpdateValidator.make("fa", (QueryTable) fb);
         final FailureListener flb = new FailureListener();
-        tuvfb.getResultTable().listenForUpdates(flb);
+        tuvfb.getResultTable().addUpdateListener(flb);
 
         TableTools.show(fa);
         TableTools.show(fb);
@@ -389,7 +389,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         ErrorListener(String description, Table table) {
             super("Error Checker: " + description, table, false);
-            table.listenForUpdates(this, false);
+            table.addUpdateListener(this, false);
         }
 
         @Override

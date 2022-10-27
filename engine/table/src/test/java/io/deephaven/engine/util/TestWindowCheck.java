@@ -187,8 +187,8 @@ public class TestWindowCheck {
                     WindowCheck.addTimeWindowInternal(timeProvider, table, "Timestamp", windowNanos, "InWindow", false);
             validator = TableUpdateValidator.make((QueryTable) windowed.first);
 
-            ((QueryTable) windowed.first).listenForUpdates(windowedFailureListener);
-            validator.getResultTable().listenForUpdates(updateFailureListener);
+            ((QueryTable) windowed.first).addUpdateListener(windowedFailureListener);
+            validator.getResultTable().addUpdateListener(updateFailureListener);
         }
 
         @Override

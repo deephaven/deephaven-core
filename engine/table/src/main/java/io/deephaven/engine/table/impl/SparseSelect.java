@@ -180,7 +180,7 @@ public class SparseSelect {
                                 outputSourcesList.stream().filter(x -> x instanceof ObjectSparseArraySource)
                                         .map(x -> (ObjectSparseArraySource<?>) x)
                                         .toArray(ObjectSparseArraySource[]::new);
-                        source.listenForUpdates(new BaseTable.ListenerImpl(
+                        source.addUpdateListener(new BaseTable.ListenerImpl(
                                 "sparseSelect(" + Arrays.toString(columnNames) + ")", source, resultTable) {
                             private final ModifiedColumnSet modifiedColumnSetForUpdates =
                                     resultTable.getModifiedColumnSetForUpdates();

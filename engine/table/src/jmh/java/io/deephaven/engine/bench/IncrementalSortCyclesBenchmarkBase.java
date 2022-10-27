@@ -54,7 +54,7 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
             out = out.where(filter).sort("Value");
             filter.start();
             listener = new BlackholeListener(blackhole);
-            out.listenForUpdates(listener);
+            out.addUpdateListener(listener);
         } finally {
             ugp.completeCycleForUnitTests();
         }

@@ -432,7 +432,7 @@ public class QueryTableAjTest {
             base.setExpectError(true);
             final io.deephaven.engine.table.impl.ErrorListener listener =
                     new io.deephaven.engine.table.impl.ErrorListener(result1);
-            result1.listenForUpdates(listener);
+            result1.addUpdateListener(listener);
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(right, i(4, 5, 6),

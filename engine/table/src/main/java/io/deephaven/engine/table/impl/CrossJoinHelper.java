@@ -115,7 +115,7 @@ public class CrossJoinHelper {
                         resultTable,
                         leftTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-                leftTable.listenForUpdates(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
+                leftTable.addUpdateListener(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
                         leftTable, resultTable) {
                     @Override
                     public void onUpdate(final TableUpdate upstream) {
@@ -681,11 +681,11 @@ public class CrossJoinHelper {
 
                 leftRecorder.setMergedListener(mergedListener);
                 rightRecorder.setMergedListener(mergedListener);
-                leftTable.listenForUpdates(leftRecorder);
-                rightTable.listenForUpdates(rightRecorder);
+                leftTable.addUpdateListener(leftRecorder);
+                rightTable.addUpdateListener(rightRecorder);
                 resultTable.addParentReference(mergedListener);
             } else {
-                rightTable.listenForUpdates(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
+                rightTable.addUpdateListener(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
                         rightTable, resultTable) {
                     private final CrossJoinModifiedSlotTracker tracker = new CrossJoinModifiedSlotTracker(jsm);
 
@@ -1098,18 +1098,18 @@ public class CrossJoinHelper {
 
             leftRecorder.setMergedListener(mergedListener);
             rightRecorder.setMergedListener(mergedListener);
-            leftTable.listenForUpdates(leftRecorder);
-            rightTable.listenForUpdates(rightRecorder);
+            leftTable.addUpdateListener(leftRecorder);
+            rightTable.addUpdateListener(rightRecorder);
             result.addParentReference(mergedListener);
         } else if (leftTable.isRefreshing() && rightTable.size() > 0) {
-            leftTable.listenForUpdates(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
+            leftTable.addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
                     onUpdate.accept(upstream, null);
                 }
             });
         } else if (rightTable.isRefreshing() && leftTable.size() > 0) {
-            rightTable.listenForUpdates(new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
+            rightTable.addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
                     onUpdate.accept(null, upstream);

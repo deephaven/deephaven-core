@@ -1122,10 +1122,10 @@ public class Numeric {
      *
      * @param percentile percentile to compute.
      * @param values values.
-     * @return percentile.
+     * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
     public static double percentile(double percentile, ${pt.primitive}... values) {
-        if(values == null){
+        if(values == null || values.length == 0){
             return NULL_DOUBLE;
         }
 
@@ -1137,10 +1137,10 @@ public class Numeric {
      *
      * @param percentile percentile to compute.
      * @param values values.
-     * @return percentile.
+     * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
     public static double percentile(double percentile, ${pt.dbArray} values) {
-        if(values == null){
+        if(values == null || values.isEmpty()){
             return NULL_DOUBLE;
         }
 

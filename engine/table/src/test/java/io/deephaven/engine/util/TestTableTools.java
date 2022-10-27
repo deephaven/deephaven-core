@@ -928,7 +928,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             }
         };
 
-        result.listenForUpdates(new InstrumentedTableUpdateListener("") {
+        result.addUpdateListener(new InstrumentedTableUpdateListener("") {
             @Override
             public void onUpdate(final TableUpdate upstream) {
                 Assert.assertTrue(table.getRowSet().intSize() > table.getRowSet().intSizePrev());

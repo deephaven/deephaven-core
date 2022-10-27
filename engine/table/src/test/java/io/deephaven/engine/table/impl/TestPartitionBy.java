@@ -142,8 +142,8 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             final ErrorListener listenerA = new ErrorListener(tableA);
             final ErrorListener listenerB = new ErrorListener(tableB);
-            tableA.listenForUpdates(listenerA);
-            tableB.listenForUpdates(listenerB);
+            tableA.addUpdateListener(listenerA);
+            tableB.addUpdateListener(listenerB);
 
             assertNull(listenerA.originalException());
             assertNull(listenerB.originalException());

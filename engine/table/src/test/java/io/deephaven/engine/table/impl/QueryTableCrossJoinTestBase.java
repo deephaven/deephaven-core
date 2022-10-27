@@ -61,7 +61,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
-        jt.listenForUpdates(listener);
+        jt.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
@@ -97,7 +97,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
-        jt.listenForUpdates(listener);
+        jt.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(origIndex));
@@ -136,7 +136,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
-        jt.listenForUpdates(listener);
+        jt.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(128));

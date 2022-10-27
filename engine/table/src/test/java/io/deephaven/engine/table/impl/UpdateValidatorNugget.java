@@ -23,8 +23,8 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
         this.originalValue = table;
         this.validator = TableUpdateValidator.make(originalValue);
 
-        originalValue.listenForUpdates(failureListener);
-        validator.getResultTable().listenForUpdates(failureListener);
+        originalValue.addUpdateListener(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
     }
 
     private final QueryTable originalValue;
