@@ -23,7 +23,7 @@ dependencies {
 
     compileOnly 'javax.inject:javax.inject:1'
 
-    implementation 'com.google.guava:guava:19.0'
+    Classpaths.inheritGuava(project)
 
     testImplementation TestTools.projectDependency(project, 'Util')
     testImplementation TestTools.projectDependency(project, 'engine-table')

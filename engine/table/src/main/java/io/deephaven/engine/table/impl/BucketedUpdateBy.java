@@ -9,7 +9,6 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -1055,7 +1054,7 @@ public class BucketedUpdateBy extends UpdateBy {
             }
             Arrays.stream(ops).forEach(UpdateByOperator::startTrackingPrev);
             final InstrumentedTableUpdateListener listener = updateBy.newListener(description, result, byColumns);
-            source.listenForUpdates(listener);
+            source.addUpdateListener(listener);
             result.addParentReference(listener);
         }
 

@@ -451,25 +451,26 @@ public abstract class FlightMessageRoundTripTest {
         currentSession.newExport(simpleTableTicket, "test")
                 .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
+        long totalRowCount = 0;
         try (FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()))) {
-            assertTrue(stream.next());
-            VectorSchemaRoot root = stream.getRoot();
+            while (stream.next()) {
+                VectorSchemaRoot root = stream.getRoot();
+                totalRowCount += root.getRowCount();
+
+                // only one column was sent
+                assertEquals(1, root.getFieldVectors().size());
+                Field i = root.getSchema().findField("I");
+
+                // all DH columns are nullable, even primitives
+                assertTrue(i.getFieldType().isNullable());
+                // verify it is a java int type, which is an arrow 32bit int
+                assertEquals(ArrowType.ArrowTypeID.Int, i.getFieldType().getType().getTypeID());
+                assertEquals(32, ((ArrowType.Int) i.getFieldType().getType()).getBitWidth());
+                assertEquals("int", i.getMetadata().get("deephaven:type"));
+            }
+
             // row count should match what we expect
-            assertEquals(10, root.getRowCount());
-
-            // only one column was sent
-            assertEquals(1, root.getFieldVectors().size());
-            Field i = root.getSchema().findField("I");
-
-            // all DH columns are nullable, even primitives
-            assertTrue(i.getFieldType().isNullable());
-            // verify it is a java int type, which is an arrow 32bit int
-            assertEquals(ArrowType.ArrowTypeID.Int, i.getFieldType().getType().getTypeID());
-            assertEquals(32, ((ArrowType.Int) i.getFieldType().getType()).getBitWidth());
-            assertEquals("int", i.getMetadata().get("deephaven:type"));
-
-            // verify that the server didn't send more data after the first payload
-            assertFalse(stream.next());
+            assertEquals(10, totalRowCount);
         }
     }
 
@@ -497,8 +498,8 @@ public abstract class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(
                 TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
 
-        // list columns TODO(#755): support for Vector
-        // assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").groupBy().join(TableTools.emptyTable(5)));
+        // list columns
+        assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").groupBy().join(TableTools.emptyTable(5)));
     }
 
     @Test
@@ -666,26 +667,26 @@ public abstract class FlightMessageRoundTripTest {
                 erw.getWriter().completed();
 
                 // read everything from the server (expecting schema message and one data message)
-                int numMessages = 0;
+                int totalRowCount = 0;
                 while (erw.getReader().next()) {
-                    ++numMessages;
-                }
-                assertEquals(1, numMessages); // only one data message
+                    final int offset = totalRowCount;
+                    final VectorSchemaRoot root = erw.getReader().getRoot();
+                    final int rowCount = root.getRowCount();
+                    totalRowCount += rowCount;
 
-                // at this point should have the data, verify it matches the created table
-                assertEquals(erw.getReader().getRoot().getRowCount(), table.size());
-
-                // check the values against the source table
-                org.apache.arrow.vector.IntVector iv =
-                        (org.apache.arrow.vector.IntVector) erw.getReader().getRoot().getVector(0);
-                for (int i = 0; i < table.size(); i++) {
-                    assertEquals("int match:", table.getColumn(0).get(i), iv.get(i));
+                    // check the values against the source table
+                    org.apache.arrow.vector.IntVector iv =
+                            (org.apache.arrow.vector.IntVector) root.getVector(0);
+                    for (int i = 0; i < rowCount; ++i) {
+                        assertEquals("int match:", table.getColumn(0).get(offset + i), iv.get(i));
+                    }
+                    org.apache.arrow.vector.Float8Vector dv =
+                            (org.apache.arrow.vector.Float8Vector) root.getVector(1);
+                    for (int i = 0; i < rowCount; ++i) {
+                        assertEquals("double match: ", table.getColumn(1).get(offset + i), dv.get(i));
+                    }
                 }
-                org.apache.arrow.vector.Float8Vector dv =
-                        (org.apache.arrow.vector.Float8Vector) erw.getReader().getRoot().getVector(1);
-                for (int i = 0; i < table.size(); i++) {
-                    assertEquals("double match: ", table.getColumn(1).get(i), dv.get(i));
-                }
+                assertEquals(table.size(), totalRowCount);
             }
         }
     }

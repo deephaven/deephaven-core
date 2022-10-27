@@ -64,12 +64,12 @@ void SpaceMapper::applyShift(uint64_t beginKey, uint64_t endKey, uint64_t destKe
 
 std::shared_ptr<RowSequence> SpaceMapper::addKeys(const RowSequence &keys) {
   RowSequenceBuilder builder;
-  auto addChunk = [this, &builder](uint64_t beginKey, uint64_t endKey) {
+  auto addInterval = [this, &builder](uint64_t beginKey, uint64_t endKey) {
     auto size = endKey - beginKey;
     auto beginIndex = addRange(beginKey, endKey);
-    builder.addRange(beginIndex, beginIndex + size);
+    builder.addInterval(beginIndex, beginIndex + size);
   };
-  keys.forEachChunk(addChunk);
+  keys.forEachInterval(addInterval);
   return builder.build();
 }
 
@@ -79,7 +79,7 @@ std::shared_ptr<RowSequence> SpaceMapper::convertKeysToIndices(const RowSequence
   }
 
   RowSequenceBuilder builder;
-  auto convertChunk = [this, &builder](uint64_t beginKey, uint64_t endKey) {
+  auto convertInterval = [this, &builder](uint64_t beginKey, uint64_t endKey) {
     auto beginp = set_.begin();
     if (!beginp.move(beginKey)) {
       auto message = stringf("begin key %o is not in the src map", beginKey);
@@ -96,9 +96,9 @@ std::shared_ptr<RowSequence> SpaceMapper::convertKeysToIndices(const RowSequence
       ++currentp;
     }
     auto size = endKey - beginKey;
-    builder.addRange(nextRank, nextRank + size);
+    builder.addInterval(nextRank, nextRank + size);
   };
-  keys.forEachChunk(convertChunk);
+  keys.forEachInterval(convertInterval);
   return builder.build();
 }
 

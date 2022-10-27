@@ -170,7 +170,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asFloat.listenForUpdates(asFloatListener);
+            asFloat.addUpdateListener(asFloatListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() ->
@@ -213,7 +213,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asFloat.listenForUpdates(asFloatListener);
+            asFloat.addUpdateListener(asFloatListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

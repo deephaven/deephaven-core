@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "deephaven/client/chunk/chunk.h"
+#include "deephaven/client/chunk/chunk_traits.h"
 #include "deephaven/client/column/column_source.h"
 #include "deephaven/client/types.h"
 
@@ -40,7 +42,7 @@ struct ColumnSourceImpls {
         ++destIndex;
       }
     };
-    rows.forEachChunk(applyChunk);
+    rows.forEachInterval(applyChunk);
   }
 
   template<typename CHUNK_TYPE, typename BACKING_STORE>
@@ -89,7 +91,7 @@ struct ColumnSourceImpls {
         ++srcIndex;
       }
     };
-    rows.forEachChunk(applyChunk);
+    rows.forEachInterval(applyChunk);
   }
 
   template<typename CHUNK_TYPE, typename BACKING_STORE>

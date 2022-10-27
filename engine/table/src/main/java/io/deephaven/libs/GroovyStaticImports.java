@@ -1554,6 +1554,10 @@ public class GroovyStaticImports {
     public static  long[] forwardFill( io.deephaven.vector.LongVector values ) {return Basic.forwardFill( values );}
     /** @see io.deephaven.function.Basic#forwardFill(io.deephaven.vector.ShortVector) */
     public static  short[] forwardFill( io.deephaven.vector.ShortVector values ) {return Basic.forwardFill( values );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],byte,byte) */
+    public static  byte[] ifelse( java.lang.Boolean[] condition, byte trueCase, byte falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],char,char) */
+    public static  char[] ifelse( java.lang.Boolean[] condition, char trueCase, char falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],byte[],byte[]) */
     public static  byte[] ifelse( java.lang.Boolean[] condition, byte[] trueCase, byte[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],char[],char[]) */
@@ -1568,6 +1572,16 @@ public class GroovyStaticImports {
     public static  long[] ifelse( java.lang.Boolean[] condition, long[] trueCase, long[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],short[],short[]) */
     public static  short[] ifelse( java.lang.Boolean[] condition, short[] trueCase, short[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],double,double) */
+    public static  double[] ifelse( java.lang.Boolean[] condition, double trueCase, double falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],float,float) */
+    public static  float[] ifelse( java.lang.Boolean[] condition, float trueCase, float falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],int,int) */
+    public static  int[] ifelse( java.lang.Boolean[] condition, int trueCase, int falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],long,long) */
+    public static  long[] ifelse( java.lang.Boolean[] condition, long trueCase, long falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],short,short) */
+    public static  short[] ifelse( java.lang.Boolean[] condition, short trueCase, short falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,byte,byte) */
     public static  byte ifelse( java.lang.Boolean condition, byte trueCase, byte falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,char,char) */
@@ -1582,6 +1596,16 @@ public class GroovyStaticImports {
     public static  long ifelse( java.lang.Boolean condition, long trueCase, long falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,short,short) */
     public static  short ifelse( java.lang.Boolean condition, short trueCase, short falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,byte,byte) */
+    public static  byte[] ifelse( io.deephaven.vector.BooleanVector condition, byte trueCase, byte falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,char,char) */
+    public static  char[] ifelse( io.deephaven.vector.BooleanVector condition, char trueCase, char falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,double,double) */
+    public static  double[] ifelse( io.deephaven.vector.BooleanVector condition, double trueCase, double falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,float,float) */
+    public static  float[] ifelse( io.deephaven.vector.BooleanVector condition, float trueCase, float falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,int,int) */
+    public static  int[] ifelse( io.deephaven.vector.BooleanVector condition, int trueCase, int falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  byte[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.ByteVector trueCase, io.deephaven.vector.ByteVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
@@ -1596,10 +1620,18 @@ public class GroovyStaticImports {
     public static  long[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.LongVector trueCase, io.deephaven.vector.LongVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.ShortVector,io.deephaven.vector.ShortVector) */
     public static  short[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.ShortVector trueCase, io.deephaven.vector.ShortVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,long,long) */
+    public static  long[] ifelse( io.deephaven.vector.BooleanVector condition, long trueCase, long falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,short,short) */
+    public static  short[] ifelse( io.deephaven.vector.BooleanVector condition, short trueCase, short falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean[],T,T) */
+    public static <T> T[] ifelseObj( java.lang.Boolean[] condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean[],T[],T[]) */
     public static <T> T[] ifelseObj( java.lang.Boolean[] condition, T[] trueCase, T[] falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean,T,T) */
     public static <T> T ifelseObj( java.lang.Boolean condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelseObj(io.deephaven.vector.BooleanVector,T,T) */
+    public static <T> T[] ifelseObj( io.deephaven.vector.BooleanVector condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#ifelseObj(io.deephaven.vector.BooleanVector,io.deephaven.vector.ObjectVector,io.deephaven.vector.ObjectVector) */
     public static <T> T[] ifelseObj( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.ObjectVector<T> trueCase, io.deephaven.vector.ObjectVector<T> falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#in(byte,byte[]) */

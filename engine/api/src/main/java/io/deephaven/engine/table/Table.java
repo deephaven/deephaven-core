@@ -853,23 +853,7 @@ public interface Table extends
     // Disaggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    /**
-     * Ungroups a table by converting arrays into columns.
-     *
-     * @param nullFill indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with
-     *        null values. If set to false, then all arrays should be the same length.
-     * @param columnsToUngroup the columns to ungroup
-     * @return the ungrouped table
-     */
-    Table ungroup(boolean nullFill, String... columnsToUngroup);
-
-    Table ungroup(String... columnsToUngroup);
-
     Table ungroupAllBut(String... columnsNotToUngroup);
-
-    Table ungroup();
-
-    Table ungroup(boolean nullFill);
 
     // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
@@ -1284,7 +1268,7 @@ public interface Table extends
      *
      * @param listener listener for updates
      */
-    void listenForUpdates(ShiftObliviousListener listener);
+    void addUpdateListener(ShiftObliviousListener listener);
 
     /**
      * Subscribe for updates to this table. After the optional initial image, {@code listener} will be invoked via the
@@ -1294,7 +1278,7 @@ public interface Table extends
      * @param replayInitialImage true to process updates for all initial rows in the table plus all changes; false to
      *        only process changes
      */
-    void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage);
+    void addUpdateListener(ShiftObliviousListener listener, boolean replayInitialImage);
 
     /**
      * Subscribe for updates to this table. {@code listener} will be invoked via the {@link NotificationQueue}
@@ -1302,7 +1286,7 @@ public interface Table extends
      *
      * @param listener listener for updates
      */
-    void listenForUpdates(TableUpdateListener listener);
+    void addUpdateListener(TableUpdateListener listener);
 
     /**
      * Unsubscribe the supplied listener.

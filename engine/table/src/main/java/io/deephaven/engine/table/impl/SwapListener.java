@@ -32,6 +32,6 @@ public class SwapListener extends SwapListenerBase<TableUpdateListener> implemen
 
     @Override
     public void subscribeForUpdates() {
-        sourceTable.listenForUpdates(this);
+        sourceTable.addUpdateListener(this);
     }
 }

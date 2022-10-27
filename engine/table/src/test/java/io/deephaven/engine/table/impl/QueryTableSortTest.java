@@ -462,7 +462,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         final io.deephaven.engine.table.impl.SimpleListener simpleListener =
                 new io.deephaven.engine.table.impl.SimpleListener(sorted);
-        sorted.listenForUpdates(simpleListener);
+        sorted.addUpdateListener(simpleListener);
 
         long adds = 0, removes = 0, modifies = 0, shifts = 0, modifiedColumns = 0;
 

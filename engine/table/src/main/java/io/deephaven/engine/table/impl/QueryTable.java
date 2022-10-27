@@ -27,6 +27,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -1321,7 +1322,7 @@ public class QueryTable extends BaseTable {
                             final SelectOrUpdateListener soul = new SelectOrUpdateListener(updateDescription, this,
                                     resultTable, effects, analyzer);
                             liveResultCapture.transferTo(soul);
-                            listenForUpdates(soul);
+                            addUpdateListener(soul);
                             ConstituentDependency.install(resultTable, soul);
                         } else {
                             if (resultTable.getRowSet().isFlat()) {
@@ -1520,7 +1521,7 @@ public class QueryTable extends BaseTable {
                                     columns, rowSet, getModifiedColumnSetForUpdates(), true, selectColumns);
                     final QueryTable result = new QueryTable(rowSet, analyzer.getPublishedColumnSources());
                     if (isRefreshing()) {
-                        listenForUpdates(new ListenerImpl(
+                        addUpdateListener(new ListenerImpl(
                                 "lazyUpdate(" + Arrays.deepToString(selectColumns) + ')', this, result));
                     }
                     propagateFlatness(result);
@@ -1644,7 +1645,7 @@ public class QueryTable extends BaseTable {
                     if (isRefreshing()) {
                         final ModifiedColumnSet.Transformer mcsTransformer =
                                 newModifiedColumnSetTransformer(queryTable, modifiedColumnSetPairs);
-                        listenForUpdates(new ListenerImpl("renameColumns(" + Arrays.deepToString(pairs) + ')',
+                        addUpdateListener(new ListenerImpl("renameColumns(" + Arrays.deepToString(pairs) + ')',
                                 this, queryTable) {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
@@ -1960,7 +1961,7 @@ public class QueryTable extends BaseTable {
                     RowSetFactory.flat(initialSize).toTracking();
             final QueryTable result = new QueryTable(resultRowSet, resultColumns);
             if (isRefreshing()) {
-                listenForUpdates(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(),
+                addUpdateListener(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(),
                         this, result) {
                     private long lastKey = rowSet.lastRowKey();
 
@@ -2087,7 +2088,7 @@ public class QueryTable extends BaseTable {
 
         if (isRefreshing()) {
             startTrackingPrev(allColumns.values());
-            listenForUpdates(listener);
+            addUpdateListener(listener);
         }
 
         result.setFlat();
@@ -2157,11 +2158,11 @@ public class QueryTable extends BaseTable {
 
                         final ListenerRecorder rightListenerRecorder =
                                 new ListenerRecorder("snapshotIncremental (rightTable)", rightTable, resultTable);
-                        rightTable.listenForUpdates(rightListenerRecorder);
+                        rightTable.addUpdateListener(rightListenerRecorder);
 
                         final ListenerRecorder leftListenerRecorder =
                                 new ListenerRecorder("snapshotIncremental (leftTable)", this, resultTable);
-                        listenForUpdates(leftListenerRecorder);
+                        addUpdateListener(leftListenerRecorder);
 
                         final SnapshotIncrementalListener listener =
                                 new SnapshotIncrementalListener(this, resultTable, resultColumns,
@@ -2187,7 +2188,7 @@ public class QueryTable extends BaseTable {
                         // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our
                         // (static)
                         // right table on the very first tick of the leftTable
-                        listenForUpdates(
+                        addUpdateListener(
                                 new ListenerImpl("snapshotIncremental (leftTable)", this, resultTable) {
                                     @Override
                                     public void onUpdate(TableUpdate upstream) {
@@ -2295,8 +2296,19 @@ public class QueryTable extends BaseTable {
         return getResult(new ReverseOperation(this));
     }
 
+
     @Override
-    public Table ungroup(boolean nullFill, String... columnsToUngroupBy) {
+    public Table ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+        final String[] columnsToUngroupBy;
+        if (columnsToUngroup.isEmpty()) {
+            columnsToUngroupBy = getDefinition()
+                    .getColumnStream()
+                    .filter(c -> c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType()))
+                    .map(ColumnDefinition::getName)
+                    .toArray(String[]::new);
+        } else {
+            columnsToUngroupBy = columnsToUngroup.stream().map(ColumnName::name).toArray(String[]::new);
+        }
         return QueryPerformanceRecorder.withNugget("ungroup(" + Arrays.toString(columnsToUngroupBy) + ")",
                 sizeForInstrumentation(), () -> {
                     if (columnsToUngroupBy.length == 0) {
@@ -2347,7 +2359,7 @@ public class QueryTable extends BaseTable {
                     if (isRefreshing()) {
                         startTrackingPrev(resultMap.values());
 
-                        listenForUpdates(new ShiftObliviousListenerImpl(
+                        addUpdateListener(new ShiftObliviousListenerImpl(
                                 "ungroup(" + Arrays.deepToString(columnsToUngroupBy) + ')',
                                 this, result) {
 

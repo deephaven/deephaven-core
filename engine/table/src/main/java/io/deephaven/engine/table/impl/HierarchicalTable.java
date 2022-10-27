@@ -161,7 +161,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table ungroup(boolean nullFill, String... columnsToUngroup) {
+    public Table ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
         return throwUnsupported("ungroup()");
     }
 

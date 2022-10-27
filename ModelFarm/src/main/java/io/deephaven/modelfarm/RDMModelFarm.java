@@ -7,7 +7,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
-import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -95,7 +94,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
             }
         };
 
-        dataManager.table().listenForUpdates(listener, true);
+        dataManager.table().addUpdateListener(listener, true);
     }
 
     private void removeKeyIndex(final RowSet rowSet) {

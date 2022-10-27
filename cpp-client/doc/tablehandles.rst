@@ -1,34 +1,39 @@
 TableHandleManager and TableHandle
 ==================================
 
-:cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>`
-is one of two ways to get
-:cpp:class:`TableHandle <deephaven::client::TableHandle>` resources
-in the system.
+TableHandleManager
+------------------
 
 :cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>` is used to access existing tables in the system (e.g. via
 :cpp:func:`fetchTable <deephaven::client::TableHandleManager::fetchTable>`)
 or create new tables (e.g. via
 :cpp:func:`emptyTable <deephaven::client::TableHandleManager::emptyTable>` or
 :cpp:func:`timeTable <deephaven::client::TableHandleManager::timeTable>`).
-It is also that place that (in a future version) you can set attributes that
-affect a related group of tables, such as whether they are resolved
-synchronously or asynchronously.
+These calls return a 
+:cpp:class:`TableHandle <deephaven::client::TableHandle>`.
 
-On the other hand, the methods on
-:cpp:class:`TableHandle <deephaven::client::TableHandle>`
-are used to create tables derived from other tables.
-Some examples are
-:cpp:func:`where <deephaven::client::TableHandle::where>` and
-:cpp:func:`sort <deephaven::client::TableHandle::sort>`).
+:cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>` can also be used to access the
+:cpp:class:`arrow::flight::FlightClient` for direct access to Arrow.
 
-These are used to create tables derived from other tables. A typical pattern
-might be
+TableHandle
+-----------
+
+Once you have a
+:cpp:class:`TableHandle <deephaven::client::TableHandle>`,
+you can create derived tables via a large variety of methods, such as
+:cpp:func:`where <deephaven::client::TableHandle::where>`
+and
+:cpp:func:`sort <deephaven::client::TableHandle::sort>`.
+
+A simple example is:
 
 .. code:: c++
 
-   TableHandle t1 = ...;
-   TableHandle t2 = t1.where(...).sort(...).tail(5);
+   TableHandle mydata = manager.fetchTable("MyData");
+   TableHandle filtered = t1.where("Price < 100").sort("Timestamp").tail(5);
+
+Declarations
+------------
 
 .. doxygenclass:: deephaven::client::TableHandleManager
    :members:

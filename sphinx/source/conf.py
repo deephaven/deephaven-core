@@ -79,11 +79,9 @@ from glob import glob
 import os
 
 workspace = os.environ.get('DEEPHAVEN_WORKSPACE', '.')
-devroot = os.environ.get('DEEPHAVEN_DEVROOT', '.')
 propfile = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
 jvm_properties = {
             'Configuration.rootFile': propfile,
-            'devroot': os.path.realpath(devroot),
             'workspace': os.path.realpath(workspace),
         }
 

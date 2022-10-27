@@ -12,8 +12,7 @@ import java.util.List;
  * Test suite for Configuration.
  *
  * Must provide a Configuration.rootFile property in the VM arguments when running from IntelliJ, even though we set
- * that in most of the tests. -ea -DConfiguration.rootFile=resources/lib-tests.prop -Ddevroot=/ -Dworkspace=/
- * -DcacheDir=/cache
+ * that in most of the tests. -ea -DConfiguration.rootFile=resources/lib-tests.prop -Dworkspace=/ -DcacheDir=/cache
  */
 public class TestConfiguration extends TestCase {
     private final String FILENAME_PROPERTY = Configuration.getInstance().getConfFileProperty();
@@ -95,13 +94,8 @@ public class TestConfiguration extends TestCase {
      * Verify that specific operations of Configuration other than named properties work properly
      */
     public void testProperties() {
-        assertNotNull(Configuration.getInstance().getDevRootPath());
-        assertTrue(Configuration.getInstance().getDevRootPath().length() > 0);
         assertNotNull(Configuration.getInstance().getWorkspacePath());
         assertTrue(Configuration.getInstance().getWorkspacePath().length() > 0);
-        assertNotNull(Configuration.getInstance().getDevRootPath("cacheDir"));
-        assertTrue(Configuration.getInstance().getDevRootPath("cacheDir").length() > 0);
-        assertTrue(Configuration.getInstance().getDevRootPath("cacheDir").endsWith("cache"));
         assertNotNull(Configuration.getInstance().getWorkspacePath("cacheDir"));
         assertTrue(Configuration.getInstance().getWorkspacePath("cacheDir").length() > 0);
         assertTrue(Configuration.getInstance().getWorkspacePath("cacheDir").endsWith("cache"));
@@ -446,21 +440,21 @@ public class TestConfiguration extends TestCase {
         final String javaVersion = System.getProperty("java.specification.version");
         if ("11".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:439)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:433)\n"
                             +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
                     history.get(0).fileName);
         } else if ("17".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:439)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:433)\n"
                             +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n",
                     history.get(0).fileName);
         } else if ("18".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:439)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:433)\n"
                             +
                             "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n"
                             +

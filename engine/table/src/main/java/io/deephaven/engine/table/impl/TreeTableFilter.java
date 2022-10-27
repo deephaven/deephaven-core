@@ -127,7 +127,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
 
             if (source.isRefreshing()) {
                 swapListener = new SwapListenerWithRLL(source, reverseLookupListener);
-                source.listenForUpdates(swapListener);
+                source.addUpdateListener(swapListener);
                 ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
                         swapListener.makeSnapshotControl(),
                         (usePrev, beforeClockValue) -> {

@@ -14,7 +14,7 @@ configurations {
 dependencies {
     api project(':open-api-shared-fu')
 
-    testImplementation 'com.google.guava:guava:19.0'
+    Classpaths.inheritGuava(project, 'testImplementation')
 }
 
 // non-transitive dependency

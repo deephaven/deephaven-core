@@ -254,12 +254,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final List<ListenerRecorder> recorders = new ArrayList<>(1 + dependentValidations.length);
 
         final ListenerRecorder parentRecorder = new ListenerRecorder("Validating Copy Parent", coalescedParent, null);
-        coalescedParent.listenForUpdates(parentRecorder);
+        coalescedParent.addUpdateListener(parentRecorder);
         recorders.add(parentRecorder);
 
         final ListenerRecorder[] validationRecorders = Arrays.stream(dependentValidations).map(dv -> {
             final ListenerRecorder validationRecorder = new ListenerRecorder(dv.name, dv.table, null);
-            dv.table.listenForUpdates(validationRecorder);
+            dv.table.addUpdateListener(validationRecorder);
             recorders.add(validationRecorder);
             return validationRecorder;
         }).toArray(ListenerRecorder[]::new);
@@ -539,6 +539,11 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy selectDistinct(Collection<? extends Selectable> columns) {
         final SelectColumn[] selectColumns = toSelectColumns(columns);
         return basicTransform(ct -> ct.selectDistinct(SelectColumn.copyFrom(selectColumns)));
+    }
+
+    @Override
+    public PartitionedTable.Proxy ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+        return basicTransform(ct -> ct.ungroup(nullFill, columnsToUngroup));
     }
 
     // endregion TableOperations Implementation

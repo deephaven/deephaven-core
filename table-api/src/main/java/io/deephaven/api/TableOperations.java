@@ -1245,4 +1245,61 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS wavgBy(String weightColumn, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    /**
+     * Ungroups a table by expanding all columns of arrays or vectors into columns of singular values, creating one row
+     * in the output table for each value in the columns to be ungrouped. Columns that are not ungrouped have their
+     * values duplicated in each output row corresponding to a given input row. All arrays and vectors must be the same
+     * size.
+     *
+     * @return the ungrouped table
+     */
+    TOPS ungroup();
+
+    /**
+     * Ungroups a table by expanding all columns of arrays or vectors into columns of singular values, creating one row
+     * in the output table for each value in the columns to be ungrouped. Columns that are not ungrouped have their
+     * values duplicated in each output row corresponding to a given input row.
+     *
+     * @param nullFill indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with
+     *        null values. If set to false, then all arrays should be the same length.
+     * @return the ungrouped table
+     */
+    TOPS ungroup(boolean nullFill);
+
+    /**
+     * Ungroups a table by expanding columns of arrays or vectors into columns of singular values, creating one row in
+     * the output table for each value in the columns to be ungrouped. Columns that are not ungrouped have their values
+     * duplicated in each output row corresponding to a given input row. The arrays and vectors must be the same size.
+     *
+     * @param columnsToUngroup the columns to ungroup
+     * @return the ungrouped table
+     */
+    TOPS ungroup(String... columnsToUngroup);
+
+    /**
+     * Ungroups a table by expanding columns of arrays or vectors into columns of singular values, creating one row in
+     * the output table for each value in the columns to be ungrouped. Columns that are not ungrouped have their values
+     * duplicated in each output row corresponding to a given input row.
+     *
+     * @param nullFill indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with
+     *        null values. If set to false, then all arrays should be the same length.
+     * @param columnsToUngroup the columns to ungroup
+     * @return the ungrouped table
+     */
+    TOPS ungroup(boolean nullFill, String... columnsToUngroup);
+
+    /**
+     * Ungroups a table by expanding columns of arrays or vectors into columns of singular values, creating one row in
+     * the output table for each value in the columns to be ungrouped. Columns that are not ungrouped have their values
+     * duplicated in each output row corresponding to a given input row.
+     *
+     * @param nullFill indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with
+     *        null values. If set to false, then all arrays should be the same length.
+     * @param columnsToUngroup the columns to ungroup
+     * @return the ungrouped table
+     */
+    TOPS ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup);
+
+    // -------------------------------------------------------------------------------------------
 }

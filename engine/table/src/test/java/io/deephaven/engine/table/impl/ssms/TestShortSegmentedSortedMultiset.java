@@ -177,7 +177,7 @@ public class TestShortSegmentedSortedMultiset extends RefreshingTableTestCase {
                     }
                 }
             };
-            asShort.listenForUpdates(asShortListener);
+            asShort.addUpdateListener(asShortListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

@@ -10,7 +10,6 @@
 
 using deephaven::client::utility::Callback;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::FailureCallback;
 using deephaven::client::utility::SFCallback;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
@@ -35,29 +34,33 @@ TableHandleManagerImpl::TableHandleManagerImpl(Private, Ticket &&consoleId,
 TableHandleManagerImpl::~TableHandleManagerImpl() = default;
 
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::emptyTable(int64_t size) {
-  auto cb = TableHandleImpl::createEtcCallback(this);
+  auto [cb, ls] = TableHandleImpl::createEtcCallback(this);
   auto resultTicket = server_->emptyTableAsync(size, cb);
-  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(cb));
+  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::fetchTable(std::string tableName) {
-  auto cb = TableHandleImpl::createEtcCallback(this);
+  auto [cb, ls] = TableHandleImpl::createEtcCallback(this);
   auto resultTicket = server_->fetchTableAsync(std::move(tableName), cb);
-  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(cb));
+  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::timeTable(int64_t startTimeNanos,
     int64_t periodNanos) {
-  auto cb = TableHandleImpl::createEtcCallback(this);
-  auto resultTicket = server_->timeTableAsync(startTimeNanos, periodNanos, cb);
-  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(cb));
+  auto [cb, ls] = TableHandleImpl::createEtcCallback(this);
+  auto resultTicket = server_->timeTableAsync(startTimeNanos, periodNanos, std::move(cb));
+  return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(ls));
 }
 
 std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor>
 TableHandleManagerImpl::newTicket() const {
   auto[ticket, fd] = server_->newTicketAndFlightDescriptor();
-  auto cb = TableHandleImpl::createSatisfiedCallback(this, ticket);
-  auto th = TableHandleImpl::create(self_.lock(), std::move(ticket), std::move(cb));
+
+  utility::CBPromise<Ticket> ticketPromise;
+  ticketPromise.setValue(ticket);
+  auto ls = std::make_shared<internal::LazyState>(server_, flightExecutor_,
+      ticketPromise.makeFuture());
+  auto th = TableHandleImpl::create(self_.lock(), std::move(ticket), std::move(ls));
   return std::make_tuple(std::move(th), std::move(fd));
 }
 }  // namespace deephaven::client::impl

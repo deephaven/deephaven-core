@@ -502,6 +502,16 @@ public class JsTimeZone {
         addMapping("MOS", "Europe/Moscow");
         addMapping("SHG", "Asia/Shanghai");
 
+        // Add short time codes from Deephaven Enterprise
+        addMapping("NY", "America/New_York");
+        addMapping("MTL", "America/Toronto");
+        addMapping("MEX", "America/Mexico_City");
+        addMapping("SKM", "Europe/Stockholm");
+        addMapping("OSL", "Europe/Oslo");
+        addMapping("MAD", "Europe/Madrid");
+        addMapping("JNB", "Africa/Johannesburg");
+        addMapping("KL", "Asia/Kuala_Lumpur");
+
         // Add GMT mappings
         TimeZone gmtTimeZone = TimeZone.createTimeZone(0);
         addMapping("UTC", gmtTimeZone);

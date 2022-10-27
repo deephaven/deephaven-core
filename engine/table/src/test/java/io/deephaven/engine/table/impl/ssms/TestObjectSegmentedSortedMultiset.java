@@ -12,7 +12,6 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -165,7 +164,7 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
                     }
                 }
             };
-            asObject.listenForUpdates(asObjectListener);
+            asObject.addUpdateListener(asObjectListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

@@ -54,7 +54,6 @@ task jmhRun(type: JavaExec)  {
 
     // arguments to pass to the application
     jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
-            "-Ddevroot=$rootDir",
             "-Dworkspace=$rootDir/tmp/workspace",
             '-Dconfiguration.quiet=true',
             '-Djava.awt.headless=true',
@@ -74,7 +73,6 @@ def createJmhTask = {
 
         // arguments to pass to the application
         def jvmArgs = [ '-DConfiguration.rootFile=dh-tests.prop',
-                "-Ddevroot=$rootDir",
                 "-Dworkspace=$rootDir/tmp/workspace",
                 '-Dconfiguration.quiet=true',
                 '-Djava.awt.headless=true',
@@ -110,7 +108,6 @@ def createDeephavenTestExecTask = {
         task.main = mainClass
 
         task.jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
-                "-Ddevroot=$rootDir",
                 "-Dworkspace=$rootDir/tmp/workspace",
                 "-Dtest.output.dir=$rootDir/tmp/logs",
                 '-Dconfiguration.quiet=true',

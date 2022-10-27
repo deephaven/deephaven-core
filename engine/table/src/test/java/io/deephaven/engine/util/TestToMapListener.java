@@ -23,7 +23,7 @@ public class TestToMapListener extends RefreshingTableTestCase {
 
         final ToMapListener<String, String> tml = ToMapListener.make(source, sentinelSource::get,
                 sentinelSource::getPrev, sentinel2Source::get, sentinel2Source::getPrev);
-        source.listenForUpdates(tml);
+        source.addUpdateListener(tml);
 
         assertEquals("H", tml.get("A"));
         assertEquals("I", tml.get("B"));

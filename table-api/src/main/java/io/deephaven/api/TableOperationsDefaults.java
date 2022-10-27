@@ -232,6 +232,28 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     // -------------------------------------------------------------------------------------------
 
     @Override
+    default TOPS ungroup() {
+        return ungroup(false, Collections.emptyList());
+    }
+
+    @Override
+    default TOPS ungroup(boolean nullFill) {
+        return ungroup(nullFill, Collections.emptyList());
+    }
+
+    @Override
+    default TOPS ungroup(String... columnsToUngroup) {
+        return ungroup(false, Arrays.stream(columnsToUngroup).map(ColumnName::of).collect(Collectors.toList()));
+    }
+
+    @Override
+    default TOPS ungroup(boolean nullFill, String... columnsToUngroup) {
+        return ungroup(nullFill, Arrays.stream(columnsToUngroup).map(ColumnName::of).collect(Collectors.toList()));
+    }
+
+    // -------------------------------------------------------------------------------------------
+
+    @Override
     @ConcurrentMethod
     default TOPS aggAllBy(AggSpec spec) {
         return aggAllBy(spec, Collections.emptyList());

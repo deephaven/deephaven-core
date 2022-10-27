@@ -49,6 +49,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Re
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
@@ -181,6 +182,7 @@ public class WorkerConnection {
     private InputTableServiceClient inputTableServiceClient;
     private ObjectServiceClient objectServiceClient;
     private PartitionedTableServiceClient partitionedTableServiceClient;
+    private StorageServiceClient storageServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -224,6 +226,7 @@ public class WorkerConnection {
         objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         partitionedTableServiceClient =
                 new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        storageServiceClient = new StorageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -435,8 +438,11 @@ public class WorkerConnection {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                             return;
+                        } else {
+                            info.notifyConnectionError(Js.cast(fail));
                         }
                     }
+                    assert success != null;
 
                     // welp; the server is gone -- let everyone know
                     info.notifyConnectionError(new ResponseStreamWrapper.Status() {
@@ -923,6 +929,10 @@ public class WorkerConnection {
 
     public PartitionedTableServiceClient partitionedTableServiceClient() {
         return partitionedTableServiceClient;
+    }
+
+    public StorageServiceClient storageServiceClient() {
+        return storageServiceClient;
     }
 
     public BrowserHeaders metadata() {

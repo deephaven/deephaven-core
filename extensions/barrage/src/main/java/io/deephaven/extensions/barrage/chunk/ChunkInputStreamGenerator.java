@@ -33,53 +33,57 @@ import java.util.Iterator;
 public interface ChunkInputStreamGenerator extends SafeCloseable {
 
     static <T> ChunkInputStreamGenerator makeInputStreamGenerator(
-            final ChunkType chunkType, final Class<T> type, final Class<?> componentType, final Chunk<Values> chunk) {
+            final ChunkType chunkType,
+            final Class<T> type,
+            final Class<?> componentType,
+            final Chunk<Values> chunk,
+            final long rowOffset) {
         switch (chunkType) {
             case Boolean:
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
             case Char:
-                return new CharChunkInputStreamGenerator(chunk.asCharChunk(), Character.BYTES);
+                return new CharChunkInputStreamGenerator(chunk.asCharChunk(), Character.BYTES, rowOffset);
             case Byte:
-                return new ByteChunkInputStreamGenerator(chunk.asByteChunk(), Byte.BYTES);
+                return new ByteChunkInputStreamGenerator(chunk.asByteChunk(), Byte.BYTES, rowOffset);
             case Short:
-                return new ShortChunkInputStreamGenerator(chunk.asShortChunk(), Short.BYTES);
+                return new ShortChunkInputStreamGenerator(chunk.asShortChunk(), Short.BYTES, rowOffset);
             case Int:
-                return new IntChunkInputStreamGenerator(chunk.asIntChunk(), Integer.BYTES);
+                return new IntChunkInputStreamGenerator(chunk.asIntChunk(), Integer.BYTES, rowOffset);
             case Long:
-                return new LongChunkInputStreamGenerator(chunk.asLongChunk(), Long.BYTES);
+                return new LongChunkInputStreamGenerator(chunk.asLongChunk(), Long.BYTES, rowOffset);
             case Float:
-                return new FloatChunkInputStreamGenerator(chunk.asFloatChunk(), Float.BYTES);
+                return new FloatChunkInputStreamGenerator(chunk.asFloatChunk(), Float.BYTES, rowOffset);
             case Double:
-                return new DoubleChunkInputStreamGenerator(chunk.asDoubleChunk(), Double.BYTES);
+                return new DoubleChunkInputStreamGenerator(chunk.asDoubleChunk(), Double.BYTES, rowOffset);
             case Object:
                 if (type.isArray()) {
-                    return new VarListChunkInputStreamGenerator<>(type, chunk.asObjectChunk());
+                    return new VarListChunkInputStreamGenerator<>(type, chunk.asObjectChunk(), rowOffset);
                 }
                 if (Vector.class.isAssignableFrom(type)) {
                     //noinspection unchecked
-                    return new VectorChunkInputStreamGenerator((Class<Vector<?>>) type, componentType, chunk.asObjectChunk());
+                    return new VectorChunkInputStreamGenerator(
+                            (Class<Vector<?>>) type, componentType, chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == String.class) {
-                    return new VarBinaryChunkInputStreamGenerator<String>(chunk.asObjectChunk(), (out, str) -> {
-                        out.write(str.getBytes(Charsets.UTF_8));
-                    });
+                    return new VarBinaryChunkInputStreamGenerator<String>(chunk.asObjectChunk(), rowOffset,
+                            (out, str) -> out.write(str.getBytes(Charsets.UTF_8)));
                 }
                 if (type == BigInteger.class) {
-                    return new VarBinaryChunkInputStreamGenerator<BigInteger>(chunk.asObjectChunk(), (out, item) -> {
-                        out.write(item.toByteArray());
-                    });
+                    return new VarBinaryChunkInputStreamGenerator<BigInteger>(chunk.asObjectChunk(), rowOffset,
+                            (out, item) -> out.write(item.toByteArray()));
                 }
                 if (type == BigDecimal.class) {
-                    return new VarBinaryChunkInputStreamGenerator<BigDecimal>(chunk.asObjectChunk(), (out, item) -> {
-                        final BigDecimal normal = item.stripTrailingZeros();
-                        final int v = normal.scale();
-                        // Write as little endian, arrow endianness.
-                        out.write(0xFF & v);
-                        out.write(0xFF & (v >> 8));
-                        out.write(0xFF & (v >> 16));
-                        out.write(0xFF & (v >> 24));
-                        out.write(normal.unscaledValue().toByteArray());
-                    });
+                    return new VarBinaryChunkInputStreamGenerator<BigDecimal>(chunk.asObjectChunk(), rowOffset,
+                            (out, item) -> {
+                                final BigDecimal normal = item.stripTrailingZeros();
+                                final int v = normal.scale();
+                                // Write as little endian, arrow endianness.
+                                out.write(0xFF & v);
+                                out.write(0xFF & (v >> 8));
+                                out.write(0xFF & (v >> 16));
+                                out.write(0xFF & (v >> 24));
+                                out.write(normal.unscaledValue().toByteArray());
+                            });
                 }
                 if (type == DateTime.class) {
                     // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
@@ -91,34 +95,33 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     if (chunk instanceof PoolableChunk) {
                         ((PoolableChunk) chunk).close();
                     }
-                    return new LongChunkInputStreamGenerator(outChunk, Long.BYTES);
+                    return new LongChunkInputStreamGenerator(outChunk, Long.BYTES, rowOffset);
                 }
                 if (type == Byte.class) {
-                    return ByteChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk());
+                    return ByteChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == Character.class) {
-                    return CharChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk());
+                    return CharChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == Double.class) {
-                    return DoubleChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk());
+                    return DoubleChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == Float.class) {
-                    return FloatChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk());
+                    return FloatChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == Integer.class) {
-                    return IntChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk());
+                    return IntChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == Long.class) {
-                    return LongChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk());
+                    return LongChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == Short.class) {
-                    return ShortChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk());
+                    return ShortChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 // TODO (core#936): support column conversion modes
 
-                return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), (out, item) -> {
-                    out.write(item.toString().getBytes(Charsets.UTF_8));
-                });
+                return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
+                        (out, item) -> out.write(item.toString().getBytes(Charsets.UTF_8)));
             default:
                 throw new UnsupportedOperationException();
         }
@@ -269,6 +272,16 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 throw new UnsupportedOperationException();
         }
     }
+
+    /**
+     * Returns the number of rows that were sent before the first row in this generator.
+     */
+    long getRowOffset();
+
+    /**
+     * Returns the offset of the final row this generator can produce.
+     */
+    long getLastRowOffset();
 
     /**
      * Get an input stream optionally position-space filtered using the provided RowSet.

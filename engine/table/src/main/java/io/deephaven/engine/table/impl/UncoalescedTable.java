@@ -90,8 +90,8 @@ public abstract class UncoalescedTable extends BaseTable {
 
     // region uncoalesced listeners
 
-    protected final void listenForUpdatesUncoalesced(@NotNull final TableUpdateListener listener) {
-        super.listenForUpdates(listener);
+    protected final void addUpdateListenerUncoalesced(@NotNull final TableUpdateListener listener) {
+        super.addUpdateListener(listener);
     }
 
     protected final void removeUpdateListenerUncoalesced(@NotNull final TableUpdateListener listener) {
@@ -367,7 +367,7 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    public Table ungroup(boolean nullFill, String... columnsToUngroup) {
+    public Table ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
         return coalesce().ungroup(nullFill, columnsToUngroup);
     }
 
@@ -459,13 +459,13 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    public void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage) {
-        coalesce().listenForUpdates(listener, replayInitialImage);
+    public void addUpdateListener(ShiftObliviousListener listener, boolean replayInitialImage) {
+        coalesce().addUpdateListener(listener, replayInitialImage);
     }
 
     @Override
-    public void listenForUpdates(TableUpdateListener listener) {
-        coalesce().listenForUpdates(listener);
+    public void addUpdateListener(TableUpdateListener listener) {
+        coalesce().addUpdateListener(listener);
     }
 
     @Override

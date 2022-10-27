@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.configuration.Configuration;
 import junit.framework.TestCase;
 
 import java.io.FileNotFoundException;
@@ -21,8 +20,8 @@ public class ModelFileGenerator {
     }
 
     private String getPath() {
-        return Configuration.getInstance().getProperty("devroot") +
-                "/engine/table/src/test/java/" + classType.getCanonicalName().replace('.', '/') + ".java";
+        return System.getProperty("ModelFileGenerator.testSource") + "/"
+                + classType.getCanonicalName().replace('.', '/') + ".java";
     }
 
     public void generateFile(final String rawClassDef) throws FileNotFoundException {

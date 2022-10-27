@@ -12,34 +12,6 @@ services:
       - ../scripts:/scripts
       - ./logs:/logs
 
-  web:
-    extends:
-      file: ../../docker-compose-common.yml
-      service: web
-
-  # Should only be used for non-production deployments, see grpc-proxy/README.md for more info
-  grpc-proxy:
-    extends:
-      file: ../../docker-compose-common.yml
-      service: grpc-proxy
-    depends_on:
-      server:
-        condition: service_healthy
-
-  envoy:
-    # A reverse proxy configured for no SSL on localhost. It fronts the requests
-    # for the static content and the websocket proxy.
-    extends:
-      file: ../../docker-compose-common.yml
-      service: envoy
-    depends_on:
-      server:
-        condition: service_healthy
-      grpc-proxy:
-        condition: service_started
-      web:
-        condition: service_started
-
   redpanda:
     extends:
       file: ../docker-compose-debezium-common.yml
