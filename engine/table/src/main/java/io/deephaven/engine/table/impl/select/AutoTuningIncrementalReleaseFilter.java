@@ -102,8 +102,6 @@ import java.text.DecimalFormat;
 public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
     private static final Logger log = LoggerFactory.getLogger(AutoTuningIncrementalReleaseFilter.class);
 
-    @NotNull
-    private final Clock clock;
     private final long initialRelease;
     private final boolean verbose;
     private final Logger logger;
@@ -157,11 +155,11 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(long initialSize, long initialRelease, double targetFactor,
             boolean verbose) {
-        this(initialSize, initialRelease, targetFactor, verbose, Clock.systemUTC());
+        this(log, initialSize, initialRelease, targetFactor, verbose);
     }
 
     /**
-     * Create an auto tuning release filter using the provided {@link Clock}.
+     * Create an auto tuning release filter using a real time clock.
      *
      * @param logger the logger to report progress (if verbose is set) and the final row/second calculations
      * @param initialSize the initial table size
@@ -174,48 +172,12 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(Logger logger, long initialSize, long initialRelease, double targetFactor,
             boolean verbose) {
-        this(logger, initialSize, initialRelease, targetFactor, verbose, Clock.systemUTC());
-    }
-
-    /**
-     * Create an auto tuning release filter using the provided {@link Clock}.
-     *
-     * @param initialSize the initial table size
-     * @param initialRelease the initial incremental update; after the first cycle the rows per second is calculated
-     *        based on the duration of the last cycle and the number of rows released by this filter
-     * @param targetFactor the multiple of the UGP cycle we should aim for
-     * @param verbose whether information should be printed on each UGP cycle describing the current rate and number of
-     *        rows released
-     * @param clock the clock, which is used to determine the start and end of each cycle
-     */
-    @ScriptApi
-    public AutoTuningIncrementalReleaseFilter(long initialSize, long initialRelease, double targetFactor,
-            boolean verbose, Clock clock) {
-        this(log, initialSize, initialRelease, targetFactor, verbose, clock);
-    }
-
-    /**
-     * Create an auto tuning release filter using the provided {@link Clock}.
-     *
-     * @param logger the logger to report progress (if verbose is set) and the final row/second calculations
-     * @param initialSize the initial table size
-     * @param initialRelease the initial incremental update; after the first cycle the rows per second is calculated
-     *        based on the duration of the last cycle and the number of rows released by this filter
-     * @param targetFactor the multiple of the UGP cycle we should aim for
-     * @param verbose whether information should be printed on each UGP cycle describing the current rate and number of
-     *        rows released
-     * @param clock the clock, which is used to determine the start and end of each cycle
-     */
-    @ScriptApi
-    public AutoTuningIncrementalReleaseFilter(Logger logger, long initialSize, long initialRelease, double targetFactor,
-            boolean verbose, Clock clock) {
         super(initialSize, false);
         this.logger = logger;
         this.targetFactor = targetFactor;
         this.verbose = verbose;
-        this.lastRefreshNanos = clock.nanoTime();
+        this.lastRefreshNanos = System.nanoTime();
         this.initialRelease = Math.max(1, initialRelease);
-        this.clock = clock;
     }
 
     @Override
@@ -229,7 +191,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
         if (releasedAll) {
             throw new IllegalStateException();
         }
-        final long nowNanos = clock.nanoTime();
+        final long nowNanos = System.nanoTime();
         if (nextSize == 0) {
             firstCycleNanos = nowNanos;
             nextSize = initialRelease;
@@ -261,7 +223,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
 
             @Override
             public void run() {
-                cycleEndNanos = clock.nanoTime();
+                cycleEndNanos = System.nanoTime();
                 UpdateGraphProcessor.DEFAULT.requestRefresh();
                 if (!captureReleasedAll && releasedAll) {
                     final DecimalFormat decimalFormat = new DecimalFormat("###,###.##");

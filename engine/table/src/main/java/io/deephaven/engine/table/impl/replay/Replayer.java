@@ -201,11 +201,6 @@ public class Replayer implements ReplayerInterface, Runnable {
         return instantNanos();
     }
 
-    @Override
-    public long nanoTime() {
-        return currentTimeNanos();
-    }
-
     /**
      * Sets the current replay time.
      *

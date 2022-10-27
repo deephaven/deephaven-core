@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.base.clock.Clock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 import io.deephaven.engine.table.Table;
@@ -92,7 +91,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         final Table source = TableTools.emptyTable(1_000_000);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
-                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, Clock.systemUTC());
+                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true);
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 
@@ -116,7 +115,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         TableTools.show(source);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
-                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, Clock.systemUTC());
+                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true);
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 

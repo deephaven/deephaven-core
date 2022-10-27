@@ -44,9 +44,4 @@ enum SystemClockInstance implements SystemClock {
     public Instant instantMillis() {
         return delegate.instantMillis();
     }
-
-    @Override
-    public long nanoTime() {
-        return delegate.nanoTime();
-    }
 }

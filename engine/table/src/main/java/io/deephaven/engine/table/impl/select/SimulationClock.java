@@ -91,11 +91,6 @@ public class SimulationClock implements Clock {
         return now.getInstant();
     }
 
-    @Override
-    public long nanoTime() {
-        return now.getNanos();
-    }
-
     /**
      * Start the simulation.
      */

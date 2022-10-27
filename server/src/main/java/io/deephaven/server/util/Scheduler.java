@@ -93,11 +93,6 @@ public interface Scheduler extends Clock {
         }
 
         @Override
-        public long nanoTime() {
-            return clock.nanoTime();
-        }
-
-        @Override
         public void runAtTime(long epochMillis, @NotNull Runnable command) {
             runAfterDelay(epochMillis - clock.currentTimeMillis(), command);
         }

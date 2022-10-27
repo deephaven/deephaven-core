@@ -50,9 +50,4 @@ public final class SystemClockJdkInternalMiscVm implements SystemClock {
         // See note in java.time.Clock.SystemClock#millis, this is the same source as java.time.Clock.systemUTC()
         return Instant.ofEpochMilli(System.currentTimeMillis());
     }
-
-    @Override
-    public long nanoTime() {
-        return System.nanoTime();
-    }
 }

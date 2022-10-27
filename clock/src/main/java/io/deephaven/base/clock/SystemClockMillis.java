@@ -66,15 +66,4 @@ public enum SystemClockMillis implements SystemClock {
     public Instant instantMillis() {
         return Instant.ofEpochMilli(System.currentTimeMillis());
     }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>
-     * Equivalent to {@link System#nanoTime()}.
-     */
-    @Override
-    public long nanoTime() {
-        return System.nanoTime();
-    }
 }

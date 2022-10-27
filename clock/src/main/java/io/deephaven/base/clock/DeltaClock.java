@@ -69,10 +69,4 @@ public final class DeltaClock implements Clock {
     public Instant instantMillis() {
         return delegate.instantMillis().plusNanos(deltaNanos);
     }
-
-    @Override
-    public long nanoTime() {
-        // Note: nanoTime() should only be used for relative durations; we don't need to apply delta.
-        return delegate.nanoTime();
-    }
 }

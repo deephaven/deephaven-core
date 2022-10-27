@@ -81,15 +81,4 @@ public enum SystemClockUtc implements SystemClock {
         // See note in java.time.Clock.SystemClock#millis, this is the same source as java.time.Clock.systemUTC()
         return Instant.ofEpochMilli(System.currentTimeMillis());
     }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>
-     * Equivalent to {@link System#nanoTime()}.
-     */
-    @Override
-    public long nanoTime() {
-        return System.nanoTime();
-    }
 }
