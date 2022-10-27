@@ -437,7 +437,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 safelyExecuteLocked(responseObserver, () -> {
                     responseObserver.onNext(AutoCompleteResponse.newBuilder()
                             .setCompletionItems(
-                                    GetCompletionItemsResponse.newBuilder().setSuccess(true))
+                                    GetCompletionItemsResponse.newBuilder().setSuccess(true)
+                                            .setRequestId(value.getGetCompletionItems().getRequestId()))
                             .build());
                 });
             }
