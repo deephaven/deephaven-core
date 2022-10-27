@@ -26,7 +26,7 @@ public final class DeltaClock implements Clock {
     private final long deltaNanos;
 
     /**
-     * Constructs a clock delta with a {@link Clock#systemUTC()} clock.
+     * Constructs a delta clock with a {@link Clock#systemUTC()} clock.
      *
      * @param deltaNanos the delta nanos
      */
@@ -35,7 +35,7 @@ public final class DeltaClock implements Clock {
     }
 
     /**
-     * Constructs a clock delta with the provided clock and delta.
+     * Constructs a delta clock with the provided clock and delta.
      *
      * @param delegate the base clock
      * @param deltaNanos the delta nanos
