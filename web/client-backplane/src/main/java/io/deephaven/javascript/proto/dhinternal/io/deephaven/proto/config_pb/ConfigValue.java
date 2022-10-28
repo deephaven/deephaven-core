@@ -10,24 +10,18 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.config_pb.ConfigPair",
+        name = "dhinternal.io.deephaven.proto.config_pb.ConfigValue",
         namespace = JsPackage.GLOBAL)
-public class ConfigPair {
+public class ConfigValue {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsOverlay
-        static ConfigPair.ToObjectReturnType create() {
+        static ConfigValue.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getKey();
-
-        @JsProperty
         String getStringValue();
-
-        @JsProperty
-        void setKey(String key);
 
         @JsProperty
         void setStringValue(String stringValue);
@@ -36,49 +30,39 @@ public class ConfigPair {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsOverlay
-        static ConfigPair.ToObjectReturnType0 create() {
+        static ConfigValue.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
-
-        @JsProperty
-        String getKey();
 
         @JsProperty
         String getStringValue();
 
         @JsProperty
-        void setKey(String key);
-
-        @JsProperty
         void setStringValue(String stringValue);
     }
 
-    public static native ConfigPair deserializeBinary(Uint8Array bytes);
+    public static native ConfigValue deserializeBinary(Uint8Array bytes);
 
-    public static native ConfigPair deserializeBinaryFromReader(ConfigPair message, Object reader);
+    public static native ConfigValue deserializeBinaryFromReader(ConfigValue message, Object reader);
 
-    public static native void serializeBinaryToWriter(ConfigPair message, Object writer);
+    public static native void serializeBinaryToWriter(ConfigValue message, Object writer);
 
-    public static native ConfigPair.ToObjectReturnType toObject(
-            boolean includeInstance, ConfigPair msg);
+    public static native ConfigValue.ToObjectReturnType toObject(
+            boolean includeInstance, ConfigValue msg);
 
     public native void clearStringValue();
 
-    public native String getKey();
+    public native int getKindCase();
 
     public native String getStringValue();
-
-    public native int getValueCase();
 
     public native boolean hasStringValue();
 
     public native Uint8Array serializeBinary();
 
-    public native void setKey(String value);
-
     public native void setStringValue(String value);
 
-    public native ConfigPair.ToObjectReturnType0 toObject();
+    public native ConfigValue.ToObjectReturnType0 toObject();
 
-    public native ConfigPair.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ConfigValue.ToObjectReturnType0 toObject(boolean includeInstance);
 }

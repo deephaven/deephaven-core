@@ -1,12 +1,12 @@
 package io.deephaven.web.client.api;
 
-import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigPair;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
+import io.deephaven.javascript.proto.dhinternal.jspb.Map;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
@@ -37,12 +37,11 @@ public class CoreClient extends QueryConnectable<CoreClient> {
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
-            JsFunction<R, JsArray<ConfigPair>> getConfigValues) {
+            JsFunction<R, Map<String, ConfigValue>> getConfigValues) {
         return Callbacks.grpcUnaryPromise(rpcCall).then(response -> {
             String[][] result = new String[0][];
-            getConfigValues.apply(response).forEach((item, index, array) -> {
-                result[index] = new String[] {item.getKey(), item.getStringValue()};
-                return null;
+            getConfigValues.apply(response).forEach((item, key) -> {
+                result[result.length] = new String[] {key, item.getStringValue()};
             });
             return Promise.resolve(result);
         });
@@ -69,7 +68,7 @@ public class CoreClient extends QueryConnectable<CoreClient> {
                         new AuthenticationConstantsRequest(),
                         connection.get().metadata(),
                         c::apply),
-                AuthenticationConstantsResponse::getConfigValuesList);
+                AuthenticationConstantsResponse::getConfigValuesMap);
     }
 
     public Promise<Void> login(LoginCredentials credentials) {
@@ -86,7 +85,7 @@ public class CoreClient extends QueryConnectable<CoreClient> {
                         new ConfigurationConstantsRequest(),
                         connection.get().metadata(),
                         c::apply),
-                ConfigurationConstantsResponse::getConfigValuesList);
+                ConfigurationConstantsResponse::getConfigValuesMap);
     }
 
     public Promise<UserInfo> getUserInfo() {
