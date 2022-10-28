@@ -68,9 +68,7 @@ tasks.withType(JavaExec).configureEach {
 
     jvmArgs '-XX:+UseG1GC',
             '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication',
-            // For development in this repository via Gradle, use the top-level data directory
-            "-Dstorage.path=${rootDir}/data"
+            '-XX:+UseStringDeduplication'
 }
 
 tasks.withType(CreateStartScripts).configureEach {

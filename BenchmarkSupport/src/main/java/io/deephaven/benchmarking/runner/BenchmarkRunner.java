@@ -20,7 +20,6 @@ import io.deephaven.benchmarking.CsvResultWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -52,7 +51,7 @@ public class BenchmarkRunner {
                     .build());
             final Collection<RunResult> run = runner.run();
             recordResults(run);
-            CsvResultWriter.recordResults(run, new File(BenchmarkTools.getLogPath() + File.separator + "Benchmark"));
+            CsvResultWriter.recordResults(run, BenchmarkTools.dataDir().resolve("Benchmark").toFile());
         } catch (Throwable t) {
             t.printStackTrace();
             System.exit(1);
@@ -97,14 +96,14 @@ public class BenchmarkRunner {
         final Table result = topLevel.naturalJoin(mergedDetails, "Benchmark,Mode,Run,Iteration,Params");
 
         final Path outputPath =
-                Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+                BenchmarkTools.dataDir().resolve("Benchmark" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
         ParquetTools.writeTable(result, outputPath.toFile(), result.getDefinition());
     }
 
     private static Table getMergedDetails() {
         final File[] files = FileUtils.missingSafeListFiles(
-                new File(BenchmarkTools.getLogPath()),
+                BenchmarkTools.dataDir().toFile(),
                 file -> file.getName().startsWith(BenchmarkTools.DETAIL_LOG_PREFIX));
         Arrays.sort(files, Utils.getModifiedTimeComparator(false));
 

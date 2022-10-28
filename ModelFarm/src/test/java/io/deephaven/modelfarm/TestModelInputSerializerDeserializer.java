@@ -4,17 +4,19 @@
 package io.deephaven.modelfarm;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.configuration.Configuration;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class TestModelInputSerializerDeserializer extends BaseArrayTestCase {
 
-    public void testSerializeDeserialize() throws IOException, ClassNotFoundException {
-        final String filename =
-                Configuration.getInstance().getTempPath("test") + "TestModelInputSerializerDeserializer.ser";
 
-        final ModelInputSerializer<Integer> serializer = new ModelInputSerializer<>(filename);
+
+    public void testSerializeDeserialize() throws IOException, ClassNotFoundException {
+        final Path path = Files.createTempFile("test", "TestModelInputSerializerDeserializer.ser");
+
+        final ModelInputSerializer<Integer> serializer = new ModelInputSerializer<>(path.toString());
 
         final int d1 = 1;
         final int d2 = 2;
@@ -25,7 +27,8 @@ public class TestModelInputSerializerDeserializer extends BaseArrayTestCase {
         serializer.exec(3);
         serializer.close();
 
-        final ModelInputDeserializer<Integer> deserializer = new ModelInputDeserializer<>(Integer.class, filename);
+        final ModelInputDeserializer<Integer> deserializer =
+                new ModelInputDeserializer<>(Integer.class, path.toString());
         assertEquals(d1, deserializer.next().intValue());
         assertEquals(d2, deserializer.next().intValue());
         assertEquals(d3, deserializer.next().intValue());
@@ -36,6 +39,7 @@ public class TestModelInputSerializerDeserializer extends BaseArrayTestCase {
         } catch (IOException e) {
             // pass
         }
+        Files.delete(path);
     }
 
 }

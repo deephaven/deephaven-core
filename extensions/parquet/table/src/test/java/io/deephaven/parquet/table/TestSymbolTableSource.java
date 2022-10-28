@@ -1,7 +1,6 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.util.TableTools;
@@ -14,8 +13,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 
@@ -27,9 +24,7 @@ public class TestSymbolTableSource {
 
     @Before
     public final void setUp() throws IOException {
-        final Path rootPath = Files.createTempDirectory(Paths.get(Configuration.getInstance().getWorkspacePath()),
-                "TestSymbolTables-");
-        dataDirectory = rootPath.toFile();
+        dataDirectory = Files.createTempDirectory(TestSymbolTableSource.class.getName()).toFile();
     }
 
     @After

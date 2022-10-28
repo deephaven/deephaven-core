@@ -30,8 +30,8 @@ public final class Liveness {
     private static final boolean COUNT_LOG_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("Liveness.countLogEnabled", true);
 
-    private static final boolean HEAP_DUMP_ENABLED =
-            Configuration.getInstance().getBooleanWithDefault("Liveness.heapDump", false);
+    private static final String HEAP_DUMP_PATH =
+            Configuration.getInstance().getStringWithDefault("Liveness.heapDumpPath", null);
 
     static final boolean CLEANUP_LOG_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("Liveness.cleanupLogEnabled", true);
@@ -112,14 +112,13 @@ public final class Liveness {
     }
 
     static void maybeHeapDump(LivenessStateException lse) {
-        if (!HEAP_DUMP_ENABLED) {
+        if (HEAP_DUMP_PATH == null) {
             return;
         }
-        final String heapDumpPath = HeapDump.generateHeapDumpPath();
-        log.fatal().append("LivenessStateException, generating heap dump to").append(heapDumpPath).append(": ")
+        log.error().append("LivenessStateException, generating heap dump to ").append(HEAP_DUMP_PATH).append(": ")
                 .append(lse).endl();
         try {
-            HeapDump.heapDump(heapDumpPath);
+            HeapDump.heapDump(HEAP_DUMP_PATH);
         } catch (IOException ignored) {
         }
     }

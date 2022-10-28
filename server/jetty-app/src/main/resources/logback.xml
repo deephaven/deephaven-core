@@ -19,6 +19,13 @@
     </encoder>
   </appender>
 
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>${deephaven.dataDir}/logs/myApp.log</file>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSS'Z', UTC} | %green(%-20.20thread) | %highlight(%5level) | %yellow(%-25.25logger{25}) | %m%n</pattern>
+    </encoder>
+  </appender>
+
   <!-- individual package levels can be change -->
   <!--<logger name="io.netty" level="INFO"/>-->
   <!--<logger name="io.deephaven" level="INFO"/>-->
@@ -26,5 +33,6 @@
   <root level="info">
     <appender-ref ref="STDOUT" />
     <appender-ref ref="LOGBUFFER" />
+    <appender-ref ref="FILE" />
   </root>
 </configuration>

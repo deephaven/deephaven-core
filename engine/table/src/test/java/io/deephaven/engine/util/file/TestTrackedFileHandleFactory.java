@@ -5,7 +5,6 @@ package io.deephaven.engine.util.file;
 
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.base.verify.RequirementFailure;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.io.sched.Scheduler;
 import io.deephaven.io.sched.TimedJob;
 import junit.framework.TestCase;
@@ -15,11 +14,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
 
-    private static final File FILE =
-            new File(Configuration.getInstance().getWorkspacePath(), "TestTrackedFileHandleFactory.dat");
+    private File FILE;
     private static final int CAPACITY = 100;
     private static final double TARGET_USAGE_RATIO = 0.9;
     private static final int TARGET_USAGE_THRESHOLD = 90;
@@ -32,8 +31,7 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
     public void setUp() throws Exception {
         super.setUp();
 
-        // noinspection ResultOfMethodCallIgnored
-        FILE.createNewFile();
+        FILE = Files.createTempFile(TestTrackedFileHandleFactory.class.getName(), ".dat").toFile();
 
         scheduler = mock(Scheduler.class);
 

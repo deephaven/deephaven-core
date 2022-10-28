@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.configuration.DataDir;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -70,8 +71,9 @@ public class QueryCompiler {
     }
 
     static QueryCompiler createForUnitTests() {
-        return new QueryCompiler(new File(Configuration.getInstance().getWorkspacePath() +
-                File.separator + "cache" + File.separator + "classes"));
+        final Path queryCompilerDir = DataDir.get()
+                .resolve("io.deephaven.engine.context.QueryCompiler.createForUnitTests");
+        return new QueryCompiler(queryCompilerDir.toFile());
     }
 
     private final Map<String, CompletableFuture<Class<?>>> knownClasses = new HashMap<>();

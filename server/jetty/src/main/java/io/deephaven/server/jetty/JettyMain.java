@@ -13,7 +13,7 @@ import java.util.concurrent.TimeoutException;
 public class JettyMain extends Main {
     public static void main(String[] args)
             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
-        final Configuration config = init(args, Main.class);
+        final Configuration config = init(args, JettyMain.class);
         final JettyConfig jettyConfig = JettyConfig.buildFromConfig(config).build();
         DaggerJettyServerComponent
                 .builder()
