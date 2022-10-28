@@ -3,13 +3,12 @@
  */
 package io.deephaven.engine.table.impl.replay;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.rowset.RowSet;
-
-import java.time.Instant;
 
 public class DataDrivenReplayer extends Replayer {
     private DateTime currentTime;
@@ -19,31 +18,6 @@ public class DataDrivenReplayer extends Replayer {
     public DataDrivenReplayer(DateTime startTime, DateTime endTime) {
         super(startTime, endTime);
         currentTime = startTime;
-    }
-
-    @Override
-    public long currentTimeMillis() {
-        return currentTime.getMillis();
-    }
-
-    @Override
-    public long currentTimeMicros() {
-        return currentTime.getMicros();
-    }
-
-    @Override
-    public long currentTimeNanos() {
-        return currentTime.getNanos();
-    }
-
-    @Override
-    public Instant instantNanos() {
-        return currentTime.getInstant();
-    }
-
-    @Override
-    public Instant instantMillis() {
-        return currentTime.getInstant();
     }
 
     TLongArrayList allTimestamp = new TLongArrayList();
@@ -101,5 +75,17 @@ public class DataDrivenReplayer extends Replayer {
     @Override
     public void setTime(long updatedTime) {
         currentTime = DateTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
+    }
+
+    @Override
+    public Clock clock() {
+        return new ClockImpl();
+    }
+
+    private class ClockImpl extends DateTimeClock {
+        @Override
+        public DateTime currentDateTime() {
+            return currentTime;
+        }
     }
 }

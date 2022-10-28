@@ -18,7 +18,7 @@ public interface Clock {
      *
      * @return the system clock
      */
-    static SystemClock systemUTC() {
+    static SystemClock system() {
         return SystemClockInstance.INSTANCE;
     }
 

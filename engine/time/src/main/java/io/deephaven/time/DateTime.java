@@ -85,8 +85,8 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
-     * Create a new DateTime initialized to the current system time. Based on {@link Clock#systemUTC()}. Equivalent to
-     * {@code of(Clock.systemUTC())}.
+     * Create a new DateTime initialized to the current system time. Based on {@link Clock#system()}. Equivalent to
+     * {@code of(Clock.system())}.
      *
      * <p>
      * The precision of DateTime is nanoseconds, but the resolution of the this method depends on the JVM.
@@ -100,12 +100,12 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return a new DateTime initialized to the current time.
      */
     public static DateTime now() {
-        return of(Clock.systemUTC());
+        return of(Clock.system());
     }
 
     /**
-     * Create a new DateTime initialized to the current system time. Based on {@link Clock#systemUTC()}. Equivalent to
-     * {@code ofMillis(Clock.systemUTC())}.
+     * Create a new DateTime initialized to the current system time. Based on {@link Clock#system()}. Equivalent to
+     * {@code ofMillis(Clock.system())}.
      *
      * <p>
      * The resolution will be in milliseconds.
@@ -113,7 +113,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return a new DateTime initialized to the current time.
      */
     public static DateTime nowMillis() {
-        return ofMillis(Clock.systemUTC());
+        return ofMillis(Clock.system());
     }
 
     /**

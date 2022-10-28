@@ -12,7 +12,7 @@ import java.util.TimerTask;
 /**
  * An interface for replaying historical data as simulated real-time data.
  */
-public interface ReplayerInterface extends Clock {
+public interface ReplayerInterface {
     /**
      * Starts replaying data.
      */
@@ -94,4 +94,6 @@ public interface ReplayerInterface extends Clock {
      * @return handle to the replayer.
      */
     ReplayerHandle getHandle();
+
+    Clock clock();
 }

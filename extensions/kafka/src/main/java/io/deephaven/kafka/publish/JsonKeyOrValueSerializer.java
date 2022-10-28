@@ -346,7 +346,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                 final WritableObjectChunk<ObjectNode, Values> jsonChunk,
                 final RowSequence keys,
                 final boolean isRemoval) {
-            final String nanosString = String.valueOf(Clock.systemUTC().currentTimeNanos());
+            final String nanosString = String.valueOf(Clock.system().currentTimeNanos());
             for (int ii = 0; ii < jsonChunk.size(); ++ii) {
                 getChildNode(jsonChunk.get(ii)).put(childNodeFieldName, nanosString);
             }

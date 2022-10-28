@@ -82,7 +82,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void shutdown() throws IOException {
-        endTime = DateTime.of(this);
+        endTime = DateTime.of(clock());
         if (done) {
             return;
         }
@@ -157,48 +157,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @return time provider that returns the current replay time.
      */
     public static Clock getClock(final ReplayerInterface replayer) {
-        return Objects.requireNonNullElse(replayer, DateTimeUtils.currentClock());
-    }
-
-    @Override
-    public long currentTimeMillis() {
-        return DateTimeUtils.nanosToMillis(currentTimeNanos());
-    }
-
-    @Override
-    public long currentTimeMicros() {
-        return DateTimeUtils.nanosToMicros(currentTimeNanos());
-    }
-
-    /**
-     * Simulated time in nanoseconds.
-     *
-     * @return simulated time in nanoseconds.
-     */
-    @Override
-    public long currentTimeNanos() {
-        if (deltaNanos == Long.MAX_VALUE) {
-            return startTime.getNanos();
-        }
-        final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
-        return Math.min(resultNanos, endTime.getNanos());
-    }
-
-    @Override
-    public Instant instantNanos() {
-        if (deltaNanos == Long.MAX_VALUE) {
-            return startTime.getInstant();
-        }
-        final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
-        if (resultNanos >= endTime.getNanos()) {
-            return endTime.getInstant();
-        }
-        return Instant.ofEpochSecond(0, resultNanos);
-    }
-
-    @Override
-    public Instant instantMillis() {
-        return instantNanos();
+        return replayer == null ? DateTimeUtils.currentClock() : replayer.clock();
     }
 
     /**
@@ -211,7 +170,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (deltaNanos == Long.MAX_VALUE) {
             startTime = DateTimeUtils.millisToTime(updatedTime);
         } else {
-            long adjustment = updatedTime - currentTimeMillis();
+            long adjustment = updatedTime - clock().currentTimeMillis();
             if (adjustment > 0) {
                 deltaNanos = deltaNanos - DateTimeUtils.millisToNanos(adjustment);
             }
@@ -292,7 +251,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void run() {
         for (PeriodicTask timerTask : timerTasks) {
-            timerTask.next(DateTime.of(this));
+            timerTask.next(DateTime.of(clock()));
         }
 
         if (lastLap) {
@@ -302,7 +261,7 @@ public class Replayer implements ReplayerInterface, Runnable {
                 e.printStackTrace();
             }
         }
-        if (DateTime.of(this).compareTo(endTime) >= 0) {
+        if (DateTime.of(clock()).compareTo(endTime) >= 0) {
             lastLap = true;
         }
     }
@@ -346,5 +305,53 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public ReplayerHandle getHandle() {
         return handle;
+    }
+
+    @Override
+    public Clock clock() {
+        return new ClockImpl();
+    }
+
+    private class ClockImpl implements Clock {
+        @Override
+        public long currentTimeMillis() {
+            return DateTimeUtils.nanosToMillis(currentTimeNanos());
+        }
+
+        @Override
+        public long currentTimeMicros() {
+            return DateTimeUtils.nanosToMicros(currentTimeNanos());
+        }
+
+        /**
+         * Simulated time in nanoseconds.
+         *
+         * @return simulated time in nanoseconds.
+         */
+        @Override
+        public long currentTimeNanos() {
+            if (deltaNanos == Long.MAX_VALUE) {
+                return startTime.getNanos();
+            }
+            final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
+            return Math.min(resultNanos, endTime.getNanos());
+        }
+
+        @Override
+        public Instant instantNanos() {
+            if (deltaNanos == Long.MAX_VALUE) {
+                return startTime.getInstant();
+            }
+            final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
+            if (resultNanos >= endTime.getNanos()) {
+                return endTime.getInstant();
+            }
+            return Instant.ofEpochSecond(0, resultNanos);
+        }
+
+        @Override
+        public Instant instantMillis() {
+            return instantNanos();
+        }
     }
 }

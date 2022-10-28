@@ -1306,7 +1306,7 @@ public class QueryTableAjTest {
         final Random random = new Random(0);
         final int size = 100;
         final int scale = 1000;
-        final long timeOffset = Clock.systemUTC().currentTimeNanos();
+        final long timeOffset = Clock.system().currentTimeNanos();
         final String[] columnNames = {"MyBoolean", "MyChar"};
 
         QueryScope.addParam("random", random);

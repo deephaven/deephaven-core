@@ -176,12 +176,12 @@ public class FuzzerTest {
     @Test
     public void testLargeSetOfFuzzerQueriesRealtime() throws IOException, InterruptedException {
         Assume.assumeTrue("Realtime Fuzzer can have a positive feedback loop.", REALTIME_FUZZER_ENABLED);
-        runLargeFuzzerSetWithSeed(Clock.systemUTC().currentTimeNanos(), 0, 99, true, 120, 1000);
+        runLargeFuzzerSetWithSeed(Clock.system().currentTimeNanos(), 0, 99, true, 120, 1000);
     }
 
     @Test
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
-        final long seed1 = Clock.systemUTC().currentTimeNanos();
+        final long seed1 = Clock.system().currentTimeNanos();
         final int iterations = TstUtils.SHORT_TESTS ? 1 : 5;
         for (long iteration = 0; iteration < iterations; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {

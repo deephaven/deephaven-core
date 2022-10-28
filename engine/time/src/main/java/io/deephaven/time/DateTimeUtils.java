@@ -170,6 +170,7 @@ public class DateTimeUtils {
     @SuppressWarnings("WeakerAccess")
     public static String lastBusinessDayNyOverride;
 
+    // TODO(deephaven-core#3044): Improve scaffolding around full system replay
     /**
      * Allows setting a custom clock instead of actual current time. This is mainly used when setting up for a replay
      * simulation.
@@ -1225,12 +1226,12 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the current clock. The current clock is {@link #clock} if set, otherwise {@link Clock#systemUTC()}.
+     * Returns the current clock. The current clock is {@link #clock} if set, otherwise {@link Clock#system()}.
      *
      * @return the current clock
      */
     public static Clock currentClock() {
-        return Objects.requireNonNullElse(clock, Clock.systemUTC());
+        return Objects.requireNonNullElse(clock, Clock.system());
     }
 
     /**

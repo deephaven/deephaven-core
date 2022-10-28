@@ -120,7 +120,7 @@ public class DeephavenApiServerModule {
             }
         };
 
-        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor, Clock.systemUTC());
+        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor, Clock.system());
     }
 
     private static void report(final String executorType, final Throwable error) {

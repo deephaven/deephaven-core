@@ -13,7 +13,7 @@ import java.util.Objects;
 public final class DeltaClock implements Clock {
 
     /**
-     * Constructs a delta clock with a {@link Clock#systemUTC()} clock.
+     * Constructs a delta clock with a {@link Clock#system()} clock.
      *
      * @param duration the duration
      * @return the clock
@@ -26,12 +26,12 @@ public final class DeltaClock implements Clock {
     private final long deltaNanos;
 
     /**
-     * Constructs a delta clock with a {@link Clock#systemUTC()} clock.
+     * Constructs a delta clock with a {@link Clock#system()} clock.
      *
      * @param deltaNanos the delta nanos
      */
     public DeltaClock(final long deltaNanos) {
-        this(Clock.systemUTC(), deltaNanos);
+        this(Clock.system(), deltaNanos);
     }
 
     /**

@@ -360,10 +360,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final long unitTime;
             switch (unit) {
                 case MICROSECONDS:
-                    unitTime = Clock.systemUTC().currentTimeMicros();
+                    unitTime = Clock.system().currentTimeMicros();
                     break;
                 case MILLISECONDS:
-                    unitTime = Clock.systemUTC().currentTimeMillis();
+                    unitTime = Clock.system().currentTimeMillis();
                     break;
                 default:
                     throw new IllegalStateException();

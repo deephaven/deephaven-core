@@ -84,7 +84,7 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
     }
 
     protected long getNowNanos() {
-        return Clock.systemUTC().currentTimeNanos();
+        return Clock.system().currentTimeNanos();
     }
 
     @Override

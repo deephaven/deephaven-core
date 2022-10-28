@@ -33,7 +33,8 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
             return;
         }
         RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
-        while (!allIterators.isEmpty() && allIterators.peek().lastTime.getNanos() < replayer.currentTimeNanos()) {
+        while (!allIterators.isEmpty()
+                && allIterators.peek().lastTime.getNanos() < replayer.clock().currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
             final long key = redirIndexSize++;
             rowRedirection.put(key, currentIt.lastIndex);

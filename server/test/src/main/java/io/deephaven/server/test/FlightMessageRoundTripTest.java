@@ -110,7 +110,7 @@ public abstract class FlightMessageRoundTripTest {
             return new Scheduler.DelegatingImpl(
                     Executors.newSingleThreadExecutor(),
                     Executors.newScheduledThreadPool(1),
-                    Clock.systemUTC());
+                    Clock.system());
         }
 
         @Provides

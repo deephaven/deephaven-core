@@ -150,7 +150,7 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
         @Override
         public void visit(ClockSystem system) {
-            out = io.deephaven.base.clock.Clock.systemUTC();
+            out = io.deephaven.base.clock.Clock.system();
         }
     }
 
