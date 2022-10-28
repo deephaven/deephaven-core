@@ -183,7 +183,7 @@ public class Basic {
      * @return number of non-null values.
      */
     static public <T> long countObj(ObjectVector<T> values) {
-        if (values == null){
+        if (values == null) {
             return NULL_LONG;
         }
 
@@ -311,7 +311,7 @@ public class Basic {
      * @return Deephaven vector.
      */
     @SafeVarargs
-    public static <T> ObjectVector<T> vecObj(T... values){
+    public static <T> ObjectVector<T> vecObj(T... values) {
         if (values == null) {
             return null;
         }
@@ -429,7 +429,7 @@ public class Basic {
 
         final long n = values.size();
 
-        if (n == 0){
+        if (n == 0) {
             return 0;
         }
 
@@ -554,7 +554,7 @@ public class Basic {
 
         final T[] array = (T[])Array.newInstance(value.getClass(), size);
 
-        for (int i = 0; i < size; i++){
+        for (int i = 0; i < size; i++) {
             array[i] = value;
         }
 
@@ -569,7 +569,7 @@ public class Basic {
      */
     @SafeVarargs
     @SuppressWarnings({"unchecked"})
-    public static <T> T[] concat(T[]... values){
+    public static <T> T[] concat(T[]... values) {
 
         int n = 0;
 
@@ -602,9 +602,9 @@ public class Basic {
      */
     @SafeVarargs
     @SuppressWarnings({"unchecked"})
-    public static <T> T[] concat(ObjectVector<T>... values){
+    public static <T> T[] concat(ObjectVector<T>... values) {
 
-        if (values.length == 0){
+        if (values.length == 0) {
             return (T[])Array.newInstance(Object.class, 0);
         }
 
@@ -641,8 +641,8 @@ public class Basic {
      * @return array with the values reversed.
      */
     @SafeVarargs
-    public static <T> T[] reverseObj(T... values){
-        if (values == null){
+    public static <T> T[] reverseObj(T... values) {
+        if (values == null) {
             return null;
         }
 
@@ -655,15 +655,15 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static <T> T[] reverseObj(ObjectVector<T> values){
-        if (values == null){
+    public static <T> T[] reverseObj(ObjectVector<T> values) {
+        if (values == null) {
             return null;
         }
 
         final int n = values.intSize("reverse");
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(values.getComponentType(), n);
 
-        for (int i=0; i<n; i++){
+        for (int i=0; i<n; i++) {
             result[i] = values.get(i);
         }
 
@@ -883,7 +883,7 @@ public class Basic {
      * @param value value.
      * @return true if the value is null according to the Deephaven convention, and false otherwise.
      */
-    static public boolean isNull(${pt.primitive} value){
+    static public boolean isNull(${pt.primitive} value) {
         return value == QueryConstants.${pt.null};
     }
 
@@ -897,13 +897,13 @@ public class Basic {
      * @return unboxed array of values.
      */
     public static ${pt.primitive}[] unbox(${pt.boxed}... values) {
-        if (values == null){
+        if (values == null) {
             return null;
         }
 
         ${pt.primitive}[] result = new ${pt.primitive}[values.length];
 
-        for (int i=0; i<values.length; i++){
+        for (int i=0; i<values.length; i++) {
             ${pt.boxed} v = values[i];
 
             if (v == null || isNull(v.${pt.primitive}Value())) {
@@ -982,8 +982,8 @@ public class Basic {
      * @param values values.
      * @return number of non-null values.
      */
-    static public long count(${pt.primitive}... values){
-        if (values == null){
+    static public long count(${pt.primitive}... values) {
+        if (values == null) {
             return NULL_LONG;
         }
 
@@ -996,8 +996,8 @@ public class Basic {
      * @param values values.
      * @return number of non-null values.
      */
-    static public long count(${pt.dbArray} values){
-        if (values == null){
+    static public long count(${pt.dbArray} values) {
+        if (values == null) {
             return NULL_LONG;
         }
 
@@ -1019,14 +1019,14 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
-    static public ${pt.primitive} last(${pt.dbArray} values){
-        if (values == null){
+    static public ${pt.primitive} last(${pt.dbArray} values) {
+        if (values == null) {
             return QueryConstants.${pt.null};
         }
 
         final long n = values.size();
 
-        if (n == 0){
+        if (n == 0) {
             return QueryConstants.${pt.null};
         }
 
@@ -1039,8 +1039,8 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
-    static public ${pt.primitive} last(${pt.primitive}... values){
-        if (values == null){
+    static public ${pt.primitive} last(${pt.primitive}... values) {
+        if (values == null) {
             return QueryConstants.${pt.null};
         }
 
@@ -1053,8 +1053,8 @@ public class Basic {
      * @param values values.
      * @return first value from the array.
      */
-    static public ${pt.primitive} first(${pt.dbArray} values){
-        if (values == null || values.size() == 0){
+    static public ${pt.primitive} first(${pt.dbArray} values) {
+        if (values == null || values.size() == 0) {
             return QueryConstants.${pt.null};
         }
 
@@ -1067,8 +1067,8 @@ public class Basic {
      * @param values values.
      * @return first value from the array.
      */
-    static public ${pt.primitive} first(${pt.primitive}... values){
-        if (values == null){
+    static public ${pt.primitive} first(${pt.primitive}... values) {
+        if (values == null) {
             return QueryConstants.${pt.null};
         }
 
@@ -1082,8 +1082,8 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
-    static public ${pt.primitive} nth(long index, ${pt.dbArray} values){
-        if (index < 0 || index >= values.size()){
+    static public ${pt.primitive} nth(long index, ${pt.dbArray} values) {
+        if (index < 0 || index >= values.size()) {
             return QueryConstants.${pt.null};
         }
 
@@ -1097,7 +1097,7 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
-    static public ${pt.primitive} nth(long index, ${pt.primitive}... values){
+    static public ${pt.primitive} nth(long index, ${pt.primitive}... values) {
         return nth(index, vec(values));
     }
 
@@ -1108,7 +1108,7 @@ public class Basic {
      * @return primitive array.
      */
     public static ${pt.primitive}[] array(${pt.dbArray} values) {
-        if (values == null){
+        if (values == null) {
             return null;
         }
 
@@ -1135,7 +1135,7 @@ public class Basic {
      * @param highInclusiveValue upper inclusive bound of the range.
      * @return true if the tested value is within the range, and false if the tested value is not in the range or is null.
      */
-    static public boolean inRange(${pt.primitive} testedValue,${pt.primitive} lowInclusiveValue,${pt.primitive} highInclusiveValue){
+    static public boolean inRange(${pt.primitive} testedValue,${pt.primitive} lowInclusiveValue,${pt.primitive} highInclusiveValue) {
         if (isNull(testedValue)) {
             return false;
         }
@@ -1152,7 +1152,7 @@ public class Basic {
      * @param possibleValues possible values.
      * @return true if the tested value is contained in the possible values, and false otherwise.
      */
-    static public boolean in(${pt.primitive} testedValues,${pt.primitive}... possibleValues){
+    static public boolean in(${pt.primitive} testedValues,${pt.primitive}... possibleValues) {
         for (${pt.primitive} possibleValue : possibleValues) {
             if (testedValues == possibleValue) {
                 return true;
@@ -1450,13 +1450,13 @@ public class Basic {
      * @return array of repeated values.  If {@code size} is less than zero, an empty array is returned.
      */
     public static ${pt.primitive}[] repeat(${pt.primitive} value, int size) {
-        if (size < 0){
+        if (size < 0) {
             return new ${pt.primitive}[0];
         }
 
         final ${pt.primitive}[] result = new ${pt.primitive}[size];
 
-        for (int i=0; i<size; i++){
+        for (int i=0; i<size; i++) {
             result[i] = value;
         }
 
@@ -1469,8 +1469,8 @@ public class Basic {
      * @param values values.
      * @return list containing values.
      */
-    public static ${pt.primitive}[] enlist(${pt.primitive}... values){
-        if (values == null){
+    public static ${pt.primitive}[] enlist(${pt.primitive}... values) {
+        if (values == null) {
             return new ${pt.primitive}[0];
         }
 
@@ -1483,8 +1483,8 @@ public class Basic {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static ${pt.primitive}[] concat(${pt.primitive}[]... values){
-        if (values == null){
+    public static ${pt.primitive}[] concat(${pt.primitive}[]... values) {
+        if (values == null) {
             return new ${pt.primitive}[0];
         }
 
@@ -1497,8 +1497,8 @@ public class Basic {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static ${pt.primitive}[] concat(${pt.dbArray}... values){
-        if (values == null){
+    public static ${pt.primitive}[] concat(${pt.dbArray}... values) {
+        if (values == null) {
             return new ${pt.primitive}[0];
         }
 
@@ -1532,8 +1532,8 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static ${pt.primitive}[] reverse(${pt.primitive}... values){
-        if (values == null){
+    public static ${pt.primitive}[] reverse(${pt.primitive}... values) {
+        if (values == null) {
             return null;
         }
 
@@ -1546,15 +1546,15 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static ${pt.primitive}[] reverse(${pt.dbArray} values){
-        if (values == null){
+    public static ${pt.primitive}[] reverse(${pt.dbArray} values) {
+        if (values == null) {
             return null;
         }
 
         final int n = values.intSize("reverse");
         final ${pt.primitive}[] result = new ${pt.primitive}[n];
 
-        for (int i=0; i<n; i++){
+        for (int i=0; i<n; i++) {
             result[i] = values.get(n-1-i);
         }
 
@@ -1724,8 +1724,8 @@ public class Basic {
      * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the
      *         specified array is null, returns null.
      */
-    public static ${pt.primitive}[] forwardFill(${pt.primitive}... values){
-        if (values == null){
+    public static ${pt.primitive}[] forwardFill(${pt.primitive}... values) {
+        if (values == null) {
             return null;
         }
 
@@ -1741,7 +1741,7 @@ public class Basic {
      * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the
      *         specified array is null, returns null.
      */
-    public static ${pt.primitive}[] forwardFill(${pt.dbArray} values){
+    public static ${pt.primitive}[] forwardFill(${pt.dbArray} values) {
         if (values == null) {
             return null;
         }
