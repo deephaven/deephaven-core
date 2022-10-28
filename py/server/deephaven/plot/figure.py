@@ -176,7 +176,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def axis(
         self,
@@ -355,7 +355,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def chart(
         self,
@@ -499,7 +499,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def chart_legend(
         self,
@@ -553,7 +553,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def chart_title(
         self,
@@ -652,7 +652,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def figure(
         self,
@@ -721,7 +721,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def figure_title(
         self,
@@ -775,7 +775,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def func(
         self,
@@ -829,7 +829,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def line(
         self,
@@ -903,7 +903,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def new_axes(
         self,
@@ -1688,7 +1688,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
 
     def save(
@@ -1907,7 +1907,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def show(
         self,
@@ -2001,7 +2001,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def ticks_minor(
         self,
@@ -2045,7 +2045,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def twin(
         self,
@@ -2256,7 +2256,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def x_ticks(
         self,
@@ -2330,7 +2330,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def x_ticks_minor(
         self,
@@ -2374,7 +2374,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def x_twin(
         self,
@@ -2576,7 +2576,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def y_ticks(
         self,
@@ -2650,7 +2650,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def y_ticks_minor(
         self,
@@ -2694,7 +2694,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def y_twin(
         self,
