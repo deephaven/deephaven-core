@@ -1716,7 +1716,7 @@ public class ChartDescriptor {
 
     public native int getColspan();
 
-    public native double getColumn();
+    public native int getColumn();
 
     public native boolean getIs3d();
 
@@ -1726,7 +1726,7 @@ public class ChartDescriptor {
 
     public native JsArray<MultiSeriesDescriptor> getMultiSeriesList();
 
-    public native double getRow();
+    public native int getRow();
 
     public native int getRowspan();
 
