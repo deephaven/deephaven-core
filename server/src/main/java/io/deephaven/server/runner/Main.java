@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -53,14 +52,7 @@ public class Main {
             bootstrapFromFile(Path.of(args[0]));
             return;
         }
-        try (final InputStream in = Main.class.getResourceAsStream("/bootstrap.properties")) {
-            if (in != null) {
-                System.out.println("# Bootstrapping from resource '/bootstrap.properties'");
-                System.getProperties().load(in);
-            } else {
-                System.out.println("# No resource '/bootstrap.properties' found, skipping bootstrapping");
-            }
-        }
+        System.out.println("# No argument, skipping bootstrapping");
     }
 
     private static void bootstrapFromFile(Path configFile) throws IOException {

@@ -26,6 +26,10 @@ DEFAULT_JVM_PROPERTIES = {
     # TODO (deephaven-core#XXXX) this doesn't work yet
     # # Disable the browser console by default, this is not yet well supported
     # 'deephaven.console.disable': 'true',
+    'LoggerFactory.silenceOnProcessEnvironment': 'true',
+    'stdout.toLogBuffer': 'false',
+    'stderr.toLogBuffer': 'false',
+    'logback.configurationFile': 'logback-minimal.xml',
 }
 DEFAULT_JVM_ARGS = [
     # Disable the JVM's signal handling for interactive python consoles - if python will
