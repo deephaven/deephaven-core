@@ -104,9 +104,9 @@ class Figure(JObjectWrapper):
 
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
-    def __init__(self, rows: int = 1, cols: int = 1, j_figure: jpy.JType = None):
+    def __init__(self, j_figure: jpy.JType = None):
         if not j_figure:
-            self.j_figure = _JPlottingConvenience.figure(rows, cols)
+            self.j_figure = _JPlottingConvenience.figure()
         else:
             self.j_figure = j_figure
 
