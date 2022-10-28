@@ -1755,7 +1755,7 @@ public class ChartDescriptor {
 
     public native void setColspan(int value);
 
-    public native void setColumn(double value);
+    public native void setColumn(int value);
 
     public native void setIs3d(boolean value);
 
@@ -1770,7 +1770,7 @@ public class ChartDescriptor {
         setMultiSeriesList(Js.<JsArray<MultiSeriesDescriptor>>uncheckedCast(value));
     }
 
-    public native void setRow(double value);
+    public native void setRow(int value);
 
     public native void setRowspan(int value);
 
