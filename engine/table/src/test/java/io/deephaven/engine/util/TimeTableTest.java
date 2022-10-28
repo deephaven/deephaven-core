@@ -21,8 +21,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeProvider;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,8 +29,7 @@ import java.util.Map;
 
 public class TimeTableTest extends RefreshingTableTestCase {
 
-    private MutableLong now;
-    private TimeProvider timeProvider;
+    private TestClock clock;
     private UpdateSourceCombiner updateSourceCombiner;
     private QueryTable timeTable;
     private TableUpdateValidator validator;
@@ -42,8 +39,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     protected void setUp() throws Exception {
         super.setUp();
 
-        now = new MutableLong(0);
-        timeProvider = () -> new DateTime(now.longValue());
+        clock = new TestClock(0);
         updateSourceCombiner = new UpdateSourceCombiner();
     }
 
@@ -51,8 +47,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     protected void tearDown() throws Exception {
         validator.deepValidation();
 
-        now = null;
-        timeProvider = null;
+        clock = null;
         updateSourceCombiner = null;
         timeTable = null;
         validator = null;
@@ -64,14 +59,14 @@ public class TimeTableTest extends RefreshingTableTestCase {
     private void build(TimeTable.Builder builder) {
         timeTable = builder
                 .registrar(updateSourceCombiner)
-                .timeProvider(timeProvider)
+                .clock(clock)
                 .build();
         column = timeTable.getColumnSource("Timestamp").reinterpret(long.class);
         validator = TableUpdateValidator.make(timeTable);
     }
 
     private void tick(long tm) {
-        now.setValue(tm);
+        clock.now = tm;
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         validator.validate();
     }

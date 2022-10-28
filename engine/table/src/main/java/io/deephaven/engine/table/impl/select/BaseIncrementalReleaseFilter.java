@@ -106,7 +106,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      * Callback that is executed when all of our expected rows have been released.
      */
     void onReleaseAll() {
-        releaseAllNanos = DateTimeUtils.currentTime().getNanos();
+        releaseAllNanos = System.nanoTime();
         if (firstReleaseNanos == QueryConstants.NULL_LONG) {
             // there was no processing to do
             firstReleaseNanos = releaseAllNanos;
@@ -226,7 +226,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
             throw new IllegalStateException();
         }
         if (firstReleaseNanos == QueryConstants.NULL_LONG) {
-            firstReleaseNanos = DateTimeUtils.currentTime().getNanos();
+            firstReleaseNanos = System.nanoTime();
         }
         releaseMoreEntries = true;
         listener.requestRecompute();

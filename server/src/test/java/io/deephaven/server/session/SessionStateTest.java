@@ -63,7 +63,7 @@ public class SessionStateTest {
         scheduler = new TestControlledScheduler();
         session = new SessionState(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                DateTimeUtils.nanosToTime(Long.MAX_VALUE), session));
+                DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session));
         nextExportId = 1;
     }
 
@@ -638,9 +638,8 @@ public class SessionStateTest {
     @Test
     public void testVerifyExpirationSession() {
         final SessionState session = new SessionState(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
-        final SessionService.TokenExpiration expiration =
-                new SessionService.TokenExpiration(UUID.randomUUID(), DateTimeUtils.nanosToTime(Long.MAX_VALUE),
-                        session);
+        final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(),
+                DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
         expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
     }
@@ -656,7 +655,7 @@ public class SessionStateTest {
     @Test
     public void testExpiredByTime() {
         session.updateExpiration(
-                new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTime(), session));
+                new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTimeMillis(), session));
         Assert.eqNull(session.getExpiration(), "session.getExpiration()"); // already expired
         expectException(StatusRuntimeException.class, () -> session.newServerSideExport(new Object()));
         expectException(StatusRuntimeException.class, () -> session.nonExport());

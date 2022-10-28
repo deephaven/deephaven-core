@@ -2373,7 +2373,9 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testDateTimeColumns() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 c("Sym", "aa", "bc", "aa", "aa"),
-                c("Timestamp", DateTimeUtils.currentTime(), DateTimeUtils.currentTime(), DateTimeUtils.currentTime(),
+                c("Timestamp", DateTimeUtils.currentTime(),
+                        DateTimeUtils.currentTime(),
+                        DateTimeUtils.currentTime(),
                         DateTimeUtils.currentTime()));
         assertEquals(queryTable.groupBy("Sym").getDefinition().getColumn("Timestamp").getComponentType(),
                 DateTime.class);

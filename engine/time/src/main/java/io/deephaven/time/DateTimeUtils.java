@@ -4,6 +4,7 @@
 package io.deephaven.time;
 
 import io.deephaven.base.StringUtils;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.TimeConstants;
 import io.deephaven.base.clock.TimeZones;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -13,6 +14,7 @@ import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
+import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTimeZone;
@@ -26,6 +28,7 @@ import java.time.temporal.ChronoField;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,9 +80,6 @@ public class DateTimeUtils {
     private static final Pattern PERIOD_PATTERN = Pattern.compile(
             "\\-?([0-9]+[Yy])?([0-9]+[Mm])?([0-9]+[Ww])?([0-9]+[Dd])?(T([0-9]+[Hh])?([0-9]+[Mm])?([0-9]+[Ss])?)?");
     private static final String DATE_COLUMN_PARTITION_FORMAT_STRING = "yyyy-MM-dd";
-
-    private static final boolean ENABLE_MICROTIME_HACK =
-            Configuration.getInstance().getBooleanWithDefault("DateTimeUtils.enableMicrotimeHack", false);
 
     /**
      * Date formatting styles for use in conversion functions such as {@link #convertDateQuiet(String, DateStyle)}.
@@ -170,11 +170,12 @@ public class DateTimeUtils {
     @SuppressWarnings("WeakerAccess")
     public static String lastBusinessDayNyOverride;
 
+    // TODO(deephaven-core#3044): Improve scaffolding around full system replay
     /**
-     * Allows setting a custom time provider instead of actual current time. This is mainly used when setting up for a
-     * replay simulation.
+     * Allows setting a custom clock instead of actual current time. This is mainly used when setting up for a replay
+     * simulation.
      */
-    public static TimeProvider timeProvider;
+    public static Clock clock;
 
     /**
      * Returns milliseconds since Epoch for a {@link DateTime} value.
@@ -1162,12 +1163,7 @@ public class DateTimeUtils {
         if (millis == io.deephaven.util.QueryConstants.NULL_LONG) {
             return io.deephaven.util.QueryConstants.NULL_LONG;
         }
-        if (ENABLE_MICROTIME_HACK) {
-            // hack hack, check to see if this is actually microtime
-            if (millis > TimeConstants.MICROTIME_THRESHOLD) {
-                return millis * 1000;
-            }
-        } else if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
+        if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
             throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
         }
         return millis * 1000000;
@@ -1230,17 +1226,31 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date/time, or, if a custom {@link #timeProvider} has been configured, provides the current
-     * time according to the custom provider.
+     * Returns the current clock. The current clock is {@link #clock} if set, otherwise {@link Clock#system()}.
      *
-     * @return A {@link DateTime} of the current date and time from the system or from the configured alternate time
-     *         provider.
+     * @return the current clock
      */
+    public static Clock currentClock() {
+        return Objects.requireNonNullElse(clock, Clock.system());
+    }
+
+    /**
+     * Equivalent to {@code DateTime.of(currentClock())}.
+     *
+     * @return the current date time
+     */
+    @ScriptApi
     public static DateTime currentTime() {
-        if (timeProvider != null) {
-            return timeProvider.currentTime();
-        }
-        return DateTime.now();
+        return DateTime.of(currentClock());
+    }
+
+    /**
+     * Equivalent to {@code DateTime.ofMillis(currentClock())}.
+     *
+     * @return the current date time
+     */
+    public static DateTime currentTimeMillis() {
+        return DateTime.ofMillis(currentClock());
     }
 
     // TODO: Revoke public access to these fields and retire them! Use getCurrentDate(), maybe hold on to the

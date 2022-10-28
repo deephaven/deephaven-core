@@ -32,7 +32,8 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
         RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
         // List<IteratorsAndNextTime> iteratorsToAddBack = new ArrayList<>(allIterators.size());
-        while (!allIterators.isEmpty() && allIterators.peek().lastTime.getNanos() < replayer.currentTimeNanos()) {
+        while (!allIterators.isEmpty()
+                && allIterators.peek().lastTime.getNanos() < replayer.clock().currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
             rowRedirection.put(currentIt.pos, currentIt.lastIndex);
             if (getRowSet().find(currentIt.pos) >= 0) {
@@ -42,7 +43,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
             }
             do {
                 currentIt = currentIt.next();
-            } while (currentIt != null && currentIt.lastTime.getNanos() < replayer.currentTimeNanos());
+            } while (currentIt != null && currentIt.lastTime.getNanos() < replayer.clock().currentTimeNanos());
             if (currentIt != null) {
                 allIterators.add(currentIt);
             }

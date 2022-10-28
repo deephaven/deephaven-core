@@ -39,7 +39,7 @@ public abstract class TimeTable extends TableBase {
      * @return the time table
      */
     public static TimeTable of(Duration interval) {
-        return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(interval)
+        return builder().clock(ClockSystem.INSTANCE).interval(interval)
                 .id(UUID.randomUUID()).build();
     }
 
@@ -51,14 +51,14 @@ public abstract class TimeTable extends TableBase {
      * @return the time table
      */
     public static TimeTable of(Duration interval, Instant startTime) {
-        return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(interval)
+        return builder().clock(ClockSystem.INSTANCE).interval(interval)
                 .startTime(startTime).id(ZERO_UUID).build();
     }
 
     // Note: if new "of(...)" static methods are added here, they should likely be added to
     // TableCreator.
 
-    public abstract TimeProvider timeProvider();
+    public abstract Clock clock();
 
     public abstract Duration interval();
 
@@ -80,7 +80,7 @@ public abstract class TimeTable extends TableBase {
     }
 
     interface Builder {
-        Builder timeProvider(TimeProvider timeProvider);
+        Builder clock(Clock clock);
 
         Builder interval(Duration interval);
 
