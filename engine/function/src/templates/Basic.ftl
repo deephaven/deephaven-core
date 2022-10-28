@@ -660,7 +660,7 @@ public class Basic {
             return null;
         }
 
-        final int n = values.intSize("reverse");
+        final int n = values.intSize("reverseObj");
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(values.getComponentType(), n);
 
         for (int i=0; i<n; i++) {
@@ -1746,7 +1746,7 @@ public class Basic {
             return null;
         }
 
-        final int n = values.intSize("reverse");
+        final int n = values.intSize("forwardFill");
         final ${pt.primitive}[] result = new ${pt.primitive}[n];
 
         ${pt.primitive} lastGood = QueryConstants.${pt.null};

@@ -525,7 +525,7 @@ public class Numeric {
 
         final long n = values.size();
 
-        if (n != weights.size()} {
+        if (n != weights.size()) {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
@@ -757,7 +757,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        if (values.size() != weights.size()} {
+        if (values.size() != weights.size()) {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
@@ -770,7 +770,7 @@ public class Numeric {
             final ${pt.primitive} v = values.get(i);
             final ${pt2.primitive} w = weights.get(i);
 
-            if (!isNull(v) && !isNull(w)} {
+            if (!isNull(v) && !isNull(w)) {
                 sumw += w;
                 sumw2 += w*w;
             }
@@ -1125,7 +1125,7 @@ public class Numeric {
      * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
     public static double percentile(double percentile, ${pt.primitive}... values) {
-        if (values == null || values.length == 0} {
+        if (values == null || values.length == 0) {
             return NULL_DOUBLE;
         }
 
@@ -1140,7 +1140,7 @@ public class Numeric {
      * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
     public static double percentile(double percentile, ${pt.dbArray} values) {
-        if (values == null || values.isEmpty()} {
+        if (values == null || values.isEmpty()) {
             return NULL_DOUBLE;
         }
 
@@ -1390,7 +1390,7 @@ public class Numeric {
             }
         }
 
-        if (count == 0} {
+        if (count == 0) {
             return ${pt.null};
         }
 
@@ -2072,7 +2072,7 @@ public class Numeric {
 
         final long n = values.size();
 
-        if (n != weights.size()} {
+        if (n != weights.size()) {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
@@ -2148,7 +2148,7 @@ public class Numeric {
 
         final long n = values.size();
 
-        if (n != weights.size()} {
+        if (n != weights.size()) {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
@@ -2191,7 +2191,7 @@ public class Numeric {
 
         final ${pt.primitive}[] result = new ${pt.primitive}[n+1];
 
-        for (int i=0; i<=n; i++} {
+        for (int i=0; i<=n; i++) {
             result[i] = (${pt.primitive})(start + i*step);
         }
 
