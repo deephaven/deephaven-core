@@ -29,7 +29,9 @@ message ConfigurationConstantsResponse {
 }
 
 message ConfigValue {
-  oneof kind {//leave room for more types
-    string string_value = 2;
+  // Using a oneof leaves room for more types. The string_value tag is used here to allow for "interop" with
+  // struct.proto.
+  oneof kind {
+    string string_value = 3;
   }
 }
