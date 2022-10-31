@@ -272,6 +272,9 @@ message FigureDescriptor {
         string legend_color = 12;
 
         bool is3d = 13;
+
+        int32 column = 14;
+        int32 row = 15;
     }
 
     enum SeriesPlotStyle {
