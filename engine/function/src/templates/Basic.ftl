@@ -870,6 +870,62 @@ public class Basic {
         return result;
     }
 
+    /**
+     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
+     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
+     * with null.
+     *
+     * @param values values.
+     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the specified
+     *         array is null, returns null.
+     */
+    public static <T> T[] forwardFillObj(ObjectVector<T> values) {
+        if (values == null) {
+            return null;
+        }
+
+        final int n = values.intSize("forwardFill");
+        final T[] result = values.toArray();
+
+        T lastGood = null;
+        for (int ii = 0; ii < n; ii++) {
+            if (!isNull(values.get(ii))) {
+                lastGood = values.get(ii);
+            }
+
+            result[ii] = lastGood;
+        }
+        return result;
+    }
+
+    /**
+     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
+     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
+     * with null.
+     *
+     * @param values values.
+     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the specified
+     *         array is null, returns null.
+     */
+    public static Boolean[] forwardFillObj(BooleanVector values) {
+        if (values == null) {
+            return null;
+        }
+
+        final int n = values.intSize("forwardFill");
+        final Boolean[] result = values.toArray();
+
+        Boolean lastGood = null;
+        for (int ii = 0; ii < n; ii++) {
+            if (!isNull(values.get(ii))) {
+                lastGood = values.get(ii);
+            }
+
+            result[ii] = lastGood;
+        }
+        return result;
+    }
+
     <#list primitiveTypes as pt>
     <#if !pt.valueType.isBoolean >
 
