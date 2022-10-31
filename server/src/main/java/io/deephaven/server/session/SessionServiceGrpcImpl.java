@@ -72,7 +72,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             responseObserver.onNext(HandshakeResponse.newBuilder()
                     .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
                     .setSessionToken(session.getExpiration().getBearerTokenAsByteString())
-                    .setTokenDeadlineTimeMillis(session.getExpiration().deadline.getMillis())
+                    .setTokenDeadlineTimeMillis(session.getExpiration().deadlineMillis)
                     .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
                     .build());
 
@@ -97,7 +97,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             responseObserver.onNext(HandshakeResponse.newBuilder()
                     .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
                     .setSessionToken(expiration.getBearerTokenAsByteString())
-                    .setTokenDeadlineTimeMillis(expiration.deadline.getMillis())
+                    .setTokenDeadlineTimeMillis(expiration.deadlineMillis)
                     .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
                     .build());
 

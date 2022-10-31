@@ -8,13 +8,13 @@ import java.io.Serializable;
 /**
  * The time provider for a {@link TimeTable}.
  *
- * @see TimeProviderSystem
+ * @see ClockSystem
  */
-public interface TimeProvider extends Serializable {
+public interface Clock extends Serializable {
 
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
-        void visit(TimeProviderSystem system);
+        void visit(ClockSystem system);
     }
 }

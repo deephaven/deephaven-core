@@ -497,9 +497,11 @@ public class FigureWidgetTranslator {
 
         clientChart.setChartType(FigureDescriptor.ChartDescriptor.ChartType.valueOf(chart.getChartType().name()));
         clientChart.setColspan(chart.colSpan());
+        clientChart.setColumn(chart.column());
         assignOptionalField(toCssColorString(chart.getLegendColor()), clientChart::setLegendColor,
                 clientChart::clearLegendColor);
         assignOptionalField(toCssFont(chart.getLegendFont()), clientChart::setLegendFont, clientChart::clearLegendFont);
+        clientChart.setRow(chart.row());
         clientChart.setRowspan(chart.rowSpan());
         clientChart.setShowLegend(chart.isShowLegend());
         assignOptionalField(chart.getTitle(), clientChart::setTitle, clientChart::clearTitle);

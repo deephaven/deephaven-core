@@ -963,7 +963,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // copy lastUpdateTime so we are not duped by the re-read
         final long localLastUpdateTime = lastUpdateTime;
-        final long now = scheduler.currentTime().getMillis();
+        final long now = scheduler.currentTimeMillis();
         final long msSinceLastUpdate = now - localLastUpdateTime;
         if (lastScheduledUpdateTime != 0 && lastScheduledUpdateTime > lastUpdateTime) {
             // an already scheduled update is coming up
@@ -1046,8 +1046,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
         }
 
-        public void scheduleAt(final long nextRunTime) {
-            scheduler.runAtTime(DateTimeUtils.millisToTime(nextRunTime), this);
+        public void scheduleAt(final long nextRunTimeMillis) {
+            scheduler.runAtTime(nextRunTimeMillis, this);
         }
     }
 
@@ -1093,7 +1093,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      */
 
     private void updateSubscriptionsSnapshotAndPropagate() {
-        lastUpdateTime = scheduler.currentTime().getMillis();
+        lastUpdateTime = scheduler.currentTimeMillis();
         if (DEBUG) {
             log.info().append(logPrefix).append("Starting update job at " + lastUpdateTime).endl();
         }
@@ -1504,7 +1504,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             updatePropagationJob.scheduleImmediately();
         }
 
-        lastUpdateTime = scheduler.currentTime().getMillis();
+        lastUpdateTime = scheduler.currentTimeMillis();
         if (DEBUG) {
             log.info().append(logPrefix).append("Completed Propagation: " + lastUpdateTime);
         }
@@ -2262,11 +2262,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         public Stats(final String tableKey) {
             this.tableKey = tableKey;
-
-            final DateTime now = scheduler.currentTime();
-            final DateTime nextRun = DateTimeUtils.plus(now,
-                    DateTimeUtils.millisToNanos(BarragePerformanceLog.CYCLE_DURATION_MILLIS));
-            scheduler.runAtTime(nextRun, this);
+            scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
         }
 
         public void stop() {
@@ -2279,10 +2275,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 return;
             }
 
-            final DateTime now = scheduler.currentTime();
-            final DateTime nextRun = DateTimeUtils.millisToTime(
-                    now.getMillis() + BarragePerformanceLog.CYCLE_DURATION_MILLIS);
-            scheduler.runAtTime(nextRun, this);
+            final DateTime now = DateTime.ofMillis(scheduler);
+            scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
 
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();

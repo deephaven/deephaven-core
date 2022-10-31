@@ -94,8 +94,8 @@ import io.deephaven.qst.table.TableSchema;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
-import io.deephaven.qst.table.TimeProvider.Visitor;
-import io.deephaven.qst.table.TimeProviderSystem;
+import io.deephaven.qst.table.Clock.Visitor;
+import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.TimeTable;
 import io.deephaven.qst.table.UngroupTable;
 import io.deephaven.qst.table.UpdateByTable;
@@ -189,9 +189,9 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(TimeTable timeTable) {
             // noinspection Convert2Lambda
-            timeTable.timeProvider().walk(new Visitor() {
+            timeTable.clock().walk(new Visitor() {
                 @Override
-                public void visit(TimeProviderSystem system) {
+                public void visit(ClockSystem system) {
                     // Even though this is functionally a no-op at the moment, it's good practice to
                     // include this visitor here since the number of TimeProvider implementations is
                     // expected to expand in the future.

@@ -31,9 +31,7 @@ def createApplication = { String name, String mainClass ->
         script.classpath = startScripts.classpath
         script.defaultJvmOpts = [
                 '-server',
-                '-XX:+UseG1GC',
-                '-XX:MaxGCPauseMillis=100',
-                '-XX:+UseStringDeduplication' ]
+        ]
     }
 }
 

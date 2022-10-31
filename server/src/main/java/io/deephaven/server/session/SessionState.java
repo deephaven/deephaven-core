@@ -58,6 +58,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 
@@ -176,7 +177,7 @@ public class SessionState {
 
         log.info().append(logPrefix)
                 .append("token initialized to '").append(expiration.token.toString())
-                .append("' which expires at ").append(expiration.deadline.toString())
+                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
                 .append(".").endl();
     }
 
@@ -205,7 +206,7 @@ public class SessionState {
 
         log.info().append(logPrefix)
                 .append("token rotating to '").append(expiration.token.toString())
-                .append("' which expires at ").append(expiration.deadline.toString())
+                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
                 .append(".").endl();
     }
 
@@ -224,7 +225,7 @@ public class SessionState {
      */
     public boolean isExpired() {
         final SessionService.TokenExpiration currToken = expiration;
-        return currToken == null || currToken.deadline.compareTo(scheduler.currentTime()) <= 0;
+        return currToken == null || currToken.deadlineMillis <= scheduler.currentTimeMillis();
     }
 
     /**

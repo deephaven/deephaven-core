@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -17,7 +18,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.table.impl.replay.Replayer;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -27,13 +27,13 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.deephaven.util.type.TypeUtils.box;
 
@@ -47,7 +47,7 @@ public class TimeTable extends QueryTable implements Runnable {
 
     public static class Builder {
         private UpdateSourceRegistrar registrar = UpdateGraphProcessor.DEFAULT;
-        private TimeProvider timeProvider;
+        private Clock clock;
         private DateTime startTime;
         private long period;
         private boolean streamTable;
@@ -57,8 +57,8 @@ public class TimeTable extends QueryTable implements Runnable {
             return this;
         }
 
-        public Builder timeProvider(TimeProvider timeProvider) {
-            this.timeProvider = timeProvider;
+        public Builder clock(Clock clock) {
+            this.clock = clock;
             return this;
         }
 
@@ -89,7 +89,7 @@ public class TimeTable extends QueryTable implements Runnable {
 
         public QueryTable build() {
             return new TimeTable(registrar,
-                    timeProvider == null ? Replayer.getTimeProvider(null) : timeProvider,
+                    Objects.requireNonNullElse(clock, DateTimeUtils.currentClock()),
                     startTime, period, streamTable);
         }
     }
@@ -101,18 +101,18 @@ public class TimeTable extends QueryTable implements Runnable {
     private static final String TIMESTAMP = "Timestamp";
     private long lastIndex = -1;
     private final SyntheticDateTimeSource columnSource;
-    private final TimeProvider timeProvider;
+    private final Clock clock;
     private final PerformanceEntry entry;
     private final boolean isStreamTable;
 
-    public TimeTable(UpdateSourceRegistrar registrar, TimeProvider timeProvider,
+    public TimeTable(UpdateSourceRegistrar registrar, Clock clock,
             @Nullable DateTime startTime, long period, boolean isStreamTable) {
         super(RowSetFactory.empty().toTracking(), initColumn(startTime, period));
         this.isStreamTable = isStreamTable;
         final String name = isStreamTable ? "TimeTableStream" : "TimeTable";
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + startTime + "," + period + ")");
         columnSource = (SyntheticDateTimeSource) getColumnSourceMap().get(TIMESTAMP);
-        this.timeProvider = timeProvider;
+        this.clock = clock;
         if (isStreamTable) {
             setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
         } else {
@@ -140,7 +140,7 @@ public class TimeTable extends QueryTable implements Runnable {
     private void refresh(final boolean notifyListeners) {
         entry.onUpdateStart();
         try {
-            final DateTime dateTime = timeProvider.currentTime();
+            final DateTime dateTime = DateTime.of(clock);
             long rangeStart = lastIndex + 1;
             if (columnSource.startTime == null) {
                 lastIndex = 0;

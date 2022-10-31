@@ -132,7 +132,7 @@ public class TestChunkedRegionedOperations {
     @Before
     public void setUp() throws Exception {
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        queryScope.putParam("nowNanos", DateTimeUtils.currentTime().getNanos());
+        queryScope.putParam("nowNanos", DateTimeUtils.currentClock().currentTimeNanos());
         queryScope.putParam("letters",
                 IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
         queryScope.putParam("emptySymbolSet", new ArrayStringSet());

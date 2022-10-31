@@ -343,7 +343,7 @@ public class ExportTableUpdateListenerTest {
         public TestSessionState() {
             super(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                    DateTimeUtils.nanosToTime(Long.MAX_VALUE), this));
+                    DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), this));
         }
     }
 

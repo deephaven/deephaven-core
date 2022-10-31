@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.replay;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
@@ -13,18 +14,16 @@ import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Objects;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-
-import static io.deephaven.time.DateTimeUtils.millisToNanos;
-import static io.deephaven.time.DateTimeUtils.nanosToTime;
 
 /**
  * Replay historical data as simulated real-time data.
@@ -34,16 +33,11 @@ public class Replayer implements ReplayerInterface, Runnable {
 
     protected DateTime startTime;
     protected DateTime endTime;
-    private long delta = Long.MAX_VALUE;
+    private long deltaNanos = Long.MAX_VALUE;
     private CopyOnWriteArrayList<Runnable> currentTables = new CopyOnWriteArrayList<>();
     private volatile boolean done;
     private boolean lastLap;
-    private final ReplayerHandle handle = new ReplayerHandle() {
-        @Override
-        public Replayer getReplayer() {
-            return Replayer.this;
-        }
-    };
+    private final ReplayerHandle handle = () -> Replayer.this;
 
     // Condition variable for use with UpdateGraphProcessor lock - the object monitor is no longer used
     private final Condition ugpCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
@@ -65,7 +59,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void start() {
-        delta = nanosToTime(millisToNanos(System.currentTimeMillis())).getNanos() - startTime.getNanos();
+        deltaNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - startTime.getNanos();
         for (Runnable currentTable : currentTables) {
             UpdateGraphProcessor.DEFAULT.addSource(currentTable);
         }
@@ -88,7 +82,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void shutdown() throws IOException {
-        endTime = currentTime();
+        endTime = DateTime.of(clock());
         if (done) {
             return;
         }
@@ -148,12 +142,12 @@ public class Replayer implements ReplayerInterface, Runnable {
      * Schedule a task to execute.
      *
      * @param task task to execute
-     * @param delay delay in milliseconds before first executing the task
-     * @param period frequency in milliseconds to execute the task.
+     * @param delayMillis delay in milliseconds before first executing the task
+     * @param periodMillis frequency in milliseconds to execute the task.
      */
     @Override
-    public void schedule(TimerTask task, long delay, long period) {
-        timerTasks.add(new PeriodicTask(task, delay, period));
+    public void schedule(TimerTask task, long delayMillis, long periodMillis) {
+        timerTasks.add(new PeriodicTask(task, delayMillis, periodMillis));
     }
 
     /**
@@ -162,47 +156,8 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @param replayer replayer
      * @return time provider that returns the current replay time.
      */
-    public static TimeProvider getTimeProvider(final ReplayerInterface replayer) {
-        return replayer == null ? new TimeProvider() {
-            @Override
-            public DateTime currentTime() {
-                return DateTimeUtils.currentTime();
-            }
-        } : new TimeProvider() {
-            @Override
-            public DateTime currentTime() {
-                try {
-                    return replayer.currentTime();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
-    }
-
-    /**
-     * Simulated time in nanoseconds.
-     *
-     * @return simulated time in nanoseconds.
-     */
-    public long currentTimeNanos() {
-        return currentTime().getNanos();
-    }
-
-    /**
-     * Simulated time.
-     *
-     * @return simulated time.
-     */
-    @Override
-    public DateTime currentTime() {
-        if (delta == Long.MAX_VALUE)
-            return startTime;
-        final DateTime result = DateTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
-        if (result.getNanos() > endTime.getNanos()) {
-            return endTime;
-        }
-        return result;
+    public static Clock getClock(final ReplayerInterface replayer) {
+        return replayer == null ? DateTimeUtils.currentClock() : replayer.clock();
     }
 
     /**
@@ -212,12 +167,12 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void setTime(long updatedTime) {
-        if (delta == Long.MAX_VALUE) {
+        if (deltaNanos == Long.MAX_VALUE) {
             startTime = DateTimeUtils.millisToTime(updatedTime);
         } else {
-            long adjustment = updatedTime - currentTime().getMillis();
+            long adjustment = updatedTime - clock().currentTimeMillis();
             if (adjustment > 0) {
-                delta = delta - adjustment * 1000000;
+                deltaNanos = deltaNanos - DateTimeUtils.millisToNanos(adjustment);
             }
         }
     }
@@ -234,7 +189,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         final ReplayTable result =
                 new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
-        if (delta < Long.MAX_VALUE) {
+        if (deltaNanos < Long.MAX_VALUE) {
             UpdateGraphProcessor.DEFAULT.addSource(result);
         }
         return result;
@@ -254,7 +209,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getRowSet(),
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
-        if (delta < Long.MAX_VALUE) {
+        if (deltaNanos < Long.MAX_VALUE) {
             UpdateGraphProcessor.DEFAULT.addSource(result);
         }
         return result;
@@ -273,7 +228,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getRowSet(),
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);
-        if (delta < Long.MAX_VALUE) {
+        if (deltaNanos < Long.MAX_VALUE) {
             UpdateGraphProcessor.DEFAULT.addSource(result);
         }
         return result;
@@ -296,7 +251,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void run() {
         for (PeriodicTask timerTask : timerTasks) {
-            timerTask.next(currentTime());
+            timerTask.next(DateTime.of(clock()));
         }
 
         if (lastLap) {
@@ -306,7 +261,7 @@ public class Replayer implements ReplayerInterface, Runnable {
                 e.printStackTrace();
             }
         }
-        if (currentTime().compareTo(endTime) >= 0) {
+        if (DateTime.of(clock()).compareTo(endTime) >= 0) {
             lastLap = true;
         }
     }
@@ -314,24 +269,24 @@ public class Replayer implements ReplayerInterface, Runnable {
     private static class PeriodicTask {
 
         private final TimerTask task;
-        private final long delay;
-        private final long period;
+        private final long delayMillis;
+        private final long periodMillis;
         DateTime nextTime = null;
 
-        public PeriodicTask(TimerTask task, long delay, long period) {
+        public PeriodicTask(TimerTask task, long delayMillis, long periodMillis) {
             this.task = task;
-            this.delay = delay;
-            this.period = period;
+            this.delayMillis = delayMillis;
+            this.periodMillis = periodMillis;
         }
 
         public void next(DateTime currentTime) {
             if (nextTime == null) {
-                nextTime = DateTimeUtils.plus(currentTime, delay * 1000000);
+                nextTime = DateTimeUtils.plus(currentTime, DateTimeUtils.millisToNanos(delayMillis));
             } else {
                 if (nextTime.getNanos() < currentTime.getNanos()) {
                     try {
                         task.run();
-                        nextTime = DateTimeUtils.plus(currentTime, period * 1000000);
+                        nextTime = DateTimeUtils.plus(currentTime, DateTimeUtils.millisToNanos(periodMillis));
                     } catch (Error e) {
                         log.error(e).append("Error").endl();
                     }
@@ -340,7 +295,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         }
     }
 
-    private CopyOnWriteArrayList<PeriodicTask> timerTasks = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<PeriodicTask> timerTasks = new CopyOnWriteArrayList<>();
 
     /**
      * Gets a handle to the replayer.
@@ -350,5 +305,53 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public ReplayerHandle getHandle() {
         return handle;
+    }
+
+    @Override
+    public Clock clock() {
+        return new ClockImpl();
+    }
+
+    private class ClockImpl implements Clock {
+        @Override
+        public long currentTimeMillis() {
+            return DateTimeUtils.nanosToMillis(currentTimeNanos());
+        }
+
+        @Override
+        public long currentTimeMicros() {
+            return DateTimeUtils.nanosToMicros(currentTimeNanos());
+        }
+
+        /**
+         * Simulated time in nanoseconds.
+         *
+         * @return simulated time in nanoseconds.
+         */
+        @Override
+        public long currentTimeNanos() {
+            if (deltaNanos == Long.MAX_VALUE) {
+                return startTime.getNanos();
+            }
+            final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
+            return Math.min(resultNanos, endTime.getNanos());
+        }
+
+        @Override
+        public Instant instantNanos() {
+            if (deltaNanos == Long.MAX_VALUE) {
+                return startTime.getInstant();
+            }
+            final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
+            if (resultNanos >= endTime.getNanos()) {
+                return endTime.getInstant();
+            }
+            return Instant.ofEpochSecond(0, resultNanos);
+        }
+
+        @Override
+        public Instant instantMillis() {
+            return instantNanos();
+        }
     }
 }

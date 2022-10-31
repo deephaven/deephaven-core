@@ -3,6 +3,7 @@
  */
 package io.deephaven.kafka.publish;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
@@ -331,19 +332,17 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     }
 
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
-        private final long fromNanosToUnitDenominator;
+        private final TimeUnit unit;
 
         public TimestampFieldProcessor(final String fieldName, final TimeUnit unit) {
             super(fieldName);
             switch (unit) {
                 case MICROSECONDS:
-                    fromNanosToUnitDenominator = 1000;
-                    break;
                 case MILLISECONDS:
-                    fromNanosToUnitDenominator = 1000 * 1000;
+                    this.unit = unit;
                     break;
                 default:
-                    throw new IllegalStateException("Unit not supported: " + unit);
+                    throw new IllegalArgumentException("Unit not supported: " + unit);
             }
         }
 
@@ -358,9 +357,19 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 final WritableObjectChunk<GenericRecord, Values> avroChunk,
                 final RowSequence keys,
                 final boolean isRemoval) {
-            final long nanos = DateTime.now().getNanos();
+            final long unitTime;
+            switch (unit) {
+                case MICROSECONDS:
+                    unitTime = Clock.system().currentTimeMicros();
+                    break;
+                case MILLISECONDS:
+                    unitTime = Clock.system().currentTimeMillis();
+                    break;
+                default:
+                    throw new IllegalStateException();
+            }
             for (int ii = 0; ii < avroChunk.size(); ++ii) {
-                avroChunk.get(ii).put(fieldName, nanos / fromNanosToUnitDenominator);
+                avroChunk.get(ii).put(fieldName, unitTime);
             }
         }
     }

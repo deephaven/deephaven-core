@@ -6,10 +6,10 @@ package io.deephaven.kafka.publish;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
@@ -346,7 +346,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                 final WritableObjectChunk<ObjectNode, Values> jsonChunk,
                 final RowSequence keys,
                 final boolean isRemoval) {
-            final String nanosString = String.valueOf(DateTime.now().getNanos());
+            final String nanosString = String.valueOf(Clock.system().currentTimeNanos());
             for (int ii = 0; ii < jsonChunk.size(); ++ii) {
                 getChildNode(jsonChunk.get(ii)).put(childNodeFieldName, nanosString);
             }

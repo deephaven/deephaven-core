@@ -11,7 +11,6 @@ import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable;
 import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
@@ -22,8 +21,8 @@ import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableSchema;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
-import io.deephaven.qst.table.TimeProvider;
-import io.deephaven.qst.table.TimeProviderSystem;
+import io.deephaven.qst.table.Clock;
+import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.TimeTable;
 
 import java.util.Objects;
@@ -63,10 +62,9 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
     @Override
     public final Table of(TimeTable timeTable) {
-        final io.deephaven.time.TimeProvider provider = TimeProviderAdapter
-                .of(timeTable.timeProvider());
+        final io.deephaven.base.clock.Clock clock = ClockAdapter.of(timeTable.clock());
         final DateTime firstTime = timeTable.startTime().map(DateTime::of).orElse(null);
-        return TableTools.timeTable(provider, firstTime, timeTable.interval().toNanos());
+        return TableTools.timeTable(clock, firstTime, timeTable.interval().toNanos());
     }
 
     @Override
@@ -138,23 +136,21 @@ public enum TableCreatorImpl implements TableCreator<Table> {
         return TableTools.merge(tables);
     }
 
-    static class TimeProviderAdapter implements TimeProvider.Visitor {
+    static class ClockAdapter implements Clock.Visitor {
 
-        public static io.deephaven.time.TimeProvider of(TimeProvider provider) {
-            return provider.walk(new TimeProviderAdapter()).getOut();
+        public static io.deephaven.base.clock.Clock of(Clock provider) {
+            return provider.walk(new ClockAdapter()).getOut();
         }
 
-        private static final io.deephaven.time.TimeProvider SYSTEM_PROVIDER = DateTimeUtils::currentTime;
+        private io.deephaven.base.clock.Clock out;
 
-        private io.deephaven.time.TimeProvider out;
-
-        public io.deephaven.time.TimeProvider getOut() {
+        public io.deephaven.base.clock.Clock getOut() {
             return Objects.requireNonNull(out);
         }
 
         @Override
-        public void visit(TimeProviderSystem system) {
-            out = SYSTEM_PROVIDER;
+        public void visit(ClockSystem system) {
+            out = io.deephaven.base.clock.Clock.system();
         }
     }
 

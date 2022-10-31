@@ -14,6 +14,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -106,8 +107,10 @@ public abstract class FlightMessageRoundTripTest {
 
         @Provides
         Scheduler provideScheduler() {
-            return new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(),
-                    Executors.newScheduledThreadPool(1));
+            return new Scheduler.DelegatingImpl(
+                    Executors.newSingleThreadExecutor(),
+                    Executors.newScheduledThreadPool(1),
+                    Clock.system());
         }
 
         @Provides

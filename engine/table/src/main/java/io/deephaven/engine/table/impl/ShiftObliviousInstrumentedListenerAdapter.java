@@ -78,7 +78,8 @@ public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObl
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         try {
-            AsyncErrorLogger.log(DateTimeUtils.currentTime(), sourceEntry, sourceEntry, originalException);
+            AsyncErrorLogger.log(DateTimeUtils.currentTimeMillis(), sourceEntry, sourceEntry,
+                    originalException);
             AsyncClientErrorNotifier.reportError(originalException);
         } catch (IOException e) {
             throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);

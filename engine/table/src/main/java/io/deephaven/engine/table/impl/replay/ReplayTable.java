@@ -50,11 +50,11 @@ public class ReplayTable extends QueryTable implements Runnable {
         if (nextTime < 0) {
             nextTime = timeSource.get(curr).getNanos();
         }
-        if (done || nextTime >= replayer.currentTimeNanos()) {
+        if (done || nextTime >= replayer.clock().currentTimeNanos()) {
             return;
         }
         RowSetBuilderRandom indexBuilder = RowSetFactory.builderRandom();
-        while (!done && nextTime < replayer.currentTimeNanos()) {
+        while (!done && nextTime < replayer.clock().currentTimeNanos()) {
             indexBuilder.addKey(curr);
             if (indexIterator.hasNext()) {
                 curr = indexIterator.nextLong();
