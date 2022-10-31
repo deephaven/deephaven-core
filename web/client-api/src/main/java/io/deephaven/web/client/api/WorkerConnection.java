@@ -36,6 +36,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
@@ -186,6 +187,7 @@ public class WorkerConnection {
     private ObjectServiceClient objectServiceClient;
     private PartitionedTableServiceClient partitionedTableServiceClient;
     private StorageServiceClient storageServiceClient;
+    private ConfigServiceClient configServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -230,6 +232,7 @@ public class WorkerConnection {
         partitionedTableServiceClient =
                 new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         storageServiceClient = new StorageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        configServiceClient = new ConfigServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -936,6 +939,10 @@ public class WorkerConnection {
 
     public StorageServiceClient storageServiceClient() {
         return storageServiceClient;
+    }
+
+    public ConfigServiceClient configServiceClient() {
+        return configServiceClient;
     }
 
     public BrowserHeaders metadata() {
