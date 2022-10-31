@@ -14,9 +14,16 @@ import java.nio.channels.ReadableByteChannel;
  * only removes the last-modified value, but a future version could provide a "real" weak/strong etag.
  */
 public class ControlledCacheResource extends Resource {
+    public static ControlledCacheResource wrap(Resource wrapped) {
+        if (wrapped instanceof ControlledCacheResource) {
+            return (ControlledCacheResource) wrapped;
+        }
+        return new ControlledCacheResource(wrapped);
+    }
+
     private final Resource wrapped;
 
-    public ControlledCacheResource(Resource wrapped) {
+    private ControlledCacheResource(Resource wrapped) {
         this.wrapped = wrapped;
     }
 
@@ -96,7 +103,7 @@ public class ControlledCacheResource extends Resource {
     @Override
     public Resource addPath(String path) throws IOException, MalformedURLException {
         // Re-wrap any instance that might be returned
-        return new ControlledCacheResource(wrapped.addPath(path));
+        return wrap(wrapped.addPath(path));
     }
 
     @Override

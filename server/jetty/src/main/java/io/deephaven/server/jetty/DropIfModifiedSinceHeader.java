@@ -53,6 +53,22 @@ public class DropIfModifiedSinceHeader extends HttpFilter {
         }
 
         @Override
+        public long getDateHeader(String name) {
+            if (name.equalsIgnoreCase(headerToRemove)) {
+                return -1;
+            }
+            return super.getDateHeader(name);
+        }
+
+        @Override
+        public int getIntHeader(String name) {
+            if (name.equalsIgnoreCase(headerToRemove)) {
+                return -1;
+            }
+            return super.getIntHeader(name);
+        }
+
+        @Override
         public Enumeration<String> getHeaders(String name) {
             if (name.equalsIgnoreCase(headerToRemove)) {
                 return Collections.emptyEnumeration();
