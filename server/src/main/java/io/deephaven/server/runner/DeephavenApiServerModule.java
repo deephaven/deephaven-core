@@ -11,6 +11,7 @@ import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.notebook.FilesystemStorageServiceModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.object.ObjectServiceModule;
@@ -62,6 +63,7 @@ import java.util.concurrent.TimeUnit;
         PartitionedTableServiceModule.class,
         FilesystemStorageServiceModule.class,
         HealthCheckModule.class,
+        ConfigServiceModule.class,
 })
 public class DeephavenApiServerModule {
 

@@ -71,7 +71,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
         try {
             String knownFile = "/ide/index.html";
             URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
-            context.setBaseResource(Resource.newResource(ide.toExternalForm().replace("!" + knownFile, "!/")));
+            Resource jarContents = Resource.newResource(ide.toExternalForm().replace("!" + knownFile, "!/"));
+            context.setBaseResource(ControlledCacheResource.wrap(jarContents));
         } catch (IOException ioException) {
             throw new UncheckedIOException(ioException);
         }
@@ -82,6 +83,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(NoCacheFilter.class, "/jsapi/*", EnumSet.noneOf(DispatcherType.class));
         context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
         context.addFilter(CacheFilter.class, "/ide/assets/*", EnumSet.noneOf(DispatcherType.class));
+        context.addFilter(DropIfModifiedSinceHeader.class, "/*", EnumSet.noneOf(DispatcherType.class));
 
         context.setSecurityHandler(new ConstraintSecurityHandler());
 
