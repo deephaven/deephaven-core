@@ -3,7 +3,6 @@
  */
 package io.deephaven.server.jetty;
 
-import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.CiphersIntermediate;
 import io.deephaven.ssl.config.ProtocolsIntermediate;
@@ -12,7 +11,6 @@ import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.servlet.web.websocket.GrpcWebsocket;
 import io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream;
-import io.grpc.servlet.web.websocket.MultiplexedWebsocketStreamImpl;
 import io.grpc.servlet.web.websocket.WebSocketServerStream;
 import io.grpc.servlet.jakarta.web.GrpcWebFilter;
 import jakarta.servlet.DispatcherType;
@@ -43,8 +41,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,7 +67,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
         try {
             String knownFile = "/ide/index.html";
             URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
-            context.setBaseResource(Resource.newResource(ide.toExternalForm().replace("!" + knownFile, "!/")));
+            Resource jarContents = Resource.newResource(ide.toExternalForm().replace("!" + knownFile, "!/"));
+            context.setBaseResource(new ControlledCacheResource(jarContents));
         } catch (IOException ioException) {
             throw new UncheckedIOException(ioException);
         }
