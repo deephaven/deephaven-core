@@ -852,7 +852,7 @@ public class Basic {
      *         array is null, returns null.
      */
     @SafeVarargs
-    public static <T> T[] forwardFillObj(final T[] values) {
+    public static <T> T[] forwardFillObj(final T... values) {
         if (values == null) {
             return null;
         }

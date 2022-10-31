@@ -1463,7 +1463,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.length == 0) {
+        if (values.size() == 0) {
             return new ${pt.primitive}[0];
         }
 
@@ -1530,7 +1530,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.length == 0) {
+        if (values.size() == 0) {
             return new ${pt.primitive}[0];
         }
 
