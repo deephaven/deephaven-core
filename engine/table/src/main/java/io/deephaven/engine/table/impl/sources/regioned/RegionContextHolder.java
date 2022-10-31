@@ -12,7 +12,7 @@ public class RegionContextHolder implements ChunkSource.FillContext {
     private final SharedContext sharedContext;
     private Object innerContext;
 
-    public RegionContextHolder(int chunkCapacity, SharedContext sharedContext) {
+    public RegionContextHolder(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
         this.chunkCapacity = chunkCapacity;
         this.sharedContext = sharedContext;
     }
@@ -22,20 +22,41 @@ public class RegionContextHolder implements ChunkSource.FillContext {
         return true;
     }
 
+    /**
+     * Set the inner wrapped context object for use by downstream regions.
+     * 
+     * @param contextObject the context object.
+     */
     public void setInnerContext(@Nullable final Object contextObject) {
         this.innerContext = contextObject;
     }
 
+    /**
+     * Get the chunk capacity this holder was created with.
+     * 
+     * @return the desired chunk capacity.
+     */
     public int getChunkCapacity() {
         return chunkCapacity;
     }
 
+    /**
+     * Get the {@link SharedContext} this holder was created with.
+     * 
+     * @return the {@link SharedContext}
+     */
     public SharedContext getSharedContext() {
         return sharedContext;
     }
 
+    /**
+     * Get the inner context value set by {@link #setInnerContext(Object)} and cast it to the templated type.
+     * 
+     * @return the inner context value.
+     * @param <T> the desired result type.
+     */
     public <T> T getInnerContext() {
-        //noinspection unchecked
-        return (T)innerContext;
+        // noinspection unchecked
+        return (T) innerContext;
     }
 }
