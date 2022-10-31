@@ -851,6 +851,7 @@ public class Basic {
      * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the specified
      *         array is null, returns null.
      */
+    @SafeVarargs
     public static <T> T[] forwardFillObj(final T[] values) {
         if (values == null) {
             return null;

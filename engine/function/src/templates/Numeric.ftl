@@ -1411,6 +1411,15 @@ public class Numeric {
         return product(new ${pt.dbArrayDirect}(values));
     }
 
+    /**
+     * Returns the cumulative minimum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative min of non-null values.
+     */
+    public static ${pt.primitive}[] cummin(${pt.boxed}[] values) {
+        return cummin(unbox(values));
+    }
 
     /**
      * Returns the cumulative minimum.  Null values are excluded.
@@ -1444,6 +1453,48 @@ public class Numeric {
     }
 
     /**
+     * Returns the cumulative minimum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative min of non-null values.
+     */
+    public static ${pt.primitive}[] cummin(${pt.dbArray} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new ${pt.primitive}[0];
+        }
+
+        final int n = values.intSize("cummin");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
+        result[0] = values.get(0);
+
+        for (int i = 1; i < n; i++) {
+            if (isNull(result[i - 1])) {
+                result[i] = values.get(i);
+            } else if (isNull(values.get(i))) {
+                result[i] = result[i - 1];
+            } else {
+                result[i] = (${pt.primitive})Math.min(result[i - 1],  values.get(i));
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the cumulative maximum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative max of non-null values.
+     */
+    public static ${pt.primitive}[] cummax(${pt.boxed}[] values) {
+        return cummax(unbox(values));
+    }
+
+    /**
      * Returns the cumulative maximum.  Null values are excluded.
      *
      * @param values values.
@@ -1468,6 +1519,32 @@ public class Numeric {
         return result;
     }
 
+    /**
+     * Returns the cumulative maximum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative max of non-null values.
+     */
+    public static ${pt.primitive}[] cummax(${pt.dbArray} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new ${pt.primitive}[0];
+        }
+
+        final int n = values.intSize("cummax");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
+
+        result[0] = values.get(0);
+
+        for (int i = 1; i < n; i++) {
+            result[i] = compare(result[i-1], values.get(i)) > 0 ? result[i-1] : values.get(i);
+        }
+
+        return result;
+    }
 
    /**
      * Returns the cumulative sum.  Null values are excluded.
