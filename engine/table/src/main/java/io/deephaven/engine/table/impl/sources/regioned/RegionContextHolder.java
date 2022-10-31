@@ -4,13 +4,38 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
+import org.jetbrains.annotations.Nullable;
 
 public class RegionContextHolder implements ChunkSource.FillContext {
-    // Currently no column regions use a non-default context.
-    // If that changes, we'll need to add indirection and/or caching here, switching out contexts on region boundaries.
+    private final int chunkCapacity;
+    private final SharedContext sharedContext;
+    private Object innerContext;
+
+    public RegionContextHolder(int chunkCapacity, SharedContext sharedContext) {
+        this.chunkCapacity = chunkCapacity;
+        this.sharedContext = sharedContext;
+    }
 
     @Override
     public boolean supportsUnboundedFill() {
         return true;
+    }
+
+    public void setInnerContext(@Nullable final Object contextObject) {
+        this.innerContext = contextObject;
+    }
+
+    public int getChunkCapacity() {
+        return chunkCapacity;
+    }
+
+    public SharedContext getSharedContext() {
+        return sharedContext;
+    }
+
+    public <T> T getInnerContext() {
+        //noinspection unchecked
+        return (T)innerContext;
     }
 }
