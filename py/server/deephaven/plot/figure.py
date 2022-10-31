@@ -3,7 +3,7 @@
 #
 
 ######################################################################################################################
-#               Preample code that gets added to generated code in GeneratePyV2FigureAPI.java
+#               This code is auto generated. DO NOT EDIT FILE!
 # Run generatePythonFigureWrapper or "./gradlew :Generators:generatePythonFigureWrapper" to generate
 ######################################################################################################################
 """ This module implements the Figure class for creating plots, charts, line, axis, color, etc. """
@@ -105,6 +105,15 @@ class Figure(JObjectWrapper):
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
     def __init__(self, rows: int = 1, cols: int = 1, j_figure: jpy.JType = None):
+        """ Initializes a Figure object that is used for displaying plots
+
+        Args:
+            rows (int): Number of rows in the figure. Defaults to 1.
+            cols (int): Number of columns in the figure. Defaults to 1.
+            j_figure (jpy.JType): Internal use only.
+        Raises:
+            DHError
+        """
         if not j_figure:
             self.j_figure = _JPlottingConvenience.figure(rows, cols)
         else:
