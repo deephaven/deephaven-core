@@ -988,7 +988,7 @@ class NaturalJoinHelper {
                         // We are almost able to fix this, because we know the hash slot and the result redirection for
                         // the left modified row; which is the new value.
                         // We could get the hash slot from the removal, and compare them, but the hash slot outside of a
-                        // modified slot tracker is unstable [and we don’t want two of them].
+                        // modified slot tracker is unstable [and we don't want two of them].
                         // On removal, we could ask our modified slot tracker if, (i) our cookie is valid, and if so
                         // (ii) what the original right value was what the right value was
                         // [presuming we add that for right side point 1]. This would let us report our original

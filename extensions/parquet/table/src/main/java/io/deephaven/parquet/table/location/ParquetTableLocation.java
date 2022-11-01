@@ -29,7 +29,7 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.IntStream;
 
-class ParquetTableLocation extends AbstractTableLocation {
+public class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
@@ -45,7 +45,7 @@ class ParquetTableLocation extends AbstractTableLocation {
 
     private volatile RowGroupReader[] rowGroupReaders;
 
-    ParquetTableLocation(@NotNull final TableKey tableKey,
+    public ParquetTableLocation(@NotNull final TableKey tableKey,
             @NotNull final ParquetTableLocationKey tableLocationKey,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
