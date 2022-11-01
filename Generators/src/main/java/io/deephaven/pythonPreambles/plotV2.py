@@ -104,9 +104,16 @@ class Figure(JObjectWrapper):
 
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
-    def __init__(self, j_figure: jpy.JType = None):
+    def __init__(self, rows: int = 1, cols: int = 1, j_figure: jpy.JType = None):
+        """ Initializes a Figure object that is used for displaying plots
+
+        Args:
+            rows (int, optional): Number of rows in the figure. Defaults to 1.
+            cols (int, optional): Number of columns in the figure. Defaults to 1.
+            j_figure (jpy.JType, internal): Internal use only.
+        """
         if not j_figure:
-            self.j_figure = _JPlottingConvenience.figure()
+            self.j_figure = _JPlottingConvenience.figure(rows, cols)
         else:
             self.j_figure = j_figure
 
