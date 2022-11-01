@@ -53,7 +53,7 @@ public final class ThreadPublisher implements StreamPublisher {
 
     public ThreadPublisher() {
         map = new HashMap<>();
-        //noinspection unchecked
+        // noinspection unchecked
         chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
         init(true, true, true);
     }
@@ -68,8 +68,8 @@ public final class ThreadPublisher implements StreamPublisher {
         }
         if (allocatedMemory
                 && (threadMXBean instanceof com.sun.management.ThreadMXBean)
-                && ((com.sun.management.ThreadMXBean)threadMXBean).isThreadAllocatedMemorySupported()) {
-            ((com.sun.management.ThreadMXBean)threadMXBean).setThreadAllocatedMemoryEnabled(true);
+                && ((com.sun.management.ThreadMXBean) threadMXBean).isThreadAllocatedMemorySupported()) {
+            ((com.sun.management.ThreadMXBean) threadMXBean).setThreadAllocatedMemoryEnabled(true);
         }
     }
 
@@ -123,8 +123,8 @@ public final class ThreadPublisher implements StreamPublisher {
             chunks[6].asWritableLongChunk().add(waitedCount - previous[3]);
             chunks[7].asWritableLongChunk().add(diff(previous[2], waitedTime));
             // todo: how to do boolean better?
-            chunks[8].asWritableByteChunk().add(isInNative ? (byte)1 : (byte)0);
-            chunks[9].asWritableByteChunk().add(isDaemon ? (byte)1 : (byte)0);
+            chunks[8].asWritableByteChunk().add(isInNative ? (byte) 1 : (byte) 0);
+            chunks[9].asWritableByteChunk().add(isDaemon ? (byte) 1 : (byte) 0);
             chunks[10].asWritableIntChunk().add(priority);
 
             previous[0] = blockedTime;

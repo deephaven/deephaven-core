@@ -50,7 +50,8 @@ public final class ThreadApplication implements ApplicationState.Factory {
     }
 
     /**
-     * Looks up the system property {@value THREADS_RING_SIZE}, defaults to {@code 8192}. The {@value THREADS_RING} table is disabled when {@code 0} or less.
+     * Looks up the system property {@value THREADS_RING_SIZE}, defaults to {@code 8192}. The {@value THREADS_RING}
+     * table is disabled when {@code 0} or less.
      *
      * @return the {@value THREADS_RING} table size
      */
@@ -59,7 +60,8 @@ public final class ThreadApplication implements ApplicationState.Factory {
     }
 
     /**
-     * Looks up the system property {@value THREADS_PERIOD}, defaults to {@code PT1s}, parsed via {@link Duration#parse(CharSequence)}.
+     * Looks up the system property {@value THREADS_PERIOD}, defaults to {@code PT1s}, parsed via
+     * {@link Duration#parse(CharSequence)}.
      *
      * @return the period to poll thread information
      */
@@ -89,8 +91,9 @@ public final class ThreadApplication implements ApplicationState.Factory {
 
             if (threadsStatsEnabled()) {
                 final Table threadsStats = threadsTable.aggBy(List.of(
-                                Aggregation.AggLast("Timestamp", "Name", "State", "IsInNative", "IsDaemon", "Priority"),
-                                Aggregation.AggSum("BlockedCount", "BlockedDuration", "WaitedCount", "WaitedDuration", "UserTime", "SystemTime", "AllocatedBytes")),
+                        Aggregation.AggLast("Timestamp", "Name", "State", "IsInNative", "IsDaemon", "Priority"),
+                        Aggregation.AggSum("BlockedCount", "BlockedDuration", "WaitedCount", "WaitedDuration",
+                                "UserTime", "SystemTime", "AllocatedBytes")),
                         "Id");
                 state.setField(THREADS_STATS, threadsStats);
             }
