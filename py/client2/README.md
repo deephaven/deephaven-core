@@ -1,7 +1,7 @@
 Client using Cython-wrapped C++ code.
 
 To build the code in this directory, you need a python environment with cython and numpy.
-For instance, in Ubuntu 22.04 I created a python venv like so:
+For instance, in Ubuntu 22.04 I created a python venv and added cython and numpy to it like so:
 
 ```
 mkdir ~/py
@@ -12,8 +12,8 @@ source ~/py/cython/bin/activate
 # the venv; to exit the venv just type "deactivate" any time.
 #
 # Any pip3 installs we do will happen inside the active venv.
-# pip3 install numpy
-# pip3 install cython
+pip3 install numpy
+pip3 install cython
 ```
 
 Set the `CMAKE_PREFIX_PATH` environment variable to include all DH's cpp-client dependencies.
