@@ -51,3 +51,25 @@ Other environment variables useful for debugging:
 
 Once built, a shared object with the binary python module should show up under pydeephaven2, named like
 `./pydeephaven2/pydeephaven2.cpython-310-x86_64-linux-gnu.so`.
+
+You can try it running python from the venv in the pydeephaven2 directory, like:
+
+```
+cfs@erke 22:18:21 ~/dh/oss2/deephaven-core/py/client2/pydeephaven2
+$ python
+Python 3.8.10 (default, Jun 22 2022, 20:18:18)
+[GCC 9.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pydeephaven2 as dh
+>>> import time
+>>> import math
+>>> now = time.time()
+>>> now_nanos_part = int(math.modf(now)[0] * 1000 * 1000 * 1000)
+>>> now
+1658456319.7144263
+>>> now_nanos_part
+714426279
+>>> now_dh = dh.DateTime(nanos=int(now * 1000 * 1000 * 1000))
+>>> now_dh.nanos()
+1658456319714426368
+```
