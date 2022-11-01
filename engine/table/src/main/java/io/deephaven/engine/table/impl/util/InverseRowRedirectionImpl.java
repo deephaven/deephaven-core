@@ -102,6 +102,8 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
         long positionStart = 0;
 
         for (final RowSet.RangeIterator rangeIterator = wrappedIndex.rangeIterator(); rangeIterator.hasNext();) {
+            rangeIterator.next();
+
             if (positionStart > 0) {
                 builder.append(", ");
             }

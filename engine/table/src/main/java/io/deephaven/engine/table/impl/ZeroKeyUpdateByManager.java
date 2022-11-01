@@ -94,7 +94,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
         // do the actual computations
         UpdateByBucketHelper[] dirtyBuckets = new UpdateByBucketHelper[] {zeroKeyUpdateBy};
-        processBuckets(dirtyBuckets, true);
+        processBuckets(dirtyBuckets, true, source.getRowSet());
         finalizeBuckets(dirtyBuckets);
     }
 

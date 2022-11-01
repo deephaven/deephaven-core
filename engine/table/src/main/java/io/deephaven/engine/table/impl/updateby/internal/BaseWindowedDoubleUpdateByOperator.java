@@ -15,9 +15,13 @@ import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.Map;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
@@ -160,4 +164,19 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
         ((DoubleSparseArraySource)outputSource).shift(subIndexToShift, delta);
     }
     // endregion Shifts
+
+
+    @Override
+    public void prepareForParallelPopulation(final RowSet added) {
+        // we don't need to do anything for redirected, that happened earlier
+        if (!redirContext.isRedirected()) {
+            ((SparseArrayColumnSource<?>) outputSource).prepareForParallelPopulation(added);
+        }
+    }
+
+    @NotNull
+    @Override
+    public Map<String, ColumnSource<?>> getOutputColumns() {
+        return Collections.singletonMap(pair.leftColumn, outputSource);
+    }
 }

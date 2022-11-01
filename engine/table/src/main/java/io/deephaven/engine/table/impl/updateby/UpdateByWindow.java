@@ -180,6 +180,12 @@ public abstract class UpdateByWindow {
         return uniqueInputSourceIndices;
     }
 
+    public void prepareForParallelPopulation(final RowSet added) {
+        for (UpdateByOperator operator : operators) {
+            operator.prepareForParallelPopulation(added);
+        }
+    }
+
     // region context-based functions
 
     public abstract void computeAffectedRowsAndOperators(final UpdateByWindowContext context,

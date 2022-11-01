@@ -198,9 +198,13 @@ public abstract class UpdateByOperator {
 
     /**
      * Apply a shift to the operation.
-     *
      */
     public abstract void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta);
+
+    /**
+     * Prepare this operator output column for parallel updated.
+     */
+    public abstract void prepareForParallelPopulation(final RowSet added);
 
     /**
      * Create the modified column set for the input columns of this operator.
@@ -233,4 +237,5 @@ public abstract class UpdateByOperator {
     public ModifiedColumnSet getOutputModifiedColumnSet() {
         return outputModifiedColumnSet;
     }
+
 }

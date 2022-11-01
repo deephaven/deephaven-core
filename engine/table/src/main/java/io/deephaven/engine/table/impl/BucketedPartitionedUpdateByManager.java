@@ -155,7 +155,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         // do the actual computations
         UpdateByBucketHelper[] dirtyBuckets = buckets.toArray(UpdateByBucketHelper[]::new);
-        processBuckets(dirtyBuckets, true);
+        processBuckets(dirtyBuckets, true, source.getRowSet());
         finalizeBuckets(dirtyBuckets);
     }
 }
