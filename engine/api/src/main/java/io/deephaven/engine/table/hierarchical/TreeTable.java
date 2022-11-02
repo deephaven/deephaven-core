@@ -1,10 +1,14 @@
 package io.deephaven.engine.table.hierarchical;
 
-import io.deephaven.api.ColumnName;
+import io.deephaven.api.*;
+import io.deephaven.engine.liveness.LivenessManager;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.function.UnaryOperator;
 
 /**
@@ -61,11 +65,11 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
 
     /**
      * Get a new TreeTable with {@code columns} designated for node-level filtering. This means that UI-driven filters
-     * on those columns will be applied to the nodes during snapshots. If no node-filter columns are designated, all
+     * on those columns will be applied to the nodes during snapshots. If no node-filter columns are designated, no
      * filters will be handled at node level. If node-filter columns are designated, filters that include other columns
-     * will be handled by filtering the source table and re-applying the tree operation to the result to produce a new
-     * TreeTable. Users of orphan promotion or other strategies to govern the structure of the tree should consider
-     * specifying an empty set of node-filter columns.
+     * will be handled by filtering the source table in a parent-preserving manner and re-applying the tree operation to
+     * the result to produce a new TreeTable. Users of orphan promotion or other strategies to govern the structure of
+     * the tree should carefully consider the structure of their data before specifying node-filter columns.
      *
      * @param columns The columns to designate
      * @return The new TreeTable
@@ -82,4 +86,38 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
      * @return The new TreeTable
      */
     TreeTable reapply(@NotNull UnaryOperator<Table> sourceTransformer);
+
+    /**
+     * Adapt a {@code source} {@link Table} to be used for a {@link Table#tree(String, String) tree} to ensure that the
+     * result will have no orphaned nodes. Nodes whose parents do not exist will become children of the root node in the
+     * resulting tree. The expected usage pattern is:
+     * <pre>TreeTable result = promoteOrphans(source, idColumn, parentColumn).tree(idColumn, parentColumn)</pre>
+     *
+     * @param source The source {@link Table}
+     * @param idColumn The name of a column containing a unique identifier for a particular row in the table
+     * @param parentColumn The name of a column containing the parent's identifier, {@code null} for rows that are
+     *        part of the root table
+     * @return A {@link Table} derived from {@code source} that has {@code null} as the parent for any nodes that would
+     *         have been orphaned by a call to {@code source.tree(idColumn, parentColumn)}
+     */
+    static Table promoteOrphans(
+            @NotNull final Table source,
+            @NotNull final String idColumn,
+            @NotNull final String parentColumn) {
+        final ColumnName grandparent = ColumnName.of("__GRANDPARENT__");
+        final ColumnName parent = ColumnName.of(parentColumn);
+        final ColumnName identifier = ColumnName.of(idColumn);
+        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
+        try (final SafeCloseable ignored = source.isRefreshing() ? LivenessScopeStack.open() : null) {
+            final Table joined = source.naturalJoin(source,
+                    List.of(JoinMatch.of(parent, identifier)),
+                    List.of(JoinAddition.of(grandparent, parent)));
+            final Table promoted = joined.updateView(Selectable.of(parent,
+                    RawString.of("isNull(" + grandparent.name() + ") ? null : " + parent.name())));
+            if (promoted.isRefreshing()) {
+                enclosingLivenessManager.manage(promoted);
+            }
+            return promoted;
+        }
+    }
 }
