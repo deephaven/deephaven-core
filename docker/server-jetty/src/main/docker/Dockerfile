@@ -29,7 +29,11 @@ COPY --from=install / /
 VOLUME /data
 VOLUME /cache
 HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:10000 -connect-timeout=10s || exit 1
-ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -Ddeephaven.cacheDir=/cache -Ddeephaven.dataDir=/data"
+ENV \
+    DEEPHAVEN_CACHE_DIR="/cache" \
+    DEEPHAVEN_CONFIG_DIR="/opt/deephaven/config" \
+    DEEPHAVEN_DATA_DIR="/data" \
+    JAVA_OPTS="-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication"
 ENTRYPOINT [ "/opt/deephaven/server/bin/start" ]
 ARG DEEPHAVEN_VERSION
 ARG SERVER
