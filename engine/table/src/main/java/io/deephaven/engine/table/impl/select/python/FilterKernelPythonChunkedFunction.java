@@ -7,7 +7,7 @@ import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
+import org.jpy.PyObject;
 
 import java.util.Objects;
 
@@ -21,10 +21,13 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
     private static final String CALL_METHOD = "__call__";
 
     // this is a python function whose arguments can accept arrays
-    private final CallableWrapper callableWrapper;
+    private final PyObject function;
 
-    FilterKernelPythonChunkedFunction(CallableWrapper callableWrapper) {
-        this.callableWrapper = Objects.requireNonNull(callableWrapper, "callableWrapper");
+    private final ArgumentsChunked argumentsChunked;
+
+    FilterKernelPythonChunkedFunction(PyObject function, ArgumentsChunked argumentsChunked) {
+        this.function = Objects.requireNonNull(function, "function");
+        this.argumentsChunked = argumentsChunked;
     }
 
     @Override
@@ -38,10 +41,11 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
             LongChunk<OrderedRowKeys> indices,
             Chunk... inputChunks) {
         final int size = indices.size();
-        final ArgumentsChunked arguments =
-                ArgumentsChunked.buildArguments(inputChunks, callableWrapper);
-        final boolean[] results = callableWrapper.getPyObject()
-                .call(boolean[].class, CALL_METHOD, arguments.getParamTypes(), arguments.getParams());
+        argumentsChunked.resolveColumnChunks(inputChunks, size);
+
+        final boolean[] results = function
+                .call(boolean[].class, CALL_METHOD, argumentsChunked.getChunkedArgTypes(),
+                        argumentsChunked.getChunkedArgs());
         if (size != results.length) {
             throw new IllegalStateException(
                     "FilterKernelPythonChunkedFunction returned results are not the proper size");

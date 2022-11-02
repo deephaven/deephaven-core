@@ -83,13 +83,13 @@ import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import io.deephaven.DeephavenException;
-import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
@@ -124,13 +124,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
+import io.deephaven.engine.util.PyCallableWrapper;
 
 public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, QueryLanguageParser.VisitArgs> {
     private static final Logger log = LoggerFactory.getLogger(QueryLanguageParser.class);
@@ -485,7 +484,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         } else {
             if (scope == org.jpy.PyObject.class) {
                 // This is a Python method call, assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
-                for (Method method : CallableWrapper.class.getDeclaredMethods()) {
+                for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
                     possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
                 }
             } else {
@@ -517,7 +516,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     private static boolean isPotentialImplicitCall(Class<?> methodClass) {
-        return CallableWrapper.class.isAssignableFrom(methodClass) || methodClass == groovy.lang.Closure.class;
+        return PyCallableWrapper.class.isAssignableFrom(methodClass) || methodClass == groovy.lang.Closure.class;
     }
 
     private Class<?> getMethodReturnType(Class<?> scope, String methodName, Class<?>[] paramTypes,
@@ -1819,14 +1818,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             printer.append(n.getNameAsString());
         }
 
-        Class<?>[] argTypes = null;
-        if (printer.hasStringBuilder()) {
-            argTypes = printArguments(expressions, printer);
-        }
+        Class<?>[] argTypes = printArguments(expressions, printer);
 
         // Python function call vectorization
         Class<?> methodClass = variables.get(n.getNameAsString());
-        if (methodClass == CallableWrapper.class) {
+        if (methodClass == PyCallableWrapper.class) {
             vectorizePythonCallable(n, expressions, argTypes);
         }
 
@@ -1834,50 +1830,47 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     private void vectorizePythonCallable(MethodCallExpr n, Expression[] expressions, Class<?>[] argTypes) {
+        final String methodName = n.getNameAsString();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        QueryScopeParam<?>[] params = queryScope.getParams(queryScope.getParamNames());
-
-        Optional<QueryScopeParam<?>> paramOptional =
-                Arrays.stream(params)
-                        .filter(p -> p.getValue() instanceof CallableWrapper && p.getName().equals(n.getNameAsString()))
-                        .findFirst();
-
-        CallableWrapper callableWrapper;
-        if (paramOptional.isPresent()) {
-            QueryScopeParam<?> param = paramOptional.get();
-            callableWrapper = (CallableWrapper) param.getValue();
-        } else {
-            throw new IllegalStateException("Resolved Python callable wrapper is no longer present.");
+        final Object paramValueRaw = queryScope.readParamValue(methodName, null);
+        if (paramValueRaw == null) {
+            throw new IllegalStateException("Resolved Python function name " + methodName + " not found");
         }
+        if (!(paramValueRaw instanceof PyCallableWrapper)) {
+            throw new IllegalStateException("Resolved Python function name " + methodName + " not callable");
+        }
+        final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) paramValueRaw;
 
-        prepareVectorization(n, expressions, callableWrapper);
-        if (callableWrapper.isVectorizable()) {
-            prepareVectorizationArgs(n, params, expressions, argTypes, callableWrapper);
+        prepareVectorization(n, expressions, pyCallableWrapper);
+        if (pyCallableWrapper.isVectorizable()) {
+            prepareVectorizationArgs(n, queryScope, expressions, argTypes, pyCallableWrapper);
         }
     }
 
-    private void prepareVectorization(MethodCallExpr n, Expression[] expressions, CallableWrapper callableWrapper) {
+    private void prepareVectorization(MethodCallExpr n, Expression[] expressions, PyCallableWrapper pyCallableWrapper) {
         try {
-            checkVectorizability(n, expressions, callableWrapper);
-            callableWrapper.setVectorizable(true);
-            if (!callableWrapper.isVectorized()) {
+            checkVectorizability(n, expressions, pyCallableWrapper);
+            pyCallableWrapper.setVectorizable(true);
+            if (!pyCallableWrapper.isVectorized() && log.isDebugEnabled()) {
                 log.debug().append("Python function call ").append(n.toString()).append(" is auto-vectorizable")
                         .endl();
             }
         } catch (RuntimeException ex) {
             // if the Callable is already vectorized (decorated with numba.vectorized or dh_vectorized),
             // then the exception is fatal, otherwise it is an un-vectorized Callable and will remain as such
-            if (callableWrapper.isVectorized()) {
+            if (pyCallableWrapper.isVectorized()) {
                 throw ex;
             }
-            log.debug().append("Python function call ").append(n.toString()).append(" is not auto-vectorizable:")
-                    .append(ex.getMessage()).endl();
+            if (log.isDebugEnabled()) {
+                log.debug().append("Python function call ").append(n.toString()).append(" is not auto-vectorizable:")
+                        .append(ex.getMessage()).endl();
+            }
         }
     }
 
-    private void checkVectorizability(MethodCallExpr n, Expression[] expressions, CallableWrapper callableWrapper) {
+    private void checkVectorizability(MethodCallExpr n, Expression[] expressions, PyCallableWrapper pyCallableWrapper) {
 
-        callableWrapper.parseSignature();
+        pyCallableWrapper.parseSignature();
 
         // Python vectorized functions(numba, DH) return arrays of primitive/Object types. This will break the generated
         // expression evaluation code that expects singular values. This check makes sure that numba/dh vectorized
@@ -1899,31 +1892,30 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
-    private void prepareVectorizationArgs(MethodCallExpr n, QueryScopeParam<?>[] params, Expression[] expressions,
+    private void prepareVectorizationArgs(MethodCallExpr n, QueryScope queryScope, Expression[] expressions,
             Class<?>[] argTypes,
-            CallableWrapper callableWrapper) {
-        List<Class<?>> paramTypes = callableWrapper.getParamTypes();
+            PyCallableWrapper pyCallableWrapper) {
+        List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
         if (paramTypes.size() != expressions.length) {
             throw new RuntimeException("Python function argument count mismatch: " + n + " " + paramTypes.size()
                     + " vs. " + expressions.length);
         }
 
-        callableWrapper.clearArgs();
+        pyCallableWrapper.initializeChunkArguments();
         for (int i = 0; i < expressions.length; i++) {
             if (expressions[i] instanceof LiteralExpr) {
-                addLiteralArg(expressions[i], argTypes[i], callableWrapper);
+                addLiteralArg(expressions[i], argTypes[i], pyCallableWrapper);
             } else if (expressions[i] instanceof NameExpr) {
                 String name = expressions[i].asNameExpr().getNameAsString();
-                Optional<QueryScopeParam<?>> param =
-                        Arrays.stream(params).filter(p -> p.getName().equals(name)).findFirst();
-                if (param.isPresent()) {
-                    callableWrapper.addArg(new Pair<>(null, param.get().getValue()));
+                Object param = queryScope.readParamValue(name, null);
+                if (param != null) {
+                    pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(param));
                 } else {
                     // A column name or one of the special variables
-                    callableWrapper.addArg(new Pair<>(name, null));
+                    pyCallableWrapper.addChunkArgument(new ColumnChunkArgument(name));
                 }
             } else {
-                throw new IllegalStateException("Vectorizability check failed.");
+                throw new IllegalStateException("Vectorizability check failed: " + n);
             }
 
             if (!isSafelyCoerceable(argTypes[i], paramTypes.get(i))) {
@@ -1931,30 +1923,31 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         + argTypes[i].getSimpleName() + " -> " + paramTypes.get(i).getSimpleName());
             }
         }
-        callableWrapper.setArgTypes(argTypes);
+        pyCallableWrapper.setChunkArgumentTypes(argTypes);
     }
 
-    private void addLiteralArg(Expression expression, Class<?> argType, CallableWrapper callableWrapper) {
+    private void addLiteralArg(Expression expression, Class<?> argType, PyCallableWrapper pyCallableWrapper) {
         if (argType == long.class) {
-            String lsv = ((LongLiteralExpr) expression).getValue() + "L";
-            long lv = Long.parseLong(lsv);
-            callableWrapper.addArg(new Pair<>(null, lv));
+            pyCallableWrapper
+                    .addChunkArgument(new ConstantChunkArgument(((LongLiteralExpr) expression).asNumber().longValue()));
         } else if (argType == int.class) {
-            callableWrapper.addArg(new Pair<>(null, ((IntegerLiteralExpr) expression).asInt()));
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument(((IntegerLiteralExpr) expression).asNumber().intValue()));
         } else if (argType == boolean.class) {
-            callableWrapper.addArg(new Pair<>(null, ((BooleanLiteralExpr) expression).getValue()));
+            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(((BooleanLiteralExpr) expression).getValue()));
         } else if (argType == String.class) {
-            callableWrapper.addArg(new Pair<>(null, ((StringLiteralExpr) expression).getValue()));
+            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(((StringLiteralExpr) expression).getValue()));
         } else if (argType == float.class) {
-            callableWrapper.addArg(new Pair<>(null, Float.parseFloat(((DoubleLiteralExpr) expression).getValue())));
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument((Float.parseFloat(((DoubleLiteralExpr) expression).getValue()))));
         } else if (argType == double.class) {
-            callableWrapper.addArg(new Pair<>(null, ((DoubleLiteralExpr) expression).asDouble()));
+            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(((DoubleLiteralExpr) expression).asDouble()));
         } else if (argType == NULL_CLASS) {
-            callableWrapper.addArg(new Pair<>(null, null));
+            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(null));
         } else if (argType == char.class) {
-            callableWrapper.addArg(new Pair<>(null, ((CharLiteralExpr) expression).getValue()));
+            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(((CharLiteralExpr) expression).getValue()));
         } else {
-            throw new IllegalStateException("Unrecognized literal expression type.");
+            throw new IllegalStateException("Unrecognized literal expression type: " + argType);
         }
     }
 

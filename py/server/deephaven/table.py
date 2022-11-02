@@ -54,6 +54,10 @@ _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext"
 _JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
 
+# For unittest vectorization
+_test_vectorization = False
+_vectorized_count = 0
+
 
 def _j_py_script_session() -> _JPythonScriptSession:
     j_execution_context = _JExecutionContext.getContext()
@@ -72,10 +76,7 @@ def _encode_signature(fn: Callable) -> str:
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
     """
-    try:
-        sig = inspect.signature(fn)
-    except:
-        return ""
+    sig = inspect.signature(fn)
 
     parameter_types = []
     for n, p in sig.parameters.items():
@@ -95,23 +96,29 @@ def _encode_signature(fn: Callable) -> str:
     return "".join(np_type_codes)
 
 
-def dh_vectorize(fn: Callable) -> Callable:
+class DhVectorize:
     """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
 
-    The result function will accept arrays of the declared parameter data types (vs. scalar) and iterate through them
+    The result callable will accept arrays of the declared parameter data types (vs. scalar) and iterate through them
     together and call the wrapped function on each iteration and pack the result of each call into an array and return
-    the result array upon exhausting array parameters.
+    the result array upon exhausting the array parameters.
     """
-    sig_code = _encode_signature(fn)
-    return_type = sig_code[-1]
 
-    @wraps(fn)
-    def wrapper(*args):
-        if len(args) != len(sig_code) - len("->?"):
-            raise ValueError(f"The number of arguments doesn't match the function signature. {len(args)}, {sig_code}")
+    def __init__(self, fn: Callable):
+        self.callable = fn
+        self.signature = _encode_signature(fn)
+        self.return_type = self.signature[-1]
+        self.dh_vectorized = True
+        self._call_count = 0
+        self._arguments = [None] * (len(self.signature) - len("->?"))
+        self._chunk_size: int
+        if _test_vectorization:
+            global _vectorized_count
+            _vectorized_count += 1
 
+    def __call__(self, *args):
         def is_chunked(v) -> bool:
-            if isinstance(v, str) or not isinstance(v, jpy.JType):
+            if not isinstance(v, jpy.JType):
                 return False
             try:
                 iter(v)
@@ -119,30 +126,37 @@ def dh_vectorize(fn: Callable) -> Callable:
             except:
                 return False
 
-        if args:
-            array_args = [arg for arg in args if is_chunked(arg)]
-            if not array_args:
-                chunk_size = 4096
-            else:
-                chunk_size = min([len(arg) for arg in array_args])
+        # upon being called the first time, set up the return array and constant arguments for reuse in subsequent calls
+        if not self._call_count:
+            if len(args) != len(self._arguments) + 1:
+                raise ValueError(
+                    f"The number of arguments doesn't match the function signature. {len(args) - 1}, {self.signature}")
+
+            self._chunk_size = args[0]
+            self._chunk_result = np.empty(self._chunk_size, self.return_type)
+
+            for i, arg in enumerate(args[1:]):
+                if not is_chunked(arg):
+                    self._arguments[i] = np.full(self._chunk_size, arg)
+
+        self._chunk_size = args[0]
+        if self._chunk_size > len(self._chunk_result):
+            self._chunk_result = np.empty(self._chunk_size, self.return_type)
+
+        for i, arg in enumerate(args[1:]):
+            if is_chunked(arg):
+                self._arguments[i] = arg
+
+        if self._arguments:
+            vectorized_args = zip(*self._arguments)
+            for i, scalar_args in enumerate(vectorized_args):
+                self._chunk_result[i] = self.callable(*scalar_args)
         else:
-            chunk_size = 4096
-        chunk_result = np.empty(chunk_size, return_type)
+            for i in range(self._chunk_size):
+                self._chunk_result[i] = self.callable()
 
-        if args:
-            vectorized_args = [arg if is_chunked(arg) else (arg,) * chunk_size for arg in args]
-            vectorized_args = zip(*vectorized_args)
-        else:
-            vectorized_args = [()] * chunk_size
-
-        for i, scalar_args in enumerate(vectorized_args):
-            chunk_result[i] = fn(*scalar_args)
-        return chunk_result
-
-    wrapper.dh_vectorized = True
-    wrapper.signature = sig_code
-
-    return wrapper
+        self._call_count += 1
+        return self._chunk_result
 
 
 @contextlib.contextmanager

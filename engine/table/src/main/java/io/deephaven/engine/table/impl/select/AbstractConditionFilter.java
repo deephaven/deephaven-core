@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
@@ -13,13 +12,15 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
-import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
+import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
@@ -31,10 +32,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
-import static io.deephaven.engine.util.PythonScopeJpyImpl.vectorizeCallable;
 
 public abstract class AbstractConditionFilter extends WhereFilterImpl {
     private static final Logger log = LoggerFactory.getLogger(AbstractConditionFilter.class);
@@ -189,14 +188,14 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     private void checkAndInitializeVectorization(QueryLanguageParser.Result result,
             List<QueryScopeParam<?>> paramsList) {
 
-        if (paramsList.stream().filter(p -> p.getValue() instanceof CallableWrapper).count() != 1) {
+        PyCallableWrapper[] cws = paramsList.stream().filter(p -> p.getValue() instanceof PyCallableWrapper)
+                .map(p -> p.getValue()).toArray(PyCallableWrapper[]::new);
+        if (cws.length != 1) {
             return;
         }
-        CallableWrapper callableWrapper =
-                (CallableWrapper) paramsList.stream().filter(p -> p.getValue() instanceof CallableWrapper).findFirst()
-                        .get().getValue();
+        PyCallableWrapper pyCallableWrapper = cws[0];
 
-        if (callableWrapper.isVectorizable()) {
+        if (pyCallableWrapper.isVectorizable()) {
             for (String variable : result.getVariablesUsed()) {
                 if (variable.equals("i")) {
                     usesI = true;
@@ -209,28 +208,11 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                     usedColumns.add("k");
                 }
             }
-            ArrayList<Pair<?, ?>> args = (ArrayList<Pair<?, ?>>) callableWrapper.getArgs().clone();
-            callableWrapper.clearArgs();
-            for (Pair<?, ?> arg : args) {
-                if (arg.getFirst() != null) {
-                    int chunkSourceIndex = usedColumns.indexOf(arg.getFirst());
-                    callableWrapper.addArg(new Pair<>(chunkSourceIndex, null));
-                } else {
-                    callableWrapper.addArg(arg);
-                }
-            }
 
-            if (!callableWrapper.isVectorized()) {
-                CallableWrapper vectorizedCallableWrapper = vectorizeCallable(callableWrapper.getPyObject());
-                vectorizedCallableWrapper.setArgs(callableWrapper.getArgs());
-                vectorizedCallableWrapper.setArgTypes(callableWrapper.getArgTypes());
-                callableWrapper = vectorizedCallableWrapper;
-            }
-        }
-
-        if (callableWrapper.isVectorized()) {
-            DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(callableWrapper,
-                    callableWrapper.getReturnType(), usedColumns.toArray(new String[0]), true);
+            ArgumentsChunked argumentsChunked = pyCallableWrapper.buildArgumentsChunked(usedColumns);
+            PyObject vectorized = pyCallableWrapper.vectorizedCallable();
+            DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(vectorized,
+                    pyCallableWrapper.getReturnType(), usedColumns.toArray(new String[0]), argumentsChunked, true);
             checkReturnType(result, dcf.getReturnedType());
             setFilter(new ConditionFilter.ChunkFilter(
                     dcf.toFilterKernel(),

@@ -8,8 +8,6 @@ import io.deephaven.engine.table.impl.select.FormulaKernelTypedBase;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
-import io.deephaven.engine.util.PythonScopeJpyImpl;
-import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
 import org.jpy.PyObject;
 
 import java.util.Objects;
@@ -24,9 +22,9 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
 
     private static final String CALL_METHOD = "__call__";
 
-    private final CallableWrapper function;
+    private final PyObject function;
 
-    FormulaKernelPythonSingularFunction(CallableWrapper function) {
+    FormulaKernelPythonSingularFunction(PyObject function) {
         this.function = Objects.requireNonNull(function, "function");
     }
 
@@ -39,7 +37,7 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
         final Class<?>[] types = ArgumentsSingular.buildParamTypes(__sources);
         final int L = __destination.size();
         for (int i = 0; i < L; i++) {
-            final byte output = function.getPyObject()
+            final byte output = function
                     .call(byte.class, CALL_METHOD, types, ArgumentsSingular.buildArguments(__sources, i));
             __destination.set(i, output);
         }
@@ -53,7 +51,7 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
         final Class<?>[] types = ArgumentsSingular.buildParamTypes(__sources);
         final int L = __destination.size();
         for (int i = 0; i < L; i++) {
-            final boolean output = function.getPyObject()
+            final boolean output = function
                     .call(boolean.class, CALL_METHOD, types, ArgumentsSingular.buildArguments(__sources, i));
             __destination.set(i, output);
         }
@@ -67,7 +65,7 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
         final Class<?>[] types = ArgumentsSingular.buildParamTypes(__sources);
         final int L = __destination.size();
         for (int i = 0; i < L; i++) {
-            final char output = function.getPyObject()
+            final char output = function
                     .call(char.class, CALL_METHOD, types, ArgumentsSingular.buildArguments(__sources, i));
             __destination.set(i, output);
         }
@@ -81,7 +79,7 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
         final Class<?>[] types = ArgumentsSingular.buildParamTypes(__sources);
         final int L = __destination.size();
         for (int i = 0; i < L; i++) {
-            final short output = function.getPyObject()
+            final short output = function
                     .call(short.class, CALL_METHOD, types, ArgumentsSingular.buildArguments(__sources, i));
             __destination.set(i, output);
         }
@@ -95,7 +93,7 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
         final Class<?>[] types = ArgumentsSingular.buildParamTypes(__sources);
         final int L = __destination.size();
         for (int i = 0; i < L; i++) {
-            final int output = function.getPyObject()
+            final int output = function
                     .call(int.class, CALL_METHOD, types, ArgumentsSingular.buildArguments(__sources, i));
             __destination.set(i, output);
         }
@@ -109,7 +107,7 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
         final Class<?>[] types = ArgumentsSingular.buildParamTypes(__sources);
         final int L = __destination.size();
         for (int i = 0; i < L; i++) {
-            final long output = function.getPyObject()
+            final long output = function
                     .call(long.class, CALL_METHOD, types, ArgumentsSingular.buildArguments(__sources, i));
             __destination.set(i, output);
         }
@@ -123,7 +121,7 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
         final Class<?>[] types = ArgumentsSingular.buildParamTypes(__sources);
         final int L = __destination.size();
         for (int i = 0; i < L; i++) {
-            final float output = function.getPyObject()
+            final float output = function
                     .call(float.class, CALL_METHOD, types, ArgumentsSingular.buildArguments(__sources, i));
             __destination.set(i, output);
         }
@@ -137,7 +135,7 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
         final Class<?>[] types = ArgumentsSingular.buildParamTypes(__sources);
         final int L = __destination.size();
         for (int i = 0; i < L; i++) {
-            final double output = function.getPyObject()
+            final double output = function
                     .call(double.class, CALL_METHOD, types, ArgumentsSingular.buildArguments(__sources, i));
             __destination.set(i, output);
         }

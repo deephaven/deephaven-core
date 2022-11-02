@@ -3,29 +3,23 @@
  */
 package io.deephaven.engine.table.impl.select.python;
 
-import io.deephaven.base.Pair;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.*;
-import io.deephaven.engine.util.PythonScopeJpyImpl;
-import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
+import io.deephaven.engine.util.PyCallableWrapper.ChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
 import io.deephaven.util.PrimitiveArrayType;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Objects;
 
-class ArgumentsChunked {
-    // static ArgumentsChunked buildArguments(Chunk<?>[] __sources) {
-    // final Class<?>[] paramTypes = new Class[__sources.length];
-    // final Object[] params = new Object[__sources.length];
-    // for (int i = 0; i < __sources.length; i++) {
-    // final ChunkToArray<?> cta = __sources[i].walk(new ChunkToArray<>());
-    // paramTypes[i] = Objects.requireNonNull(cta.getArrayType());
-    // params[i] = Objects.requireNonNull(cta.getArray());
-    // }
-    // return new ArgumentsChunked(paramTypes, params);
-    // }
+public class ArgumentsChunked {
+    private final Collection<ChunkArgument> chunkArguments;
+    private final Class<?>[] chunkedArgTypes;
+    private final Object[] chunkedArgs;
+    private final boolean forNumba;
 
-    static ArgumentsChunked buildArguments(Chunk<?>[] __sources, CallableWrapper callableWrapper) {
+    public void resolveColumnChunks(Chunk<?>[] __sources, int chunkSize) {
         final Class<?>[] paramTypes = new Class[__sources.length];
         final Object[] params = new Object[__sources.length];
         for (int i = 0; i < __sources.length; i++) {
@@ -34,39 +28,36 @@ class ArgumentsChunked {
             params[i] = Objects.requireNonNull(cta.getArray());
         }
 
-        ArrayList<Pair<?, ?>> args = callableWrapper.getArgs();
-        final Object[] chunkedArgs = new Object[args.size()];
-        Class<?>[] argTypes = callableWrapper.getArgTypes();
-        Class<?>[] chunkedArgTypes = new Class[argTypes.length];
-
-        for (int i = 0; i < args.size(); i++) {
-            Pair<?, ?> arg = args.get(i);
-            if (arg.getFirst() != null) {
-                int colIdx = (int) arg.getFirst();
-                chunkedArgs[i] = params[colIdx];
-                chunkedArgTypes[i] = paramTypes[colIdx];
-            } else {
-                chunkedArgs[i] = arg.getSecond();
-                chunkedArgTypes[i] = argTypes[i];
-            }
+        // for DH vectorized callable, we pass in the chunk size as the first argument
+        if (!forNumba) {
+            chunkedArgs[0] = chunkSize;
         }
-        return new ArgumentsChunked(chunkedArgTypes, chunkedArgs);
+
+        int i = forNumba ? 0 : 1;
+        for (ChunkArgument arg : chunkArguments) {
+            if (arg instanceof ColumnChunkArgument) {
+                int idx = ((ColumnChunkArgument) arg).getChunkSourceIndex();
+                chunkedArgs[i] = params[idx];
+                chunkedArgTypes[i] = paramTypes[idx];
+            }
+            i++;
+        }
     }
 
-    private final Class<?>[] paramTypes;
-    private final Object[] params;
-
-    private ArgumentsChunked(Class<?>[] paramTypes, Object[] params) {
-        this.paramTypes = paramTypes;
-        this.params = params;
+    public ArgumentsChunked(Collection<ChunkArgument> chunkArguments, Object[] chunkedArgs, Class<?>[] argTypes,
+            boolean numbaVectorized) {
+        this.chunkArguments = chunkArguments;
+        this.chunkedArgs = chunkedArgs;
+        this.chunkedArgTypes = argTypes;
+        this.forNumba = numbaVectorized;
     }
 
-    Class<?>[] getParamTypes() {
-        return paramTypes;
+    Class<?>[] getChunkedArgTypes() {
+        return chunkedArgTypes;
     }
 
-    Object[] getParams() {
-        return params;
+    Object[] getChunkedArgs() {
+        return chunkedArgs;
     }
 
     private static class ChunkToArray<ATTR extends Any> implements Chunk.Visitor<ATTR> {

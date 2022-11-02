@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.base.Pair;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -21,11 +20,12 @@ import io.deephaven.engine.table.impl.select.codegen.RichType;
 import io.deephaven.engine.table.impl.select.formula.FormulaFactory;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
+import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
-import io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -36,6 +36,7 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -48,7 +49,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.deephaven.engine.util.IterableUtils.makeCommaSeparatedList;
-import static io.deephaven.engine.util.PythonScopeJpyImpl.vectorizeCallable;
 
 public class DhFormulaColumn extends AbstractFormulaColumn {
     private static final Logger log = LoggerFactory.getLogger(DhFormulaColumn.class);
@@ -213,40 +213,23 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     private void checkAndInitializeVectorization(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        if (Arrays.stream(params).filter(p -> p.getValue() instanceof CallableWrapper).count() != 1) {
+        PyCallableWrapper[] cws = Arrays.stream(params).filter(p -> p.getValue() instanceof PyCallableWrapper)
+                .map(p -> p.getValue()).toArray(PyCallableWrapper[]::new);
+        if (cws.length != 1) {
             return;
         }
+        PyCallableWrapper pyCallableWrapper = cws[0];
 
-        CallableWrapper callableWrapper =
-                (CallableWrapper) Arrays.stream(params).filter(p -> p.getValue() instanceof CallableWrapper).findFirst()
-                        .get().getValue();
-
-        if (callableWrapper.isVectorizable()) {
-            ArrayList<Pair<?, ?>> args = (ArrayList<Pair<?, ?>>) callableWrapper.getArgs().clone();
-            callableWrapper.clearArgs();
-            for (Pair<?, ?> arg : args) {
-                if (arg.getFirst() != null) {
-                    int chunkSourceIndex =
-                            Arrays.asList(this.analyzedFormula.sourceDescriptor.sources).indexOf(arg.getFirst());
-                    callableWrapper.addArg(new Pair<>(chunkSourceIndex, null));
-                } else {
-                    callableWrapper.addArg(arg);
-                }
-            }
-
-            if (!callableWrapper.isVectorized()) {
-                CallableWrapper vectorizedCallableWrapper = vectorizeCallable(callableWrapper.getPyObject());
-                vectorizedCallableWrapper.setArgs(callableWrapper.getArgs());
-                vectorizedCallableWrapper.setArgTypes(callableWrapper.getArgTypes());
-                callableWrapper = vectorizedCallableWrapper;
-            }
-        }
-
-        if (callableWrapper.isVectorized()) {
+        // could be already vectorized or to-be-vectorized,
+        if (pyCallableWrapper.isVectorizable()) {
+            ArgumentsChunked argumentsChunked = pyCallableWrapper
+                    .buildArgumentsChunked(Arrays.asList(this.analyzedFormula.sourceDescriptor.sources));
+            PyObject vectorized = pyCallableWrapper.vectorizedCallable();
             formulaColumnPython = FormulaColumnPython.create(this.columnName,
-                    DeephavenCompatibleFunction.create(callableWrapper,
-                            callableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
-                            true)); // TODO this doesn't seem needed?
+                    DeephavenCompatibleFunction.create(vectorized,
+                            pyCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
+                            argumentsChunked,
+                            true));
             formulaColumnPython.initDef(columnDefinitionMap);
         }
     }
