@@ -40,7 +40,7 @@ public class Configuration extends PropertyFile {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static Configuration TEST_NEW_Configuration() {
+    public static Configuration newConfigurationForTesting() {
         return new Configuration();
     }
 
@@ -49,7 +49,7 @@ public class Configuration extends PropertyFile {
         try {
             configurationFile = reloadProperties();
         } catch (IOException x) {
-            throw new ConfigurationException("Could not process configuration from file.", x);
+            throw new ConfigurationException("Could not process configuration from file", x);
         }
         // The quiet property is available because things like shell scripts may be parsing our System.out and they
         // don't want to have to deal with these log messages

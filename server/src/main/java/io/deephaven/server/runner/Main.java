@@ -26,6 +26,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,12 +54,11 @@ public class Main {
             bootstrapFromFile(Path.of(args[0]));
             return;
         }
-        Bootstrap.printf("# No argument, skipping bootstrapping%n");
     }
 
     private static void bootstrapFromFile(Path configFile) throws IOException {
         Bootstrap.printf("# Bootstrapping from file '%s'%n", configFile);
-        try (final Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
+        try (final Reader reader = Files.newBufferedReader(configFile, Charset.defaultCharset())) {
             System.getProperties().load(reader);
         }
     }

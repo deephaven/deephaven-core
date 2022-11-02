@@ -13,7 +13,7 @@ public final class Bootstrap {
         printf("# %s: %s%n", source.getName(), message);
     }
 
-    public static void printf(String format, Object ... args) {
+    public static void printf(String format, Object... args) {
         if (!isQuiet()) {
             System.out.printf(format, args);
         }

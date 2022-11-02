@@ -226,7 +226,7 @@ public class JpyConfigLoaderTest {
         // and Configuration not an interface...
         String existingValue = System.getProperty("Configuration.rootFile");
         System.setProperty("Configuration.rootFile", configFile);
-        Configuration config = Configuration.TEST_NEW_Configuration();
+        Configuration config = Configuration.newConfigurationForTesting();
         if (existingValue != null) {
             System.setProperty("Configuration.rootFile", existingValue);
         } else {
