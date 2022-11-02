@@ -94,6 +94,9 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
+        // Set up /js-plugins/*
+        JsPlugins.maybeAdd(context);
+
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
         // grpc-websocket, that can't multiplex all streams on a single socket
