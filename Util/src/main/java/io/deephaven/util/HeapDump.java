@@ -6,12 +6,15 @@ package io.deephaven.util;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.io.logger.Logger;
+import io.deephaven.configuration.DataDir;
 import com.sun.management.HotSpotDiagnosticMXBean;
+import io.deephaven.io.logger.Logger;
 
 import javax.management.MBeanServer;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Predicate;
@@ -26,14 +29,15 @@ public class HeapDump {
     }
 
     public static String generateHeapDumpPath() {
-        final Configuration configuration = Configuration.getInstance();
-        final String processName = configuration.getProcessName();
-        return configuration.getLogPath(processName + "_"
-                + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis())) + ".hprof");
+        final String name =
+                new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis())) + ".hprof";
+        final Path path = DataDir.get().resolve("heapDumps").resolve(name);
+        return path.toString();
     }
 
     @SuppressWarnings("WeakerAccess")
     public static void heapDump(String filename) throws IOException {
+        Files.createDirectories(Path.of(filename).getParent());
         final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         final HotSpotDiagnosticMXBean mxBean = ManagementFactory.newPlatformMXBeanProxy(server,
                 "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
@@ -68,9 +72,5 @@ public class HeapDump {
             log.info().append("Heap dump on requirement failures enabled.").endl();
             Require.setOnFailureCallback(rf -> heapDumpWrapper("Requirement failure", rf, ignore, log));
         }
-    }
-
-    public static void main(String[] args) throws IOException {
-        heapDump();
     }
 }

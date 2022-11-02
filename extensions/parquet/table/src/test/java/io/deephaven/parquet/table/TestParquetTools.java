@@ -5,7 +5,6 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -28,6 +27,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -46,9 +46,8 @@ public class TestParquetTools {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    private final static String testRoot =
-            Configuration.getInstance().getWorkspacePath() + File.separator + "TestParquetTools";
-    private final static File testRootFile = new File(testRoot);
+    private String testRoot;
+    private File testRootFile;
 
     private static Table table1;
     private static Table emptyTable;
@@ -78,11 +77,12 @@ public class TestParquetTools {
     }
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
 
-        testRootFile.mkdirs();
+        testRootFile = Files.createTempDirectory(TestParquetTools.class.getName()).toFile();
+        testRoot = testRootFile.toString();
     }
 
     @After

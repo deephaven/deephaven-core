@@ -12,14 +12,6 @@ _JDHConfig = jpy.get_type("io.deephaven.configuration.Configuration")
 _JDateTimeZone = jpy.get_type("org.joda.time.DateTimeZone")
 
 
-def get_log_dir() -> str:
-    """ Returns the server's log directory. """
-    try:
-        return _JDHConfig.getInstance().getLogDir()
-    except Exception as e:
-        raise DHError(e, "failed to get the server's log directory.") from e
-
-
 def get_server_timezone() -> TimeZone:
     """ Returns the server's time zone. """
     try:

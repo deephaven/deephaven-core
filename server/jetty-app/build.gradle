@@ -69,15 +69,17 @@ if (hasProperty('gcApplication')) {
     extraJvmArgs += ['-Dio.deephaven.app.GcApplication.enabled=true']
 }
 
+if (hasProperty('quiet')) {
+    extraJvmArgs += ['-Ddeephaven.quiet=true']
+}
+
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect
     jvmArgs extraJvmArgs
 
     jvmArgs '-XX:+UseG1GC',
             '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication',
-            // For development in this repository via Gradle, use the top-level data directory
-            "-Dstorage.path=${rootDir}/data"
+            '-XX:+UseStringDeduplication'
 }
 
 tasks.withType(CreateStartScripts).configureEach {

@@ -26,6 +26,10 @@ DEFAULT_JVM_PROPERTIES = {
     # TODO (deephaven-core#XXXX) this doesn't work yet
     # # Disable the browser console by default, this is not yet well supported
     # 'deephaven.console.disable': 'true',
+    'LoggerFactory.silenceOnProcessEnvironment': 'true',
+    'stdout.toLogBuffer': 'false',
+    'stderr.toLogBuffer': 'false',
+    'logback.configurationFile': 'logback-minimal.xml',
 }
 DEFAULT_JVM_ARGS = [
     # Disable the JVM's signal handling for interactive python consoles - if python will
@@ -47,19 +51,15 @@ def start_jvm(
         java_home: str = os.environ.get('JAVA_HOME', None),
         extra_classpath = [],
         propfile: str = None,
-        workspace: str = '.',
         config = None):
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
 
-    if propfile is None:
-        propfile = 'dh-defaults.prop'
+    system_properties = dict()
+    if propfile:
+        # Build jvm system properties starting with defaults we accept as args
+        system_properties.update({ 'Configuration.rootFile': propfile })
 
-    # Build jvm system properties starting with defaults we accept as args
-    system_properties = {
-        'workspace': workspace,
-        'Configuration.rootFile': propfile,
-    }
     # Append user-created args, allowing them to override these values
     system_properties.update(jvm_properties)
 

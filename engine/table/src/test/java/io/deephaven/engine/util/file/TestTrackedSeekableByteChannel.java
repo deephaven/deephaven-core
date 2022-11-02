@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.util.file;
 
-import io.deephaven.configuration.Configuration;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -27,7 +26,7 @@ public class TestTrackedSeekableByteChannel {
 
     @Before
     public void setup() throws IOException {
-        file = File.createTempFile("TestTrackedSeekableByteChannel-", ".dat", new File(Configuration.getInstance().getWorkspacePath()));
+        file = File.createTempFile("TestTrackedSeekableByteChannel-", ".dat");
         channel = new TrackedSeekableByteChannel(
                 f -> handle = new FileHandle(FileChannel.open(f.toPath(),
                         StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE),
