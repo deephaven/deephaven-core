@@ -9,17 +9,21 @@ import java.util.Optional;
 
 public final class ConfigDir {
     public static final String PROPERTY = "deephaven.configDir";
+    public static final String ENV_VAR = "DEEPHAVEN_CONFIG_DIR";
     static final String ROOT_FILE_PROP = "Configuration.rootFile";
     private static final String DEFAULT_CONFIG_FILE_NAME = "deephaven.prop";
     private static final String DEFAULT_CONFIGURATION_FILE = "dh-defaults.prop";
 
     /**
-     * Gets the config directory by the system property {@value #PROPERTY} if present.
+     * Gets the config directory by the system property {@value #PROPERTY} or environment variable {@value #ENV_VAR} if
+     * present.
      *
      * @return the config directory
      */
     public static Optional<Path> get() {
-        return Optional.ofNullable(System.getProperty(ConfigDir.PROPERTY)).map(Path::of);
+        return viaProperty()
+                .or(ConfigDir::viaEnvVar)
+                .map(Path::of);
     }
 
     /**
@@ -61,5 +65,13 @@ public final class ConfigDir {
 
     private static Path defaultFileName(Path p) {
         return p.resolve(DEFAULT_CONFIG_FILE_NAME);
+    }
+
+    private static Optional<String> viaProperty() {
+        return Optional.ofNullable(System.getProperty(PROPERTY));
+    }
+
+    private static Optional<String> viaEnvVar() {
+        return Optional.ofNullable(System.getenv(ENV_VAR));
     }
 }

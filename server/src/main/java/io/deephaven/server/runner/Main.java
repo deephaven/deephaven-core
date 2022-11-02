@@ -43,9 +43,8 @@ public class Main {
     public static final String SSL_CLIENT_AUTH = "ssl.clientAuthentication";
     public static final String PRIVATEKEY = "privatekey";
     public static final String CERTS = "certs";
-    public static final String DEEPHAVEN_QUALIFIER_PROPERTY = "deephaven.qualifier";
-    public static final String DEEPHAVEN_ORGANIZATION_PROPERTY = "deephaven.organization";
     public static final String DEEPHAVEN_APPLICATION_PROPERTY = "deephaven.application";
+    public static final String DEEPHAVEN_APPLICATION_ENV = "DEEPHAVEN_APPLICATION";
 
     private static void bootstrapSystemProperties(String[] args) throws IOException {
         if (args.length > 1) {
@@ -65,11 +64,12 @@ public class Main {
     }
 
     private static void bootstrapProjectDirectories() throws IOException {
+        final String applicationName =
+                applicationProperty().or(Main::applicationEnvironmentVariable).orElse("deephaven");
+
         // Default directories based on the underlying OS conventions
-        final dev.dirs.ProjectDirectories defaultDirectories = dev.dirs.ProjectDirectories.from(
-                System.getProperty(DEEPHAVEN_QUALIFIER_PROPERTY, "io"),
-                System.getProperty(DEEPHAVEN_ORGANIZATION_PROPERTY, "Deephaven Data Labs"),
-                System.getProperty(DEEPHAVEN_APPLICATION_PROPERTY, "deephaven"));
+        final dev.dirs.ProjectDirectories defaultDirectories =
+                dev.dirs.ProjectDirectories.from("io", "Deephaven Data Labs", applicationName);
 
         final Path cacheDir = CacheDir.getOrSet(defaultDirectories.cacheDir);
         final Path configDir = ConfigDir.getOrSet(defaultDirectories.configDir);
@@ -210,5 +210,13 @@ public class Main {
 
     private static String prefix(String prefix, String key) {
         return prefix != null ? prefix + key : key;
+    }
+
+    private static Optional<String> applicationProperty() {
+        return Optional.ofNullable(System.getProperty(DEEPHAVEN_APPLICATION_PROPERTY));
+    }
+
+    private static Optional<String> applicationEnvironmentVariable() {
+        return Optional.ofNullable(System.getenv(DEEPHAVEN_APPLICATION_ENV));
     }
 }

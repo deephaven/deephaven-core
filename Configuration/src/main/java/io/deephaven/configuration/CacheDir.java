@@ -12,10 +12,15 @@ import java.nio.file.Path;
  */
 public final class CacheDir {
     public static final String PROPERTY = "deephaven.cacheDir";
+    public static final String ENV_VAR = "DEEPHAVEN_CACHE_DIR";
+
     private static final String JAVA_IO_TMPDIR = "java.io.tmpdir";
 
     /**
      * Return the system property value for {@value CacheDir#PROPERTY} if it is present.
+     *
+     * <p>
+     * Otherwise, return the environment value for {@value CacheDir#ENV_VAR} if it is present.
      *
      * <p>
      * Otherwise, return "%s/deephaven/cache", parameterized from the value of the system property
@@ -24,9 +29,15 @@ public final class CacheDir {
      * @return the cache dir
      */
     public static Path get() {
-        final String explicitCacheDir = System.getProperty(PROPERTY);
-        return explicitCacheDir != null ? Path.of(explicitCacheDir)
-                : Path.of(System.getProperty(JAVA_IO_TMPDIR), "deephaven", "cache");
+        final String explicitProp = System.getProperty(PROPERTY);
+        if (explicitProp != null) {
+            return Path.of(explicitProp);
+        }
+        final String explicitEnv = System.getenv(ENV_VAR);
+        if (explicitEnv != null) {
+            return Path.of(explicitEnv);
+        }
+        return Path.of(System.getProperty(JAVA_IO_TMPDIR), "deephaven", "cache");
     }
 
     /**
