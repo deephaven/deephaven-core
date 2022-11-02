@@ -8,6 +8,7 @@ import io.deephaven.configuration.CacheDir;
 import io.deephaven.configuration.ConfigDir;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.internal.log.Bootstrap;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBufferGlobal;
@@ -20,6 +21,7 @@ import io.deephaven.ssl.config.SSLConfig.Builder;
 import io.deephaven.ssl.config.SSLConfig.ClientAuth;
 import io.deephaven.ssl.config.Trust;
 import io.deephaven.ssl.config.TrustCertificates;
+import io.deephaven.util.HeapDump;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -27,7 +29,6 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -125,6 +126,8 @@ public class Main {
         final ProcessEnvironment processEnvironment =
                 ProcessEnvironment.basicInteractiveProcessInitialization(config, mainClass.getName(), log);
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
+        HeapDump.setupHeapDumpWithDefaults(config,
+                (final RuntimeException unused) -> ConstructSnapshot.concurrentAttemptInconsistent(), log);
         return config;
     }
 
