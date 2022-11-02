@@ -62,6 +62,10 @@ if (hasProperty('gcApplication')) {
     extraJvmArgs += ['-Dio.deephaven.app.GcApplication.enabled=true']
 }
 
+if (hasProperty('quiet')) {
+    extraJvmArgs += ['-Ddeephaven.quiet=true']
+}
+
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect
     jvmArgs extraJvmArgs

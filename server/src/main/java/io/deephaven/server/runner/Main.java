@@ -8,6 +8,7 @@ import io.deephaven.configuration.CacheDir;
 import io.deephaven.configuration.ConfigDir;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
+import io.deephaven.internal.log.Bootstrap;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.io.logger.LogBufferInterceptor;
@@ -52,11 +53,11 @@ public class Main {
             bootstrapFromFile(Path.of(args[0]));
             return;
         }
-        System.out.println("# No argument, skipping bootstrapping");
+        Bootstrap.printf("# No argument, skipping bootstrapping%n");
     }
 
     private static void bootstrapFromFile(Path configFile) throws IOException {
-        System.out.printf("# Bootstrapping from file '%s'%n", configFile);
+        Bootstrap.printf("# Bootstrapping from file '%s'%n", configFile);
         try (final Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
             System.getProperties().load(reader);
         }
@@ -76,7 +77,7 @@ public class Main {
         Files.createDirectories(cacheDir);
         Files.createDirectories(dataDir);
 
-        System.out.printf("%s=%s%n%s=%s%n%s=%s%n",
+        Bootstrap.printf("%s=%s%n%s=%s%n%s=%s%n",
                 CacheDir.PROPERTY,
                 cacheDir,
                 ConfigDir.PROPERTY,
@@ -95,7 +96,7 @@ public class Main {
      */
     @NotNull
     public static Configuration init(String[] args, Class<?> mainClass) throws IOException {
-        System.out.printf("# Starting %s%n", mainClass.getName());
+        Bootstrap.printf("# Starting %s%n", mainClass.getName());
 
         // No classes should be loaded before we bootstrap additional system properties
         bootstrapSystemProperties(args);

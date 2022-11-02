@@ -3,6 +3,7 @@
  */
 package io.deephaven.configuration;
 
+import io.deephaven.internal.log.Bootstrap;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
@@ -52,7 +53,7 @@ public class Configuration extends PropertyFile {
         }
         // The quiet property is available because things like shell scripts may be parsing our System.out and they
         // don't want to have to deal with these log messages
-        if (System.getProperty(QUIET_PROPERTY) == null) {
+        if (!isQuiet()) {
             log.info().append("Configuration: configuration file is ").append(configurationFile).endl();
         }
     }
@@ -310,5 +311,9 @@ public class Configuration extends PropertyFile {
             String sRightValue2) {
         out.append(sKey).append(", \"").append(sLeftValue).append("\", \"").append(sRightValue).append("\", \"")
                 .append(sRightValue2).append("\"\n");
+    }
+
+    static boolean isQuiet() {
+        return Bootstrap.isQuiet() || System.getProperty(QUIET_PROPERTY) != null;
     }
 }
