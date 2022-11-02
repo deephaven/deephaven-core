@@ -566,7 +566,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(4).toTracking(),
     // col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
     //
-    // final Table treed = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
+    // final Table treed = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTable
     // .promoteOrphans(source, "Sentinel", "Parent").tree("Sentinel", "Parent"));
     // TableTools.showWithRowSet(treed);
     // assertEquals(3, treed.size());
@@ -1077,13 +1077,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // @Override
     // protected Table e() {
     // return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
-    // () -> TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared, "ID", "Parent"));
+    // () -> TreeTable.promoteOrphans((QueryTable) prepared, "ID", "Parent"));
     // }
     // },
     // new EvalNugget() {
     // @Override
     // protected Table e() {
-    // return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
+    // return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTable
     // .promoteOrphans((QueryTable) prepared.where("Sentinel % 2 == 0"), "ID", "Parent"));
     // }
     // },
@@ -1091,7 +1091,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // @Override
     // protected Table e() {
     // return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared
+    // .computeLocked(() -> TreeTable.promoteOrphans((QueryTable) prepared
     // .where("Sentinel % 2 == 0"), "ID", "Parent").tree("ID", "Parent"));
     // }
     // },
@@ -1401,7 +1401,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // final SafeCloseable scopeCloseable = LivenessScopeStack.open();
     //
-    // final Table promoted = TreeTableOrphanPromoter.promoteOrphans(table, "IntCol", "ParentCol");
+    // final Table promoted = TreeTable.promoteOrphans(table, "IntCol", "ParentCol");
     // final Table treed = promoted.tree("IntCol", "ParentCol");
     //
     // final SingletonLivenessManager treeManager = new SingletonLivenessManager(treed);

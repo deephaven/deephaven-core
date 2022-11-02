@@ -947,13 +947,16 @@ public interface Table extends
      * <p>
      * The structure of the table is encoded by an "id" and a "parent" column. The id column should represent a unique
      * identifier for a given row, and the parent column indicates which row is the parent for a given row. Rows that
-     * have a null parent, are shown in the main table. It is possible for rows to be "orphaned", if their parent
-     * reference is non-null and does not exist in the table.
+     * have a {@code null} parent are part of the "root" table.
+     * <p>
+     * It is possible for rows to be "orphaned" if their parent is non-{@code null} and does not exist in the table.
+     * See {@link TreeTable#promoteOrphans(Table, String, String)}.
      *
-     * @param idColumn the name of a column containing a unique identifier for a particular row in the table
-     * @param parentColumn the name of a column containing the parent's identifier, null for elements that are part of
-     *        the root table
-     * @return a hierarchical table grouped according to the parentColumn
+     * @param idColumn The name of a column containing a unique identifier for a particular row in the table
+     * @param parentColumn The name of a column containing the parent's identifier, {@code null} for rows that are
+     *        part of the root table
+     * @return A {@link TreeTable} organized according to the parent-child relationships expressed by {@code idColumn}
+     * and {@code parentColumn}
      */
     @ConcurrentMethod
     TreeTable tree(String idColumn, String parentColumn);
