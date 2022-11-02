@@ -32,7 +32,7 @@ ENV \
     DEEPHAVEN_CACHE_DIR="/cache" \
     DEEPHAVEN_CONFIG_DIR="/opt/deephaven/config" \
     DEEPHAVEN_DATA_DIR="/data" \
-    JAVA_OPTS="-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -Ddeephaven.console.type=groovy"
+    START_OPTS="-Ddeephaven.console.type=groovy"
 ENTRYPOINT [ "/opt/deephaven/server/bin/start" ]
 
 ARG DEEPHAVEN_VERSION

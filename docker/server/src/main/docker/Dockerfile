@@ -32,8 +32,7 @@ HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -
 ENV \
     DEEPHAVEN_CACHE_DIR="/cache" \
     DEEPHAVEN_CONFIG_DIR="/opt/deephaven/config" \
-    DEEPHAVEN_DATA_DIR="/data" \
-    JAVA_OPTS="-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication"
+    DEEPHAVEN_DATA_DIR="/data"
 ENTRYPOINT [ "/opt/deephaven/server/bin/start" ]
 ARG DEEPHAVEN_VERSION
 ARG SERVER

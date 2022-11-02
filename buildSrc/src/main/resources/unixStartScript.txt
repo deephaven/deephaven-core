@@ -47,7 +47,13 @@ APP_BASE_NAME=`basename "\$0"`
 DEFAULT_JVM_OPTS=${defaultJvmOpts}
 
 # Customization for deephaven-core to reference a compiler directives file
-DEFAULT_JVM_OPTS="\${DEFAULT_JVM_OPTS} -XX:+UnlockDiagnosticVMOptions -XX:CompilerDirectivesFile=\"\${APP_HOME}/lib/dh-compiler-directives.txt\""
+# There is no easy way for users to override these options
+DEFAULT_JVM_OPTS="\${DEFAULT_JVM_OPTS} -XX:+UnlockDiagnosticVMOptions -XX:CompilerDirectivesFile=\"\${APP_HOME}/etc/dh-compiler-directives.txt\""
+
+# Customization for deephaven-core to include vm options file by default
+# If users explicitly set JAVA_OPTS, the will be opting out of dh-default.vmoptions
+DH_DEFAULT_VMOPTIONS="-XX:VMOptionsFile=\"\${APP_HOME}/etc/dh-default.vmoptions\""
+JAVA_OPTS="\${JAVA_OPTS:-\${DH_DEFAULT_VMOPTIONS}}"
 
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD="maximum"
