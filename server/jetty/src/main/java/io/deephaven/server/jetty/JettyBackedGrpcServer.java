@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.resource.Resource;
@@ -73,6 +74,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         } catch (IOException ioException) {
             throw new UncheckedIOException(ioException);
         }
+        context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
 
         // For the Web UI, cache everything in the static folder
         // https://create-react-app.dev/docs/production-build/#static-file-caching
@@ -122,13 +124,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
             });
         }
 
+        // Note: handler order matters
         HandlerCollection handlers = new HandlerCollection();
-
         // Set up /js-plugins/*
         JsPlugins.maybeAdd(handlers::addHandler);
-
         handlers.addHandler(context);
-
         jetty.setHandler(handlers);
     }
 
