@@ -41,7 +41,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             source.listenForUpdates(new BaseTable.ListenerImpl("", source, shiftApplyTable) {
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                    shiftOutputColumns(upstream);
+//                    shiftOutputColumns(upstream);
                     super.onUpdate(upstream);
                 }
             });
@@ -94,7 +94,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
         // do the actual computations
         UpdateByBucketHelper[] dirtyBuckets = new UpdateByBucketHelper[] {zeroKeyUpdateBy};
-        processBuckets(dirtyBuckets, true, source.getRowSet());
+        processBuckets(dirtyBuckets, true, RowSetShiftData.EMPTY);
         finalizeBuckets(dirtyBuckets);
     }
 

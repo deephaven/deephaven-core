@@ -1096,6 +1096,10 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                 }
             }
         }
+
+        public void prepareForParallelPopulation(RowSet rowSet) {
+            wrapped.prepareForParallelPopulation(rowSet);
+        }
     }
     // endregion reinterpretation
 }

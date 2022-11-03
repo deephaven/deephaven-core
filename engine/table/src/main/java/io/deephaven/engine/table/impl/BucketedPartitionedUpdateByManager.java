@@ -82,7 +82,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             source.listenForUpdates(new BaseTable.ListenerImpl("", source, shiftApplyTable) {
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                    shiftOutputColumns(upstream);
+//                    shiftOutputColumns(upstream);
                     super.onUpdate(upstream);
                 }
             });
@@ -108,16 +108,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             for (UpdateByOperator op : operators) {
                 op.createInputModifiedColumnSet(source);
             }
-        }
-
-        if (redirContext.isRedirected()) {
-            // make a dummy update to generate the initial row keys
-            final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
-                    RowSetFactory.empty(),
-                    RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY,
-                    ModifiedColumnSet.EMPTY);
-            redirContext.processUpdateForRedirection(fakeUpdate, source.getRowSet());
         }
 
         final PartitionedTable transformed = pt.transform(t -> {
@@ -153,9 +143,19 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         result.addParentReference(transformed);
 
-        // do the actual computations
+        if (redirContext.isRedirected()) {
+            // make a dummy update to generate the initial row keys
+            final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
+                    RowSetFactory.empty(),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.EMPTY);
+            redirContext.processUpdateForRedirection(fakeUpdate, source.getRowSet());
+        }
+
         UpdateByBucketHelper[] dirtyBuckets = buckets.toArray(UpdateByBucketHelper[]::new);
-        processBuckets(dirtyBuckets, true, source.getRowSet());
+
+        processBuckets(dirtyBuckets, true, RowSetShiftData.EMPTY);
         finalizeBuckets(dirtyBuckets);
     }
 }

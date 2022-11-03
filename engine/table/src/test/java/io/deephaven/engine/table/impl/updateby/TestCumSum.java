@@ -163,7 +163,7 @@ public class TestCumSum extends BaseUpdateByTest {
 
     @Test
     public void testBucketedGeneralTicking() {
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(100, true, false, true, 0x31313131);
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {

@@ -184,7 +184,12 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
     public void prepareForParallelPopulation(final RowSet added) {
         // we don't need to do anything for redirected, that happened earlier
         if (!redirContext.isRedirected()) {
-            ((SparseArrayColumnSource<?>) outputSource).prepareForParallelPopulation(added);
+            // this might be a Boolean reinterpreted column source
+            if (outputSource instanceof BooleanSparseArraySource.ReinterpretedAsByte) {
+                ((BooleanSparseArraySource.ReinterpretedAsByte) outputSource).prepareForParallelPopulation(added);
+            } else {
+                ((SparseArrayColumnSource<?>) outputSource).prepareForParallelPopulation(added);
+            }
         }
     }
 
