@@ -2,13 +2,18 @@ package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.api.*;
 import io.deephaven.engine.liveness.LivenessManager;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 /**
@@ -91,12 +96,15 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
      * Adapt a {@code source} {@link Table} to be used for a {@link Table#tree(String, String) tree} to ensure that the
      * result will have no orphaned nodes. Nodes whose parents do not exist will become children of the root node in the
      * resulting tree. The expected usage pattern is:
-     * <pre>TreeTable result = promoteOrphans(source, idColumn, parentColumn).tree(idColumn, parentColumn)</pre>
-     *
+     * 
+     * <pre>
+     * TreeTable result = promoteOrphans(source, idColumn, parentColumn).tree(idColumn, parentColumn)
+     * </pre>
+     * 
      * @param source The source {@link Table}
      * @param idColumn The name of a column containing a unique identifier for a particular row in the table
-     * @param parentColumn The name of a column containing the parent's identifier, {@code null} for rows that are
-     *        part of the root table
+     * @param parentColumn The name of a column containing the parent's identifier, {@code null} for rows that are part
+     *        of the root table
      * @return A {@link Table} derived from {@code source} that has {@code null} as the parent for any nodes that would
      *         have been orphaned by a call to {@code source.tree(idColumn, parentColumn)}
      */
@@ -107,17 +115,14 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
         final ColumnName grandparent = ColumnName.of("__GRANDPARENT__");
         final ColumnName parent = ColumnName.of(parentColumn);
         final ColumnName identifier = ColumnName.of(idColumn);
-        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = source.isRefreshing() ? LivenessScopeStack.open() : null) {
-            final Table joined = source.naturalJoin(source,
-                    List.of(JoinMatch.of(parent, identifier)),
-                    List.of(JoinAddition.of(grandparent, parent)));
-            final Table promoted = joined.updateView(Selectable.of(parent,
-                    RawString.of("isNull(" + grandparent.name() + ") ? null : " + parent.name())));
-            if (promoted.isRefreshing()) {
-                enclosingLivenessManager.manage(promoted);
-            }
-            return promoted;
-        }
+        return LivenessScopeStack.computeEnclosed(
+                () -> source
+                        .naturalJoin(source,
+                                List.of(JoinMatch.of(parent, identifier)),
+                                List.of(JoinAddition.of(grandparent, parent)))
+                        .updateView(Selectable.of(parent,
+                                RawString.of("isNull(" + grandparent.name() + ") ? null : " + parent.name()))),
+                source::isRefreshing,
+                DynamicNode::isRefreshing);
     }
 }
