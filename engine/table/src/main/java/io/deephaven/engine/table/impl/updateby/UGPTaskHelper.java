@@ -50,8 +50,8 @@ public class UGPTaskHelper {
         protected abstract void complete();
     }
 
-    private static class UGPTaskHelperSerialNotification<T> extends UGPTaskHelperNotification {
-        private UGPTaskHelperSerialNotification(ArrayList<T> dataList, AtomicInteger nextTask, AtomicInteger tasksCompleted, WorkerAction workerAction, Runnable completeAction) {
+    private static class UGPTaskHelperSerialNotification<T> extends UGPTaskHelperNotification<T> {
+        private UGPTaskHelperSerialNotification(ArrayList<T> dataList, AtomicInteger nextTask, AtomicInteger tasksCompleted, WorkerAction<T> workerAction, Runnable completeAction) {
             super(dataList, nextTask, tasksCompleted, workerAction, completeAction);
         }
 
@@ -68,8 +68,8 @@ public class UGPTaskHelper {
         }
     }
 
-    private static class UGPTaskHelperParallelNotification<T> extends UGPTaskHelperNotification {
-        private UGPTaskHelperParallelNotification(ArrayList<T> dataList, AtomicInteger nextTask, AtomicInteger tasksCompleted, WorkerAction workerAction, Runnable completeAction) {
+    private static class UGPTaskHelperParallelNotification<T> extends UGPTaskHelperNotification<T> {
+        private UGPTaskHelperParallelNotification(ArrayList<T> dataList, AtomicInteger nextTask, AtomicInteger tasksCompleted, WorkerAction<T> workerAction, Runnable completeAction) {
             super(dataList, nextTask, tasksCompleted, workerAction, completeAction);
         }
 
@@ -88,7 +88,7 @@ public class UGPTaskHelper {
         final AtomicInteger nextTask = new AtomicInteger(0);
 
         // create and schedule a single notification, will auto serialize
-        UGPTaskHelperSerialNotification notification = new UGPTaskHelperSerialNotification<T>(dataObjects, nextTask, completed, workerAction, completedAction);
+        UGPTaskHelperSerialNotification<T> notification = new UGPTaskHelperSerialNotification<>(dataObjects, nextTask, completed, workerAction, completedAction);
         UpdateGraphProcessor.DEFAULT.addNotification(notification);
     }
 
@@ -98,7 +98,7 @@ public class UGPTaskHelper {
 
         // create and schedule a notification for each object
         for (int ii = 0; ii < dataObjects.size(); ii++) {
-            UGPTaskHelperParallelNotification notification = new UGPTaskHelperParallelNotification<T>(dataObjects, nextTask, completed, workerAction, completedAction);
+            UGPTaskHelperParallelNotification<T> notification = new UGPTaskHelperParallelNotification<>(dataObjects, nextTask, completed, workerAction, completedAction);
             UpdateGraphProcessor.DEFAULT.addNotification(notification);
         }
     }
