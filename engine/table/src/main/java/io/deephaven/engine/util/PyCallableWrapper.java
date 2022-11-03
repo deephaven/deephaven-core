@@ -71,6 +71,9 @@ public class PyCallableWrapper {
             if (arg instanceof ColumnChunkArgument) {
                 String columnName = ((ColumnChunkArgument) arg).getColumnName();
                 int chunkSourceIndex = columnSources.indexOf(columnName);
+                if (chunkSourceIndex < 0) {
+                    throw new IllegalArgumentException("Column source not found: " + columnName);
+                }
                 ((ColumnChunkArgument) arg).setChunkSourceIndex(chunkSourceIndex);
             } else {
                 args[i] = ((ConstantChunkArgument) arg).getValue();

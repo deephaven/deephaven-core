@@ -69,6 +69,9 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
+_numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "O"]
+
+
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
     type to numpy dtype chars (i,l,h,f,d,b,?,O), and pack them into a string with parameter type chars first,
@@ -92,7 +95,11 @@ def _encode_signature(fn: Callable) -> str:
         return_type = np.dtype("object")
 
     np_type_codes = [np.dtype(p).char for p in parameter_types]
-    np_type_codes.extend(["-", ">", np.dtype(return_type).char])
+    np_type_codes = [c if c in _numpy_type_codes else "O" for c in np_type_codes]
+    return_type_code = np.dtype(return_type).char
+    return_type_code = return_type_code if return_type_code in _numpy_type_codes else "O"
+
+    np_type_codes.extend(["-", ">", return_type_code])
     return "".join(np_type_codes)
 
 
