@@ -26,14 +26,18 @@ public class DataDir {
     }
 
     /**
-     * Gets the data directory if the system property {@value #PROPERTY} or {@value WORKSPACE_PROPERTY} is present,
-     * otherwise sets the system property {@value #PROPERTY} to {@code defaultValue} and returns {@code defaultValue}.
+     * Gets the data directory if the system property {@value #PROPERTY} or {@value WORKSPACE_PROPERTY} is present, or
+     * if the environment variable {@value #ENV_VAR} is present, otherwise sets the system property {@value #PROPERTY}
+     * to {@code defaultValue} and returns {@code defaultValue}.
      *
      * @param defaultValue the value to set if none is present
      * @return the data directory
      */
     public static Path getOrSet(String defaultValue) {
-        final String existing = System.getProperty(PROPERTY, System.getProperty(WORKSPACE_PROPERTY, null));
+        final String existing = viaProperty()
+                .or(DataDir::viaWorkspace)
+                .or(DataDir::viaEnvironmentVariable)
+                .orElse(null);
         if (existing != null) {
             return Path.of(existing);
         }

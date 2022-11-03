@@ -27,14 +27,17 @@ public final class ConfigDir {
     }
 
     /**
-     * Gets the config directory if the system property {@value #PROPERTY} is present, otherwise sets the system
-     * property {@value #PROPERTY} to {@code defaultValue} and returns {@code defaultValue}.
+     * Gets the config directory if the system property {@value #PROPERTY} or environment variable {@value #ENV_VAR} is
+     * present, otherwise sets the system property {@value #PROPERTY} to {@code defaultValue} and returns
+     * {@code defaultValue}.
      *
      * @param defaultValue the value to set if none is present
      * @return the config directory
      */
     public static Path getOrSet(String defaultValue) {
-        final String existing = System.getProperty(PROPERTY);
+        final String existing = viaProperty()
+                .or(ConfigDir::viaEnvVar)
+                .orElse(null);
         if (existing != null) {
             return Path.of(existing);
         }
