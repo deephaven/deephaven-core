@@ -34,7 +34,7 @@ class JsPlugins {
             context.setSecurityHandler(new ConstraintSecurityHandler());
             addHandler.accept(context);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new IllegalStateException(String.format("Unable to resolve resourceBase '%s'", resourceBase), e);
         }
     }
 }
