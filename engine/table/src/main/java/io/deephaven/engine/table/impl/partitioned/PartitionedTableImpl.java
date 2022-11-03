@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -335,38 +336,26 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         for (int kci = 0; kci < numKeys; ++kci) {
             filters.add(new MatchFilter(keyColumnNames[kci], keyColumnValues[kci]));
         }
-        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Table[] matchingConstituents = filter(filters).snapshotConstituents();
-            if (matchingConstituents.length > 1) {
-                throw new UnsupportedOperationException(
-                        "Result size mismatch: expected 0 or 1 results, instead found "
-                                + matchingConstituents.length);
-            }
-            if (matchingConstituents.length == 1) {
-                final Table constituent = matchingConstituents[0];
-                if (constituent.isRefreshing()) {
-                    enclosingLivenessManager.manage(constituent);
-                }
-                return constituent;
-            }
-            return null;
-        }
+        return LivenessScopeStack.computeEnclosed(() -> {
+                    final Table[] matchingConstituents = filter(filters).snapshotConstituents();
+                    final int matchingCount = matchingConstituents.length;
+                    if (matchingCount > 1) {
+                        throw new UnsupportedOperationException(
+                                "Result size mismatch: expected 0 or 1 results, instead found " + matchingCount);
+                    }
+                    return matchingCount == 1 ? matchingConstituents[0] : null;
+                },
+                table::isRefreshing,
+                constituent -> constituent != null && constituent.isRefreshing());
     }
 
     @ConcurrentMethod
     @Override
     public Table[] constituents() {
-        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Table[] constituents = snapshotConstituents();
-            Arrays.stream(constituents).forEach((final Table constituent) -> {
-                if (constituent.isRefreshing()) {
-                    enclosingLivenessManager.manage(constituent);
-                }
-            });
-            return constituents;
-        }
+        return LivenessScopeStack.computeArrayEnclosed(
+                this::snapshotConstituents,
+                table::isRefreshing,
+                constituent -> constituent != null && constituent.isRefreshing());
     }
 
     private Table[] snapshotConstituents() {

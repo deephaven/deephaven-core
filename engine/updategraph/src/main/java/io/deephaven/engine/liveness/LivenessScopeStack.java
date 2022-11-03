@@ -9,6 +9,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * <p>
@@ -151,6 +154,61 @@ public class LivenessScopeStack {
         public void close() {
             pop(scope);
             scope.release();
+        }
+    }
+
+    /**
+     * Perform a computation guarded by a new {@link LivenessScope} that is released before this method returns. The
+     * result of the computation is managed by the enclosing {@link LivenessManager}, as determined by {@link #peek()}.
+     *
+     * @param computation The computation to perform. Will be invoked exactly once.
+     * @param shouldEnclose Whether its actually necessary to use a new LivenessScope for the computation. Will be
+     *        invoked exactly once.
+     * @param shouldManageResult Whether its necessary to manage the result with the enclosing LivenessScope. Will be
+     *        invoked exactly once.
+     * @return The result of {@code computation.get()}
+     */
+    public static <RESULT_TYPE extends LivenessReferent> RESULT_TYPE computeEnclosed(
+            @NotNull final Supplier<RESULT_TYPE> computation,
+            @NotNull final BooleanSupplier shouldEnclose,
+            @NotNull final Predicate<RESULT_TYPE> shouldManageResult) {
+        final boolean manage = shouldEnclose.getAsBoolean();
+        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
+        try (final SafeCloseable ignored = manage ? LivenessScopeStack.open() : null) {
+            final RESULT_TYPE result = computation.get();
+            if (shouldManageResult.test(result)) {
+                enclosingLivenessManager.manage(result);
+            }
+            return result;
+        }
+    }
+
+    /**
+     * Perform a computation guarded by a new {@link LivenessScope} that is released before this method returns. The
+     * results of the computation are managed by the enclosing {@link LivenessManager}, as determined by
+     * {@link #peek()}.
+     *
+     * @param computation The computation to perform. Will be invoked exactly once.
+     * @param shouldEnclose Whether its actually necessary to use a new LivenessScope for the computation. Will be
+     *        invoked exactly once.
+     * @param shouldManageResult Whether its necessary to manage the result with the enclosing LivenessScope. Will be
+     *        invoked exactly once per result.
+     * @return The results of {@code computation.get()}
+     */
+    public static <RESULT_TYPE extends LivenessReferent> RESULT_TYPE[] computeArrayEnclosed(
+            @NotNull final Supplier<RESULT_TYPE[]> computation,
+            @NotNull final BooleanSupplier shouldEnclose,
+            @NotNull final Predicate<RESULT_TYPE> shouldManageResult) {
+        final boolean manage = shouldEnclose.getAsBoolean();
+        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
+        try (final SafeCloseable ignored = manage ? LivenessScopeStack.open() : null) {
+            final RESULT_TYPE[] results = computation.get();
+            for (final RESULT_TYPE result : results) {
+                if (shouldManageResult.test(result)) {
+                    enclosingLivenessManager.manage(result);
+                }
+            }
+            return results;
         }
     }
 }
