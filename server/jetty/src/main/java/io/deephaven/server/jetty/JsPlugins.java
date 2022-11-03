@@ -26,7 +26,8 @@ class JsPlugins {
         }
         try {
             Resource resource = ControlledCacheResource.wrap(Resource.newResource(resourceBase));
-            WebAppContext context = new WebAppContext(null, "/js-plugins/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
+            WebAppContext context =
+                    new WebAppContext(null, "/js-plugins/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
             context.setBaseResource(resource);
             context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
             // Suppress warnings about security handlers
