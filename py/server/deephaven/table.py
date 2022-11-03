@@ -127,10 +127,9 @@ class DhVectorize:
         def is_chunked(v) -> bool:
             if not isinstance(v, jpy.JType):
                 return False
-            try:
-                iter(v)
+            if v.jclass.toString().startswith("class ["):
                 return True
-            except:
+            else:
                 return False
 
         # upon being called the first time, set up the return array and constant arguments for reuse in subsequent calls
