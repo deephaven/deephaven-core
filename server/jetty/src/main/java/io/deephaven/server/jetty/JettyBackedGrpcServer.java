@@ -51,7 +51,7 @@ import java.util.function.Supplier;
 
 import static io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream.GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL;
 import static io.grpc.servlet.web.websocket.WebSocketServerStream.GRPC_WEBSOCKETS_PROTOCOL;
-import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
+import static org.eclipse.jetty.servlet.ServletContextHandler.NO_SESSIONS;
 
 public class JettyBackedGrpcServer implements GrpcServer {
 
@@ -65,7 +65,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         jetty.addConnector(createConnector(jetty, config));
 
         final WebAppContext context =
-                new WebAppContext(null, "/", null, null, null, new ErrorPageErrorHandler(), SESSIONS);
+                new WebAppContext(null, "/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
         try {
             String knownFile = "/ide/index.html";
             URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
@@ -124,10 +124,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
             });
         }
 
-        // Note: handler order matters
+        // Note: handler order matters due to pathSpec order
         HandlerCollection handlers = new HandlerCollection();
         // Set up /js-plugins/*
         JsPlugins.maybeAdd(handlers::addHandler);
+        // Set up /*
         handlers.addHandler(context);
         jetty.setHandler(handlers);
     }
