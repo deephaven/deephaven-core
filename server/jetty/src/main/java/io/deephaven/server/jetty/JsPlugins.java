@@ -1,13 +1,21 @@
 package io.deephaven.server.jetty;
 
 import io.deephaven.configuration.Configuration;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.function.Consumer;
+
+import static org.eclipse.jetty.servlet.ServletContextHandler.NO_SESSIONS;
 
 class JsPlugins {
 
-    public static void maybeAdd(ServletContextHandler context) {
+    public static void maybeAdd(Consumer<Handler> addHandler) {
         // Note: this would probably be better to live in JettyConfig - but until we establish more formal expectations
         // for js plugin configuration and workflows, we'll keep this here.
         final String resourceBase =
@@ -15,15 +23,17 @@ class JsPlugins {
         if (resourceBase == null) {
             return;
         }
-        context.addServlet(createServlet("js-plugins", resourceBase), "/js-plugins/*");
-    }
+        try {
+            Resource resource = ControlledCacheResource.wrap(Resource.resolveAlias(Resource.newResource(resourceBase)));
+            WebAppContext context = new WebAppContext(null, "/js-plugins/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
+            context.setBaseResource(resource);
 
-    private static ServletHolder createServlet(String name, String resourceBase) {
-        final ServletHolder jsPlugins = new ServletHolder(name, DefaultServlet.class);
-        jsPlugins.setInitParameter("resourceBase", resourceBase);
-        jsPlugins.setInitParameter("pathInfoOnly", "true");
-        jsPlugins.setInitParameter("dirAllowed", "false");
-        jsPlugins.setAsyncSupported(true);
-        return jsPlugins;
+            // Suppress warnings about security handlers
+            context.setSecurityHandler(new ConstraintSecurityHandler());
+
+            addHandler.accept(context);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

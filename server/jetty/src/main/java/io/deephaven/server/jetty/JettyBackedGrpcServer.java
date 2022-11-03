@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.resource.Resource;
@@ -85,17 +86,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Add an extra filter to redirect from / to /ide/
         context.addFilter(HomeFilter.class, "/", EnumSet.noneOf(DispatcherType.class));
 
-        // Direct jetty all use this configuration as the root application
-        context.setContextPath("/");
-
         // Handle grpc-web connections, translate to vanilla grpc
         context.addFilter(new FilterHolder(new GrpcWebFilter()), "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
-
-        // Set up /js-plugins/*
-        JsPlugins.maybeAdd(context);
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
@@ -126,7 +121,15 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 );
             });
         }
-        jetty.setHandler(context);
+
+        HandlerCollection handlers = new HandlerCollection();
+
+        // Set up /js-plugins/*
+        JsPlugins.maybeAdd(handlers::addHandler);
+
+        handlers.addHandler(context);
+
+        jetty.setHandler(handlers);
     }
 
     @Override
