@@ -4,6 +4,7 @@
 package io.deephaven.configuration;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * The cache directory is a directory that the application may use for storing data with "cache-like" semantics.
@@ -29,30 +30,38 @@ public final class CacheDir {
      * @return the cache dir
      */
     public static Path get() {
-        final String explicitProp = System.getProperty(PROPERTY);
-        if (explicitProp != null) {
-            return Path.of(explicitProp);
-        }
-        final String explicitEnv = System.getenv(ENV_VAR);
-        if (explicitEnv != null) {
-            return Path.of(explicitEnv);
-        }
-        return Path.of(System.getProperty(JAVA_IO_TMPDIR), "deephaven", "cache");
+        return viaProperty()
+                .or(CacheDir::viaEnvVar)
+                .map(Path::of)
+                .orElseGet(CacheDir::viaTmpDir);
     }
 
     /**
-     * Gets the cache directory if the system property {@value #PROPERTY} is present, otherwise sets the system property
-     * {@value #PROPERTY} to {@code defaultValue} and returns {@code defaultValue}.
+     * Gets the cache directory if the system property {@value #PROPERTY} or environment variable {@value #ENV_VAR} is
+     * present, otherwise sets the system property {@value #PROPERTY} to {@code defaultValue} and returns
+     * {@code defaultValue}.
      *
      * @param defaultValue the value to set if none is present
      * @return the cache directory
      */
     public static Path getOrSet(String defaultValue) {
-        final String existing = System.getProperty(PROPERTY);
+        final String existing = viaProperty().or(CacheDir::viaEnvVar).orElse(null);
         if (existing != null) {
             return Path.of(existing);
         }
         System.setProperty(PROPERTY, defaultValue);
         return Path.of(defaultValue);
+    }
+
+    private static Optional<String> viaProperty() {
+        return Optional.ofNullable(System.getProperty(PROPERTY));
+    }
+
+    private static Optional<String> viaEnvVar() {
+        return Optional.ofNullable(System.getenv(ENV_VAR));
+    }
+
+    private static Path viaTmpDir() {
+        return Path.of(System.getProperty(JAVA_IO_TMPDIR), "deephaven", "cache");
     }
 }
