@@ -3,10 +3,15 @@
  */
 package io.deephaven.internal.log;
 
+import java.util.Optional;
+
 public final class Bootstrap {
 
     public static boolean isQuiet() {
-        return Boolean.getBoolean("deephaven.quiet");
+        return viaProperty()
+                .or(Bootstrap::viaEnvironment)
+                .map(Boolean::parseBoolean)
+                .orElse(false);
     }
 
     public static void log(Class<?> source, String message) {
@@ -17,5 +22,13 @@ public final class Bootstrap {
         if (!isQuiet()) {
             System.out.printf(format, args);
         }
+    }
+
+    private static Optional<String> viaProperty() {
+        return Optional.ofNullable(System.getProperty("deephaven.quiet"));
+    }
+
+    private static Optional<String> viaEnvironment() {
+        return Optional.ofNullable(System.getenv("DEEPHAVEN_QUIET"));
     }
 }
