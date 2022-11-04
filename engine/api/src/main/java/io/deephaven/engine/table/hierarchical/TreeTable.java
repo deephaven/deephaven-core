@@ -1,19 +1,13 @@
 package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.api.*;
-import io.deephaven.engine.liveness.LivenessManager;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 /**
@@ -112,16 +106,16 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
             @NotNull final Table source,
             @NotNull final String idColumn,
             @NotNull final String parentColumn) {
-        final ColumnName grandparent = ColumnName.of("__GRANDPARENT__");
         final ColumnName parent = ColumnName.of(parentColumn);
         final ColumnName identifier = ColumnName.of(idColumn);
+        final ColumnName sentinel = ColumnName.of("__MATCHED_PARENT_IDENTIFIER__");
         return LivenessScopeStack.computeEnclosed(
                 () -> source
                         .naturalJoin(source,
                                 List.of(JoinMatch.of(parent, identifier)),
-                                List.of(JoinAddition.of(grandparent, parent)))
+                                List.of(JoinAddition.of(sentinel, identifier)))
                         .updateView(Selectable.of(parent,
-                                RawString.of("isNull(" + grandparent.name() + ") ? null : " + parent.name()))),
+                                RawString.of("isNull(" + sentinel.name() + ") ? null : " + parent.name()))),
                 source::isRefreshing,
                 DynamicNode::isRefreshing);
     }
