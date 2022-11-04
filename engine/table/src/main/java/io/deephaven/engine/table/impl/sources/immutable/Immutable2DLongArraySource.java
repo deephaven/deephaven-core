@@ -290,6 +290,7 @@ public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSo
 
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
                @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+         //noinspection unchecked
          return (ColumnSource<ALTERNATE_DATA_TYPE>) new LongAsDateTimeColumnSource(this);
     }
     // endregion reinterpret

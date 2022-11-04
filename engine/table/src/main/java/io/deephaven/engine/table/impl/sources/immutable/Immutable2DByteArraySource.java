@@ -288,6 +288,7 @@ public class Immutable2DByteArraySource extends AbstractDeferredGroupingColumnSo
 
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
                @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+         //noinspection unchecked
          return (ColumnSource<ALTERNATE_DATA_TYPE>) new ByteAsBooleanColumnSource(this);
     }
     // endregion reinterpret

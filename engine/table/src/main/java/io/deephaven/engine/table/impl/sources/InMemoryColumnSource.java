@@ -5,12 +5,15 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.engine.table.impl.sources.immutable.Immutable2DCharArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
 import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -98,6 +101,39 @@ public interface InMemoryColumnSource {
         }
         // noinspection unchecked
         return (WritableColumnSource<T>) result;
+    }
+
+    @NotNull
+    static <T> ColumnSource<T> makeImmutableConstantSource(
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType,
+            @Nullable final T value) {
+        final ColumnSource<?> result;
+        if (dataType == boolean.class || dataType == Boolean.class) {
+            result = new ByteAsBooleanColumnSource(
+                    new ImmutableConstantByteSource(BooleanUtils.booleanAsByte((Boolean) value)));
+        } else if (dataType == char.class || dataType == Character.class) {
+            result = new ImmutableConstantCharSource(TypeUtils.unbox((Character) value));
+        } else if (dataType == byte.class || dataType == Byte.class) {
+            result = new ImmutableConstantByteSource(TypeUtils.unbox((Byte) value));
+        } else if (dataType == double.class || dataType == Double.class) {
+            result = new ImmutableConstantDoubleSource(TypeUtils.unbox((Double) value));
+        } else if (dataType == float.class || dataType == Float.class) {
+            result = new ImmutableConstantFloatSource(TypeUtils.unbox((Float) value));
+        } else if (dataType == int.class || dataType == Integer.class) {
+            result = new ImmutableConstantIntSource(TypeUtils.unbox((Integer) value));
+        } else if (dataType == long.class || dataType == Long.class) {
+            result = new ImmutableConstantLongSource(TypeUtils.unbox((Long) value));
+        } else if (dataType == short.class || dataType == Short.class) {
+            result = new ImmutableConstantShortSource(TypeUtils.unbox((Short) value));
+        } else if (dataType == DateTime.class) {
+            result = new LongAsDateTimeColumnSource(
+                    new ImmutableConstantLongSource(DateTimeUtils.nanos((DateTime) value)));
+        } else {
+            result = new ImmutableConstantObjectSource<>(dataType, componentType, value);
+        }
+        // noinspection unchecked
+        return (ColumnSource<T>) result;
     }
 
     /**

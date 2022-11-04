@@ -104,7 +104,7 @@ public class Immutable2DObjectArraySource<T> extends AbstractDeferredGroupingCol
     }
 
     @Override
-    public final void set(long key, Object value) {
+    public final void set(long key, T value) {
         data[keyToSegment(key)][keyToOffset(key)] = value;
     }
 

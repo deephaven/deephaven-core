@@ -36,20 +36,31 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharObjectVectorColumnSource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
+
         charToAllButBooleanAndLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
         fixupLongReinterpret(charToLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java"));
+        fixupByteReinterpret(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableByteArraySource.java");
         replicateObjectImmutableArraySource();
+
         charToAllButBooleanAndLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DCharArraySource.java");
         fixupLongReinterpret(charToLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DCharArraySource.java"));
         fixupByteReinterpret(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableByteArraySource.java");
-        fixupByteReinterpret(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DByteArraySource.java");
         replicateObjectImmutable2DArraySource();
+
+        charToAllButBooleanAndLong(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantCharSource.java");
+        fixupLongReinterpret(charToLong(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantCharSource.java"));
+        fixupByteReinterpret(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantByteSource.java");
+        replicateImmutableConstantObjectSource();
+
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
         replicateObjectSizedChunk();
 
@@ -100,6 +111,7 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(",
                 "               @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "         //noinspection unchecked",
                 "         return (ColumnSource<ALTERNATE_DATA_TYPE>) new LongAsDateTimeColumnSource(this);",
                 "    }"));
         FileUtils.writeLines(resultClassJavaFile, lines);
@@ -117,6 +129,7 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(",
                 "               @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "         //noinspection unchecked",
                 "         return (ColumnSource<ALTERNATE_DATA_TYPE>) new ByteAsBooleanColumnSource(this);",
                 "    }"));
         FileUtils.writeLines(resultClassJavaFile, lines);
@@ -193,16 +206,21 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectImmutableArraySource() throws IOException {
-        replicateObjectImmutableArraySource(
+        replicateObjectImmutableSource(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
     }
 
     private static void replicateObjectImmutable2DArraySource() throws IOException {
-        replicateObjectImmutableArraySource(
+        replicateObjectImmutableSource(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DCharArraySource.java");
     }
 
-    private static void replicateObjectImmutableArraySource(String immutableSourcePath) throws IOException {
+    private static void replicateImmutableConstantObjectSource() throws IOException {
+        replicateObjectImmutableSource(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantCharSource.java");
+    }
+
+    private static void replicateObjectImmutableSource(String immutableSourcePath) throws IOException {
         final String resultClassJavaPath = charToObject(
                 immutableSourcePath);
         final File resultClassJavaFile = new File(resultClassJavaPath);
@@ -211,6 +229,8 @@ public class ReplicateSourcesAndChunks {
         lines = globalReplacements(lines,
                 "class ImmutableObjectArraySource", "class ImmutableObjectArraySource<T>",
                 "class Immutable2DObjectArraySource", "class Immutable2DObjectArraySource<T>",
+                "class ImmutableConstantObjectSource", "class ImmutableConstantObjectSource<T>",
+                "Object value", "T value",
                 "\\? extends Object", "\\? extends T",
                 "copyFromTypedArray\\(data", "copyFromTypedArray\\(\\(T[]\\)data",
                 "resetFromTypedArray\\(data", "resetFromTypedArray\\(\\(T[]\\)data",
@@ -231,7 +251,7 @@ public class ReplicateSourcesAndChunks {
                     "this\\(\\)", "this\\(type, componentType\\)",
                     "this\\(DEFAULT_SEGMENT_SHIFT\\)", "this\\(type, componentType, DEFAULT_SEGMENT_SHIFT\\)");
             lines = simpleFixup(lines, "allocateArray", "return \\(T\\)data;", "return data;");
-        } else {
+        } else if (immutableSourcePath.contains("Array")) {
             lines = simpleFixup(lines, "constructor",
                     "ImmutableObjectArraySource\\(",
                     "ImmutableObjectArraySource\\(Class<T> type, Class<?> componentType",
@@ -240,6 +260,13 @@ public class ReplicateSourcesAndChunks {
                     "ImmutableObjectArraySource\\(",
                     "ImmutableObjectArraySource\\(Class<T> type, Class<?> componentType, ",
                     "super\\(Object.class\\)", "super\\(type, componentType\\)");
+        } else if (immutableSourcePath.contains("Constant")) {
+            lines = simpleFixup(lines, "constructor",
+                    "ImmutableConstantObjectSource\\(",
+                    "ImmutableConstantObjectSource\\(@NotNull final Class<T> type, final Class<?> componentType, ",
+                    "super\\(Object.class\\)", "super\\(type, componentType\\)");
+        } else {
+            throw new IllegalStateException("Unexpected source path " + immutableSourcePath);
         }
 
         FileUtils.writeLines(resultClassJavaFile, lines);
