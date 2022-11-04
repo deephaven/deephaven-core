@@ -10,6 +10,7 @@ import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CloseEvent;
 import elemental2.dom.Event;
+import elemental2.dom.EventListener;
 import elemental2.dom.MessageEvent;
 import elemental2.dom.URL;
 import elemental2.dom.WebSocket;
@@ -130,6 +131,8 @@ public class MultiplexedWebsocketTransport implements Transport {
 
     private final JsLazy<Transport> alternativeTransport;
 
+    private JsRunnable cleanup = JsRunnable.doNothing();
+
     public MultiplexedWebsocketTransport(TransportOptions options, JsRunnable avoidMultiplexCallback) {
         this.options = options;
         String url = options.getUrl();
@@ -171,13 +174,18 @@ public class MultiplexedWebsocketTransport implements Transport {
             // if the socket isn't open already, wait until the socket is
             // open, then flush the queue, otherwise everything will be
             // fine to send right away on the already open socket.
-            webSocket.addEventListener("open", this::onOpen);
+            addWebsocketEventListener("open", this::onOpen);
         }
         sendOrEnqueue(new HeaderFrame(path, metadata));
 
-        webSocket.addEventListener("close", this::onClose);
-        webSocket.addEventListener("error", this::onError);
-        webSocket.addEventListener("message", this::onMessage);
+        addWebsocketEventListener("close", this::onClose);
+        addWebsocketEventListener("error", this::onError);
+        addWebsocketEventListener("message", this::onMessage);
+    }
+
+    private void addWebsocketEventListener(String eventName, EventListener listener) {
+        webSocket.addEventListener(eventName, listener);
+        cleanup = cleanup.andThen(() -> webSocket.removeEventListener(eventName, listener));
     }
 
     private void onOpen(Event event) {
@@ -233,7 +241,12 @@ public class MultiplexedWebsocketTransport implements Transport {
             alternativeTransport.get().cancel();
             return;
         }
-        // TODO remove handlers, and close if we're the last one out
+        removeHandlers();
+    }
+
+    private void removeHandlers() {
+        cleanup.run();
+        cleanup = JsRunnable.doNothing();
     }
 
     private void onClose(Event event) {
@@ -242,7 +255,8 @@ public class MultiplexedWebsocketTransport implements Transport {
             return;
         }
         // each grpc transport will handle this as an error
-        options.getOnEnd().onInvoke(new JsError("Unexpectedly closed " + ((CloseEvent) event).reason));
+        options.getOnEnd().onInvoke(new JsError("Unexpectedly closed " + Js.<CloseEvent>uncheckedCast(event).reason));
+        removeHandlers();
     }
 
     private void onError(Event event) {
@@ -250,7 +264,7 @@ public class MultiplexedWebsocketTransport implements Transport {
     }
 
     private void onMessage(Event event) {
-        MessageEvent<ArrayBuffer> messageEvent = (MessageEvent<ArrayBuffer>) event;
+        MessageEvent<ArrayBuffer> messageEvent = Js.uncheckedCast(event);
         // read the message, make sure it is for us, if so strip the stream id and fwd it
         int streamId = new DataView(messageEvent.data, 0, 4).getInt32(0);
         boolean closed;
@@ -264,6 +278,7 @@ public class MultiplexedWebsocketTransport implements Transport {
             options.getOnChunk().onInvoke(new Uint8Array(messageEvent.data, 4), false);
             if (closed) {
                 options.getOnEnd().onInvoke(null);
+                removeHandlers();
             }
         }
     }
