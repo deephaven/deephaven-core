@@ -61,7 +61,7 @@ public class SparseSelect {
 
     private final static ExecutorService executor = SPARSE_SELECT_THREADS == 1 ? null
             : Executors.newFixedThreadPool(SPARSE_SELECT_THREADS,
-                    new NamingThreadFactory(SparseSelect.class, "copyThread", true));
+                    new NamingThreadFactory(SparseSelect.class, "copyThread"));
 
     private SparseSelect() {} // static use only
 

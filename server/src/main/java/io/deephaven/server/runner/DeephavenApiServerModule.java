@@ -155,7 +155,7 @@ public class DeephavenApiServerModule {
 
     private static class ThreadFactory extends NamingThreadFactory {
         public ThreadFactory(final String name) {
-            super(DeephavenApiServer.class, name, true);
+            super(DeephavenApiServer.class, name);
         }
 
         @Override

@@ -8,7 +8,6 @@ import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.context.ExecutionContext;
@@ -1847,7 +1846,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private class UnitTestRefreshThreadFactory extends NamingThreadFactory {
 
         private UnitTestRefreshThreadFactory() {
-            super(UpdateGraphProcessor.class, "unitTestRefresh", true);
+            super(UpdateGraphProcessor.class, "unitTestRefresh");
         }
 
         @Override
