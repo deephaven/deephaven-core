@@ -83,16 +83,10 @@ public class DeephavenApiServerModule {
     @Provides
     @Singleton
     public ScriptSession provideScriptSession(Map<String, Provider<ScriptSession>> scriptTypes) {
-        final String DEEPHAVEN_CONSOLE_TYPE = "deephaven.console.type";
-        boolean configuredConsole = Configuration.getInstance().hasProperty(DEEPHAVEN_CONSOLE_TYPE);
+        // Check which script language is configured
+        String scriptSessionType = Configuration.getInstance().getProperty("deephaven.console.type");
 
-        if (!configuredConsole && scriptTypes.size() == 1) {
-            // if there is only one; use it
-            return scriptTypes.values().iterator().next().get();
-        }
-
-        // otherwise, assume we want python...
-        String scriptSessionType = Configuration.getInstance().getStringWithDefault(DEEPHAVEN_CONSOLE_TYPE, "python");
+        // Emit an error if the selected language isn't provided
         if (!scriptTypes.containsKey(scriptSessionType)) {
             throw new IllegalArgumentException("Console type not found: " + scriptSessionType);
         }
