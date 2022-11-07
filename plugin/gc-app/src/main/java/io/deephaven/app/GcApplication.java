@@ -52,8 +52,8 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
     private static final String NOTIFICATION_INFO_ENABLED = "io.deephaven.app.GcApplication.notification_info.enabled";
     private static final String NOTIFICATION_INFO_STATS_ENABLED =
             "io.deephaven.app.GcApplication.notification_info_stats.enabled";
-    private static final String NOTIFICATION_INFO_RING_ENABLED =
-            "io.deephaven.app.GcApplication.notification_info_ring.enabled";
+    private static final String NOTIFICATION_INFO_RING_SIZE =
+            "io.deephaven.app.GcApplication.notification_info_ring.size";
     private static final String POOLS_ENABLED = "io.deephaven.app.GcApplication.pools.enabled";
     private static final String POOLS_STATS_ENABLED = "io.deephaven.app.GcApplication.pools_stats.enabled";
 
@@ -86,13 +86,13 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
     }
 
     /**
-     * Looks up the system property {@value NOTIFICATION_INFO_RING_ENABLED}, defaults to {@code 1024}. The
+     * Looks up the system property {@value NOTIFICATION_INFO_RING_SIZE}, defaults to {@code 1024}. The
      * {@value NOTIFICATION_INFO_RING} table is disabled when {@code 0} or less.
      *
      * @return the {@value NOTIFICATION_INFO_RING} table size
      */
     public static int notificationInfoRingSize() {
-        return Integer.getInteger(NOTIFICATION_INFO_RING_ENABLED, 1024);
+        return Integer.getInteger(NOTIFICATION_INFO_RING_SIZE, 1024);
     }
 
     /**

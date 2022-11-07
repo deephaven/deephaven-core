@@ -65,8 +65,11 @@ if (hasProperty('debug')) {
     extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
 }
 
-if (hasProperty('gcApplication')) {
-    extraJvmArgs += ['-Dio.deephaven.app.GcApplication.enabled=true']
+if (hasProperty('apps')) {
+    extraJvmArgs += [
+            '-Dio.deephaven.app.GcApplication.enabled=true',
+            '-Dio.deephaven.app.ThreadApplication.enabled=true'
+    ]
 }
 
 if (hasProperty('quiet')) {
