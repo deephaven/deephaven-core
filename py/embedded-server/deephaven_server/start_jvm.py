@@ -54,14 +54,9 @@ def start_jvm(
         config = None):
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
-    if not jvm_args:
-        jvm_args = DEFAULT_JVM_ARGS
-
-    if not jvm_properties:
-        jvm_properties = DEFAULT_JVM_PROPERTIES
-
-    if not java_home:
-        java_home = os.environ.get('JAVA_HOME', None)
+    jvm_args = jvm_args or DEFAULT_JVM_ARGS
+    jvm_properties = jvm_properties or DEFAULT_JVM_PROPERTIES
+    java_home = java_home or os.environ.get('JAVA_HOME', None)
 
     system_properties = dict()
     if propfile:
