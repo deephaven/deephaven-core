@@ -29,6 +29,7 @@ import io.deephaven.server.uri.UriModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
 import org.jetbrains.annotations.NotNull;
@@ -156,7 +157,7 @@ public class DeephavenApiServerModule {
         public Thread newThread(final @NotNull Runnable r) {
             return super.newThread(() -> {
                 MultiChunkPool.enableDedicatedPoolForThisThread();
-                r.run();
+                ThreadInitializationFactory.wrapRunnable(r).run();
             });
         }
     }

@@ -34,6 +34,7 @@ import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.thread.ThreadDump;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -265,17 +266,14 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         notificationProcessor = makeNotificationProcessor();
         jvmIntrospectionContext = new JvmIntrospectionContext();
 
-        refreshThread = new Thread("UpdateGraphProcessor." + name() + ".refreshThread") {
-            @Override
-            public void run() {
-                configureRefreshThread();
-                // noinspection InfiniteLoopStatement
-                while (true) {
-                    Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
-                    refreshTablesAndFlushNotifications();
-                }
+        refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
+            configureRefreshThread();
+            // noinspection InfiniteLoopStatement
+            while (true) {
+                Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
+                refreshTablesAndFlushNotifications();
             }
-        };
+        }), "UpdateGraphProcessor." + name() + ".refreshThread");
         refreshThread.setDaemon(true);
 
         final int updateThreads =
@@ -1813,7 +1811,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         public Thread newThread(@NotNull final Runnable r) {
             return super.newThread(() -> {
                 configureRefreshThread();
-                r.run();
+                ThreadInitializationFactory.wrapRunnable(r).run();
             });
         }
     }

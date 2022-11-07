@@ -16,7 +16,9 @@ public class NamingThreadFactory implements ThreadFactory {
     private final ThreadGroup threadGroup;
 
     /**
-     * Creates a thread factory using the provided class and name as part of the thread name. All created threads will be daemon threads.
+     * Creates a thread factory using the provided class and name as part of the thread name. All created threads will
+     * be daemon threads.
+     * 
      * @param clazz a class to use when naming each thread
      * @param name a name component to add after the class name when naming each thread
      */
@@ -26,6 +28,7 @@ public class NamingThreadFactory implements ThreadFactory {
 
     /**
      * Creates a thread factory using the provided class and name as part of the thread name.
+     * 
      * @param clazz a class to use when naming each thread
      * @param name a name component to add after the class name when naming each thread
      * @param daemon true to make each thread a daemon thread
@@ -36,6 +39,7 @@ public class NamingThreadFactory implements ThreadFactory {
 
     /**
      * Creates a thread factory using the provided class and name as part of the thread name.
+     * 
      * @param threadGroup a thread group to add each thread to
      * @param clazz a class to use when naming each thread
      * @param name a name component to add after the class name when naming each thread
