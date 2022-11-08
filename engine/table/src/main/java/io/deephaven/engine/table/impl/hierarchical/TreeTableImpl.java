@@ -144,7 +144,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
         result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE, partitioned);
         result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
-        result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+        result.setAttribute(AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE, reverseLookup);
         copyAttributes(result, BaseTable.CopyAttributeOperation.Tree);
         maybeUpdateSortableColumns(result);
 
