@@ -40,6 +40,7 @@ import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
@@ -1952,5 +1953,13 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void supplyRowLookup(@NotNull final Supplier<ToIntFunction<Object>> rowLookupFactory) {
             this.reverseLookup = rowLookupFactory.get();
         }
+    }
+
+    public static ToIntFunction<Object> getRowLookup(@NotNull final Table aggregationResult) {
+        final Object value = aggregationResult.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE);
+        Assert.neqNull(value, "aggregation result row lookup");
+        Assert.instanceOf(value, "aggregation result row lookup", ToIntFunction.class);
+        //noinspection unchecked
+        return (ToIntFunction<Object>) value;
     }
 }
