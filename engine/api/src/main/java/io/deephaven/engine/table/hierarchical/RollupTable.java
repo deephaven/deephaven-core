@@ -3,6 +3,7 @@ package io.deephaven.engine.table.hierarchical;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Pair;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -89,6 +90,14 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     Collection<? extends Pair> getColumnPairs();
 
     /**
+     * Apply a set of filters to the group-by columns of this rollup in order to produce a new rollup.
+     *
+     * @param filters The filters to apply; must only reference the group-by columns and must not use column arrays
+     * @return The new RollupTable
+     */
+    RollupTable withFilters(@NotNull Collection<? extends Filter> filters);
+
+    /**
      * Recorder for node-level operations to be applied when gathering snapshots.
      */
     interface NodeOperationsRecorder extends
@@ -117,18 +126,4 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
      * @return The new RollupTable
      */
     RollupTable withNodeOperations(@NotNull NodeOperationsRecorder... nodeOperations);
-
-    /**
-     * Apply a transformation to the source table, e.g. for filtering, and re-apply the rollup operation to produce a
-     * new RollupTable inheriting the same node operations. Transformations that change the source table's
-     * {@link Table#getDefinition() definition}, e.g. {@link Table#dropColumns drop columns}, are not supported. This is
-     * intended for use in applying {@link Table#sort sorts} and {@link Table#where filters}.
-     * 
-     * @param sourceTransformer The source transformation to apply
-     * @return The new RollupTable
-     */
-    RollupTable reapply(@NotNull UnaryOperator<Table> sourceTransformer);
-
-    // TODO-RWC: Filters can only be applied to group-by columns. We can apply them to the first level and re-rollup
-    // when recomputing.
 }

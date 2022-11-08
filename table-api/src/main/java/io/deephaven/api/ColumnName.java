@@ -47,6 +47,10 @@ public abstract class ColumnName
         return values.stream().map(ColumnName::of).collect(Collectors.toList());
     }
 
+    public static List<String> names(Collection<? extends ColumnName> columns) {
+        return columns.stream().map(ColumnName::name).collect(Collectors.toList());
+    }
+
     public static Optional<Collection<ColumnName>> cast(Collection<? extends Selectable> columns) {
         for (Selectable column : columns) {
             if (!(column instanceof ColumnName)) {

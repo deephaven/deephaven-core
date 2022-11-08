@@ -4,8 +4,11 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.api.agg.Pair;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -15,15 +18,20 @@ import io.deephaven.engine.table.impl.LiveAttributeMap;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.deephaven.api.ColumnName.names;
+import static io.deephaven.engine.table.impl.by.AggregationContextTransformer.UNKNOWN_ROW;
+import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 
 /**
@@ -37,21 +45,37 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private final Collection<? extends Aggregation> aggregations;
     private final boolean includesConstituents;
     private final Collection<? extends ColumnName> groupByColumns;
+
+    final int baseLevel;
+    final int numLevels;
+    private final QueryTable[] levelTables;
+    private final ToIntFunction<Object>[] levelRowLookups;
+
     private final RollupNodeOperationsRecorder aggregatedNodeOperations;
     private final RollupNodeOperationsRecorder constituentNodeOperations;
 
-    public RollupTableImpl(
+    private RollupTableImpl(
             @NotNull final QueryTable source,
             @NotNull final QueryTable root,
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includesConstituents,
             @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final QueryTable[] levelTables,
+            @NotNull final ToIntFunction<Object>[] levelRowLookups,
             @Nullable final RollupNodeOperationsRecorder aggregatedNodeOperations,
             @Nullable final RollupNodeOperationsRecorder constituentNodeOperations) {
         super(source, root);
         this.aggregations = aggregations;
         this.includesConstituents = includesConstituents;
         this.groupByColumns = groupByColumns;
+
+        baseLevel = groupByColumns.size();
+        numLevels = baseLevel + 1;
+        Require.eq(numLevels, "level count", levelTables.length, "levelTables.length");
+        this.levelTables = levelTables;
+        Require.eq(numLevels, "level count", levelRowLookups.length, "levelRowLookups.length");
+        this.levelRowLookups = levelRowLookups;
+
         this.aggregatedNodeOperations = aggregatedNodeOperations;
         this.constituentNodeOperations = constituentNodeOperations;
     }
@@ -87,6 +111,45 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
+    public RollupTable withFilters(@NotNull final Collection<? extends Filter> filters) {
+        final WhereFilter[] whereFilters = initializeAndValidateFilters(filters);
+        final QueryTable filteredBaseLevel = (QueryTable) levelTables[baseLevel].where(whereFilters);
+        final ToIntFunction<Object> baseLevelRowLookup = levelRowLookups[baseLevel];
+        final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
+        final ToIntFunction<Object> filteredBaseLevelRowLookup = key -> {
+            final int unfilteredRowKey = baseLevelRowLookup.applyAsInt(key);
+            // NB: Rollup snapshot patterns allow us to safely always use current, here.
+            if (filteredBaseLevelRowSet.find(unfilteredRowKey) > 0) {
+                return unfilteredRowKey;
+            }
+            return UNKNOWN_ROW;
+        };
+        return makeRollupFromBaseLevel(
+                filteredBaseLevel, filteredBaseLevelRowLookup, aggregations, includesConstituents, groupByColumns)
+                        .withNodeOperations(aggregatedNodeOperations, constituentNodeOperations);
+    }
+
+    private WhereFilter[] initializeAndValidateFilters(@NotNull final Collection<? extends Filter> filters) {
+        final WhereFilter[] whereFilters = WhereFilter.from(filters);
+        for (final WhereFilter whereFilter : whereFilters) {
+            whereFilter.init(source.getDefinition());
+            final List<String> invalidColumnsUsed = whereFilter.getColumns().stream().map(ColumnName::of)
+                    .filter(cn -> !groupByColumns.contains(cn)).map(ColumnName::name).collect(Collectors.toList());
+            if (!invalidColumnsUsed.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Invalid filter found: " + whereFilter + " may only use group-by columns, which are "
+                                + names(groupByColumns) + ", but has also used " + invalidColumnsUsed);
+            }
+            final boolean usesArrays = !whereFilter.getColumnArrays().isEmpty();
+            if (usesArrays) {
+                throw new IllegalArgumentException("Invalid filter found: " + whereFilter
+                        + " may not use column arrays, but uses column arrays from " + whereFilter.getColumnArrays());
+            }
+        }
+        return whereFilters;
+    }
+
+    @Override
     public NodeOperationsRecorder makeNodeOperationsRecorder(@NotNull final NodeType nodeType) {
         return new RollupNodeOperationsRecorder(nodeTypeToDefinition(nodeType), nodeType);
     }
@@ -115,8 +178,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                     return unexpectedNodeType(recorderTyped.getNodeType());
             }
         }
-        return new RollupTableImpl(source, root, aggregations, includesConstituents, groupByColumns,
-                newAggregatedNodeOperations, newConstituentNodeOperations);
+        return new RollupTableImpl(source, root, aggregations, includesConstituents, groupByColumns, levelTables,
+                levelRowLookups, newAggregatedNodeOperations, newConstituentNodeOperations);
     }
 
     private static RollupNodeOperationsRecorder accumulateOperations(
@@ -148,35 +211,32 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    public RollupTable reapply(@NotNull final UnaryOperator<Table> sourceTransformer) {
-        final Table newSource = sourceTransformer.apply(source);
-        if (!source.getDefinition().equals(newSource.getDefinition())) {
-            throw new UnsupportedOperationException(
-                    "Unexpected definition change: " +
-                            source.getDefinition().getDifferenceDescription(
-                                    newSource.getDefinition(), "original source", "new source", ", "));
-        }
-        // TODO-RWC: Attribute copies?
-        final RollupTable rollup = newSource.rollup(aggregations, includesConstituents, groupByColumns);
-        return rollup.withNodeOperations(aggregatedNodeOperations, constituentNodeOperations);
-    }
-
-    @Override
     protected RollupTableImpl copy() {
         final RollupTableImpl result =
-                new RollupTableImpl(source, root, aggregations, includesConstituents, groupByColumns,
-                        aggregatedNodeOperations, constituentNodeOperations);
+                new RollupTableImpl(source, root, aggregations, includesConstituents, groupByColumns, levelTables,
+                        levelRowLookups, aggregatedNodeOperations, constituentNodeOperations);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
     }
 
-    public static RollupTable makeRollup(@NotNull final QueryTable input,
-                                         @NotNull final Collection<? extends Aggregation> aggregations,
-                                         final boolean includeConstituents,
-                                         @NotNull final Collection<? extends ColumnName> groupByColumns) {
+    public static RollupTable makeRollup(
+            @NotNull final QueryTable input,
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            final boolean includeConstituents,
+            @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final QueryTable baseLevel = input.aggNoMemo(
                 AggregationProcessor.forRollupBase(aggregations, includeConstituents), false, null, groupByColumns);
+        return makeRollupFromBaseLevel(
+                baseLevel, getRowLookup(baseLevel), aggregations, includeConstituents, groupByColumns);
 
+    }
+
+    private static RollupTable makeRollupFromBaseLevel(
+            @NotNull final QueryTable baseLevel,
+            @NotNull final ToIntFunction<Object> baseLevelRowLookup,
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            final boolean includeConstituents,
+            @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final Deque<ColumnName> columnsToReaggregate = new ArrayDeque<>(groupByColumns);
         final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.size());
         QueryTable lastLevel = baseLevel;
