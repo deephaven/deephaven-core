@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class RollupInfo extends AbstractHierarchicalTableInfo {
-    public static final String ROLLUP_COLUMN = "__RollupHierarchicalColumn";
+
     private static final long serialVersionUID = 5L;
 
     public final List<MatchPair> matchPairs;

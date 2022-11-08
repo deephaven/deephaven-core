@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 
@@ -473,12 +474,12 @@ class AggregationContext {
         return permuteKernels;
     }
 
-    void setReverseLookupFunction(ToIntFunction<Object> reverseLookupFunction) {
+    void supplyReverseLookup(Supplier<ToIntFunction<Object>> reverseLookupFactory) {
         if (transformers == null) {
             return;
         }
         for (final AggregationContextTransformer aggregationContextTransformer : transformers) {
-            aggregationContextTransformer.setReverseLookupFunction(reverseLookupFunction);
+            aggregationContextTransformer.supplyReverseLookup(reverseLookupFactory);
         }
     }
 }
