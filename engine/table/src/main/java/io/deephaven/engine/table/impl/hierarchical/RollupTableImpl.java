@@ -197,7 +197,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop);
         final Object reverseLookup =
                 Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
-        finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+        finalTable.setAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE, reverseLookup);
 
         final Table result = BaseHierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, groupByColumns,
                 includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));

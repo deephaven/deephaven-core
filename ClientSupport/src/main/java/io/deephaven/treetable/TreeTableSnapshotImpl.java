@@ -99,7 +99,7 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
             treeForDisplay = baseTable;
         }
 
-        masterRll = (ReverseLookup) treeForDisplay.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
+        masterRll = (ReverseLookup) treeForDisplay.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE);
         masterTableMap = (TableMap) treeForDisplay.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE);
         sourceTable = treeForDisplay.getSourceTable();
 
@@ -133,7 +133,7 @@ class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
 
     @Override
     ReverseLookup getReverseLookup(Table t) {
-        final ReverseLookup tableRll = (ReverseLookup) t.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
+        final ReverseLookup tableRll = (ReverseLookup) t.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE);
         return tableRll == null ? masterRll : tableRll;
     }
 

@@ -479,7 +479,7 @@ class AggregationContext {
             return;
         }
         for (final AggregationContextTransformer aggregationContextTransformer : transformers) {
-            aggregationContextTransformer.supplyReverseLookup(reverseLookupFactory);
+            aggregationContextTransformer.supplyRowLookup(reverseLookupFactory);
         }
     }
 }

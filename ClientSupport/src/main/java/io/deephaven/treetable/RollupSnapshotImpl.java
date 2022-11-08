@@ -65,7 +65,7 @@ class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
 
     @Override
     ReverseLookup getReverseLookup(Table t) {
-        return (ReverseLookup) t.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
+        return (ReverseLookup) t.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE);
     }
 
     @Override

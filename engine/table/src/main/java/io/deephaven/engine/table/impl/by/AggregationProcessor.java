@@ -137,7 +137,7 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_DOUBLE
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
-import static io.deephaven.engine.table.Table.REVERSE_LOOKUP_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.RollupAttributeCopier.DEFAULT_INSTANCE;
 import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
@@ -937,7 +937,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             transformers.add(new StaticColumnSourceTransformer(
                     RollupTableImpl.KEY_WIDTH_COLUMN.name(),
                     new ImmutableConstantIntSource(groupByColumnNames.length)));
-            transformers.add(new ReverseLookupAttributeSetter());
+            transformers.add(new RowLookupAttributeSetter());
             return makeAggregationContext();
         }
 
@@ -1079,7 +1079,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             transformers.add(new StaticColumnSourceTransformer(
                     RollupTableImpl.KEY_WIDTH_COLUMN.name(),
                     new ImmutableConstantIntSource(groupByColumnNames.length)));
-            transformers.add(new ReverseLookupAttributeSetter());
+            transformers.add(new RowLookupAttributeSetter());
             return makeAggregationContext();
         }
 
@@ -1380,7 +1380,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                         new UniqueRowKeyChunkedOperator(TreeTableImpl.REVERSE_LOOKUP_ROW_KEY_COLUMN.name())},
                 new String[][] {ZERO_LENGTH_STRING_ARRAY},
                 new ChunkSource.WithPrev[] {null},
-                new AggregationContextTransformer[] {new ReverseLookupAttributeSetter()});
+                new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
 
     private static AggregationContext makeEmptyAggregationContext(final boolean requireStateChangeRecorder) {
@@ -1936,21 +1936,21 @@ public class AggregationProcessor implements AggregationContextFactory {
         return ROW_REDIRECTION_PREFIX + columnIdentifier + ROLLUP_COLUMN_SUFFIX;
     }
 
-    private static class ReverseLookupAttributeSetter implements AggregationContextTransformer {
+    private static class RowLookupAttributeSetter implements AggregationContextTransformer {
 
         private ToIntFunction<?> reverseLookup;
 
-        private ReverseLookupAttributeSetter() {}
+        private RowLookupAttributeSetter() {}
 
         @Override
         public QueryTable transformResult(@NotNull final QueryTable table) {
-            table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+            table.setAttribute(AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE, reverseLookup);
             return table;
         }
 
         @Override
-        public void supplyReverseLookup(Supplier<ToIntFunction<Object>> reverseLookupFactory) {
-            this.reverseLookup = reverseLookupFactory.get();
+        public void supplyRowLookup(@NotNull final Supplier<ToIntFunction<Object>> rowLookupFactory) {
+            this.reverseLookup = rowLookupFactory.get();
         }
     }
 }

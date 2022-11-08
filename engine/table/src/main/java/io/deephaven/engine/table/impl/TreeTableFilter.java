@@ -116,7 +116,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
             }
             treeTableInfo = (TreeTableInfo) sourceInfo;
             reverseLookupListener =
-                    Objects.requireNonNull((ReverseLookupListener) table.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE));
+                    Objects.requireNonNull((ReverseLookupListener) table.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE));
 
             filters = TreeTableFilter.this.filters;
 

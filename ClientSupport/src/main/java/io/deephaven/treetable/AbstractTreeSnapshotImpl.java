@@ -183,7 +183,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         final ReverseLookupListener listener = ReverseLookupListener
                 .makeReverseLookupListenerWithSnapshot((BaseTable) table, getInfo().getHierarchicalColumnName());
         table = ((BaseTable) table).copy();
-        table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, listener);
+        table.setAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE, listener);
 
         return table;
     }
@@ -233,12 +233,12 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
      */
     Table applyColumnFormats(Table t) {
         if (info.getColumnFormats() != null && t != null) {
-            final Object rll = t.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
+            final Object rll = t.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE);
             final Object preparedRll = t.getAttribute(Table.PREPARED_RLL_ATTRIBUTE);
             t = t.updateView(
                     processFormatColumns(t, SelectColumnFactory.getFormatExpressions(getInfo().getColumnFormats())));
             if (rll != null) {
-                t.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, rll);
+                t.setAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE, rll);
             }
             if (preparedRll != null) {
                 t.setAttribute(Table.PREPARED_RLL_ATTRIBUTE, preparedRll);
