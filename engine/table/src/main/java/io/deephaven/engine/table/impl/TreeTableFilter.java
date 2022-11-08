@@ -93,7 +93,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
         private final WhereFilter[] filters;
         private final ColumnSource parentSource;
         private final ColumnSource idSource;
-        private final ReverseLookupListener reverseLookupListener;
+        private final ReverseLookup reverseLookupListener;
 
         @ReferentialIntegrity
         final SwapListenerWithRLL swapListener;

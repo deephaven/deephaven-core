@@ -78,8 +78,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
     }
 
-    // TODO-RWC: Be sure to take format columns into account for table definitions. Prune formats applied to both for
-    // leafs?
+    // TODO-RWC: Be sure to take format columns into account for table definitions. Prune formats applied to both from UI.
 
     public final class ClientView extends LivenessArtifact {
 

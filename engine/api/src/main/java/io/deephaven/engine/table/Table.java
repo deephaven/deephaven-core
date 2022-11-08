@@ -164,6 +164,11 @@ public interface Table extends
     String HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable";
     String TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE = "TreeTableFilterReverseLookup";
     String HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo";
+    /**
+     * Attribute on aggregation results used for hierarchical table construction. If present, the value is a map
+     * from boxed aggregation group-by column value (or array of values) to the resulting row key (also row position),
+     * or {@code -1} for missing mappings.
+     */
     String REVERSE_LOOKUP_ATTRIBUTE = "ReverseLookup";
     String PREPARED_RLL_ATTRIBUTE = "PreparedRll";
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
