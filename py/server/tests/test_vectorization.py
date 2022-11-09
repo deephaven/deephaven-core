@@ -16,7 +16,7 @@ from deephaven.execution_context import make_user_exec_ctx
 from deephaven.filters import Filter, and_
 from deephaven.html import to_html
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, DhVectorize
+from deephaven.table import Table, _DhVectorize
 from tests.testbase import BaseTestCase
 
 
@@ -34,14 +34,14 @@ class VectorizationTestCase(BaseTestCase):
     def test_vectorization_exceptions(self):
         t = empty_table(1)
 
-        @DhVectorize
+        @_DhVectorize
         def vectorized_func(p1, p2):
             return p1 + p2
 
         def auto_func(p1, p2):
             return p1 + p2
 
-        @DhVectorize
+        @_DhVectorize
         def no_param_func():
             return random.randint(0, 100)
 
@@ -141,7 +141,7 @@ class VectorizationTestCase(BaseTestCase):
         self.assertIn("66", t.to_string(cols=["Z"]))
 
     def test_multiple_formulas_vectorized(self):
-        @DhVectorize
+        @_DhVectorize
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
@@ -182,7 +182,7 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(9, t.size)
 
     def test_multiple_filters_vectorized(self):
-        @DhVectorize
+        @_DhVectorize
         def pyfunc_bool(p1, p2, p3) -> bool:
             return p1 * p2 * p3
 

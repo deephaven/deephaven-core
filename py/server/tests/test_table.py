@@ -15,7 +15,7 @@ from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, la
 from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, DhVectorize
+from deephaven.table import Table, _DhVectorize
 from tests.testbase import BaseTestCase
 
 

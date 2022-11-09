@@ -221,7 +221,7 @@ public class PyCallableWrapper {
         if (numbaVectorized) {
             return pyCallable;
         } else {
-            return dh_table_module.call("DhVectorize", unwrapped);
+            return dh_table_module.call("_DhVectorize", unwrapped);
         }
     }
 

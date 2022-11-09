@@ -8,6 +8,7 @@ instruments for working with Deephaven refreshing and static data. """
 from __future__ import annotations
 
 import contextlib
+import functools
 import inspect
 from enum import Enum, auto
 from functools import wraps
@@ -103,22 +104,24 @@ def _encode_signature(fn: Callable) -> str:
     return "".join(np_type_codes)
 
 
-class DhVectorize:
+class _DhVectorize:
     """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
 
     The result callable will accept arrays of the declared parameter data types (vs. scalar) and iterate through them
-    together and call the wrapped function on each iteration and pack the result of each call into an array and return
-    the result array upon exhausting the array parameters.
+    together and call the wrapped function on each iteration and pack the result of each call into an array and
+    return the result array upon exhausting the array parameters. In addition, the result callable also adds an extra
+    chunk-size parameter at the beginning to let the caller pass in the actual runtime chunk size. For this reason,
+    it is not recommended for user to use this decorator directly, as it changes the signature of the original callable.
     """
-
     def __init__(self, fn: Callable):
+        functools.update_wrapper(self, fn)
         self.callable = fn
         self.signature = _encode_signature(fn)
         self.return_type = self.signature[-1]
         self.dh_vectorized = True
         self._call_count = 0
         self._arguments = [None] * (len(self.signature) - len("->?"))
-        self._chunk_size: int
+        self._chunk_size: int = 0
         if _test_vectorization:
             global _vectorized_count
             _vectorized_count += 1
@@ -127,28 +130,30 @@ class DhVectorize:
         def is_chunked(v) -> bool:
             if not isinstance(v, jpy.JType):
                 return False
+
+            # Chunked arguments are of Java array type, JPY follows JNI type signature for arrays, i.e. '[type'
             if v.jclass.toString().startswith("class ["):
                 return True
             else:
                 return False
 
         # upon being called the first time, set up the return array and constant arguments for reuse in subsequent calls
-        if not self._call_count:
-            if len(args) != len(self._arguments) + 1:
-                raise ValueError(
-                    f"The number of arguments doesn't match the function signature. {len(args) - 1}, {self.signature}")
+        if len(args) != len(self._arguments) + 1:
+            raise ValueError(
+                f"The number of arguments doesn't match the function signature. {len(args) - 1}, {self.signature}")
+        if args[0] <= 0:
+            raise ValueError(f"The chunk size argument must be a positive integer. {args[0]}")
 
+        # to account for chunk size change and the first time gets called, when it becomes larger, we need to make new
+        # result/const-arg arrays
+        if args[0] > self._chunk_size:
             self._chunk_size = args[0]
             self._chunk_result = np.empty(self._chunk_size, self.return_type)
-
             for i, arg in enumerate(args[1:]):
                 if not is_chunked(arg):
                     self._arguments[i] = np.full(self._chunk_size, arg)
 
-        self._chunk_size = args[0]
-        if self._chunk_size > len(self._chunk_result):
-            self._chunk_result = np.empty(self._chunk_size, self.return_type)
-
+        # only reassign the chunk arguments
         for i, arg in enumerate(args[1:]):
             if is_chunked(arg):
                 self._arguments[i] = arg
