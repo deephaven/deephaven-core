@@ -361,7 +361,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
 
-    static protected boolean shouldCopyAttribute(String attrName, CopyAttributeOperation copyType) {
+    public static boolean shouldCopyAttribute(String attrName, CopyAttributeOperation copyType) {
         return attributeToCopySet.getOrDefault(attrName, LEGACY_COPY_ATTRIBUTES).contains(copyType);
     }
 
