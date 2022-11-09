@@ -76,30 +76,19 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             recorders = new LinkedList<>();
             listener = newListener(description);
 
-            // create an intermediate table that will listen to source updates and shift output columns
-            final QueryTable shiftApplyTable = new QueryTable(source.getRowSet(), source.getColumnSourceMap());
-
-            source.listenForUpdates(new BaseTable.ListenerImpl("", source, shiftApplyTable) {
-                @Override
-                public void onUpdate(@NotNull final TableUpdate upstream) {
-//                    shiftOutputColumns(upstream);
-                    super.onUpdate(upstream);
-                }
-            });
-
-            // create a recorder instance sourced from the shifting table
-            ListenerRecorder shiftRecorder = new ListenerRecorder(description, shiftApplyTable, result);
-            shiftRecorder.setMergedListener(listener);
-            shiftApplyTable.listenForUpdates(shiftRecorder);
+            // create a recorder instance sourced from the source table
+            ListenerRecorder sourceRecorder = new ListenerRecorder(description, source, result);
+            sourceRecorder.setMergedListener(listener);
+            source.listenForUpdates(sourceRecorder);
             result.addParentReference(listener);
-            recorders.offerLast(shiftRecorder);
+            recorders.offerLast(sourceRecorder);
 
             // create input and output modified column sets
             for (UpdateByOperator op : operators) {
-                op.createInputModifiedColumnSet(shiftApplyTable);
+                op.createInputModifiedColumnSet(source);
                 op.createOutputModifiedColumnSet(result);
             }
-            pt = shiftApplyTable.partitionedAggBy(List.of(), true, null, byColumns);
+            pt = source.partitionedAggBy(List.of(), true, null, byColumns);
         } else {
             // no shifting will be needed, can create directly from source
             pt = source.partitionedAggBy(List.of(), true, null, byColumns);
@@ -109,6 +98,9 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                 op.createInputModifiedColumnSet(source);
             }
         }
+
+        // make the source->result transformer
+        transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
 
         final PartitionedTable transformed = pt.transform(t -> {
             UpdateByBucketHelper updateBy = new UpdateByBucketHelper(
@@ -143,19 +135,15 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         result.addParentReference(transformed);
 
-        if (redirContext.isRedirected()) {
-            // make a dummy update to generate the initial row keys
-            final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
-                    RowSetFactory.empty(),
-                    RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY,
-                    ModifiedColumnSet.EMPTY);
-            redirContext.processUpdateForRedirection(fakeUpdate, source.getRowSet());
-        }
+        // make a dummy update to generate the initial row keys
+        final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
+                RowSetFactory.empty(),
+                RowSetFactory.empty(),
+                RowSetShiftData.EMPTY,
+                ModifiedColumnSet.EMPTY);
 
-        UpdateByBucketHelper[] dirtyBuckets = buckets.toArray(UpdateByBucketHelper[]::new);
-
-        processBuckets(dirtyBuckets, true, RowSetShiftData.EMPTY);
-        finalizeBuckets(dirtyBuckets);
+        // do the actual computations
+        final StateManager sm = new StateManager(fakeUpdate, true);
+        sm.processUpdate();
     }
 }

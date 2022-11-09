@@ -262,10 +262,10 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         // other rows can be affected by removes
         if (upstream.removed().isNonempty()) {
             try (final RowSet prev = ctx.sourceRowSet.copyPrev();
-                 final RowSet removedPositions = prev.invert(upstream.removed());
-                 final WritableRowSet affectedByRemoves =
-                         computeAffectedRowsTicks(prev, upstream.removed(), removedPositions, prevUnits,
-                                 fwdUnits)) {
+                    final RowSet removedPositions = prev.invert(upstream.removed());
+                    final WritableRowSet affectedByRemoves =
+                            computeAffectedRowsTicks(prev, upstream.removed(), removedPositions, prevUnits,
+                                    fwdUnits)) {
                 // apply shifts to get back to pos-shift space
                 upstream.shifted().apply(affectedByRemoves);
                 // retain only the rows that still exist in the sourceRowSet

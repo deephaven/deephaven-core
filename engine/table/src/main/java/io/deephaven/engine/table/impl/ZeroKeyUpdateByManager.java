@@ -35,32 +35,21 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             recorders = new LinkedList<>();
             listener = newListener(description);
 
-            // create an intermediate table that will listen to source updates and shift output columns
-            final QueryTable shiftApplyTable = new QueryTable(source.getRowSet(), source.getColumnSourceMap());
-
-            source.listenForUpdates(new BaseTable.ListenerImpl("", source, shiftApplyTable) {
-                @Override
-                public void onUpdate(@NotNull final TableUpdate upstream) {
-//                    shiftOutputColumns(upstream);
-                    super.onUpdate(upstream);
-                }
-            });
-
-            // create a recorder instance sourced from the shifting table
-            ListenerRecorder shiftRecorder = new ListenerRecorder(description, shiftApplyTable, result);
-            shiftRecorder.setMergedListener(listener);
-            shiftApplyTable.listenForUpdates(shiftRecorder);
+            // create a recorder instance sourced from the source table
+            ListenerRecorder sourceRecorder = new ListenerRecorder(description, source, result);
+            sourceRecorder.setMergedListener(listener);
+            source.listenForUpdates(sourceRecorder);
             result.addParentReference(listener);
-            recorders.offerLast(shiftRecorder);
+            recorders.offerLast(sourceRecorder);
 
             // create input and output modified column sets
             for (UpdateByOperator op : operators) {
-                op.createInputModifiedColumnSet(shiftApplyTable);
+                op.createInputModifiedColumnSet(source);
                 op.createOutputModifiedColumnSet(result);
             }
 
-            // create an updateby bucket instance sourced from the shifting table
-            zeroKeyUpdateBy = new UpdateByBucketHelper(description, shiftApplyTable, operators, windows, inputSources,
+            // create an updateby bucket instance sourced from the source table
+            zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
                     operatorInputSourceSlots, resultSources, timestampColumnName, redirContext, control);
             buckets.offerLast(zeroKeyUpdateBy);
 
@@ -82,20 +71,19 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             }
         }
 
-        if (redirContext.isRedirected()) {
-            // make a dummy update to generate the initial row keys
-            final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
-                    RowSetFactory.empty(),
-                    RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY,
-                    ModifiedColumnSet.EMPTY);
-            redirContext.processUpdateForRedirection(fakeUpdate, source.getRowSet());
-        }
+        // make the source->result transformer
+        transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
+
+        // make a dummy update to generate the initial row keys
+        final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
+                RowSetFactory.empty(),
+                RowSetFactory.empty(),
+                RowSetShiftData.EMPTY,
+                ModifiedColumnSet.EMPTY);
 
         // do the actual computations
-        UpdateByBucketHelper[] dirtyBuckets = new UpdateByBucketHelper[] {zeroKeyUpdateBy};
-        processBuckets(dirtyBuckets, true, RowSetShiftData.EMPTY);
-        finalizeBuckets(dirtyBuckets);
+        final StateManager sm = new StateManager(fakeUpdate, true);
+        sm.processUpdate();
     }
 
     /**

@@ -67,7 +67,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
     }
 
     UpdateByWindowTime(UpdateByOperator[] operators, int[][] operatorSourceSlots, @Nullable String timestampColumnName,
-                       long prevUnits, long fwdUnits) {
+            long prevUnits, long fwdUnits) {
         super(operators, operatorSourceSlots, timestampColumnName);
         this.prevUnits = prevUnits;
         this.fwdUnits = fwdUnits;
@@ -402,26 +402,26 @@ public class UpdateByWindowTime extends UpdateByWindow {
 
                     Arrays.fill(ctx.inputSourceChunkPopulated, false);
                     for (int opIdx : context.dirtyOperatorIndices) {
-                            // prep the chunk array needed by the accumulate call
-                            final int[] srcIndices = operatorInputSourceSlots[opIdx];
-                            Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
-                            for (int ii = 0; ii < srcIndices.length; ii++) {
-                                int srcIdx = srcIndices[ii];
-                                // chunk prep
-                                prepareValuesChunkForSource(ctx, srcIdx, chunkInfluencerRs);
-                                chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
-                            }
-
-                            // make the specialized call for windowed operators
-                            ((UpdateByWindowedOperator.Context) ctx.opContext[opIdx]).accumulate(
-                                    chunkRs,
-                                    chunkArr,
-                                    pushChunk,
-                                    popChunk,
-                                    chunkRsSize);
+                        // prep the chunk array needed by the accumulate call
+                        final int[] srcIndices = operatorInputSourceSlots[opIdx];
+                        Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
+                        for (int ii = 0; ii < srcIndices.length; ii++) {
+                            int srcIdx = srcIndices[ii];
+                            // chunk prep
+                            prepareValuesChunkForSource(ctx, srcIdx, chunkInfluencerRs);
+                            chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
                         }
+
+                        // make the specialized call for windowed operators
+                        ((UpdateByWindowedOperator.Context) ctx.opContext[opIdx]).accumulate(
+                                chunkRs,
+                                chunkArr,
+                                pushChunk,
+                                popChunk,
+                                chunkRsSize);
                     }
                 }
+            }
         }
 
         // call `finishUpdate()` function for each operator

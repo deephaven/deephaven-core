@@ -180,6 +180,19 @@ public abstract class UpdateByWindow {
         return uniqueInputSourceIndices;
     }
 
+    public boolean isSourceInUse(int srcIdx) {
+        // this looks worse than it actually is, windows are defined by their input sources so there will be only
+        // one or two entries in `getUniqueSourceIndices()`. Iterating will be faster than building a lookup table
+        // or a hashset
+        for (int winSrcIdx : getUniqueSourceIndices()) {
+            if (winSrcIdx == srcIdx) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void prepareForParallelPopulation(final RowSet added) {
         for (UpdateByOperator operator : operators) {
             operator.prepareForParallelPopulation(added);

@@ -57,15 +57,15 @@ class UpdateByBucketHelper {
      */
 
     protected UpdateByBucketHelper(@NotNull final String description,
-                                   @NotNull final QueryTable source,
-                                   @NotNull final UpdateByOperator[] operators,
-                                   @NotNull final UpdateByWindow[] windows,
-                                   @NotNull final ColumnSource<?>[] inputSources,
-                                   @NotNull final int[][] operatorInputSourceSlots,
-                                   @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-                                   @Nullable String timestampColumnName,
-                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
-                                   @NotNull final UpdateByControl control) {
+            @NotNull final QueryTable source,
+            @NotNull final UpdateByOperator[] operators,
+            @NotNull final UpdateByWindow[] windows,
+            @NotNull final ColumnSource<?>[] inputSources,
+            @NotNull final int[][] operatorInputSourceSlots,
+            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @Nullable String timestampColumnName,
+            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateByControl control) {
 
         this.source = source;
         this.operators = operators;
@@ -238,7 +238,7 @@ class UpdateByBucketHelper {
      * @param initialStep Whether this update is part of the initial creation of the bucket
      */
     public void prepareForUpdate(final TableUpdate upstream, final boolean initialStep) {
-        Assert.eqFalse(isDirty, "UpdateBy bucket was marekd dirty before processing an update");
+        Assert.eqFalse(isDirty, "UpdateBy bucket was marked dirty before processing an update");
 
         // add all the SSA data
         if (timestampColumnName != null) {
