@@ -90,6 +90,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
@@ -129,7 +130,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.deephaven.engine.util.PyCallableWrapper;
 
 public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, QueryLanguageParser.VisitArgs> {
     private static final Logger log = LoggerFactory.getLogger(QueryLanguageParser.class);
@@ -1907,12 +1907,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 addLiteralArg(expressions[i], argTypes[i], pyCallableWrapper);
             } else if (expressions[i] instanceof NameExpr) {
                 String name = expressions[i].asNameExpr().getNameAsString();
-                Object param = queryScope.readParamValue(name, null);
-                if (param != null) {
-                    pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(param));
-                } else {
+                try {
+                    Object param = queryScope.readParamValue(name);
+                    pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(param, argTypes[i]));
+                } catch (QueryScope.MissingVariableException ex) {
                     // A column name or one of the special variables
-                    pyCallableWrapper.addChunkArgument(new ColumnChunkArgument(name));
+                    pyCallableWrapper.addChunkArgument(new ColumnChunkArgument(name, argTypes[i]));
                 }
             } else {
                 throw new IllegalStateException("Vectorizability check failed: " + n);
@@ -1923,29 +1923,34 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         + argTypes[i].getSimpleName() + " -> " + paramTypes.get(i).getSimpleName());
             }
         }
-        pyCallableWrapper.setChunkArgumentTypes(argTypes);
     }
 
     private void addLiteralArg(Expression expression, Class<?> argType, PyCallableWrapper pyCallableWrapper) {
         if (argType == long.class) {
             pyCallableWrapper
-                    .addChunkArgument(new ConstantChunkArgument(((LongLiteralExpr) expression).asNumber().longValue()));
+                    .addChunkArgument(new ConstantChunkArgument(((LongLiteralExpr) expression).asNumber().longValue(),
+                            long.class));
         } else if (argType == int.class) {
             pyCallableWrapper.addChunkArgument(
-                    new ConstantChunkArgument(((IntegerLiteralExpr) expression).asNumber().intValue()));
+                    new ConstantChunkArgument(((IntegerLiteralExpr) expression).asNumber().intValue(), int.class));
         } else if (argType == boolean.class) {
-            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(((BooleanLiteralExpr) expression).getValue()));
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument(((BooleanLiteralExpr) expression).getValue(), boolean.class));
         } else if (argType == String.class) {
-            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(((StringLiteralExpr) expression).getValue()));
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument(((StringLiteralExpr) expression).getValue(), String.class));
         } else if (argType == float.class) {
             pyCallableWrapper.addChunkArgument(
-                    new ConstantChunkArgument((Float.parseFloat(((DoubleLiteralExpr) expression).getValue()))));
+                    new ConstantChunkArgument((Float.parseFloat(((DoubleLiteralExpr) expression).getValue())),
+                            float.class));
         } else if (argType == double.class) {
-            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(((DoubleLiteralExpr) expression).asDouble()));
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument(((DoubleLiteralExpr) expression).asDouble(), double.class));
         } else if (argType == NULL_CLASS) {
-            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(null));
+            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(null, NULL_CLASS));
         } else if (argType == char.class) {
-            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(((CharLiteralExpr) expression).getValue()));
+            pyCallableWrapper
+                    .addChunkArgument(new ConstantChunkArgument(((CharLiteralExpr) expression).getValue(), char.class));
         } else {
             throw new IllegalStateException("Unrecognized literal expression type: " + argType);
         }

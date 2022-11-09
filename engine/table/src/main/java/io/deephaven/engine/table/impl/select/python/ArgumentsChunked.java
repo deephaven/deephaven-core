@@ -19,11 +19,11 @@ public class ArgumentsChunked {
     private final Object[] chunkedArgs;
     private final boolean forNumba;
 
-    public void resolveColumnChunks(Chunk<?>[] __sources, int chunkSize) {
-        final Class<?>[] paramTypes = new Class[__sources.length];
-        final Object[] params = new Object[__sources.length];
-        for (int i = 0; i < __sources.length; i++) {
-            final ChunkToArray<?> cta = __sources[i].walk(new ChunkToArray<>());
+    public void resolveColumnChunks(Chunk<?>[] chunkSources, int chunkSize) {
+        final Class<?>[] paramTypes = new Class[chunkSources.length];
+        final Object[] params = new Object[chunkSources.length];
+        for (int i = 0; i < chunkSources.length; i++) {
+            final ChunkToArray<?> cta = chunkSources[i].walk(new ChunkToArray<>());
             paramTypes[i] = Objects.requireNonNull(cta.getArrayType());
             params[i] = Objects.requireNonNull(cta.getArray());
         }
@@ -31,6 +31,7 @@ public class ArgumentsChunked {
         // for DH vectorized callable, we pass in the chunk size as the first argument
         if (!forNumba) {
             chunkedArgs[0] = chunkSize;
+            chunkedArgTypes[0] = int.class;
         }
 
         int i = forNumba ? 0 : 1;

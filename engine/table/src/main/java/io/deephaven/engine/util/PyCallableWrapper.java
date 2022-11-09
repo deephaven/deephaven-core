@@ -1,6 +1,8 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
@@ -15,7 +17,9 @@ import java.util.Map;
  * method, so that we can call it using __call__ without all of the JPy nastiness.
  */
 public class PyCallableWrapper {
-    private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = PyCallableWrapper.getNumbaVectorizedFuncType();
+    private static final Logger log = LoggerFactory.getLogger(PyCallableWrapper.class);
+
+    private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
 
     private static final PyModule dh_table_module = PyModule.importModule("deephaven.table");
 
@@ -32,19 +36,14 @@ public class PyCallableWrapper {
         numpyType2JavaClass.put('O', Object.class);
     }
 
-    private PyObject pyCallable;
+    private final PyObject pyCallable;
 
     private String signature = null;
     private List<Class<?>> paramTypes;
     private Class<?> returnType;
     private boolean vectorizable = false;
     private boolean vectorized = false;
-
-    // first value of the pair is null if it is a resolved constant arg, otherwise it is the used column name when
-    // uninitialized and an index value of the chunked arrays for the column sources used as args when initialized
     private Collection<ChunkArgument> chunkArguments;
-    private Class<?>[] chunkArgumentTypes;
-
     private boolean numbaVectorized;
     private PyObject unwrapped;
 
@@ -52,47 +51,57 @@ public class PyCallableWrapper {
         this.pyCallable = pyCallable;
     }
 
-    public ArgumentsChunked buildArgumentsChunked(List<String> columnSources) {
+    public ArgumentsChunked buildArgumentsChunked(List<String> columnNames) {
         Object[] args;
         Class<?>[] argTypes;
 
-        if (!numbaVectorized) {
-            args = new Object[chunkArguments.size() + 1];
-            argTypes = new Class[chunkArgumentTypes.length + 1];
-            argTypes[0] = int.class;
-        } else {
+        if (numbaVectorized) {
             args = new Object[chunkArguments.size()];
-            argTypes = new Class[chunkArgumentTypes.length];
+            argTypes = new Class[chunkArguments.size()];
+        } else {
+            // For DH vectorized func, we prepend 1 parameter to communicate the chunk size
+            args = new Object[chunkArguments.size() + 1];
+            argTypes = new Class[chunkArguments.size() + 1];
         }
 
+        // For DH vectorized, we add a parameter at the beginning for chunk size
         int i = numbaVectorized ? 0 : 1;
-        int j = 0;
         for (ChunkArgument arg : chunkArguments) {
             if (arg instanceof ColumnChunkArgument) {
                 String columnName = ((ColumnChunkArgument) arg).getColumnName();
-                int chunkSourceIndex = columnSources.indexOf(columnName);
+                int chunkSourceIndex = columnNames.indexOf(columnName);
                 if (chunkSourceIndex < 0) {
                     throw new IllegalArgumentException("Column source not found: " + columnName);
                 }
                 ((ColumnChunkArgument) arg).setChunkSourceIndex(chunkSourceIndex);
             } else {
                 args[i] = ((ConstantChunkArgument) arg).getValue();
-                argTypes[i] = chunkArgumentTypes[j];
             }
+            argTypes[i] = arg.getType();
             i++;
-            j++;
         }
         return new ArgumentsChunked(chunkArguments, args, argTypes, numbaVectorized);
     }
 
-    public interface ChunkArgument {
+    public static abstract class ChunkArgument {
+        private Class<?> type;
+
+        public Class<?> getType() {
+            return type;
+        }
+
+        public ChunkArgument(Class<?> type) {
+            this.type = type;
+        }
     }
-    public static class ColumnChunkArgument implements ChunkArgument {
+
+    public static class ColumnChunkArgument extends ChunkArgument {
         private final String columnName;
         private int chunkSourceIndex;
         private boolean resolved = false;
 
-        public ColumnChunkArgument(String columnName) {
+        public ColumnChunkArgument(String columnName, Class<?> type) {
+            super(type);
             this.columnName = columnName;
         }
 
@@ -103,7 +112,7 @@ public class PyCallableWrapper {
 
         public int getChunkSourceIndex() {
             if (!resolved) {
-                throw new IllegalStateException("The column chunk argument hasn't been resolved " + this.columnName);
+                throw new IllegalStateException("The column chunk argument hasn't been resolved " + columnName);
             }
             return chunkSourceIndex;
         }
@@ -113,10 +122,11 @@ public class PyCallableWrapper {
         }
     }
 
-    public static class ConstantChunkArgument implements ChunkArgument {
+    public static class ConstantChunkArgument extends ChunkArgument {
         private final Object value;
 
-        public ConstantChunkArgument(Object value) {
+        public ConstantChunkArgument(Object value, Class<?> type) {
+            super(type);
             this.value = value;
         }
 
@@ -125,12 +135,17 @@ public class PyCallableWrapper {
         }
     }
 
-    // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
-    // false assumption, then we'll need to make this initialization code 'python restart' proof.
-    static PyObject getNumbaVectorizedFuncType() {
+    /**
+     * This assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
+     * false assumption, then we'll need to make this initialization code 'python restart' proof.
+     */
+    private static PyObject getNumbaVectorizedFuncType() {
         try {
             return PyModule.importModule("numba.np.ufunc.dufunc").getAttribute("DUFunc");
         } catch (Exception e) {
+            if (log.isDebugEnabled()) {
+                log.debug("Numba isn't installed in the Python environment.");
+            }
             return null;
         }
     }
@@ -142,11 +157,10 @@ public class PyCallableWrapper {
                 throw new IllegalArgumentException(
                         "numba vectorized function must have an explicit signature: " + pyCallable);
             }
-            // numba allows a vectorized function to have multiple signatures, only the first one
-            // will be accepted by DH
+            // numba allows a vectorized function to have multiple signatures
             if (params.size() > 1) {
                 throw new UnsupportedOperationException(
-                        "Multiple signatures on numba vectorized functions aren't supported yet.");
+                        "Multiple signatures on numba vectorized functions aren't supported yet. " + pyCallable);
             }
             signature = params.get(0).getStringValue();
             unwrapped = null;
@@ -191,7 +205,7 @@ public class PyCallableWrapper {
                 if (paramType == null) {
                     throw new IllegalStateException(
                             "Parameters of vectorized functions should always be of integral, floating point, boolean, or Object type: "
-                                    + numpyTypeChar);
+                                    + numpyTypeChar + " of " + signature);
                 }
                 paramTypes.add(paramType);
             } else {
@@ -215,14 +229,6 @@ public class PyCallableWrapper {
         return PythonScopeJpyImpl.convert(pyCallable.callMethod("__call__", args));
     }
 
-    public PyObject getPyCallable() {
-        return pyCallable;
-    }
-
-    public Class<?> getReturnType() {
-        return returnType;
-    }
-
     public List<Class<?>> getParamTypes() {
         return paramTypes;
     }
@@ -241,26 +247,14 @@ public class PyCallableWrapper {
 
     public void initializeChunkArguments() {
         this.chunkArguments = new ArrayList<>();
-        this.chunkArgumentTypes = null;
     }
 
     public void addChunkArgument(ChunkArgument chunkArgument) {
         this.chunkArguments.add(chunkArgument);
     }
 
-    public Collection<ChunkArgument> getChunkArguments() {
-        return this.chunkArguments;
+    public Class<?> getReturnType() {
+        return returnType;
     }
 
-    public void setChunkArguments(Collection<ChunkArgument> chunkingArgs) {
-        this.chunkArguments = chunkingArgs;
-    }
-
-    public Class<?>[] getChunkArgumentTypes() {
-        return this.chunkArgumentTypes;
-    }
-
-    public void setChunkArgumentTypes(Class<?>[] chunkArgumentTypes) {
-        this.chunkArgumentTypes = chunkArgumentTypes;
-    }
 }
