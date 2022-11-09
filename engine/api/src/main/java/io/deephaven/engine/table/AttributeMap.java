@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Interface for objects (mostly {@link Table tables} and similar) that act as an immutable map of key-value attribute
@@ -124,12 +125,12 @@ public interface AttributeMap<TYPE extends AttributeMap<TYPE>> {
     Map<String, Object> getAttributes();
 
     /**
-     * Get all attributes from this AttributeMap except those whose keys appear in {@code excluded}.
+     * Get all attributes from this AttributeMap whose keys are accepted by {@code included}.
      *
-     * @param excluded A set of attributes keys (names) to exclude from the result
-     * @return An immutable map containing AttributeMap's attributes, except those whose keys appear in {@code excluded}
+     * @param included A predicate to determine which attribute keys to include
+     * @return An immutable map containing AttributeMap's attributes whose keys are accepted by {@code included}
      */
     @ConcurrentMethod
     @NotNull
-    Map<String, Object> getAttributes(@Nullable Collection<String> excluded);
+    Map<String, Object> getAttributes(@NotNull Predicate<String> included);
 }

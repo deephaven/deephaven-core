@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,9 +43,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     final boolean isRefreshing;
 
     protected HierarchicalTableImpl(
+            @NotNull final Map<String, Object> initialAttributes,
             @NotNull final QueryTable source,
             @NotNull final QueryTable root) {
-        super(null);
+        super(initialAttributes);
         this.source = source;
         this.root = root;
 

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  *           their result {@code AttributeMap} after construction using {@link #setAttribute(String, Object)}, which by
  *           convention must only be done before the result is published. No mutation is permitted after first access
  *           using any of {@link #getAttribute(String)}, {@link #getAttributeKeys()}, {@link #hasAttribute(String)},
- *           {@link #getAttributes()}, or {@link #getAttributes(Collection)}.
+ *           {@link #getAttributes()}, or {@link AttributeMap#getAttributes(Predicate)}.
  */
 public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYPE>, IMPL_TYPE extends LiveAttributeMap<IFACE_TYPE, IMPL_TYPE>>
         extends LivenessArtifact
@@ -258,18 +258,15 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     @Override
     @NotNull
     public Map<String, Object> getAttributes() {
-        return getAttributes(Collections.emptySet());
+        return immutableAttributes();
     }
 
     @Override
     @ConcurrentMethod
     @NotNull
-    public Map<String, Object> getAttributes(@Nullable final Collection<String> excluded) {
-        if (excluded == null || excluded.isEmpty()) {
-            return immutableAttributes();
-        }
+    public Map<String, Object> getAttributes(@NotNull final Predicate<String> included) {
         return immutableAttributes().entrySet().stream()
-                .filter(ae -> !excluded.contains(ae.getKey()))
+                .filter(ae -> included.test(ae.getKey()))
                 .collect(Collectors.collectingAndThen(
                         Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue),
                         Collections::unmodifiableMap));

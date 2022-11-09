@@ -22,6 +22,7 @@ import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -125,7 +126,7 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     @NotNull
-    default Map<String, Object> getAttributes(@Nullable Collection<String> excluded) {
+    default Map<String, Object> getAttributes(@Nullable Predicate<String> included) {
         return throwUnsupported();
     }
 
