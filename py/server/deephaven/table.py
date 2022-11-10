@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import inspect
+import threading
 from enum import Enum, auto
 from functools import wraps
 from itertools import zip_longest
@@ -113,18 +114,20 @@ class _DhVectorize:
     chunk-size parameter at the beginning to let the caller pass in the actual runtime chunk size. For this reason,
     it is not recommended for user to use this decorator directly, as it changes the signature of the original callable.
     """
+
     def __init__(self, fn: Callable):
         functools.update_wrapper(self, fn)
         self.callable = fn
         self.signature = _encode_signature(fn)
         self.return_type = self.signature[-1]
+        self.arg_count = len(self.signature) - len("->?")
         self.dh_vectorized = True
         self._call_count = 0
-        self._arguments = [None] * (len(self.signature) - len("->?"))
-        self._chunk_size: int = 0
         if _test_vectorization:
             global _vectorized_count
             _vectorized_count += 1
+        self._r_lock = threading.RLock()
+        self._thread_local = threading.local()
 
     def __call__(self, *args):
         def is_chunked(v) -> bool:
@@ -138,36 +141,55 @@ class _DhVectorize:
                 return False
 
         # upon being called the first time, set up the return array and constant arguments for reuse in subsequent calls
-        if len(args) != len(self._arguments) + 1:
+        if len(args) != self.arg_count + 1:
             raise ValueError(
                 f"The number of arguments doesn't match the function signature. {len(args) - 1}, {self.signature}")
         if args[0] <= 0:
             raise ValueError(f"The chunk size argument must be a positive integer. {args[0]}")
 
+        try:
+            chunk_size = self._thread_local.chunk_size
+        except:
+            chunk_size = 0
+
+        try:
+            arguments = self._thread_local.arguments
+        except:
+            arguments = [None] * self.arg_count
+            self._thread_local.arguments = arguments
+
         # to account for chunk size change and the first time gets called, when it becomes larger, we need to make new
         # result/const-arg arrays
-        if args[0] > self._chunk_size:
-            self._chunk_size = args[0]
-            self._chunk_result = np.empty(self._chunk_size, self.return_type)
+        if args[0] > chunk_size:
+            chunk_size = args[0]
+            self._thread_local.chunk_size = chunk_size
             for i, arg in enumerate(args[1:]):
                 if not is_chunked(arg):
-                    self._arguments[i] = np.full(self._chunk_size, arg)
+                    arguments[i] = np.full(chunk_size, arg)
+            self._thread_local.chunk_result = np.empty(chunk_size, self.return_type)
+
+        try:
+            chunk_result = self._thread_local.chunk_result
+        except:
+            raise RuntimeError(f"The chunk result array hasn't been instantiated.")
 
         # only reassign the chunk arguments
         for i, arg in enumerate(args[1:]):
             if is_chunked(arg):
-                self._arguments[i] = arg
+                arguments[i] = arg
 
-        if self._arguments:
-            vectorized_args = zip(*self._arguments)
+        if arguments:
+            vectorized_args = zip(*arguments)
             for i, scalar_args in enumerate(vectorized_args):
-                self._chunk_result[i] = self.callable(*scalar_args)
+                chunk_result[i] = self.callable(*scalar_args)
         else:
-            for i in range(self._chunk_size):
-                self._chunk_result[i] = self.callable()
+            for i in range(chunk_size):
+                chunk_result[i] = self.callable()
 
-        self._call_count += 1
-        return self._chunk_result
+        with self._r_lock:
+            self._call_count += 1
+
+        return chunk_result
 
 
 @contextlib.contextmanager
