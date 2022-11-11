@@ -39,11 +39,6 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
                 curVal *= currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_FLOAT;
-        }
     }
 
     public FloatCumProdOperator(@NotNull final MatchPair pair,

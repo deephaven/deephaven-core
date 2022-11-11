@@ -48,11 +48,6 @@ public class IntCumMinMaxOperator extends BaseIntUpdateByOperator {
                 }
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_INT;
-        }
     }
 
     public IntCumMinMaxOperator(@NotNull final MatchPair pair,

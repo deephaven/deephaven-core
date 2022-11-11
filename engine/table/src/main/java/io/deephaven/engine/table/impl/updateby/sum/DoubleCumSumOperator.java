@@ -43,11 +43,6 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
                 curVal += currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_DOUBLE;
-        }
     }
 
     public DoubleCumSumOperator(@NotNull final MatchPair pair,

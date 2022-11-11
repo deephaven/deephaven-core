@@ -39,11 +39,6 @@ public class DoubleFillByOperator extends BaseDoubleUpdateByOperator {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_DOUBLE;
-        }
     }
 
     public DoubleFillByOperator(@NotNull final MatchPair fillPair,

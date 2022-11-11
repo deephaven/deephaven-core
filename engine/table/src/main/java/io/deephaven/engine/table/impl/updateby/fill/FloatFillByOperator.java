@@ -39,11 +39,6 @@ public class FloatFillByOperator extends BaseFloatUpdateByOperator {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_FLOAT;
-        }
     }
 
     public FloatFillByOperator(@NotNull final MatchPair fillPair,

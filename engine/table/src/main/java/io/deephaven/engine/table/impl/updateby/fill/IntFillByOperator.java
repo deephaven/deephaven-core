@@ -39,11 +39,6 @@ public class IntFillByOperator extends BaseIntUpdateByOperator {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_INT;
-        }
     }
 
     public IntFillByOperator(@NotNull final MatchPair fillPair,

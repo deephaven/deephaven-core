@@ -39,11 +39,6 @@ public class ShortFillByOperator extends BaseShortUpdateByOperator {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_SHORT;
-        }
     }
 
     public ShortFillByOperator(@NotNull final MatchPair fillPair,

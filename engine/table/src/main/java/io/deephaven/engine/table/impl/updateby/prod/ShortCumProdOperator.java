@@ -38,11 +38,6 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
                 curVal *= currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_SHORT;
-        }
     }
 
     public ShortCumProdOperator(@NotNull final MatchPair pair,

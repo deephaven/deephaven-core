@@ -38,11 +38,6 @@ public class FloatCumSumOperator extends BaseFloatUpdateByOperator {
                 curVal += currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_FLOAT;
-        }
     }
 
     public FloatCumSumOperator(@NotNull final MatchPair pair,

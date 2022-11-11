@@ -43,11 +43,6 @@ public class LongCumProdOperator extends BaseLongUpdateByOperator {
                 curVal *= currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_LONG;
-        }
     }
 
     public LongCumProdOperator(@NotNull final MatchPair pair,

@@ -43,11 +43,6 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
                 curVal *= currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_BYTE;
-        }
     }
 
     public ByteCumProdOperator(@NotNull final MatchPair pair,

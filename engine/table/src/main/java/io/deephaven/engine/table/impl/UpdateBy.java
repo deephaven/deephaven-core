@@ -334,9 +334,8 @@ public abstract class UpdateBy {
         }
 
         private void onError(Exception error) {
-            // Not sure what to do here...
+            // signal to the future that an exception has occured
             waitForResult.completeExceptionally(error);
-            System.out.println(error.toString());
         }
 
         /**
@@ -518,8 +517,8 @@ public abstract class UpdateBy {
             if (jobScheduler.threadCount() > 1) {
                 // process the buckets in parallel
                 final int bucketsPerTask = Math.max(1, dirtyBuckets.length / jobScheduler.threadCount());
-                TIntArrayList offsetList = new TIntArrayList();
-                TIntArrayList countList = new TIntArrayList();
+                final TIntArrayList offsetList = new TIntArrayList();
+                final TIntArrayList countList = new TIntArrayList();
 
                 for (int ii = 0; ii < dirtyBuckets.length; ii += bucketsPerTask) {
                     offsetList.add(ii);
@@ -576,8 +575,19 @@ public abstract class UpdateBy {
                                 }
                             }
 
-                            // shift the non-redirected output sources now, after parallelPopulation
-                            if (!redirContext.isRedirected() && update.shifted().nonempty()) {
+                            if (redirContext.isRedirected()) {
+                                for (UpdateByOperator op : windows[winIdx].getOperators()) {
+                                    // If we're redirected we have to make sure we tell the output source its actual
+                                    // size, or we're going to have a bad time.  This is not necessary for
+                                    // non-redirections since the SparseArraySources do not need to do anything with
+                                    // capacity.
+                                    op.getOutputColumns().forEach((name, outputSource) -> {
+                                        // The redirection index does not use the 0th index for some reason.
+                                        ((WritableColumnSource<?>)outputSource).ensureCapacity(redirContext.requiredCapacity());
+                                    }) ;
+                                }
+                            } else if (update.shifted().nonempty()) {
+                                // shift the non-redirected output sources now, after parallelPopulation
                                 shiftWindowOperators(win, update.shifted());
                             }
 
@@ -597,9 +607,10 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Clean up the resources created during this update and notify downstream if applicable
+         * Clean up the resources created during this update and notify downstream if applicable. Calls
+         * {@code completedAction} when the work is complete
          */
-        private void cleanUpAndNotify() {
+        private void cleanUpAndNotify(final Runnable completeAction) {
             shiftedRows.close();
 
             // create the downstream before calling finalize() on the buckets (which releases resources)
@@ -620,8 +631,7 @@ public abstract class UpdateBy {
                 result.notifyListeners(downstream);
             }
 
-            // signal to the main task that we have completed our work
-            waitForResult.complete(null);
+            completeAction.run();
         }
 
         /**
@@ -716,7 +726,12 @@ public abstract class UpdateBy {
             // call will chain to another until the sequence is complete
             computeCachedColumnRowsets(
                     () -> processWindows(
-                            () -> cleanUpAndNotify()));
+                            () -> cleanUpAndNotify(
+                                    () -> {
+                                        // signal to the main task that we have completed our work
+                                        waitForResult.complete(null);
+                                    }
+                            )));
 
             try {
                 // need to wait until this future is complete
@@ -748,14 +763,13 @@ public abstract class UpdateBy {
             final TableUpdate upstream = sourceRecorder.getUpdate();
 
             // we need to keep a reference to TableUpdate during our computation
-            if (upstream != null) {
-                final StateManager sm = new StateManager(upstream.acquire(), false);
-                sm.processUpdate();
-            }
+            final StateManager sm = new StateManager(upstream.acquire(), false);
+            sm.processUpdate();
         }
 
         @Override
         protected boolean canExecute(final long step) {
+
             synchronized (recorders) {
                 return recorders.stream().allMatch(lr -> lr.satisfied(step));
             }

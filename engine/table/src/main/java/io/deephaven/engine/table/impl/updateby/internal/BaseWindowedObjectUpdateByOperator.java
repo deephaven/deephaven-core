@@ -18,6 +18,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,7 +104,7 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
             outputFillContext.close();
         }
 
-        @Override
+        @FinalDefault
         public void reset() {
             curVal = null;
             nullCount = 0;
@@ -122,7 +123,7 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
                                             // endregion extra-constructor-args
                                     ) {
         super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
-        if(this.redirContext.isRedirected()) {
+        if (this.redirContext.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new ObjectArraySource(colType);
             // endregion create-dense
@@ -144,13 +145,6 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
 
     @Override
     public void initializeUpdate(@NotNull UpdateContext context) {
-        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
-        // need to do anything with capacity.
-        if(redirContext.isRedirected()) {
-            // The redirection index does not use the 0th index for some reason.
-            outputSource.ensureCapacity(redirContext.requiredCapacity());
-        }
     }
 
     @Override

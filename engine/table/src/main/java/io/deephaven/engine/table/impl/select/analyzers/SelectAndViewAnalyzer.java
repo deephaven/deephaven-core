@@ -573,6 +573,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         @FinalDefault
         default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
                 int count, IterateAction action, Runnable completeAction, final Consumer<Exception> onError) {
+
+            if (count == 0) {
+                // no work to do
+                completeAction.run();
+            }
+
             final AtomicInteger nextIndex = new AtomicInteger(start);
             final AtomicInteger remaining = new AtomicInteger(count);
 
@@ -619,6 +625,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         @FinalDefault
         default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
                 int count, IterateResumeAction action, Runnable completeAction, Consumer<Exception> onError) {
+
+            if (count == 0) {
+                // no work to do
+                completeAction.run();
+            }
+
             final AtomicInteger nextIndex = new AtomicInteger(start);
             final AtomicInteger remaining = new AtomicInteger(count);
 
@@ -669,33 +681,47 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         @FinalDefault
         default void iterateSerial(ExecutionContext executionContext, LogOutputAppendable description, int start,
                 int count, IterateResumeAction action, Runnable completeAction, Consumer<Exception> onError) {
+
+            if (count == 0) {
+                // no work to do
+                completeAction.run();
+            }
+
             final AtomicInteger nextIndex = new AtomicInteger(start);
             final AtomicInteger remaining = new AtomicInteger(count);
 
-            final Runnable resumeAction = () -> {
-                // check for completion
-                if (remaining.decrementAndGet() == 0) {
-                    completeAction.run();
-                }
-            };
-
-            final Runnable task = () -> {
-                // this will run until all tasks have started
-                while (true) {
-                    int idx = nextIndex.getAndIncrement();
-                    if (idx < start + count) {
-                        // do the work
-                        action.run(idx, resumeAction);
+            // no lambda, need the `this` reference to re-execute
+            final Runnable resumeAction = new Runnable() {
+                @Override
+                public void run() {
+                    // check for completion
+                    if (remaining.decrementAndGet() == 0) {
+                        completeAction.run();
                     } else {
-                        // no more work to do
-                        return;
+                        // schedule the next task
+                        submit(executionContext,
+                                () -> {
+                                    int idx = nextIndex.getAndIncrement();
+                                    if (idx < start + count) {
+                                        // do the work
+                                        action.run(idx, this);
+                                    }
+                                },
+                                description,
+                                onError);
                     }
+
                 }
             };
 
             // create a single task
             submit(executionContext,
-                    task,
+                    () -> {
+                        int idx = nextIndex.getAndIncrement();
+                        if (idx < start + count) {
+                            action.run(idx, resumeAction);
+                        }
+                    },
                     description,
                     onError);
         }

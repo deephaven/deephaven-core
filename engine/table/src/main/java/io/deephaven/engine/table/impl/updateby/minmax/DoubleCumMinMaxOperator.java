@@ -48,11 +48,6 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
                 }
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_DOUBLE;
-        }
     }
 
     public DoubleCumMinMaxOperator(@NotNull final MatchPair pair,

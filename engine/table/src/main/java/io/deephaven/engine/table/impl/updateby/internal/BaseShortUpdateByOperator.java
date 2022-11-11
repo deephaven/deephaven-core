@@ -19,6 +19,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -87,6 +88,11 @@ public abstract class BaseShortUpdateByOperator extends UpdateByCumulativeOperat
         public void writeToOutputColumn(@NotNull final RowSequence inputKeys) {
             outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
+
+        @FinalDefault
+        public void reset() {
+            curVal = NULL_SHORT;
+        }
     }
 
     /**
@@ -131,14 +137,6 @@ public abstract class BaseShortUpdateByOperator extends UpdateByCumulativeOperat
             ctx.curVal = outputSource.getShort(firstUnmodifiedKey);
         } else {
             ctx.reset();
-        }
-
-        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
-        // need to do anything with capacity.
-        if(redirContext.isRedirected()) {
-            // The redirection index does not use the 0th index for some reason.
-            outputSource.ensureCapacity(redirContext.requiredCapacity());
         }
     }
 

@@ -42,11 +42,6 @@ public class IntCumSumOperator extends BaseLongUpdateByOperator {
                 curVal += currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_LONG;
-        }
     }
 
     public IntCumSumOperator(@NotNull final MatchPair pair,

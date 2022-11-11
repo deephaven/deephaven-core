@@ -39,11 +39,6 @@ public class ByteFillByOperator extends BaseByteUpdateByOperator {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_BYTE;
-        }
     }
 
     public ByteFillByOperator(@NotNull final MatchPair fillPair,

@@ -47,11 +47,6 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_LONG;
-        }
     }
 
     public LongFillByOperator(@NotNull final MatchPair fillPair,

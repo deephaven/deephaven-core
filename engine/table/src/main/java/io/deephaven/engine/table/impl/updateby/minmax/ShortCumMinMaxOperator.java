@@ -43,11 +43,6 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
                 }
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_SHORT;
-        }
     }
 
     public ShortCumMinMaxOperator(@NotNull final MatchPair pair,

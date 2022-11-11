@@ -48,11 +48,6 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
                 }
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_BYTE;
-        }
     }
 
     public ByteCumMinMaxOperator(@NotNull final MatchPair pair,

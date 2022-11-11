@@ -34,11 +34,6 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_CHAR;
-        }
     }
 
     public CharFillByOperator(@NotNull final MatchPair fillPair,

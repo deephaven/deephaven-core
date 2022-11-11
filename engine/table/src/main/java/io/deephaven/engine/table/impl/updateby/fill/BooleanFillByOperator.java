@@ -46,11 +46,6 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_BOOLEAN_AS_BYTE;
-        }
     }
 
     public BooleanFillByOperator(@NotNull final MatchPair fillPair,

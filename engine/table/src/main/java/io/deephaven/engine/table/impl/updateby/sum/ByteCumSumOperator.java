@@ -43,11 +43,6 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
                 curVal += currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_LONG;
-        }
     }
 
     public ByteCumSumOperator(@NotNull final MatchPair pair,

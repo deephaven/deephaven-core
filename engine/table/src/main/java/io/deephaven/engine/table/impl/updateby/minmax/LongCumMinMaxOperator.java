@@ -56,11 +56,6 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
                 }
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_LONG;
-        }
     }
 
     public LongCumMinMaxOperator(@NotNull final MatchPair pair,

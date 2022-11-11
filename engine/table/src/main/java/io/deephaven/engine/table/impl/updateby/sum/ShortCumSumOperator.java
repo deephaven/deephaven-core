@@ -37,11 +37,6 @@ public class ShortCumSumOperator extends BaseLongUpdateByOperator {
                 curVal += currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_LONG;
-        }
     }
 
     public ShortCumSumOperator(@NotNull final MatchPair pair,

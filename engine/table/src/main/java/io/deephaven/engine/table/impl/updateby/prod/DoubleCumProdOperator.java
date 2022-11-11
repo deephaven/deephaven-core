@@ -44,11 +44,6 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
                 curVal *= currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_DOUBLE;
-        }
     }
 
     public DoubleCumProdOperator(@NotNull final MatchPair pair,

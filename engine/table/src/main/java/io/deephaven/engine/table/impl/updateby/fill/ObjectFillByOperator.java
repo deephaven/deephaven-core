@@ -38,11 +38,6 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
                 curVal = currentVal;
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = null;
-        }
     }
 
     public ObjectFillByOperator(@NotNull final MatchPair fillPair,

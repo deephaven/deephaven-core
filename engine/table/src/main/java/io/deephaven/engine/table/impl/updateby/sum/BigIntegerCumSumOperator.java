@@ -40,11 +40,6 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
                 }
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = null;
-        }
     }
 
     public BigIntegerCumSumOperator(@NotNull final MatchPair inputPair,

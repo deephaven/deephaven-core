@@ -43,11 +43,6 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
                 }
             }
         }
-
-        @Override
-        public void reset() {
-            curVal = NULL_FLOAT;
-        }
     }
 
     public FloatCumMinMaxOperator(@NotNull final MatchPair pair,
