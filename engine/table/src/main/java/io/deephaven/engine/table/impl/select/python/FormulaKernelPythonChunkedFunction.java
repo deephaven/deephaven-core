@@ -27,7 +27,7 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
 
     FormulaKernelPythonChunkedFunction(PyObject function, ArgumentsChunked argumentsChunked) {
         this.function = Objects.requireNonNull(function, "function");
-        this.argumentsChunked = argumentsChunked;
+        this.argumentsChunked = argumentsChunked.clone();
     }
 
     @Override
@@ -145,6 +145,7 @@ class FormulaKernelPythonChunkedFunction extends FormulaKernelTypedBase implemen
 
     @Override
     public FillContext makeFillContext(int __chunkCapacity) {
+        argumentsChunked.fillColumnChunks(__chunkCapacity);
         return FillContextPython.EMPTY;
     }
 }
