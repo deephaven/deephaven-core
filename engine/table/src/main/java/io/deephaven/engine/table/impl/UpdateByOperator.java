@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -21,13 +22,13 @@ import java.util.Map;
  * interface, the pattern of calls will be as follows.
  *
  * <ol>
- * <li>Reprocess
- * <ul>
- * <li>{@link #initializeUpdate(UpdateContext, RowSet, UpdateBy.UpdateType)}</li>
- * <li>{@link #UpdateByWindow.processRows}</li>
+ * <li>{@link UpdateByCumulativeOperator#initializeUpdate(UpdateContext, long, long)} for cumulative operators or
+ * {@link UpdateByWindowedOperator#initializeUpdate(UpdateContext)} for windowed operators</li>
+ * <li>{@link io.deephaven.engine.table.impl.UpdateByCumulativeOperator.Context#accumulate(RowSequence, Chunk[], LongChunk, int)}
+ * for cumulative operators or
+ * {@link UpdateByWindowedOperator.Context#accumulate(RowSequence, Chunk[], IntChunk, IntChunk, int)} for windowed
+ * operators</li>
  * <li>{@link #finishUpdate(UpdateContext)}</li>
- * </ul>
- * </li>
  * </ol>
  */
 public abstract class UpdateByOperator {
@@ -92,7 +93,7 @@ public abstract class UpdateByOperator {
     }
 
 
-    public UpdateByOperator(@NotNull final MatchPair pair,
+    protected UpdateByOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final OperationControl control,
             @Nullable final String timestampColumnName,
@@ -208,7 +209,6 @@ public abstract class UpdateByOperator {
 
     /**
      * Create the modified column set for the input columns of this operator.
-     *
      */
     public void createInputModifiedColumnSet(@NotNull final QueryTable source) {
         inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames());
@@ -216,7 +216,6 @@ public abstract class UpdateByOperator {
 
     /**
      * Create the modified column set for the output columns from this operator.
-     *
      */
     public void createOutputModifiedColumnSet(@NotNull final QueryTable result) {
         outputModifiedColumnSet = result.newModifiedColumnSet(getOutputColumnNames());
@@ -224,7 +223,6 @@ public abstract class UpdateByOperator {
 
     /**
      * Return the modified column set for the input columns of this operator.
-     *
      */
     public ModifiedColumnSet getInputModifiedColumnSet() {
         return inputModifiedColumnSet;
@@ -232,7 +230,6 @@ public abstract class UpdateByOperator {
 
     /**
      * Return the modified column set for the output columns from this operator.
-     *
      */
     public ModifiedColumnSet getOutputModifiedColumnSet() {
         return outputModifiedColumnSet;

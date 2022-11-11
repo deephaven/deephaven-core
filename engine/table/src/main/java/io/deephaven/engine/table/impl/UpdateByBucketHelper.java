@@ -20,7 +20,8 @@ import java.util.Map;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
- * An implementation of {@link UpdateBy} dedicated to zero key computation.
+ * An helper class of {@link UpdateBy} dedicated to zero key computation. This will manage the computation of a single
+ * bucket of rows
  */
 class UpdateByBucketHelper {
     protected final ColumnSource<?>[] inputSources;
@@ -36,24 +37,27 @@ class UpdateByBucketHelper {
     /** An array of {@link UpdateByWindow.UpdateByWindowContext}s for each window */
     final UpdateByWindow.UpdateByWindowContext[] windowContexts;
 
-    /** store timestamp data in an Ssa (if needed) */
+    /** store timestamp data in an SSA (if needed) */
     final String timestampColumnName;
     final LongSegmentedSortedArray timestampSsa;
     final ColumnSource<?> timestampColumnSource;
     final ModifiedColumnSet timestampColumnSet;
 
-    /** Indicates this bucket needs to be processed (at least window and operator are dirty) */
+    /** Indicates this bucket needs to be processed (at least one window and operator are dirty) */
     boolean isDirty;
 
     /**
      * Perform an updateBy without any key columns.
      *
+     * @param description descibes this bucket helper
      * @param source the source table
      * @param operators, the operations to perform
+     * @param inputSources the source input sources
+     * @param operatorInputSourceSlots the mapping from operator index to needed input source indices
      * @param resultSources the result sources
+     * @param timestampColumnName the timestamp column used for time-based operations
      * @param redirContext the row redirection shared context
      * @param control the control object.
-     * @return the result table
      */
 
     protected UpdateByBucketHelper(@NotNull final String description,
@@ -268,14 +272,31 @@ class UpdateByBucketHelper {
         }
     }
 
+    /**
+     * Returns {@code true} if this bucket needs to be processed (at least one operator and window has changes)
+     */
     public boolean isDirty() {
         return isDirty;
     }
 
+    /**
+     * Store an array of input sources for the following call to {@code processWindow()}. The function allows for the
+     * use of cached input sources instead of the original input sources.
+     *
+     * @param winIdx the index of the window to modify
+     * @param inputSources the input sources for the
+     */
     public void assignInputSources(final int winIdx, final ColumnSource<?>[] inputSources) {
         windows[winIdx].assignInputSources(windowContexts[winIdx], inputSources);
     }
 
+    /**
+     * Perform all the operator calculations for this bucket using the input sources assigned by the
+     * {@code assignInputSources()} call.
+     *
+     * @param winIdx the index of the window to modify
+     * @param initialStep the input sources for the
+     */
     public void processWindow(final int winIdx, final boolean initialStep) {
         if (!windows[winIdx].isWindowDirty(windowContexts[winIdx])) {
             return; // no work to do for this bucket window
@@ -283,6 +304,9 @@ class UpdateByBucketHelper {
         windows[winIdx].processRows(windowContexts[winIdx], initialStep);
     }
 
+    /**
+     * Close the window contexts and release resources for this bucket
+     */
     public void finalizeUpdate() {
         for (int winIdx = 0; winIdx < windows.length; winIdx++) {
             windowContexts[winIdx].close();

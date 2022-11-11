@@ -24,7 +24,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
-// this class is currently too big, should specialize into CumWindow, TickWindow, TimeWindow to simplify implementation
+/**
+ * This is the specialization of {@link UpdateByWindow} that handles tick based `windowed` operators. These operators
+ * maintain a window of data based on row distance rather than timestamps. Window-based operators must maintain a buffer
+ * of `influencer` values to add to the rolling window as the current row changes.
+ */
 public class UpdateByWindowTicks extends UpdateByWindow {
     protected final long prevUnits;
     protected final long fwdUnits;
@@ -190,10 +194,12 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         ctx.nextInfluencerKey = ctx.influencerKeyChunk.get(ctx.nextInfluencerIndex);
     }
 
-    // windowed by time/ticks is more complex to compute: find all the changed rows and the rows that would
-    // be affected by the changes (includes newly added rows) and need to be recomputed. Then include all
-    // the rows that are affected by deletions (if any). After the affected rows have been identified,
-    // determine which rows will be needed to compute new values for the affected rows (influencer rows)
+    /**
+     * Finding the `affected` and `influencer` rowsets for a windowed operation is complex. We must identify modified
+     * rows (including added rows) and deleted rows and determine which rows are `affected` by the change given the
+     * window parameters. After these rows have been identified, must determine which rows will be needed to recompute
+     * these values (i.e. that fall within the window and will `influence` this computation).
+     */
     @Override
     public void computeAffectedRowsAndOperators(UpdateByWindowContext context, @NotNull TableUpdate upstream) {
 

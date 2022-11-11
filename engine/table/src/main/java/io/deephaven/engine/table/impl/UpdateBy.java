@@ -13,6 +13,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.UncheckedTableException;
@@ -43,6 +44,13 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  * The core of the {@link Table#updateBy(UpdateByControl, Collection, Collection)} operation.
  */
 public abstract class UpdateBy {
+    /** When caching a column source, how many rows should we process in each parallel batch? (1M default) */
+    public static final int PARALLEL_CACHE_BATCH_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheBatchSize", 1 << 20);
+    /** When caching a column source, what size chunks should be used to move data to the cache? (65K default) */
+    public static final int PARALLEL_CACHE_CHUNK_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheChunkSize", 1 << 16);
+
     /** Input sources may be reused by mutiple operators, only store and cache unique ones */
     protected final ColumnSource<?>[] inputSources;
     /** Map operators to input sources, note some operators need more than one input, WAvg e.g. */
@@ -65,8 +73,10 @@ public abstract class UpdateBy {
     protected final boolean inputCacheNeeded;
     /** Whether caching benefits each input source */
     protected final boolean[] inputSourceCacheNeeded;
-    /** References to the dense array sources we are using for the cached sources, it's expected that these will be
-     * released and need to be created */
+    /**
+     * References to the dense array sources we are using for the cached sources, it's expected that these will be
+     * released and need to be created
+     */
     protected final SoftReference<WritableColumnSource<?>>[] inputSourceCaches;
     /** For easy iteration, create a list of the source indices that need to be cached */
     protected final int[] cacheableSourceIndices;
@@ -78,7 +88,7 @@ public abstract class UpdateBy {
 
     /** For refreshing sources, maintain a list of each of the bucket listeners */
     protected LinkedList<ListenerRecorder> recorders;
-    /** For refreshing sources, need a merged listener to produce downstream updates  */
+    /** For refreshing sources, need a merged listener to produce downstream updates */
     protected UpdateByListener listener;
 
     public static class UpdateByRedirectionContext implements Context {
@@ -211,7 +221,7 @@ public abstract class UpdateBy {
         buckets = new LinkedList<>();
     }
 
-    /** Remove all references to Objects for this column source  */
+    /** Remove all references to Objects for this column source */
     private void fillObjectArraySourceWithNull(ObjectArraySource<?> sourceToNull) {
         Assert.neqNull(sourceToNull, "cached column source was null, must have been GC'd");
         try (final ResettableWritableObjectChunk<?, ?> backingChunk =
@@ -225,7 +235,7 @@ public abstract class UpdateBy {
         }
     }
 
-    /** Release the input sources that will not be needed for the rest of this update  */
+    /** Release the input sources that will not be needed for the rest of this update */
     private void releaseInputSources(int winIdx, ColumnSource<?>[] maybeCachedInputSources,
             TrackingWritableRowSet[] inputSourceRowSets, AtomicInteger[] inputSourceReferenceCounts) {
         final UpdateByWindow win = windows[winIdx];
@@ -251,19 +261,22 @@ public abstract class UpdateBy {
     /**
      * Overview of work performed by {@link StateManager}:
      * <ol>
-     *     <li>Create `shiftedRows`, the set of rows for the output sources that are affected by shifts</li>
-     *     <li>Compute a rowset for each cacheable input source identifying which rows will be needed for processing</li>
-     *     <li>Process each window serially
-     *         <ol>
-     *             <li>Cache the input sources that are needed for this window (this can be done in parallel for each column and even in a chunky way)</li>
-     *             <li>Compute the modified rowset of output column sources and call `prepareForParallelPopulation()', this could be done in parallel with the caching</li>
-     *             <li>When prepareForParallelPopulation() complete, apply upstream shifts to the output sources</li>
-     *             <li>When caching and shifts are complete, process the data in this window in parallel by dividing the buckets into sets (N/num_threads) and running a job for each bucket_set 3e) when all buckets processed</li>
-     *             <li>When all buckets processed, release the input source caches that will not be re-used later</li>
-     *         </ol>
-     *     </li>
-     *     <li>When all windows processed, create the downstream update and notify</li>
-     *     <li>Release resources</li>
+     * <li>Create `shiftedRows`, the set of rows for the output sources that are affected by shifts</li>
+     * <li>Compute a rowset for each cacheable input source identifying which rows will be needed for processing</li>
+     * <li>Process each window serially
+     * <ul>
+     * <li>Cache the input sources that are needed for this window (this can be done in parallel for each column and
+     * parallel again for a subset of the rows)</li>
+     * <li>Compute the modified rowset of output column sources and call `prepareForParallelPopulation()', this could be
+     * done in parallel with the caching</li>
+     * <li>When prepareForParallelPopulation() complete, apply upstream shifts to the output sources</li>
+     * <li>When caching and shifts are complete, process the data in this window in parallel by dividing the buckets
+     * into sets (N/num_threads) and running a job for each bucket_set 3e) when all buckets processed</li>
+     * <li>When all buckets processed, release the input source caches that will not be re-used later</li>
+     * </ul>
+     * </li>
+     * <li>When all windows processed, create the downstream update and notify</li>
+     * <li>Release resources</li>
      * </ol>
      */
 
@@ -327,7 +340,7 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Accumulate in parallel the dirty bucket rowsets for the cacheable input sources.  Calls
+         * Accumulate in parallel the dirty bucket rowsets for the cacheable input sources. Calls
          * {@code completedAction} when the work is complete
          */
         private void computeCachedColumnRowsets(final Runnable completeAction) {
@@ -336,7 +349,7 @@ public abstract class UpdateBy {
                 return;
             }
 
-            // on the initial step, everything is dirty
+            // initially everything is dirty so cache everything
             if (initialStep) {
                 for (int srcIdx : cacheableSourceIndices) {
                     // create a TrackingRowSet to be used by `InverseRowRedirectionImpl`
@@ -367,7 +380,7 @@ public abstract class UpdateBy {
                                     UpdateByWindow.UpdateByWindowContext winCtx = bucket.windowContexts[winIdx];
 
                                     if (win.isWindowDirty(winCtx)) {
-                                        // add this rowset to the running total
+                                        // add this rowset to the running total for this input source
                                         if (inputSourceRowSets[srcIdx] == null) {
                                             inputSourceRowSets[srcIdx] =
                                                     win.getInfluencerRows(winCtx).copy().toTracking();
@@ -386,8 +399,8 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Create a new input source cache and populate the required rows in parallel.  Calls
-         * {@code completedAction} when the work is complete
+         * Create a new input source cache and populate the required rows in parallel. Calls {@code completedAction}
+         * when the work is complete
          */
         private void createCachedColumnSource(int srcIdx, final Runnable completeAction) {
             if (maybeCachedInputSources[srcIdx] != null) {
@@ -409,22 +422,20 @@ public abstract class UpdateBy {
             }
             innerSource.ensureCapacity(inputRowSet.size());
 
+            // there will be no updates to this cached column source, so use a simple redirection
             final WritableRowRedirection rowRedirection = new InverseRowRedirectionImpl(inputRowSet);
             final WritableColumnSource<?> outputSource =
                     new WritableRedirectedColumnSource(rowRedirection, innerSource, 0);
 
-            // holding this reference will protect `rowDirection` and `innerSource` from GC
+            // holding this reference should protect `rowDirection` and `innerSource` from GC
             maybeCachedInputSources[srcIdx] = outputSource;
 
-            final int PARALLEL_CHUNK_SIZE = 1 << 20; // 1M row chunks (configuration item?)
-            final int CHUNK_SIZE = 1 << 16; // copied from SparseSelect
-
-            if (inputRowSet.size() >= PARALLEL_CHUNK_SIZE) {
+            if (inputRowSet.size() >= PARALLEL_CACHE_BATCH_SIZE) {
                 // divide the rowset into reasonable chunks and do the cache population in parallel
                 final ArrayList<RowSet> populationRowSets = new ArrayList<>();
                 try (final RowSequence.Iterator rsIt = inputRowSet.getRowSequenceIterator()) {
                     while (rsIt.hasMore()) {
-                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(PARALLEL_CHUNK_SIZE);
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(PARALLEL_CACHE_BATCH_SIZE);
                         populationRowSets.add(chunkOk.asRowSet().copy());
                     }
                 }
@@ -434,10 +445,12 @@ public abstract class UpdateBy {
                             try (final RowSet chunkRs = populationRowSets.get(idx);
                                     final RowSequence.Iterator rsIt = chunkRs.getRowSequenceIterator();
                                     final ChunkSink.FillFromContext ffc =
-                                            outputSource.makeFillFromContext(CHUNK_SIZE);
-                                    final ChunkSource.GetContext gc = inputSource.makeGetContext(CHUNK_SIZE)) {
+                                            outputSource.makeFillFromContext(PARALLEL_CACHE_CHUNK_SIZE);
+                                    final ChunkSource.GetContext gc =
+                                            inputSource.makeGetContext(PARALLEL_CACHE_CHUNK_SIZE)) {
                                 while (rsIt.hasMore()) {
-                                    final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+                                    final RowSequence chunkOk =
+                                            rsIt.getNextRowSequenceWithLength(PARALLEL_CACHE_CHUNK_SIZE);
                                     final Chunk<? extends Values> values = inputSource.getChunk(gc, chunkOk);
                                     outputSource.fillFromChunk(ffc, values, chunkOk);
                                 }
@@ -451,10 +464,10 @@ public abstract class UpdateBy {
                 // run this in serial, not worth parallelization
                 try (final RowSequence.Iterator rsIt = inputRowSet.getRowSequenceIterator();
                         final ChunkSink.FillFromContext ffc =
-                                outputSource.makeFillFromContext(CHUNK_SIZE);
-                        final ChunkSource.GetContext gc = inputSource.makeGetContext(CHUNK_SIZE)) {
+                                outputSource.makeFillFromContext(PARALLEL_CACHE_CHUNK_SIZE);
+                        final ChunkSource.GetContext gc = inputSource.makeGetContext(PARALLEL_CACHE_CHUNK_SIZE)) {
                     while (rsIt.hasMore()) {
-                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
+                        final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(PARALLEL_CACHE_CHUNK_SIZE);
                         final Chunk<? extends Values> values = inputSource.getChunk(gc, chunkOk);
                         outputSource.fillFromChunk(ffc, values, chunkOk);
                     }
@@ -464,8 +477,8 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Create cached input sources for all input needed by {@code windows[winIdx]}.  Calls
-         * {@code completedAction} when the work is complete
+         * Create cached input sources for all input needed by {@code windows[winIdx]}. Calls {@code completedAction}
+         * when the work is complete
          */
         private void cacheInputSources(final int winIdx, final Runnable completeAction) {
             if (inputCacheNeeded) {
@@ -482,7 +495,9 @@ public abstract class UpdateBy {
             }
         }
 
-        /** Shift the operator output columns for this window  */
+        /**
+         * Shift the operator output columns for this window
+         */
         protected void shiftWindowOperators(UpdateByWindow win, RowSetShiftData shift) {
             try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
                 shift.apply((begin, end, delta) -> {
@@ -496,7 +511,7 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Divide the buckets for {@code windows[winIdx]} into sets and process each set in parallel.  Calls
+         * Divide the buckets for {@code windows[winIdx]} into sets and process each set in parallel. Calls
          * {@code completedAction} when the work is complete
          */
         private void processWindowBuckets(int winIdx, final Runnable completedAction) {
@@ -531,8 +546,8 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Process all {@code windows} in a serial manner (to minimize cache memory usage).  Will create  cached
-         * input sources, process the buckets, then release the cached columns before starting the next window.  Calls
+         * Process all {@code windows} in a serial manner (to minimize cache memory usage). Will create cached input
+         * sources, process the buckets, then release the cached columns before starting the next window. Calls
          * {@code completedAction} when the work is complete
          */
         private void processWindows(final Runnable completeAction) {
@@ -610,8 +625,7 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Create the update for downstream listeners.  This combines all bucket updates/modifies into a unified
-         * update
+         * Create the update for downstream listeners. This combines all bucket updates/modifies into a unified update
          */
         private TableUpdate computeDownstreamUpdate() {
             final TableUpdateImpl downstream = new TableUpdateImpl();
@@ -661,8 +675,9 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Process the {@link TableUpdate update} provided in the constructor.  This performs much work in parallel and
-         * leverages {@link io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.JobScheduler} extensively
+         * Process the {@link TableUpdate update} provided in the constructor. This performs much work in parallel and
+         * leverages {@link io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.JobScheduler}
+         * extensively
          */
         public void processUpdate() {
             if (redirContext.isRedirected()) {
@@ -675,7 +690,7 @@ public abstract class UpdateBy {
                 // shifts and include them in our parallel update preparations
                 if (update.shifted().nonempty()) {
                     try (final RowSet prev = source.getRowSet().copyPrev();
-                         final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
+                            final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
 
                         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                         final int size = update.shifted().size();

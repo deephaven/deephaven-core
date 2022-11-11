@@ -22,7 +22,10 @@ import java.util.stream.IntStream;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-// this class is currently too big, should specialize into CumWindow, TickWindow, TimeWindow to simplify implementation
+/**
+ * This is the specialization of {@link UpdateByWindow} that handles `cumulative` operators. These operators do not
+ * maintain a window of data and can be computed from the previous value and the current value.
+ */
 public class UpdateByWindowCumulative extends UpdateByWindow {
 
     public UpdateByWindowCumulative(UpdateByOperator[] operators, int[][] operatorSourceSlots,

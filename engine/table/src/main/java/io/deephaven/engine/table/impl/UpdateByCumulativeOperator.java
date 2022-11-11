@@ -42,12 +42,22 @@ public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
                 int len);
     }
 
+    /**
+     * An operator that computes a cumulative operation from a column
+     *
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this operation
+     * @param redirContext the row redirection context to use for the operation
+     */
     public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
         super(pair, affectingColumns, null, null, 0L, 0L, redirContext);
     }
 
+    /**
+     * Initialize the bucket context for this cumulative operator
+     */
     abstract public void initializeUpdate(@NotNull final UpdateContext context, final long firstUnmodifiedKey,
             long firstUnmodifiedTimestamp);
 

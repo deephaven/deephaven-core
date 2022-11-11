@@ -31,6 +31,8 @@ public abstract class UpdateByWindowedOperator extends UpdateByOperator {
      * @param affectingColumns the names of the columns that affect this operation
      * @param control the control parameters for operation
      * @param timestampColumnName the optional time stamp column for windowing (uses ticks if not provided)
+     * @param reverseTimeScaleUnits the time (us) or ticks to extend the window backwards
+     * @param forwardTimeScaleUnits the time (us) or ticks to extend the window forwards
      * @param redirContext the row redirection context to use for the operation
      */
     public UpdateByWindowedOperator(@NotNull final MatchPair pair,
@@ -44,6 +46,9 @@ public abstract class UpdateByWindowedOperator extends UpdateByOperator {
                 redirContext);
     }
 
+    /**
+     * Initialize the bucket context for this windowed operator
+     */
     public abstract void initializeUpdate(@NotNull final UpdateContext context);
 
     @Override

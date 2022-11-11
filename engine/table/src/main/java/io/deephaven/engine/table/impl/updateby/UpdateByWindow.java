@@ -31,46 +31,36 @@ public abstract class UpdateByWindow {
     public abstract class UpdateByWindowContext implements SafeCloseable {
         /** store a reference to the source rowset */
         protected final TrackingRowSet sourceRowSet;
-
         /** the column source providing the timestamp data for this window */
         @Nullable
         protected final ColumnSource<?> timestampColumnSource;
-
         /** the timestamp SSA providing fast lookup for time windows */
         @Nullable
         protected final LongSegmentedSortedArray timestampSsa;
-
         /** An array of context objects for each underlying operator */
         protected final UpdateByOperator.UpdateContext[] opContext;
-
+        /** Whether this is the creation phase of this operator */
         protected final boolean initialStep;
 
         /** An array of ColumnSources for each underlying operator */
         protected ColumnSource<?>[] inputSources;
-
         /** An array of {@link ChunkSource.GetContext}s for each input column */
         protected ChunkSource.GetContext[] inputSourceGetContexts;
-
         /** A set of chunks used to store working values */
         protected Chunk<? extends Values>[] inputSourceChunks;
-
         /** An indicator of if each slot has been populated with data or not for this phase. */
         protected boolean[] inputSourceChunkPopulated;
-
-        /** the rows affected by this update */
+        /** The rows affected by this update */
         protected RowSet affectedRows;
-        /** the rows that contain values used to compute affected row values */
+        /** The rows that will be needed to re-compute `affectedRows` */
         protected RowSet influencerRows;
-
+        /** Size to use for chunked operations */
         protected int workingChunkSize;
-
         /** Indicates this bucket window needs to be processed */
         protected boolean isDirty;
-
         /** Indicates which operators need to be processed */
         protected int[] dirtyOperatorIndices;
-
-        /** Not actually dity, but indicates which sources are need to process this window context */
+        /** Indicates which sources are needed to process this window context */
         protected int[] dirtySourceIndices;
 
         public UpdateByWindowContext(final TrackingRowSet sourceRowSet,
@@ -125,6 +115,14 @@ public abstract class UpdateByWindow {
         this.timestampColumnName = timestampColumnName;
     }
 
+    /**
+     * Create a new window and populate it with the specified operators and input source mapping.
+     *
+     * @param operators the array of operators that belong to this window
+     * @param operatorSourceSlots the mapping of operator indices to required input sources indices
+     *
+     * @return a new {@link UpdateByWindow window} from these operators
+     */
     public static UpdateByWindow createFromOperatorArray(final UpdateByOperator[] operators,
             final int[][] operatorSourceSlots) {
         // review operators to extract timestamp column (if one exists)
@@ -156,15 +154,24 @@ public abstract class UpdateByWindow {
         }
     }
 
+    /**
+     * Returns the timestamp column name for this window (or null if no timestamps in use)
+     */
     @Nullable
     public String getTimestampColumnName() {
         return timestampColumnName;
     }
 
+    /**
+     * Returns the operators for this window (a subset of the total operators for this UpdateBy call)
+     */
     public UpdateByOperator[] getOperators() {
         return operators;
     }
 
+    /**
+     * Returns the mapping from operator indices to input source indices
+     */
     public int[][] getOperatorInputSourceSlots() {
         return operatorInputSourceSlots;
     }
@@ -180,6 +187,11 @@ public abstract class UpdateByWindow {
         return uniqueInputSourceIndices;
     }
 
+    /**
+     * Returns `true` if the input source is used by this window's operators
+     *
+     * @param srcIdx the index of the input source
+     */
     public boolean isSourceInUse(int srcIdx) {
         // this looks worse than it actually is, windows are defined by their input sources so there will be only
         // one or two entries in `getUniqueSourceIndices()`. Iterating will be faster than building a lookup table
@@ -189,23 +201,46 @@ public abstract class UpdateByWindow {
                 return true;
             }
         }
-
         return false;
     }
 
-    public void prepareForParallelPopulation(final RowSet added) {
+    /**
+     * Pre-create all the modified/new rows in the output source so they can be updated in parallel tasks
+     *
+     * @param changes the rowset indicating which rows will be modifed or added this cycle
+     */
+    public void prepareForParallelPopulation(final RowSet changes) {
         for (UpdateByOperator operator : operators) {
-            operator.prepareForParallelPopulation(added);
+            operator.prepareForParallelPopulation(changes);
         }
     }
 
     // region context-based functions
 
+    /**
+     * Examine the upstream {@link TableUpdate update} and determine which operators and rows are affected and will need
+     * to be recomputed. This also sets the {@code isDirty} flags on the window context and operator contexts
+     *
+     * @param context the window context that will store the results.
+     * @param upstream the update that indicates incoming changes to the data.
+     */
     public abstract void computeAffectedRowsAndOperators(final UpdateByWindowContext context,
             @NotNull final TableUpdate upstream);
 
+    /**
+     * Generate the contexts used by the operators for this bucket.
+     *
+     * @param context the window context that will store the results.
+     */
     protected abstract void makeOperatorContexts(final UpdateByWindowContext context);
 
+    /**
+     * Accepts and stores the input source array that will be used for future computation. This call allows use of
+     * cached input sources instead of potentially slow access to the original input sources
+     *
+     * @param context the window context that will store these sources.
+     * @param inputSources the (potentially cached) input sources to use for processing.
+     */
     public void assignInputSources(final UpdateByWindowContext context, final ColumnSource<?>[] inputSources) {
         context.inputSources = inputSources;
         context.inputSourceChunkPopulated = new boolean[inputSources.length];
@@ -219,6 +254,13 @@ public abstract class UpdateByWindow {
         }
     }
 
+    /**
+     * Prepare a chunk of data from this input source for later computations
+     *
+     * @param context the window context that will store the results.
+     * @param srcIdx the index of the input source.
+     * @param rs the rows to retrieve.
+     */
     protected void prepareValuesChunkForSource(final UpdateByWindowContext context, final int srcIdx,
             final RowSequence rs) {
         if (rs.isEmpty()) {
@@ -231,30 +273,64 @@ public abstract class UpdateByWindow {
         }
     }
 
+    /**
+     * Perform the computations and store the results in the operator output sources
+     *
+     * @param context the window context that will manage the results.
+     * @param initialStep whether this is the creation step of the table.
+     */
     public abstract void processRows(final UpdateByWindowContext context, final boolean initialStep);
 
+    /**
+     * Returns `true` if the window for this bucket needs to be processed this cycle.
+     *
+     * @param context the window context that will manage the results.
+     */
     public boolean isWindowDirty(final UpdateByWindowContext context) {
         return context.isDirty;
     }
 
+    /**
+     * Returns `true` if the window for this bucket needs to be processed this cycle.
+     *
+     * @param context the window context that will manage the results.
+     */
     public int[] getDirtyOperators(final UpdateByWindowContext context) {
         return context.dirtyOperatorIndices;
     }
 
+    /**
+     * Returns the list of input sources that will be needed to process the `dirty` operators for this bucket
+     *
+     * @param context the window context that will manage the results.
+     */
     public int[] getDirtySources(final UpdateByWindowContext context) {
         return context.dirtySourceIndices;
     }
 
+    /**
+     * Returns the rows that will be recomputed for this bucket this cycle
+     *
+     * @param context the window context that will manage the results.
+     */
     public RowSet getAffectedRows(final UpdateByWindowContext context) {
         return context.affectedRows;
     }
 
+    /**
+     * Returns the rows that are needed to recompute the `affected` rows (that `influence` the results)
+     *
+     * @param context the window context that will manage the results.
+     */
     public RowSet getInfluencerRows(final UpdateByWindowContext context) {
         return context.influencerRows;
     }
 
     // endregion
 
+    /**
+     * Returns a hash code to help distinguish between windows on the same UpdateBy call
+     */
     protected static int hashCode(boolean windowed, @NotNull String[] inputColumnNames,
             @Nullable String timestampColumnName, long prevUnits,
             long fwdUnits) {
@@ -278,6 +354,9 @@ public abstract class UpdateByWindow {
         return hash;
     }
 
+    /**
+     * Returns a hash code given a particular operator
+     */
     public static int hashCodeFromOperator(final UpdateByOperator op) {
         return hashCode(op instanceof UpdateByWindowedOperator,
                 op.getInputColumnNames(),
@@ -286,6 +365,9 @@ public abstract class UpdateByWindow {
                 op.getPrevWindowUnits());
     }
 
+    /**
+     * Returns `true` if two operators are compatible and can be executed as part of the same window
+     */
     public static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
         // verify input columns match
         String[] opAInput = opA.getInputColumnNames();

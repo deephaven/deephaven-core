@@ -536,8 +536,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         int threadCount();
 
         /**
-         * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}.  This provides a callable
-         * interface with {@code index} indicating which iteration to perform.  When this returns, the scheduler will
+         * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a callable
+         * interface with {@code index} indicating which iteration to perform. When this returns, the scheduler will
          * automatically schedule the next iteration.
          */
         @FunctionalInterface
@@ -546,9 +546,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         /**
-         * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}.  This provides a callable
+         * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a callable
          * interface with {@code index} indicating which iteration to perform and {@link Runnable resume} providing a
-         * mechanism to inform the scheduler that the current task is complete.  When {@code resume} is called, the
+         * mechanism to inform the scheduler that the current task is complete. When {@code resume} is called, the
          * scheduler will automatically schedule the next iteration.
          *
          * NOTE: failing to call {@code resume} will result in the scheduler not scheduling all remaining iterations.
@@ -653,10 +653,10 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         /**
-         * Provides a mechanism to iterate over a range of values serially using the {@link JobScheduler}.  The
-         * advantage to using this over a simple iteration is the resumption callable on {@code action} that will
-         * trigger the next iterable.  This allows the next iteration to de delayed until dependendat asynchronous
-         * serial or parallel scheduler jobs have completed.
+         * Provides a mechanism to iterate over a range of values serially using the {@link JobScheduler}. The advantage
+         * to using this over a simple iteration is the resumption callable on {@code action} that will trigger the next
+         * iterable. This allows the next iteration to de delayed until dependendat asynchronous serial or parallel
+         * scheduler jobs have completed.
          *
          * @param executionContext the execution context for this task
          * @param description the description for

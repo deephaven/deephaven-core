@@ -25,7 +25,11 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-// this class is currently too big, should specialize into CumWindow, TickWindow, TimeWindow to simplify implementation
+/**
+ * This is the specialization of {@link UpdateByWindow} that handles time-based `windowed` operators. These operators
+ * maintain a window of data based on a timestamp column rather than row distances. Window-based operators must maintain
+ * a buffer of `influencer` values to add to the rolling window as the current row changes.
+ */
 public class UpdateByWindowTime extends UpdateByWindow {
     protected final long prevUnits;
     protected final long fwdUnits;
@@ -95,6 +99,12 @@ public class UpdateByWindowTime extends UpdateByWindow {
                 isInitializeStep);
     }
 
+    /**
+     * Finding the `affected` and `influencer` rowsets for a windowed operation is complex. We must identify modified
+     * rows (including added rows) and deleted rows and determine which rows are `affected` by the change given the
+     * window parameters. After these rows have been identified, must determine which rows will be needed to recompute
+     * these values (i.e. that fall within the window and will `influence` this computation).
+     */
     private static WritableRowSet computeAffectedRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
             long fwdNanos, final ColumnSource<?> timestampColumnSource, final LongSegmentedSortedArray timestampSsa,
             boolean usePrev) {
