@@ -27,13 +27,12 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
 
     FilterKernelPythonChunkedFunction(PyObject function, ArgumentsChunked argumentsChunked) {
         this.function = Objects.requireNonNull(function, "function");
-        this.argumentsChunked = argumentsChunked.clone();
+        this.argumentsChunked = argumentsChunked;
     }
 
     @Override
     public Context getContext(int maxChunkSize) {
-        this.argumentsChunked.fillColumnChunks(maxChunkSize);
-        return new Context(maxChunkSize);
+        return new Context(maxChunkSize, this.argumentsChunked.makeFillContextPython(maxChunkSize));
     }
 
     @Override
@@ -42,11 +41,11 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
             LongChunk<OrderedRowKeys> indices,
             Chunk... inputChunks) {
         final int size = indices.size();
-        argumentsChunked.resolveColumnChunks(inputChunks, size);
+        context.fillContextPython.resolveColumnChunks(inputChunks, size);
 
         final boolean[] results = function
-                .call(boolean[].class, CALL_METHOD, argumentsChunked.getChunkedArgTypes(),
-                        argumentsChunked.getChunkedArgs());
+                .call(boolean[].class, CALL_METHOD, context.fillContextPython.getChunkedArgTypes(),
+                        context.fillContextPython.getChunkedArgs());
         if (size > results.length) {
             throw new IllegalStateException(
                     "FilterKernelPythonChunkedFunction returned results are not the proper size");

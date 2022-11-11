@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.select.python.FillContextPython;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.DateTimeUtils;
@@ -82,9 +83,16 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         class Context implements io.deephaven.engine.table.Context {
             public final WritableLongChunk<OrderedRowKeys> resultChunk;
+            public final FillContextPython fillContextPython;
+
+            public Context(int maxChunkSize, FillContextPython fillContextPython) {
+                this.resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
+                this.fillContextPython = fillContextPython;
+            }
 
             public Context(int maxChunkSize) {
-                resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
+                this.resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
+                this.fillContextPython = new FillContextPython();
             }
 
             @Override

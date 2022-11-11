@@ -52,20 +52,6 @@ public class PyCallableWrapper {
     }
 
     public ArgumentsChunked buildArgumentsChunked(List<String> columnNames) {
-        Object[] args;
-        Class<?>[] argTypes;
-
-        if (numbaVectorized) {
-            args = new Object[chunkArguments.size()];
-            argTypes = new Class[chunkArguments.size()];
-        } else {
-            // For DH vectorized func, we prepend 1 parameter to communicate the chunk size
-            args = new Object[chunkArguments.size() + 1];
-            argTypes = new Class[chunkArguments.size() + 1];
-        }
-
-        // For DH vectorized, we add a parameter at the beginning for chunk size
-        int i = numbaVectorized ? 0 : 1;
         for (ChunkArgument arg : chunkArguments) {
             if (arg instanceof ColumnChunkArgument) {
                 String columnName = ((ColumnChunkArgument) arg).getColumnName();
@@ -74,17 +60,13 @@ public class PyCallableWrapper {
                     throw new IllegalArgumentException("Column source not found: " + columnName);
                 }
                 ((ColumnChunkArgument) arg).setChunkSourceIndex(chunkSourceIndex);
-            } else {
-                args[i] = ((ConstantChunkArgument) arg).getValue();
             }
-            argTypes[i] = arg.getType();
-            i++;
         }
-        return new ArgumentsChunked(chunkArguments, args, argTypes, numbaVectorized);
+        return new ArgumentsChunked(chunkArguments, numbaVectorized);
     }
 
     public static abstract class ChunkArgument {
-        private Class<?> type;
+        final private Class<?> type;
 
         public Class<?> getType() {
             return type;
@@ -112,7 +94,8 @@ public class PyCallableWrapper {
 
         public int getChunkSourceIndex() {
             if (!resolved) {
-                throw new IllegalStateException("The column chunk argument hasn't been resolved " + columnName);
+                throw new IllegalStateException(
+                        "The column chunk argument for " + columnName + " hasn't been resolved");
             }
             return chunkSourceIndex;
         }
@@ -160,7 +143,8 @@ public class PyCallableWrapper {
             // numba allows a vectorized function to have multiple signatures
             if (params.size() > 1) {
                 throw new UnsupportedOperationException(
-                        "Multiple signatures on numba vectorized functions aren't supported yet. " + pyCallable);
+                        pyCallable
+                                + " has multiple signatures; this is not currently supported for numba vectorized functions");
             }
             signature = params.get(0).getStringValue();
             unwrapped = null;
@@ -221,7 +205,7 @@ public class PyCallableWrapper {
         if (numbaVectorized) {
             return pyCallable;
         } else {
-            return dh_table_module.call("_DhVectorize", unwrapped);
+            return dh_table_module.call("_dh_vectorize", unwrapped);
         }
     }
 

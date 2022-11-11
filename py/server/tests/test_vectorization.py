@@ -16,7 +16,7 @@ from deephaven.execution_context import make_user_exec_ctx
 from deephaven.filters import Filter, and_
 from deephaven.html import to_html
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, _DhVectorize
+from deephaven.table import Table, _dh_vectorize
 from tests.testbase import BaseTestCase
 
 
@@ -34,14 +34,14 @@ class VectorizationTestCase(BaseTestCase):
     def test_vectorization_exceptions(self):
         t = empty_table(1)
 
-        @_DhVectorize
+        @_dh_vectorize
         def vectorized_func(p1, p2):
             return p1 + p2
 
         def auto_func(p1, p2):
             return p1 + p2
 
-        @_DhVectorize
+        @_dh_vectorize
         def no_param_func():
             return random.randint(0, 100)
 
@@ -86,27 +86,27 @@ class VectorizationTestCase(BaseTestCase):
             return random.randint(0, 100)
 
         expected_count = 0
-        t = empty_table(1).update("X = py_const(3)")
+        t = empty_table(10).update("X = py_const(3)")
         expected_count += 1
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
         seed = 10
-        t = empty_table(1).update("X = py_const(seed)")
+        t = empty_table(10).update("X = py_const(seed)")
         expected_count += 1
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
-        t = empty_table(1).update("X = py_const(30*1024*1034*1034)")
+        t = empty_table(10).update("X = py_const(30*1024*1034*1034)")
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
-        t = empty_table(1).update("X = py_const(30000000000L)")
+        t = empty_table(10).update("X = py_const(30000000000L)")
         expected_count += 1
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
-        t = empty_table(1).update("X = py_const(100.01)")
+        t = empty_table(10).update("X = py_const(100.01)")
         expected_count += 1
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
-        t = empty_table(1).update("X = py_const(100.01f)")
+        t = empty_table(10).update("X = py_const(100.01f)")
         expected_count += 1
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
@@ -115,19 +115,21 @@ class VectorizationTestCase(BaseTestCase):
         self.assertIn("NULL_INT", str(cm.exception))
 
         def py_const_str(s) -> str:
-            return "hello " + str(s) + "!"
+            return str(random.randint(1, 1000000000)) + "hello " + str(s) + "!"
 
-        t = empty_table(1).update("X = py_const_str(`Deephaven`)")
+        t = empty_table(10).update("X = py_const_str(`Deephaven`)")
         expected_count += 1
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
-        with self.assertRaises(DHError) as cm:
-            t = empty_table(1).update("X = py_const_str(null)")
+        t = empty_table(10).update("X = py_const_str(null)")
         expected_count += 1
-        self.assertIn("non null", str(cm.exception))
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
-        t = empty_table(1).update("X = py_const_str(true)")
+        t = empty_table(10).update("X = py_const_str(true)")
+        expected_count += 1
+        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+
+        t = t.update("Y = py_const_str(X)")
         expected_count += 1
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
@@ -141,7 +143,7 @@ class VectorizationTestCase(BaseTestCase):
         self.assertIn("66", t.to_string(cols=["Z"]))
 
     def test_multiple_formulas_vectorized(self):
-        @_DhVectorize
+        @_dh_vectorize
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
@@ -182,7 +184,7 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(9, t.size)
 
     def test_multiple_filters_vectorized(self):
-        @_DhVectorize
+        @_dh_vectorize
         def pyfunc_bool(p1, p2, p3) -> bool:
             return p1 * p2 * p3
 
