@@ -83,6 +83,10 @@ class GwtTools {
     static void applyDefaults(Project p, GwtExtension gwt, boolean compile = false) {
         gwt.gwtVersion = Classpaths.GWT_VERSION
         gwt.jettyVersion = Classpaths.JETTY_VERSION
+        p.configurations.each {
+            it.exclude group: 'net.sourceforge.htmlunit'
+            it.exclude group: 'org.eclipse.jetty'
+        }
         if (compile) {
 
             String warPath = new File(p.buildDir, 'gwt').absolutePath

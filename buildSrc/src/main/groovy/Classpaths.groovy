@@ -24,7 +24,7 @@ class Classpaths {
     static final String ELEMENTAL_VERSION = '1.1.0'
 
     static final String GWT_GROUP = 'com.google.gwt'
-    static final String GWT_VERSION = '2.9.0'
+    static final String GWT_VERSION = '2.10.0'
 
     static final String JAVA_PARSER_GROUP = 'com.github.javaparser'
     static final String JAVA_PARSER_NAME = 'javaparser-core'
@@ -36,8 +36,7 @@ class Classpaths {
     static final String JAVAX_ANNOTATIONS_NAME = 'validation-api'
     static final String JAVAX_ANNOTATIONS_VERSION = '1.0.0.GA'
 
-    static final String JETTY_GROUP = 'org.eclipse.jetty'
-    static final String JETTY_VERSION = '9.4.20.v20190813'
+    static final String JETTY_VERSION = '9.4.44.v20210927'
 
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
     static final String JS_INTEROP_VERSION = '2.0.0'
@@ -146,9 +145,9 @@ class Classpaths {
         if (addDependency(config, GWT_GROUP, name, GWT_VERSION)) {
             // when we add gwt-dev, lets also force asm version, just to be safe.
             name == 'gwt-dev' && config.resolutionStrategy {
-                force 'org.ow2.asm:asm:5.0.3'
-                force 'org.ow2.asm:asm-util:5.0.3'
-                force 'org.ow2.asm:asm-commons:5.0.3'
+                force 'org.ow2.asm:asm:9.2'
+                force 'org.ow2.asm:asm-util:9.2'
+                force 'org.ow2.asm:asm-commons:9.2'
             }
         }
     }
