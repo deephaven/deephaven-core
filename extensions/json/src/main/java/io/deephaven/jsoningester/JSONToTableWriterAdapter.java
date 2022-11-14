@@ -7,7 +7,6 @@ package io.deephaven.jsoningester;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -25,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -306,14 +306,20 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 .entrySet()) {
             final String fieldName = subtableEntry.getKey();
             outputColumnNames.remove(getSubtableRowIdColName(fieldName));
-            final JSONToTableWriterAdapterBuilder adapterBuilder =
-                    subtableEntry.getValue();
+
+            final JSONToTableWriterAdapterBuilder adapterBuilder = subtableEntry.getValue();
             outputColumnNames.removeAll(adapterBuilder.getDefinedColumns());
 
             try {
                 final TableWriter<?> subtableWriter =
                         Require.neqNull(fieldToSubtableWriters.get(fieldName), "subtableWriter");
-                makeSubtableFieldProcessor(fieldName, adapterBuilder, subtableWriter, fieldToSubtableWriters);
+                makeSubtableFieldProcessor(
+                        fieldName,
+                        adapterBuilder,
+                        subtableWriter,
+                        fieldToSubtableWriters,
+                        allowMissingKeys,
+                        allowNullValues);
             } catch (RuntimeException ex) {
                 throw new JSONIngesterException(
                         "Failed creating field processor for subtable field \"" + fieldName + '"', ex);
@@ -573,15 +579,19 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     /**
      * This is like {@link #makeCompositeFieldProcessor} except it processes fields into a different table.
      *
-     * @param fieldName
-     * @param subtableBuilder
-     * @param subtableWriter
+     * @param fieldName The name of the JSON field containing an ArrayNode of subtable data
+     * @param subtableBuilder The subtable JSON adapter builder
+     * @param subtableWriter The subtable's TableWriter
+     * @param subtableKeyAllowedMissing Whether the subtable's key ({@code fieldName}) is allowed to be missing
+     * @param subtableKeyAllowedNull Whether {@code fieldName} is allowed to have a null value
      */
     private void makeSubtableFieldProcessor(
             @NotNull String fieldName,
             @NotNull JSONToTableWriterAdapterBuilder subtableBuilder,
             @NotNull TableWriter<?> subtableWriter,
-            @NotNull Map<String, TableWriter<?>> allSubtableWriters) {
+            @NotNull Map<String, TableWriter<?>> allSubtableWriters,
+            boolean subtableKeyAllowedMissing,
+            boolean subtableKeyAllowedNull) {
 
         // Subtable record counter, mapping each row of the parent table to the corresponding rows of the subtable.
         // TODO: it would be better to use a unique parent message ID if available
@@ -640,7 +650,12 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             // fieldProcessors have been processed)
             final Queue<SubtableData> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
             subtableProcessingQueue
-                    .add(new SubtableData(fieldName, subtableAdapter, subtableFieldValue, subtableMessageCounter));
+                    .add(new SubtableData(fieldName,
+                            subtableAdapter,
+                            subtableFieldValue,
+                            subtableMessageCounter,
+                            subtableKeyAllowedMissing,
+                            subtableKeyAllowedNull));
         };
 
         fieldProcessors.add(fieldProcessor);
@@ -971,32 +986,75 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     /**
-     * Consumes a string and wraps it into a {@link TextMessage} with its timestamps and msgId set automatically. This
-     * method should never be used if {@link #consumeString(TextMessage)} or {@link #consumeJson} is used.
+     * Consumes a string and wraps it into a {@link TextMessage} with its timestamps and msgId set automatically.
      *
      * @param json The input JSON string
      * @return The {@link BaseMessageMetadata#getMsgNo() message number} assigned to the message. This is automatically
      *         set to the current value of {@link #messagesQueued}.
      * @throws IOException
      */
-    public long consumeString(final String json) throws IOException {
+    public synchronized long consumeString(final String json) throws IOException {
         long msgId = messagesQueued.get();
         final DateTime now = DateTime.now();
         final TextJsonMessage msg = new TextJsonMessage(now, now, now, null, msgId, json);
-        consumeString(msg);
+        consumeJson(msg);
+        return msgId;
+    }
+
+    /**
+     * Wraps an InputStream into a {@link StreamJsonMessage} with its timestamps and msgId set automatically.
+     *
+     * @param json The input JSON string
+     * @return The {@link BaseMessageMetadata#getMsgNo() message number} assigned to the message. This is automatically
+     *         set to the current value of {@link #messagesQueued}.
+     * @throws IOException
+     */
+    public synchronized long consumeStream(final InputStream json, final Runnable afterParse) {
+        long msgId = messagesQueued.get();
+        final DateTime now = DateTime.now();
+        final StreamJsonMessage msg = new StreamJsonMessage(now, now, now, null, msgId, json, afterParse);
+        consumeJson(msg);
         return msgId;
     }
 
     @Override
-    public void consumeString(TextMessage msg) {
-        consumeJson(
-                new TextJsonMessage(
-                        msg.getSentTime(),
-                        msg.getReceiveTime(),
-                        msg.getIngestTime(),
-                        msg.getMessageId(),
-                        msg.getMsgNo(),
-                        msg.getText()));
+    public void consumeString(final TextMessage msg) {
+        consumeJson(new JsonMessage() {
+            @Override
+            public JsonNode getJson() throws JsonNodeUtil.JsonStringParseException {
+                return JsonNodeUtil.makeJsonNode(msg.getText());
+
+            }
+
+            @Override
+            public DateTime getSentTime() {
+                return msg.getSentTime();
+            }
+
+            @Override
+            public DateTime getReceiveTime() {
+                return msg.getReceiveTime();
+            }
+
+            @Override
+            public DateTime getIngestTime() {
+                return msg.getIngestTime();
+            }
+
+            @Override
+            public String getMessageId() {
+                return msg.getMessageId();
+            }
+
+            @Override
+            public long getMsgNo() {
+                return msg.getMsgNo();
+            }
+        });
+    }
+
+    public long consumeStream(final InputStream json) {
+        return consumeStream(json, null);
     }
 
     public void consumeJson(final JsonMessage msg) {
@@ -1012,6 +1070,13 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         }
         final long queuedMessages = messagesQueued.getAndIncrement();
 
+        // ensure no messages have been skipped
+        // TODO: is this check overkill?
+        // the MsgNo is used (1) to ensure messages received from an external source are enqueued in the order in which
+        // they are received, and (2) to ensure that processed messages are written in the same order in which they were
+        // enqueued when parallel processing is enabled.
+        // arguably (1) is the job of the caller, and this adapter should only be responsible for (2), in which case
+        // it should set a sequence number itself.
         if (queuedMessages != msg.getMsgNo()) {
             throw new IllegalStateException("Unexpected message number " + msg.getMsgNo()
                     + ", previously queued messages " + queuedMessages);
@@ -1368,7 +1433,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
 
             if (fieldValue == null || fieldValue.isMissingNode()) {
-                if (allowMissingKeys) {
+                if (subtableFieldToProcess.subtableKeyAllowedMissing) {
                     continue;
                 } else {
                     throw new JSONIngesterException(
@@ -1377,7 +1442,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             }
 
             if (fieldValue.isNull()) {
-                if (allowNullValues) {
+                if (subtableFieldToProcess.subtableKeyAllowedNull) {
                     continue;
                 } else {
                     throw new JSONIngesterException(
@@ -1617,6 +1682,10 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         }
     }
 
+    /**
+     * Wrapper for a {@link JsonNode} to process into a subtable as well as parameters to be used during parsing &
+     * processing.
+     */
     protected static class SubtableData {
         @NotNull
         private final String fieldName;
@@ -1627,14 +1696,23 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         @NotNull
         private final AtomicLong subtableMessageCounter;
 
-        public SubtableData(@NotNull String fieldName,
+        private final boolean subtableKeyAllowedMissing;
+
+        private final boolean subtableKeyAllowedNull;
+
+        public SubtableData(
+                @NotNull String fieldName,
                 @NotNull JSONToTableWriterAdapter subtableAdapter,
                 @Nullable JsonNode subtableNode,
-                @NotNull AtomicLong subtableMessageCounter) {
+                @NotNull AtomicLong subtableMessageCounter,
+                boolean subtableKeyAllowedMissing,
+                boolean subtableKeyAllowedNull) {
             this.fieldName = fieldName;
             this.subtableAdapter = subtableAdapter;
             this.subtableNode = subtableNode;
             this.subtableMessageCounter = subtableMessageCounter;
+            this.subtableKeyAllowedMissing = subtableKeyAllowedMissing;
+            this.subtableKeyAllowedNull = subtableKeyAllowedNull;
         }
     }
 }

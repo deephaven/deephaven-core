@@ -26,8 +26,12 @@ abstract class BaseMessageMetadata implements MessageMetadata {
      * @param messageId The unique, monotonically-increasing ID for this message.
      * @param messageNumber The sequential number indicating the sequence this message was received in by the ingester.
      */
-    public BaseMessageMetadata(final DateTime sentTime, final DateTime receiveTime, final DateTime ingestTime,
-            final String messageId, final long messageNumber) {
+    public BaseMessageMetadata(
+            final DateTime sentTime,
+            final DateTime receiveTime,
+            final DateTime ingestTime,
+            final String messageId,
+            final long messageNumber) {
         this.sentTime = sentTime;
         this.receiveTime = receiveTime;
         this.ingestTime = ingestTime;

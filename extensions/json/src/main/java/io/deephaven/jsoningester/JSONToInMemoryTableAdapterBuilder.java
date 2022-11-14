@@ -12,10 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
+import java.util.function.*;
 
 /**
  * Created by rbasralian on 10/14/22
@@ -199,6 +196,11 @@ public class JSONToInMemoryTableAdapterBuilder {
         addCol(column, returnType);
 
         jsonAdpaterBuilder.addColumnFromFunction(column, returnType, function);
+        return this;
+    }
+
+    public JSONToInMemoryTableAdapterBuilder nConsumerThreads(final int nConsumerThreads) {
+        jsonAdpaterBuilder.nConsumerThreads(nConsumerThreads);
         return this;
     }
 

@@ -9,10 +9,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
+import java.util.function.*;
 
 import static io.deephaven.jsoningester.JSONToTableWriterAdapter.SUBTABLE_RECORD_ID_COL;
 
@@ -311,19 +308,24 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
     }
 
     private void checkAlreadyDefined(final String column) {
-        if (isDefined(column)) {
-            throw new JSONIngesterException("Column is already defined " + column);
+        if (allowedUnmappedColumns.contains(column)) {
+            throw new JSONIngesterException("Column \"" + column + "\" is already defined: allows unmapped");
+        } else if (columnToJsonField.containsKey(column)) {
+            throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to field \""
+                    + columnToJsonField.get(column) + '"');
+        } else if (columnToIntFunction.containsKey(column)) {
+            throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to int function");
+        } else if (columnToLongFunction.containsKey(column)) {
+            throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to long function");
+        } else if (columnToDoubleFunction.containsKey(column)) {
+            throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to double function");
+        } else if (columnToObjectFunction.containsKey(column)) {
+            throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to object function");
+        } else if (columnToParallelField.containsKey(column)) {
+            throw new JSONIngesterException(
+                    "Column \"" + column + "\" is already defined: mapped to parallel array field \""
+                            + columnToParallelField.get(column) + '"');
         }
-    }
-
-    private boolean isDefined(final String column) {
-        return allowedUnmappedColumns.contains(column) ||
-                columnToJsonField.containsKey(column) ||
-                columnToIntFunction.containsKey(column) ||
-                columnToLongFunction.containsKey(column) ||
-                columnToDoubleFunction.containsKey(column) ||
-                columnToObjectFunction.containsKey(column) ||
-                columnToParallelField.containsKey(column);
     }
 
     protected Collection<String> getDefinedColumns() {
