@@ -31,6 +31,7 @@ import io.deephaven.server.table.ops.UngroupGrpcImpl;
 import io.deephaven.server.table.ops.UnstructuredFilterTableGrpcImpl;
 import io.deephaven.server.table.ops.UpdateByGrpcImpl;
 import io.deephaven.server.table.ops.UpdateOrSelectGrpcImpl;
+import io.deephaven.server.table.ops.WhereInGrpcImpl;
 import io.grpc.BindableService;
 
 @MapKey
@@ -199,4 +200,9 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.UPDATE_BY)
     GrpcTableOperation<?> bindUpdateBy(UpdateByGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.WHERE_IN)
+    GrpcTableOperation<?> bindWhereIn(WhereInGrpcImpl op);
 }

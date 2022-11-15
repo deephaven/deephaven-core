@@ -3,8 +3,8 @@
  */
 package io.deephaven.qst.table;
 
-import io.deephaven.api.JoinMatch;
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.JoinMatch;
 import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
@@ -14,6 +14,7 @@ import java.util.List;
 
 /**
  * @see TableOperations#whereIn(Object, Collection)
+ * @see TableOperations#whereNotIn(Object, Collection)
  */
 @Immutable
 @NodeStyle
@@ -28,6 +29,8 @@ public abstract class WhereInTable extends TableBase {
     public abstract TableSpec right();
 
     public abstract List<JoinMatch> matches();
+
+    public abstract boolean inverted();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
@@ -53,6 +56,8 @@ public abstract class WhereInTable extends TableBase {
         Builder addMatches(JoinMatch... elements);
 
         Builder addAllMatches(Iterable<? extends JoinMatch> elements);
+
+        Builder inverted(boolean inverted);
 
         WhereInTable build();
     }

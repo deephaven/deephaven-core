@@ -65,6 +65,7 @@ import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
+import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
@@ -103,7 +104,6 @@ import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
 import io.deephaven.qst.table.WhereInTable;
-import io.deephaven.qst.table.WhereNotInTable;
 import io.deephaven.qst.table.WhereTable;
 
 import java.time.Instant;
@@ -289,14 +289,15 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(WhereInTable whereInTable) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#990): TableService implementation of whereIn/whereNotIn, https://github.com/deephaven/deephaven-core/issues/990");
-        }
-
-        @Override
-        public void visit(WhereNotInTable whereNotInTable) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#990): TableService implementation of whereIn/whereNotIn, https://github.com/deephaven/deephaven-core/issues/990");
+            WhereInRequest.Builder builder = WhereInRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(ref(whereInTable.left()))
+                    .setRightId(ref(whereInTable.right()))
+                    .setInverted(whereInTable.inverted());
+            for (JoinMatch match : whereInTable.matches()) {
+                builder.addColumnsToMatch(Strings.of(match));
+            }
+            out = op(Builder::setWhereIn, builder.build());
         }
 
         @Override

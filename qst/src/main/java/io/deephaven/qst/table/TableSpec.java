@@ -122,8 +122,6 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(WhereInTable whereInTable);
 
-        void visit(WhereNotInTable whereNotInTable);
-
         void visit(NaturalJoinTable naturalJoinTable);
 
         void visit(ExactJoinTable exactJoinTable);

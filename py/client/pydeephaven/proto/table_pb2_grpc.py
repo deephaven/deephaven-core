@@ -180,6 +180,11 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.WhereIn = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/WhereIn',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.WhereInRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.Batch = channel.unary_stream(
                 '/io.deephaven.proto.backplane.grpc.TableService/Batch',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.BatchTableRequest.SerializeToString,
@@ -466,6 +471,17 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def WhereIn(self, request, context):
+        """*
+        Filters the left table based on the set of values in the right table.
+
+        Note that when the right table ticks, all of the rows in the left table are going to be re-evaluated,
+        thus the intention is that the right table is fairly slow moving compared with the left table.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Batch(self, request, context):
         """
         Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
@@ -654,6 +670,11 @@ def add_TableServiceServicer_to_server(servicer, server):
             'CreateInputTable': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateInputTable,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'WhereIn': grpc.unary_unary_rpc_method_handler(
+                    servicer.WhereIn,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.WhereInRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'Batch': grpc.unary_stream_rpc_method_handler(
@@ -1233,6 +1254,23 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable',
             deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def WhereIn(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/WhereIn',
+            deephaven_dot_proto_dot_table__pb2.WhereInRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

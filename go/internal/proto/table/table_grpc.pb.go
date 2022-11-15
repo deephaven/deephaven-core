@@ -98,6 +98,12 @@ type TableServiceClient interface {
 	// Creates a new Table based on the provided configuration. This can be used as a regular table from the other methods
 	// in this interface, or can be interacted with via the InputTableService to modify its contents.
 	CreateInputTable(ctx context.Context, in *CreateInputTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// *
+	// Filters the left table based on the set of values in the right table.
+	//
+	// Note that when the right table ticks, all of the rows in the left table are going to be re-evaluated,
+	// thus the intention is that the right table is fairly slow moving compared with the left table.
+	WhereIn(ctx context.Context, in *WhereInRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
 	// requiring them to be exported and managed by the client. The server will automatically release any tables when they
 	// are no longer depended upon.
@@ -415,6 +421,15 @@ func (c *tableServiceClient) CreateInputTable(ctx context.Context, in *CreateInp
 	return out, nil
 }
 
+func (c *tableServiceClient) WhereIn(ctx context.Context, in *WhereInRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/WhereIn", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tableServiceClient) Batch(ctx context.Context, in *BatchTableRequest, opts ...grpc.CallOption) (TableService_BatchClient, error) {
 	stream, err := c.cc.NewStream(ctx, &TableService_ServiceDesc.Streams[0], "/io.deephaven.proto.backplane.grpc.TableService/Batch", opts...)
 	if err != nil {
@@ -558,6 +573,12 @@ type TableServiceServer interface {
 	// Creates a new Table based on the provided configuration. This can be used as a regular table from the other methods
 	// in this interface, or can be interacted with via the InputTableService to modify its contents.
 	CreateInputTable(context.Context, *CreateInputTableRequest) (*ExportedTableCreationResponse, error)
+	// *
+	// Filters the left table based on the set of values in the right table.
+	//
+	// Note that when the right table ticks, all of the rows in the left table are going to be re-evaluated,
+	// thus the intention is that the right table is fairly slow moving compared with the left table.
+	WhereIn(context.Context, *WhereInRequest) (*ExportedTableCreationResponse, error)
 	// Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
 	// requiring them to be exported and managed by the client. The server will automatically release any tables when they
 	// are no longer depended upon.
@@ -673,6 +694,9 @@ func (UnimplementedTableServiceServer) RunChartDownsample(context.Context, *RunC
 }
 func (UnimplementedTableServiceServer) CreateInputTable(context.Context, *CreateInputTableRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateInputTable not implemented")
+}
+func (UnimplementedTableServiceServer) WhereIn(context.Context, *WhereInRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WhereIn not implemented")
 }
 func (UnimplementedTableServiceServer) Batch(*BatchTableRequest, TableService_BatchServer) error {
 	return status.Errorf(codes.Unimplemented, "method Batch not implemented")
@@ -1287,6 +1311,24 @@ func _TableService_CreateInputTable_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_WhereIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WhereInRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).WhereIn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/WhereIn",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).WhereIn(ctx, req.(*WhereInRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_Batch_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(BatchTableRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -1467,6 +1509,10 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateInputTable",
 			Handler:    _TableService_CreateInputTable_Handler,
+		},
+		{
+			MethodName: "WhereIn",
+			Handler:    _TableService_WhereIn_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

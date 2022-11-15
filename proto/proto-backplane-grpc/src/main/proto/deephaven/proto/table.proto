@@ -184,6 +184,14 @@ service TableService {
    */
   rpc CreateInputTable(CreateInputTableRequest) returns (ExportedTableCreationResponse) {}
 
+  /**
+   * Filters the left table based on the set of values in the right table.
+   *
+   * Note that when the right table ticks, all of the rows in the left table are going to be re-evaluated,
+   * thus the intention is that the right table is fairly slow moving compared with the left table.
+   */
+  rpc WhereIn(WhereInRequest) returns (ExportedTableCreationResponse) {}
+
   /*
    * Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
    * requiring them to be exported and managed by the client. The server will automatically release any tables when they
@@ -760,6 +768,15 @@ message CreateInputTableRequest {
   InputTableKind kind = 4;
 }
 
+message WhereInRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  // When true, becomes a "where not in" request
+  bool inverted = 4;
+  repeated string columns_to_match = 5;
+}
+
 message BatchTableRequest {
   repeated Operation ops = 1;
 
@@ -797,6 +814,7 @@ message BatchTableRequest {
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
       CreateInputTableRequest create_input_table = 31;
       UpdateByRequest update_by = 32;
+      WhereInRequest where_in = 33;
     }
   }
 }
