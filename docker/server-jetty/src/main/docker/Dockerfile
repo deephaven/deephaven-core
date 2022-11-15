@@ -15,7 +15,7 @@ RUN set -eux; \
 
 COPY wheels/ /wheels
 RUN set -eux; \
-    python -m pip install -q --no-index --no-cache-dir /wheels/*.whl; \
+    python -m pip install -q --no-cache-dir /wheels/*.whl; \
     rm -r /wheels
 
 ARG DEEPHAVEN_VERSION
