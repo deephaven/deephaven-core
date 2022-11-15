@@ -12,7 +12,7 @@ from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_s
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
-from deephaven.table_factory import DynamicTableWriter
+from deephaven.table_factory import DynamicTableWriter, InputTable
 from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
@@ -200,10 +200,75 @@ class TableFactoryTestCase(BaseTestCase):
 
         col_defs = {"A_Long": dtypes.long}
         table_writer = DynamicTableWriter(col_defs)
-        table_writer.write_row(10**10)
+        table_writer.write_row(10 ** 10)
         t = table_writer.table
         self.wait_ticking_table_update(t, row_count=1, timeout=5)
         self.assertIn("10000000000", t.to_string())
+
+    def test_input_table(self):
+        col_defs = {
+            "ByteArray": dtypes.byte_array,
+            "ShortArray": dtypes.short_array,
+            "Int32Array": dtypes.int32_array,
+            "LongArray": dtypes.long_array,
+            "Float32Array": dtypes.float32_array,
+            "DoubleArray": dtypes.double_array,
+            "StringArray": dtypes.string_array,
+        }
+        with DynamicTableWriter(col_defs) as table_writer:
+            b_array = dtypes.array(dtypes.byte, [1, 1, 1])
+            s_array = dtypes.array(dtypes.short, [128, 228, 328])
+            i_array = dtypes.array(dtypes.int32, [32768, 42768, 52768])
+            l_array = dtypes.array(dtypes.long, [2 ** 32, 2 ** 33, 2 ** 36])
+            f_array = dtypes.array(dtypes.float32, [1.0, 1.1, 1.2])
+            d_array = dtypes.array(dtypes.double, [1.0 / 2 ** 32, 1.1 / 2 ** 33, 1.2 / 2 ** 36])
+            str_array = dtypes.array(dtypes.string, ["some", "not so random", "text"])
+            table_writer.write_row(b_array, s_array, i_array, l_array, f_array, d_array, str_array
+                                   )
+        t = table_writer.table
+        self.wait_ticking_table_update(t, row_count=1, timeout=5)
+
+        with self.subTest("from table definition"):
+            append_only_input_table = InputTable(col_defs=col_defs)
+            append_only_input_table.add(t)
+            self.assertEqual(append_only_input_table.size, 1)
+            append_only_input_table.add(t)
+            self.assertEqual(append_only_input_table.size, 2)
+
+            keyed_input_table = InputTable(col_defs=col_defs, key_cols="StringArray")
+            keyed_input_table.add(t)
+            self.assertEqual(keyed_input_table.size, 1)
+            keyed_input_table.add(t)
+            self.assertEqual(keyed_input_table.size, 1)
+
+        with self.subTest("from init table"):
+            append_only_input_table = InputTable(init_table=t)
+            append_only_input_table.add(t)
+            self.assertEqual(append_only_input_table.size, 2)
+            append_only_input_table.add(t)
+            self.assertEqual(append_only_input_table.size, 3)
+
+            keyed_input_table = InputTable(init_table=t, key_cols="StringArray")
+            self.assertEqual(keyed_input_table.size, 1)
+            keyed_input_table.add(t)
+            self.assertEqual(keyed_input_table.size, 1)
+
+            str_array = dtypes.array(dtypes.string, ["some more", "not so random", "text"])
+            table_writer.write_row(b_array, s_array, i_array, l_array, f_array, d_array, str_array)
+            self.wait_ticking_table_update(t, row_count=2, timeout=5)
+            keyed_input_table.add(t)
+            self.assertEqual(keyed_input_table.size, 2)
+
+        with self.subTest("deletion on input table"):
+            append_only_input_table = InputTable(init_table=t)
+            with self.assertRaises(DHError) as cm:
+                append_only_input_table.delete(t)
+            self.assertIn("not allowed.", str(cm.exception))
+
+            keyed_input_table = InputTable(init_table=t, key_cols="StringArray")
+            self.assertEqual(keyed_input_table.size, 2)
+            keyed_input_table.delete(t.select("StringArray"))
+            self.assertEqual(keyed_input_table.size, 0)
 
 
 if __name__ == '__main__':
