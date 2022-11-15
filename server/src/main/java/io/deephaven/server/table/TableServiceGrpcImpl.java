@@ -4,6 +4,7 @@
 package io.deephaven.server.table;
 
 import com.google.rpc.Code;
+import io.deephaven.clientsupport.gotorow.SeekRow;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.ExportUtil;
@@ -48,12 +49,12 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ops.GrpcTableOperation;
-import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
+import java.lang.Object;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -279,6 +280,45 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     @Override
     public void whereIn(WhereInRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.WHERE_IN, request, responseObserver);
+    }
+
+    @Override
+    public void seekRow(SeekRowRequest request, StreamObserver<SeekRowResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = sessionService.getCurrentSession();
+            final Ticket sourceId = request.getSourceId();
+            if (sourceId.getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
+            }
+
+            SessionState.ExportObject<Table> exportedTable =
+                    ticketRouter.resolve(session, sourceId, "sourceId");
+            session.nonExport()
+                    .require(exportedTable)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        try {
+                            final Table table = exportedTable.get();
+                            final Long result = table.apply(new SeekRow(
+                                    request.getStartingRow(),
+                                    request.getColumnName(),
+                                    request.getSeekValue(),
+                                    request.getInsensitive(),
+                                    request.getContains(),
+                                    request.getIsBackward()
+                            ));
+                            safelyExecuteLocked(responseObserver, () -> {
+                                SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
+                                responseObserver.onNext(rowResponse.setResultRow(result).build());
+                                responseObserver.onCompleted();
+                            });
+                        } catch (Exception e) {
+                            safelyExecuteLocked(responseObserver, () -> {
+                                responseObserver.onError(e);
+                            });
+                        }
+                    });
+        });
     }
 
     @Override

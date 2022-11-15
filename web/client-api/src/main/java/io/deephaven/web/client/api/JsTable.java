@@ -561,7 +561,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         String[] columnNames = Arrays.stream(columns).map(Column::getName).toArray(String[]::new);
         final ClientTableState distinct = workerConnection.newState((c, cts, metadata) -> {
             SelectDistinctRequest request = new SelectDistinctRequest();
-            request.setSourceId(state.getHandle().makeTableReference());
+            request.setSourceId(state.getHandle().makeTicket());
             request.setResultId(cts.getHandle().makeTicket());
             request.setColumnNamesList(columnNames);
             workerConnection.tableServiceClient().selectDistinct(request, metadata, c::apply);
