@@ -1,6 +1,7 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -18,60 +19,30 @@ public class SeekRowRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface TicketFieldType {
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface GetTicketUnionType {
-                    @JsOverlay
-                    static SeekRowRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
-                            Object o) {
-                        return Js.cast(o);
-                    }
-
-                    @JsOverlay
-                    default String asString() {
-                        return Js.asString(this);
-                    }
-
-                    @JsOverlay
-                    default Uint8Array asUint8Array() {
-                        return Js.cast(this);
-                    }
-
-                    @JsOverlay
-                    default boolean isString() {
-                        return (Object) this instanceof String;
-                    }
-
-                    @JsOverlay
-                    default boolean isUint8Array() {
-                        return (Object) this instanceof Uint8Array;
-                    }
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static SeekRowRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType of(Object o) {
+                    return Js.cast(o);
                 }
 
                 @JsOverlay
-                static SeekRowRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                SeekRowRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
-
-                @JsProperty
-                void setTicket(
-                        SeekRowRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
-
-                @JsOverlay
-                default void setTicket(String ticket) {
-                    setTicket(
-                            Js.<SeekRowRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                    ticket));
+                default String asString() {
+                    return Js.asString(this);
                 }
 
                 @JsOverlay
-                default void setTicket(Uint8Array ticket) {
-                    setTicket(
-                            Js.<SeekRowRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                    ticket));
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
                 }
             }
 
@@ -81,16 +52,24 @@ public class SeekRowRequest {
             }
 
             @JsProperty
-            double getBatchOffset();
+            SeekRowRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
-            SeekRowRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType getTicket();
+            void setTicket(SeekRowRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType ticket);
 
-            @JsProperty
-            void setBatchOffset(double batchOffset);
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                        Js.<SeekRowRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
+            }
 
-            @JsProperty
-            void setTicket(SeekRowRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType ticket);
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                        Js.<SeekRowRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
+            }
         }
 
         @JsOverlay
@@ -152,60 +131,31 @@ public class SeekRowRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface TicketFieldType {
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface GetTicketUnionType {
-                    @JsOverlay
-                    static SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
-                            Object o) {
-                        return Js.cast(o);
-                    }
-
-                    @JsOverlay
-                    default String asString() {
-                        return Js.asString(this);
-                    }
-
-                    @JsOverlay
-                    default Uint8Array asUint8Array() {
-                        return Js.cast(this);
-                    }
-
-                    @JsOverlay
-                    default boolean isString() {
-                        return (Object) this instanceof String;
-                    }
-
-                    @JsOverlay
-                    default boolean isUint8Array() {
-                        return (Object) this instanceof Uint8Array;
-                    }
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType of(
+                        Object o) {
+                    return Js.cast(o);
                 }
 
                 @JsOverlay
-                static SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
-
-                @JsProperty
-                void setTicket(
-                        SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
-
-                @JsOverlay
-                default void setTicket(String ticket) {
-                    setTicket(
-                            Js.<SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                    ticket));
+                default String asString() {
+                    return Js.asString(this);
                 }
 
                 @JsOverlay
-                default void setTicket(Uint8Array ticket) {
-                    setTicket(
-                            Js.<SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                    ticket));
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
                 }
             }
 
@@ -215,16 +165,25 @@ public class SeekRowRequest {
             }
 
             @JsProperty
-            double getBatchOffset();
+            SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
-            SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType getTicket();
+            void setTicket(
+                    SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType ticket);
 
-            @JsProperty
-            void setBatchOffset(double batchOffset);
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                        Js.<SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
+            }
 
-            @JsProperty
-            void setTicket(SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType ticket);
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                        Js.<SeekRowRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
+            }
         }
 
         @JsOverlay
@@ -303,7 +262,7 @@ public class SeekRowRequest {
 
     public native String getSeekValue();
 
-    public native TableReference getSourceId();
+    public native Ticket getSourceId();
 
     public native String getStartingRow();
 
@@ -325,7 +284,7 @@ public class SeekRowRequest {
 
     public native void setSourceId();
 
-    public native void setSourceId(TableReference value);
+    public native void setSourceId(Ticket value);
 
     public native void setStartingRow(String value);
 
