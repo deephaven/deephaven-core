@@ -5,6 +5,7 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.Global;
 import elemental2.core.JsArray;
+import elemental2.core.JsNumber;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
@@ -50,6 +51,7 @@ import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -561,7 +563,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         String[] columnNames = Arrays.stream(columns).map(Column::getName).toArray(String[]::new);
         final ClientTableState distinct = workerConnection.newState((c, cts, metadata) -> {
             SelectDistinctRequest request = new SelectDistinctRequest();
-            request.setSourceId(state.getHandle().makeTicket());
+            request.setSourceId(state.getHandle().makeTableReference());
             request.setResultId(cts.getHandle().makeTicket());
             request.setColumnNamesList(columnNames);
             workerConnection.tableServiceClient().selectDistinct(request, metadata, c::apply);
@@ -990,19 +992,39 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public Promise<LongWrapper> seekRow(LongWrapper startingRow, Column column, String valueType, String seekValue, boolean insensitive, boolean contains, boolean isBackwards) {
+    public Promise<Double> seekRow(
+            double startingRow,
+            Column column,
+            String valueType,
+            String seekValue,
+            @JsOptional Boolean insensitive,
+            @JsOptional Boolean contains,
+            @JsOptional Boolean isBackwards
+    ) {
         SeekRowRequest seekRowRequest = new SeekRowRequest();
-        seekRowRequest.setSourceId(state().getHandle().makeTableReference());
-        seekRowRequest.setStartingRow(Long.toString(startingRow.getWrapped()));
+        seekRowRequest.setSourceId(state().getHandle().makeTicket());
+        seekRowRequest.setStartingRow(String.valueOf(startingRow));
         seekRowRequest.setColumnName(column.getName());
-        seekRowRequest.setValueType(valueType);
-        seekRowRequest.setSeekValue(seekValue);
-        seekRowRequest.setInsensitive(insensitive);
-        seekRowRequest.setContains(contains);
-        seekRowRequest.setIsBackward(isBackwards);
+        // TODO: look at FilterValue.ofNumber to build the literal
+        // Should take in any type of value here, so we don't do any DateWrapper string conversion junk
+
+        Literal lit = new Literal();
+        lit.setLongValue();
+        seekRowRequest.setSeekValue(lit);
+//        seekRowRequest.setValueType(valueType);
+//        seekRowRequest.setSeekValue(seekValue);
+        if (insensitive != null) {
+            seekRowRequest.setInsensitive(insensitive);
+        }
+        if (contains != null) {
+            seekRowRequest.setContains(contains);
+        }
+        if (isBackwards != null) {
+            seekRowRequest.setIsBackward(isBackwards);
+        }
 
         return Callbacks.<SeekRowResponse, Object>grpcUnaryPromise(c -> workerConnection.tableServiceClient().seekRow(seekRowRequest, workerConnection.metadata(), c::apply))
-                .then(seekRowResponse -> Promise.resolve(LongWrapper.ofString(seekRowResponse.getResultRow())));
+                .then(seekRowResponse -> Promise.resolve((double) Long.parseLong(seekRowResponse.getResultRow())));
     }
 
     public void maybeRevive(ClientTableState state) {
