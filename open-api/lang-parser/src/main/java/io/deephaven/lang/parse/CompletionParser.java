@@ -118,6 +118,13 @@ public class CompletionParser implements Closeable {
         }
     }
 
+    public String getText(String uri) {
+        final PendingParse doc = docs.get(uri);
+        if (doc == null) {
+            throw new IllegalStateException("Unable to find parsed document " + uri);
+        }
+        return doc.getText();
+    }
     public ParsedDocument finish(String uri) {
         final PendingParse doc = docs.get(uri);
         if (doc == null) {
