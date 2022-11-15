@@ -5,6 +5,7 @@ package io.deephaven.server.appmode;
 
 import io.deephaven.appmode.ApplicationConfig;
 import io.deephaven.appmode.ApplicationState;
+import io.deephaven.appmode.ApplicationState.Factory;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -19,6 +20,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class ApplicationInjector {
 
@@ -27,19 +29,22 @@ public class ApplicationInjector {
     private final Provider<ScriptSession> scriptSessionProvider;
     private final ApplicationTicketResolver ticketResolver;
     private final ApplicationState.Listener applicationListener;
+    private final Set<Factory> factories;
 
     @Inject
     public ApplicationInjector(
             final Provider<ScriptSession> scriptSessionProvider,
             final ApplicationTicketResolver ticketResolver,
-            final ApplicationState.Listener applicationListener) {
+            final ApplicationState.Listener applicationListener,
+            final Set<Factory> factories) {
         this.scriptSessionProvider = Objects.requireNonNull(scriptSessionProvider);
         this.ticketResolver = ticketResolver;
         this.applicationListener = applicationListener;
+        this.factories = factories;
     }
 
     public void run() throws IOException, ClassNotFoundException {
-        for (ApplicationState.Factory factory : ApplicationState.Factory.loadFromServiceFactory()) {
+        for (ApplicationState.Factory factory : factories) {
             loadApplicationFactory(factory);
         }
 

@@ -5,11 +5,17 @@ package io.deephaven.server.appmode;
 
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
+import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoSet;
 import io.deephaven.appmode.ApplicationState;
+import io.deephaven.appmode.ApplicationState.Factory;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.session.TicketResolver;
 import io.grpc.BindableService;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Module
 public interface AppModeModule {
@@ -29,4 +35,12 @@ public interface AppModeModule {
 
     @Binds
     ApplicationStates bindApplicationStates(ApplicationTicketResolver resolver);
+
+    @Provides
+    @ElementsIntoSet
+    static Set<Factory> providesFactoriesFromServiceLoader() {
+        final Set<Factory> set = new LinkedHashSet<>();
+        ApplicationState.Factory.loadFromServiceFactory().forEach(set::add);
+        return set;
+    }
 }
