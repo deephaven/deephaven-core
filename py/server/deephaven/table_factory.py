@@ -3,7 +3,7 @@
 #
 
 """ This module provides various ways to make a Deephaven table. """
-from __future__ import annotations
+
 from typing import List, Dict, Any, Union, Sequence
 
 import jpy
