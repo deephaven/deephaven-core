@@ -6,6 +6,4 @@ plugins {
 dependencies {
     api project(':application-mode')
     implementation project(':engine-table')
-
-    Classpaths.inheritAutoService(project)
 }
