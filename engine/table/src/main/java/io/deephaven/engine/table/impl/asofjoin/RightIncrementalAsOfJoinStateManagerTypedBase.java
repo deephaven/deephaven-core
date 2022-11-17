@@ -287,8 +287,9 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
                 bc.resetSharedContexts();
             }
+        } finally {
+            this.hashSlots = null;
         }
-        this.hashSlots = null;
     }
 
     private class LeftBuildHandler implements TypedHasherUtil.BuildHandler {
@@ -441,8 +442,9 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         this.hashSlots = slots;
         try (final ProbeContext pc = makeProbeContext(sources, rowSet.size())) {
             probeTable(pc, rowSet, usePrev, sources, new RightProbeHandler(sequentialBuilders));
+        } finally {
+            this.hashSlots = null;
         }
-        this.hashSlots = null;
 
         return nextCookie;
     }
