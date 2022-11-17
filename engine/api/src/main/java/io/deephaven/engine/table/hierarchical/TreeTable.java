@@ -38,25 +38,33 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
     ColumnName getTreeColumn();
 
     /**
+     * Get a new TreeTable with {@code columns} designated for node-level filtering, in addition to any columns already
+     * so-designated on {@code this} TreeTable.
+     * <p>
+     * UI-driven filters on those the designated node-level filtering columns will be applied to the nodes during
+     * snapshots. If no node-filter columns are designated, no filters will be handled at node level.
+     * <p>
+     * Filters that include other columns are handled by filtering the source table in a parent-preserving manner and
+     * re-applying the tree operation to the result to produce a new TreeTable. Users of orphan promotion or other
+     * strategies to govern the structure of the tree should carefully consider the structure of their data before
+     * specifying node-filter columns.
+     * <p>
+     * Specifying node-filter columns represents a trade-off between performance (which is expected to be much better
+     * for node-level filtering) and tree structural integrity (which may be lost since node-level filters are not
+     * parent-preserving).
+     *
+     * @param columns The columns to designate
+     * @return The new TreeTable
+     */
+    TreeTable withNodeFilterColumns(@NotNull Collection<? extends ColumnName> columns);
+
+    /**
      * Apply a set of filters to the columns of this TreeTable in order to produce a new TreeTable.
      *
      * @param filters The filters to apply
      * @return The new TreeTable
      */
     TreeTable withFilters(@NotNull Collection<? extends Filter> filters);
-
-    /**
-     * Get a new TreeTable with {@code columns} designated for node-level filtering. This means that UI-driven filters
-     * on those columns will be applied to the nodes during snapshots. If no node-filter columns are designated, no
-     * filters will be handled at node level. If node-filter columns are designated, filters that include other columns
-     * will be handled by filtering the source table in a parent-preserving manner and re-applying the tree operation to
-     * the result to produce a new TreeTable. Users of orphan promotion or other strategies to govern the structure of
-     * the tree should carefully consider the structure of their data before specifying node-filter columns.
-     *
-     * @param columns The columns to designate
-     * @return The new TreeTable
-     */
-    TreeTable withNodeFilterColumns(@NotNull Collection<? extends ColumnName> columns);
 
     /**
      * Recorder for node-level operations to be applied when gathering snapshots.

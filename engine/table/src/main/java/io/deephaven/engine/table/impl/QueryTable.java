@@ -41,6 +41,7 @@ import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllByTable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -247,7 +248,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     private volatile Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations = EMPTY_CACHED_OPERATIONS;
 
     /**
-     * Creates a new abstract table, inferring a definition but creating a new column source map.
+     * Creates a new table, inferring a definition but creating a new column source map.
      *
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
@@ -260,7 +261,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     /**
-     * Creates a new abstract table, reusing a definition but creating a new column source map.
+     * Creates a new table, reusing a definition but creating a new column source map.
      *
      * @param definition The definition to use for this table, which will be re-ordered to match the same order as
      *        {@code columns} if it does not match
@@ -276,15 +277,15 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     /**
-     * Creates a new abstract table, reusing a definition and column source map.
+     * Creates a new table, reusing a definition and column source map.
      *
-     * @param definition The definition to use for this table
+     * @param definition The definition to use for this table, which will not be validated or re-ordered.
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which is not copied.
      * @param modifiedColumnSet Optional {@link ModifiedColumnSet} that should be re-used if supplied
      * @param attributes Optional value to use for initial attributes
      */
-    private QueryTable(
+    public QueryTable(
             @NotNull final TableDefinition definition,
             @NotNull final TrackingRowSet rowSet,
             @NotNull final LinkedHashMap<String, ColumnSource<?>> columns,
