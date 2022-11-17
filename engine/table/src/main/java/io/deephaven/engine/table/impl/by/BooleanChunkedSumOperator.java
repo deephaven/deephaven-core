@@ -88,16 +88,16 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         return hasValue(resultColumn, destPos);
     }
 
-    private static void sumChunk(ObjectChunk<Boolean, ? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkNull, MutableInt chunkTrue, MutableInt chunkFalse) {
+    private static void sumChunk(ObjectChunk<Boolean, ? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkTrue, MutableInt chunkFalse) {
         final int chunkEnd = chunkStart + chunkSize;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final Boolean aBoolean = values.get(ii);
-            if (aBoolean == null) {
-                chunkNull.increment();
-            } else if (aBoolean) {
-                chunkTrue.increment();
-            } else {
-                chunkFalse.increment();
+            if (aBoolean != null) {
+                if (aBoolean) {
+                    chunkTrue.increment();
+                } else {
+                    chunkFalse.increment();
+                }
             }
         }
     }
@@ -149,10 +149,9 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
     }
 
     private boolean addChunk(ObjectChunk<Boolean, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
-        final MutableInt chunkNull = new MutableInt(0);
         final MutableInt chunkTrue = new MutableInt(0);
         final MutableInt chunkFalse = new MutableInt(0);
-        sumChunk(values, chunkStart, chunkSize, chunkNull, chunkTrue, chunkFalse);
+        sumChunk(values, chunkStart, chunkSize, chunkTrue, chunkFalse);
 
         boolean modified = false;
         if (chunkTrue.intValue() > 0) {
@@ -172,14 +171,13 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
     }
 
     private boolean removeChunk(ObjectChunk<Boolean, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
-        final MutableInt chunkNull = new MutableInt(0);
         final MutableInt chunkTrue = new MutableInt(0);
         final MutableInt chunkFalse = new MutableInt(0);
-        sumChunk(values, chunkStart, chunkSize, chunkNull, chunkTrue, chunkFalse);
+        sumChunk(values, chunkStart, chunkSize, chunkTrue, chunkFalse);
 
         boolean modified = false;
 
-        long newFalse = -1; // impossible value
+        long newFalse = -1;
         if (chunkFalse.intValue() > 0) {
             newFalse = addAndGet(falseCount, destination, -chunkFalse.intValue());
         }
@@ -188,8 +186,7 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
             Assert.gtZero(oldTrue, "oldTrue");
             long newTrue = oldTrue - chunkTrue.intValue();
             if (newTrue == 0) {
-                // we are zeroing ourselves out
-                if (newFalse < 0) {
+                if (chunkFalse.intValue() == 0) {
                     newFalse = falseCount.getUnsafe(destination);
                 }
                 if (newFalse == NULL_LONG || newFalse == 0) {
@@ -199,7 +196,6 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
             resultColumn.set(destination, newTrue);
             return true;
         } else if (newFalse == 0) {
-            // we may have gone to zero, in which case it must be nulled out
             if (resultColumn.getUnsafe(destination) == 0) {
                 resultColumn.set(destination, NULL_LONG);
                 modified = true;
@@ -210,15 +206,13 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
     }
 
     private boolean modifyChunk(ObjectChunk<Boolean, ? extends Values> preValues, ObjectChunk<Boolean, ? extends Values> postValues, long destination, int chunkStart, int chunkSize) {
-        final MutableInt preChunkNull = new MutableInt(0);
         final MutableInt preChunkTrue = new MutableInt(0);
         final MutableInt preChunkFalse = new MutableInt(0);
-        sumChunk(preValues, chunkStart, chunkSize, preChunkNull, preChunkTrue, preChunkFalse);
+        sumChunk(preValues, chunkStart, chunkSize, preChunkTrue, preChunkFalse);
 
-        final MutableInt postChunkNull = new MutableInt(0);
         final MutableInt postChunkTrue = new MutableInt(0);
         final MutableInt postChunkFalse = new MutableInt(0);
-        sumChunk(postValues, chunkStart, chunkSize, postChunkNull, postChunkTrue, postChunkFalse);
+        sumChunk(postValues, chunkStart, chunkSize, postChunkTrue, postChunkFalse);
 
         final boolean trueModified = preChunkTrue.intValue() != postChunkTrue.intValue();
         final boolean falseModified = preChunkFalse.intValue() != postChunkFalse.intValue();
@@ -236,7 +230,6 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
             final long oldTrue = resultColumn.getUnsafe(destination);
             long newTrue = NullSafeAddition.plusLong(oldTrue, postChunkTrue.intValue() - preChunkTrue.intValue());
             if (newTrue == 0) {
-                // we are zeroing ourselves out
                 if (!falseModified) {
                     newFalse = falseCount.getUnsafe(destination);
                 }
