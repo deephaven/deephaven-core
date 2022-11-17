@@ -90,7 +90,7 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     Collection<? extends Pair> getColumnPairs();
 
     /**
-     * Apply a set of filters to the group-by columns of this rollup in order to produce a new rollup.
+     * Apply a set of filters to the group-by columns of this RollupTable in order to produce a new RollupTable.
      *
      * @param filters The filters to apply; must only reference the group-by columns and must not use column arrays
      * @return The new RollupTable
