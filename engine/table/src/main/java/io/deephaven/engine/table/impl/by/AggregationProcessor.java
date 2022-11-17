@@ -40,7 +40,6 @@ import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
@@ -139,8 +138,6 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
 import static io.deephaven.engine.table.Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE;
-import static io.deephaven.engine.table.impl.RollupAttributeCopier.DEFAULT_INSTANCE;
-import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID;
@@ -311,12 +308,14 @@ public class AggregationProcessor implements AggregationContextFactory {
     // Converter Framework
     // -----------------------------------------------------------------------------------------------------------------
 
+    private static final PartitionByChunkedOperator.AttributeCopier PARTITION_ATTRIBUTE_COPIER =
+            (pt, st) -> pt.copyAttributes(st, BaseTable.CopyAttributeOperation.PartitionBy);
+
     /**
      * Base class for conversion from a collection of {@link Aggregation aggregations} to an {@link AggregationContext}
      * for {@code aggregations}. Accumulates state by visiting each aggregation.
      */
     private abstract class Converter implements Aggregation.Visitor, AggSpec.Visitor {
-
         final QueryTable table;
         private final boolean requireStateChangeRecorder;
         final String[] groupByColumnNames;
@@ -702,7 +701,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                     table,
                     partition.includeGroupByColumns() ? table : (QueryTable) table.dropColumns(groupByColumnNames),
                     partition.column().name(),
-                    (pt, st) -> pt.copyAttributes(st, BaseTable.CopyAttributeOperation.PartitionBy),
+                    PARTITION_ATTRIBUTE_COPIER,
                     groupByColumnNames));
         }
 
@@ -968,7 +967,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                     new NullSelectColumn<>(Table.class, null, ROLLUP_COLUMN.name()),
                     new NullSelectColumn<>(int.class, null, KEY_WIDTH_COLUMN.name()));
             final PartitionByChunkedOperator partitionOperator = new PartitionByChunkedOperator(table,
-                    adjustedTable, partition.column().name(), LEAF_WITHCONSTITUENTS_INSTANCE, groupByColumnNames);
+                    adjustedTable, partition.column().name(), PARTITION_ATTRIBUTE_COPIER, groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
         }
@@ -1111,7 +1110,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                     ? table
                     : (QueryTable) table.dropColumns(columnsToDrop);
             final PartitionByChunkedOperator partitionOperator = new PartitionByChunkedOperator(
-                    table, adjustedTable, partition.column().name(), DEFAULT_INSTANCE, groupByColumnNames);
+                    table, adjustedTable, partition.column().name(), PARTITION_ATTRIBUTE_COPIER, groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
         }
@@ -1959,7 +1958,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         final Object value = aggregationResult.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE);
         Assert.neqNull(value, "aggregation result row lookup");
         Assert.instanceOf(value, "aggregation result row lookup", ToIntFunction.class);
-        //noinspection unchecked
+        // noinspection unchecked
         return (ToIntFunction<Object>) value;
     }
 }

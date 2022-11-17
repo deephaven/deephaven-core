@@ -580,7 +580,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TestCase.assertEquals(rll.get(1), 2);
         TestCase.assertEquals(rll.get(2), 4);
         TestCase.assertEquals(rll.get(3), 6);
-        TestCase.assertEquals(rll.get(4), rll.getNoEntryValue());
+        TestCase.assertEquals(rll.get(4), rll.noEntryValue());
 
         TstUtils.addToTable(table, i(4), c("x", 4), c("y", "d"));
 
@@ -591,7 +591,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TestCase.assertEquals(rll2.get(1), 2);
         TestCase.assertEquals(rll2.get(2), 4);
         TestCase.assertEquals(rll2.get(3), 6);
-        TestCase.assertEquals(rll2.get(4), rll.getNoEntryValue());
+        TestCase.assertEquals(rll2.get(4), rll.noEntryValue());
 
         table.notifyListeners(i(), i(), i(4));
 
@@ -600,7 +600,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                         .get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TestCase.assertEquals(rll3.get(1), 2);
-        TestCase.assertEquals(rll3.get(2), rll.getNoEntryValue());
+        TestCase.assertEquals(rll3.get(2), rll.noEntryValue());
         TestCase.assertEquals(rll3.get(3), 6);
         TestCase.assertEquals(rll3.get(4), 4);
 
@@ -611,17 +611,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         TestCase.assertEquals(rll.get(1), 2);
-        TestCase.assertEquals(rll.get(2), rll.getNoEntryValue());
+        TestCase.assertEquals(rll.get(2), rll.noEntryValue());
         TestCase.assertEquals(rll.get(3), 6);
         TestCase.assertEquals(rll.get(4), 4);
 
         TestCase.assertEquals(rll2.get(1), 2);
-        TestCase.assertEquals(rll2.get(2), rll.getNoEntryValue());
+        TestCase.assertEquals(rll2.get(2), rll.noEntryValue());
         TestCase.assertEquals(rll2.get(3), 6);
         TestCase.assertEquals(rll2.get(4), 4);
 
         TestCase.assertEquals(rll3.get(1), 2);
-        TestCase.assertEquals(rll3.get(2), rll.getNoEntryValue());
+        TestCase.assertEquals(rll3.get(2), rll.noEntryValue());
         TestCase.assertEquals(rll3.get(3), 6);
         TestCase.assertEquals(rll3.get(4), 4);
 

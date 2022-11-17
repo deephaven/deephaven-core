@@ -34,7 +34,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
         assertEquals(4, reverseLookupListener.get("B"));
         assertEquals(6, reverseLookupListener.get("C"));
         assertEquals(8, reverseLookupListener.get("D"));
-        assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("E"));
+        assertEquals(reverseLookupListener.noEntryValue(), reverseLookupListener.get("E"));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet keysToModify = RowSetFactory.fromKeys(4);
@@ -46,7 +46,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
         assertEquals(4, reverseLookupListener.get("E"));
         assertEquals(6, reverseLookupListener.get("C"));
         assertEquals(8, reverseLookupListener.get("D"));
-        assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("B"));
+        assertEquals(reverseLookupListener.noEntryValue(), reverseLookupListener.get("B"));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet keysToSwap = RowSetFactory.fromKeys(4, 6);
@@ -61,7 +61,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
         assertEquals(4, reverseLookupListener.get("C"));
         assertEquals(6, reverseLookupListener.get("E"));
         assertEquals(8, reverseLookupListener.get("D"));
-        assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("B"));
+        assertEquals(reverseLookupListener.noEntryValue(), reverseLookupListener.get("B"));
     }
 
     private static class ReverseLookupEvalNugget implements EvalNuggetInterface {
@@ -115,7 +115,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
                 if (currentRow != null) {
                     assertEquals((long) currentRow, checkRow);
                 } else {
-                    assertEquals(listener.getNoEntryValue(), checkRow);
+                    assertEquals(listener.noEntryValue(), checkRow);
                 }
             }
             final RowSet addedRows = source.getRowSet().minus(source.getRowSet().copyPrev());
@@ -128,7 +128,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
                 if (prevRow != null) {
                     assertEquals((long) prevRow, checkRow);
                 } else {
-                    assertEquals(listener.getNoEntryValue(), checkRow);
+                    assertEquals(listener.noEntryValue(), checkRow);
                 }
             }
         }

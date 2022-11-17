@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.api.ColumnName.names;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
-import static io.deephaven.engine.table.impl.by.AggregationContextTransformer.UNKNOWN_ROW;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 
@@ -118,7 +118,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             if (filteredBaseLevelRowSet.find(unfilteredRowKey) > 0) {
                 return unfilteredRowKey;
             }
-            return UNKNOWN_ROW;
+            return DEFAULT_UNKNOWN_ROW;
         };
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, filteredBaseLevel);
         final ToIntFunction<Object>[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);
