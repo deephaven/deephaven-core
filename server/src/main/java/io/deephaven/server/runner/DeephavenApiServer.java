@@ -99,18 +99,18 @@ public class DeephavenApiServer {
      */
     public DeephavenApiServer run() throws IOException, ClassNotFoundException, TimeoutException {
 
-        // As we start to shut down, close outstanding sessions to give any gRPCs closure.
+        // Prevent new gRPC calls from being started
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
+                server::beginShutdown);
+
+        // Now that no new gRPC calls may be made, close outstanding sessions to give any clients closure
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
                 sessionService::onShutdown);
 
-        // Once all clients have had a chance to observe the start of shutdown, begin to stop the server by not allowing
-        // new requests
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
-                () -> server.stopWithTimeout(10, TimeUnit.SECONDS));
-
-        // Finally, wait for gRPC to exit now.
+        // Finally, wait for the http server to be finished stopping
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
             try {
+                server.stopWithTimeout(10, TimeUnit.SECONDS);
                 server.join();
             } catch (final InterruptedException ignored) {
             }
