@@ -1,13 +1,13 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.internal.log.LoggerFactory;
@@ -37,7 +37,7 @@ import static io.deephaven.engine.table.Table.PREPARED_RLL_ATTRIBUTE;
  * matching rows are included; as well as their ancestors. The result table is then converted into a tree table using
  * the original parameters.
  */
-public class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Provider {
+class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Provider {
     private static final boolean DEBUG = io.deephaven.configuration.Configuration.getInstance()
             .getBooleanWithDefault("TreeTableFilter.debug", false);
 
@@ -46,7 +46,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
     private final WhereFilter[] filters;
     private final TableDefinition origTableDefinition;
 
-    private TreeTableFilter(Table source, WhereFilter[] filters) {
+    TreeTableFilter(@NotNull final Table source, @NotNull final WhereFilter[] filters) {
         this.filters = filters;
         this.origTableDefinition = source.getDefinition();
 

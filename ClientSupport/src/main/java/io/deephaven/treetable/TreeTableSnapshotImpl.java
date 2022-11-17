@@ -5,7 +5,7 @@ package io.deephaven.treetable;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
+import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
