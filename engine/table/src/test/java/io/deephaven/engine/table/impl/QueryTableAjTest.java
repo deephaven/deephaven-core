@@ -1420,7 +1420,7 @@ public class QueryTableAjTest {
      */
     @Test
     public void testIds3080() {
-       try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Logger log = new StreamLoggerImpl();
 
             final int seed = 0;
@@ -1443,12 +1443,14 @@ public class QueryTableAjTest {
                             new TstUtils.IntGenerator(20_000_000, 20_010_000)));
 
             final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
-                    (QueryTable) rightTable.reverse(), MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                    (QueryTable) rightTable.reverse(),
+                    MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
                     MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
 
             // force compare results of the bucketed output, we cannot compare static to incremental as in other tests
             // because static will experience the same error when performing `rehashInternalFull()`
-            checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"), rightTable.partitionBy("Bucket"),
+            checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
+                    rightTable.partitionBy("Bucket"),
                     true, true);
         }
     }
