@@ -9,7 +9,7 @@ import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.table.impl.ReverseLookup;
+import io.deephaven.engine.table.impl.hierarchical.ReverseLookup;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.impl.select.SelectColumn;

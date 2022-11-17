@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.hierarchical.ReverseLookup;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -266,7 +267,7 @@ public class ReverseLookupListener extends LivenessArtifact
     }
 
     @Override
-    public long getNoEntryValue() {
+    public long noEntryValue() {
         return NO_ENTRY_VALUE;
     }
 

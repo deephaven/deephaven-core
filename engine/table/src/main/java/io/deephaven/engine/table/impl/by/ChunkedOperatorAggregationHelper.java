@@ -14,7 +14,6 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -52,8 +51,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.*;
 
-import static io.deephaven.engine.table.impl.by.AggregationContextTransformer.EMPTY_KEY;
-import static io.deephaven.engine.table.impl.by.AggregationContextTransformer.UNKNOWN_ROW;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 
 @SuppressWarnings("rawtypes")
 public class ChunkedOperatorAggregationHelper {
@@ -319,7 +318,7 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
-        ac.supplyReverseLookup(() -> makeReverseLookup(keySources, stateManager));
+        ac.supplyRowLookup(() -> makeRowLookup(keySources, stateManager));
         return stateManager;
     }
 
@@ -335,7 +334,7 @@ public class ChunkedOperatorAggregationHelper {
                 upstream.modifiedColumnSet());
     }
 
-    private static ToIntFunction<Object> makeReverseLookup(
+    private static AggregationRowLookup makeRowLookup(
             @NotNull final ColumnSource<?>[] keySources,
             @NotNull final OperatorAggregationStateManager stateManager) {
         if (keySources.length == 1) {
@@ -352,12 +351,12 @@ public class ChunkedOperatorAggregationHelper {
             for (int ii = 0; ii < keySources.length; ++ii) {
                 if (keySources[ii].getType() == DateTime.class) {
                     final int fii = ii;
-                    reinterpreters.add(reinterpreted ->
-                            reinterpreted[fii] = DateTimeUtils.nanos((DateTime) reinterpreted[fii]));
+                    reinterpreters.add(
+                            reinterpreted -> reinterpreted[fii] = DateTimeUtils.nanos((DateTime) reinterpreted[fii]));
                 } else if (keySources[ii].getType() == Boolean.class) {
                     final int fii = ii;
-                    reinterpreters.add(reinterpreted ->
-                            reinterpreted[fii] = BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
+                    reinterpreters.add(reinterpreted -> reinterpreted[fii] =
+                            BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
                 }
             }
             if (reinterpreters.isEmpty()) {
@@ -1590,9 +1589,9 @@ public class ChunkedOperatorAggregationHelper {
                 resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, responsiveGroups);
 
-        ac.supplyReverseLookup(() -> {
+        ac.supplyRowLookup(() -> {
             final TObjectIntMap<Object> keyToSlot = new TObjectIntHashMap<>(
-                    responsiveGroups, Constants.DEFAULT_LOAD_FACTOR, UNKNOWN_ROW);
+                    responsiveGroups, Constants.DEFAULT_LOAD_FACTOR, DEFAULT_UNKNOWN_ROW);
             final MutableInt slotNumber = new MutableInt(0);
             grouping.keySet().forEach(k -> keyToSlot.put(k, slotNumber.getAndIncrement()));
             return keyToSlot::get;
@@ -2122,7 +2121,7 @@ public class ChunkedOperatorAggregationHelper {
             swapListener.setListenerAndResult(listener, result);
         }
 
-        ac.supplyReverseLookup(() -> key -> key == EMPTY_KEY ? 0 : UNKNOWN_ROW);
+        ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, (Object[]) EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
 
         return ac.transformResult(result);
     }

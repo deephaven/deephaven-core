@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.WaitNotification;
@@ -27,7 +26,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 
-import static io.deephaven.engine.table.Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.PREPARED_RLL_ATTRIBUTE;
 
 /**
@@ -207,7 +205,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                     expectedParents.computeIfAbsent(parent, x -> new TLongHashSet()).add(row);
                     final long parentRow =
                             usePrev ? reverseLookupListener.getPrev(parent) : reverseLookupListener.get(parent);
-                    if (parentRow == reverseLookupListener.getNoEntryValue()) {
+                    if (parentRow == reverseLookupListener.noEntryValue()) {
                         continue;
                     }
                     if (sourceRowSet.find(parentRow) < 0) {
@@ -232,7 +230,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
 
                 final long parentKey =
                         usePrev ? reverseLookupListener.getPrev(parentValue) : reverseLookupListener.get(parentValue);
-                if (parentKey != reverseLookupListener.getNoEntryValue()) {
+                if (parentKey != reverseLookupListener.noEntryValue()) {
                     // then we should have it in our RowSet
                     builder.addKey(parentKey);
                     final long position = parentRowSet.find(parentKey);
@@ -273,7 +271,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
 
                     if (parentSet.isEmpty()) {
                         parentReferences.remove(parent);
-                        if (parentKey != reverseLookupListener.getNoEntryValue()) {
+                        if (parentKey != reverseLookupListener.noEntryValue()) {
                             builder.addKey(parentKey);
 
                             if (valuesRowSet.find(parentKey) < 0) {
@@ -329,7 +327,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
 
                 final long parentKey =
                         usePrev ? reverseLookupListener.getPrev(parent) : reverseLookupListener.get(parent);
-                if (parentKey != reverseLookupListener.getNoEntryValue()) {
+                if (parentKey != reverseLookupListener.noEntryValue()) {
                     builder.addKey(parentKey);
                     final Object grandParentId =
                             usePrev ? parentSource.getPrev(parentKey) : parentSource.get(parentKey);
@@ -584,30 +582,5 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                         .append(", result=").append(System.identityHashCode(resultTable)).endl();
             }
         }
-    }
-
-    public static Table toTreeTable(Table rawTable, Table originalTree) {
-        final Object sourceInfo = originalTree.getAttribute(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-        if (!(sourceInfo instanceof TreeTableInfo)) {
-            throw new IllegalArgumentException("Table is not a tree");
-        }
-        final TreeTableInfo treeTableInfo = (TreeTableInfo) sourceInfo;
-        return rawTable.tree(treeTableInfo.idColumn, treeTableInfo.parentColumn);
-    }
-
-    public static Table rawFilterTree(Table tree, String... filters) {
-        return rawFilterTree(tree, WhereFilterFactory.getExpressions(filters));
-    }
-
-    public static Table rawFilterTree(Table tree, WhereFilter[] filters) {
-        return tree.apply(new TreeTableFilter(tree, filters));
-    }
-
-    public static Table filterTree(Table tree, String... filters) {
-        return filterTree(tree, WhereFilterFactory.getExpressions(filters));
-    }
-
-    public static Table filterTree(Table tree, WhereFilter[] filters) {
-        return toTreeTable(rawFilterTree(tree, filters), tree);
     }
 }
