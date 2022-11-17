@@ -1414,4 +1414,44 @@ public class QueryTableAjTest {
             }
         }
     }
+
+    /**
+     * Reproduction of the error from DHC issue #3080.
+     */
+    @Test
+    public void testIds3080() {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Logger log = new StreamLoggerImpl();
+
+            final int seed = 0;
+            final Random random = new Random(seed);
+
+            final int leftSize = 32000;
+
+            // fairly small LHS will speed up detection of the error but will not affect correctness
+            final QueryTable leftTable = getTable(true, 1000, random,
+                    initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                            new TstUtils.StringGenerator(leftSize),
+                            new TstUtils.IntGenerator(0, 100000),
+                            new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+
+            // need RHS with unique bucket count > rehash threshold of 4096
+            final QueryTable rightTable = getTable(true, 32000, random,
+                    initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                            new TstUtils.StringGenerator(leftSize),
+                            new TstUtils.SortedIntGenerator(0, 100000),
+                            new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+
+            final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
+                    (QueryTable) rightTable.reverse(),
+                    MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                    MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
+
+            // force compare results of the bucketed output, we cannot compare static to incremental as in other tests
+            // because static will experience the same error when performing `rehashInternalFull()`
+            checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
+                    rightTable.partitionBy("Bucket"),
+                    true, true);
+        }
+    }
 }
