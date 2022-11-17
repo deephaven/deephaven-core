@@ -3,11 +3,11 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -17,10 +17,10 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
- * Iterative Boolean Sum.
- *
- * Any true value makes the result true.  If there are no values, the result is null.  All false values result in false.
+ * Iterative Boolean Sum. Result is the number of {@code true} values, or {@code null} if all values are {@code null}.
 */
 public final class BooleanChunkedSumOperator implements IterativeChunkedAggregationOperator {
     private final String name;
@@ -36,16 +36,37 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
      *
      * @param source the column source to update
      * @param destPos the position within the column source
-     * @return the value, before the update update
+     * @return the value, before the update
      */
-    private static long add(LongArraySource source, long destPos, long count) {
-        final long value = source.getUnsafe(destPos);
-        if (value == QueryConstants.NULL_LONG) {
+    private static long getAndAdd(LongArraySource source, long destPos, long count) {
+        final long oldValue = source.getUnsafe(destPos);
+        if (oldValue == NULL_LONG || oldValue == 0) {
+            Assert.gtZero(count, "count");
             source.set(destPos, count);
             return 0;
         } else {
-            source.set(destPos, value + count);
-            return value;
+            source.set(destPos, oldValue + count);
+            return oldValue;
+        }
+    }
+
+    /**
+     * Add to the value at the given position, return the new value.
+     *
+     * @param source the column source to update
+     * @param destPos the position within the column source
+     * @return the value, after the update
+     */
+    private static long addAndGet(LongArraySource source, long destPos, long count) {
+        final long oldValue = source.getUnsafe(destPos);
+        if (oldValue == NULL_LONG || oldValue == 0) {
+            Assert.gtZero(count, "count");
+            source.set(destPos, count);
+            return count;
+        } else {
+            final long newValue = oldValue + count;
+            source.set(destPos, newValue);
+            return newValue;
         }
     }
 
@@ -59,16 +80,12 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
     private static boolean hasValue(LongArraySource source, long destPos) {
         final long value = source.getUnsafe(destPos);
         //noinspection ConditionCoveredByFurtherCondition
-        return value != QueryConstants.NULL_LONG && value > 0;
+        return value != NULL_LONG && value > 0;
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private static boolean hasTrue(LongArraySource trueCount, long destPos) {
-        return hasValue(trueCount, destPos);
-    }
-
-    private boolean hasFalse(long destPos) {
-        return hasValue(falseCount, destPos);
+    private boolean hasTrue(long destPos) {
+        return hasValue(resultColumn, destPos);
     }
 
     private static void sumChunk(ObjectChunk<Boolean, ? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkNull, MutableInt chunkTrue, MutableInt chunkFalse) {
@@ -139,22 +156,18 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
 
         boolean modified = false;
         if (chunkTrue.intValue() > 0) {
-            add(resultColumn, destination,  chunkTrue.intValue());
+            getAndAdd(resultColumn, destination, chunkTrue.intValue());
             modified = true;
         }
         if (chunkFalse.intValue() > 0) {
-            final long oldFalse = add(falseCount, destination, chunkFalse.intValue());
-            if (chunkTrue.intValue() == 0 && oldFalse == 0 && !hasTrue(resultColumn, destination)) {
+            final long oldFalse = getAndAdd(falseCount, destination, chunkFalse.intValue());
+            if (oldFalse == 0 && chunkTrue.intValue() == 0 && !hasTrue(destination)) {
                 resultColumn.set(destination, 0L);
                 modified = true;
             }
         }
-        if (chunkNull.intValue() > 0 && chunkFalse.intValue() == 0 && chunkTrue.intValue() == 0) {
-            if (!hasTrue(resultColumn, destination) && !hasFalse(destination)) {
-                resultColumn.set(destination, QueryConstants.NULL_LONG);
-                modified = true;
-            }
-        }
+        // New or resurrected slots are adds, not modifies, and will already have null in the result, so we never need
+        // to update the result to null or report a mod if there are only nulls in the chunk.
         return modified;
     }
 
@@ -168,33 +181,28 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
 
         long newFalse = -1; // impossible value
         if (chunkFalse.intValue() > 0) {
-            final long oldFalse = falseCount.getUnsafe(destination);
-            newFalse = NullSafeAddition.plusLong(oldFalse, -chunkFalse.intValue());
-            falseCount.set(destination, newFalse);
+            newFalse = addAndGet(falseCount, destination, -chunkFalse.intValue());
         }
         if (chunkTrue.intValue() > 0) {
             final long oldTrue = resultColumn.getUnsafe(destination);
-            final long newTrue;
-            if (oldTrue == chunkTrue.intValue()) {
+            Assert.gtZero(oldTrue, "oldTrue");
+            long newTrue = oldTrue - chunkTrue.intValue();
+            if (newTrue == 0) {
                 // we are zeroing ourselves out
                 if (newFalse < 0) {
                     newFalse = falseCount.getUnsafe(destination);
                 }
-                if (newFalse > 0) { // we've set it, or read a null above
-                    newTrue = 0;
-                } else {
-                    newTrue = QueryConstants.NULL_LONG;
+                if (newFalse == NULL_LONG || newFalse == 0) {
+                    newTrue = NULL_LONG;
                 }
-            } else {
-                newTrue = oldTrue - chunkTrue.intValue();
             }
-            modified = true;
             resultColumn.set(destination, newTrue);
+            return true;
         } else if (newFalse == 0) {
             // we may have gone to zero, in which case it must be nulled out
             if (resultColumn.getUnsafe(destination) == 0) {
+                resultColumn.set(destination, NULL_LONG);
                 modified = true;
-                resultColumn.set(destination, QueryConstants.NULL_LONG);
             }
         }
 
@@ -220,50 +228,28 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         }
 
         long newFalse = -1;
-        long oldFalse = -1;
         if (falseModified) {
-            oldFalse = falseCount.getUnsafe(destination);
-            if (oldFalse == QueryConstants.NULL_LONG) {
-                oldFalse = 0;
-            }
-            newFalse = oldFalse + postChunkFalse.intValue() - preChunkFalse.intValue();
-            falseCount.set(destination, newFalse);
+            newFalse = addAndGet(falseCount, destination, postChunkFalse.intValue() - preChunkFalse.intValue());
         }
 
         if (trueModified) {
             final long oldTrue = resultColumn.getUnsafe(destination);
-            final long newTrue = NullSafeAddition.plusLong(oldTrue, postChunkTrue.intValue() - preChunkTrue.intValue());
-            resultColumn.set(destination, newTrue);
-            if (newTrue > 0) {
-                // if we're still above zero, then we are done
-                return true;
+            long newTrue = NullSafeAddition.plusLong(oldTrue, postChunkTrue.intValue() - preChunkTrue.intValue());
+            if (newTrue == 0) {
+                // we are zeroing ourselves out
+                if (!falseModified) {
+                    newFalse = falseCount.getUnsafe(destination);
+                }
+                if (newFalse == NULL_LONG || newFalse == 0) {
+                    newTrue = NULL_LONG;
+                }
             }
-        }
-
-        if (oldFalse > 0 && newFalse > 0) {
-            // we are still positive, so the result will not change
-            return trueModified;
-        }
-
-        // if true was modified, and we got to this point; then it must be zero
-        final boolean hasTrue = !trueModified && hasTrue(resultColumn, destination);
-        if (hasTrue) {
-            return false;
-        }
-
-        // we only hit the first two cases when we have a false change
-        if (oldFalse > 0 && newFalse == 0) {
-            // set to null, because we had a false but do not anymore
-            resultColumn.set(destination, QueryConstants.NULL_LONG);
+            resultColumn.set(destination, newTrue);
             return true;
         }
-        else if (oldFalse == 0 && newFalse > 0) {
-            // set to 0, because we were null; but now are true
-            resultColumn.set(destination, 0L);
-            return true;
-        } else if (trueModified && !falseModified) {
-            newFalse = falseCount.getUnsafe(destination);
-            resultColumn.set(destination, newFalse > 0 ? 0 : QueryConstants.NULL_LONG);
+
+        if (newFalse == 0) {
+            resultColumn.set(destination, NULL_LONG);
             return true;
         }
 
