@@ -162,6 +162,6 @@ class FormulaKernelPythonSingularFunction extends FormulaKernelTypedBase impleme
 
     @Override
     public FillContext makeFillContext(int __chunkCapacity) {
-        return new FillContextPython();
+        return FillContextPython.EMPTY;
     }
 }

@@ -101,7 +101,7 @@ def _encode_signature(fn: Callable) -> str:
     return "".join(np_type_codes)
 
 
-def _dh_vectorize(fn):
+def dh_vectorize(fn):
     """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
 
     The result wrapper accepts arrays of the declared parameter data types (vs. scalar), iterates through them
@@ -115,22 +115,23 @@ def _dh_vectorize(fn):
     return_type = signature[-1]
 
     def wrapper(*args):
-        if len(args) != len(signature) - len("->?") + 1:
+        if len(args) != len(signature) - len("->?") + 2:
             raise ValueError(
-                f"The number of arguments doesn't match the function signature. {len(args) - 1}, {signature}")
+                f"The number of arguments doesn't match the function signature. {len(args) - 2}, {signature}")
         if args[0] <= 0:
             raise ValueError(f"The chunk size argument must be a positive integer. {args[0]}")
 
         chunk_size = args[0]
-        chunk_result = np.empty(chunk_size, return_type)
-        if args[1:]:
-            vectorized_args = zip(*args[1:])
+        chunk_result = args[1]
+        if args[2:]:
+            vectorized_args = zip(*args[2:])
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
                 chunk_result[i] = fn(*scalar_args)
         else:
             for i in range(chunk_size):
                 chunk_result[i] = fn()
+
         return chunk_result
 
     wrapper.callable = fn

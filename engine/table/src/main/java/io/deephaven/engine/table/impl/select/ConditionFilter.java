@@ -80,19 +80,26 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
-
         class Context implements io.deephaven.engine.table.Context {
             public final WritableLongChunk<OrderedRowKeys> resultChunk;
-            public final FillContextPython fillContextPython;
+            private final io.deephaven.engine.table.Context kernelContext;
 
-            public Context(int maxChunkSize, FillContextPython fillContextPython) {
+            public Context(int maxChunkSize, io.deephaven.engine.table.Context kernelContext) {
                 this.resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
-                this.fillContextPython = fillContextPython;
+                this.kernelContext = kernelContext;
             }
 
             public Context(int maxChunkSize) {
                 this.resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
-                this.fillContextPython = new FillContextPython();
+                this.kernelContext = null;
+            }
+
+            public <TYPE extends io.deephaven.engine.table.Context> TYPE getKernelContext() {
+                if (kernelContext == null) {
+                    throw new IllegalStateException("No kernel context registered");
+                }
+                // noinspection unchecked
+                return (TYPE) kernelContext;
             }
 
             @Override

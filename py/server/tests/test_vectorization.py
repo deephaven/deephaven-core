@@ -7,16 +7,18 @@ import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
+import numpy as np
+
 import deephaven
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
 from deephaven.execution_context import make_user_exec_ctx
 from deephaven.filters import Filter, and_
 from deephaven.html import to_html
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, _dh_vectorize
+from deephaven.table import Table, dh_vectorize
 from tests.testbase import BaseTestCase
 
 
@@ -34,14 +36,14 @@ class VectorizationTestCase(BaseTestCase):
     def test_vectorization_exceptions(self):
         t = empty_table(1)
 
-        @_dh_vectorize
+        @dh_vectorize
         def vectorized_func(p1, p2):
             return p1 + p2
 
         def auto_func(p1, p2):
             return p1 + p2
 
-        @_dh_vectorize
+        @dh_vectorize
         def no_param_func():
             return random.randint(0, 100)
 
@@ -95,7 +97,7 @@ class VectorizationTestCase(BaseTestCase):
         expected_count += 1
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
-        t = empty_table(10).update("X = py_const(30*1024*1034*1034)")
+        t = empty_table(10).update("X = py_const(30*1024*1024*1024)")
         self.assertEqual(deephaven.table._vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(30000000000L)")
@@ -143,7 +145,7 @@ class VectorizationTestCase(BaseTestCase):
         self.assertIn("66", t.to_string(cols=["Z"]))
 
     def test_multiple_formulas_vectorized(self):
-        @_dh_vectorize
+        @dh_vectorize
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
@@ -184,7 +186,7 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(9, t.size)
 
     def test_multiple_filters_vectorized(self):
-        @_dh_vectorize
+        @dh_vectorize
         def pyfunc_bool(p1, p2, p3) -> bool:
             return p1 * p2 * p3
 
@@ -198,6 +200,48 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(5, deephaven.table._vectorized_count)
         self.assertEqual(t1.size, t.size)
         self.assertEqual(9, t.size)
+
+    def test_return_types(self):
+        def pyfunc_bool() -> bool:
+            return True
+
+        def pyfunc_byte() -> np.int8:
+            return 100
+
+        def pyfunc_short() -> np.int16:
+            return 100
+
+        def pyfunc_int() -> np.int32:
+            return 100
+
+        def pyfunc_long() -> np.int64:
+            return 100
+
+        def pyfunc_float() -> np.float32:
+            return 100
+
+        def pyfunc_double() -> np.float64:
+            return 1000
+
+        def pyfunc_str() -> str:
+            return "abc"
+
+        t = empty_table(1).update("X = pyfunc_bool()")
+        self.assertEqual(t.columns[0].data_type, dtypes.bool_)
+        t = empty_table(1).update("X = pyfunc_byte()")
+        self.assertEqual(t.columns[0].data_type, dtypes.byte)
+        t = empty_table(1).update("X = pyfunc_short()")
+        self.assertEqual(t.columns[0].data_type, dtypes.short)
+        t = empty_table(1).update("X = pyfunc_int()")
+        self.assertEqual(t.columns[0].data_type, dtypes.int32)
+        t = empty_table(1).update("X = pyfunc_long()")
+        self.assertEqual(t.columns[0].data_type, dtypes.long)
+        t = empty_table(1).update("X = pyfunc_float()")
+        self.assertEqual(t.columns[0].data_type, dtypes.float32)
+        t = empty_table(1).update("X = pyfunc_double()")
+        self.assertEqual(t.columns[0].data_type, dtypes.double)
+        t = empty_table(1).update("X = pyfunc_str()")
+        self.assertEqual(t.columns[0].data_type, dtypes.JObject)
 
 
 if __name__ == "__main__":

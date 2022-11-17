@@ -32,7 +32,7 @@ public class PyCallableWrapper {
         numpyType2JavaClass.put('f', float.class);
         numpyType2JavaClass.put('d', double.class);
         numpyType2JavaClass.put('b', byte.class);
-        numpyType2JavaClass.put('?', boolean.class);
+        numpyType2JavaClass.put('?', Boolean.class);
         numpyType2JavaClass.put('O', Object.class);
     }
 
@@ -59,14 +59,14 @@ public class PyCallableWrapper {
                 if (chunkSourceIndex < 0) {
                     throw new IllegalArgumentException("Column source not found: " + columnName);
                 }
-                ((ColumnChunkArgument) arg).setChunkSourceIndex(chunkSourceIndex);
+                ((ColumnChunkArgument) arg).setSourceChunkIndex(chunkSourceIndex);
             }
         }
-        return new ArgumentsChunked(chunkArguments, numbaVectorized);
+        return new ArgumentsChunked(chunkArguments, returnType, numbaVectorized);
     }
 
     public static abstract class ChunkArgument {
-        final private Class<?> type;
+        private final Class<?> type;
 
         public Class<?> getType() {
             return type;
@@ -79,7 +79,7 @@ public class PyCallableWrapper {
 
     public static class ColumnChunkArgument extends ChunkArgument {
         private final String columnName;
-        private int chunkSourceIndex;
+        private int sourceChunkIndex;
         private boolean resolved = false;
 
         public ColumnChunkArgument(String columnName, Class<?> type) {
@@ -87,17 +87,17 @@ public class PyCallableWrapper {
             this.columnName = columnName;
         }
 
-        public void setChunkSourceIndex(int chunkSourceIndex) {
+        public void setSourceChunkIndex(int sourceChunkIndex) {
             this.resolved = true;
-            this.chunkSourceIndex = chunkSourceIndex;
+            this.sourceChunkIndex = sourceChunkIndex;
         }
 
-        public int getChunkSourceIndex() {
+        public int getSourceChunkIndex() {
             if (!resolved) {
                 throw new IllegalStateException(
                         "The column chunk argument for " + columnName + " hasn't been resolved");
             }
-            return chunkSourceIndex;
+            return sourceChunkIndex;
         }
 
         public String getColumnName() {
@@ -148,15 +148,17 @@ public class PyCallableWrapper {
             }
             signature = params.get(0).getStringValue();
             unwrapped = null;
-            vectorized = true;
             numbaVectorized = true;
+            vectorized = true;
         } else if (pyCallable.hasAttribute("dh_vectorized")) {
             signature = pyCallable.getAttribute("signature").toString();
             unwrapped = pyCallable.getAttribute("callable");
+            numbaVectorized = false;
             vectorized = true;
         } else {
             signature = dh_table_module.call("_encode_signature", pyCallable).toString();
             unwrapped = pyCallable;
+            numbaVectorized = false;
             vectorized = false;
         }
     }
@@ -205,7 +207,7 @@ public class PyCallableWrapper {
         if (numbaVectorized) {
             return pyCallable;
         } else {
-            return dh_table_module.call("_dh_vectorize", unwrapped);
+            return dh_table_module.call("dh_vectorize", unwrapped);
         }
     }
 

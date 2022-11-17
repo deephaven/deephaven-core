@@ -32,7 +32,7 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
 
     @Override
     public Context getContext(int maxChunkSize) {
-        return new Context(maxChunkSize, this.argumentsChunked.makeFillContextPython(maxChunkSize));
+        return new Context(maxChunkSize, argumentsChunked.makeFillContextPython(maxChunkSize));
     }
 
     @Override
@@ -41,11 +41,12 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
             LongChunk<OrderedRowKeys> indices,
             Chunk... inputChunks) {
         final int size = indices.size();
-        context.fillContextPython.resolveColumnChunks(inputChunks, size);
+        FillContextPython fillContextPython = context.getKernelContext();
+        fillContextPython.resolveColumnChunks(inputChunks, size);
 
         final boolean[] results = function
-                .call(boolean[].class, CALL_METHOD, context.fillContextPython.getChunkedArgTypes(),
-                        context.fillContextPython.getChunkedArgs());
+                .call(boolean[].class, CALL_METHOD, fillContextPython.getChunkedArgTypes(),
+                        fillContextPython.getChunkedArgs());
         if (size > results.length) {
             throw new IllegalStateException(
                     "FilterKernelPythonChunkedFunction returned results are not the proper size");

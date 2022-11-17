@@ -61,7 +61,7 @@ public class DeephavenCompatibleFunction {
     }
 
     public FilterKernel<Context> toFilterKernel() {
-        if (returnedType != boolean.class) {
+        if (returnedType != boolean.class && !Boolean.class.equals(returnedType)) {
             throw new IllegalStateException("FilterKernel functions must be annotated with a boolean return type");
         }
         return isVectorized ? new FilterKernelPythonChunkedFunction(function, argumentsChunked)
