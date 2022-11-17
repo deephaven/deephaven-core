@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.api.*;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -37,6 +38,27 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
     ColumnName getTreeColumn();
 
     /**
+     * Apply a set of filters to the columns of this TreeTable in order to produce a new TreeTable.
+     *
+     * @param filters The filters to apply
+     * @return The new TreeTable
+     */
+    TreeTable withFilters(@NotNull Collection<? extends Filter> filters);
+
+    /**
+     * Get a new TreeTable with {@code columns} designated for node-level filtering. This means that UI-driven filters
+     * on those columns will be applied to the nodes during snapshots. If no node-filter columns are designated, no
+     * filters will be handled at node level. If node-filter columns are designated, filters that include other columns
+     * will be handled by filtering the source table in a parent-preserving manner and re-applying the tree operation to
+     * the result to produce a new TreeTable. Users of orphan promotion or other strategies to govern the structure of
+     * the tree should carefully consider the structure of their data before specifying node-filter columns.
+     *
+     * @param columns The columns to designate
+     * @return The new TreeTable
+     */
+    TreeTable withNodeFilterColumns(@NotNull Collection<? extends ColumnName> columns);
+
+    /**
      * Recorder for node-level operations to be applied when gathering snapshots.
      */
     interface NodeOperationsRecorder extends
@@ -61,30 +83,6 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
      * @return The new TreeTable
      */
     TreeTable withNodeOperations(@NotNull NodeOperationsRecorder nodeOperations);
-
-    /**
-     * Get a new TreeTable with {@code columns} designated for node-level filtering. This means that UI-driven filters
-     * on those columns will be applied to the nodes during snapshots. If no node-filter columns are designated, no
-     * filters will be handled at node level. If node-filter columns are designated, filters that include other columns
-     * will be handled by filtering the source table in a parent-preserving manner and re-applying the tree operation to
-     * the result to produce a new TreeTable. Users of orphan promotion or other strategies to govern the structure of
-     * the tree should carefully consider the structure of their data before specifying node-filter columns.
-     *
-     * @param columns The columns to designate
-     * @return The new TreeTable
-     */
-    TreeTable withNodeFilterColumns(@NotNull Collection<? extends ColumnName> columns);
-
-    /**
-     * Apply a transformation to the source table, e.g. for filtering, and re-apply the tree operation to produce a new
-     * TreeTable inheriting the same node operations and node-filter columns. Transformations that change the source
-     * table's {@link Table#getDefinition() definition}, e.g. {@link Table#dropColumns drop columns}, are not supported.
-     * This is intended for use in applying {@link Table#sort sorts} and {@link Table#where filters}.
-     * 
-     * @param sourceTransformer The source transformation to apply
-     * @return The new TreeTable
-     */
-    TreeTable reapply(@NotNull UnaryOperator<Table> sourceTransformer);
 
     /**
      * Adapt a {@code source} {@link Table} to be used for a {@link Table#tree(String, String) tree} to ensure that the
