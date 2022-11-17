@@ -559,20 +559,6 @@ public interface Table extends
     Table aj(Table rightTable, Collection<String> columnsToMatch);
 
     /**
-     * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list. Matching is
-     * done exactly for the first n-1 columns and via a binary search for the last match pair. The columns of the
-     * original table are returned intact, together with all the columns from rightTable.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth")
-     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
-     *        side as a result of the match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
-    Table aj(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd);
-
-    /**
      * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
      * given timestamp instead of the row before.
      * <p>

@@ -399,18 +399,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table aj(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        AsOfJoinMatchFactory.AsOfJoinResult resultMatch = AsOfJoinMatchFactory.getAjExpressions(columnsToMatch);
-        AsOfJoinMatchFactory.AsOfJoinResult resultAdd = AsOfJoinMatchFactory.getAjExpressions(columnsToAdd);
-        return aj(
-                rightTable,
-                MatchPair.fromMatches(List.of(resultMatch.matches)),
-                MatchPair.fromMatches(List.of(resultAdd.matches)),
-                AsOfMatchRule.of(resultMatch.rule));
-    }
-
-    @Override
-    @FinalDefault
     default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return raj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.GREATER_THAN_EQUAL);
     }
