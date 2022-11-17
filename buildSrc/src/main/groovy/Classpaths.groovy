@@ -68,7 +68,7 @@ class Classpaths {
 
     static final String IMMUTABLES_GROUP = 'org.immutables'
     static final String IMMUTABLES_NAME = 'value'
-    static final String IMMUTABLES_VERSION = '2.8.1'
+    static final String IMMUTABLES_VERSION = '2.9.2'
 
     static final String JUNIT_GROUP = 'org.junit'
     static final String JUNIT_NAME = 'junit-bom'
