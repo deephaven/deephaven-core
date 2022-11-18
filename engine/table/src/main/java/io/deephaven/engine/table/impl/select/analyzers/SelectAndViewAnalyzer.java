@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.select.analyzers;
 
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -15,29 +14,21 @@ import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
-import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.updategraph.AbstractNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
-import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
@@ -349,8 +340,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
      * @param onCompletion Called when an inner column is complete. The outer layer should pass the {@code onCompletion}
      */
     public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
-            JobScheduler jobScheduler, @Nullable LivenessNode liveResultOwner,
-            SelectLayerCompletionHandler onCompletion);
+                                     JobScheduler jobScheduler, @Nullable LivenessNode liveResultOwner,
+                                     SelectLayerCompletionHandler onCompletion);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do
@@ -502,356 +493,6 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * Called when all of the required columns are completed.
          */
         protected abstract void onAllRequiredColumnsCompleted();
-    }
-
-    /**
-     * An interface for submitting jobs to be executed and accumulating their performance of all the tasks performed off
-     * thread.
-     */
-    public interface JobScheduler {
-        /**
-         * Cause runnable to be executed.
-         *
-         * @param executionContext the execution context to run it under
-         * @param runnable the runnable to execute
-         * @param description a description for logging
-         * @param onError a routine to call if an exception occurs while running runnable
-         */
-        void submit(
-                ExecutionContext executionContext,
-                Runnable runnable,
-                final LogOutputAppendable description,
-                final Consumer<Exception> onError);
-
-        /**
-         * The performance statistics of all runnables that have been completed off-thread, or null if it was executed
-         * in the current thread.
-         */
-        BasePerformanceEntry getAccumulatedPerformance();
-
-        /**
-         * How many threads exist in the job scheduler? The job submitters can use this value to determine how many
-         * sub-jobs to split work into.
-         */
-        int threadCount();
-
-        /**
-         * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a callable
-         * interface with {@code index} indicating which iteration to perform. When this returns, the scheduler will
-         * automatically schedule the next iteration.
-         */
-        @FunctionalInterface
-        interface IterateAction {
-            void run(int index);
-        }
-
-        /**
-         * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a callable
-         * interface with {@code index} indicating which iteration to perform and {@link Runnable resume} providing a
-         * mechanism to inform the scheduler that the current task is complete. When {@code resume} is called, the
-         * scheduler will automatically schedule the next iteration.
-         *
-         * NOTE: failing to call {@code resume} will result in the scheduler not scheduling all remaining iterations.
-         * This will not block the scheduler, but the {@code completeAction} {@link Runnable} will never be called
-         */
-        @FunctionalInterface
-        interface IterateResumeAction {
-            void run(int index, Runnable resume);
-        }
-
-        /**
-         * Provides a mechanism to iterate over a range of values in parallel using the {@link JobScheduler}
-         *
-         * @param executionContext the execution context for this task
-         * @param description the description to use for logging
-         * @param start the integer value from which to start iterating
-         * @param count the number of times this task should be called
-         * @param action the task to perform, the current iteration index is provided as a parameter
-         * @param completeAction this will be called when all iterations are complete
-         * @param onError error handler for the scheduler to use while iterating
-         */
-        @FinalDefault
-        default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
-                int count, IterateAction action, Runnable completeAction, final Consumer<Exception> onError) {
-
-            if (count == 0) {
-                // no work to do
-                completeAction.run();
-            }
-
-            final AtomicInteger nextIndex = new AtomicInteger(start);
-            final AtomicInteger remaining = new AtomicInteger(count);
-
-            final Runnable task = () -> {
-                // this will run until all tasks have started
-                while (true) {
-                    int idx = nextIndex.getAndIncrement();
-                    if (idx < start + count) {
-                        // do the work
-                        action.run(idx);
-
-                        // check for completion
-                        if (remaining.decrementAndGet() == 0) {
-                            completeAction.run();
-                            return;
-                        }
-                    } else {
-                        // no more work to do
-                        return;
-                    }
-                }
-            };
-
-            // create multiple tasks but not more than one per scheduler thread
-            for (int i = 0; i < Math.min(count, threadCount()); i++) {
-                submit(executionContext,
-                        task,
-                        description,
-                        onError);
-            }
-        }
-
-        /**
-         * Provides a mechanism to iterate over a range of values in parallel using the {@link JobScheduler}
-         *
-         * @param executionContext the execution context for this task
-         * @param description the description to use for logging
-         * @param start the integer value from which to start iterating
-         * @param count the number of times this task should be called
-         * @param action the task to perform, the current iteration index and a resume Runnable are parameters
-         * @param completeAction this will be called when all iterations are complete
-         * @param onError error handler for the scheduler to use while iterating
-         */
-        @FinalDefault
-        default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
-                int count, IterateResumeAction action, Runnable completeAction, Consumer<Exception> onError) {
-
-            if (count == 0) {
-                // no work to do
-                completeAction.run();
-            }
-
-            final AtomicInteger nextIndex = new AtomicInteger(start);
-            final AtomicInteger remaining = new AtomicInteger(count);
-
-            final Runnable resumeAction = () -> {
-                // check for completion
-                if (remaining.decrementAndGet() == 0) {
-                    completeAction.run();
-                }
-            };
-
-            final Runnable task = () -> {
-                // this will run until all tasks have started
-                while (true) {
-                    int idx = nextIndex.getAndIncrement();
-                    if (idx < start + count) {
-                        // do the work
-                        action.run(idx, resumeAction);
-                    } else {
-                        // no more work to do
-                        return;
-                    }
-                }
-            };
-
-            // create multiple tasks but not more than one per scheduler thread
-            for (int i = 0; i < Math.min(count, threadCount()); i++) {
-                submit(executionContext,
-                        task,
-                        description,
-                        onError);
-            }
-        }
-
-        /**
-         * Provides a mechanism to iterate over a range of values serially using the {@link JobScheduler}. The advantage
-         * to using this over a simple iteration is the resumption callable on {@code action} that will trigger the next
-         * iterable. This allows the next iteration to de delayed until dependendat asynchronous serial or parallel
-         * scheduler jobs have completed.
-         *
-         * @param executionContext the execution context for this task
-         * @param description the description to use for logging
-         * @param start the integer value from which to start iterating
-         * @param count the number of times this task should be called
-         * @param action the task to perform, the current iteration index and a resume Runnable are parameters
-         * @param completeAction this will be called when all iterations are complete
-         * @param onError error handler for the scheduler to use while iterating
-         */
-        @FinalDefault
-        default void iterateSerial(ExecutionContext executionContext, LogOutputAppendable description, int start,
-                int count, IterateResumeAction action, Runnable completeAction, Consumer<Exception> onError) {
-
-            if (count == 0) {
-                // no work to do
-                completeAction.run();
-            }
-
-            final AtomicInteger nextIndex = new AtomicInteger(start);
-            final AtomicInteger remaining = new AtomicInteger(count);
-
-            // no lambda, need the `this` reference to re-execute
-            final Runnable resumeAction = new Runnable() {
-                @Override
-                public void run() {
-                    // check for completion
-                    if (remaining.decrementAndGet() == 0) {
-                        completeAction.run();
-                    } else {
-                        // schedule the next task
-                        submit(executionContext,
-                                () -> {
-                                    int idx = nextIndex.getAndIncrement();
-                                    if (idx < start + count) {
-                                        // do the work
-                                        action.run(idx, this);
-                                    }
-                                },
-                                description,
-                                onError);
-                    }
-
-                }
-            };
-
-            // create a single task
-            submit(executionContext,
-                    () -> {
-                        int idx = nextIndex.getAndIncrement();
-                        if (idx < start + count) {
-                            action.run(idx, resumeAction);
-                        }
-                    },
-                    description,
-                    onError);
-        }
-    }
-
-    public static class UpdateGraphProcessorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
-
-        @Override
-        public void submit(
-                final ExecutionContext executionContext,
-                final Runnable runnable,
-                final LogOutputAppendable description,
-                final Consumer<Exception> onError) {
-            UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
-                @Override
-                public boolean canExecute(long step) {
-                    return true;
-                }
-
-                @Override
-                public void run() {
-                    final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
-                    baseEntry.onBaseEntryStart();
-                    try {
-                        runnable.run();
-                    } catch (Exception e) {
-                        onError.accept(e);
-                    } catch (Error e) {
-                        ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
-                        throw e;
-                    } finally {
-                        baseEntry.onBaseEntryEnd();
-                        synchronized (accumulatedBaseEntry) {
-                            accumulatedBaseEntry.accumulate(baseEntry);
-                        }
-                    }
-                }
-
-                @Override
-                public LogOutput append(LogOutput output) {
-                    return output.append("{Notification(").append(System.identityHashCode(this)).append(" for ")
-                            .append(description).append("}");
-                }
-
-                @Override
-                public ExecutionContext getExecutionContext() {
-                    return executionContext;
-                }
-            });
-        }
-
-        @Override
-        public BasePerformanceEntry getAccumulatedPerformance() {
-            return accumulatedBaseEntry;
-        }
-
-        @Override
-        public int threadCount() {
-            return UpdateGraphProcessor.DEFAULT.getUpdateThreads();
-        }
-    }
-
-    public static class OperationInitializationPoolJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
-
-        @Override
-        public void submit(
-                final ExecutionContext executionContext,
-                final Runnable runnable,
-                final LogOutputAppendable description,
-                final Consumer<Exception> onError) {
-            OperationInitializationThreadPool.executorService.submit(() -> {
-                final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
-                basePerformanceEntry.onBaseEntryStart();
-                try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
-                    runnable.run();
-                } catch (Exception e) {
-                    onError.accept(e);
-                } catch (Error e) {
-                    ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
-                    throw e;
-                } finally {
-                    basePerformanceEntry.onBaseEntryEnd();
-                    synchronized (accumulatedBaseEntry) {
-                        accumulatedBaseEntry.accumulate(basePerformanceEntry);
-                    }
-                }
-            });
-        }
-
-        @Override
-        public BasePerformanceEntry getAccumulatedPerformance() {
-            return accumulatedBaseEntry;
-        }
-
-        @Override
-        public int threadCount() {
-            return OperationInitializationThreadPool.NUM_THREADS;
-        }
-    }
-
-    public static class ImmediateJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        public static final ImmediateJobScheduler INSTANCE = new ImmediateJobScheduler();
-
-        @Override
-        public void submit(
-                final ExecutionContext executionContext,
-                final Runnable runnable,
-                final LogOutputAppendable description,
-                final Consumer<Exception> onError) {
-            try (SafeCloseable ignored = executionContext != null ? executionContext.open() : null) {
-                runnable.run();
-            } catch (Exception e) {
-                onError.accept(e);
-            } catch (Error e) {
-                ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
-                throw e;
-            }
-        }
-
-        @Override
-        public BasePerformanceEntry getAccumulatedPerformance() {
-            return null;
-        }
-
-        @Override
-        public int threadCount() {
-            return 1;
-        }
     }
 
     /**

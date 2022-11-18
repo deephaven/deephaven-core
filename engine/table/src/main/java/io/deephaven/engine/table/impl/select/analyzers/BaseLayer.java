@@ -11,6 +11,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;

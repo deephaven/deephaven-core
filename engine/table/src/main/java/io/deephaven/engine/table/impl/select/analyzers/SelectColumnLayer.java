@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
@@ -117,8 +118,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public void applyUpdate(final TableUpdate upstream, final RowSet toClear,
-            final UpdateHelper helper, final JobScheduler jobScheduler, @Nullable final LivenessNode liveResultOwner,
-            final SelectLayerCompletionHandler onCompletion) {
+                            final UpdateHelper helper, final JobScheduler jobScheduler, @Nullable final LivenessNode liveResultOwner,
+                            final SelectLayerCompletionHandler onCompletion) {
         if (upstream.removed().isNonempty()) {
             if (isRedirected) {
                 clearObjectsAtThisLevel(upstream.removed());

@@ -33,8 +33,11 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.vector.Vector;
@@ -43,7 +46,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
@@ -1263,15 +1265,15 @@ public class QueryTable extends BaseTable {
                             RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
 
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-                    final SelectAndViewAnalyzer.JobScheduler jobScheduler;
+                    final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
                             (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
                                     && OperationInitializationThreadPool.NUM_THREADS > 1))
                             && !OperationInitializationThreadPool.isInitializationThread()
                             && analyzer.allowCrossColumnParallelization()) {
-                        jobScheduler = new SelectAndViewAnalyzer.OperationInitializationPoolJobScheduler();
+                        jobScheduler = new OperationInitializationPoolJobScheduler();
                     } else {
-                        jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
+                        jobScheduler = ImmediateJobScheduler.INSTANCE;
                     }
 
                     final QueryTable resultTable;

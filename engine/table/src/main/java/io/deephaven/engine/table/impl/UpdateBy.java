@@ -21,7 +21,6 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
@@ -29,6 +28,10 @@ import io.deephaven.engine.table.impl.util.InverseRowRedirectionImpl;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
+import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -309,7 +312,7 @@ public abstract class UpdateBy {
         final TrackingWritableRowSet[] inputSourceRowSets;
         final AtomicInteger[] inputSourceReferenceCounts;
 
-        final SelectAndViewAnalyzer.JobScheduler jobScheduler;
+        final JobScheduler jobScheduler;
         final CompletableFuture<Void> waitForResult;
 
         final SharedContext sharedContext;
@@ -335,16 +338,16 @@ public abstract class UpdateBy {
 
             if (initialStep) {
                 if (OperationInitializationThreadPool.NUM_THREADS > 1) {
-                    jobScheduler = new SelectAndViewAnalyzer.OperationInitializationPoolJobScheduler();
+                    jobScheduler = new OperationInitializationPoolJobScheduler();
                 } else {
-                    jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
+                    jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
                 waitForResult = new CompletableFuture<>();
             } else {
                 if (UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1) {
-                    jobScheduler = new SelectAndViewAnalyzer.UpdateGraphProcessorJobScheduler();
+                    jobScheduler = new UpdateGraphProcessorJobScheduler();
                 } else {
-                    jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
+                    jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
                 waitForResult = null;
             }
@@ -704,7 +707,7 @@ public abstract class UpdateBy {
 
         /**
          * Process the {@link TableUpdate update} provided in the constructor. This performs much work in parallel and
-         * leverages {@link io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.JobScheduler}
+         * leverages {@link JobScheduler}
          * extensively
          */
         public void processUpdate() {
