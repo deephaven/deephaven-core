@@ -135,6 +135,16 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         result.addParentReference(transformed);
 
+        if (source.isRefreshing()) {
+            // create a recorder instance sourced from the transformed table
+            ListenerRecorder sourceRecorder = new ListenerRecorder(description, transformed.table(), result);
+            sourceRecorder.setMergedListener(listener);
+            transformed.table().listenForUpdates(sourceRecorder);
+            result.addParentReference(listener);
+            recorders.offerLast(sourceRecorder);
+        }
+
+
         // make a dummy update to generate the initial row keys
         final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
                 RowSetFactory.empty(),

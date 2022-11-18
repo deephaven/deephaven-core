@@ -164,9 +164,10 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
 
     @Override
     public void prepareForParallelPopulation(final RowSet added) {
-        // we don't need to do anything for redirected, that happened earlier
-        if (!redirContext.isRedirected()) {
-            ((SparseArrayColumnSource<?>) outputSource).prepareForParallelPopulation(added);
+        if (redirContext.isRedirected()) {
+            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
+        } else {
+            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);
         }
     }
 

@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
@@ -843,7 +844,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);
     }
 
-    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {
+    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte>, WritableSourceWithPrepareForParallelPopulation {
         private final BooleanSparseArraySource wrapped;
 
         private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {
@@ -1049,9 +1050,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
             final LongChunk<OrderedRowKeys> keys = RowSequence.asRowKeyChunk();
 
-            final boolean hasPrev = wrapped.prevFlusher != null;
+            final boolean trackPrevious = wrapped.prevFlusher != null && wrapped.ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-            if (hasPrev) {
+            if (trackPrevious) {
                 wrapped.prevFlusher.maybeActivate();
             }
 
@@ -1073,13 +1074,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                 }
 
                 // This conditional with its constant condition should be very friendly to the branch predictor.
-                final byte[] prevBlock = hasPrev ? wrapped.ensurePrevBlock(firstRowKey, block0, block1, block2) : null;
-                final long[] inUse = hasPrev ? wrapped.prevInUse.get(block0).get(block1).get(block2) : null;
+                final byte[] prevBlock = trackPrevious ? wrapped.ensurePrevBlock(firstRowKey, block0, block1, block2) : null;
+                final long[] inUse = trackPrevious ? wrapped.prevInUse.get(block0).get(block1).get(block2) : null;
 
                 while (ii <= lastII) {
                     final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
                     // This 'if' with its constant condition should be very friendly to the branch predictor.
-                    if (hasPrev) {
+                    if (trackPrevious) {
                         assert inUse != null;
                         assert prevBlock != null;
 
@@ -1097,8 +1098,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             }
         }
 
+        @Override
         public void prepareForParallelPopulation(RowSet rowSet) {
-            wrapped.prepareForParallelPopulation(rowSet);
+           wrapped.prepareForParallelPopulation(rowSet);
         }
     }
     // endregion reinterpretation

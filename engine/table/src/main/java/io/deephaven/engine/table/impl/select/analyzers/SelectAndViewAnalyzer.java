@@ -563,7 +563,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * Provides a mechanism to iterate over a range of values in parallel using the {@link JobScheduler}
          *
          * @param executionContext the execution context for this task
-         * @param description the description for
+         * @param description the description to use for logging
          * @param start the integer value from which to start iterating
          * @param count the number of times this task should be called
          * @param action the task to perform, the current iteration index is provided as a parameter
@@ -615,7 +615,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * Provides a mechanism to iterate over a range of values in parallel using the {@link JobScheduler}
          *
          * @param executionContext the execution context for this task
-         * @param description the description for
+         * @param description the description to use for logging
          * @param start the integer value from which to start iterating
          * @param count the number of times this task should be called
          * @param action the task to perform, the current iteration index and a resume Runnable are parameters
@@ -671,7 +671,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * scheduler jobs have completed.
          *
          * @param executionContext the execution context for this task
-         * @param description the description for
+         * @param description the description to use for logging
          * @param start the integer value from which to start iterating
          * @param count the number of times this task should be called
          * @param action the task to perform, the current iteration index and a resume Runnable are parameters

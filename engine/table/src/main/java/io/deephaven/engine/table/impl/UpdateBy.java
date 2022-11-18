@@ -12,12 +12,14 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.*;
@@ -170,6 +172,24 @@ public abstract class UpdateBy {
             return !iterator.hasNext();
         }
 
+        public RowSet getInnerKeys(final RowSet outerKeys, final SharedContext sharedContext) {
+            if (rowRedirection == null) {
+                return null;
+            }
+            RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+            final int chunkSize = Math.min(outerKeys.intSize(), 4096);
+            try (final RowSequence.Iterator it = outerKeys.getRowSequenceIterator();
+                    ChunkSource.FillContext fillContext = rowRedirection.makeFillContext(chunkSize, sharedContext);
+                    WritableLongChunk<? extends RowKeys> chunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
+                while (it.hasMore()) {
+                    final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
+                    rowRedirection.fillChunk(fillContext, chunk, rs);
+                    builder.addRowKeysChunk(chunk);
+                }
+            }
+            return builder.build();
+        }
+
         @Override
         public void close() {
             try (final WritableRowSet ignored = freeRows) {
@@ -292,6 +312,8 @@ public abstract class UpdateBy {
         final SelectAndViewAnalyzer.JobScheduler jobScheduler;
         final CompletableFuture<Void> waitForResult;
 
+        final SharedContext sharedContext;
+
         WritableRowSet shiftedRows;
 
         public StateManager(TableUpdate update, boolean initialStep) {
@@ -311,21 +333,23 @@ public abstract class UpdateBy {
                 inputSourceReferenceCounts = null;
             }
 
-            waitForResult = new CompletableFuture<>();
-
             if (initialStep) {
                 if (OperationInitializationThreadPool.NUM_THREADS > 1) {
                     jobScheduler = new SelectAndViewAnalyzer.OperationInitializationPoolJobScheduler();
                 } else {
                     jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
                 }
+                waitForResult = new CompletableFuture<>();
             } else {
                 if (UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1) {
                     jobScheduler = new SelectAndViewAnalyzer.UpdateGraphProcessorJobScheduler();
                 } else {
                     jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
                 }
+                waitForResult = null;
             }
+
+            sharedContext = SharedContext.makeSharedContext();
         }
 
         @Override
@@ -495,26 +519,11 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Shift the operator output columns for this window
-         */
-        protected void shiftWindowOperators(UpdateByWindow win, RowSetShiftData shift) {
-            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                shift.apply((begin, end, delta) -> {
-                    try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                        for (UpdateByOperator op : win.getOperators()) {
-                            op.applyOutputShift(subRowSet, delta);
-                        }
-                    }
-                });
-            }
-        }
-
-        /**
          * Divide the buckets for {@code windows[winIdx]} into sets and process each set in parallel. Calls
          * {@code completedAction} when the work is complete
          */
         private void processWindowBuckets(int winIdx, final Runnable completedAction) {
-            if (jobScheduler.threadCount() > 1) {
+            if (jobScheduler.threadCount() > 1 && dirtyBuckets.length > 1) {
                 // process the buckets in parallel
                 final int bucketsPerTask = Math.max(1, dirtyBuckets.length / jobScheduler.threadCount());
                 final TIntArrayList offsetList = new TIntArrayList();
@@ -558,8 +567,13 @@ public abstract class UpdateBy {
                         cacheInputSources(winIdx, () -> {
                             // prepare each operator for the parallel updates to come
                             if (initialStep) {
-                                for (UpdateByOperator op : win.getOperators()) {
-                                    op.prepareForParallelPopulation(source.getRowSet());
+                                // prepare the entire set of rows on the initial step
+                                try (final RowSet changedRows = redirContext.isRedirected()
+                                        ? RowSetFactory.flat(redirContext.requiredCapacity())
+                                        : source.getRowSet().copy()) {
+                                    for (UpdateByOperator op : win.getOperators()) {
+                                        op.prepareForParallelPopulation(changedRows);
+                                    }
                                 }
                             } else {
                                 // get the minimal set of rows to be updated for this window
@@ -569,26 +583,27 @@ public abstract class UpdateBy {
                                             windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
                                         }
                                     }
-                                    for (UpdateByOperator op : win.getOperators()) {
-                                        op.prepareForParallelPopulation(windowRowSet);
+                                    try (final RowSet changedRows = redirContext.isRedirected()
+                                            ? redirContext.getInnerKeys(windowRowSet, sharedContext)
+                                            : windowRowSet.copy()) {
+                                        for (UpdateByOperator op : win.getOperators()) {
+                                            op.prepareForParallelPopulation(changedRows);
+                                        }
                                     }
                                 }
                             }
 
-                            if (redirContext.isRedirected()) {
-                                for (UpdateByOperator op : windows[winIdx].getOperators()) {
-                                    // If we're redirected we have to make sure we tell the output source its actual
-                                    // size, or we're going to have a bad time.  This is not necessary for
-                                    // non-redirections since the SparseArraySources do not need to do anything with
-                                    // capacity.
-                                    op.getOutputColumns().forEach((name, outputSource) -> {
-                                        // The redirection index does not use the 0th index for some reason.
-                                        ((WritableColumnSource<?>)outputSource).ensureCapacity(redirContext.requiredCapacity());
-                                    }) ;
-                                }
-                            } else if (update.shifted().nonempty()) {
+                            if (!redirContext.isRedirected() && update.shifted().nonempty()) {
                                 // shift the non-redirected output sources now, after parallelPopulation
-                                shiftWindowOperators(win, update.shifted());
+                                try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                                    update.shifted().apply((begin, end, delta) -> {
+                                        try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
+                                            for (UpdateByOperator op : win.getOperators()) {
+                                                op.applyOutputShift(subRowSet, delta);
+                                            }
+                                        }
+                                    });
+                                }
                             }
 
                             processWindowBuckets(winIdx, () -> {
@@ -611,7 +626,10 @@ public abstract class UpdateBy {
          * {@code completedAction} when the work is complete
          */
         private void cleanUpAndNotify(final Runnable completeAction) {
-            shiftedRows.close();
+            try (final RowSet ignoredRs = shiftedRows;
+                    final SharedContext ignoredCtx = sharedContext) {
+                // auto close these resources
+            }
 
             // create the downstream before calling finalize() on the buckets (which releases resources)
             final TableUpdate downstream;
@@ -729,21 +747,24 @@ public abstract class UpdateBy {
                             () -> cleanUpAndNotify(
                                     () -> {
                                         // signal to the main task that we have completed our work
-                                        waitForResult.complete(null);
-                                    }
-                            )));
+                                        if (waitForResult != null) {
+                                            waitForResult.complete(null);
+                                        }
+                                    })));
 
-            try {
-                // need to wait until this future is complete
-                waitForResult.get();
-            } catch (InterruptedException e) {
-                throw new CancellationException("interrupted while processing updateBy");
-            } catch (ExecutionException e) {
-                if (e.getCause() instanceof RuntimeException) {
-                    throw (RuntimeException) e.getCause();
-                } else {
-                    throw new UncheckedDeephavenException("Failure while processing updateBy",
-                            e.getCause());
+            if (waitForResult != null) {
+                try {
+                    // need to wait until this future is complete
+                    waitForResult.get();
+                } catch (InterruptedException e) {
+                    throw new CancellationException("interrupted while processing updateBy");
+                } catch (ExecutionException e) {
+                    if (e.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) e.getCause();
+                    } else {
+                        throw new UncheckedDeephavenException("Failure while processing updateBy",
+                                e.getCause());
+                    }
                 }
             }
         }

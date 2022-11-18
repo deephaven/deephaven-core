@@ -46,8 +46,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
 
     @Test
     public void testMixedGeneralZeroKey() {
-        doTestTicking(false, false, false, 20, 10, 12);
-
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
                 doTestTicking(seed > 15, false, false, 20, size, seed);
@@ -89,7 +87,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                         }
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
-                        // NOTE: I can't include the float/double based Rolling
                         final Collection<? extends UpdateByOperation> clauses = List.of(
                                 UpdateByOperation.Fill(),
                                 UpdateByOperation.RollingSum(100, 0,

@@ -5,6 +5,7 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -12,10 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
@@ -157,9 +155,10 @@ public abstract class BaseIntUpdateByOperator extends UpdateByCumulativeOperator
 
     @Override
     public void prepareForParallelPopulation(final RowSet added) {
-        // we don't need to do anything for redirected, that happened earlier
-        if (!redirContext.isRedirected()) {
-            ((SparseArrayColumnSource<?>) outputSource).prepareForParallelPopulation(added);
+        if (redirContext.isRedirected()) {
+            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
+        } else {
+            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);
         }
     }
 
