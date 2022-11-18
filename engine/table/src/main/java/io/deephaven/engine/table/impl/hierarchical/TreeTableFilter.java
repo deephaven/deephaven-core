@@ -3,17 +3,19 @@
  */
 package io.deephaven.engine.table.impl.hierarchical;
 
-import io.deephaven.base.verify.Assert;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.util.ConcurrentMethod;
+import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl.TreeReverseLookup;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import gnu.trove.iterator.TLongIterator;
@@ -26,36 +28,34 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 
-import static io.deephaven.engine.table.Table.PREPARED_RLL_ATTRIBUTE;
-
 /**
- * Apply filters, preserving parents.
- *
- * The TreeTableFilter takes a TreeTable and WhereFilters as input. The original source table is filtered and any
- * matching rows are included; as well as their ancestors. The result table is then converted into a tree table using
- * the original parameters.
+ * Apply filters to a tree source table, preserving ancestors.
+ * <p>
+ * The TreeTableFilter takes a {@link TreeTableImpl tree} and {@link WhereFilter fllters} as input, and expects to be
+ * {@link Table#apply(Function) applied} to the tree's {@link HierarchicalTableImpl#getSource() source}. Applying the
+ * filter will produce a new table intended to be the source for a subsequent tree operation with the same parameters as
+ * the input. The result table includes any rows matched by the input filters, as well as all ancestors of those rows.
  */
 class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Provider {
-    private static final boolean DEBUG = io.deephaven.configuration.Configuration.getInstance()
-            .getBooleanWithDefault("TreeTableFilter.debug", false);
+
+    private static final boolean DEBUG =
+            Configuration.getInstance().getBooleanWithDefault("TreeTableFilter.debug", false);
 
     private static final Logger log = LoggerFactory.getLogger(TreeTableFilter.class);
 
+    private final TreeTableImpl tree;
     private final WhereFilter[] filters;
-    private final TableDefinition origTableDefinition;
 
-    TreeTableFilter(@NotNull final Table source, @NotNull final WhereFilter[] filters) {
-        this.filters = filters;
-        this.origTableDefinition = source.getDefinition();
-
-        for (final WhereFilter filter : filters) {
-            filter.init(origTableDefinition);
-        }
+    TreeTableFilter(@NotNull final TreeTableImpl tree, @NotNull final WhereFilter[] filters) {
+        this.tree = tree;
+        this.filters = filters; // NB: The tree will always have initialized these filters ahead of time
     }
 
+    @ConcurrentMethod
     @Override
-    public Table apply(Table table) {
-        return new State(table, origTableDefinition).getRaw();
+    public Table apply(@NotNull final Table table) {
+        Require.eq(table, "table", tree.getSource(), "tree.getSource()");
+        return new State(tree, filters).getResult();
     }
 
     @Override
@@ -63,69 +63,95 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
         if (Arrays.stream(filters).allMatch(WhereFilter::canMemoize)) {
             return new TreeTableFilterKey(filters);
         }
-
         return null;
     }
 
-    private class State {
-        private QueryTable filteredRaw;
+    private static class State {
+
+        /**
+         * The source table of the {@link TreeTableImpl} to be filtered.
+         */
         private final QueryTable source;
+
+        /**
+         * The rpw identifier column name from the {@link TreeTableImpl} to be filtered.
+         */
+        private final ColumnName idColumnName;
+
+        /**
+         * The parent identifier column name from the {@link TreeTableImpl} to be filtered.
+         */
+        private final ColumnName parentIdColumnName;
+
+        /**
+         * The input {@link TreeTableImpl tree's} {@link TreeReverseLookup reverse lookup}.
+         */
+        private final TreeReverseLookup reverseLookup;
+
+        /**
+         * The (initialized) filters to apply to {@link #source} in order to produce {@link #matched}.
+         */
+        private final WhereFilter[] filters;
+
+        /**
+         * The row identifier source from {@link #source}.
+         */
+        private final ColumnSource idSource;
+
+        /**
+         * The parent identifier source from {@link #source}.
+         */
+        private final ColumnSource parentIdSource;
+
+        /**
+         * Swap listener for concurrent instantiation.
+         */
+        @ReferentialIntegrity
+        private final SwapListenerEx swapListener;
+
+        /**
+         * The eventual listener that maintains {@link #result}.
+         */
+        @ReferentialIntegrity
+        private Listener sourceListener;
+
+        /**
+         * The result table after filtering {@link #source} and re-adding ancestors.
+         */
+        private QueryTable result;
 
         /**
          * The complete RowSet of our result table.
          */
         private TrackingWritableRowSet resultRowSet;
+
         /**
-         * The RowSet of values that match our desired filter.
+         * The rows from {@link #source} that match our filters.
          */
-        private WritableRowSet valuesRowSet;
+        private WritableRowSet matched;
+
         /**
-         * The RowSet of ancestors of matching values.
+         * The rows from {@link #source} containing all ancestors of matched rows.
          */
-        private WritableRowSet parentRowSet;
+        private WritableRowSet ancestors;
+
         /**
          * For each parent key, a set of rows which directly descend from the parent.
          */
         private Map<Object, TLongSet> parentReferences;
 
-        private final WhereFilter[] filters;
-        private final ColumnSource parentSource;
-        private final ColumnSource idSource;
-        private final ReverseLookup reverseLookupListener;
+        private State(@NotNull final TreeTableImpl tree, @NotNull final WhereFilter[] filters) {
+            source = (QueryTable) tree.getSource();
+            idColumnName = tree.getIdentifierColumn();
+            parentIdColumnName = tree.getParentIdentifierColumn();
+            reverseLookup = tree.getReverseLookup();
+            this.filters = filters;
 
-        @ReferentialIntegrity
-        final SwapListenerWithRLL swapListener;
-
-        @ReferentialIntegrity
-        TreeTableFilterListener treeListener;
-
-        private final TreeTableInfo treeTableInfo;
-
-        private State(Table table, TableDefinition origTableDefinition) {
-            if (!(table instanceof BaseHierarchicalTable)) {
-                throw new IllegalArgumentException("Table is not a tree");
-            }
-            final BaseHierarchicalTable hierarchicalTable = (BaseHierarchicalTable) table;
-
-            source = (QueryTable) hierarchicalTable.getSourceTable();
-            final HierarchicalTableInfo sourceInfo = hierarchicalTable.getInfo();
-            if (!(sourceInfo instanceof TreeTableInfo)) {
-                throw new IllegalArgumentException("Table is not a tree");
-            }
-            treeTableInfo = (TreeTableInfo) sourceInfo;
-            reverseLookupListener =
-                    Objects.requireNonNull((ReverseLookupListener) table.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE));
-
-            filters = TreeTableFilter.this.filters;
-
-            // The filters have already been inited by here.
-            Assert.eq(table.getDefinition(), "Applied table.definition", origTableDefinition, "Original definition");
-
-            parentSource = source.getColumnSource(treeTableInfo.parentColumn);
-            idSource = source.getColumnSource(treeTableInfo.idColumn);
+            idSource = source.getColumnSource(tree.getIdentifierColumn().name());
+            parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());
 
             if (source.isRefreshing()) {
-                swapListener = new SwapListenerWithRLL(source, reverseLookupListener);
+                swapListener = new SwapListenerEx(source, reverseLookup);
                 source.addUpdateListener(swapListener);
                 ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
                         swapListener.makeSnapshotControl(),
@@ -140,28 +166,24 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
         }
 
         private void doInitialFilter(final boolean usePrev) {
-            valuesRowSet = doValueFilter(usePrev, source.getRowSet());
+            matched = doValueFilter(usePrev, source.getRowSet());
 
-            parentReferences = new HashMap<>(valuesRowSet.intSize("parentReferenceMap"));
-            parentRowSet = computeParents(usePrev, valuesRowSet);
-            resultRowSet = valuesRowSet.union(parentRowSet).toTracking();
+            parentReferences = new HashMap<>(matched.intSize("parentReferenceMap"));
+            ancestors = computeParents(usePrev, matched);
+            resultRowSet = matched.union(ancestors).toTracking();
 
             validateState(usePrev);
 
-            filteredRaw = (QueryTable) source.getSubTable(resultRowSet);
+            result = source.getSubTable(resultRowSet);
             if (swapListener != null) {
-                treeListener = new TreeTableFilterListener("tree filter", source, filteredRaw);
-                swapListener.setListenerAndResult(treeListener, filteredRaw);
-                filteredRaw.addParentReference(treeListener);
+                sourceListener = new Listener("tree filter", source, result);
+                swapListener.setListenerAndResult(sourceListener, result);
+                result.addParentReference(sourceListener);
             }
-
-            // We can re-use the RLL when filtering as long as we are sure to check for existence in the
-            // sub table indices. Sticking this annotation here will let QueryTable know it can re-use it.
-            filteredRaw.setAttribute(PREPARED_RLL_ATTRIBUTE, reverseLookupListener);
         }
 
-        private Table getRaw() {
-            return filteredRaw;
+        private Table getResult() {
+            return result;
         }
 
         private void validateState(final boolean usePrev) {
@@ -169,7 +191,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 return;
             }
 
-            final RowSet union = valuesRowSet.union(parentRowSet);
+            final RowSet union = matched.union(ancestors);
 
             if (!union.equals(resultRowSet)) {
                 throw new IllegalStateException();
@@ -183,11 +205,11 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 throw new IllegalStateException("Bad refilter!");
             }
 
-            if (!expectedRowSet.equals(valuesRowSet)) {
-                final RowSet missing = expectedRowSet.minus(valuesRowSet);
-                final RowSet extraValues = valuesRowSet.minus(expectedRowSet);
+            if (!expectedRowSet.equals(matched)) {
+                final RowSet missing = expectedRowSet.minus(matched);
+                final RowSet extraValues = matched.minus(expectedRowSet);
                 throw new IllegalStateException("Inconsistent included Values: missing=" + missing + ", extra="
-                        + extraValues + ", expected=" + expectedRowSet + ", valuesRowSet=" + valuesRowSet);
+                        + extraValues + ", expected=" + expectedRowSet + ", valuesRowSet=" + matched);
             }
 
             TLongArrayList parentsToProcess = new TLongArrayList();
@@ -198,14 +220,14 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 final TLongArrayList newParentKeys = new TLongArrayList();
                 for (final TLongIterator it = parentsToProcess.iterator(); it.hasNext();) {
                     final long row = it.next();
-                    final Object parent = usePrev ? parentSource.getPrev(row) : parentSource.get(row);
+                    final Object parent = usePrev ? parentIdSource.getPrev(row) : parentIdSource.get(row);
                     if (parent == null) {
                         continue;
                     }
                     expectedParents.computeIfAbsent(parent, x -> new TLongHashSet()).add(row);
                     final long parentRow =
-                            usePrev ? reverseLookupListener.getPrev(parent) : reverseLookupListener.get(parent);
-                    if (parentRow == reverseLookupListener.noEntryValue()) {
+                            usePrev ? reverseLookup.getPrev(parent) : reverseLookup.get(parent);
+                    if (parentRow == reverseLookup.noEntryValue()) {
                         continue;
                     }
                     if (sourceRowSet.find(parentRow) < 0) {
@@ -229,11 +251,11 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 }
 
                 final long parentKey =
-                        usePrev ? reverseLookupListener.getPrev(parentValue) : reverseLookupListener.get(parentValue);
-                if (parentKey != reverseLookupListener.noEntryValue()) {
+                        usePrev ? reverseLookup.getPrev(parentValue) : reverseLookup.get(parentValue);
+                if (parentKey != reverseLookup.noEntryValue()) {
                     // then we should have it in our RowSet
                     builder.addKey(parentKey);
-                    final long position = parentRowSet.find(parentKey);
+                    final long position = ancestors.find(parentKey);
                     if (position < 0) {
                         throw new IllegalStateException(
                                 "Could not find parent in our result: " + parentValue + ", key=" + parentKey);
@@ -242,18 +264,18 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
             });
 
             final RowSet expectedParentRowSet = builder.build();
-            if (!expectedParentRowSet.equals(parentRowSet)) {
+            if (!expectedParentRowSet.equals(ancestors)) {
                 throw new IllegalStateException();
             }
         }
 
         private void removeValues(RowSet rowsToRemove) {
-            valuesRowSet.remove(rowsToRemove);
+            matched.remove(rowsToRemove);
             removeParents(rowsToRemove);
         }
 
         private void removeParents(RowSet rowsToRemove) {
-            final Map<Object, TLongSet> parents = generateParentReferenceMap(rowsToRemove, parentSource::getPrev);
+            final Map<Object, TLongSet> parents = generateParentReferenceMap(rowsToRemove, parentIdSource::getPrev);
 
             final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
             while (!parents.isEmpty()) {
@@ -263,7 +285,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 final TLongSet references = entry.getValue();
                 iterator.remove();
 
-                final long parentKey = reverseLookupListener.getPrev(parent);
+                final long parentKey = reverseLookup.getPrev(parent);
 
                 final TLongSet parentSet = parentReferences.get(parent);
                 if (parentSet != null) {
@@ -271,11 +293,11 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
 
                     if (parentSet.isEmpty()) {
                         parentReferences.remove(parent);
-                        if (parentKey != reverseLookupListener.noEntryValue()) {
+                        if (parentKey != reverseLookup.noEntryValue()) {
                             builder.addKey(parentKey);
 
-                            if (valuesRowSet.find(parentKey) < 0) {
-                                final Object grandParentId = parentSource.getPrev(parentKey);
+                            if (matched.find(parentKey) < 0) {
+                                final Object grandParentId = parentIdSource.getPrev(parentKey);
                                 if (grandParentId != null) {
                                     parents.computeIfAbsent(grandParentId, x -> new TLongHashSet()).add(parentKey);
                                 }
@@ -285,7 +307,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 }
             }
 
-            parentRowSet.remove(builder.build());
+            ancestors.remove(builder.build());
         }
 
         private WritableRowSet doValueFilter(boolean usePrev, RowSet rowsToFilter) {
@@ -315,7 +337,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
 
         private WritableRowSet computeParents(final boolean usePrev, @NotNull final RowSet rowsToParent) {
             final Map<Object, TLongSet> parents =
-                    generateParentReferenceMap(rowsToParent, usePrev ? parentSource::getPrev : parentSource::get);
+                    generateParentReferenceMap(rowsToParent, usePrev ? parentIdSource::getPrev : parentIdSource::get);
 
             final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
             while (!parents.isEmpty()) {
@@ -326,11 +348,11 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 iterator.remove();
 
                 final long parentKey =
-                        usePrev ? reverseLookupListener.getPrev(parent) : reverseLookupListener.get(parent);
-                if (parentKey != reverseLookupListener.noEntryValue()) {
+                        usePrev ? reverseLookup.getPrev(parent) : reverseLookup.get(parent);
+                if (parentKey != reverseLookup.noEntryValue()) {
                     builder.addKey(parentKey);
                     final Object grandParentId =
-                            usePrev ? parentSource.getPrev(parentKey) : parentSource.get(parentKey);
+                            usePrev ? parentIdSource.getPrev(parentKey) : parentIdSource.get(parentKey);
                     if (grandParentId != null) {
                         parents.computeIfAbsent(grandParentId, x -> new TLongHashSet()).add(parentKey);
                     }
@@ -355,12 +377,13 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
             return parents;
         }
 
-        private class TreeTableFilterListener extends BaseTable.ListenerImpl {
+        private class Listener extends BaseTable.ListenerImpl {
+
             final ModifiedColumnSet inputColumns;
 
-            TreeTableFilterListener(String description, Table parent, QueryTable dependent) {
+            Listener(String description, Table parent, QueryTable dependent) {
                 super(description, parent, dependent);
-                inputColumns = source.newModifiedColumnSet(treeTableInfo.idColumn, treeTableInfo.parentColumn);
+                inputColumns = source.newModifiedColumnSet(idColumnName.name(), parentIdColumnName.name());
                 Arrays.stream(filters).forEach(filter -> {
                     for (final String column : filter.getColumns()) {
                         inputColumns.setAll(column);
@@ -374,7 +397,7 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
 
                 final TableUpdateImpl downstream = new TableUpdateImpl();
 
-                final long rllLastStep = reverseLookupListener.getLastNotificationStep();
+                final long rllLastStep = reverseLookup.getLastNotificationStep();
                 final long sourceLastStep = source.getLastNotificationStep();
 
                 if (rllLastStep != sourceLastStep) {
@@ -391,18 +414,18 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 try (final RowSet allRemoved =
                         useModified ? upstream.removed().union(upstream.getModifiedPreShift()) : null;
                         final RowSet valuesToRemove =
-                                (useModified ? allRemoved : upstream.removed()).intersect(valuesRowSet);
+                                (useModified ? allRemoved : upstream.removed()).intersect(matched);
                         final RowSet removedParents =
-                                (useModified ? allRemoved : upstream.removed()).intersect(parentRowSet)) {
+                                (useModified ? allRemoved : upstream.removed()).intersect(ancestors)) {
 
                     removeValues(valuesToRemove);
-                    parentRowSet.remove(removedParents);
+                    ancestors.remove(removedParents);
                     removeParents(removedParents);
                 }
 
                 // Now we must shift all maintained state.
                 upstream.shifted().forAllInRowSet(resultRowSet, (key, delta) -> {
-                    final Object parentId = parentSource.getPrev(key);
+                    final Object parentId = parentIdSource.getPrev(key);
                     if (parentId == null) {
                         return;
                     }
@@ -414,8 +437,8 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                         parentSet.add(key + delta);
                     }
                 });
-                upstream.shifted().apply(valuesRowSet);
-                upstream.shifted().apply(parentRowSet);
+                upstream.shifted().apply(matched);
+                upstream.shifted().apply(ancestors);
                 upstream.shifted().apply(resultRowSet);
 
                 // Finally, handle added sets.
@@ -426,14 +449,14 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                         final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
-                    valuesRowSet.insert(newFiltered);
-                    parentRowSet.insert(newParents);
-                    parentRowSet.insert(resurrectedParents);
-                    parentRowSet.insert(newResurrectedParents);
+                    matched.insert(newFiltered);
+                    ancestors.insert(newParents);
+                    ancestors.insert(resurrectedParents);
+                    ancestors.insert(newResurrectedParents);
                 }
 
                 // Compute expected results and the sets we will propagate to child listeners.
-                try (final RowSet result = valuesRowSet.union(parentRowSet);
+                try (final RowSet result = matched.union(ancestors);
                         final WritableRowSet resultRemovals = resultRowSet.minus(result)) {
                     downstream.added = result.minus(resultRowSet);
                     resultRowSet.update(downstream.added(), resultRemovals);
@@ -449,138 +472,41 @@ class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Pr
                 downstream.shifted = upstream.shifted();
                 downstream.modifiedColumnSet = upstream.modifiedColumnSet(); // note that dependent is a subTable
 
-                filteredRaw.notifyListeners(downstream);
+                result.notifyListeners(downstream);
 
                 validateState(false);
             }
 
             @Override
             public boolean canExecute(final long step) {
-                return super.canExecute(step) && reverseLookupListener.satisfied(step);
+                return super.canExecute(step) && reverseLookup.satisfied(step);
             }
         }
     }
 
     private static class TreeTableFilterKey extends MemoizedOperationKey {
-        final WhereFilter[] filters;
 
-        TreeTableFilterKey(WhereFilter[] filters) {
+        private final WhereFilter[] filters;
+
+        private TreeTableFilterKey(@NotNull final WhereFilter[] filters) {
             this.filters = filters;
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o)
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (other == null || getClass() != other.getClass()) {
                 return false;
-            final TreeTableFilterKey filter = (TreeTableFilterKey) o;
-            return Arrays.equals(filters, filter.filters);
+            }
+            final TreeTableFilterKey otherKey = (TreeTableFilterKey) other;
+            return Arrays.equals(filters, otherKey.filters);
         }
 
         @Override
         public int hashCode() {
             return Arrays.hashCode(filters);
-        }
-    }
-
-    private static final class SwapListenerWithRLL extends SwapListener {
-        private final ReverseLookupListener rll;
-
-        private long rllLastNotificationStep;
-
-        SwapListenerWithRLL(BaseTable sourceTable, ReverseLookupListener rll) {
-            super(sourceTable);
-            this.rll = rll;
-        }
-
-        @Override
-        public ConstructSnapshot.SnapshotControl makeSnapshotControl() {
-            return ConstructSnapshot.makeSnapshotControl(
-                    this::startWithRLL,
-                    (final long currentClockValue,
-                            final boolean usingPreviousValues) -> rll
-                                    .getLastNotificationStep() == rllLastNotificationStep
-                                    && isInInitialNotificationWindow(),
-                    (final long afterClockValue, final boolean usedPreviousValues) -> end(afterClockValue));
-        }
-
-        @SuppressWarnings("AutoBoxing")
-        public synchronized Boolean startWithRLL(final long beforeClockValue) {
-            success = false;
-            lastNotificationStep = sourceTable.getLastNotificationStep();
-            rllLastNotificationStep = rll.getLastNotificationStep();
-
-            final Boolean result;
-
-            final long beforeStep = LogicalClock.getStep(beforeClockValue);
-            final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
-            if (beforeState == LogicalClock.State.Idle) {
-                result = false;
-            } else {
-                final boolean sourceUpdatedOnThisCycle = lastNotificationStep == beforeStep;
-                final boolean rllUpdatedOnThisCycle = rllLastNotificationStep == beforeStep;
-
-                if (sourceUpdatedOnThisCycle) {
-                    if (rllUpdatedOnThisCycle || rll.satisfied(beforeStep)) {
-                        result = false;
-                    } else {
-                        WaitNotification.waitForSatisfaction(beforeStep, rll);
-                        rllLastNotificationStep = rll.getLastNotificationStep();
-                        result = LogicalClock.DEFAULT.currentStep() == beforeStep ? false : null;
-                    }
-                } else if (rllUpdatedOnThisCycle) {
-                    if (sourceTable.satisfied(beforeStep)) {
-                        result = false;
-                    } else {
-                        WaitNotification.waitForSatisfaction(beforeStep, sourceTable);
-                        lastNotificationStep = sourceTable.getLastNotificationStep();
-                        result = LogicalClock.DEFAULT.currentStep() == beforeStep ? false : null;
-                    }
-                } else {
-                    result = true;
-                }
-            }
-            if (DEBUG) {
-                log.info().append("SwapListenerWithRLL start() source=")
-                        .append(System.identityHashCode(sourceTable))
-                        .append(". swap=")
-                        .append(System.identityHashCode(this))
-                        .append(", start={").append(beforeStep).append(",").append(beforeState.toString())
-                        .append("}, last=").append(lastNotificationStep)
-                        .append(", rllLast=").append(rllLastNotificationStep)
-                        .append(", result=").append(result)
-                        .endl();
-            }
-            return result;
-        }
-
-        @Override
-        public boolean start(final long beforeClockValue) {
-            throw new UnsupportedOperationException("Call startWithRLL");
-        }
-
-        @Override
-        public synchronized boolean end(final long afterClockValue) {
-            if (SwapListener.DEBUG) {
-                log.info().append("SwapListenerWithRLL end() swap=").append(System.identityHashCode(this))
-                        .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
-                        .append(LogicalClock.getState(afterClockValue).toString())
-                        .append("}, last=").append(sourceTable.getLastNotificationStep())
-                        .append(", rllLast=").append(rll.getLastNotificationStep())
-                        .endl();
-            }
-            return rll.getLastNotificationStep() == rllLastNotificationStep && super.end(afterClockValue);
-        }
-
-        @Override
-        public synchronized void setListenerAndResult(@NotNull final TableUpdateListener listener,
-                @NotNull final NotificationStepReceiver resultTable) {
-            super.setListenerAndResult(listener, resultTable);
-            if (SwapListener.DEBUG) {
-                log.info().append("SwapListenerWithRLL swap=").append(System.identityHashCode(SwapListenerWithRLL.this))
-                        .append(", result=").append(System.identityHashCode(resultTable)).endl();
-            }
         }
     }
 }

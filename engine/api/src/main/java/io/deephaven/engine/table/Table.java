@@ -169,7 +169,7 @@ public interface Table extends
      * from boxed aggregation group-by column value (or array of values) to the resulting row key (also row position),
      * or {@code -1} for missing mappings.
      */
-    String AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE = "RowLookup";
+    String AGGREGATION_ROW_LOOKUP_ATTRIBUTE = "RowLookup";
     String PREPARED_RLL_ATTRIBUTE = "PreparedRll";
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
     /**

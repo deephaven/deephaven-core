@@ -4,6 +4,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
@@ -13,14 +14,13 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,28 +36,24 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     public static final ColumnName TREE_COLUMN = ColumnName.of("__TREE_HIERARCHY__");
     public static final ColumnName REVERSE_LOOKUP_ROW_KEY_COLUMN = ColumnName.of("__ROW_KEY__");
 
-    private final QueryTable reverseLookupTable;
+    private final TreeReverseLookup reverseLookup;
     private final ColumnName identifierColumn;
     private final ColumnName parentIdentifierColumn;
     private final Set<ColumnName> nodeFilterColumns;
     private final TreeNodeOperationsRecorder nodeOperations;
 
-    private final ToLongFunction<Object> reverseLookup;
-
     private TreeTableImpl(
             @NotNull final Map<String, Object> initialAttributes,
             @NotNull final QueryTable source,
             @NotNull final QueryTable root,
-            @Nullable final QueryTable reverseLookupTable, // Used for referential integrity only
-            @NotNull final ToLongFunction<Object> reverseLookup,
+            @NotNull final TreeReverseLookup reverseLookup,
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn,
             @NotNull final Set<ColumnName> nodeFilterColumns,
             @Nullable final TreeNodeOperationsRecorder nodeOperations) {
         super(initialAttributes, source, root);
-        this.reverseLookupTable = reverseLookupTable;
-        if (reverseLookupTable != null && reverseLookupTable.isRefreshing()) {
-            manage(reverseLookupTable);
+        if (source.isRefreshing()) {
+            manage(reverseLookup);
         }
         this.reverseLookup = reverseLookup;
         this.identifierColumn = identifierColumn;
@@ -85,8 +81,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     public TreeTable withNodeFilterColumns(@NotNull final Collection<? extends ColumnName> columns) {
         final Set<ColumnName> resultNodeFilterColumns = new HashSet<>(nodeFilterColumns);
         resultNodeFilterColumns.addAll(columns);
-        return new TreeTableImpl(getAttributes(), source, root, reverseLookupTable, reverseLookup,
-                identifierColumn, parentIdentifierColumn,
+        return new TreeTableImpl(getAttributes(), source, root, reverseLookup, identifierColumn, parentIdentifierColumn,
                 Collections.unmodifiableSet(resultNodeFilterColumns), nodeOperations);
     }
 
@@ -114,11 +109,18 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             return withNodeOperations(makeNodeOperationsRecorder().where(nodeFilters));
         }
 
-        final QueryTable filteredSource = source.apply(new TreeTableFilter(source, sourceFilters));
+        final QueryTable filteredSource = (QueryTable) source.apply(
+                new TreeTableFilter(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
         final QueryTable filteredRoot = computeTreeRoot(filteredSource, parentIdentifierColumn);
-        return new TreeTableImpl(getAttributes(), filteredSource, filteredRoot, reverseLookupTable, reverseLookup,
-                identifierColumn, parentIdentifierColumn, nodeFilterColumns,
-                accumulateOperations(nodeOperations, nodeFiltersRecorder));
+        return new TreeTableImpl(getAttributes(), filteredSource, filteredRoot, reverseLookup, identifierColumn,
+                parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder));
+    }
+
+    /**
+     * @return The TreeReverseLookup for this TreeTableImpl
+     */
+    TreeReverseLookup getReverseLookup() {
+        return reverseLookup;
     }
 
     @Override
@@ -128,9 +130,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     public TreeTable withNodeOperations(@NotNull final NodeOperationsRecorder nodeOperations) {
-        return new TreeTableImpl(getAttributes(), source, root, reverseLookupTable, reverseLookup,
-                identifierColumn, parentIdentifierColumn, nodeFilterColumns,
-                accumulateOperations(this.nodeOperations, nodeOperations));
+        return new TreeTableImpl(getAttributes(), source, root, reverseLookup, identifierColumn, parentIdentifierColumn,
+                nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations));
     }
 
     private static TreeNodeOperationsRecorder accumulateOperations(
@@ -145,8 +146,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     protected TreeTableImpl copy() {
-        return new TreeTableImpl(getAttributes(), source, root, reverseLookupTable, reverseLookup,
-                identifierColumn, parentIdentifierColumn, nodeFilterColumns, nodeOperations);
+        return new TreeTableImpl(getAttributes(), source, root, reverseLookup, identifierColumn, parentIdentifierColumn,
+                nodeFilterColumns, nodeOperations);
     }
 
     public static TreeTable makeTree(
@@ -155,12 +156,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final ColumnName parentIdentifierColumn) {
         final QueryTable root = computeTreeRoot(source, parentIdentifierColumn);
         final QueryTable reverseLookupTable = computeReverseLookupTable(source, identifierColumn);
-        final ToLongFunction<Object> reverseLookupFunction = computeReverseLookupFunction(reverseLookupTable);
+        final TreeReverseLookup reverseLookup = new TreeReverseLookup(reverseLookupTable);
         // TODO-RWC: update sortable columns
         return new TreeTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)),
-                source, root, reverseLookupTable, reverseLookupFunction, identifierColumn, parentIdentifierColumn,
-                Set.of(), null);
+                source, root, reverseLookup, identifierColumn, parentIdentifierColumn, Set.of(), null);
     }
 
     private static QueryTable computeTreeRoot(
@@ -184,10 +184,52 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         return source.aggNoMemo(AggregationProcessor.forTreeReverseLookup(), false, null, List.of(idColumn));
     }
 
-    private static ToLongFunction<Object> computeReverseLookupFunction(@NotNull final QueryTable reverseLookupTable) {
-        final ToIntFunction<Object> rowLookupFunction = getRowLookup(reverseLookupTable);
-        final ColumnSource<Long> sourceRowKeyColumnSource =
-                reverseLookupTable.getColumnSource(REVERSE_LOOKUP_ROW_KEY_COLUMN.name(), long.class);
-        return id -> sourceRowKeyColumnSource.get(rowLookupFunction.applyAsInt(id));
+    static final class TreeReverseLookup
+            extends LivenessArtifact
+            implements ReverseLookup, NotificationStepSource {
+
+        private final NotificationStepSource parent;
+        private final AggregationRowLookup rowLookup;
+        private final ColumnSource<Long> sourceRowKeyColumnSource;
+
+        private TreeReverseLookup(@NotNull final QueryTable reverseLookupTable) {
+            if (reverseLookupTable.isRefreshing()) {
+                parent = reverseLookupTable;
+                manage(reverseLookupTable);
+            } else {
+                parent = null;
+            }
+            rowLookup = getRowLookup(reverseLookupTable);
+            sourceRowKeyColumnSource =
+                    reverseLookupTable.getColumnSource(REVERSE_LOOKUP_ROW_KEY_COLUMN.name(), long.class);
+        }
+
+        @Override
+        public long get(final Object key) {
+            final int idAggregationRow = rowLookup.get(key);
+            if (idAggregationRow == rowLookup.noEntryValue()) {
+                return this.noEntryValue();
+            }
+            return sourceRowKeyColumnSource.get(idAggregationRow);
+        }
+
+        @Override
+        public long getPrev(final Object key) {
+            final int idAggregationRow = rowLookup.get(key);
+            if (idAggregationRow == rowLookup.noEntryValue()) {
+                return this.noEntryValue();
+            }
+            return sourceRowKeyColumnSource.getPrev(idAggregationRow);
+        }
+
+        @Override
+        public long getLastNotificationStep() {
+            return parent.getLastNotificationStep();
+        }
+
+        @Override
+        public boolean satisfied(final long step) {
+            return parent.satisfied(step);
+        }
     }
 }
