@@ -374,8 +374,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                                     seekValue,
                                     request.getInsensitive(),
                                     request.getContains(),
-                                    request.getIsBackward()
-                            ));
+                                    request.getIsBackward()));
                             safelyExecuteLocked(responseObserver, () -> {
                                 SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
                                 responseObserver.onNext(rowResponse.setResultRow(result).build());

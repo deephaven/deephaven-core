@@ -31,7 +31,8 @@ public class SeekRow implements Function<Table, Long> {
 
     private static final Logger log = LoggerFactory.getLogger(SeekRow.class);
 
-    public SeekRow(long startingRow, String columnName, Object seekValue, boolean insensitive, boolean contains, boolean isBackward) {
+    public SeekRow(long startingRow, String columnName, Object seekValue, boolean insensitive, boolean contains,
+            boolean isBackward) {
         this.startingRow = startingRow < 0 ? 0 : startingRow;
         this.columnName = columnName;
         this.seekValue = seekValue;
@@ -49,17 +50,21 @@ public class SeekRow implements Function<Table, Long> {
         final RowSet index = table.getRowSet();
         long row;
         if (isSorted) {
-            final Comparable value = (Comparable) table.getColumnSource(columnName).get((int) index.get((int) startingRow));
-            final int compareTo = sortDirection * nullSafeCompare(value, (Comparable) seekValue) * (isBackward ? -1 : 1);
+            final Comparable value =
+                    (Comparable) table.getColumnSource(columnName).get((int) index.get((int) startingRow));
+            final int compareTo =
+                    sortDirection * nullSafeCompare(value, (Comparable) seekValue) * (isBackward ? -1 : 1);
             final int start = isBackward ? (int) startingRow + 1 : (int) startingRow;
             if (compareTo == 0) {
                 return startingRow;
             } else if (compareTo < 0) {
                 // value is less than seek value
-                log.info().append("Value is before: ").append(nullSafeToString(value)).append(" < ").append(nullSafeToString(seekValue)).endl();
+                log.info().append("Value is before: ").append(nullSafeToString(value)).append(" < ")
+                        .append(nullSafeToString(seekValue)).endl();
                 row = maybeBinarySearch(table, index, sortDirection, start, (int) index.size() - 1);
             } else {
-                log.info().append("Value is after: ").append(nullSafeToString(value)).append(" > ").append(nullSafeToString(seekValue)).endl();
+                log.info().append("Value is after: ").append(nullSafeToString(value)).append(" > ")
+                        .append(nullSafeToString(seekValue)).endl();
                 row = maybeBinarySearch(table, index, sortDirection, 0, start);
             }
             if (row >= 0) {
@@ -104,7 +109,8 @@ public class SeekRow implements Function<Table, Long> {
                 double ns = ((Number) seekValue).doubleValue();
                 double du = Math.abs(nu - ns);
                 double dl = Math.abs(nl - ns);
-                log.info().append("Using numerical distance (").appendDouble(dl).append(", ").appendDouble(du).append(")").endl();
+                log.info().append("Using numerical distance (").appendDouble(dl).append(", ").appendDouble(du)
+                        .append(")").endl();
                 return index.find(du < dl ? closestUpperRowYet : closestLowerRowYet);
             } else if (DateTime.class.isAssignableFrom(columnType)) {
                 long nu = ((DateTime) closestUpperValueYet).getNanos();
@@ -142,10 +148,12 @@ public class SeekRow implements Function<Table, Long> {
         log.info().append("Seek Value ").append(nullSafeToString(comparableSeek)).endl();
 
         if (nullSafeCompare(minValue, comparableSeek) * sortDirection >= 0) {
-            log.info().append("Less than min ").append(nullSafeToString(comparableSeek)).append(" < ").append(nullSafeToString(minValue)).endl();
+            log.info().append("Less than min ").append(nullSafeToString(comparableSeek)).append(" < ")
+                    .append(nullSafeToString(minValue)).endl();
             return minBound;
         } else if (nullSafeCompare(maxValue, comparableSeek) * sortDirection <= 0) {
-            log.info().append("Greater than max: ").append(nullSafeToString(comparableSeek)).append(" < ").append(nullSafeToString(maxValue)).endl();
+            log.info().append("Greater than max: ").append(nullSafeToString(comparableSeek)).append(" < ")
+                    .append(nullSafeToString(maxValue)).endl();
             return maxBound;
         }
 
@@ -157,7 +165,8 @@ public class SeekRow implements Function<Table, Long> {
             }
 
             if (nullSafeCompare(minValue, maxValue) * sortDirection > 0) {
-                log.info().append("Not Sorted (").append(minValue.toString()).append(", ").append(maxValue.toString()).append(")").endl();
+                log.info().append("Not Sorted (").append(minValue.toString()).append(", ").append(maxValue.toString())
+                        .append(")").endl();
                 // not really sorted
                 return -1;
             }
@@ -165,9 +174,11 @@ public class SeekRow implements Function<Table, Long> {
             final int check = (minBound + maxBound) / 2;
             final Comparable checkValue = (Comparable) columnSource.get(index.get(check));
             // Search up by default, reverse the result to search down
-            final int compareResult = nullSafeCompare(checkValue, comparableSeek) * sortDirection * (isBackward ? -1 : 1);
+            final int compareResult =
+                    nullSafeCompare(checkValue, comparableSeek) * sortDirection * (isBackward ? -1 : 1);
 
-            log.info().append("Check[").append(check).append("] ").append(checkValue.toString()).append(" -> ").append(compareResult).endl();
+            log.info().append("Check[").append(check).append("] ").append(checkValue.toString()).append(" -> ")
+                    .append(compareResult).endl();
 
             if (compareResult == 0) {
                 return check;
@@ -194,7 +205,7 @@ public class SeekRow implements Function<Table, Long> {
         if (insensitive) {
             return ((String) c1).toLowerCase().compareTo(((String) c2).toLowerCase());
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return c1.compareTo(c2);
     }
 
@@ -216,9 +227,10 @@ public class SeekRow implements Function<Table, Long> {
 
         final boolean isComparable = !contains && Comparable.class.isAssignableFrom(columnSource.getType());
 
-        final Object useSeek = (seekValue instanceof String && insensitive) ? ((String) seekValue).toLowerCase() : seekValue;
+        final Object useSeek =
+                (seekValue instanceof String && insensitive) ? ((String) seekValue).toLowerCase() : seekValue;
 
-        for (; it.hasNext(); ) {
+        for (; it.hasNext();) {
             long key = it.nextLong();
             Object value = columnSource.get(key);
             if (useSeek instanceof String) {
@@ -227,7 +239,7 @@ public class SeekRow implements Function<Table, Long> {
                     value = value == null ? null : ((String) value).toLowerCase();
                 }
             }
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             if (contains && value != null && ((String) value).contains((String) useSeek)) {
                 return (long) Require.geqZero(index.find(key), "index.find(key)");
             }
@@ -236,7 +248,7 @@ public class SeekRow implements Function<Table, Long> {
             }
 
             if (isComparable && useSeek != null && value != null) {
-                //noinspection unchecked
+                // noinspection unchecked
                 long compareResult = ((Comparable) useSeek).compareTo(value);
                 if (compareResult < 0) {
                     // seekValue is less than value
@@ -244,7 +256,7 @@ public class SeekRow implements Function<Table, Long> {
                         closestUpperRowYet = key;
                         closestUpperValueYet = (Comparable) value;
                     } else {
-                        //noinspection unchecked
+                        // noinspection unchecked
                         if (closestUpperValueYet.compareTo(value) > 0) {
                             closestUpperValueYet = (Comparable) value;
                             closestUpperRowYet = key;
@@ -257,7 +269,7 @@ public class SeekRow implements Function<Table, Long> {
                         closestLowerRowYet = key;
                         closestLowerValueYet = (Comparable) value;
                     } else {
-                        //noinspection unchecked
+                        // noinspection unchecked
                         if (closestLowerValueYet.compareTo(value) < 0) {
                             closestLowerValueYet = (Comparable) value;
                             closestLowerRowYet = key;
@@ -306,7 +318,7 @@ public class SeekRow implements Function<Table, Long> {
         boolean first = true;
 
         Object previous = null;
-        for (RowSet.Iterator it = index.iterator(); it.hasNext(); ) {
+        for (RowSet.Iterator it = index.iterator(); it.hasNext();) {
             long key = it.nextLong();
             Object current = columnSource.get(key);
             if (current == previous) {

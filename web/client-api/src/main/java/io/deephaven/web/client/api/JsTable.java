@@ -1035,8 +1035,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             Object seekValue,
             @JsOptional Boolean insensitive,
             @JsOptional Boolean contains,
-            @JsOptional Boolean isBackwards
-    ) {
+            @JsOptional Boolean isBackwards) {
         SeekRowRequest seekRowRequest = new SeekRowRequest();
         seekRowRequest.setSourceId(state().getHandle().makeTicket());
         seekRowRequest.setStartingRow(String.valueOf(startingRow));
@@ -1052,7 +1051,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             seekRowRequest.setIsBackward(isBackwards);
         }
 
-        return Callbacks.<SeekRowResponse, Object>grpcUnaryPromise(c -> workerConnection.tableServiceClient().seekRow(seekRowRequest, workerConnection.metadata(), c::apply))
+        return Callbacks
+                .<SeekRowResponse, Object>grpcUnaryPromise(c -> workerConnection.tableServiceClient()
+                        .seekRow(seekRowRequest, workerConnection.metadata(), c::apply))
                 .then(seekRowResponse -> Promise.resolve((double) Long.parseLong(seekRowResponse.getResultRow())));
     }
 
