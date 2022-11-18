@@ -22,6 +22,7 @@ import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
@@ -991,7 +992,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
     }
 
-    private Literal objectToLiteral(Object value) {
+    private Literal objectToLiteral(String valueType, Object value) {
         Literal literal = new Literal();
         if (value instanceof DateWrapper) {
             literal.setNanoTimeValue(((DateWrapper) value).valueOf());
@@ -999,11 +1000,29 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             literal.setLongValue(((LongWrapper) value).valueOf());
         } else if (Js.typeof(value).equals("number")) {
             literal.setDoubleValue(Js.asDouble(value));
-        } else if (Js.typeof(value).equals("string")) {
-            literal.setStringValue((String) value);
+        } else if (Js.typeof(value).equals("boolean")) {
+            literal.setBoolValue((Boolean) value);
         } else {
-            // Try a toString of what was passed in
-            literal.setStringValue(value.toString());
+            switch (FilterDescriptor.ValueType.valueOf(valueType)) {
+                case String:
+                    literal.setStringValue(value.toString());
+                    break;
+                case Number:
+                    literal.setDoubleValue(Double.parseDouble(value.toString()));
+                    break;
+                case Long:
+                    literal.setLongValue(value.toString());
+                    break;
+                case Datetime:
+                    literal.setNanoTimeValue(value.toString());
+                    break;
+                case Boolean:
+                    literal.setBoolValue(Boolean.parseBoolean(value.toString()));
+                    break;
+                case Other:
+                default:
+                    throw new UnsupportedOperationException("Invalid value type for seekRow: " + valueType);
+            }
         }
         return literal;
     }
@@ -1022,7 +1041,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         seekRowRequest.setSourceId(state().getHandle().makeTicket());
         seekRowRequest.setStartingRow(String.valueOf(startingRow));
         seekRowRequest.setColumnName(column.getName());
-        seekRowRequest.setSeekValue(objectToLiteral(seekValue));
+        seekRowRequest.setSeekValue(objectToLiteral(valueType, seekValue));
         if (insensitive != null) {
             seekRowRequest.setInsensitive(insensitive);
         }

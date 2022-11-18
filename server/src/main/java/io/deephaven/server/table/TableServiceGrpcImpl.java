@@ -49,12 +49,15 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ops.GrpcTableOperation;
+import io.deephaven.time.DateTime;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 import java.lang.Object;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -277,6 +280,69 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_BY, request, responseObserver);
     }
 
+    private Object getSeekValue(Literal literal, Class<?> dataType) {
+        if (literal.hasStringValue()) {
+            return literal.getStringValue();
+        } else if (literal.hasNanoTimeValue()) {
+            return new DateTime(literal.getNanoTimeValue());
+        } else if (literal.hasLongValue()) {
+            Long longValue = literal.getLongValue();
+            if (dataType == byte.class) {
+                return longValue.byteValue();
+            }
+            if (dataType == short.class) {
+                return longValue.shortValue();
+            }
+            if (dataType == int.class) {
+                return longValue.intValue();
+            }
+            if (dataType == long.class) {
+                return longValue;
+            }
+            if (dataType == float.class) {
+                return longValue.floatValue();
+            }
+            if (dataType == double.class) {
+                return longValue.doubleValue();
+            }
+            if (dataType == BigInteger.class) {
+                return BigInteger.valueOf(longValue);
+            }
+            if (dataType == BigDecimal.class) {
+                return new BigDecimal(longValue);
+            }
+        } else if (literal.hasDoubleValue()) {
+            Double doubleValue = literal.getDoubleValue();
+            if (dataType == byte.class) {
+                return doubleValue.byteValue();
+            }
+            if (dataType == short.class) {
+                return doubleValue.shortValue();
+            }
+            if (dataType == int.class) {
+                return doubleValue.intValue();
+            }
+            if (dataType == long.class) {
+                return doubleValue.longValue();
+            }
+            if (dataType == float.class) {
+                return doubleValue.floatValue();
+            }
+            if (dataType == double.class) {
+                return doubleValue;
+            }
+            if (dataType == BigInteger.class) {
+                return BigDecimal.valueOf(doubleValue).toBigInteger();
+            }
+            if (dataType == BigDecimal.class) {
+                return BigDecimal.valueOf(doubleValue);
+            }
+        } else if (literal.hasBoolValue()) {
+            return literal.getBoolValue();
+        }
+        throw new UnsupportedOperationException("Invalid column type for numeric seek: " + dataType);
+    }
+
     @Override
     public void whereIn(WhereInRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.WHERE_IN, request, responseObserver);
@@ -299,10 +365,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .submit(() -> {
                         try {
                             final Table table = exportedTable.get();
+                            final String columnName = request.getColumnName();
+                            final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
+                            final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
                             final Long result = table.apply(new SeekRow(
                                     request.getStartingRow(),
-                                    request.getColumnName(),
-                                    request.getSeekValue(),
+                                    columnName,
+                                    seekValue,
                                     request.getInsensitive(),
                                     request.getContains(),
                                     request.getIsBackward()
