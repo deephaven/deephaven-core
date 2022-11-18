@@ -991,12 +991,29 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
     }
 
+    private Literal objectToLiteral(Object value) {
+        Literal literal = new Literal();
+        if (value instanceof DateWrapper) {
+            literal.setNanoTimeValue(((DateWrapper) value).valueOf());
+        } else if (value instanceof LongWrapper) {
+            literal.setLongValue(((LongWrapper) value).valueOf());
+        } else if (Js.typeof(value).equals("number")) {
+            literal.setDoubleValue(Js.asDouble(value));
+        } else if (Js.typeof(value).equals("string")) {
+            literal.setStringValue((String) value);
+        } else {
+            // Try a toString of what was passed in
+            literal.setStringValue(value.toString());
+        }
+        return literal;
+    }
+
     @JsMethod
     public Promise<Double> seekRow(
             double startingRow,
             Column column,
             String valueType,
-            String seekValue,
+            Object seekValue,
             @JsOptional Boolean insensitive,
             @JsOptional Boolean contains,
             @JsOptional Boolean isBackwards
@@ -1005,14 +1022,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         seekRowRequest.setSourceId(state().getHandle().makeTicket());
         seekRowRequest.setStartingRow(String.valueOf(startingRow));
         seekRowRequest.setColumnName(column.getName());
-        // TODO: look at FilterValue.ofNumber to build the literal
-        // Should take in any type of value here, so we don't do any DateWrapper string conversion junk
-
-        Literal lit = new Literal();
-        lit.setLongValue();
-        seekRowRequest.setSeekValue(lit);
-//        seekRowRequest.setValueType(valueType);
-//        seekRowRequest.setSeekValue(seekValue);
+        seekRowRequest.setSeekValue(objectToLiteral(seekValue));
         if (insensitive != null) {
             seekRowRequest.setInsensitive(insensitive);
         }
