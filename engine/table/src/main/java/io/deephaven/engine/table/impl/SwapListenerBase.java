@@ -30,7 +30,8 @@ import org.jetbrains.annotations.NotNull;
  * are using.
  */
 public abstract class SwapListenerBase<T extends TableListener> extends LivenessArtifact implements TableListener {
-    protected static final boolean DEBUG =
+
+    static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("SwapListener.debug", false);
     static final boolean DEBUG_NOTIFICATIONS =
             Configuration.getInstance().getBooleanWithDefault("SwapListener.debugNotifications", false);

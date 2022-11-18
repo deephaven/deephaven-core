@@ -14,13 +14,13 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,7 +45,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     final int numLevels;
     final int baseLevelIndex;
     private final QueryTable[] levelTables;
-    private final ToIntFunction<Object>[] levelRowLookups;
+    private final AggregationRowLookup[] levelRowLookups;
 
     private final RollupNodeOperationsRecorder aggregatedNodeOperations;
     private final RollupNodeOperationsRecorder constituentNodeOperations;
@@ -57,7 +57,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             final boolean includesConstituents,
             @NotNull final Collection<? extends ColumnName> groupByColumns,
             @NotNull final QueryTable[] levelTables,
-            @NotNull final ToIntFunction<Object>[] levelRowLookups,
+            @NotNull final AggregationRowLookup[] levelRowLookups,
             @Nullable final RollupNodeOperationsRecorder aggregatedNodeOperations,
             @Nullable final RollupNodeOperationsRecorder constituentNodeOperations) {
         super(initialAttributes, source, levelTables[0]);
@@ -110,10 +110,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     public RollupTable withFilters(@NotNull final Collection<? extends Filter> filters) {
         final WhereFilter[] whereFilters = initializeAndValidateFilters(filters);
         final QueryTable filteredBaseLevel = (QueryTable) levelTables[baseLevelIndex].where(whereFilters);
-        final ToIntFunction<Object> baseLevelRowLookup = levelRowLookups[baseLevelIndex];
+        final AggregationRowLookup baseLevelRowLookup = levelRowLookups[baseLevelIndex];
         final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
-        final ToIntFunction<Object> filteredBaseLevelRowLookup = key -> {
-            final int unfilteredRowKey = baseLevelRowLookup.applyAsInt(key);
+        final AggregationRowLookup filteredBaseLevelRowLookup = key -> {
+            final int unfilteredRowKey = baseLevelRowLookup.get(key);
             // NB: Rollup snapshot patterns allow us to safely always use current, here.
             if (filteredBaseLevelRowSet.find(unfilteredRowKey) > 0) {
                 return unfilteredRowKey;
@@ -121,7 +121,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             return DEFAULT_UNKNOWN_ROW;
         };
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, filteredBaseLevel);
-        final ToIntFunction<Object>[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);
+        final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);
         rollupFromBase(levelTables, levelRowLookups, aggregations, groupByColumns);
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, aggregatedNodeOperations, constituentNodeOperations);
@@ -223,7 +223,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final QueryTable baseLevel = source.aggNoMemo(
                 AggregationProcessor.forRollupBase(aggregations, includeConstituents), false, null, groupByColumns);
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, baseLevel);
-        final ToIntFunction<Object>[] levelRowLookups = makeLevelRowLookupsArray(numLevels, getRowLookup(baseLevel));
+        final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, getRowLookup(baseLevel));
         rollupFromBase(levelTables, levelRowLookups, aggregations, groupByColumns);
         // TODO-RWC: update sortable columns
         return new RollupTableImpl(
@@ -238,10 +238,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return levelTables;
     }
 
-    private static ToIntFunction<Object>[] makeLevelRowLookupsArray(
-            final int numLevels, @NotNull final ToIntFunction<Object> baseLevelRowLookup) {
-        // noinspection unchecked
-        final ToIntFunction<Object>[] levelRowLookups = new ToIntFunction[numLevels];
+    private static AggregationRowLookup[] makeLevelRowLookupsArray(
+            final int numLevels,
+            @NotNull final AggregationRowLookup baseLevelRowLookup) {
+        final AggregationRowLookup[] levelRowLookups = new AggregationRowLookup[numLevels];
         levelRowLookups[numLevels - 1] = baseLevelRowLookup;
         return levelRowLookups;
     }
@@ -256,7 +256,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
      */
     private static void rollupFromBase(
             @NotNull final QueryTable[] levelTables,
-            ToIntFunction<Object>[] levelRowLookups,
+            @NotNull final AggregationRowLookup[] levelRowLookups,
             @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final Deque<ColumnName> columnsToReaggregateBy = new ArrayDeque<>(groupByColumns);

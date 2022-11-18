@@ -278,7 +278,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.UpdateView,
                 CopyAttributeOperation.RollupCopy));
 
-        tempMap.put(AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.RollupCopy));
+        tempMap.put(AGGREGATION_ROW_LOOKUP_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.RollupCopy));
 
         tempMap.put(PREPARED_RLL_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.Filter));
 

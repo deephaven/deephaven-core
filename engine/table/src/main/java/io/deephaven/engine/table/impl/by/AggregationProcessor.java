@@ -129,7 +129,6 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -137,7 +136,7 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_DOUBLE
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
-import static io.deephaven.engine.table.Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID;
@@ -1938,27 +1937,26 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private static class RowLookupAttributeSetter implements AggregationContextTransformer {
 
-        private ToIntFunction<?> reverseLookup;
+        private AggregationRowLookup reverseLookup;
 
         private RowLookupAttributeSetter() {}
 
         @Override
         public QueryTable transformResult(@NotNull final QueryTable table) {
-            table.setAttribute(AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE, reverseLookup);
+            table.setAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE, reverseLookup);
             return table;
         }
 
         @Override
-        public void supplyRowLookup(@NotNull final Supplier<ToIntFunction<Object>> rowLookupFactory) {
+        public void supplyRowLookup(@NotNull final Supplier<AggregationRowLookup> rowLookupFactory) {
             this.reverseLookup = rowLookupFactory.get();
         }
     }
 
-    public static ToIntFunction<Object> getRowLookup(@NotNull final Table aggregationResult) {
-        final Object value = aggregationResult.getAttribute(Table.AGGREGATION_RESULT_ROW_LOOKUP_ATTRIBUTE);
+    public static AggregationRowLookup getRowLookup(@NotNull final Table aggregationResult) {
+        final Object value = aggregationResult.getAttribute(Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE);
         Assert.neqNull(value, "aggregation result row lookup");
-        Assert.instanceOf(value, "aggregation result row lookup", ToIntFunction.class);
-        // noinspection unchecked
-        return (ToIntFunction<Object>) value;
+        Assert.instanceOf(value, "aggregation result row lookup", AggregationRowLookup.class);
+        return (AggregationRowLookup) value;
     }
 }
