@@ -707,8 +707,7 @@ public abstract class UpdateBy {
 
         /**
          * Process the {@link TableUpdate update} provided in the constructor. This performs much work in parallel and
-         * leverages {@link JobScheduler}
-         * extensively
+         * leverages {@link JobScheduler} extensively
          */
         public void processUpdate() {
             if (redirContext.isRedirected()) {

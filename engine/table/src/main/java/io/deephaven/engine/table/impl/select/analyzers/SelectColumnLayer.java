@@ -118,8 +118,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public void applyUpdate(final TableUpdate upstream, final RowSet toClear,
-                            final UpdateHelper helper, final JobScheduler jobScheduler, @Nullable final LivenessNode liveResultOwner,
-                            final SelectLayerCompletionHandler onCompletion) {
+            final UpdateHelper helper, final JobScheduler jobScheduler, @Nullable final LivenessNode liveResultOwner,
+            final SelectLayerCompletionHandler onCompletion) {
         if (upstream.removed().isNonempty()) {
             if (isRedirected) {
                 clearObjectsAtThisLevel(upstream.removed());

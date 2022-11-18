@@ -1,4 +1,4 @@
-/**
+ /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl.select.analyzers;
@@ -340,8 +340,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
      * @param onCompletion Called when an inner column is complete. The outer layer should pass the {@code onCompletion}
      */
     public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
-                                     JobScheduler jobScheduler, @Nullable LivenessNode liveResultOwner,
-                                     SelectLayerCompletionHandler onCompletion);
+            JobScheduler jobScheduler, @Nullable LivenessNode liveResultOwner,
+            SelectLayerCompletionHandler onCompletion);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do
