@@ -19,7 +19,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
 
     private static final ThreadLocal<Deque<PyDictWrapper>> threadScopeStack = new ThreadLocal<>();
-    private static final ThreadLocal<Deque<Map<PyObject, ?>>> threadConvertedMapStack = new ThreadLocal<>();
+    private static final ThreadLocal<Deque<Map<PyObject, Object>>> threadConvertedMapStack = new ThreadLocal<>();
 
     public static PythonScopeJpyImpl ofMainGlobals() {
         return new PythonScopeJpyImpl(PyLib.getMainGlobals().asDict());
@@ -77,22 +77,22 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         return convert(value);
     }
 
-    private static Deque<Map<PyObject, ?>> ensureConvertedMap() {
-        Deque<Map<PyObject, ?>> convertedMapStack = threadConvertedMapStack.get();
+    private static Deque<Map<PyObject, Object>> ensureConvertedMap() {
+        Deque<Map<PyObject, Object>> convertedMapStack = threadConvertedMapStack.get();
         if (convertedMapStack == null) {
             convertedMapStack = new ArrayDeque<>();
             threadConvertedMapStack.set(convertedMapStack);
         }
         // the current thread doesn't have a default map for the default main scope yet
         if (convertedMapStack.isEmpty()) {
-            HashMap<PyObject, ?> convertedMap = new HashMap<>();
+            HashMap<PyObject, Object> convertedMap = new HashMap<>();
             convertedMapStack.push(convertedMap);
         }
         return convertedMapStack;
     }
 
-    private static Map<PyObject, ?> currentConvertedMap() {
-        Deque<Map<PyObject, ?>> convertedMapStack = ensureConvertedMap();
+    private static Map<PyObject, Object> currentConvertedMap() {
+        Deque<Map<PyObject, Object>> convertedMapStack = ensureConvertedMap();
         return convertedMapStack.peek();
     }
 
@@ -109,9 +109,8 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
      * @return a Java object representing the underlying JPy object.
      */
     public static Object convert(PyObject pyObject) {
-        Map convertedMap = currentConvertedMap();
-
-        return convertedMap.computeIfAbsent(pyObject, po -> convertInternal((PyObject) po));
+        Map<PyObject, Object> convertedMap = currentConvertedMap();
+        return convertedMap.computeIfAbsent(pyObject, PythonScopeJpyImpl::convertInternal);
     }
 
     private static Object convertInternal(PyObject pyObject) {
@@ -141,8 +140,8 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         }
         scopeStack.push(pydict.asDict());
 
-        Deque<Map<PyObject, ?>> convertedMapStack = ensureConvertedMap();
-        HashMap<PyObject, ?> convertedMap = new HashMap<>();
+        Deque<Map<PyObject, Object>> convertedMapStack = ensureConvertedMap();
+        HashMap<PyObject, Object> convertedMap = new HashMap<>();
         convertedMapStack.push(convertedMap);
     }
 
@@ -155,7 +154,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         PyDictWrapper pydict = scopeStack.pop();
         pydict.close();
 
-        Deque<Map<PyObject, ?>> convertedMapStack = threadConvertedMapStack.get();
+        Deque<Map<PyObject, Object>> convertedMapStack = threadConvertedMapStack.get();
         if (convertedMapStack == null) {
             throw new IllegalStateException("The thread converted-map stack is empty.");
         }

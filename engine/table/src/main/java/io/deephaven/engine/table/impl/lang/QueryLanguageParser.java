@@ -1956,7 +1956,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
-
     private static boolean isSafelyCoerceable(Class<?> expressionType, Class<?> aClass) {
         // TODO (core#709): numba does appear to check for type coercing at runtime, though no explicit rules exist
         // also the dh_vectorize is type-blind for now and simply calls the wrapped function with the provided data.

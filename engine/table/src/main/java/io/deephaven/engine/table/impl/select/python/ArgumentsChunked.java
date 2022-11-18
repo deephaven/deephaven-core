@@ -11,8 +11,8 @@ import java.util.Collection;
 
 public class ArgumentsChunked {
     private final Collection<ChunkArgument> chunkArguments;
-    private final boolean forNumba;
     private final Class<?> returnType;
+    private final boolean forNumba;
 
     private void prepareOneChunkedArg(Object[] chunkedArgs, Class<?>[] chunkedArgTypes, int argIdx, Class<?> argType,
             Object argValue, int maxChunkSize) {
@@ -75,7 +75,6 @@ public class ArgumentsChunked {
         final Class<?>[] chunkedArgTypes;
         final Object[] chunkedArgs;
 
-        // For DH vectorized, we add a parameter at the beginning for chunk size
         if (forNumba) {
             chunkedArgs = new Object[chunkArguments.size()];
             chunkedArgTypes = new Class[chunkArguments.size()];
@@ -98,7 +97,7 @@ public class ArgumentsChunked {
 
     public ArgumentsChunked(Collection<ChunkArgument> chunkArguments, Class<?> returnType, boolean forNumba) {
         this.chunkArguments = chunkArguments;
-        this.forNumba = forNumba;
         this.returnType = returnType;
+        this.forNumba = forNumba;
     }
 }
