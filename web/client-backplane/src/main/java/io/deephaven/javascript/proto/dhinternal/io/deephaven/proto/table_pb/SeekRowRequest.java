@@ -17,6 +17,44 @@ public class SeekRowRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SeekValueFieldType {
+            @JsOverlay
+            static SeekRowRequest.ToObjectReturnType.SeekValueFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getDoubleValue();
+
+            @JsProperty
+            String getLongValue();
+
+            @JsProperty
+            String getNanoTimeValue();
+
+            @JsProperty
+            String getStringValue();
+
+            @JsProperty
+            boolean isBoolValue();
+
+            @JsProperty
+            void setBoolValue(boolean boolValue);
+
+            @JsProperty
+            void setDoubleValue(double doubleValue);
+
+            @JsProperty
+            void setLongValue(String longValue);
+
+            @JsProperty
+            void setNanoTimeValue(String nanoTimeValue);
+
+            @JsProperty
+            void setStringValue(String stringValue);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
@@ -81,16 +119,13 @@ public class SeekRowRequest {
         String getColumnName();
 
         @JsProperty
-        String getSeekValue();
+        SeekRowRequest.ToObjectReturnType.SeekValueFieldType getSeekValue();
 
         @JsProperty
         SeekRowRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
         @JsProperty
         String getStartingRow();
-
-        @JsProperty
-        String getValueType();
 
         @JsProperty
         boolean isContains();
@@ -114,20 +149,55 @@ public class SeekRowRequest {
         void setIsBackward(boolean isBackward);
 
         @JsProperty
-        void setSeekValue(String seekValue);
+        void setSeekValue(SeekRowRequest.ToObjectReturnType.SeekValueFieldType seekValue);
 
         @JsProperty
         void setSourceId(SeekRowRequest.ToObjectReturnType.SourceIdFieldType sourceId);
 
         @JsProperty
         void setStartingRow(String startingRow);
-
-        @JsProperty
-        void setValueType(String valueType);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SeekValueFieldType {
+            @JsOverlay
+            static SeekRowRequest.ToObjectReturnType0.SeekValueFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getDoubleValue();
+
+            @JsProperty
+            String getLongValue();
+
+            @JsProperty
+            String getNanoTimeValue();
+
+            @JsProperty
+            String getStringValue();
+
+            @JsProperty
+            boolean isBoolValue();
+
+            @JsProperty
+            void setBoolValue(boolean boolValue);
+
+            @JsProperty
+            void setDoubleValue(double doubleValue);
+
+            @JsProperty
+            void setLongValue(String longValue);
+
+            @JsProperty
+            void setNanoTimeValue(String nanoTimeValue);
+
+            @JsProperty
+            void setStringValue(String stringValue);
+        }
+
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -195,16 +265,13 @@ public class SeekRowRequest {
         String getColumnName();
 
         @JsProperty
-        String getSeekValue();
+        SeekRowRequest.ToObjectReturnType0.SeekValueFieldType getSeekValue();
 
         @JsProperty
         SeekRowRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
         @JsProperty
         String getStartingRow();
-
-        @JsProperty
-        String getValueType();
 
         @JsProperty
         boolean isContains();
@@ -228,16 +295,13 @@ public class SeekRowRequest {
         void setIsBackward(boolean isBackward);
 
         @JsProperty
-        void setSeekValue(String seekValue);
+        void setSeekValue(SeekRowRequest.ToObjectReturnType0.SeekValueFieldType seekValue);
 
         @JsProperty
         void setSourceId(SeekRowRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
 
         @JsProperty
         void setStartingRow(String startingRow);
-
-        @JsProperty
-        void setValueType(String valueType);
     }
 
     public static native SeekRowRequest deserializeBinary(Uint8Array bytes);
@@ -250,6 +314,8 @@ public class SeekRowRequest {
     public static native SeekRowRequest.ToObjectReturnType toObject(
             boolean includeInstance, SeekRowRequest msg);
 
+    public native void clearSeekValue();
+
     public native void clearSourceId();
 
     public native String getColumnName();
@@ -260,13 +326,13 @@ public class SeekRowRequest {
 
     public native boolean getIsBackward();
 
-    public native String getSeekValue();
+    public native Literal getSeekValue();
 
     public native Ticket getSourceId();
 
     public native String getStartingRow();
 
-    public native String getValueType();
+    public native boolean hasSeekValue();
 
     public native boolean hasSourceId();
 
@@ -280,15 +346,15 @@ public class SeekRowRequest {
 
     public native void setIsBackward(boolean value);
 
-    public native void setSeekValue(String value);
+    public native void setSeekValue();
+
+    public native void setSeekValue(Literal value);
 
     public native void setSourceId();
 
     public native void setSourceId(Ticket value);
 
     public native void setStartingRow(String value);
-
-    public native void setValueType(String value);
 
     public native SeekRowRequest.ToObjectReturnType0 toObject();
 
