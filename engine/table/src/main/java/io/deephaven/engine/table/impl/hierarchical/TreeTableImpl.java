@@ -36,6 +36,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     public static final ColumnName TREE_COLUMN = ColumnName.of("__TREE_HIERARCHY__");
     public static final ColumnName REVERSE_LOOKUP_ROW_KEY_COLUMN = ColumnName.of("__ROW_KEY__");
 
+    private final QueryTable tree;
     private final TreeReverseLookup reverseLookup;
     private final ColumnName identifierColumn;
     private final ColumnName parentIdentifierColumn;
@@ -45,16 +46,18 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     private TreeTableImpl(
             @NotNull final Map<String, Object> initialAttributes,
             @NotNull final QueryTable source,
-            @NotNull final QueryTable root,
+            @NotNull final QueryTable tree,
             @NotNull final TreeReverseLookup reverseLookup,
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn,
             @NotNull final Set<ColumnName> nodeFilterColumns,
             @Nullable final TreeNodeOperationsRecorder nodeOperations) {
-        super(initialAttributes, source, root);
+        super(initialAttributes, source, getTreeRoot(tree));
         if (source.isRefreshing()) {
+            manage(tree);
             manage(reverseLookup);
         }
+        this.tree = tree;
         this.reverseLookup = reverseLookup;
         this.identifierColumn = identifierColumn;
         this.parentIdentifierColumn = parentIdentifierColumn;
@@ -81,7 +84,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     public TreeTable withNodeFilterColumns(@NotNull final Collection<? extends ColumnName> columns) {
         final Set<ColumnName> resultNodeFilterColumns = new HashSet<>(nodeFilterColumns);
         resultNodeFilterColumns.addAll(columns);
-        return new TreeTableImpl(getAttributes(), source, root, reverseLookup, identifierColumn, parentIdentifierColumn,
+        return new TreeTableImpl(getAttributes(), source, tree, reverseLookup, identifierColumn, parentIdentifierColumn,
                 Collections.unmodifiableSet(resultNodeFilterColumns), nodeOperations);
     }
 
@@ -111,8 +114,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
         final QueryTable filteredSource = (QueryTable) source.apply(
                 new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
-        final QueryTable filteredRoot = computeTreeRoot(filteredSource, parentIdentifierColumn);
-        return new TreeTableImpl(getAttributes(), filteredSource, filteredRoot, reverseLookup, identifierColumn,
+        final QueryTable filteredTree = computeTree(filteredSource, parentIdentifierColumn);
+        return new TreeTableImpl(getAttributes(), filteredSource, filteredTree, reverseLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder));
     }
 
@@ -130,7 +133,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     public TreeTable withNodeOperations(@NotNull final NodeOperationsRecorder nodeOperations) {
-        return new TreeTableImpl(getAttributes(), source, root, reverseLookup, identifierColumn, parentIdentifierColumn,
+        return new TreeTableImpl(getAttributes(), source, tree, reverseLookup, identifierColumn, parentIdentifierColumn,
                 nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations));
     }
 
@@ -146,7 +149,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     protected TreeTableImpl copy() {
-        return new TreeTableImpl(getAttributes(), source, root, reverseLookup, identifierColumn, parentIdentifierColumn,
+        return new TreeTableImpl(getAttributes(), source, tree, reverseLookup, identifierColumn, parentIdentifierColumn,
                 nodeFilterColumns, nodeOperations);
     }
 
@@ -154,28 +157,30 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final QueryTable source,
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn) {
-        final QueryTable root = computeTreeRoot(source, parentIdentifierColumn);
+        final QueryTable tree = computeTree(source, parentIdentifierColumn);
         final QueryTable reverseLookupTable = computeReverseLookupTable(source, identifierColumn);
         final TreeReverseLookup reverseLookup = new TreeReverseLookup(reverseLookupTable);
         // TODO-RWC: update sortable columns
         return new TreeTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)),
-                source, root, reverseLookup, identifierColumn, parentIdentifierColumn, Set.of(), null);
+                source, tree, reverseLookup, identifierColumn, parentIdentifierColumn, Set.of(), null);
     }
 
-    private static QueryTable computeTreeRoot(
+    private static QueryTable computeTree(
             @NotNull final QueryTable source,
             @NotNull final ColumnName parentIdColumn) {
         final ColumnDefinition parentIdColumnDefinition = source.getDefinition().getColumn(parentIdColumn.name());
         final TableDefinition parentIdOnlyTableDefinition = TableDefinition.of(parentIdColumnDefinition);
         final Table nullParent = new QueryTable(parentIdOnlyTableDefinition, RowSetFactory.flat(1).toTracking(),
                 NullValueColumnSource.createColumnSourceMap(parentIdOnlyTableDefinition), null, null);
-        final Table partitioned = source.aggNoMemo(
-                AggregationProcessor.forAggregation(List.of(Partition.of(CONSTITUENT))),
+        return source.aggNoMemo(AggregationProcessor.forAggregation(List.of(Partition.of(CONSTITUENT))),
                 true, nullParent, List.of(parentIdColumn));
+    }
+
+    private static QueryTable getTreeRoot(@NotNull final QueryTable tree) {
         // This is "safe" because we rely on the implementation details of aggregation and the partition operator,
         // which ensure that the initial groups are bucketed first and the result row set is flat.
-        return (QueryTable) partitioned.getColumnSource(CONSTITUENT.name()).get(0);
+        return (QueryTable) tree.getColumnSource(CONSTITUENT.name()).get(0);
     }
 
     private static QueryTable computeReverseLookupTable(
