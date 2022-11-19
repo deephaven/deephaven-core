@@ -47,19 +47,19 @@ class TreeTableFilter {
 
     static final class Operator implements Function<Table, Table>, MemoizedOperationKey.Provider {
 
-        private final TreeTableImpl tree;
+        private final TreeTableImpl treeTable;
         private final WhereFilter[] filters;
 
-        Operator(@NotNull final TreeTableImpl tree, @NotNull final WhereFilter[] filters) {
-            this.tree = tree;
+        Operator(@NotNull final TreeTableImpl treeTable, @NotNull final WhereFilter[] filters) {
+            this.treeTable = treeTable;
             this.filters = filters; // NB: The tree will always have initialized these filters ahead of time
         }
 
         @ConcurrentMethod
         @Override
         public Table apply(@NotNull final Table table) {
-            Require.eq(table, "table", tree.getSource(), "tree.getSource()");
-            return new TreeTableFilter(tree, filters).getResult();
+            Require.eq(table, "table", treeTable.getSource(), "tree.getSource()");
+            return new TreeTableFilter(treeTable, filters).getResult();
         }
 
         @Override
