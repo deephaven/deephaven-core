@@ -226,6 +226,9 @@ class VectorizationTestCase(BaseTestCase):
         def pyfunc_str() -> str:
             return "abc"
 
+        def pyfunc_obj() -> object:
+            return [1, 2]
+
         t = empty_table(1).update("X = pyfunc_bool()")
         self.assertEqual(t.columns[0].data_type, dtypes.bool_)
         t = empty_table(1).update("X = pyfunc_byte()")
@@ -241,7 +244,9 @@ class VectorizationTestCase(BaseTestCase):
         t = empty_table(1).update("X = pyfunc_double()")
         self.assertEqual(t.columns[0].data_type, dtypes.double)
         t = empty_table(1).update("X = pyfunc_str()")
-        self.assertEqual(t.columns[0].data_type, dtypes.JObject)
+        self.assertEqual(t.columns[0].data_type, dtypes.string)
+        t = empty_table(1).update("X = pyfunc_obj()")
+        self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
 
 if __name__ == "__main__":

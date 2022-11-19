@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select.python;
 
 import io.deephaven.engine.util.PyCallableWrapper.ChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
+import org.jpy.PyObject;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,6 +65,9 @@ public class ArgumentsChunked {
             if (argValue != null) {
                 Arrays.fill((double[]) chunkedArgs[argIdx], (double) argValue);
             }
+        } else if (argType == PyObject.class) {
+            chunkedArgTypes[argIdx] = PyObject[].class;
+            chunkedArgs[argIdx] = new PyObject[maxChunkSize];
         } else {
             chunkedArgTypes[argIdx] = Object[].class;
             chunkedArgs[argIdx] = new Object[maxChunkSize];

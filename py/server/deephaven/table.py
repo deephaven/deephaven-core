@@ -67,7 +67,7 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-_numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "O"]
+_numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "O"]
 
 
 def _encode_signature(fn: Callable) -> str:

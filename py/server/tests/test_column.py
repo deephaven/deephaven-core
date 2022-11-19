@@ -76,14 +76,14 @@ class ColumnTestCase(BaseTestCase):
         x = [MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG, 0.98888, 999999.888888]
         n = len(x)
 
-        def get_x(i):
+        def get_x(i) -> int:
             return x[i]
 
         t_list = empty_table(n).update(["X = x[i]"])
         t_func = empty_table(n).update(["X = get_x(i)"])
         # We want to test that casting on both PyObject and JObject works as expected.
         self.assertEqual(t_list.columns[0].data_type, dtypes.PyObject)
-        self.assertEqual(t_func.columns[0].data_type, dtypes.JObject)
+        self.assertEqual(t_func.columns[0].data_type, dtypes.int_)
 
         t_list_integers = t_list.update(
             ["A = (byte)X", "B = (short)X", "C = (int)X", "D = (long)X", "E = (float)X", "F = (double)X"])

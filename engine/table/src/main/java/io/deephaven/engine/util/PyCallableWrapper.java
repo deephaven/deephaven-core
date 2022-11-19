@@ -32,7 +32,8 @@ public class PyCallableWrapper {
         numpyType2JavaClass.put('f', float.class);
         numpyType2JavaClass.put('d', double.class);
         numpyType2JavaClass.put('b', byte.class);
-        numpyType2JavaClass.put('?', Boolean.class);
+        numpyType2JavaClass.put('?', boolean.class);
+        numpyType2JavaClass.put('U', String.class);
         numpyType2JavaClass.put('O', Object.class);
     }
 
@@ -180,7 +181,7 @@ public class PyCallableWrapper {
         Class<?> returnType = numpyType2JavaClass.get(numpyTypeCode);
         if (returnType == null) {
             throw new IllegalStateException(
-                    "Vectorized functions should always have an integral, floating point, boolean, or Object return type: "
+                    "Vectorized functions should always have an integral, floating point, boolean, String, or Object return type: "
                             + numpyTypeCode);
         }
 
@@ -190,7 +191,7 @@ public class PyCallableWrapper {
                 Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
                 if (paramType == null) {
                     throw new IllegalStateException(
-                            "Parameters of vectorized functions should always be of integral, floating point, boolean, or Object type: "
+                            "Parameters of vectorized functions should always be of integral, floating point, boolean, String, or Object type: "
                                     + numpyTypeChar + " of " + signature);
                 }
                 paramTypes.add(paramType);
@@ -200,7 +201,13 @@ public class PyCallableWrapper {
         }
 
         this.paramTypes = paramTypes;
-        this.returnType = returnType;
+        if (returnType == Object.class) {
+            this.returnType = PyObject.class;
+        } else if (returnType == boolean.class) {
+            this.returnType = Boolean.class;
+        } else {
+            this.returnType = returnType;
+        }
     }
 
     public PyObject vectorizedCallable() {
