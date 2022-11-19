@@ -110,7 +110,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         }
 
         final QueryTable filteredSource = (QueryTable) source.apply(
-                new TreeTableFilter(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
+                new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
         final QueryTable filteredRoot = computeTreeRoot(filteredSource, parentIdentifierColumn);
         return new TreeTableImpl(getAttributes(), filteredSource, filteredRoot, reverseLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder));
