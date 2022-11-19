@@ -34,10 +34,11 @@ import java.util.stream.Stream;
 /**
  * Apply filters to a tree source table, preserving ancestors.
  * <p>
- * The TreeTableFilter takes a {@link TreeTableImpl tree} and {@link WhereFilter fllters} as input, and expects to be
- * {@link Table#apply(Function) applied} to the tree's {@link HierarchicalTableImpl#getSource() source}. Applying the
- * filter will produce a new table intended to be the source for a subsequent tree operation with the same parameters as
- * the input. The result table includes any rows matched by the input filters, as well as all ancestors of those rows.
+ * The TreeTableFilter is created by an {@link Operator} that takes a {@link TreeTableImpl tree table} and
+ * {@link WhereFilter fllters} as input, and expects to be {@link Table#apply(Function) applied} to the tree table's
+ * {@link HierarchicalTableImpl#getSource() source}. Applying the filter will produce a new table intended to be the
+ * source for a subsequent tree operation with the same parameters as the input. The result table includes any rows
+ * matched by the input filters, as well as all ancestors of those rows.
  */
 class TreeTableFilter {
 
