@@ -4,7 +4,6 @@
 package io.deephaven.treetable;
 
 import io.deephaven.base.Pair;
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
@@ -13,7 +12,6 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
@@ -246,7 +244,7 @@ class SnapshotState {
                 } else if (!ColumnFormattingValues.isFormattingColumn(columnName)) {
                     throw new UncheckedTableException(
                             "Column " + columnName + " does not exist. Available column names are [" +
-                                    StringUtils.joinStrings(columnSourceMap.keySet(), ",") + "]");
+                                    String.join(",", columnSourceMap.keySet()) + "]");
                 }
             }
         }

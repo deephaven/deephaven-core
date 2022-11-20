@@ -3,7 +3,6 @@
  */
 package io.deephaven.benchmarking;
 
-import io.deephaven.base.StringUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -21,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * An entry point to get instances of {@link BenchmarkTableBuilder}s.
@@ -254,7 +254,7 @@ public class BenchmarkTools {
     }
 
     public static String buildParameterString(BenchmarkParams params) {
-        return StringUtils.joinStrings(params.getParamsKeys().stream().map(params::getParam), ";");
+        return params.getParamsKeys().stream().map(params::getParam).collect(Collectors.joining(";"));
     }
 
     public static String getLogPath() {

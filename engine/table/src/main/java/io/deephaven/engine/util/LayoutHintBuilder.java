@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.base.StringUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.gui.color.Color;
@@ -572,25 +571,26 @@ public class LayoutHintBuilder {
         }
 
         if (frontCols != null && !frontCols.isEmpty()) {
-            sb.append("front=").append(StringUtils.joinStrings(frontCols, ",")).append(';');
+            sb.append("front=").append(String.join(",", frontCols)).append(';');
         }
 
         if (backCols != null && !backCols.isEmpty()) {
-            sb.append("back=").append(StringUtils.joinStrings(backCols, ",")).append(';');
+            sb.append("back=").append(String.join(",", backCols)).append(';');
         }
 
         if (hiddenCols != null && !hiddenCols.isEmpty()) {
-            sb.append("hide=").append(StringUtils.joinStrings(hiddenCols, ",")).append(';');
+            sb.append("hide=").append(String.join(",", hiddenCols)).append(';');
         }
 
         if (autoFilterCols != null && !autoFilterCols.isEmpty()) {
             sb.append("autofilter=").append(
-                    StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::serialize), ","))
+                            autoFilterCols.values().stream().map(AutoFilterData::serialize)
+                                    .collect(Collectors.joining(",")))
                     .append(';');
         }
 
         if (freezeCols != null && !freezeCols.isEmpty()) {
-            sb.append("freeze=").append(StringUtils.joinStrings(freezeCols, ",")).append(';');
+            sb.append("freeze=").append(String.join(",", freezeCols)).append(';');
         }
 
         if (alwaysSubscribedCols != null && !alwaysSubscribedCols.isEmpty()) {

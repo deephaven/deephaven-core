@@ -1,14 +1,14 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.util.ConcurrentMethod;
-import io.deephaven.base.StringUtils;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Default implementation for {@link GridAttributes}.
@@ -26,11 +26,23 @@ public abstract class BaseGridAttributes<IFACE_TYPE extends GridAttributes<IFACE
 
     @Override
     @ConcurrentMethod
-    public final IFACE_TYPE restrictSortTo(String... allowedSortingColumns) {
-        Assert.neqNull(allowedSortingColumns, "allowedSortingColumns");
+    public final IFACE_TYPE restrictSortTo(@NotNull final String... allowedSortingColumns) {
         checkAvailableColumns(Arrays.asList(allowedSortingColumns));
         return withAttributes(Map.of(
-                GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE, StringUtils.joinStrings(allowedSortingColumns, ",")));
+                GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", allowedSortingColumns)));
+    }
+
+    protected Collection<String> getSortableColumns() {
+        final String sortingRestrictions = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+        if (sortingRestrictions == null) {
+            return null;
+        }
+        return Stream.of(sortingRestrictions.split(",")).collect(Collectors.toList());
+    }
+
+    protected void setSortableColumns(@NotNull final Collection<String> allowedSortingColumns) {
+        checkAvailableColumns(allowedSortingColumns);
+        setAttribute(SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", allowedSortingColumns));
     }
 
     @Override
@@ -41,19 +53,19 @@ public abstract class BaseGridAttributes<IFACE_TYPE extends GridAttributes<IFACE
 
     @Override
     @ConcurrentMethod
-    public final IFACE_TYPE withDescription(String description) {
+    public final IFACE_TYPE withDescription(@NotNull final String description) {
         return withAttributes(Map.of(DESCRIPTION_ATTRIBUTE, description));
     }
 
     @Override
     @ConcurrentMethod
-    public final IFACE_TYPE withColumnDescription(String column, String description) {
-        return withColumnDescription(Collections.singletonMap(column, description));
+    public final IFACE_TYPE withColumnDescription(@NotNull final String column, @NotNull final String description) {
+        return withColumnDescriptions(Collections.singletonMap(column, description));
     }
 
     @Override
     @ConcurrentMethod
-    public final IFACE_TYPE withColumnDescription(Map<String, String> descriptions) {
+    public final IFACE_TYPE withColumnDescriptions(@NotNull final Map<String, String> descriptions) {
         checkAvailableColumns(descriptions.keySet());
         // noinspection unchecked
         final Map<String, String> existingDescriptions =
@@ -67,9 +79,14 @@ public abstract class BaseGridAttributes<IFACE_TYPE extends GridAttributes<IFACE
         return withAttributes(Map.of(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, resultDescriptions));
     }
 
+    protected void setColumnDescriptions(@NotNull final Map<String, String> descriptions) {
+        checkAvailableColumns(descriptions.keySet());
+        return setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, descriptions));
+    }
+
     @Override
     @ConcurrentMethod
-    public final IFACE_TYPE setLayoutHints(String hints) {
+    public final IFACE_TYPE setLayoutHints(@NotNull final String hints) {
         return withAttributes(Map.of(Table.LAYOUT_HINTS_ATTRIBUTE, hints));
     }
 

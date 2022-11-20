@@ -3,7 +3,6 @@
  */
 package io.deephaven.time;
 
-import io.deephaven.base.StringUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.clock.MicroTimer;
 import io.deephaven.util.annotations.ReflexiveUse;
@@ -199,7 +198,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      */
     public String toString(TimeZone timeZone) {
         return dateTimeFormat.withZone(timeZone.getTimeZone()).print(getMillis())
-                + StringUtils.pad(String.valueOf(getNanosPartial()), 6, '0') + " " + timeZone.toString().substring(3);
+                + DateTimeUtils.pad(String.valueOf(getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
     /**

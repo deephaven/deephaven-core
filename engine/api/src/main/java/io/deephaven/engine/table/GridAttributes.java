@@ -1,6 +1,7 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.api.util.ConcurrentMethod;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
@@ -21,7 +22,7 @@ public interface GridAttributes<TYPE extends GridAttributes<TYPE>> extends Attri
      * @return A copy of this grid with the sort restrictions applied, or this if no change was needed
      */
     @ConcurrentMethod
-    TYPE restrictSortTo(String... allowedSortingColumns);
+    TYPE restrictSortTo(@NotNull String... allowedSortingColumns);
 
     /**
      * Clear all sorting restrictions that were applied to the grid.
@@ -38,10 +39,10 @@ public interface GridAttributes<TYPE extends GridAttributes<TYPE>> extends Attri
      * @return A copy of this grid with the description applied, or this if no change was needed
      */
     @ConcurrentMethod
-    TYPE withDescription(String description);
+    TYPE withDescription(@NotNull String description);
 
     /**
-     * Add a description for a specific column. Users should use {@link #withColumnDescription(Map)} to set several
+     * Add a description for a specific column. Users should use {@link #withColumnDescriptions(Map)} to set several
      * descriptions at once.
      *
      * @param column The name of the column
@@ -49,7 +50,7 @@ public interface GridAttributes<TYPE extends GridAttributes<TYPE>> extends Attri
      * @return A copy of this grid with the description applied, or this if no change was needed
      */
     @ConcurrentMethod
-    TYPE withColumnDescription(String column, String description);
+    TYPE withColumnDescription(@NotNull String column, @NotNull String description);
 
     /**
      * Add a set of column descriptions to the grid.
@@ -58,7 +59,7 @@ public interface GridAttributes<TYPE extends GridAttributes<TYPE>> extends Attri
      * @return A copy of this grid with the descriptions applied, or this if no change was needed
      */
     @ConcurrentMethod
-    TYPE withColumnDescription(Map<String, String> descriptions);
+    TYPE withColumnDescriptions(@NotNull Map<String, String> descriptions);
 
     /**
      * Set layout hints for this grid.
@@ -67,5 +68,5 @@ public interface GridAttributes<TYPE extends GridAttributes<TYPE>> extends Attri
      * @return A copy of this grid with the layout hints applied, or this if no change was needed
      */
     @ConcurrentMethod
-    TYPE setLayoutHints(String hints);
+    TYPE setLayoutHints(@NotNull String hints);
 }
