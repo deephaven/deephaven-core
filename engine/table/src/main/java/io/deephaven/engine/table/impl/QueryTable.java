@@ -519,9 +519,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
         }
-        final MemoizedOperationKey rollupKey =
-                MemoizedOperationKey.rollup(aggregations, groupByColumns, includeConstituents);
-        return memoizeResult(rollupKey,
+        return memoizeResult(MemoizedOperationKey.rollup(aggregations, groupByColumns, includeConstituents),
                 () -> RollupTableImpl.makeRollup(this, aggregations, includeConstituents, groupByColumns));
     }
 
