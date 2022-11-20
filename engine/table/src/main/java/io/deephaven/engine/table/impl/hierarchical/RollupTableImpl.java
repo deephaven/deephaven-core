@@ -67,6 +67,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @Nullable final TableDefinition constituentNodeDefinition,
             @Nullable final RollupNodeOperationsRecorder constituentNodeOperations) {
         super(initialAttributes, source, levelTables[0]);
+
         this.aggregations = aggregations;
         this.includesConstituents = includesConstituents;
         this.groupByColumns = groupByColumns;
@@ -88,10 +89,18 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                     : constituentNodeDefinition;
             this.constituentNodeOperations = constituentNodeOperations;
         } else {
-            Require.eqNull(constituentNodeDefinition, "constituentNodeDefinition");
+            Assert.eqNull(constituentNodeDefinition, "constituentNodeDefinition");
             this.constituentNodeDefinition = null;
-            Require.eqNull(constituentNodeOperations, "constituentNodeOperations");
+            Assert.eqNull(constituentNodeOperations, "constituentNodeOperations");
             this.constituentNodeOperations = null;
+        }
+
+        if (source.isRefreshing()) {
+            final Table root = getRoot(); // This is our 0th level aggregation result
+            Assert.assertion(root.isRefreshing(), "root.isRefreshing() if source.isRefreshing()");
+            // The 0th level aggregation result depends directly or indirectly on all the other aggregation results,
+            // their raw constituents, and the source.
+            manage(root);
         }
     }
 
@@ -152,6 +161,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     public RollupTable withFilters(@NotNull final Collection<? extends Filter> filters) {
+        if (filters.isEmpty()) {
+            return noopResult();
+        }
+
         final WhereFilter[] whereFilters = initializeAndValidateFilters(filters);
         final QueryTable filteredBaseLevel = (QueryTable) levelTables[baseLevelIndex].where(whereFilters);
         final AggregationRowLookup baseLevelRowLookup = levelRowLookups[baseLevelIndex];
@@ -200,10 +213,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     public RollupTable withNodeOperations(@NotNull final NodeOperationsRecorder... nodeOperations) {
         if (Stream.of(nodeOperations).allMatch(Objects::isNull)) {
-            if (isRefreshing) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return noopResult();
         }
         RollupNodeOperationsRecorder newAggregatedNodeOperations = aggregatedNodeOperations;
         RollupNodeOperationsRecorder newConstituentNodeOperations = constituentNodeOperations;

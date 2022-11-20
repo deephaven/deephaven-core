@@ -37,11 +37,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      */
     final QueryTable root;
 
-    /**
-     * Whether the data in this can change.
-     */
-    final boolean isRefreshing;
-
     protected HierarchicalTableImpl(
             @NotNull final Map<String, Object> initialAttributes,
             @NotNull final QueryTable source,
@@ -49,15 +44,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         super(initialAttributes);
         this.source = source;
         this.root = root;
-
-        final boolean sourceRefreshing = source.isRefreshing();
-        final boolean rootRefreshing = root.isRefreshing();
-        Assert.eq(sourceRefreshing, "source.isRefreshing()", rootRefreshing, "root.isRefreshing()");
-        isRefreshing = sourceRefreshing;
-        if (isRefreshing) {
-            manage(source);
-            manage(root);
-        }
     }
 
     @Override
@@ -68,6 +54,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     @Override
     public Table getRoot() {
         return root;
+    }
+
+    IFACE_TYPE noopResult() {
+        if (getSource().isRefreshing()) {
+            manageWithCurrentScope();
+        }
+        //noinspection unchecked
+        return (IFACE_TYPE) this;
     }
 
     @Override
@@ -118,7 +112,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 // noinspection unchecked
                 this.base = (IMPL_TYPE) HierarchicalTableImpl.this;
             } else {
-                if (base.isRefreshing) {
+                if (base.getSource().isRefreshing()) {
                     manage(base);
                 }
                 this.base = base;
