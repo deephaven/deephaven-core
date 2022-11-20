@@ -455,7 +455,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table restrictSortTo(String... allowedSortingColumns) {
+    default Table restrictSortTo(@NotNull String... allowedSortingColumns) {
         return throwUnsupported();
     }
 
@@ -465,22 +465,22 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table withDescription(String description) {
+    default Table withDescription(@NotNull String description) {
         return throwUnsupported();
     }
 
     @Override
-    default Table withColumnDescription(String column, String description) {
+    default Table withColumnDescription(@NotNull String column, @NotNull String description) {
         return throwUnsupported();
     }
 
     @Override
-    default Table withColumnDescription(Map<String, String> descriptions) {
+    default Table withColumnDescriptions(@NotNull Map<String, String> descriptions) {
         return throwUnsupported();
     }
 
     @Override
-    default Table setLayoutHints(String hints) {
+    default Table setLayoutHints(@NotNull String hints) {
         return throwUnsupported();
     }
 }

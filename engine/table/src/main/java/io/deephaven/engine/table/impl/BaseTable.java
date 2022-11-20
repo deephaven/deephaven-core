@@ -6,13 +6,11 @@ package io.deephaven.engine.table.impl;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import io.deephaven.base.Base64;
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
@@ -937,7 +935,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             throw new IllegalArgumentException("withKeys() must be called with at least one key column");
         }
         checkAvailableColumns(Arrays.asList(columns));
-        return StringUtils.joinStrings(columns, ",");
+        return String.join(",", columns);
     }
 
     @Override
@@ -953,16 +951,15 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     public void copySortableColumns(
             @NotNull final BaseGridAttributes<?, ?> destination,
             @NotNull final Predicate<String> shouldCopy) {
-        final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+        final Collection<String> currentSortableColumns = getSortableColumns();
         if (currentSortableColumns == null) {
             return;
         }
-        destination.setAttribute(SORTABLE_COLUMNS_ATTRIBUTE,
-                Stream.of(currentSortableColumns.split(",")).filter(shouldCopy).collect(Collectors.joining(",")));
+        destination.setSortableColumns(currentSortableColumns.stream().filter(shouldCopy).collect(Collectors.toList()));
     }
 
-    void copySortableColumns(BaseTable destination, MatchPair[] renamedColumns) {
-        final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+    void copySortableColumns(BaseTable<?> destination, MatchPair[] renamedColumns) {
+        final Collection<String> currentSortableColumns = getSortableColumns();
         if (currentSortableColumns == null) {
             return;
         }
@@ -986,7 +983,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // 1) The column exists in the new table and was not renamed in any way but the Identity (C1 = C1)
         // 2) The column does not exist in the new table, but was renamed to another (C2 = C1)
         final Set<String> resultColumnNames = destination.getDefinition().getColumnNameMap().keySet();
-        for (final String columnName : currentSortableColumns.split(",")) {
+        for (final String columnName : currentSortableColumns) {
             // Only add it to the set of sortable columns if it hasn't changed in an unknown way
             final String maybeRenamedColumn = columnMapping.get(columnName);
             if (resultColumnNames.contains(columnName)
@@ -1000,16 +997,16 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             }
         }
 
-        destination.setAttribute(SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", sortableColumns));
+        destination.setSortableColumns(sortableColumns);
     }
 
-    void copySortableColumns(BaseTable destination, SelectColumn[] selectCols) {
-        final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+    void copySortableColumns(BaseTable<?> destination, SelectColumn[] selectCols) {
+        final Collection<String> currentSortableColumns = getSortableColumns();
         if (currentSortableColumns == null) {
             return;
         }
 
-        final Set<String> currentSortableSet = CollectionUtil.setFromArray(currentSortableColumns.split(","));
+        final Set<String> currentSortableSet = new HashSet<>(currentSortableColumns);
         final Set<String> newSortableSet = new HashSet<>();
 
         for (SelectColumn sc : selectCols) {
@@ -1038,7 +1035,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             }
         }
 
-        destination.setAttribute(SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", newSortableSet));
+        destination.setSortableColumns(newSortableSet);
     }
 
     /**
@@ -1050,33 +1047,22 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // Does this table actually have the requested columns?
         checkAvailableColumns(Arrays.asList(columns));
 
-        final String sortable = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
-
-        if (sortable == null) {
+        final Collection<String> currentSortableColumns = getSortableColumns();
+        if (currentSortableColumns == null) {
             return;
-        }
-
-        final List<String> sortableColSet;
-        if (sortable.isEmpty()) {
-            sortableColSet = Collections.emptyList();
-        } else {
-            sortableColSet = Arrays.asList(sortable.split(","));
         }
 
         // TODO: This is hacky. SortTableGrpcImpl will update the table with __ABS__ prefixed columns
         // TODO: when the user requests to sort absolute.
         final Set<String> unsortable = Arrays.stream(columns)
                 .map(cn -> cn.startsWith("__ABS__") ? cn.replace("__ABS__", "") : cn).collect(Collectors.toSet());
-        sortableColSet.forEach(unsortable::remove);
+        currentSortableColumns.forEach(unsortable::remove);
 
         if (unsortable.isEmpty()) {
             return;
         }
 
-        // If this is null, we never should have gotten to this point because _all_ columns are sortable.
-        Assert.neqNull(sortable, "sortable");
-
-        throw new NotSortableException(unsortable, sortableColSet);
+        throw new NotSortableException(unsortable, currentSortableColumns);
     }
 
     /**

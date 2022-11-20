@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.filter.Filter;
@@ -42,8 +43,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private final boolean includesConstituents;
     private final Collection<? extends ColumnName> groupByColumns;
 
-    final int numLevels;
-    final int baseLevelIndex;
+    private final int numLevels;
+    private final int baseLevelIndex;
     private final QueryTable[] levelTables;
     private final AggregationRowLookup[] levelRowLookups;
 
@@ -229,6 +230,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 source.getAttributes(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Rollup)),
                 source, aggregations, includeConstituents, groupByColumns, levelTables, levelRowLookups, null, null);
         source.copySortableColumns(result, baseLevel.getDefinition().getColumnNameMap()::containsKey);
+        result.setColumnDescriptions(AggregationDescriptions.of(aggregations));
         return result;
     }
 

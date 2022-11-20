@@ -3,7 +3,6 @@ package io.deephaven.engine.table.impl.hierarchical;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.Predicate;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSetFactory;
