@@ -33,7 +33,7 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
  */
 public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImpl> implements TreeTable {
 
-    public static final ColumnName TREE_COLUMN = ColumnName.of("__TREE_HIERARCHY__");
+    public static final ColumnName TREE_COLUMN = ColumnName.of("__TREE__");
     public static final ColumnName REVERSE_LOOKUP_ROW_KEY_COLUMN = ColumnName.of("__ROW_KEY__");
 
     private final QueryTable tree;
@@ -76,8 +76,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    public ColumnName getTreeColumn() {
-        return TREE_COLUMN;
+    public TableDefinition getNodeDefinition() {
+        return nodeOperations == null ? source.getDefinition() : nodeOperations.getResultDefinition();
     }
 
     @Override
@@ -128,7 +128,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     public NodeOperationsRecorder makeNodeOperationsRecorder() {
-        return new TreeNodeOperationsRecorder(root.getDefinition());
+        return new TreeNodeOperationsRecorder(getNodeDefinition());
     }
 
     @Override
@@ -174,7 +174,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         final TableDefinition parentIdOnlyTableDefinition = TableDefinition.of(parentIdColumnDefinition);
         final Table nullParent = new QueryTable(parentIdOnlyTableDefinition, RowSetFactory.flat(1).toTracking(),
                 NullValueColumnSource.createColumnSourceMap(parentIdOnlyTableDefinition), null, null);
-        return source.aggNoMemo(AggregationProcessor.forAggregation(List.of(Partition.of(CONSTITUENT))),
+        return source.aggNoMemo(AggregationProcessor.forAggregation(List.of(Partition.of(TREE_COLUMN))),
                 true, nullParent, List.of(parentIdColumn));
     }
 

@@ -2,15 +2,20 @@ package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.*;
 import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableAdapter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -28,6 +33,8 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
     private final Collection<? extends SelectColumn> recordedFormats;
     private final Collection<SortColumn> recordedSorts;
     private final Collection<? extends SelectColumn> recordedAbsoluteViews;
+
+    volatile TableDefinition resultDefinition;
 
     BaseNodeOperationsRecorder(
             @NotNull final TableDefinition definition,
@@ -50,6 +57,27 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
 
     Collection<? extends SelectColumn> getRecordedAbsoluteViews() {
         return recordedAbsoluteViews;
+    }
+
+    TableDefinition getResultDefinition() {
+        TableDefinition localResult;
+        if ((localResult = resultDefinition) != null) {
+            return localResult;
+        }
+        synchronized (this) {
+            if ((localResult = resultDefinition) != null) {
+                return localResult;
+            }
+            if (getRecordedFormats().isEmpty()) {
+                return resultDefinition = definition;
+            }
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                final Table emptyNode = new QueryTable(definition, RowSetFactory.empty().toTracking(),
+                        NullValueColumnSource.createColumnSourceMap(definition));
+                final Table emptyNodeFormatted = emptyNode.updateView(getRecordedFormats());
+                return resultDefinition = emptyNodeFormatted.getDefinition();
+            }
+        }
     }
 
     TYPE self() {

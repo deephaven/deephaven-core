@@ -4,6 +4,7 @@ import io.deephaven.api.*;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.DynamicNode;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,27 +32,29 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
     ColumnName getParentIdentifierColumn();
 
     /**
-     * Get the name for the "tree" column that holds the next level node tables in each level of a tree.
+     * Get the {@link TableDefinition} that should be exposed to node table consumers, e.g. UI-driven snapshots. This
+     * excludes "internal" columns used to organize the tree or support operations, but includes formatting columns.
      *
-     * @return The tree column name
+     * @return The externally-visible node {@link TableDefinition}
      */
-    ColumnName getTreeColumn();
+    TableDefinition getNodeDefinition();
 
     /**
      * Get a new TreeTable with {@code columns} designated for node-level filtering, in addition to any columns already
      * so-designated on {@code this} TreeTable.
      * <p>
-     * UI-driven filters on those the designated node-level filtering columns will be applied to the nodes during
-     * snapshots. If no node-filter columns are designated, no filters will be handled at node level.
+     * Filters specified via {@link #withFilters(Collection)}, typically from the UI, that only use the designated
+     * node-level filtering columns will be applied to the nodes during snapshots. If no node-filter columns are
+     * designated, no filters will be handled at node level.
      * <p>
-     * Filters that include other columns are handled by filtering the source table in a parent-preserving manner and
+     * Filters that include other columns are handled by filtering the source table in a ancestor-preserving manner and
      * re-applying the tree operation to the result to produce a new TreeTable. Users of orphan promotion or other
      * strategies to govern the structure of the tree should carefully consider the structure of their data before
      * specifying node-filter columns.
      * <p>
      * Specifying node-filter columns represents a trade-off between performance (which is expected to be much better
      * for node-level filtering) and tree structural integrity (which may be lost since node-level filters are not
-     * parent-preserving).
+     * ancestor-preserving).
      *
      * @param columns The columns to designate
      * @return The new TreeTable

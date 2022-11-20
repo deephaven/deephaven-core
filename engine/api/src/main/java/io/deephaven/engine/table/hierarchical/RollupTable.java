@@ -5,6 +5,7 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -75,11 +76,16 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     ColumnName getKeyWidthColumn();
 
     /**
-     * Get the name for the "rollup" column that holds the next level node tables in each level of a rollup.
+     * Get the {@link TableDefinition} that should be exposed to node table consumers, e.g. UI-driven snapshots. This
+     * excludes "internal" columns used to organize the rollup or support operations, but includes formatting columns
+     * (and the {@link #getKeyWidthColumn() key-width column} for {@link NodeType#Aggregated aggregated} nodes).
      *
-     * @return The rollup column name
+     * @param nodeType The {@link NodeType node type} to get the {@link TableDefinition} for
+     * @return The externally-visible node {@link TableDefinition} for the requested {@code nodeType}
+     * @throws IllegalArgumentException If {@link NodeType#Constituent Constituent} is specified when
+     *         {@code includesConstituents() == false}
      */
-    ColumnName getRollupColumn();
+    TableDefinition getNodeDefinition(@NotNull NodeType nodeType);
 
     /**
      * Get the {@link Pair input/output column name pairs} from input (source) column names to output (rollup
