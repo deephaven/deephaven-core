@@ -1052,10 +1052,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             return;
         }
 
-        // TODO: This is hacky. SortTableGrpcImpl will update the table with __ABS__ prefixed columns
-        // TODO: when the user requests to sort absolute.
         final Set<String> unsortable = Arrays.stream(columns)
-                .map(cn -> cn.startsWith("__ABS__") ? cn.replace("__ABS__", "") : cn).collect(Collectors.toSet());
+                .map(AbsoluteSortColumnConventions::stripAbsoluteColumnName).collect(Collectors.toSet());
         currentSortableColumns.forEach(unsortable::remove);
 
         if (unsortable.isEmpty()) {

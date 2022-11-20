@@ -10,7 +10,10 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,34 +26,44 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
     private final Collection<? extends WhereFilter> recordedFilters;
 
     TreeNodeOperationsRecorder(@NotNull final TableDefinition definition) {
-        this(definition, List.of(), List.of(), List.of());
+        this(definition, List.of(), List.of(), List.of(), List.of());
     }
 
     private TreeNodeOperationsRecorder(
             @NotNull final TableDefinition definition,
             @NotNull final Collection<? extends SelectColumn> recordedFormats,
             @NotNull final Collection<SortColumn> recordedSorts,
+            @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews,
             @NotNull final Collection<? extends WhereFilter> recordedFilters) {
-        super(definition, recordedFormats, recordedSorts);
+        super(definition, recordedFormats, recordedSorts, recordedAbsoluteViews);
         this.recordedFilters = recordedFilters;
+    }
+
+    Collection<? extends WhereFilter> getRecordedFilters() {
+        return recordedFilters;
     }
 
     @Override
     TreeTable.NodeOperationsRecorder withFormats(@NotNull final Stream<? extends SelectColumn> formats) {
         return new TreeNodeOperationsRecorder(definition,
-                Stream.concat(recordedFormats.stream(), formats).collect(Collectors.toList()),
-                recordedSorts, recordedFilters);
+                mergeFormats(getRecordedFormats().stream(), formats),
+                getRecordedSorts(), getRecordedAbsoluteViews(), recordedFilters);
     }
 
     @Override
-    TreeTable.NodeOperationsRecorder withSorts(@NotNull final Stream<SortColumn> sorts) {
-        return new TreeNodeOperationsRecorder(definition, recordedFormats,
-                Stream.concat(sorts, recordedSorts.stream()).collect(Collectors.toList()), recordedFilters);
+    TreeTable.NodeOperationsRecorder withSorts(
+            @NotNull final Stream<SortColumn> sorts,
+            @NotNull final Stream<? extends SelectColumn> absoluteViews) {
+        return new TreeNodeOperationsRecorder(definition, getRecordedFormats(),
+                mergeSortColumns(getRecordedSorts().stream(), sorts),
+                mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), absoluteViews),
+                getRecordedFilters());
     }
 
     TreeTable.NodeOperationsRecorder withFilters(@NotNull final Stream<? extends WhereFilter> filters) {
-        return new TreeNodeOperationsRecorder(definition, recordedFormats, recordedSorts,
-                Stream.concat(recordedFilters.stream(), filters).collect(Collectors.toList()));
+        return new TreeNodeOperationsRecorder(definition, getRecordedFormats(), getRecordedSorts(),
+                getRecordedAbsoluteViews(),
+                mergeFilters(getRecordedFilters().stream(), filters));
     }
 
     TreeNodeOperationsRecorder withOperations(@NotNull final TreeNodeOperationsRecorder other) {
@@ -59,14 +72,16 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
                     "Incompatible operation recorders; compatible recorders must be created from the same table");
         }
         return new TreeNodeOperationsRecorder(definition,
-                Stream.concat(recordedFormats.stream(), other.getRecordedFormats().stream())
-                        .collect(Collectors.toList()),
-                Stream.concat(other.getRecordedSorts().stream(), recordedSorts.stream()).collect(Collectors.toList()),
-                Stream.concat(recordedFilters.stream(), other.recordedFilters.stream()).collect(Collectors.toList()));
+                mergeFormats(getRecordedFormats().stream(), other.getRecordedFormats().stream()),
+                mergeSortColumns(getRecordedSorts().stream(), other.getRecordedSorts().stream()),
+                mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), other.getRecordedAbsoluteViews().stream()),
+                mergeFilters(getRecordedFilters().stream(), other.getRecordedFilters().stream()));
     }
 
-    Collection<? extends WhereFilter> getRecordedFilters() {
-        return recordedFilters;
+    private static Collection<? extends WhereFilter> mergeFilters(
+            @NotNull final Stream<? extends WhereFilter> wfs1,
+            @NotNull final Stream<? extends WhereFilter> wfs2) {
+        return Stream.concat(wfs1, wfs2).collect(Collectors.toList());
     }
 
     @Override

@@ -27,7 +27,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
-import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -59,7 +58,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private final TableDefinition constituentDefinition;
     private final boolean constituentChangesPermitted;
 
-    private volatile WeakReference<Table> memoizedMerge;
+    private volatile WeakReference<QueryTable> memoizedMerge;
 
     /**
      * @see PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean) Factory method that
@@ -140,8 +139,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @Override
     public Table merge() {
-        Table merged;
-        WeakReference<Table> localMemoizedMerge;
+        QueryTable merged;
+        WeakReference<QueryTable> localMemoizedMerge;
         if ((localMemoizedMerge = memoizedMerge) != null
                 && Liveness.verifyCachedObjectForReuse(merged = localMemoizedMerge.get())) {
             return merged;
