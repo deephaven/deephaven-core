@@ -41,7 +41,6 @@ import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -1275,7 +1274,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                     }
                     propagateFlatness(resultTable);
-                    maybeUpdateSortableColumns(resultTable, selectColumns);
+                    copySortableColumns(resultTable, selectColumns);
                     if (publishTheseSources) {
                         maybeCopyColumnDescriptions(resultTable, selectColumns);
                     } else {
@@ -1389,7 +1388,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 copyAttributes(queryTable,
                                         flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView
                                                 : CopyAttributeOperation.View);
-                                maybeUpdateSortableColumns(queryTable, viewColumns);
+                                copySortableColumns(queryTable, viewColumns);
                                 if (publishTheseSources) {
                                     maybeCopyColumnDescriptions(queryTable, viewColumns);
                                 } else {
@@ -1462,7 +1461,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
                     propagateFlatness(result);
                     copyAttributes(result, CopyAttributeOperation.UpdateView);
-                    maybeUpdateSortableColumns(result, selectColumns);
+                    copySortableColumns(result, selectColumns);
                     maybeCopyColumnDescriptions(result, selectColumns);
 
                     return result;
@@ -1495,7 +1494,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         propagateFlatness(resultTable);
 
                         copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
-                        maybeUpdateSortableColumns(resultTable);
+                        copySortableColumns(resultTable, resultTable.getDefinition().getColumnNameMap()::containsKey);
                         maybeCopyColumnDescriptions(resultTable);
 
                         if (swapListener != null) {
@@ -1599,7 +1598,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
                     propagateFlatness(queryTable);
 
-                    maybeUpdateSortableColumns(queryTable, pairs);
+                    copySortableColumns(queryTable, pairs);
                     maybeCopyColumnDescriptions(queryTable, pairs);
 
                     return queryTable;

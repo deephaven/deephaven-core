@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.hierarchical;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.Predicate;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -160,10 +161,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         final QueryTable tree = computeTree(source, parentIdentifierColumn);
         final QueryTable reverseLookupTable = computeReverseLookupTable(source, identifierColumn);
         final TreeReverseLookup reverseLookup = new TreeReverseLookup(reverseLookupTable);
-        // TODO-RWC: update sortable columns
-        return new TreeTableImpl(
+        final TreeTableImpl result = new TreeTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)),
                 source, tree, reverseLookup, identifierColumn, parentIdentifierColumn, Set.of(), null);
+        source.copySortableColumns(result, (final String columnName) -> true);
+        return result;
     }
 
     private static QueryTable computeTree(

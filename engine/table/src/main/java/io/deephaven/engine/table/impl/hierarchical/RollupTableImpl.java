@@ -225,10 +225,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, baseLevel);
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, getRowLookup(baseLevel));
         rollupFromBase(levelTables, levelRowLookups, aggregations, groupByColumns);
-        // TODO-RWC: update sortable columns
-        return new RollupTableImpl(
+        final RollupTableImpl result = new RollupTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Rollup)),
                 source, aggregations, includeConstituents, groupByColumns, levelTables, levelRowLookups, null, null);
+        source.copySortableColumns(result, baseLevel.getDefinition().getColumnNameMap()::containsKey);
+        return result;
     }
 
     private static QueryTable[] makeLevelTablesArray(
