@@ -950,18 +950,18 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
     }
 
-    // TODO-RWC: Delete?
-    void maybeUpdateSortableColumns(Table destination) {
+    public void copySortableColumns(
+            @NotNull final BaseGridAttributes<?, ?> destination,
+            @NotNull final Predicate<String> shouldCopy) {
         final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
         if (currentSortableColumns == null) {
             return;
         }
-
-        destination.restrictSortTo(Arrays.stream(currentSortableColumns.split(","))
-                .filter(destination.getColumnSourceMap()::containsKey).toArray(String[]::new));
+        destination.setAttribute(SORTABLE_COLUMNS_ATTRIBUTE,
+                Stream.of(currentSortableColumns.split(",")).filter(shouldCopy).collect(Collectors.joining(",")));
     }
 
-    void maybeUpdateSortableColumns(Table destination, MatchPair[] renamedColumns) {
+    void copySortableColumns(BaseTable destination, MatchPair[] renamedColumns) {
         final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
         if (currentSortableColumns == null) {
             return;
@@ -985,25 +985,25 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // Process the original set of sortable columns, adding them to the new set if one of the below
         // 1) The column exists in the new table and was not renamed in any way but the Identity (C1 = C1)
         // 2) The column does not exist in the new table, but was renamed to another (C2 = C1)
-        final Map<String, ? extends ColumnSource<?>> sourceMap = destination.getColumnSourceMap();
-        for (String col : currentSortableColumns.split(",")) {
+        final Set<String> resultColumnNames = destination.getDefinition().getColumnNameMap().keySet();
+        for (final String columnName : currentSortableColumns.split(",")) {
             // Only add it to the set of sortable columns if it hasn't changed in an unknown way
-            final String maybeRenamedColumn = columnMapping.get(col);
-            if (sourceMap.get(col) != null && (maybeRenamedColumn == null || maybeRenamedColumn.equals(col))) {
-                sortableColumns.add(col);
+            final String maybeRenamedColumn = columnMapping.get(columnName);
+            if (resultColumnNames.contains(columnName)
+                    && (maybeRenamedColumn == null || maybeRenamedColumn.equals(columnName))) {
+                sortableColumns.add(columnName);
             } else {
-                final String newName = columnMapping.inverse().get(col);
+                final String newName = columnMapping.inverse().get(columnName);
                 if (newName != null) {
                     sortableColumns.add(newName);
                 }
             }
         }
 
-        // Apply the new mapping to the result table.
-        destination.restrictSortTo(sortableColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        destination.setAttribute(SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", sortableColumns));
     }
 
-    void maybeUpdateSortableColumns(Table destination, SelectColumn[] selectCols) {
+    void copySortableColumns(BaseTable destination, SelectColumn[] selectCols) {
         final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
         if (currentSortableColumns == null) {
             return;
@@ -1038,7 +1038,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             }
         }
 
-        destination.restrictSortTo(newSortableSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        destination.setAttribute(SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", newSortableSet));
     }
 
     /**
