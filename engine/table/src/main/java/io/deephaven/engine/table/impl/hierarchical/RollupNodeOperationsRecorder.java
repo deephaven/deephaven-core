@@ -6,9 +6,7 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -22,15 +20,16 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
     RollupNodeOperationsRecorder(
             @NotNull final TableDefinition definition,
             @NotNull final RollupTable.NodeType nodeType) {
-        this(definition, nodeType, List.of(), List.of());
+        this(definition, nodeType, List.of(), List.of(), List.of());
     }
 
     private RollupNodeOperationsRecorder(
             @NotNull final TableDefinition definition,
             @NotNull final RollupTable.NodeType nodeType,
             @NotNull final Collection<? extends SelectColumn> recordedFormats,
-            @NotNull final Collection<SortColumn> recordedSorts) {
-        super(definition, recordedFormats, recordedSorts);
+            @NotNull final Collection<SortColumn> recordedSorts,
+            @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews) {
+        super(definition, recordedFormats, recordedSorts, recordedAbsoluteViews);
         this.nodeType = nodeType;
     }
 
@@ -41,14 +40,18 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
     @Override
     RollupTable.NodeOperationsRecorder withFormats(@NotNull final Stream<? extends SelectColumn> formats) {
         return new RollupNodeOperationsRecorder(definition, nodeType,
-                Stream.concat(recordedFormats.stream(), formats).collect(Collectors.toList()),
-                recordedSorts);
+                mergeFormats(getRecordedFormats().stream(), formats), getRecordedSorts(), getRecordedAbsoluteViews());
     }
 
     @Override
-    RollupTable.NodeOperationsRecorder withSorts(@NotNull final Stream<SortColumn> sorts) {
-        return new RollupNodeOperationsRecorder(definition, nodeType, recordedFormats,
-                Stream.concat(sorts, recordedSorts.stream()).collect(Collectors.toList()));
+    RollupTable.NodeOperationsRecorder withSorts(
+            @NotNull final Stream<SortColumn> sorts,
+            @NotNull final Stream<? extends SelectColumn> absoluteViews) {
+        // Arguably, we might want to look for duplicate absolute views, but that would imply that there were also
+        // duplicative sorts, which we don't really expect to happen.
+        return new RollupNodeOperationsRecorder(definition, nodeType, getRecordedFormats(),
+                mergeSortColumns(getRecordedSorts().stream(), sorts),
+                mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), absoluteViews));
     }
 
     RollupNodeOperationsRecorder withOperations(@NotNull final RollupNodeOperationsRecorder other) {
@@ -57,8 +60,8 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
                     "Incompatible operation recorders; compatible recorders must be created from the same table, with the same node type");
         }
         return new RollupNodeOperationsRecorder(definition, nodeType,
-                Stream.concat(recordedFormats.stream(), other.getRecordedFormats().stream())
-                        .collect(Collectors.toList()),
-                Stream.concat(other.getRecordedSorts().stream(), recordedSorts.stream()).collect(Collectors.toList()));
+                mergeFormats(getRecordedFormats().stream(), other.getRecordedFormats().stream()),
+                mergeSortColumns(getRecordedSorts().stream(), other.getRecordedSorts().stream()),
+                mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), other.getRecordedAbsoluteViews().stream()));
     }
 }

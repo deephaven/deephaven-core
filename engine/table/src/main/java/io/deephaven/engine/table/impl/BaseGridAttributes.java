@@ -81,7 +81,7 @@ public abstract class BaseGridAttributes<IFACE_TYPE extends GridAttributes<IFACE
 
     protected void setColumnDescriptions(@NotNull final Map<String, String> descriptions) {
         checkAvailableColumns(descriptions.keySet());
-        return setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, descriptions));
+        setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, descriptions);
     }
 
     @Override
