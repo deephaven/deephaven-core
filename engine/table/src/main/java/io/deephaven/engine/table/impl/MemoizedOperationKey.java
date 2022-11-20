@@ -333,6 +333,16 @@ public abstract class MemoizedOperationKey {
         public int hashCode() {
             return Objects.hash(idColumn, parentColumn);
         }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.Tree;
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation getParentCopyType() {
+            return BaseTable.CopyAttributeOperation.TreeCopy;
+        }
     }
 
     private static class AggBy extends AttributeAgnosticMemoizedOperationKey {
