@@ -73,21 +73,21 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
     public TreeTable.NodeOperationsRecorder where(String... filters) {
         final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(definition);
         adapter.where(filters);
-        return withFilters(adapter.whereFilters());
+        return adapter.hasWhereFilters() ? withFilters(adapter.whereFilters()) : self();
     }
 
     @Override
     public TreeTable.NodeOperationsRecorder where(Collection<? extends Filter> filters) {
         final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(definition);
         adapter.where(filters);
-        return withFilters(adapter.whereFilters());
+        return adapter.hasWhereFilters() ? withFilters(adapter.whereFilters()) : self();
     }
 
     @Override
     public TreeTable.NodeOperationsRecorder where(Filter... filters) {
         final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(definition);
         adapter.where(filters);
-        return withFilters(adapter.whereFilters());
+        return adapter.hasWhereFilters() ? withFilters(adapter.whereFilters()) : self();
     }
 
     private static final class FilterRecordingTableAdapter extends RecordingTableAdapter {
@@ -102,6 +102,10 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
         public Table where(@NotNull final Collection<? extends Filter> filters) {
             this.filters = filters;
             return this;
+        }
+
+        private boolean hasWhereFilters() {
+            return !filters.isEmpty();
         }
 
         private Stream<? extends WhereFilter> whereFilters() {
