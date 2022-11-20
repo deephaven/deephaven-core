@@ -10,7 +10,6 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.function.UnaryOperator;
 
 /**
  * Interface for the result of {@link Table#rollup rollup} operations.
