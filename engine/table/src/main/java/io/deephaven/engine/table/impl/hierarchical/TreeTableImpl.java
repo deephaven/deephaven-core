@@ -63,6 +63,14 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         this.parentIdentifierColumn = parentIdentifierColumn;
         this.nodeFilterColumns = nodeFilterColumns;
         this.nodeOperations = nodeOperations;
+
+        if (source.isRefreshing()) {
+            Assert.assertion(tree.isRefreshing(), "tree.isRefreshing() if source.isRefreshing()");
+            // The tree aggregation result depends on the source and all the node tables.
+            manage(tree);
+            // The reverse lookup just depends on the (original, unfiltered) source, which may not be our direct source.
+            manage(reverseLookup);
+        }
     }
 
     @Override
@@ -91,7 +99,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     public TreeTable withFilters(@NotNull Collection<? extends Filter> filters) {
         if (filters.isEmpty()) {
-            return copy();
+            return noopResult();
         }
 
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
