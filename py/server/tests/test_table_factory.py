@@ -244,6 +244,8 @@ class TableFactoryTestCase(BaseTestCase):
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
+            keyed_input_table.add(append_only_input_table)
+            self.assertEqual(keyed_input_table.size, 2)
 
         with self.subTest("deletion on input table"):
             append_only_input_table = InputTable(init_table=t)
