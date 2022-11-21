@@ -8,6 +8,9 @@ import io.deephaven.api.agg.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -328,5 +331,14 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private static Stream<ColumnDefinition<?>> filterRollupInternalColumns(
             @NotNull final Stream<ColumnDefinition<?>> columnDefinitions) {
         return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX));
+    }
+
+    @Override
+    public long fillSnapshotChunks(
+            @NotNull final Table keyTable,
+            @Nullable final BitSet columns,
+            @NotNull final RowSequence rows,
+            @NotNull final WritableChunk<? extends Values>[] destinations) {
+        return 0;
     }
 }
