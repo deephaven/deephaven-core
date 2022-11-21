@@ -46,7 +46,10 @@ class Column:
 
     @property
     def j_column_definition(self):
-        j_data_type = self.data_type.qst_type.clazz()
+        if hasattr(self.data_type.j_type, 'jclass'):
+            j_data_type = self.data_type.j_type.jclass
+        else:
+            j_data_type = self.data_type.qst_type.clazz()
         j_component_type = self.component_type.qst_type.clazz() if self.component_type else None
         j_column_type = self.column_type.value
         return _JColumnDefinition.fromGenericType(self.name, j_data_type, j_component_type, j_column_type)
