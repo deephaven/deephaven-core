@@ -19,6 +19,7 @@ import java.util.Collection;
  * @param <TABLE> the table type
  */
 public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABLE> {
+    boolean AGG_BY_PRESERVE_EMPTY_DEFAULT = false;
 
     // -------------------------------------------------------------------------------------------
 

@@ -5,6 +5,8 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.bat
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggAllByRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest;
@@ -45,6 +47,535 @@ import jsinterop.base.JsPropertyMap;
 public class Operation {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface AggAllByFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface SpecFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface ApproximatePercentileFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getCompression();
+
+                    @JsProperty
+                    double getPercentile();
+
+                    @JsProperty
+                    void setCompression(double compression);
+
+                    @JsProperty
+                    void setPercentile(double percentile);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface CountDistinctFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    boolean isCountNulls();
+
+                    @JsProperty
+                    void setCountNulls(boolean countNulls);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface DistinctFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.DistinctFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    boolean isIncludeNulls();
+
+                    @JsProperty
+                    void setIncludeNulls(boolean includeNulls);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface FormulaFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.FormulaFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getFormula();
+
+                    @JsProperty
+                    String getParamToken();
+
+                    @JsProperty
+                    void setFormula(String formula);
+
+                    @JsProperty
+                    void setParamToken(String paramToken);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface MedianFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.MedianFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    boolean isAverageEvenlyDivided();
+
+                    @JsProperty
+                    void setAverageEvenlyDivided(boolean averageEvenlyDivided);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface PercentileFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.PercentileFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getPercentile();
+
+                    @JsProperty
+                    boolean isAverageEvenlyDivided();
+
+                    @JsProperty
+                    void setAverageEvenlyDivided(boolean averageEvenlyDivided);
+
+                    @JsProperty
+                    void setPercentile(double percentile);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface SortedFirstFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    JsArray<Object> getColumnsList();
+
+                    @JsProperty
+                    void setColumnsList(JsArray<Object> columnsList);
+
+                    @JsOverlay
+                    default void setColumnsList(Object[] columnsList) {
+                        setColumnsList(Js.<JsArray<Object>>uncheckedCast(columnsList));
+                    }
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface TDigestFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.TDigestFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getCompression();
+
+                    @JsProperty
+                    void setCompression(double compression);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface UniqueFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.UniqueFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    boolean isIncludeNulls();
+
+                    @JsProperty
+                    void setIncludeNulls(boolean includeNulls);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface WeightedAvgFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getWeightColumn();
+
+                    @JsProperty
+                    void setWeightColumn(String weightColumn);
+                }
+
+                @JsOverlay
+                static Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getAbsSum();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
+
+                @JsProperty
+                Object getAvg();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.DistinctFieldType getDistinct();
+
+                @JsProperty
+                Object getFirst();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.FormulaFieldType getFormula();
+
+                @JsProperty
+                Object getFreeze();
+
+                @JsProperty
+                Object getGroup();
+
+                @JsProperty
+                Object getLast();
+
+                @JsProperty
+                Object getMax();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.MedianFieldType getMedian();
+
+                @JsProperty
+                Object getMin();
+
+                @JsProperty
+                Object getPb_var();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.PercentileFieldType getPercentile();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
+
+                @JsProperty
+                Object getSortedLast();
+
+                @JsProperty
+                Object getStd();
+
+                @JsProperty
+                Object getSum();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.TDigestFieldType getTDigest();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.UniqueFieldType getUnique();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
+
+                @JsProperty
+                Object getWeightedSum();
+
+                @JsProperty
+                void setAbsSum(Object absSum);
+
+                @JsProperty
+                void setApproximatePercentile(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
+
+                @JsProperty
+                void setAvg(Object avg);
+
+                @JsProperty
+                void setCountDistinct(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
+
+                @JsProperty
+                void setDistinct(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.DistinctFieldType distinct);
+
+                @JsProperty
+                void setFirst(Object first);
+
+                @JsProperty
+                void setFormula(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.FormulaFieldType formula);
+
+                @JsProperty
+                void setFreeze(Object freeze);
+
+                @JsProperty
+                void setGroup(Object group);
+
+                @JsProperty
+                void setLast(Object last);
+
+                @JsProperty
+                void setMax(Object max);
+
+                @JsProperty
+                void setMedian(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.MedianFieldType median);
+
+                @JsProperty
+                void setMin(Object min);
+
+                @JsProperty
+                void setPb_var(Object pb_var);
+
+                @JsProperty
+                void setPercentile(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.PercentileFieldType percentile);
+
+                @JsProperty
+                void setSortedFirst(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
+
+                @JsProperty
+                void setSortedLast(Object sortedLast);
+
+                @JsProperty
+                void setStd(Object std);
+
+                @JsProperty
+                void setSum(Object sum);
+
+                @JsProperty
+                void setTDigest(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.TDigestFieldType tDigest);
+
+                @JsProperty
+                void setUnique(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.UniqueFieldType unique);
+
+                @JsProperty
+                void setWeightedAvg(
+                        Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
+
+                @JsProperty
+                void setWeightedSum(Object weightedSum);
+            }
+
+            @JsOverlay
+            static Operation.ToObjectReturnType.AggAllByFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<String> getGroupByColumnsList();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getSourceId();
+
+            @JsProperty
+            Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType getSpec();
+
+            @JsProperty
+            void setGroupByColumnsList(JsArray<String> groupByColumnsList);
+
+            @JsOverlay
+            default void setGroupByColumnsList(String[] groupByColumnsList) {
+                setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupByColumnsList));
+            }
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSourceId(Object sourceId);
+
+            @JsProperty
+            void setSpec(Operation.ToObjectReturnType.AggAllByFieldType.SpecFieldType spec);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface AggregationFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface AggregationsListFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface ColumnsFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    JsArray<String> getMatchPairsList();
+
+                    @JsProperty
+                    Object getSpec();
+
+                    @JsProperty
+                    void setMatchPairsList(JsArray<String> matchPairsList);
+
+                    @JsOverlay
+                    default void setMatchPairsList(String[] matchPairsList) {
+                        setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
+                    }
+
+                    @JsProperty
+                    void setSpec(Object spec);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface CountFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.CountFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getColumnName();
+
+                    @JsProperty
+                    void setColumnName(String columnName);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface FirstRowKeyFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getColumnName();
+
+                    @JsProperty
+                    void setColumnName(String columnName);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface PartitionFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getColumnName();
+
+                    @JsProperty
+                    boolean isIncludeGroupByColumns();
+
+                    @JsProperty
+                    void setColumnName(String columnName);
+
+                    @JsProperty
+                    void setIncludeGroupByColumns(boolean includeGroupByColumns);
+                }
+
+                @JsOverlay
+                static Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType getColumns();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.CountFieldType getCount();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
+
+                @JsProperty
+                Object getLastRowKey();
+
+                @JsProperty
+                Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType getPartition();
+
+                @JsProperty
+                void setColumns(
+                        Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType columns);
+
+                @JsProperty
+                void setCount(
+                        Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.CountFieldType count);
+
+                @JsProperty
+                void setFirstRowKey(
+                        Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
+
+                @JsProperty
+                void setLastRowKey(Object lastRowKey);
+
+                @JsProperty
+                void setPartition(
+                        Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType partition);
+            }
+
+            @JsOverlay
+            static Operation.ToObjectReturnType.AggregationFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType> getAggregationsList();
+
+            @JsProperty
+            JsArray<String> getGroupByColumnsList();
+
+            @JsProperty
+            Object getInitialGroupsId();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getSourceId();
+
+            @JsProperty
+            boolean isPreserveEmpty();
+
+            @JsOverlay
+            default void setAggregationsList(
+                    Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType[] aggregationsList) {
+                setAggregationsList(
+                        Js.<JsArray<Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType>>uncheckedCast(
+                                aggregationsList));
+            }
+
+            @JsProperty
+            void setAggregationsList(
+                    JsArray<Operation.ToObjectReturnType.AggregationFieldType.AggregationsListFieldType> aggregationsList);
+
+            @JsProperty
+            void setGroupByColumnsList(JsArray<String> groupByColumnsList);
+
+            @JsOverlay
+            default void setGroupByColumnsList(String[] groupByColumnsList) {
+                setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupByColumnsList));
+            }
+
+            @JsProperty
+            void setInitialGroupsId(Object initialGroupsId);
+
+            @JsProperty
+            void setPreserveEmpty(boolean preserveEmpty);
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSourceId(Object sourceId);
+        }
+
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ApplyPreviewColumnsFieldType {
             @JsOverlay
@@ -1634,6 +2165,12 @@ public class Operation {
         }
 
         @JsProperty
+        Operation.ToObjectReturnType.AggAllByFieldType getAggAllBy();
+
+        @JsProperty
+        Operation.ToObjectReturnType.AggregationFieldType getAggregation();
+
+        @JsProperty
         Operation.ToObjectReturnType.ApplyPreviewColumnsFieldType getApplyPreviewColumns();
 
         @JsProperty
@@ -1728,6 +2265,12 @@ public class Operation {
 
         @JsProperty
         Operation.ToObjectReturnType.WhereInFieldType getWhereIn();
+
+        @JsProperty
+        void setAggAllBy(Operation.ToObjectReturnType.AggAllByFieldType aggAllBy);
+
+        @JsProperty
+        void setAggregation(Operation.ToObjectReturnType.AggregationFieldType aggregation);
 
         @JsProperty
         void setApplyPreviewColumns(
@@ -1833,6 +2376,535 @@ public class Operation {
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface AggAllByFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface SpecFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface ApproximatePercentileFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getCompression();
+
+                    @JsProperty
+                    double getPercentile();
+
+                    @JsProperty
+                    void setCompression(double compression);
+
+                    @JsProperty
+                    void setPercentile(double percentile);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface CountDistinctFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.CountDistinctFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    boolean isCountNulls();
+
+                    @JsProperty
+                    void setCountNulls(boolean countNulls);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface DistinctFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.DistinctFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    boolean isIncludeNulls();
+
+                    @JsProperty
+                    void setIncludeNulls(boolean includeNulls);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface FormulaFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.FormulaFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getFormula();
+
+                    @JsProperty
+                    String getParamToken();
+
+                    @JsProperty
+                    void setFormula(String formula);
+
+                    @JsProperty
+                    void setParamToken(String paramToken);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface MedianFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.MedianFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    boolean isAverageEvenlyDivided();
+
+                    @JsProperty
+                    void setAverageEvenlyDivided(boolean averageEvenlyDivided);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface PercentileFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.PercentileFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getPercentile();
+
+                    @JsProperty
+                    boolean isAverageEvenlyDivided();
+
+                    @JsProperty
+                    void setAverageEvenlyDivided(boolean averageEvenlyDivided);
+
+                    @JsProperty
+                    void setPercentile(double percentile);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface SortedFirstFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.SortedFirstFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    JsArray<Object> getColumnsList();
+
+                    @JsProperty
+                    void setColumnsList(JsArray<Object> columnsList);
+
+                    @JsOverlay
+                    default void setColumnsList(Object[] columnsList) {
+                        setColumnsList(Js.<JsArray<Object>>uncheckedCast(columnsList));
+                    }
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface TDigestFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.TDigestFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getCompression();
+
+                    @JsProperty
+                    void setCompression(double compression);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface UniqueFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.UniqueFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    boolean isIncludeNulls();
+
+                    @JsProperty
+                    void setIncludeNulls(boolean includeNulls);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface WeightedAvgFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getWeightColumn();
+
+                    @JsProperty
+                    void setWeightColumn(String weightColumn);
+                }
+
+                @JsOverlay
+                static Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getAbsSum();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
+
+                @JsProperty
+                Object getAvg();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.DistinctFieldType getDistinct();
+
+                @JsProperty
+                Object getFirst();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.FormulaFieldType getFormula();
+
+                @JsProperty
+                Object getFreeze();
+
+                @JsProperty
+                Object getGroup();
+
+                @JsProperty
+                Object getLast();
+
+                @JsProperty
+                Object getMax();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.MedianFieldType getMedian();
+
+                @JsProperty
+                Object getMin();
+
+                @JsProperty
+                Object getPb_var();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.PercentileFieldType getPercentile();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
+
+                @JsProperty
+                Object getSortedLast();
+
+                @JsProperty
+                Object getStd();
+
+                @JsProperty
+                Object getSum();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.TDigestFieldType getTDigest();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.UniqueFieldType getUnique();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
+
+                @JsProperty
+                Object getWeightedSum();
+
+                @JsProperty
+                void setAbsSum(Object absSum);
+
+                @JsProperty
+                void setApproximatePercentile(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
+
+                @JsProperty
+                void setAvg(Object avg);
+
+                @JsProperty
+                void setCountDistinct(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
+
+                @JsProperty
+                void setDistinct(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.DistinctFieldType distinct);
+
+                @JsProperty
+                void setFirst(Object first);
+
+                @JsProperty
+                void setFormula(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.FormulaFieldType formula);
+
+                @JsProperty
+                void setFreeze(Object freeze);
+
+                @JsProperty
+                void setGroup(Object group);
+
+                @JsProperty
+                void setLast(Object last);
+
+                @JsProperty
+                void setMax(Object max);
+
+                @JsProperty
+                void setMedian(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.MedianFieldType median);
+
+                @JsProperty
+                void setMin(Object min);
+
+                @JsProperty
+                void setPb_var(Object pb_var);
+
+                @JsProperty
+                void setPercentile(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.PercentileFieldType percentile);
+
+                @JsProperty
+                void setSortedFirst(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
+
+                @JsProperty
+                void setSortedLast(Object sortedLast);
+
+                @JsProperty
+                void setStd(Object std);
+
+                @JsProperty
+                void setSum(Object sum);
+
+                @JsProperty
+                void setTDigest(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.TDigestFieldType tDigest);
+
+                @JsProperty
+                void setUnique(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.UniqueFieldType unique);
+
+                @JsProperty
+                void setWeightedAvg(
+                        Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
+
+                @JsProperty
+                void setWeightedSum(Object weightedSum);
+            }
+
+            @JsOverlay
+            static Operation.ToObjectReturnType0.AggAllByFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<String> getGroupByColumnsList();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getSourceId();
+
+            @JsProperty
+            Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType getSpec();
+
+            @JsProperty
+            void setGroupByColumnsList(JsArray<String> groupByColumnsList);
+
+            @JsOverlay
+            default void setGroupByColumnsList(String[] groupByColumnsList) {
+                setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupByColumnsList));
+            }
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSourceId(Object sourceId);
+
+            @JsProperty
+            void setSpec(Operation.ToObjectReturnType0.AggAllByFieldType.SpecFieldType spec);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface AggregationFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface AggregationsListFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface ColumnsFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    JsArray<String> getMatchPairsList();
+
+                    @JsProperty
+                    Object getSpec();
+
+                    @JsProperty
+                    void setMatchPairsList(JsArray<String> matchPairsList);
+
+                    @JsOverlay
+                    default void setMatchPairsList(String[] matchPairsList) {
+                        setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
+                    }
+
+                    @JsProperty
+                    void setSpec(Object spec);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface CountFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.CountFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getColumnName();
+
+                    @JsProperty
+                    void setColumnName(String columnName);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface FirstRowKeyFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getColumnName();
+
+                    @JsProperty
+                    void setColumnName(String columnName);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface PartitionFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.PartitionFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getColumnName();
+
+                    @JsProperty
+                    boolean isIncludeGroupByColumns();
+
+                    @JsProperty
+                    void setColumnName(String columnName);
+
+                    @JsProperty
+                    void setIncludeGroupByColumns(boolean includeGroupByColumns);
+                }
+
+                @JsOverlay
+                static Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType getColumns();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.CountFieldType getCount();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
+
+                @JsProperty
+                Object getLastRowKey();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.PartitionFieldType getPartition();
+
+                @JsProperty
+                void setColumns(
+                        Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType columns);
+
+                @JsProperty
+                void setCount(
+                        Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.CountFieldType count);
+
+                @JsProperty
+                void setFirstRowKey(
+                        Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
+
+                @JsProperty
+                void setLastRowKey(Object lastRowKey);
+
+                @JsProperty
+                void setPartition(
+                        Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType.PartitionFieldType partition);
+            }
+
+            @JsOverlay
+            static Operation.ToObjectReturnType0.AggregationFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType> getAggregationsList();
+
+            @JsProperty
+            JsArray<String> getGroupByColumnsList();
+
+            @JsProperty
+            Object getInitialGroupsId();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getSourceId();
+
+            @JsProperty
+            boolean isPreserveEmpty();
+
+            @JsOverlay
+            default void setAggregationsList(
+                    Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType[] aggregationsList) {
+                setAggregationsList(
+                        Js.<JsArray<Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType>>uncheckedCast(
+                                aggregationsList));
+            }
+
+            @JsProperty
+            void setAggregationsList(
+                    JsArray<Operation.ToObjectReturnType0.AggregationFieldType.AggregationsListFieldType> aggregationsList);
+
+            @JsProperty
+            void setGroupByColumnsList(JsArray<String> groupByColumnsList);
+
+            @JsOverlay
+            default void setGroupByColumnsList(String[] groupByColumnsList) {
+                setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupByColumnsList));
+            }
+
+            @JsProperty
+            void setInitialGroupsId(Object initialGroupsId);
+
+            @JsProperty
+            void setPreserveEmpty(boolean preserveEmpty);
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSourceId(Object sourceId);
+        }
+
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ApplyPreviewColumnsFieldType {
             @JsOverlay
@@ -3423,6 +4495,12 @@ public class Operation {
         }
 
         @JsProperty
+        Operation.ToObjectReturnType0.AggAllByFieldType getAggAllBy();
+
+        @JsProperty
+        Operation.ToObjectReturnType0.AggregationFieldType getAggregation();
+
+        @JsProperty
         Operation.ToObjectReturnType0.ApplyPreviewColumnsFieldType getApplyPreviewColumns();
 
         @JsProperty
@@ -3517,6 +4595,12 @@ public class Operation {
 
         @JsProperty
         Operation.ToObjectReturnType0.WhereInFieldType getWhereIn();
+
+        @JsProperty
+        void setAggAllBy(Operation.ToObjectReturnType0.AggAllByFieldType aggAllBy);
+
+        @JsProperty
+        void setAggregation(Operation.ToObjectReturnType0.AggregationFieldType aggregation);
 
         @JsProperty
         void setApplyPreviewColumns(
@@ -3629,6 +4713,10 @@ public class Operation {
     public static native Operation.ToObjectReturnType toObject(
             boolean includeInstance, Operation msg);
 
+    public native void clearAggAllBy();
+
+    public native void clearAggregation();
+
     public native void clearApplyPreviewColumns();
 
     public native void clearAsOfJoin();
@@ -3692,6 +4780,10 @@ public class Operation {
     public native void clearView();
 
     public native void clearWhereIn();
+
+    public native AggAllByRequest getAggAllBy();
+
+    public native AggregationRequest getAggregation();
 
     public native ApplyPreviewColumnsRequest getApplyPreviewColumns();
 
@@ -3759,6 +4851,10 @@ public class Operation {
 
     public native WhereInRequest getWhereIn();
 
+    public native boolean hasAggAllBy();
+
+    public native boolean hasAggregation();
+
     public native boolean hasApplyPreviewColumns();
 
     public native boolean hasAsOfJoin();
@@ -3824,6 +4920,14 @@ public class Operation {
     public native boolean hasWhereIn();
 
     public native Uint8Array serializeBinary();
+
+    public native void setAggAllBy();
+
+    public native void setAggAllBy(AggAllByRequest value);
+
+    public native void setAggregation();
+
+    public native void setAggregation(AggregationRequest value);
 
     public native void setApplyPreviewColumns();
 

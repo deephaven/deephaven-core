@@ -1,38 +1,21 @@
 package io.deephaven.server.table.ops;
 
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.ReleaseRequest;
-import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.server.runner.DeephavenApiServerSingleAuthenticatedBase;
 import io.deephaven.server.session.SessionState.ExportObject;
-import io.deephaven.util.SafeCloseable;
 import io.grpc.Status.Code;
-import io.grpc.StatusRuntimeException;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class WhereInGrpcTest extends DeephavenApiServerSingleAuthenticatedBase {
-
-    private SafeCloseable executionContext;
+public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> {
 
     @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
-    }
-
-    @Override
-    public void tearDown() throws Exception {
-        executionContext.close();
-        super.tearDown();
+    public ExportedTableCreationResponse send(WhereInRequest request) {
+        return channel().tableBlocking().whereIn(request);
     }
 
     @Test
@@ -224,31 +207,5 @@ public class WhereInGrpcTest extends DeephavenApiServerSingleAuthenticatedBase {
             ticking.cancel();
             emptyTable.cancel();
         }
-    }
-
-    private void assertError(WhereInRequest request, Code code, String message) {
-        final ExportedTableCreationResponse response;
-        try {
-            response = channel().tableBlocking().whereIn(request);
-        } catch (StatusRuntimeException e) {
-            assertThat(e.getStatus().getCode()).isEqualTo(code);
-            assertThat(e).hasMessageContaining(message);
-            return;
-        }
-        release(response);
-        failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
-    }
-
-    private void release(ExportedTableCreationResponse exportedTableCreationResponse) {
-        release(exportedTableCreationResponse.getResultId().getTicket());
-    }
-
-    private void release(Ticket ticket) {
-        // noinspection ResultOfMethodCallIgnored
-        channel().sessionBlocking().release(ReleaseRequest.newBuilder().setId(ticket).build());
-    }
-
-    private static TableReference ref(ExportObject<?> export) {
-        return TableReference.newBuilder().setTicket(export.getExportId()).build();
     }
 }

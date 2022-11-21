@@ -152,8 +152,6 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(SelectDistinctTable selectDistinctTable);
 
-        void visit(CountByTable countByTable);
-
         void visit(UpdateByTable updateByTable);
 
         void visit(UngroupTable ungroupTable);

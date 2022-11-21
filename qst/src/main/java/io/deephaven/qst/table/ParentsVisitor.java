@@ -282,11 +282,6 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(CountByTable countByTable) {
-        out = single(countByTable);
-    }
-
-    @Override
     public void visit(UpdateByTable updateByTable) {
         out = single(updateByTable);
     }

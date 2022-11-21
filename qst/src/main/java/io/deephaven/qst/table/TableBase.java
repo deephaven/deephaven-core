@@ -15,8 +15,8 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.qst.TableCreationLogic;
 
 import java.util.Arrays;
@@ -451,17 +451,24 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final AggregationTable aggBy(Aggregation aggregation) {
-        return AggregationTable.builder().parent(this).addAggregations(aggregation).build();
+        return AggregationTable.builder()
+                .parent(this)
+                .addAggregations(aggregation)
+                .build();
     }
 
     @Override
     public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations) {
-        return AggregationTable.builder().parent(this).addAllAggregations(aggregations).build();
+        return AggregationTable.builder()
+                .parent(this)
+                .addAllAggregations(aggregations)
+                .build();
     }
 
     @Override
     public TableSpec aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty) {
-        return AggregationTable.builder().parent(this)
+        return AggregationTable.builder()
+                .parent(this)
                 .addAllAggregations(aggregations)
                 .preserveEmpty(preserveEmpty)
                 .build();
@@ -478,8 +485,11 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends ColumnName> groupByColumns) {
-        return AggregationTable.builder().parent(this).addAllGroupByColumns(groupByColumns)
-                .addAggregations(aggregation).build();
+        return AggregationTable.builder()
+                .parent(this)
+                .addAllGroupByColumns(groupByColumns)
+                .addAggregations(aggregation)
+                .build();
     }
 
     @Override
@@ -494,8 +504,11 @@ public abstract class TableBase implements TableSpec {
     @Override
     public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends ColumnName> groupByColumns) {
-        return AggregationTable.builder().parent(this).addAllGroupByColumns(groupByColumns)
-                .addAllAggregations(aggregations).build();
+        return AggregationTable.builder()
+                .parent(this)
+                .addAllGroupByColumns(groupByColumns)
+                .addAllAggregations(aggregations)
+                .build();
     }
 
     @Override
@@ -602,24 +615,29 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final CountByTable countBy(String countColumnName) {
-        return CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName)).build();
+    public final AggregationTable countBy(String countColumnName) {
+        return countBy(countColumnName, Collections.emptyList());
     }
 
     @Override
-    public final CountByTable countBy(String countColumnName, String... groupByColumns) {
+    public final AggregationTable countBy(String countColumnName, String... groupByColumns) {
         return countBy(countColumnName, Arrays.asList(groupByColumns));
     }
 
     @Override
-    public final CountByTable countBy(String countColumnName, ColumnName... groupByColumns) {
-        return CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName))
-                .addGroupByColumns(groupByColumns).build();
+    public final AggregationTable countBy(String countColumnName, ColumnName... groupByColumns) {
+        return AggregationTable.builder()
+                .parent(this)
+                .addAggregations(Aggregation.AggCount(countColumnName))
+                .addGroupByColumns(groupByColumns)
+                .build();
     }
 
     @Override
-    public final CountByTable countBy(String countColumnName, Collection<String> groupByColumns) {
-        CountByTable.Builder builder = CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName));
+    public final AggregationTable countBy(String countColumnName, Collection<String> groupByColumns) {
+        AggregationTable.Builder builder = AggregationTable.builder()
+                .parent(this)
+                .addAggregations(Aggregation.AggCount(countColumnName));
         for (String groupByColumn : groupByColumns) {
             builder.addGroupByColumns(ColumnName.of(groupByColumn));
         }

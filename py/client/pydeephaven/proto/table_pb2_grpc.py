@@ -160,6 +160,16 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.AggAllBy = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/AggAllBy',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AggAllByRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
+        self.Aggregate = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/Aggregate',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AggregationRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.Snapshot = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/Snapshot',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
@@ -433,6 +443,25 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def AggAllBy(self, request, context):
+        """
+        Aggregates all non-grouping grouping columns against a single aggregation specification.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Aggregate(self, request, context):
+        """
+        Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
+        aggregations to each resulting group of rows. The result table will have one row per group, ordered by
+        the encounter order within the source_id table, thereby ensuring that the row key for a given group never
+        changes.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Snapshot(self, request, context):
         """
         Snapshot rightId, triggered by leftId, and export the resulting new Table.
@@ -650,6 +679,16 @@ def add_TableServiceServicer_to_server(servicer, server):
             'ComboAggregate': grpc.unary_unary_rpc_method_handler(
                     servicer.ComboAggregate,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'AggAllBy': grpc.unary_unary_rpc_method_handler(
+                    servicer.AggAllBy,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AggAllByRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'Aggregate': grpc.unary_unary_rpc_method_handler(
+                    servicer.Aggregate,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregationRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'Snapshot': grpc.unary_unary_rpc_method_handler(
@@ -1186,6 +1225,40 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate',
             deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AggAllBy(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AggAllBy',
+            deephaven_dot_proto_dot_table__pb2.AggAllByRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Aggregate(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Aggregate',
+            deephaven_dot_proto_dot_table__pb2.AggregationRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

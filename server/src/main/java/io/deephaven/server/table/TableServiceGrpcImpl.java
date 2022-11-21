@@ -9,6 +9,8 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.AggAllByRequest;
+import io.deephaven.proto.backplane.grpc.AggregationRequest;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -183,6 +185,16 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
+    public void aggAllBy(AggAllByRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AGG_ALL_BY, request, responseObserver);
+    }
+
+    @Override
+    public void aggregate(AggregationRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AGGREGATION, request, responseObserver);
+    }
+
+    @Override
     public void snapshot(final SnapshotTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT, request, responseObserver);
@@ -336,20 +348,19 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         firstFailure.compareAndSet(null, (StatusRuntimeException) cause);
                     }
                     final String finalErrorInfo = errorInfo;
-                    safelyExecuteLocked(responseObserver,
-                            () -> responseObserver.onNext(ExportedTableCreationResponse.newBuilder()
-                                    .setResultId(resultId)
-                                    .setSuccess(false)
-                                    .setErrorInfo(finalErrorInfo)
-                                    .build()));
+                    final ExportedTableCreationResponse response = ExportedTableCreationResponse.newBuilder()
+                            .setResultId(resultId)
+                            .setSuccess(false)
+                            .setErrorInfo(finalErrorInfo)
+                            .build();
+                    safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
                     onOneResolved.run();
                 }).submit(() -> {
                     final Table table = exportBuilder.doExport();
-
-                    safelyExecuteLocked(responseObserver,
-                            () -> responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, table)));
+                    final ExportedTableCreationResponse response =
+                            ExportUtil.buildTableCreationResponse(resultId, table);
+                    safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
                     onOneResolved.run();
-
                     return table;
                 });
             }

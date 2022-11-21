@@ -255,6 +255,37 @@ public interface AggSpec {
     }
 
     /**
+     * Calls every single visit method of {@code visitor} with a {@code null} object.
+     *
+     * @param visitor the visitor
+     */
+    static void visitAll(Visitor visitor) {
+        visitor.visit((AggSpecAbsSum) null);
+        visitor.visit((AggSpecApproximatePercentile) null);
+        visitor.visit((AggSpecAvg) null);
+        visitor.visit((AggSpecCountDistinct) null);
+        visitor.visit((AggSpecDistinct) null);
+        visitor.visit((AggSpecFirst) null);
+        visitor.visit((AggSpecFormula) null);
+        visitor.visit((AggSpecFreeze) null);
+        visitor.visit((AggSpecGroup) null);
+        visitor.visit((AggSpecLast) null);
+        visitor.visit((AggSpecMax) null);
+        visitor.visit((AggSpecMedian) null);
+        visitor.visit((AggSpecMin) null);
+        visitor.visit((AggSpecPercentile) null);
+        visitor.visit((AggSpecSortedFirst) null);
+        visitor.visit((AggSpecSortedLast) null);
+        visitor.visit((AggSpecStd) null);
+        visitor.visit((AggSpecSum) null);
+        visitor.visit((AggSpecTDigest) null);
+        visitor.visit((AggSpecUnique) null);
+        visitor.visit((AggSpecWAvg) null);
+        visitor.visit((AggSpecWSum) null);
+        visitor.visit((AggSpecVar) null);
+    }
+
+    /**
      * Build a {@link ColumnAggregation} for this AggSpec.
      *
      * @param pair The input/output column name pair

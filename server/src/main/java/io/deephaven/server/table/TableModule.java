@@ -9,6 +9,8 @@ import dagger.Module;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.server.table.ops.AggAllByGrpcImpl;
+import io.deephaven.server.table.ops.AggregationGrpcImpl;
 import io.deephaven.server.table.ops.ApplyPreviewColumnsGrpcImpl;
 import io.deephaven.server.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.server.table.ops.CreateInputTableGrpcImpl;
@@ -120,6 +122,16 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.COMBO_AGGREGATE)
     GrpcTableOperation<?> bindOperationComboAgg(ComboAggregateGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.AGG_ALL_BY)
+    GrpcTableOperation<?> bindOperationAggAllBy(AggAllByGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.AGGREGATION)
+    GrpcTableOperation<?> bindOperationAggregation(AggregationGrpcImpl op);
 
     @Binds
     @IntoMap

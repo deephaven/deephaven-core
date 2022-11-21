@@ -5,10 +5,10 @@ package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.agg.Aggregation;
-import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -26,9 +26,12 @@ public abstract class AggregationTable extends ByTableBase {
 
     public abstract List<Aggregation> aggregations();
 
-    @Value.Default
-    public boolean preserveEmpty() {
-        return false;
+    @Nullable
+    public abstract Boolean preserveEmpty();
+
+    public final boolean preserveEmptyOrDefault() {
+        final Boolean preserveEmpty = preserveEmpty();
+        return preserveEmpty == null ? AGG_BY_PRESERVE_EMPTY_DEFAULT : preserveEmpty;
     }
 
     public abstract Optional<TableSpec> initialGroups();
@@ -53,7 +56,6 @@ public abstract class AggregationTable extends ByTableBase {
         }
     }
 
-
     public interface Builder extends ByTableBase.Builder<AggregationTable, Builder> {
         Builder addAggregations(Aggregation element);
 
@@ -61,7 +63,7 @@ public abstract class AggregationTable extends ByTableBase {
 
         Builder addAllAggregations(Iterable<? extends Aggregation> elements);
 
-        Builder preserveEmpty(boolean preserveEmpty);
+        Builder preserveEmpty(Boolean preserveEmpty);
 
         Builder initialGroups(TableSpec initialGroups);
 

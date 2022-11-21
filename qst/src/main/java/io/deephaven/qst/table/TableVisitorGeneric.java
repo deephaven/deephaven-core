@@ -138,11 +138,6 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(CountByTable countByTable) {
-        accept(countByTable);
-    }
-
-    @Override
     public void visit(UpdateByTable updateByTable) {
         accept(updateByTable);
     }

@@ -10,7 +10,6 @@ import io.deephaven.qst.TableAdapterResults.Output;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -252,11 +251,14 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public void visit(AggregationTable aggregationTable) {
         if (aggregationTable.groupByColumns().isEmpty()) {
-            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
-                    aggregationTable.preserveEmpty()));
+            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(
+                    aggregationTable.aggregations(),
+                    aggregationTable.preserveEmptyOrDefault()));
         } else {
-            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
-                    aggregationTable.preserveEmpty(), aggregationTable.initialGroups().map(this::table).orElse(null),
+            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(
+                    aggregationTable.aggregations(),
+                    aggregationTable.preserveEmptyOrDefault(),
+                    aggregationTable.initialGroups().map(this::table).orElse(null),
                     aggregationTable.groupByColumns()));
         }
     }
@@ -278,16 +280,6 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         } else {
             addOp(selectDistinctTable,
                     parentOps(selectDistinctTable).selectDistinct(selectDistinctTable.columns()));
-        }
-    }
-
-    @Override
-    public void visit(CountByTable countByTable) {
-        if (countByTable.groupByColumns().isEmpty()) {
-            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name()));
-        } else {
-            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name(),
-                    countByTable.groupByColumns().toArray(new ColumnName[0])));
         }
     }
 

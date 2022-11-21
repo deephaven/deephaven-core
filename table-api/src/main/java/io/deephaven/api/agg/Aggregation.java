@@ -5,6 +5,7 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpec.Visitor;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
 import io.deephaven.api.agg.spec.AggSpecDistinct;
@@ -19,7 +20,9 @@ import io.deephaven.api.agg.util.PercentileOutput;
 import io.deephaven.api.agg.util.Sentinel;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.BiFunction;
 
 /**
@@ -57,8 +60,21 @@ public interface Aggregation extends Serializable {
      * @return The aggregation
      */
     static Aggregation of(AggSpec spec, String... pairs) {
-        if (pairs.length == 1) {
-            return of(spec, pairs[0]);
+        return of(spec, Arrays.asList(pairs));
+    }
+
+    /**
+     * Combine an {@link AggSpec} and one or more input/output {@link Pair column name pairs} into a
+     * {@link ColumnAggregation} or {@link ColumnAggregations}.
+     *
+     * @param spec The {@link ColumnAggregation#spec() aggregation specifier} to apply to the column name pair(s)
+     * @param pairs The input/output column name {@link ColumnAggregation#pair() pair} or
+     *        {@link ColumnAggregations#pairs() pairs}
+     * @return The aggregation
+     */
+    static Aggregation of(AggSpec spec, List<String> pairs) {
+        if (pairs.size() == 1) {
+            return of(spec, pairs.get(0));
         }
         final ColumnAggregations.Builder builder = ColumnAggregations.builder().spec(spec);
         for (String pair : pairs) {
@@ -653,6 +669,21 @@ public interface Aggregation extends Serializable {
      */
     static Sentinel Sentinel() {
         return Sentinel.of();
+    }
+
+    /**
+     * Calls every single visit method of {@code visitor} with a {@code null} object.
+     *
+     * @param visitor the visitor
+     */
+    static void visitAll(Visitor visitor) {
+        visitor.visit((Aggregations) null);
+        visitor.visit((ColumnAggregation) null);
+        visitor.visit((ColumnAggregations) null);
+        visitor.visit((Count) null);
+        visitor.visit((FirstRowKey) null);
+        visitor.visit((LastRowKey) null);
+        visitor.visit((Partition) null);
     }
 
     /**
