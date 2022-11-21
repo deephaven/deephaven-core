@@ -151,6 +151,81 @@ public class WhereInGrpcTest extends DeephavenApiServerSingleAuthenticatedBase {
         }
     }
 
+    @Test
+    public void whereInTicking() {
+        final ExportObject<Table> ticking = authenticatedSessionState()
+                .newServerSideExport(TableTools.timeTable("00:00:01").view("Id=ii"));
+        try {
+            final WhereInRequest request = WhereInRequest.newBuilder()
+                    .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                    .setLeftId(ref(ticking))
+                    .setRightId(ref(ticking))
+                    .addColumnsToMatch("Id")
+                    .build();
+            final ExportedTableCreationResponse response = channel().tableBlocking().whereIn(request);
+            try {
+                assertThat(response.getSuccess()).isTrue();
+                assertThat(response.getIsStatic()).isFalse();
+            } finally {
+                release(response);
+            }
+        } finally {
+            ticking.cancel();
+        }
+    }
+
+    @Test
+    public void whereInLeftTicking() {
+        final ExportObject<Table> ticking = authenticatedSessionState()
+                .newServerSideExport(TableTools.timeTable("00:00:01").view("Id=ii"));
+        final ExportObject<Table> emptyTable = authenticatedSessionState()
+                .newServerSideExport(TableTools.emptyTable(1).view("Id=0"));
+        try {
+            final WhereInRequest request = WhereInRequest.newBuilder()
+                    .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                    .setLeftId(ref(ticking))
+                    .setRightId(ref(emptyTable))
+                    .addColumnsToMatch("Id")
+                    .build();
+            final ExportedTableCreationResponse response = channel().tableBlocking().whereIn(request);
+            try {
+                assertThat(response.getSuccess()).isTrue();
+                assertThat(response.getIsStatic()).isFalse();
+            } finally {
+                release(response);
+            }
+        } finally {
+            ticking.cancel();
+            emptyTable.cancel();
+        }
+    }
+
+    @Test
+    public void whereInRightTicking() {
+        final ExportObject<Table> ticking = authenticatedSessionState()
+                .newServerSideExport(TableTools.timeTable("00:00:01").view("Id=ii"));
+        final ExportObject<Table> emptyTable = authenticatedSessionState()
+                .newServerSideExport(TableTools.emptyTable(1).view("Id=0"));
+        try {
+            final WhereInRequest request = WhereInRequest.newBuilder()
+                    .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                    .setLeftId(ref(emptyTable))
+                    .setRightId(ref(ticking))
+                    .addColumnsToMatch("Id")
+                    .build();
+            final ExportedTableCreationResponse response = channel().tableBlocking().whereIn(request);
+            try {
+                assertThat(response.getSuccess()).isTrue();
+                assertThat(response.getIsStatic()).isFalse();
+            } finally {
+                release(response);
+            }
+        } finally {
+            ticking.cancel();
+            emptyTable.cancel();
+        }
+    }
+
     private void assertError(WhereInRequest request, Code code, String message) {
         final ExportedTableCreationResponse response;
         try {
