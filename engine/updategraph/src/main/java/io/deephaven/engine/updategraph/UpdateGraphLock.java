@@ -8,6 +8,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.FunctionalInterfaces;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -384,6 +385,16 @@ public class UpdateGraphLock {
                 @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
                 throws InterruptedException, EXCEPTION_TYPE {
             return delegate.computeLockedInterruptibly(supplier);
+        }
+
+        @Override
+        public SafeCloseable lockCloseable() {
+            return delegate.lockCloseable();
+        }
+
+        @Override
+        public SafeCloseable lockInterruptiblyCloseable() throws InterruptedException {
+            return delegate.lockInterruptiblyCloseable();
         }
 
         String getDebugMessage() {

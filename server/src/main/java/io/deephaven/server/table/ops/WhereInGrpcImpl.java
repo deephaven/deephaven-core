@@ -11,7 +11,7 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.locks.AwareFunctionalLock;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -48,17 +48,12 @@ public class WhereInGrpcImpl extends GrpcTableOperation<WhereInRequest> {
         final Table left = sourceTables.get(0).get();
         final Table right = sourceTables.get(1).get();
         final List<JoinMatch> columnsToMatch = JoinMatch.from(request.getColumnsToMatchList());
-        final AwareFunctionalLock lock =
-                left.isRefreshing() || right.isRefreshing() ? updateGraphProcessor.sharedLock() : null;
-        if (lock != null) {
-            lock.lock();
-        }
-        try {
+        try (final SafeCloseable _lock = lock(left, right)) {
             return request.getInverted() ? left.whereNotIn(right, columnsToMatch) : left.whereIn(right, columnsToMatch);
-        } finally {
-            if (lock != null) {
-                lock.unlock();
-            }
         }
+    }
+
+    private SafeCloseable lock(Table left, Table right) {
+        return left.isRefreshing() || right.isRefreshing() ? updateGraphProcessor.sharedLock().lockCloseable() : null;
     }
 }
