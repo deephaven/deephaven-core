@@ -4,9 +4,11 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,7 +40,7 @@ public final class ClientView<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, 
     private final Table keyTable;
 
     /**
-     * Name for an optional column of booleans that specifiy whether descendants of an expanded node should be
+     * Name for an optional column of booleans that specify whether descendants of an expanded node should be
      * expanded by default instead of the typical contracted by default.
      */
     private final ColumnName keyTableExpandDescendantsColumn;
@@ -84,6 +86,28 @@ public final class ClientView<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, 
             if (base != effective) {
                 Assert.assertion(effective.getSource().isRefreshing(), "base and effective refreshing must match");
                 manage(effective);
+            }
+        }
+    }
+
+    private static final class NodeState {
+
+        private final long id;
+        private final Table processed;
+        private final Object lookup;
+
+        private NodeState(final long id, final Table processed, final Object lookup) {
+            this.id = id;
+            this.processed = processed;
+            this.lookup = lookup;
+            if (processed.isRefreshing()) {
+                processed.retainReference();
+            }
+        }
+
+        private void release() {
+            if (processed.isRefreshing()) {
+                processed.dropReference();
             }
         }
     }
