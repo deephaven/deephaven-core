@@ -14,8 +14,8 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -104,13 +104,8 @@ public class UpdateGraphLock {
         rwLock = new ReentrantReadWriteLock(true);
         readLock = rwLock.readLock();
         writeLock = rwLock.writeLock();
-        if (allowUnitTestMode) {
-            sharedLock = new DebugAwareFunctionalLock(new SharedLock());
-            exclusiveLock = new DebugAwareFunctionalLock(new ExclusiveLock());
-        } else {
-            sharedLock = new SharedLock();
-            exclusiveLock = new ExclusiveLock();
-        }
+        sharedLock = new SharedLock();
+        exclusiveLock = allowUnitTestMode ? new DebugAwareFunctionalLock(new ExclusiveLock()) : new ExclusiveLock();
         this.allowUnitTestMode = allowUnitTestMode;
     }
 
@@ -305,10 +300,10 @@ public class UpdateGraphLock {
 
     // region DebugLock
     class DebugAwareFunctionalLock implements AwareFunctionalLock {
-        private final AwareFunctionalLock delegate;
-        private final Deque<Throwable> lockingContext = new ArrayDeque<>();
+        private final ExclusiveLock delegate;
+        private final Deque<Throwable> lockingContext = new ConcurrentLinkedDeque<>();
 
-        DebugAwareFunctionalLock(AwareFunctionalLock delegate) {
+        DebugAwareFunctionalLock(ExclusiveLock delegate) {
             this.delegate = delegate;
         }
 
