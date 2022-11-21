@@ -39,6 +39,10 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
         return RETAINED_REFERENCE_UPDATER.compareAndSet(this, null, retainedReference);
     }
 
+    private boolean clearRetainedReference(@NotNull final WeakReference<? extends LivenessReferent> retainedReference) {
+        return RETAINED_REFERENCE_UPDATER.compareAndSet(this, retainedReference, null);
+    }
+
     private WeakReference<? extends LivenessReferent> getRetainedReference() {
         // noinspection unchecked
         return (WeakReference<? extends LivenessReferent>) RETAINED_REFERENCE_UPDATER.getAndSet(this, null);
@@ -64,9 +68,11 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return;
         }
-        final WeakReference<? extends LivenessReferent> retainedReference = getRetainedReference();
+        final WeakReference<? extends LivenessReferent> localRetainedReference = getRetainedReference();
         final LivenessReferent retained;
-        if (retainedReference != null && (retained = retainedReference.get()) != null) {
+        if (localRetainedReference != null
+                && clearRetainedReference(localRetainedReference)
+                && (retained = localRetainedReference.get()) != null) {
             retained.dropReference();
         }
     }
