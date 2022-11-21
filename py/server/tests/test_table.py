@@ -1,9 +1,13 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+import random
+import time
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
+
+import deephaven
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \

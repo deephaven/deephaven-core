@@ -124,6 +124,11 @@ class NumpyTestCase(BaseTestCase):
                 np_array = to_numpy(self.test_table, [col.name])
                 test_table = to_table(np_array, [col.name])
                 self.assertEqual(test_table.size, self.test_table.size)
+                if col.data_type == dtypes.JObject:
+                    # to_table treats any non-primitive/string data as Python object
+                    self.assertEqual(test_table.columns[0].data_type, dtypes.PyObject)
+                else:
+                    self.assertEqual(test_table.columns[0].data_type, col.data_type)
 
         with self.subTest("test multi-columns to numpy"):
             input_cols = [
