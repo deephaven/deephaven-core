@@ -181,8 +181,8 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
      * Attach a reverse lookup listener to the specified table.
      */
     Table attachReverseLookup(Table table) {
-        final ReverseLookupListener listener = ReverseLookupListener
-                .makeReverseLookupListenerWithSnapshot((BaseTable) table, getInfo().getHierarchicalColumnName());
+//        final ReverseLookupListener listener = ReverseLookupListener
+//                .makeReverseLookupListenerWithSnapshot((BaseTable) table, getInfo().getHierarchicalColumnName());
         table = ((BaseTable) table).copy();
         table.setAttribute(Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE, listener);
 

@@ -6,7 +6,6 @@ package io.deephaven.treetable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.Table;
@@ -317,8 +316,8 @@ class SnapshotState {
             return new Pair<>(name, new double[requestedViewportSize]);
         } else if (type == float.class || type == Float.class) {
             return new Pair<>(name, new float[requestedViewportSize]);
-        } else if (type == SmartKey.class) {
-            return new Pair<>(name, new Object[requestedViewportSize]);
+//        } else if (type == SmartKey.class) {
+//            return new Pair<>(name, new Object[requestedViewportSize]);
         } else {
             return new Pair<>(name, Array.newInstance(type, requestedViewportSize));
         }

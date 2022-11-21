@@ -339,6 +339,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @Nullable final BitSet columns,
             @NotNull final RowSequence rows,
             @NotNull final WritableChunk<? extends Values>[] destinations) {
+
         return 0;
     }
 }
