@@ -118,7 +118,7 @@ public interface FunctionalLock extends Lock {
     default SafeCloseable lockCloseable() {
         // Note: we are creating the closeable _first_ in the rare case that we are out of memory or there is some
         // other exceptional circumstance that causes this object creation to fail.
-        final SafeCloseableUnlock unlock = new SafeCloseableUnlock(this);
+        final SafeCloseable unlock = this::unlock;
         lock();
         return unlock;
     }
@@ -132,7 +132,7 @@ public interface FunctionalLock extends Lock {
     default SafeCloseable lockInterruptiblyCloseable() throws InterruptedException {
         // Note: we are creating the closeable _first_ in the rare case that we are out of memory or there is some
         // other exceptional circumstance that causes this object creation to fail.
-        final SafeCloseableUnlock unlock = new SafeCloseableUnlock(this);
+        final SafeCloseable unlock = this::unlock;
         lockInterruptibly();
         return unlock;
     }
