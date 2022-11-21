@@ -4,7 +4,10 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
@@ -245,5 +248,14 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         public boolean satisfied(final long step) {
             return parent.satisfied(step);
         }
+    }
+
+    @Override
+    public long fillSnapshotChunks(
+            @NotNull final Table keyTable,
+            @Nullable final BitSet columns,
+            @NotNull final RowSequence rows,
+            @NotNull final WritableChunk<? extends Values>[] destinations) {
+        return 0;
     }
 }

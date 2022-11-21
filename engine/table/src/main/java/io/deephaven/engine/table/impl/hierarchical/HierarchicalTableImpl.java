@@ -84,7 +84,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          */
         private final IMPL_TYPE base;
 
-        private final IMPL_TYPE hierarchicalTable;
+        private final IMPL_TYPE hierarchicalTable = null; // TODO-RWC implement client views
 
         /**
          * The table of keys to expand.
@@ -105,7 +105,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             this.keyTable = keyTable;
             this.sorts = sorts;
             this.filters = filters;
-            if (isRefreshing) {
+            if (source.isRefreshing()) {
                 manage(HierarchicalTableImpl.this);
             }
             if (base == null) {
