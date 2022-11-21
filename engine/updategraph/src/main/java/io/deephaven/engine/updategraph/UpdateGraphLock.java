@@ -387,16 +387,6 @@ public class UpdateGraphLock {
             return delegate.computeLockedInterruptibly(supplier);
         }
 
-        @Override
-        public SafeCloseable lockCloseable() {
-            return delegate.lockCloseable();
-        }
-
-        @Override
-        public SafeCloseable lockInterruptiblyCloseable() throws InterruptedException {
-            return delegate.lockInterruptiblyCloseable();
-        }
-
         String getDebugMessage() {
             final Throwable item = lockingContext.peek();
             return item == null ? "locking context is empty" : ExceptionUtils.getStackTrace(item);
