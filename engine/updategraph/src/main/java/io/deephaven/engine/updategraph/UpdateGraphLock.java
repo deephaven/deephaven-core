@@ -320,19 +320,19 @@ public class UpdateGraphLock {
         @Override
         public void lock() {
             delegate.lock();
-            lockingContext.push(new Throwable());
+            pushContext();
         }
 
         @Override
         public void lockInterruptibly() throws InterruptedException {
             delegate.lockInterruptibly();
-            lockingContext.push(new Throwable());
+            pushContext();
         }
 
         @Override
         public boolean tryLock() {
             if (delegate.tryLock()) {
-                lockingContext.push(new Throwable());
+                pushContext();
                 return true;
             }
             return false;
@@ -341,7 +341,7 @@ public class UpdateGraphLock {
         @Override
         public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
             if (delegate.tryLock(time, unit)) {
-                lockingContext.push(new Throwable());
+                pushContext();
                 return true;
             }
             return false;
@@ -349,8 +349,8 @@ public class UpdateGraphLock {
 
         @Override
         public void unlock() {
-            delegate.unlock();
             lockingContext.pop();
+            delegate.unlock();
         }
 
         @NotNull
@@ -359,36 +359,19 @@ public class UpdateGraphLock {
             return delegate.newCondition();
         }
 
-        @Override
-        public <EXCEPTION_TYPE extends Exception> void doLocked(
-                @NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable) throws EXCEPTION_TYPE {
-            delegate.doLocked(runnable);
-        }
-
-        @Override
-        public <EXCEPTION_TYPE extends Exception> void doLockedInterruptibly(
-                @NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable)
-                throws InterruptedException, EXCEPTION_TYPE {
-            delegate.doLockedInterruptibly(runnable);
-        }
-
-        @Override
-        public <RESULT_TYPE, EXCEPTION_TYPE extends Exception> RESULT_TYPE computeLocked(
-                @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
-                throws EXCEPTION_TYPE {
-            return delegate.computeLocked(supplier);
-        }
-
-        @Override
-        public <RESULT_TYPE, EXCEPTION_TYPE extends Exception> RESULT_TYPE computeLockedInterruptibly(
-                @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
-                throws InterruptedException, EXCEPTION_TYPE {
-            return delegate.computeLockedInterruptibly(supplier);
-        }
-
         String getDebugMessage() {
             final Throwable item = lockingContext.peek();
             return item == null ? "locking context is empty" : ExceptionUtils.getStackTrace(item);
+        }
+
+        private void pushContext() {
+            // Implementation must have already acquired lock
+            try {
+                lockingContext.push(new Throwable());
+            } catch (Throwable t) {
+                delegate.unlock();
+                throw t;
+            }
         }
     }
     // endregion DebugLock
