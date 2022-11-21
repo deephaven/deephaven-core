@@ -318,7 +318,7 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
-        ac.supplyRowLookup(() -> makeRowLookup(keySources, stateManager));
+        ac.supplyRowLookup(() -> stateManager::findPositionForKey);
         return stateManager;
     }
 
@@ -332,46 +332,6 @@ public class ChunkedOperatorAggregationHelper {
         }
         return new TableUpdateImpl(upstream.added(), RowSetFactory.empty(), upstream.modified(), upstream.shifted(),
                 upstream.modifiedColumnSet());
-    }
-
-    private static AggregationRowLookup makeRowLookup(
-            @NotNull final ColumnSource<?>[] keySources,
-            @NotNull final OperatorAggregationStateManager stateManager) {
-        if (keySources.length == 1) {
-            if (keySources[0].getType() == DateTime.class) {
-                // TODO-RWC: Should this be null or NULL_LONG?
-                return key -> stateManager.findPositionForKey(DateTimeUtils.nanos((DateTime) key));
-            } else if (keySources[0].getType() == Boolean.class) {
-                return key -> stateManager.findPositionForKey(BooleanUtils.booleanAsByte((Boolean) key));
-            } else {
-                return stateManager::findPositionForKey;
-            }
-        } else {
-            final List<Consumer<Object[]>> reinterpreters = new ArrayList<>();
-            for (int ii = 0; ii < keySources.length; ++ii) {
-                if (keySources[ii].getType() == DateTime.class) {
-                    final int fii = ii;
-                    reinterpreters.add(
-                            reinterpreted -> reinterpreted[fii] = DateTimeUtils.nanos((DateTime) reinterpreted[fii]));
-                } else if (keySources[ii].getType() == Boolean.class) {
-                    final int fii = ii;
-                    reinterpreters.add(reinterpreted -> reinterpreted[fii] =
-                            BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
-                }
-            }
-            if (reinterpreters.isEmpty()) {
-                return stateManager::findPositionForKey;
-            } else {
-                return key -> {
-                    final Object[] keyArray = (Object[]) key;
-                    final Object[] reinterpreted = Arrays.copyOf(keyArray, keyArray.length);
-                    for (final Consumer<Object[]> transform : reinterpreters) {
-                        transform.accept(reinterpreted);
-                    }
-                    return stateManager.findPositionForKey(reinterpreted);
-                };
-            }
-        }
     }
 
     private static class KeyedUpdateContext implements SafeCloseable {
@@ -2121,7 +2081,7 @@ public class ChunkedOperatorAggregationHelper {
             swapListener.setListenerAndResult(listener, result);
         }
 
-        ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, (Object[]) EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
+        ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
 
         return ac.transformResult(result);
     }

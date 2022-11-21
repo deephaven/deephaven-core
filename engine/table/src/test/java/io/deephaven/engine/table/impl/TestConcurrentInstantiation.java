@@ -496,7 +496,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate3, reverse3);
     }
 
-
     public void testSortOfPartitionBy() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "a", "a"));
@@ -529,7 +528,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
-
 
     public void testChain() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
@@ -569,69 +567,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, chain1);
         TstUtils.assertTableEquals(tableUpdate, chain2);
         TstUtils.assertTableEquals(tableUpdate, chain3);
-    }
-
-    public void testReverseLookupListener() throws ExecutionException, InterruptedException, TimeoutException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                c("x", 1, 2, 3), c("y", "a", "b", "c"));
-
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-
-        final ReverseLookupListener rll =
-                pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
-                        .get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-
-        TestCase.assertEquals(rll.get(1), 2);
-        TestCase.assertEquals(rll.get(2), 4);
-        TestCase.assertEquals(rll.get(3), 6);
-        TestCase.assertEquals(rll.get(4), rll.noEntryValue());
-
-        TstUtils.addToTable(table, i(4), c("x", 4), c("y", "d"));
-
-        final ReverseLookupListener rll2 =
-                pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
-                        .get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-
-        TestCase.assertEquals(rll2.get(1), 2);
-        TestCase.assertEquals(rll2.get(2), 4);
-        TestCase.assertEquals(rll2.get(3), 6);
-        TestCase.assertEquals(rll2.get(4), rll.noEntryValue());
-
-        table.notifyListeners(i(), i(), i(4));
-
-        final ReverseLookupListener rll3 =
-                pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
-                        .get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-
-        TestCase.assertEquals(rll3.get(1), 2);
-        TestCase.assertEquals(rll3.get(2), rll.noEntryValue());
-        TestCase.assertEquals(rll3.get(3), 6);
-        TestCase.assertEquals(rll3.get(4), 4);
-
-        TestCase.assertTrue(LogicalClock.DEFAULT.currentStep() > rll.getLastNotificationStep());
-        TestCase.assertTrue(LogicalClock.DEFAULT.currentStep() > rll2.getLastNotificationStep());
-        TestCase.assertEquals(LogicalClock.DEFAULT.currentStep(), rll3.getLastNotificationStep());
-
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-
-        TestCase.assertEquals(rll.get(1), 2);
-        TestCase.assertEquals(rll.get(2), rll.noEntryValue());
-        TestCase.assertEquals(rll.get(3), 6);
-        TestCase.assertEquals(rll.get(4), 4);
-
-        TestCase.assertEquals(rll2.get(1), 2);
-        TestCase.assertEquals(rll2.get(2), rll.noEntryValue());
-        TestCase.assertEquals(rll2.get(3), 6);
-        TestCase.assertEquals(rll2.get(4), 4);
-
-        TestCase.assertEquals(rll3.get(1), 2);
-        TestCase.assertEquals(rll3.get(2), rll.noEntryValue());
-        TestCase.assertEquals(rll3.get(3), 6);
-        TestCase.assertEquals(rll3.get(4), 4);
-
-        TestCase.assertEquals(LogicalClock.DEFAULT.currentStep(), rll.getLastNotificationStep());
-        TestCase.assertEquals(LogicalClock.DEFAULT.currentStep(), rll2.getLastNotificationStep());
-        TestCase.assertEquals(LogicalClock.DEFAULT.currentStep(), rll3.getLastNotificationStep());
     }
 
     public void testIterative() {

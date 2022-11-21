@@ -11,7 +11,7 @@ public interface AggregationRowLookup {
     /**
      * Re-usable empty key, for use in (trivial) reverse lookups against no-key aggregations.
      */
-    Object EMPTY_KEY = new Object();
+    Object[] EMPTY_KEY = new Object[0];
 
     /**
      * Re-usable unknown row constant to serve as the default return value for {@link #noEntryValue()}.
@@ -37,7 +37,8 @@ public interface AggregationRowLookup {
      * columns</dd>
      * </p>
      * <p>
-     * Reinterpretation for key fields, if needed, will be applied internally by the row lookup function.
+     * All key fields must be reinterpreted to the appropriate primitive value before boxing. See
+     * {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToPrimitive}.
      *
      * @param key A single (boxed) value for single-column keys, or an array of (boxed) values for compound keys
      * @return The row key where {@code key} exists in the table
