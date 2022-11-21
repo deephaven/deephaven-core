@@ -170,15 +170,6 @@ public interface Table extends
      * or {@code -1} for missing mappings.
      */
     String AGGREGATION_ROW_LOOKUP_ATTRIBUTE = "AggregationRowLookup";
-    /**
-     * Attribute on sort results. If present, the value is a {@link java.util.function.LongUnaryOperator} from output
-     * row key (that is, in the sorted table's row space) to input row key (that is, in the parent table's row space),
-     * returning {@link io.deephaven.engine.rowset.RowSequence#NULL_ROW_KEY} for missing matches.
-     * Using this concurrently requires careful consideration; it is safe for "previous" use before the parent table
-     * notifies on a given cycle, or for "current" use after the sorted table notifies (and during idle phases).
-     * Never available on the result of sorting a stream table.
-     */
-    String SORT_REVERSE_LOOKUP_ATTRIBUTE = "SortReverseLookup";
     String PREPARED_RLL_ATTRIBUTE = "PreparedRll";
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
     /**

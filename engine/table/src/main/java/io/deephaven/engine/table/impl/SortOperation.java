@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl;
 
-import gnu.trove.map.TLongLongMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
@@ -25,9 +24,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.LongUnaryOperator;
-
-import static io.deephaven.engine.table.Table.SORT_REVERSE_LOOKUP_ATTRIBUTE;
 
 public class SortOperation implements QueryTable.MemoizableOperation<QueryTable> {
 
@@ -269,7 +265,6 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             resultTable = new QueryTable(resultRowSet, resultMap);
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
-            resultTable.setAttribute(SORT_REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
 
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup, sortColumns, sortOrder,
                     sortMapping.writableCast(), sortedColumnsToSortBy,
@@ -279,31 +274,6 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             setSorted(resultTable);
 
             return new Result<>(resultTable, listener);
-        }
-    }
-
-    /**
-     * Get a reverse lookup for this sort result. See {@link Table#SORT_REVERSE_LOOKUP_ATTRIBUTE}. Unsupported if the
-     * sort result's parent was a {@link BaseTable#isStream() stream table}.
-     *
-     * @param sortResult The sort result table
-     * @return The reverse lookup
-     */
-    public static LongUnaryOperator getReverseLookup(@NotNull final Table sortResult) {
-        final Object value = sortResult.getAttribute(SORT_REVERSE_LOOKUP_ATTRIBUTE);
-        Assert.neqNull(value, "sort result reverse lookup");
-        Assert.instanceOf(value, "sort result reverse lookup", TLongLongMap.class);
-        return (TLongLongMap) value;
-    }
-
-    public static interface SortReverseLookup {
-        /**
-         *
-         * @param outputRowKey
-         * @return
-         */
-        long get(long outputRowKey) {
-
         }
     }
 }
