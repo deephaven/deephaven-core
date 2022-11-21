@@ -104,12 +104,16 @@ def _encode_signature(fn: Callable) -> str:
 def dh_vectorize(fn):
     """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
 
-    The result wrapper accepts arrays of the declared parameter data types (vs. scalar), iterates through them
-    together, and calls the wrapped function on each iteration. The result of each call is packed into an array which
-    is then returned when the input arrays are exhausted. In addition, the result wrapper expects an extra
-    'chunk-size' parameter that the caller must provide to determine the actual size of the input arrays. Since this
-    potentially changes the signature of the wrapped function, it is not recommended for the user to use this
-    decorator with the @ syntax.
+    If this annotation is not used on a query function, the Deephaven query engine will make an effort to vectorize
+    the function.  If vectorization is not possible, the query engine will use the original, non-vectorized function.
+    If this annotation is used on a function, the Deephaven query engine will use the vectorized function in a query, or an
+    error will result if the function can not be vectorized.
+
+    When this decorator is used on a function, the number and type of input and output arguments are changed.
+    These changes are only intended for use by the Deephaven query engine.  Users are discouraged from using
+    vectorized functions in non-query code, since the function signature may change in future versions.
+    
+    The current vectorized function signature includes (1) the size of the input arrays, (2) the output array, and (3) the input arrays.
     """
     signature = _encode_signature(fn)
     return_type = signature[-1]
