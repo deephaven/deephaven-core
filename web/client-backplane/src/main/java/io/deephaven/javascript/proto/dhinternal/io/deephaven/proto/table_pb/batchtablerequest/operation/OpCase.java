@@ -42,5 +42,6 @@ public class OpCase {
             UNSTRUCTURED_FILTER,
             UPDATE,
             UPDATE_VIEW,
-            VIEW;
+            VIEW,
+            WHERE_IN;
 }

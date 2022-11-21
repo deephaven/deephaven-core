@@ -1564,6 +1564,49 @@ public class BatchTableRequest {
                 void setSourceId(Object sourceId);
             }
 
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface WhereInFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.WhereInFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getColumnsToMatchList();
+
+                @JsProperty
+                Object getLeftId();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getRightId();
+
+                @JsProperty
+                boolean isInverted();
+
+                @JsProperty
+                void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+                @JsOverlay
+                default void setColumnsToMatchList(String[] columnsToMatchList) {
+                    setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+                }
+
+                @JsProperty
+                void setInverted(boolean inverted);
+
+                @JsProperty
+                void setLeftId(Object leftId);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setRightId(Object rightId);
+            }
+
             @JsOverlay
             static BatchTableRequest.ToObjectReturnType.OpsListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
@@ -1661,6 +1704,9 @@ public class BatchTableRequest {
 
             @JsProperty
             Object getView();
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.WhereInFieldType getWhereIn();
 
             @JsProperty
             void setApplyPreviewColumns(
@@ -1773,6 +1819,10 @@ public class BatchTableRequest {
 
             @JsProperty
             void setView(Object view);
+
+            @JsProperty
+            void setWhereIn(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.WhereInFieldType whereIn);
         }
 
         @JsOverlay
@@ -3340,6 +3390,49 @@ public class BatchTableRequest {
                 void setSourceId(Object sourceId);
             }
 
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface WhereInFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.WhereInFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getColumnsToMatchList();
+
+                @JsProperty
+                Object getLeftId();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getRightId();
+
+                @JsProperty
+                boolean isInverted();
+
+                @JsProperty
+                void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+                @JsOverlay
+                default void setColumnsToMatchList(String[] columnsToMatchList) {
+                    setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+                }
+
+                @JsProperty
+                void setInverted(boolean inverted);
+
+                @JsProperty
+                void setLeftId(Object leftId);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setRightId(Object rightId);
+            }
+
             @JsOverlay
             static BatchTableRequest.ToObjectReturnType0.OpsListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
@@ -3437,6 +3530,9 @@ public class BatchTableRequest {
 
             @JsProperty
             Object getView();
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.WhereInFieldType getWhereIn();
 
             @JsProperty
             void setApplyPreviewColumns(
@@ -3549,6 +3645,10 @@ public class BatchTableRequest {
 
             @JsProperty
             void setView(Object view);
+
+            @JsProperty
+            void setWhereIn(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.WhereInFieldType whereIn);
         }
 
         @JsOverlay
