@@ -22,6 +22,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -275,5 +276,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             return new Result<>(resultTable, listener);
         }
+    }
+
+    public static RowRedirection getRowRedirection(@NotNull final Table sortResult) {
+        final String firstColumnName = sortResult.getDefinition().getColumns().get(0).getName();
+        final ColumnSource<?> firstColumnSource = sortResult.getColumnSource(firstColumnName);
+        if (!(firstColumnSource instanceof RedirectedColumnSource)) {
+            throw new IllegalArgumentException("Sort result's first column is not redirected");
+        }
+        return ((RedirectedColumnSource) firstColumnSource).getRowRedirection();
     }
 }

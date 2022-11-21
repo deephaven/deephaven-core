@@ -3,15 +3,21 @@
  */
 package io.deephaven.engine.table.impl.hierarchical;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.hash.KeyedLongObjectHashMap;
+import io.deephaven.hash.KeyedLongObjectKey;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.lang.ref.WeakReference;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.BiFunction;
+import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +57,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         return root;
     }
 
+    @Override
+    public SnapshotState makeSnapshotState() {
+        return null;
+    }
+
     IFACE_TYPE noopResult() {
         if (getSource().isRefreshing()) {
             manageWithCurrentScope();
@@ -69,6 +80,90 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
     }
 
+    static final class SnapshotStateImpl implements SnapshotState {
+
+        private final Map<Table, KeyTableState> cachedKeyTableStates = new WeakHashMap<>();
+        private final KeyedLongObjectHashMap<NodeState> cachedNodes = new KeyedLongObjectHashMap<>(NodeState.ID_KEY);
+
+        KeyTableState getKeyTableState(
+                @NotNull Table keyTable,
+                @NotNull ColumnName keyTableExpandDescendantsColumn,
+                @NotNull final BiFunction<Table, ColumnName, ? extends KeyTableState> keyTableStateFactory) {
+            return cachedKeyTableStates.computeIfAbsent(keyTable,
+                    kt -> keyTableStateFactory.apply(keyTable, keyTableExpandDescendantsColumn));
+        }
+
+        NodeState getNodeState(final long id, @NotNull final LongFunction<NodeState> nodeStateFactory) {
+            return cachedNodes.putIfAbsent(id, nodeStateFactory::apply);
+        }
+
+        @Override
+        public void close() {
+            cachedNodes.forEach(NodeState::release);
+            cachedNodes.clear();
+        }
+    }
+
+    /**
+     * Opaque per-type key table state used in computing snapshots.
+     */
+    interface KeyTableState {
+    }
+
+    static final class NodeState {
+
+        private static final AtomicIntegerFieldUpdater<NodeState> RETENTION_COUNT_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(NodeState.class, "retentionCount");
+        private static final KeyedLongObjectKey<NodeState> ID_KEY = new KeyedLongObjectKey.BasicStrict<>() {
+            @Override
+            public long getLongKey(@NotNull final NodeState nodeState) {
+                return nodeState.id;
+            }
+        };
+
+        /**
+         * Node identifier, a type-specific identifier that uniquely maps to a single Table node in the
+         * HierarchicalTable.
+         */
+        private final long id;
+
+        /**
+         * The Table at this node, after any node-level operations have been applied.
+         */
+        private final Table processed;
+
+        /**
+         * The sort {@link RowRedirection} that maps the appropriate unsorted row key space to {@link #processed
+         * processed's} outer row space.
+         */
+        private final RowRedirection sortRedirection;
+
+        private volatile int retentionCount;
+
+        NodeState(final long id, final Table processed, final boolean needsRedirection) {
+            this.id = id;
+            this.processed = processed;
+            if (processed.isRefreshing()) {
+                RETENTION_COUNT_UPDATER.set(this, 1);
+                processed.retainReference();
+            }
+            sortRedirection = needsRedirection ? SortOperation.getRowRedirection(processed) : null;
+        }
+
+        Table getProcessed() {
+            return processed;
+        }
+
+        RowRedirection getSortRedirection() {
+            return sortRedirection;
+        }
+
+        private void release() {
+            if (RETENTION_COUNT_UPDATER.compareAndSet(this, 1, 0)) {
+                processed.dropReference();
+            }
+        }
+    }
     // TODO-RWC: Be sure to take format columns into account for table definitions. Prune formats applied to both from
     // UI.
 }
