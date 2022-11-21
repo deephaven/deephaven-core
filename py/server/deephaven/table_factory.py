@@ -197,7 +197,7 @@ class DynamicTableWriter(JObjectWrapper):
 
 
 class InputTable(Table):
-    """InputTable is a subclass of Table that allows the users to dynamic add/delete/modify data in it. There are two
+    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it. There are two
     types of InputTable - append-only and keyed.
 
     The append-only input table is not keyed, all rows are added to the end of the table, and deletions and edits are
@@ -238,7 +238,7 @@ class InputTable(Table):
             raise DHError(e, "failed to create a InputTable.") from e
 
     def add(self, table: Table):
-        """Writes rows in the provided table to this input table. If this is keyed input table, added rows with keys
+        """Writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
         that match existing rows will replace those rows.
 
         Args:
