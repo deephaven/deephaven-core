@@ -582,7 +582,7 @@ public abstract class MemoizedOperationKey {
         return new CrossJoin(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve);
     }
 
-    private static boolean equalWeakRefsByReferentIdentity(final WeakReference<?> r1, final WeakReference<?> r2) {
+    protected static boolean equalWeakRefsByReferentIdentity(final WeakReference<?> r1, final WeakReference<?> r2) {
         if (r1 == r2) {
             return true;
         }

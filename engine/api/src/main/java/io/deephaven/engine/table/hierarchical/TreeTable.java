@@ -31,6 +31,14 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
     ColumnName getParentIdentifierColumn();
 
     /**
+     * Get the name of a column that denotes whether a row is expandable. This column is "synthetic"; that is, it's not
+     * part of the data, but rather calculated as part of snapshotting.
+     *
+     * @return The name of a column that denotes row expandability
+     */
+    ColumnName getExpandableColumn();
+
+    /**
      * Get the {@link TableDefinition} that should be exposed to node table consumers, e.g. UI-driven snapshots. This
      * excludes "internal" columns used to organize the tree or support operations, but includes formatting columns.
      *
