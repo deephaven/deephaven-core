@@ -222,8 +222,7 @@ class InputTable(Table):
                 raise ValueError("both column definitions and init table are provided.")
 
             if col_defs:
-                cols = [Column(name=n, data_type=t) for n, t in col_defs.items()]
-                j_arg_1 = _JTableDefinition.of([col.j_column_definition for col in cols])
+                j_arg_1 = _JTableDefinition.of([Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
             else:
                 j_arg_1 = init_table.j_table
 
@@ -237,7 +236,7 @@ class InputTable(Table):
         except Exception as e:
             raise DHError(e, "failed to create a InputTable.") from e
 
-    def add(self, table: Table):
+    def add(self, table: Table) -> None:
         """Writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
         that match existing rows will replace those rows.
 
@@ -252,8 +251,9 @@ class InputTable(Table):
         except Exception as e:
             raise DHError(e, "add to InputTable failed.") from e
 
-    def delete(self, table: Table):
-        """Deletes the keys contained in the provided table from this keyed input table.
+    def delete(self, table: Table) -> None:
+        """Deletes the keys contained in the provided table from this keyed input table. If this method is called on an
+        append-only input table, a PermissionError will be raised.
 
         Args:
             table (Table): the table with the keys to delete
