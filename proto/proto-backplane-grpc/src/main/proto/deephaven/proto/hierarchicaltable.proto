@@ -90,16 +90,24 @@ message HierarchicalTableViewDescriptor {
   //   - Rollups: The group-by columns
   //   - Trees: The single identifier column
   repeated string expand_by_columns = 1;
+
+  // ----- ONLY IN ROLLUPS -----
   // The name of a column that signifies the "width" (in defined columns) for a rollup key. Must be included along
-  // with expanded columns in a rollup key table.
+  // with expand-by columns in a rollup key table.
   optional string rollup_key_width_column = 2;
   // Whether this rollup's leaf nodes are first level aggregations or constituents
   optional RollupNodeType rollup_leaf_node_type = 3;
   // '='-delimited pairs from output (aggregation) column name to input (constituent) column name
   repeated string rollup_output_input_column_pairs = 4;
+  // ---------------------------
+
+  // ------ ONLY IN TREES ------
+  // The name of a column that specifies whether a tree row is expandable. Leaf rows have no children to expand.
+  optional string tree_row_expandable_column = 5;
+  // ---------------------------
 
   // Schema as described in Arrow Message.fbs::Message.
-  bytes schema_header = 5;
+  bytes schema_header = 6;
 }
 
 message HierarchicalTableViewRequest {
@@ -111,13 +119,16 @@ message HierarchicalTableViewRequest {
   // If empty or not present, the result will have all nodes collapsed.
   // The format for the key table is dictated by the corresponding HierarchicalTableViewDescriptor. It is expected to
   // have one column for each "expand-by column", one for the "rollup key width column" for rollups, and (optionally)
-  // an "ExpandDescendants" column of booleans that dictates that descendant nodes should be expanded if not included
+  // an "expand descendants" column of booleans that dictates that descendant nodes should be expanded if not included
   // in the key table instead of contracted if not included.
   Ticket key_table = 3;
+  // The name of a column found in the key table that specifies whether descendants of an expanded node should be
+  // expanded by default instead of contracted by default
+  optional string key_table_expand_descendants_column = 4;
   // Filters to apply to the hierarchical table nodes
-  repeated Condition filters = 4;
+  repeated Condition filters = 5;
   // Sorts to apply to the hierarchical table nodes
-  repeated SortDescriptor sorts = 5;
+  repeated SortDescriptor sorts = 6;
 }
 
 message HierarchicalTableViewResponse {

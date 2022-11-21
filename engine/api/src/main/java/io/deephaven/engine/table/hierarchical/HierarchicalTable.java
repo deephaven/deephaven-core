@@ -2,8 +2,10 @@ package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.AttributeMap;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +32,8 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
      * @return The root table
      */
     Table getRoot();
+
+    Context makeSnapshotContext(@NotNull Table keyTable, @Nullable LivenessManager manager);
 
     /**
      * Populate data chunks for a snapshot of this HierarchicalTable.

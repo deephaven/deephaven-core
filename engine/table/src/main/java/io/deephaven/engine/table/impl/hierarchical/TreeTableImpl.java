@@ -37,6 +37,7 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
 public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImpl> implements TreeTable {
 
     public static final ColumnName TREE_COLUMN = ColumnName.of("__TREE__");
+    public static final ColumnName EXPANDABLE_COLUMN = ColumnName.of("__EXPANDABLE__");
     public static final ColumnName REVERSE_LOOKUP_ROW_KEY_COLUMN = ColumnName.of("__ROW_KEY__");
 
     private final QueryTable tree;
@@ -84,6 +85,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     public ColumnName getParentIdentifierColumn() {
         return parentIdentifierColumn;
+    }
+
+    @Override
+    public ColumnName getExpandableColumn() {
+        return EXPANDABLE_COLUMN;
     }
 
     @Override
