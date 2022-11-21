@@ -119,12 +119,16 @@ class NumpyTestCase(BaseTestCase):
             self.assert_table_equals(tmp_table2, tmp_table.select(['Long2', 'Long4']))
 
     def test_to_table(self):
-        for col in self.test_table.columns[:-1]:
+        for col in self.test_table.columns:
             with self.subTest(f"test single column to numpy- {col.name}"):
                 np_array = to_numpy(self.test_table, [col.name])
                 test_table = to_table(np_array, [col.name])
                 self.assertEqual(test_table.size, self.test_table.size)
-                self.assertEqual(test_table.columns[0].data_type, col.data_type)
+                if col.data_type == dtypes.JObject:
+                    # to_table treats any non-primitive/string data as Python object
+                    self.assertEqual(test_table.columns[0].data_type, dtypes.PyObject)
+                else:
+                    self.assertEqual(test_table.columns[0].data_type, col.data_type)
 
         with self.subTest("test multi-columns to numpy"):
             input_cols = [

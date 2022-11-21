@@ -84,6 +84,9 @@ class ColumnTestCase(BaseTestCase):
         # We want to test that casting on both PyObject and JObject works as expected.
         self.assertEqual(t_list.columns[0].data_type, dtypes.PyObject)
         self.assertEqual(t_func.columns[0].data_type, dtypes.int_)
+        t_func_str = t_func.to_string()
+        for v in x:
+            self.assertIn(str(int(v)), t_func_str)
 
         t_list_integers = t_list.update(
             ["A = (byte)X", "B = (short)X", "C = (int)X", "D = (long)X", "E = (float)X", "F = (double)X"])

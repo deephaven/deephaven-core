@@ -72,7 +72,7 @@ _numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "O"]
 
 def _encode_signature(fn: Callable) -> str:
     """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
-    type to numpy dtype chars (i,l,h,f,d,b,?,O), and pack them into a string with parameter type chars first,
+    type to numpy dtype chars (i,l,h,f,d,b,?,U,O), and pack them into a string with parameter type chars first,
     in their original order, followed by the delimiter string '->', then the return type_char.
 
     If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
@@ -105,18 +105,18 @@ def dh_vectorize(fn):
     """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
 
     If this annotation is not used on a query function, the Deephaven query engine will make an effort to vectorize
-    the function.  If vectorization is not possible, the query engine will use the original, non-vectorized function.
-    If this annotation is used on a function, the Deephaven query engine will use the vectorized function in a query, or an
-    error will result if the function can not be vectorized.
+    the function. If vectorization is not possible, the query engine will use the original, non-vectorized function.
+    If this annotation is used on a function, the Deephaven query engine will use the vectorized function in a query,
+    or an error will result if the function can not be vectorized.
 
     When this decorator is used on a function, the number and type of input and output arguments are changed.
-    These changes are only intended for use by the Deephaven query engine.  Users are discouraged from using
+    These changes are only intended for use by the Deephaven query engine. Users are discouraged from using
     vectorized functions in non-query code, since the function signature may change in future versions.
     
-    The current vectorized function signature includes (1) the size of the input arrays, (2) the output array, and (3) the input arrays.
+    The current vectorized function signature includes (1) the size of the input arrays, (2) the output array,
+    and (3) the input arrays.
     """
     signature = _encode_signature(fn)
-    return_type = signature[-1]
 
     def wrapper(*args):
         if len(args) != len(signature) - len("->?") + 2:
