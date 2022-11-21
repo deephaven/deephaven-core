@@ -193,11 +193,6 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(WhereNotInTable whereNotInTable) {
-        out = Stream.of(whereNotInTable.left(), whereNotInTable.right());
-    }
-
-    @Override
     public void visit(NaturalJoinTable naturalJoinTable) {
         out = Stream.of(naturalJoinTable.left(), naturalJoinTable.right());
     }

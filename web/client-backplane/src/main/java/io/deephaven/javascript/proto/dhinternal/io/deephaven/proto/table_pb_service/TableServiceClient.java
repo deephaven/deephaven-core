@@ -33,6 +33,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Sort
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.UngroupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.UnstructuredFilterTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.WhereInRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsOverlay;
@@ -3013,6 +3014,98 @@ public class TableServiceClient {
         }
     }
 
+    @JsFunction
+    public interface WhereInCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.WhereInCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(TableServiceClient.WhereInCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+    }
+
+    @JsFunction
+    public interface WhereInMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.WhereInMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.WhereInMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface WhereInMetadata_or_callbackUnionType {
+        @JsOverlay
+        static TableServiceClient.WhereInMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default TableServiceClient.WhereInMetadata_or_callbackFn asWhereInMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isWhereInMetadata_or_callbackFn() {
+            return (Object) this instanceof TableServiceClient.WhereInMetadata_or_callbackFn;
+        }
+    }
+
     public String serviceHost;
 
     public TableServiceClient(String serviceHost, Object options) {}
@@ -4694,4 +4787,56 @@ public class TableServiceClient {
     public native UnaryResponse view(
             SelectOrUpdateRequest requestMessage,
             TableServiceClient.ViewMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse whereIn(
+            WhereInRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.WhereInCallbackFn callback) {
+        return whereIn(
+                requestMessage,
+                Js.<TableServiceClient.WhereInMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse whereIn(
+            WhereInRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return whereIn(
+                requestMessage,
+                Js.<TableServiceClient.WhereInMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse whereIn(
+            WhereInRequest requestMessage,
+            TableServiceClient.WhereInMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.WhereInCallbackFn callback) {
+        return whereIn(
+                requestMessage,
+                Js.<TableServiceClient.WhereInMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse whereIn(
+            WhereInRequest requestMessage,
+            TableServiceClient.WhereInMetadata_or_callbackFn metadata_or_callback) {
+        return whereIn(
+                requestMessage,
+                Js.<TableServiceClient.WhereInMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse whereIn(
+            WhereInRequest requestMessage,
+            TableServiceClient.WhereInMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.WhereInCallbackFn callback);
+
+    public native UnaryResponse whereIn(
+            WhereInRequest requestMessage,
+            TableServiceClient.WhereInMetadata_or_callbackUnionType metadata_or_callback);
 }

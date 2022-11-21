@@ -30,6 +30,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Sort
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.UngroupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.UnstructuredFilterTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.WhereInRequest;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -1584,6 +1585,49 @@ public class Operation {
             void setSourceId(Object sourceId);
         }
 
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface WhereInFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType.WhereInFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<String> getColumnsToMatchList();
+
+            @JsProperty
+            Object getLeftId();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getRightId();
+
+            @JsProperty
+            boolean isInverted();
+
+            @JsProperty
+            void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+            @JsOverlay
+            default void setColumnsToMatchList(String[] columnsToMatchList) {
+                setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+            }
+
+            @JsProperty
+            void setInverted(boolean inverted);
+
+            @JsProperty
+            void setLeftId(Object leftId);
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setRightId(Object rightId);
+        }
+
         @JsOverlay
         static Operation.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -1683,6 +1727,9 @@ public class Operation {
         Object getView();
 
         @JsProperty
+        Operation.ToObjectReturnType.WhereInFieldType getWhereIn();
+
+        @JsProperty
         void setApplyPreviewColumns(
                 Operation.ToObjectReturnType.ApplyPreviewColumnsFieldType applyPreviewColumns);
 
@@ -1779,6 +1826,9 @@ public class Operation {
 
         @JsProperty
         void setView(Object view);
+
+        @JsProperty
+        void setWhereIn(Operation.ToObjectReturnType.WhereInFieldType whereIn);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -3324,6 +3374,49 @@ public class Operation {
             void setSourceId(Object sourceId);
         }
 
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface WhereInFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType0.WhereInFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<String> getColumnsToMatchList();
+
+            @JsProperty
+            Object getLeftId();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getRightId();
+
+            @JsProperty
+            boolean isInverted();
+
+            @JsProperty
+            void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+            @JsOverlay
+            default void setColumnsToMatchList(String[] columnsToMatchList) {
+                setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+            }
+
+            @JsProperty
+            void setInverted(boolean inverted);
+
+            @JsProperty
+            void setLeftId(Object leftId);
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setRightId(Object rightId);
+        }
+
         @JsOverlay
         static Operation.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -3423,6 +3516,9 @@ public class Operation {
         Object getView();
 
         @JsProperty
+        Operation.ToObjectReturnType0.WhereInFieldType getWhereIn();
+
+        @JsProperty
         void setApplyPreviewColumns(
                 Operation.ToObjectReturnType0.ApplyPreviewColumnsFieldType applyPreviewColumns);
 
@@ -3519,6 +3615,9 @@ public class Operation {
 
         @JsProperty
         void setView(Object view);
+
+        @JsProperty
+        void setWhereIn(Operation.ToObjectReturnType0.WhereInFieldType whereIn);
     }
 
     public static native Operation deserializeBinary(Uint8Array bytes);
@@ -3592,6 +3691,8 @@ public class Operation {
 
     public native void clearView();
 
+    public native void clearWhereIn();
+
     public native ApplyPreviewColumnsRequest getApplyPreviewColumns();
 
     public native AsOfJoinTablesRequest getAsOfJoin();
@@ -3656,6 +3757,8 @@ public class Operation {
 
     public native SelectOrUpdateRequest getView();
 
+    public native WhereInRequest getWhereIn();
+
     public native boolean hasApplyPreviewColumns();
 
     public native boolean hasAsOfJoin();
@@ -3717,6 +3820,8 @@ public class Operation {
     public native boolean hasUpdateView();
 
     public native boolean hasView();
+
+    public native boolean hasWhereIn();
 
     public native Uint8Array serializeBinary();
 
@@ -3843,6 +3948,10 @@ public class Operation {
     public native void setView();
 
     public native void setView(SelectOrUpdateRequest value);
+
+    public native void setWhereIn();
+
+    public native void setWhereIn(WhereInRequest value);
 
     public native Operation.ToObjectReturnType0 toObject();
 
