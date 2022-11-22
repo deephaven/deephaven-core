@@ -119,33 +119,42 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final WhereInTable whereIn(TableSpec rightTable, String... columnsToMatch) {
-        WhereInTable.Builder builder = WhereInTable.builder().left(this).right(rightTable);
+        return whereIn(rightTable, columnsToMatch, false);
+    }
+
+    @Override
+    public final WhereInTable whereIn(TableSpec rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+        return whereIn(rightTable, columnsToMatch, false);
+    }
+
+    @Override
+    public final WhereInTable whereNotIn(TableSpec rightTable, String... columnsToMatch) {
+        return whereIn(rightTable, columnsToMatch, true);
+    }
+
+    @Override
+    public final WhereInTable whereNotIn(TableSpec rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+        return whereIn(rightTable, columnsToMatch, true);
+    }
+
+    private WhereInTable whereIn(TableSpec rightTable, String[] columnsToMatch, boolean inverted) {
+        WhereInTable.Builder builder = WhereInTable.builder()
+                .left(this)
+                .right(rightTable)
+                .inverted(inverted);
         for (String toMatch : columnsToMatch) {
             builder.addMatches(JoinMatch.parse(toMatch));
         }
         return builder.build();
     }
 
-    @Override
-    public final WhereInTable whereIn(TableSpec rightTable,
-            Collection<? extends JoinMatch> columnsToMatch) {
-        return WhereInTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
-                .build();
-    }
-
-    @Override
-    public final WhereNotInTable whereNotIn(TableSpec rightTable, String... columnsToMatch) {
-        WhereNotInTable.Builder builder = WhereNotInTable.builder().left(this).right(rightTable);
-        for (String toMatch : columnsToMatch) {
-            builder.addMatches(JoinMatch.parse(toMatch));
-        }
-        return builder.build();
-    }
-
-    @Override
-    public final WhereNotInTable whereNotIn(TableSpec rightTable,
-            Collection<? extends JoinMatch> columnsToMatch) {
-        return WhereNotInTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
+    private WhereInTable whereIn(TableSpec rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            boolean inverted) {
+        return WhereInTable.builder()
+                .left(this)
+                .right(rightTable)
+                .addAllMatches(columnsToMatch)
+                .inverted(inverted)
                 .build();
     }
 
