@@ -651,8 +651,8 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void listenForUpdates(final ShiftObliviousListener listener, final boolean replayInitialImage) {
-        listenForUpdates(new LegacyListenerAdapter(listener, getRowSet()));
+    public void addUpdateListener(final ShiftObliviousListener listener, final boolean replayInitialImage) {
+        addUpdateListener(new LegacyListenerAdapter(listener, getRowSet()));
         if (replayInitialImage) {
             if (isRefreshing()) {
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
@@ -665,7 +665,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void listenForUpdates(final TableUpdateListener listener) {
+    public void addUpdateListener(final TableUpdateListener listener) {
         if (isFailed) {
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
@@ -1436,7 +1436,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     /**
-     * If we are a refreshing table, then we should create a swap listener and listen for updates.
+     * If we are a refreshing table, then we should create a swap listener that listens for updates to this table.
      *
      * Otherwise, we return null.
      *

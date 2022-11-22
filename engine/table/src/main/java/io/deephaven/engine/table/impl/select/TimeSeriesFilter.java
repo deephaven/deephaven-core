@@ -8,6 +8,7 @@
 
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -68,7 +69,7 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
             throw new RuntimeException(columnName + " is not a DateTime column!");
         }
 
-        long nanoBoundary = getNow().getNanos() - nanos;
+        long nanoBoundary = getNowNanos() - nanos;
 
         RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
         for (RowSet.Iterator it = selection.iterator(); it.hasNext();) {
@@ -82,8 +83,8 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
         return indexBuilder.build();
     }
 
-    protected DateTime getNow() {
-        return DateTime.now();
+    protected long getNowNanos() {
+        return Clock.system().currentTimeNanos();
     }
 
     @Override

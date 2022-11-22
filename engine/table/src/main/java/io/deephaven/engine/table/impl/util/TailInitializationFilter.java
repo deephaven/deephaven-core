@@ -121,7 +121,7 @@ public class TailInitializationFilter {
                             result.notifyListeners(added.copy(), removed.copy(), modified.copy());
                         }
                     };
-            table.listenForUpdates(listener, false);
+            table.addUpdateListener(listener, false);
         }
         return result;
     }

@@ -22,6 +22,7 @@ String[] mods = [
         'qst',
         'go',
         'authentication',
+        'cpp-client',
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
@@ -333,6 +334,9 @@ include(':hotspot-impl')
 project(':hotspot-impl').projectDir = file('hotspot-impl')
 
 include ':authentication'
+
+include ':clock'
+include ':clock-impl'
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {

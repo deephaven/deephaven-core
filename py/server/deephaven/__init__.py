@@ -7,7 +7,7 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
-__version__ = "0.18.0"
+__version__ = "0.19.0"
 
 from deephaven_internal import jvm
 try:
@@ -21,5 +21,5 @@ from .csv import read as read_csv
 from .csv import write as write_csv
 from .stream.kafka import consumer as kafka_consumer
 from .stream.kafka import producer as kafka_producer
-from .table_factory import empty_table, time_table, merge, merge_sorted, new_table, DynamicTableWriter
+from .table_factory import empty_table, time_table, merge, merge_sorted, new_table, DynamicTableWriter, InputTable
 from .replay import TableReplayer

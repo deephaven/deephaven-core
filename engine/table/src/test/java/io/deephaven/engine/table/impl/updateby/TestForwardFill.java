@@ -8,6 +8,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.function.Basic;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.FunctionalInterfaces;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +23,6 @@ import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShi
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.function.Basic.forwardFill;
 import static io.deephaven.test.junit4.EngineCleanup.printTableUpdates;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -53,7 +53,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
@@ -111,7 +111,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
@@ -163,7 +163,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
@@ -303,21 +303,21 @@ public class TestForwardFill extends BaseUpdateByTest {
 
     final void assertWithForwardFill(final @NotNull Object expected, final @NotNull Object actual) {
         if (expected instanceof char[]) {
-            assertArrayEquals(forwardFill((char[]) expected), (char[]) actual);
+            assertArrayEquals(Basic.forwardFill((char[]) expected), (char[]) actual);
         } else if (expected instanceof byte[]) {
-            assertArrayEquals(forwardFill((byte[]) expected), (byte[]) actual);
+            assertArrayEquals(Basic.forwardFill((byte[]) expected), (byte[]) actual);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(forwardFill((short[]) expected), (short[]) actual);
+            assertArrayEquals(Basic.forwardFill((short[]) expected), (short[]) actual);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(forwardFill((int[]) expected), (int[]) actual);
+            assertArrayEquals(Basic.forwardFill((int[]) expected), (int[]) actual);
         } else if (expected instanceof long[]) {
-            assertArrayEquals(forwardFill((long[]) expected), (long[]) actual);
+            assertArrayEquals(Basic.forwardFill((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(forwardFill((float[]) expected), (float[]) actual, .001f);
+            assertArrayEquals(Basic.forwardFill((float[]) expected), (float[]) actual, .001f);
         } else if (expected instanceof double[]) {
-            assertArrayEquals(forwardFill((double[]) expected), (double[]) actual, .001d);
+            assertArrayEquals(Basic.forwardFill((double[]) expected), (double[]) actual, .001d);
         } else {
-            assertArrayEquals(forwardFill((Object[]) expected), (Object[]) actual);
+            assertArrayEquals(Basic.forwardFillObj((Object[]) expected), (Object[]) actual);
         }
     }
     // endregion

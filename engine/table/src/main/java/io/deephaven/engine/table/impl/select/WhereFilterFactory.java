@@ -445,8 +445,9 @@ public class WhereFilterFactory {
                 try {
                     // Maybe it was just a TOD?
                     long time = DateTimeUtils.convertTime(valString);
-                    dateLower = DateTimeUtils.getZonedDateTime(DateTime.now()).truncatedTo(ChronoUnit.DAYS).plus(time,
-                            ChronoUnit.NANOS);
+                    dateLower =
+                            DateTimeUtils.getZonedDateTime(DateTime.nowMillis()).truncatedTo(ChronoUnit.DAYS).plus(time,
+                                    ChronoUnit.NANOS);
                 } catch (RuntimeException ignored1) {
                 }
             }

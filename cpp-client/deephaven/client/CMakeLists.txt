@@ -70,12 +70,12 @@ set(ALL_FILES
     include/public/deephaven/client/chunk/chunk.h
     include/public/deephaven/client/chunk/chunk_filler.h
     include/public/deephaven/client/chunk/chunk_maker.h
+    include/public/deephaven/client/chunk/chunk_traits.h
     include/public/deephaven/client/column/array_column_source.h
     include/public/deephaven/client/column/column_source.h
     include/public/deephaven/client/container/row_sequence.h
     include/public/deephaven/client/table/table.h
 
-    src/subscription/classic_table_state.cc
     src/subscription/immer_table_state.cc
     src/subscription/index_decoder.cc
     src/subscription/shift_processor.cc

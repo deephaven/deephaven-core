@@ -83,7 +83,7 @@ public class QueryTableWhereTest {
 
         final QueryTable whereResult = (QueryTable) table.where(filter.apply("x%2 == 1"));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
-        whereResult.listenForUpdates(whereResultListener);
+        whereResult.addUpdateListener(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
 
@@ -161,7 +161,7 @@ public class QueryTableWhereTest {
 
         final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1", "y=='f'")));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
-        whereResult.listenForUpdates(whereResultListener);
+        whereResult.addUpdateListener(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 8).toTracking(), c("x", 1, 3, 4), c("y", 'a', 'c', 'f')), 10));
 

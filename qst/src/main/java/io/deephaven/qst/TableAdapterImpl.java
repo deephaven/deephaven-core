@@ -39,7 +39,6 @@ import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
 import io.deephaven.qst.table.WhereInTable;
-import io.deephaven.qst.table.WhereNotInTable;
 import io.deephaven.qst.table.WhereTable;
 
 import java.util.Collections;
@@ -171,14 +170,9 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(WhereInTable whereInTable) {
         final TOPS left = ops(whereInTable.left());
         final TABLE right = table(whereInTable.right());
-        addOp(whereInTable, left.whereIn(right, whereInTable.matches()));
-    }
-
-    @Override
-    public void visit(WhereNotInTable whereNotInTable) {
-        final TOPS left = ops(whereNotInTable.left());
-        final TABLE right = table(whereNotInTable.right());
-        addOp(whereNotInTable, left.whereNotIn(right, whereNotInTable.matches()));
+        final TOPS result = whereInTable.inverted() ? left.whereNotIn(right, whereInTable.matches())
+                : left.whereIn(right, whereInTable.matches());
+        addOp(whereInTable, result);
     }
 
     @Override

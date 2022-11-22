@@ -6,10 +6,12 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.notebook.FilesystemStorageServiceModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.object.ObjectServiceModule;
@@ -61,6 +63,7 @@ import java.util.concurrent.TimeUnit;
         PartitionedTableServiceModule.class,
         FilesystemStorageServiceModule.class,
         HealthCheckModule.class,
+        ConfigServiceModule.class,
 })
 public class DeephavenApiServerModule {
 
@@ -119,7 +122,7 @@ public class DeephavenApiServerModule {
             }
         };
 
-        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor);
+        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor, Clock.system());
     }
 
     private static void report(final String executorType, final Throwable error) {

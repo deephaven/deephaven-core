@@ -4,6 +4,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.Pair;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -16,7 +17,6 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -72,17 +72,17 @@ public class WindowCheck {
      * @param addToMonitor should we add this to the UpdateGraphProcessor
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
-    static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, QueryTable table,
+    static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
         UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
-        if (timeProvider == null) {
+        if (clock == null) {
             inWindowColumnSource = new InWindowColumnSource(table, timestampColumn, windowNanos);
         } else {
             inWindowColumnSource =
-                    new InWindowColumnSourceWithTimeProvider(timeProvider, table, timestampColumn, windowNanos);
+                    new InWindowColumnSourceWithClock(clock, table, timestampColumn, windowNanos);
         }
         inWindowColumnSource.init();
         resultColumns.put(inWindowColumn, inWindowColumnSource);
@@ -92,7 +92,7 @@ public class WindowCheck {
         final TimeWindowListener timeWindowListener =
                 new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, table, result);
         recorder.setMergedListener(timeWindowListener);
-        table.listenForUpdates(recorder);
+        table.addUpdateListener(recorder);
         table.getRowSet().forAllRowKeys(timeWindowListener::addIndex);
         result.addParentReference(timeWindowListener);
         result.manage(table);
@@ -374,18 +374,17 @@ public class WindowCheck {
         }
     }
 
-    private static class InWindowColumnSourceWithTimeProvider extends InWindowColumnSource {
-        final private TimeProvider timeProvider;
+    private static class InWindowColumnSourceWithClock extends InWindowColumnSource {
+        final private Clock clock;
 
-        InWindowColumnSourceWithTimeProvider(TimeProvider timeProvider, Table table, String timestampColumn,
-                long windowNanos) {
+        InWindowColumnSourceWithClock(Clock clock, Table table, String timestampColumn, long windowNanos) {
             super(table, timestampColumn, windowNanos);
-            this.timeProvider = Require.neqNull(timeProvider, "timeProvider");
+            this.clock = Require.neqNull(clock, "clock");
         }
 
         @Override
         long getTimeNanos() {
-            return timeProvider.currentTime().getNanos();
+            return clock.currentTimeNanos();
         }
     }
 
@@ -418,7 +417,7 @@ public class WindowCheck {
         }
 
         long getTimeNanos() {
-            return DateTimeUtils.currentTime().getNanos();
+            return DateTimeUtils.currentClock().currentTimeNanos();
         }
 
         @Override

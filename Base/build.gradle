@@ -5,6 +5,8 @@ plugins {
 
 dependencies {
 
+    api project(':clock')
+
     implementation depTrove3
     compileOnlyApi depAnnotations
     implementation depCommonsLang3

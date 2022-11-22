@@ -30,14 +30,23 @@ service SessionService {
   /*
    * Handshake between client and server to create a new session. The response includes a metadata header name and the
    * token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
+   *
+   * Deprecated: Please use Flight's Handshake or http authorization headers instead.
    */
-  rpc NewSession(HandshakeRequest) returns (HandshakeResponse) {}
+  rpc NewSession(HandshakeRequest) returns (HandshakeResponse) {
+    option deprecated = true;
+  }
 
   /*
    * Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
    * token that should replace the existing token for subsequent requests.
+   *
+   * Deprecated: Please use Flight's Handshake with an empty payload.
    */
-  rpc RefreshSessionToken(HandshakeRequest) returns (HandshakeResponse) {}
+  rpc RefreshSessionToken(HandshakeRequest) returns (HandshakeResponse) {
+    option deprecated = true;
+  }
+
 
   /*
    * Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
@@ -76,15 +85,19 @@ service SessionService {
 }
 
 message WrappedAuthenticationRequest {
+  // do not allow tag 2, since that occurs in flight's BasicAuth
+  reserved 2;
+  // do not allow tag 3, since that occurs in flight's BasicAuth
+  reserved 3;
   /*
    * The type of the protobuf the auth payload protobuf.
    */
-  string type = 1;
+  string type = 4;
 
   /*
    * The serialized payload of the protobuf instance.
    */
-  bytes payload = 2;
+  bytes payload = 5;
 }
 
 /*
@@ -99,12 +112,12 @@ message HandshakeRequest {
    * - protocol = 0: most recent HandshakeResponse payload
    * - protocol = 1: payload is BasicAuth
    */
-  sint32 auth_protocol = 1;
+  sint32 auth_protocol = 1 [deprecated=true];
 
   /*
    * Arbitrary auth/handshake info.
    */
-  bytes payload = 2;
+  bytes payload = 2 [deprecated=true];
 }
 
 /*
@@ -117,23 +130,23 @@ message HandshakeResponse {
   /*
    * The metadata header to identify the session. This value is static and defined via configuration.
    */
-  bytes metadata_header = 1;
+  bytes metadata_header = 1 [deprecated=true];
 
   /*
    * Arbitrary session_token to assign to the value to the provided metadata header.
    */
-  bytes session_token = 2;
+  bytes session_token = 2 [deprecated=true];
 
   /*
    * When this session_token will be considered invalid by the server.
    */
-  sint64 token_deadline_time_millis = 3 [jstype=JS_STRING];
+  sint64 token_deadline_time_millis = 3 [jstype=JS_STRING, deprecated = true];
 
   /*
    * The length of time that this token was intended to live. Note that `refreshSessionToken` may return the
    * existing token to reduce overhead and to prevent denial-of-service caused by refreshing too frequently.
    */
-  sint64 token_expiration_delay_millis = 4 [jstype=JS_STRING];
+  sint64 token_expiration_delay_millis = 4 [jstype=JS_STRING, deprecated = true];
 }
 
 message CloseSessionResponse {

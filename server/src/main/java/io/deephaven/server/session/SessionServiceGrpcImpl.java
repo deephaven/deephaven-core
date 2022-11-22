@@ -5,6 +5,7 @@ package io.deephaven.server.session;
 
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -21,7 +22,6 @@ import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationRequest;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
-import io.deephaven.auth.AuthContext;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
@@ -72,7 +72,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             responseObserver.onNext(HandshakeResponse.newBuilder()
                     .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
                     .setSessionToken(session.getExpiration().getBearerTokenAsByteString())
-                    .setTokenDeadlineTimeMillis(session.getExpiration().deadline.getMillis())
+                    .setTokenDeadlineTimeMillis(session.getExpiration().deadlineMillis)
                     .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
                     .build());
 
@@ -97,7 +97,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             responseObserver.onNext(HandshakeResponse.newBuilder()
                     .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
                     .setSessionToken(expiration.getBearerTokenAsByteString())
-                    .setTokenDeadlineTimeMillis(expiration.deadline.getMillis())
+                    .setTokenDeadlineTimeMillis(expiration.deadlineMillis)
                     .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
                     .build());
 
@@ -295,8 +295,13 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 try {
                     session = service.getSessionForAuthToken(token);
                 } catch (AuthenticationException e) {
-                    log.error().append("Failed to authenticate: ").append(e).endl();
-                    throw Status.UNAUTHENTICATED.asRuntimeException();
+                    try {
+                        call.close(Status.UNAUTHENTICATED, new Metadata());
+                    } catch (IllegalStateException ignored) {
+                        // could be thrown if the call was already closed. As an interceptor, we can't throw,
+                        // so ignoring this and just returning the no-op listener.
+                    }
+                    return new ServerCall.Listener<>() {};
                 }
             }
             final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session);

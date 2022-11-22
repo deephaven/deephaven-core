@@ -24,23 +24,18 @@ _has_all_wrappers_imported = False
 
 def _recursive_import(package_path: str) -> None:
     """ Recursively import every module in a package. """
-
     try:
         pkg = importlib.import_module(package_path)
     except ModuleNotFoundError:
         return
 
-    mods = pkgutil.walk_packages(pkg.__path__)
+    mods = pkgutil.walk_packages(pkg.__path__, prefix=package_path + ".")
     for mod in mods:
-        mod_path = ".".join([package_path, mod.name])
-        if mod.ispkg:
-            _recursive_import(mod_path)
-        else:
-            if mod_path not in sys.modules:
-                try:
-                    importlib.import_module(mod_path)
-                except:
-                    ...
+        if mod.name not in sys.modules:
+            try:
+                importlib.import_module(mod.name)
+            except:
+                ...
 
 
 class JObjectWrapper(ABC):

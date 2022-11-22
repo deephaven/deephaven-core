@@ -35,13 +35,32 @@ private:
 };
 }  // namespace internal
 
+/**
+ * The table schema that goes along with a Table class. This Schema object tells you about
+ * the names and data types of the table columns.
+ */
 class Schema {
 public:
+  /**
+   * Constructor.
+   */
   explicit Schema(std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> columns);
+  /**
+   * Move constructor.
+   */
   Schema(Schema &&other) noexcept;
+  /**
+   * Move assignment operator.
+   */
   Schema &operator=(Schema &&other) noexcept;
+  /**
+   * Destructor.
+   */
   ~Schema();
 
+  /**
+   * The schema (represented as a pair of name, column type) for each column in your Table.
+   */
   const std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> &columns() const {
     return columns_;
   }
@@ -50,13 +69,28 @@ private:
   std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> columns_;
 };
 
+/**
+ * An abstract base class representing a Deephaven table. This is used for example in
+ * TickingUpdate to provide table snapshots to a caller who has subscribed to ticking tables.
+ */
 class Table {
-protected:
+public:
+  /**
+   * Alias.
+   */
   typedef deephaven::client::column::ColumnSource ColumnSource;
+  /**
+   * Alias.
+   */
   typedef deephaven::client::container::RowSequence RowSequence;
 
-public:
+  /**
+   * Constructor.
+   */
   Table() = default;
+  /**
+   * Destructor.
+   */
   virtual ~Table() = default;
 
   /**
@@ -65,7 +99,7 @@ public:
   virtual std::shared_ptr<RowSequence> getRowSequence() const = 0;
   /**
    * Gets a ColumnSource from the table by index.
-   * @param columnIndex Must be in the range [0, numColumns).
+   * @param columnIndex Must be in the half-open interval [0, numColumns).
    */
   virtual std::shared_ptr<ColumnSource> getColumn(size_t columnIndex) const = 0;
 

@@ -365,7 +365,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table2 = (QueryTable) table1.updateView("z = x", "x = z + 1", "t = x - 3");
         final ShiftObliviousListener table2Listener = newListenerWithGlobals(table2);
-        table2.listenForUpdates(table2Listener);
+        table2.addUpdateListener(table2Listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table1, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -422,7 +422,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table4 = (QueryTable) table3.view("z = x", "x = z + 1", "t = x - 3");
         final ShiftObliviousListener table4Listener = newListenerWithGlobals(table4);
-        table4.listenForUpdates(table4Listener);
+        table4.addUpdateListener(table4Listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table3, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -1118,7 +1118,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable reverseTable = (QueryTable) table.reverse();
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
-        reverseTable.listenForUpdates(listener);
+        reverseTable.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TableUpdateImpl downstream = new TableUpdateImpl();
@@ -1144,7 +1144,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(reversedTable);
-        reversedTable.listenForUpdates(listener);
+        reversedTable.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TableUpdateImpl downstream = new TableUpdateImpl();
@@ -1882,7 +1882,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals("", diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
 
         final ListenerWithGlobals listener;
-        snapshot.listenForUpdates(listener = newListenerWithGlobals(snapshot));
+        snapshot.addUpdateListener(listener = newListenerWithGlobals(snapshot));
         listener.reset();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1971,7 +1971,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals("", diff(prevTable(snapshot), firstResult, 10));
 
         final io.deephaven.engine.table.impl.SimpleListener listener;
-        snapshot.listenForUpdates(listener = new io.deephaven.engine.table.impl.SimpleListener(snapshot));
+        snapshot.addUpdateListener(listener = new io.deephaven.engine.table.impl.SimpleListener(snapshot));
         listener.reset();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -2072,10 +2072,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
 
         final SimpleShiftObliviousListener simpleListener = new SimpleShiftObliviousListener(snapshot);
-        snapshot.listenForUpdates(simpleListener);
+        snapshot.addUpdateListener(simpleListener);
 
         final CoalescingListener coalescingListener = new CoalescingListener(rightTable);
-        rightTable.listenForUpdates(coalescingListener, true);
+        rightTable.addUpdateListener(coalescingListener, true);
 
         Table lastSnapshot = snapshot.silent().select();
         RowSet lastRowSet = RowSetFactory.empty();
@@ -2197,7 +2197,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable selected = function.call(queryTable);
         final io.deephaven.engine.table.impl.SimpleListener simpleListener =
                 new io.deephaven.engine.table.impl.SimpleListener(selected);
-        selected.listenForUpdates(simpleListener);
+        selected.addUpdateListener(simpleListener);
 
         final Supplier<TableUpdateImpl> newUpdate =
                 () -> new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
@@ -2287,7 +2287,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable selected = function.call(queryTable);
         final io.deephaven.engine.table.impl.SimpleListener simpleListener =
                 new io.deephaven.engine.table.impl.SimpleListener(selected);
-        selected.listenForUpdates(simpleListener);
+        selected.addUpdateListener(simpleListener);
 
         final Supplier<TableUpdateImpl> newUpdate =
                 () -> new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
@@ -2373,7 +2373,9 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testDateTimeColumns() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 c("Sym", "aa", "bc", "aa", "aa"),
-                c("Timestamp", DateTimeUtils.currentTime(), DateTimeUtils.currentTime(), DateTimeUtils.currentTime(),
+                c("Timestamp", DateTimeUtils.currentTime(),
+                        DateTimeUtils.currentTime(),
+                        DateTimeUtils.currentTime(),
                         DateTimeUtils.currentTime()));
         assertEquals(queryTable.groupBy("Sym").getDefinition().getColumn("Timestamp").getComponentType(),
                 DateTime.class);
@@ -2547,7 +2549,7 @@ public class QueryTableTest extends QueryTableTestBase {
             assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(t1.getColumn("Y").get(0, 5)));
 
             final ErrorListener errorListener = new ErrorListener(t1);
-            t1.listenForUpdates(errorListener);
+            t1.addUpdateListener(errorListener);
 
             // This is too big, we should fail
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -3173,7 +3175,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         // any listener will do for this empty update test
         final TableUpdateListener listener = new io.deephaven.engine.table.impl.SimpleListener(src);
-        src.listenForUpdates(listener);
+        src.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(src, update.added());
@@ -3209,7 +3211,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         // we want to specifically test non-shift-aware-listener path
         final ShiftObliviousListener listener = new SimpleShiftObliviousListener(src);
-        src.listenForUpdates(listener);
+        src.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(src, update.added());
@@ -3230,7 +3232,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // we want to specifically test shift-aware-listener path
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(src);
-        src.listenForUpdates(listener);
+        src.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(src, update.added());
@@ -3335,6 +3337,6 @@ public class QueryTableTest extends QueryTableTestBase {
                         TestCase.fail(originalException.getMessage());
                     }
                 };
-        validatorTable.listenForUpdates(validatorTableListener);
+        validatorTable.addUpdateListener(validatorTableListener);
     }
 }

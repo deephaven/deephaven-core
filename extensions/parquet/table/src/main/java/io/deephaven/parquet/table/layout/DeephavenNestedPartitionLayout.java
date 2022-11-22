@@ -120,4 +120,8 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends FileTableLocati
 
     protected abstract TLK makeKey(@NotNull final Path tableLeafDirectory,
             @NotNull final Map<String, Comparable<?>> partitions);
+
+    protected String getColumnPartitionKey() {
+        return columnPartitionKey;
+    }
 }

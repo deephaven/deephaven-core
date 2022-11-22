@@ -538,6 +538,56 @@ public class TestNumeric extends BaseArrayTestCase {
 //        }
 //    }
 
+    public void test${pt.boxed}CumMinArray() {
+        assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new ${pt.primitive}[]{5, 4, 3, 2, 1}, cummin(new ${pt.primitive}[]{5, 4, 3, 2, 1}));
+        assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new ${pt.primitive}[]{5, 4, 3, 3, 1}, cummin(new ${pt.primitive}[]{5, 4, 3, ${pt.null}, 1}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 2, 2, 2}, cummin(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1}, cummin(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1}));
+        assertEquals(new ${pt.primitive}[0], cummin(new ${pt.primitive}[0]));
+        assertEquals(new ${pt.primitive}[0], cummin(new ${pt.boxed}[0]));
+        assertEquals(null, cummin((${pt.primitive}[]) null));
+
+        assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new ${pt.primitive}[]{5, 4, 3, 2, 1}, cummin(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, 4, 3, 2, 1})));
+        assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new ${pt.primitive}[]{5, 4, 3, 3, 1}, cummin(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, 4, 3, ${pt.null}, 1})));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 2, 2, 2}, cummin(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1}, cummin(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1})));
+        assertEquals(new ${pt.primitive}[0], cummin(new ${pt.dbArrayDirect}(new ${pt.primitive}[0])));
+        assertEquals(null, cummin((${pt.dbArray}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+        assertEquals(new ${pt.primitive}[]{5, 4, 3, 2, 1}, cummin((${pt.primitive})5, (${pt.primitive})4, (${pt.primitive})3, (${pt.primitive})2, (${pt.primitive})1));
+    }
+
+    public void test${pt.boxed}CumMaxArray() {
+        assertEquals(new ${pt.primitive}[]{1, 2, 3, 4, 5}, cummax(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new ${pt.primitive}[]{5, 5, 5, 5, 5}, cummax(new ${pt.primitive}[]{5, 4, 3, 2, 1}));
+        assertEquals(new ${pt.primitive}[]{1, 2, 3, 3, 5}, cummax(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new ${pt.primitive}[]{5, 5, 5, 5, 5}, cummax(new ${pt.primitive}[]{5, 4, 3, ${pt.null}, 1}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}, cummax(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 4, 4, 4, 4}, cummax(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1}));
+        assertEquals(new ${pt.primitive}[0], cummax(new ${pt.primitive}[0]));
+        assertEquals(new ${pt.primitive}[0], cummax(new ${pt.boxed}[0]));
+        assertEquals(null, cummax((${pt.primitive}[]) null));
+
+        assertEquals(new ${pt.primitive}[]{1, 2, 3, 4, 5}, cummax(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new ${pt.primitive}[]{5, 5, 5, 5, 5}, cummax(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, 4, 3, 2, 1})));
+        assertEquals(new ${pt.primitive}[]{1, 2, 3, 3, 5}, cummax(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new ${pt.primitive}[]{5, 5, 5, 5, 5}, cummax(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, 4, 3, ${pt.null}, 1})));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}, cummax(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 4, 4, 4, 4}, cummax(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1})));
+        assertEquals(new ${pt.primitive}[0], cummax(new ${pt.dbArrayDirect}(new ${pt.primitive}[0])));
+        assertEquals(null, cummax((${pt.dbArray}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new ${pt.primitive}[]{1, 2, 3, 4, 5}, cummax((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+        assertEquals(new ${pt.primitive}[]{5, 5, 5, 5, 5}, cummax((${pt.primitive})5, (${pt.primitive})4, (${pt.primitive})3, (${pt.primitive})2, (${pt.primitive})1));
+    }
+
     public void test${pt.boxed}CumSumArray() {
         assertEquals(new ${pt.primitive}[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
         assertEquals(new ${pt.primitive}[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
@@ -786,10 +836,12 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(2.0, percentile(0.00, new ${pt.primitive}[]{4,2,3}));
         assertEquals(3.0, percentile(0.50, new ${pt.primitive}[]{4,2,3}));
         assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.primitive}[])null));
+        assertEquals(NULL_DOUBLE, percentile(0.25, new ${pt.primitive}[]{}));
 
         assertEquals(2.0, percentile(0.00, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{4,2,3})));
         assertEquals(3.0, percentile(0.50, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{4,2,3})));
         assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.dbArray}) null));
+        assertEquals(NULL_DOUBLE, percentile(0.50, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{})));
 
         try {
             percentile(-1, new ${pt.primitive}[]{4,2,3});

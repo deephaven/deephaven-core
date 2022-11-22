@@ -8,6 +8,7 @@ import dagger.Component;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PyLogOutputStream;
+import io.deephaven.internal.log.Bootstrap;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
@@ -105,7 +106,7 @@ public class EmbeddedServer {
 
         final ScriptSession scriptSession = this.scriptSession.get();
         checkGlobals(scriptSession, null);
-        System.out.println("Server started on port " + server.server().getPort());
+        Bootstrap.printf("Server started on port %d%n", server.server().getPort());
 
         // We need to open the systemic execution context to permanently install the contexts for this thread.
         scriptSession.getExecutionContext().open();

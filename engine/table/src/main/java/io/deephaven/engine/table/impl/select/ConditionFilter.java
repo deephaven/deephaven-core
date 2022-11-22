@@ -79,12 +79,26 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
-
         class Context implements io.deephaven.engine.table.Context {
             public final WritableLongChunk<OrderedRowKeys> resultChunk;
+            private final io.deephaven.engine.table.Context kernelContext;
+
+            public Context(int maxChunkSize, io.deephaven.engine.table.Context kernelContext) {
+                this.resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
+                this.kernelContext = kernelContext;
+            }
 
             public Context(int maxChunkSize) {
-                resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
+                this.resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
+                this.kernelContext = null;
+            }
+
+            public <TYPE extends io.deephaven.engine.table.Context> TYPE getKernelContext() {
+                if (kernelContext == null) {
+                    throw new IllegalStateException("No kernel context registered");
+                }
+                // noinspection unchecked
+                return (TYPE) kernelContext;
             }
 
             @Override
@@ -406,7 +420,6 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
         usedInputs = new ArrayList<>();
         for (String usedColumn : usedColumns) {
-
             final ColumnDefinition column = tableDefinition.getColumn(usedColumn);
             final Class columnType = column.getDataType();
             usedInputs.add(new Pair<>(usedColumn, columnType));

@@ -13,7 +13,7 @@ import java.util.concurrent.TimeoutException;
 public class NettyMain extends Main {
     public static void main(String[] args)
             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
-        final Configuration config = init(args, Main.class);
+        final Configuration config = init(args, NettyMain.class);
         final NettyConfig nettyConfig = NettyConfig.buildFromConfig(config).build();
         DaggerNettyServerComponent
                 .builder()

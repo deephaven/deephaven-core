@@ -4,8 +4,8 @@
 package io.deephaven.time;
 
 import io.deephaven.base.StringUtils;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.clock.MicroTimer;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.type.TypeUtils;
 import org.joda.time.DateTimeZone;
@@ -49,6 +49,35 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
+     * Create a new date time via {@link Clock#currentTimeNanos()}.
+     *
+     * <p>
+     * Equivalent to {@code new DateTime(clock.currentTimeNanos())}.
+     *
+     * <p>
+     * If nanosecond resolution is not necessary, consider using {@link #ofMillis(Clock)}.
+     *
+     * @param clock the clock
+     * @return the date time
+     */
+    public static DateTime of(Clock clock) {
+        return new DateTime(clock.currentTimeNanos());
+    }
+
+    /**
+     * Create a new date time via {@link Clock#currentTimeMillis()}.
+     *
+     * <p>
+     * Equivalent to {@code new DateTime(Math.multiplyExact(clock.currentTimeMillis(), 1_000_000))}.
+     *
+     * @param clock the clock
+     * @return the date time
+     */
+    public static DateTime ofMillis(Clock clock) {
+        return new DateTime(Math.multiplyExact(clock.currentTimeMillis(), 1_000_000));
+    }
+
+    /**
      * Create a new DateTime initialized to the epoch.
      */
     public DateTime() {
@@ -56,16 +85,35 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
-     * Create a new DateTime initialized to the current time.
+     * Create a new DateTime initialized to the current system time. Based on {@link Clock#system()}. Equivalent to
+     * {@code of(Clock.system())}.
      *
      * <p>
-     * The precision of DateTime is nanoseconds, but the resolution of the now method is currently microseconds.
-     * </p>
+     * The precision of DateTime is nanoseconds, but the resolution of the this method depends on the JVM.
+     *
+     * <p>
+     * If you don't need nanosecond resolution, it may be preferable to use {@link #nowMillis()}.
+     *
+     * <p>
+     * Note: overflow checking is not performed - this method will overflow in the year 2262.
      *
      * @return a new DateTime initialized to the current time.
      */
     public static DateTime now() {
-        return new DateTime(MicroTimer.currentTimeMicros() * 1000);
+        return of(Clock.system());
+    }
+
+    /**
+     * Create a new DateTime initialized to the current system time. Based on {@link Clock#system()}. Equivalent to
+     * {@code ofMillis(Clock.system())}.
+     *
+     * <p>
+     * The resolution will be in milliseconds.
+     *
+     * @return a new DateTime initialized to the current time.
+     */
+    public static DateTime nowMillis() {
+        return ofMillis(Clock.system());
     }
 
     /**
@@ -154,9 +202,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return a Java Instant representing this DateTime
      */
     public Instant getInstant() {
-        long epochSecond = nanos / 1000000000;
-        long nanoAdjustment = nanos % 1000000000;
-        return Instant.ofEpochSecond(epochSecond, nanoAdjustment);
+        return Instant.ofEpochSecond(0, nanos);
     }
 
     @Override

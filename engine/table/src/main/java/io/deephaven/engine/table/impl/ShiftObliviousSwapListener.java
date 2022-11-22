@@ -41,6 +41,6 @@ public class ShiftObliviousSwapListener extends SwapListenerBase<ShiftObliviousL
 
     @Override
     public void subscribeForUpdates() {
-        sourceTable.listenForUpdates(this);
+        sourceTable.addUpdateListener(this);
     }
 }

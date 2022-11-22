@@ -15,7 +15,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
-import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
 import io.deephaven.util.QueryConstants;
@@ -44,7 +43,7 @@ final class RightIncrementalAsOfJoinHasherByte extends RightIncrementalAsOfJoinS
     }
 
     protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, ObjectArraySource sequentialBuilders) {
+            ObjectArraySource sequentialBuilders) {
         final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -106,7 +105,7 @@ final class RightIncrementalAsOfJoinHasherByte extends RightIncrementalAsOfJoinS
     }
 
     protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, ObjectArraySource sequentialBuilders) {
+            ObjectArraySource sequentialBuilders) {
         final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -167,7 +166,7 @@ final class RightIncrementalAsOfJoinHasherByte extends RightIncrementalAsOfJoinS
     }
 
     protected void probeRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, ObjectArraySource sequentialBuilders) {
+            ObjectArraySource sequentialBuilders) {
         final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -221,7 +220,7 @@ final class RightIncrementalAsOfJoinHasherByte extends RightIncrementalAsOfJoinS
         return hash;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate, IntegerArraySource hashSlots) {
+    private boolean migrateOneLocation(int locationToMigrate) {
         final byte currentStateValue = alternateStateSource.getUnsafe(locationToMigrate);
         if (currentStateValue == ENTRY_EMPTY_STATE) {
             return false;
@@ -239,16 +238,16 @@ final class RightIncrementalAsOfJoinHasherByte extends RightIncrementalAsOfJoinS
         rightRowSetSource.set(destinationTableLocation, alternateRightRowSetSource.getUnsafe(locationToMigrate));
         alternateRightRowSetSource.set(locationToMigrate, null);
         final long cookie  = alternateCookieSource.getUnsafe(locationToMigrate);
-        migrateCookie(cookie, destinationTableLocation, hashSlots);
+        migrateCookie(cookie, destinationTableLocation);
         alternateStateSource.set(locationToMigrate, ENTRY_EMPTY_STATE);
         return true;
     }
 
     @Override
-    protected int rehashInternalPartial(int entriesToRehash, IntegerArraySource hashSlots) {
+    protected int rehashInternalPartial(int entriesToRehash) {
         int rehashedEntries = 0;
         while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, hashSlots)) {
+            if (migrateOneLocation(--rehashPointer)) {
                 rehashedEntries++;
             }
         }
@@ -269,9 +268,9 @@ final class RightIncrementalAsOfJoinHasherByte extends RightIncrementalAsOfJoinS
     }
 
     @Override
-    protected void migrateFront(IntegerArraySource hashSlots) {
+    protected void migrateFront() {
         int location = 0;
-        while (migrateOneLocation(location++, hashSlots));
+        while (migrateOneLocation(location++));
     }
 
     @Override
@@ -308,6 +307,7 @@ final class RightIncrementalAsOfJoinHasherByte extends RightIncrementalAsOfJoinS
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     destLeftSource[destinationTableLocation] = oldLeftSource[sourceBucket];
                     destRightSource[destinationTableLocation] = oldRightSource[sourceBucket];
+                    hashSlots.set(oldModifiedCookie[sourceBucket], destinationTableLocation);
                     destModifiedCookie[destinationTableLocation] = oldModifiedCookie[sourceBucket];
                     break;
                 }

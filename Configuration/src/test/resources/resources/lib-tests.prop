@@ -19,5 +19,4 @@ NIO.driver.maxThreadCount=400
 NIO.driver.useFast=true
 
 Comm.fatalErrorHandlerFactoryClass=io.deephaven.base.ThrowRuntimeExceptionFatalErrorHandlerFactory
-NIO.wireLagClock.native=false
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory

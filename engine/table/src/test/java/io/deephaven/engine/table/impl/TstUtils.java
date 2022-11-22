@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.clock.Clock;
+import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -2085,7 +2086,7 @@ public class TstUtils {
         }
     }
 
-    public static class StepClock implements Clock, Runnable {
+    public static class StepClock extends ClockNanoBase implements Runnable {
 
         private final long nanoTimes[];
 
@@ -2097,13 +2098,8 @@ public class TstUtils {
         }
 
         @Override
-        public long currentTimeMillis() {
-            return nanoTimes[step] / 1_000_000L;
-        }
-
-        @Override
-        public long currentTimeMicros() {
-            return nanoTimes[step] / 1_000L;
+        public long currentTimeNanos() {
+            return nanoTimes[step];
         }
 
         @Override

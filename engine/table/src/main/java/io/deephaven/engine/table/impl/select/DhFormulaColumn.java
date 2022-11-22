@@ -3,49 +3,48 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.util.PythonScope;
-import io.deephaven.engine.util.PythonScopeJpyImpl;
-import io.deephaven.time.DateTime;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
-import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.engine.table.impl.select.codegen.JavaKernelBuilder;
 import io.deephaven.engine.table.impl.select.codegen.RichType;
 import io.deephaven.engine.table.impl.select.formula.FormulaFactory;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
+import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
-import io.deephaven.vector.Vector;
+import io.deephaven.engine.util.PyCallableWrapper;
+import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.Vector;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jpy.PyDictWrapper;
-import org.jpy.PyListWrapper;
 import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -200,28 +199,39 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 returnedType = Boolean.class;
             }
             formulaString = result.getConvertedExpression();
+
+            // check if this is a column to be created with a Python vectorizable function
+            checkAndInitializeVectorization(columnDefinitionMap);
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + formulaString, e);
-        }
-
-        // check if this is a column to be created with a numba vectorized function
-        for (QueryScopeParam<?> param : params) {
-            final Object value = param.getValue();
-            if (value != null && value.getClass() == NumbaCallableWrapper.class) {
-                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) value;
-                formulaColumnPython = FormulaColumnPython.create(this.columnName,
-                        DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
-                                numbaCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
-                                true));
-                formulaColumnPython.initDef(columnDefinitionMap);
-                break;
-            }
         }
 
         formulaFactory = useKernelFormulasProperty
                 ? createKernelFormulaFactory(getFormulaKernelFactory())
                 : createFormulaFactory();
         return formulaColumnPython != null ? formulaColumnPython.usedColumns : usedColumns;
+    }
+
+    private void checkAndInitializeVectorization(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        PyCallableWrapper[] cws = Arrays.stream(params).filter(p -> p.getValue() instanceof PyCallableWrapper)
+                .map(p -> p.getValue()).toArray(PyCallableWrapper[]::new);
+        if (cws.length != 1) {
+            return;
+        }
+        PyCallableWrapper pyCallableWrapper = cws[0];
+
+        // could be already vectorized or to-be-vectorized,
+        if (pyCallableWrapper.isVectorizable()) {
+            ArgumentsChunked argumentsChunked = pyCallableWrapper
+                    .buildArgumentsChunked(Arrays.asList(this.analyzedFormula.sourceDescriptor.sources));
+            PyObject vectorized = pyCallableWrapper.vectorizedCallable();
+            formulaColumnPython = FormulaColumnPython.create(this.columnName,
+                    DeephavenCompatibleFunction.create(vectorized,
+                            pyCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
+                            argumentsChunked,
+                            true));
+            formulaColumnPython.initDef(columnDefinitionMap);
+        }
     }
 
     @NotNull
@@ -805,7 +815,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     /**
      * Is this parameter immutable, and thus would contribute no state to the formula?
-     *
+     * <p>
      * If any query scope parameter is not a primitive, String, or known immutable class; then it may be a mutable
      * object that results in undefined results when the column is not evaluated strictly in order.
      *

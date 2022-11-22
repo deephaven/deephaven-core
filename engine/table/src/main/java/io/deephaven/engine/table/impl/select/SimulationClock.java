@@ -11,6 +11,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 
@@ -73,6 +74,21 @@ public class SimulationClock implements Clock {
     @Override
     public long currentTimeMicros() {
         return now.getMicros();
+    }
+
+    @Override
+    public long currentTimeNanos() {
+        return now.getNanos();
+    }
+
+    @Override
+    public Instant instantNanos() {
+        return now.getInstant();
+    }
+
+    @Override
+    public Instant instantMillis() {
+        return now.getInstant();
     }
 
     /**

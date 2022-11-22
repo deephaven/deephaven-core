@@ -82,6 +82,8 @@ dependencies {
 
     implementation project(':grpc-java:grpc-mtls')
 
+    implementation 'dev.dirs:directories:26'
+
     testImplementation 'io.grpc:grpc-testing'
 
     testImplementation project(':proto:proto-backplane-grpc')

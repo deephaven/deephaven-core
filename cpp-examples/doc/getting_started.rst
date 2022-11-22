@@ -6,7 +6,7 @@ Installation
 
 1. Install the Deephaven library and the packages it depends on. Instructions
    for doing so are in the Deephaven repo in ``cpp-client/README.md``.
-2. Confirm that you are able to build and run the "Hello, WOrld" example
+2. Confirm that you are able to build and run the "Hello, World" example
    program provided in the Deephaven Examples repo in the directory
    ``hello_world``
 3. The file ``hello_world/CMakeLists.txt`` shows how to use CMake to build

@@ -140,8 +140,8 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         }
 
         @Override
-        protected DateTime getNow() {
-            return new DateTime(now * 1000000L);
+        protected long getNowNanos() {
+            return now * 1000000L;
         }
 
         long getNowLong() {

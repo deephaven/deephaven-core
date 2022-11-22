@@ -3,11 +3,11 @@
  */
 package io.deephaven.server.util;
 
-import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeProvider;
+import io.deephaven.base.clock.Clock;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -15,15 +15,15 @@ import java.util.concurrent.TimeUnit;
 /**
  * The Scheduler is used to schedule tasks that should execute at a future time.
  */
-public interface Scheduler extends TimeProvider {
+public interface Scheduler extends Clock {
 
     /**
      * Schedule this task to run at the specified time.
      *
-     * @param absoluteTime when to run this task
+     * @param epochMillis when to run this task
      * @param command the task to run
      */
-    void runAtTime(@NotNull DateTime absoluteTime, @NotNull Runnable command);
+    void runAtTime(long epochMillis, @NotNull Runnable command);
 
     /**
      * Schedule this task to run at the specified time.
@@ -58,20 +58,43 @@ public interface Scheduler extends TimeProvider {
 
         private final ExecutorService serialDelegate;
         private final ScheduledExecutorService concurrentDelegate;
+        private final Clock clock;
 
-        public DelegatingImpl(final ExecutorService serialExecutor, final ScheduledExecutorService concurrentExecutor) {
-            this.serialDelegate = serialExecutor;
-            this.concurrentDelegate = concurrentExecutor;
+        public DelegatingImpl(ExecutorService serialExecutor, ScheduledExecutorService concurrentExecutor,
+                Clock clock) {
+            this.serialDelegate = Objects.requireNonNull(serialExecutor);
+            this.concurrentDelegate = Objects.requireNonNull(concurrentExecutor);
+            this.clock = Objects.requireNonNull(clock);
         }
 
         @Override
-        public DateTime currentTime() {
-            return DateTimeUtils.currentTime();
+        public long currentTimeMillis() {
+            return clock.currentTimeMillis();
         }
 
         @Override
-        public void runAtTime(@NotNull final DateTime absoluteTime, final @NotNull Runnable command) {
-            runAfterDelay(absoluteTime.getMillis() - currentTime().getMillis(), command);
+        public long currentTimeMicros() {
+            return clock.currentTimeMicros();
+        }
+
+        @Override
+        public long currentTimeNanos() {
+            return clock.currentTimeNanos();
+        }
+
+        @Override
+        public Instant instantNanos() {
+            return clock.instantNanos();
+        }
+
+        @Override
+        public Instant instantMillis() {
+            return clock.instantMillis();
+        }
+
+        @Override
+        public void runAtTime(long epochMillis, @NotNull Runnable command) {
+            runAfterDelay(epochMillis - clock.currentTimeMillis(), command);
         }
 
         @Override

@@ -281,7 +281,7 @@ public class TestBasic extends BaseArrayTestCase {
     public void testObjIfelseScalar() {
         final Integer i1 = Integer.valueOf(1);
         final Integer i2 = Integer.valueOf(2);
-        assertEquals(null, ifelseObj(null, i1, i2));
+        assertEquals(null, ifelseObj((Boolean)null, i1, i2));
         assertEquals(i1, ifelseObj(true, i1, i2));
         assertEquals(i2, ifelseObj(false, i1, i2));
     }
@@ -300,6 +300,23 @@ public class TestBasic extends BaseArrayTestCase {
             fail("Should have raised an IllegalArgumentException");
         } catch(IllegalArgumentException e) {
         }
+
+        assertEquals(new Integer[]{null, 1, 2}, ifelseObj(bv, Integer.valueOf(1), Integer.valueOf(2)));
+        assertEquals(null, ifelseObj((BooleanVector) null, Integer.valueOf(1), Integer.valueOf(2)));
+        assertEquals(new Integer[]{null, null, 2}, ifelseObj(bv, null, Integer.valueOf(2)));
+        assertEquals(new Integer[]{null, 1, null}, ifelseObj(bv, Integer.valueOf(1), null));
+
+        try {
+            ifelseObj(bv, (Integer)null, (Integer)null);
+            fail("Should have raised an IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+        }
+
+        try {
+            ifelseObj(bv, Integer.valueOf(1), Double.valueOf(2));
+            fail("Should have raised an IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+        }
     }
 
     public void testObjIfelseArray() {
@@ -313,6 +330,42 @@ public class TestBasic extends BaseArrayTestCase {
             fail("Should have raised an IllegalArgumentException");
         } catch(IllegalArgumentException e) {
         }
+
+        assertEquals(new Integer[]{null, 1, 2}, ifelseObj(new Boolean[]{null, true, false}, Integer.valueOf(1), Integer.valueOf(2)));
+        assertEquals(null, ifelseObj((Boolean[]) null, Integer.valueOf(1), Integer.valueOf(2)));
+        assertEquals(new Integer[]{null, null, 2}, ifelseObj(new Boolean[]{null, true, false}, null, Integer.valueOf(2)));
+        assertEquals(new Integer[]{null, 1, null}, ifelseObj(new Boolean[]{null, true, false}, Integer.valueOf(1), null));
+
+        try {
+            ifelseObj(new Boolean[]{null, true, false}, (Integer)null, (Integer)null);
+            fail("Should have raised an IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+        }
+
+        try {
+            ifelseObj(new Boolean[]{null, true, false}, Integer.valueOf(1), Double.valueOf(2));
+            fail("Should have raised an IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+        }
+    }
+
+    public void testObjForwardFillVec() {
+        assertEquals(null, forwardFillObj((ObjectVectorDirect<Integer>)null));
+        assertEquals(null, forwardFillObj((BooleanVectorDirect)null));
+
+        assertEquals(new Integer[]{0, 0, 1, 2, 2, 3}, forwardFillObj(new ObjectVectorDirect<Integer>(new Integer[]{0, null, 1, 2, null, 3})));
+        assertEquals(new Long[]{0L, 0L, 1L, 2L, 2L, 3L}, forwardFillObj(new ObjectVectorDirect<Long>(new Long[]{0L, null, 1L, 2L, null, 3L})));
+        assertEquals(new Double[]{0.0, 0.0, 1.0, 2.0, 2.0, 3.0}, forwardFillObj(new ObjectVectorDirect<Double>(new Double[]{0.0, null, 1.0, 2.0, null, 3.0})));
+        assertEquals(new Boolean[]{true, true, false, true, true, false}, forwardFillObj(new BooleanVectorDirect(new Boolean[]{true, null, false, true, null, false})));
+    }
+
+    public void testObjForwardFillArray() {
+        assertEquals(null, forwardFillObj((Boolean[])null));
+
+        assertEquals(new Integer[]{0, 0, 1, 2, 2, 3}, forwardFillObj(new Integer[]{0, null, 1, 2, null, 3}));
+        assertEquals(new Long[]{0L, 0L, 1L, 2L, 2L, 3L}, forwardFillObj(new Long[]{0L, null, 1L, 2L, null, 3L}));
+        assertEquals(new Double[]{0.0, 0.0, 1.0, 2.0, 2.0, 3.0}, forwardFillObj(new Double[]{0.0, null, 1.0, 2.0, null, 3.0}));
+        assertEquals(new Boolean[]{true, true, false, true, true, false}, forwardFillObj(new Boolean[]{true, null, false, true, null, false}));
     }
 
 
@@ -741,7 +794,7 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}IfelseScalar() {
-        assertEquals(${pt.null}, ifelse(null, (${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(${pt.null}, ifelse((Boolean)null, (${pt.primitive})1, (${pt.primitive})2));
         assertEquals((${pt.primitive})1, ifelse(true, (${pt.primitive})1, (${pt.primitive})2));
         assertEquals((${pt.primitive})2, ifelse(false, (${pt.primitive})1, (${pt.primitive})2));
     }
@@ -760,6 +813,9 @@ public class TestBasic extends BaseArrayTestCase {
             fail("Should have raised an IllegalArgumentException");
         } catch(IllegalArgumentException e) {
         }
+
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 1, 2}, ifelse(bv, (${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(null, ifelse((BooleanVector) null, (${pt.primitive})1, (${pt.primitive})2));
     }
 
     public void test${pt.boxed}IfelseArray() {
@@ -773,8 +829,20 @@ public class TestBasic extends BaseArrayTestCase {
             fail("Should have raised an IllegalArgumentException");
         } catch(IllegalArgumentException e) {
         }
+
+        assertEquals(new ${pt.primitive}[]{${pt.null}, 1, 2}, ifelse(new Boolean[]{null, true, false}, (${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(null, ifelse((Boolean[]) null, (${pt.primitive})1, (${pt.primitive})2));
     }
 
+    public void test${pt.boxed}ForwardFillVec() {
+        assertEquals(null, forwardFill((${pt.dbArrayDirect})null));
+        assertEquals(new ${pt.primitive}[]{0, 0, 1, 2, 2, 3}, forwardFill(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{0, ${pt.null}, 1, 2, ${pt.null}, 3})));
+    }
+
+    public void test${pt.boxed}ForwardFillArray() {
+        assertEquals(null, forwardFill((${pt.primitive}[])null));
+        assertEquals(new ${pt.primitive}[]{0, 0, 1, 2, 2, 3}, forwardFill(new ${pt.primitive}[]{0, ${pt.null}, 1, 2, ${pt.null}, 3}));
+    }
     </#if>
     </#list>
 }

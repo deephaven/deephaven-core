@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.MatchPair;
@@ -432,7 +433,7 @@ public class QueryTableAjTest {
             base.setExpectError(true);
             final io.deephaven.engine.table.impl.ErrorListener listener =
                     new io.deephaven.engine.table.impl.ErrorListener(result1);
-            result1.listenForUpdates(listener);
+            result1.addUpdateListener(listener);
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(right, i(4, 5, 6),
@@ -1305,7 +1306,7 @@ public class QueryTableAjTest {
         final Random random = new Random(0);
         final int size = 100;
         final int scale = 1000;
-        final long timeOffset = DateTime.now().getNanos();
+        final long timeOffset = Clock.system().currentTimeNanos();
         final String[] columnNames = {"MyBoolean", "MyChar"};
 
         QueryScope.addParam("random", random);
@@ -1411,6 +1412,46 @@ public class QueryTableAjTest {
                 joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en,
                         random);
             }
+        }
+    }
+
+    /**
+     * Reproduction of the error from DHC issue #3080.
+     */
+    @Test
+    public void testIds3080() {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Logger log = new StreamLoggerImpl();
+
+            final int seed = 0;
+            final Random random = new Random(seed);
+
+            final int leftSize = 32000;
+
+            // fairly small LHS will speed up detection of the error but will not affect correctness
+            final QueryTable leftTable = getTable(true, 1000, random,
+                    initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                            new TstUtils.StringGenerator(leftSize),
+                            new TstUtils.IntGenerator(0, 100000),
+                            new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+
+            // need RHS with unique bucket count > rehash threshold of 4096
+            final QueryTable rightTable = getTable(true, 32000, random,
+                    initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                            new TstUtils.StringGenerator(leftSize),
+                            new TstUtils.SortedIntGenerator(0, 100000),
+                            new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+
+            final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
+                    (QueryTable) rightTable.reverse(),
+                    MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                    MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
+
+            // force compare results of the bucketed output, we cannot compare static to incremental as in other tests
+            // because static will experience the same error when performing `rehashInternalFull()`
+            checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
+                    rightTable.partitionBy("Bucket"),
+                    true, true);
         }
     }
 }

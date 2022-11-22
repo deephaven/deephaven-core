@@ -395,7 +395,7 @@ public class TreeTableOrphanPromoter implements Function<Table, QueryTable> {
                             }
                         };
 
-                source.listenForUpdates(listener);
+                source.addUpdateListener(listener);
             }
 
             return result;

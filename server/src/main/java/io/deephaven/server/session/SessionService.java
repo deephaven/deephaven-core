@@ -5,15 +5,13 @@ package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
+import com.google.rpc.Code;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
-import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.Status;
@@ -31,7 +29,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -63,19 +60,15 @@ public class SessionService {
 
     private final List<TerminationNotificationListener> terminationListeners = new CopyOnWriteArrayList<>();
 
-    private final BasicAuthMarshaller basicAuthMarshaller;
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
 
-    @Inject()
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @Inject
     public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
             @Named("session.tokenExpireMs") final long tokenExpireMs,
-            final Optional<BasicAuthMarshaller> basicAuthMarshaller,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.scheduler = scheduler;
         this.sessionFactory = sessionFactory;
         this.tokenExpireMs = tokenExpireMs;
-        this.basicAuthMarshaller = basicAuthMarshaller.orElse(null);
         this.authRequestHandlers = authRequestHandlers;
 
         if (tokenExpireMs < MIN_COOKIE_EXPIRE_MS) {
@@ -177,7 +170,7 @@ public class SessionService {
     private TokenExpiration refreshToken(final SessionState session, boolean initialToken) {
         UUID newUUID;
         TokenExpiration expiration;
-        final DateTime now = scheduler.currentTime();
+        final long nowMillis = scheduler.currentTimeMillis();
 
         synchronized (session) {
             expiration = session.getExpiration();
@@ -187,7 +180,7 @@ public class SessionService {
                     return null;
                 }
 
-                if (expiration.deadline.getMillis() - tokenExpireMs + tokenRotateMs > now.getMillis()) {
+                if (expiration.deadlineMillis - tokenExpireMs + tokenRotateMs > nowMillis) {
                     // current token is not old enough to rotate
                     return expiration;
                 }
@@ -195,8 +188,7 @@ public class SessionService {
 
             do {
                 newUUID = UuidCreator.getRandomBased();
-                final long tokenExpireNanos = TimeUnit.MILLISECONDS.toNanos(tokenExpireMs);
-                expiration = new TokenExpiration(newUUID, DateTimeUtils.plus(now, tokenExpireNanos), session);
+                expiration = new TokenExpiration(newUUID, nowMillis + tokenExpireMs, session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
             if (initialToken) {
@@ -210,7 +202,7 @@ public class SessionService {
         synchronized (this) {
             if (!cleanupJobInstalled) {
                 cleanupJobInstalled = true;
-                scheduler.runAtTime(expiration.deadline, sessionCleanupJob);
+                scheduler.runAtTime(expiration.deadlineMillis, sessionCleanupJob);
             }
         }
 
@@ -243,21 +235,16 @@ public class SessionService {
             }
         }
 
-        Optional<AuthContext> context = Optional.empty();
-        if (token.startsWith(Auth2Constants.BASIC_PREFIX) && basicAuthMarshaller != null) {
-            final String payload = token.substring(Auth2Constants.BASIC_PREFIX.length());
-            context = basicAuthMarshaller.login(payload, SessionServiceGrpcImpl::insertCallHeader);
-        } else {
-            int offset = token.indexOf(' ');
-            final String key = token.substring(0, offset < 0 ? token.length() : offset);
-            final String payload = offset < 0 ? "" : token.substring(offset + 1);
-            AuthenticationRequestHandler handler = authRequestHandlers.get(key);
-            if (handler != null) {
-                context = handler.login(payload, SessionServiceGrpcImpl::insertCallHeader);
-            }
+        int offset = token.indexOf(' ');
+        final String key = token.substring(0, offset < 0 ? token.length() : offset);
+        final String payload = offset < 0 ? "" : token.substring(offset + 1);
+        AuthenticationRequestHandler handler = authRequestHandlers.get(key);
+        if (handler == null) {
+            throw new AuthenticationException();
         }
-
-        return context.map(this::newSession).orElse(null);
+        return handler.login(payload, SessionServiceGrpcImpl::insertCallHeader)
+                .map(this::newSession)
+                .orElseThrow(AuthenticationException::new);
     }
 
     /**
@@ -269,7 +256,7 @@ public class SessionService {
     public SessionState getSessionForToken(final UUID token) {
         final TokenExpiration expiration = tokenToSession.get(token);
         if (expiration == null || expiration.session.isExpired()
-                || expiration.deadline.compareTo(scheduler.currentTime()) <= 0) {
+                || expiration.deadlineMillis <= scheduler.currentTimeMillis()) {
             return null;
         }
         return expiration.session;
@@ -327,12 +314,12 @@ public class SessionService {
 
     public static final class TokenExpiration {
         public final UUID token;
-        public final DateTime deadline;
+        public final long deadlineMillis;
         public final SessionState session;
 
-        public TokenExpiration(final UUID cookie, final DateTime deadline, final SessionState session) {
+        public TokenExpiration(final UUID cookie, final long deadlineMillis, final SessionState session) {
             this.token = cookie;
-            this.deadline = deadline;
+            this.deadlineMillis = deadlineMillis;
             this.session = session;
         }
 
@@ -351,11 +338,11 @@ public class SessionService {
     private final class SessionCleanupJob implements Runnable {
         @Override
         public void run() {
-            final DateTime now = scheduler.currentTime();
+            final long nowMillis = scheduler.currentTimeMillis();
 
             do {
                 final TokenExpiration next = outstandingCookies.peek();
-                if (next == null || next.deadline.getMillis() > now.getMillis()) {
+                if (next == null || next.deadlineMillis > nowMillis) {
                     break;
                 }
 
@@ -367,7 +354,7 @@ public class SessionService {
 
                 synchronized (next.session) {
                     final TokenExpiration tokenExpiration = next.session.getExpiration();
-                    if (tokenExpiration != null && tokenExpiration.deadline.getMillis() <= now.getMillis()) {
+                    if (tokenExpiration != null && tokenExpiration.deadlineMillis <= nowMillis) {
                         next.session.onExpired();
                     }
                 }
@@ -378,7 +365,7 @@ public class SessionService {
                 if (next == null) {
                     cleanupJobInstalled = false;
                 } else {
-                    scheduler.runAtTime(next.deadline, this);
+                    scheduler.runAtTime(next.deadlineMillis, this);
                 }
             }
         }
@@ -394,6 +381,9 @@ public class SessionService {
 
         @Override
         void onClose() {
+            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
+                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Session has ended"));
+            });
             terminationListeners.remove(this);
         }
 

@@ -36,6 +36,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
@@ -71,6 +72,7 @@ import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
@@ -133,7 +135,9 @@ public class WorkerConnection {
         // TODO configurable, let us support this even when ssl?
         if (DomGlobal.window.location.protocol.equals("http:")) {
             useWebsockets = true;
-            Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
+            Grpc.setDefaultTransport.onInvoke(options -> new MultiplexedWebsocketTransport(options, () -> {
+                Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
+            }));
         } else {
             useWebsockets = false;
         }
@@ -183,6 +187,7 @@ public class WorkerConnection {
     private ObjectServiceClient objectServiceClient;
     private PartitionedTableServiceClient partitionedTableServiceClient;
     private StorageServiceClient storageServiceClient;
+    private ConfigServiceClient configServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -227,6 +232,7 @@ public class WorkerConnection {
         partitionedTableServiceClient =
                 new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         storageServiceClient = new StorageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        configServiceClient = new ConfigServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -438,8 +444,11 @@ public class WorkerConnection {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                             return;
+                        } else {
+                            info.notifyConnectionError(Js.cast(fail));
                         }
                     }
+                    assert success != null;
 
                     // welp; the server is gone -- let everyone know
                     info.notifyConnectionError(new ResponseStreamWrapper.Status() {
@@ -930,6 +939,10 @@ public class WorkerConnection {
 
     public StorageServiceClient storageServiceClient() {
         return storageServiceClient;
+    }
+
+    public ConfigServiceClient configServiceClient() {
+        return configServiceClient;
     }
 
     public BrowserHeaders metadata() {

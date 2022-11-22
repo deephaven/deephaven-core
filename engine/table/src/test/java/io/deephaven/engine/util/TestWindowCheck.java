@@ -13,7 +13,6 @@ import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
@@ -65,14 +64,14 @@ public class TestWindowCheck {
         // of steps.
         final int stepSize = (int) Math.ceil(Math.sqrt(size));
 
-        final TestTimeProvider timeProvider = new TestTimeProvider();
-        timeProvider.now = startTime.getNanos();
+        final TestClock clock = new TestClock();
+        clock.now = startTime.getNanos();
 
         final WindowEvalNugget[] en;
         UpdateGraphProcessor.DEFAULT.exclusiveLock().lock();
         try {
             en = new WindowEvalNugget[] {
-                    new WindowEvalNugget(timeProvider, table)
+                    new WindowEvalNugget(clock, table)
             };
         } finally {
             UpdateGraphProcessor.DEFAULT.exclusiveLock().unlock();
@@ -82,21 +81,21 @@ public class TestWindowCheck {
 
         int step = 0;
 
-        while (timeProvider.now < endTime.getNanos() + 600 * DateTimeUtils.SECOND) {
+        while (clock.now < endTime.getNanos() + 600 * DateTimeUtils.SECOND) {
             ++step;
             final boolean combined = combinedRandom.nextBoolean();
 
             if (combined) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    advanceTime(timeProvider, en);
+                    advanceTime(clock, en);
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
                             random, table, columnInfo);
                 });
                 TstUtils.validate("Step " + step, en);
             } else {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> advanceTime(timeProvider, en));
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> advanceTime(clock, en));
                 if (RefreshingTableTestCase.printTableUpdates) {
-                    TstUtils.validate("Step = " + step + " time = " + new DateTime(timeProvider.now), en);
+                    TstUtils.validate("Step = " + step + " time = " + new DateTime(clock.now), en);
                 }
 
                 for (int ii = 0; ii < stepsPerTick; ++ii) {
@@ -110,10 +109,10 @@ public class TestWindowCheck {
         }
     }
 
-    private void advanceTime(TestTimeProvider timeProvider, WindowEvalNugget[] en) {
-        timeProvider.now += 5 * DateTimeUtils.SECOND;
+    private void advanceTime(TestClock clock, WindowEvalNugget[] en) {
+        clock.now += 5 * DateTimeUtils.SECOND;
         if (RefreshingTableTestCase.printTableUpdates) {
-            System.out.println("Ticking time to " + new DateTime(timeProvider.now));
+            System.out.println("Ticking time to " + new DateTime(clock.now));
         }
         for (final WindowEvalNugget wen : en) {
             wen.windowed.second.run();
@@ -124,16 +123,16 @@ public class TestWindowCheck {
     public void testWindowCheckEmptyInitial() {
         base.setExpectError(false);
 
-        final TestTimeProvider timeProvider = new TestTimeProvider();
+        final TestClock clock = new TestClock();
         final DateTime startTime = DateTimeUtils.convertDateTime("2018-02-23T09:30:00 NY");
-        timeProvider.now = startTime.getNanos();
+        clock.now = startTime.getNanos();
 
         final DateTime[] emptyDateTimeArray = new DateTime[0];
         final QueryTable tableToCheck = testRefreshingTable(i().toTracking(),
                 c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
         final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> WindowCheck.addTimeWindowInternal(timeProvider, tableToCheck, "Timestamp",
+                .computeLocked(() -> WindowCheck.addTimeWindowInternal(clock, tableToCheck, "Timestamp",
                         DateTimeUtils.SECOND * 60, "InWindow", false));
 
         TableTools.showWithRowSet(windowed.first);
@@ -142,20 +141,11 @@ public class TestWindowCheck {
 
     }
 
-    private static class TestTimeProvider implements TimeProvider {
-        long now = 0;
-
-        @Override
-        public DateTime currentTime() {
-            return new DateTime(now);
-        }
-    }
-
     private static class WindowEvalNugget implements EvalNuggetInterface {
         final Pair<Table, WindowCheck.TimeWindowListener> windowed;
         private final QueryTable table;
         private final TableUpdateValidator validator;
-        private final TestTimeProvider timeProvider;
+        private final TestClock clock;
         private final long windowNanos;
         private Throwable exception;
 
@@ -179,16 +169,16 @@ public class TestWindowCheck {
         TableUpdateListener windowedFailureListener = new FailureListener();
         TableUpdateListener updateFailureListener = new FailureListener();
 
-        WindowEvalNugget(TestTimeProvider timeProvider, QueryTable table) {
+        WindowEvalNugget(TestClock clock, QueryTable table) {
             this.table = table;
-            this.timeProvider = timeProvider;
+            this.clock = clock;
             windowNanos = 300 * DateTimeUtils.SECOND;
             windowed =
-                    WindowCheck.addTimeWindowInternal(timeProvider, table, "Timestamp", windowNanos, "InWindow", false);
+                    WindowCheck.addTimeWindowInternal(clock, table, "Timestamp", windowNanos, "InWindow", false);
             validator = TableUpdateValidator.make((QueryTable) windowed.first);
 
-            ((QueryTable) windowed.first).listenForUpdates(windowedFailureListener);
-            validator.getResultTable().listenForUpdates(updateFailureListener);
+            ((QueryTable) windowed.first).addUpdateListener(windowedFailureListener);
+            validator.getResultTable().addUpdateListener(updateFailureListener);
         }
 
         @Override
@@ -209,7 +199,7 @@ public class TestWindowCheck {
             final ColumnSource<DateTime> timestamp = table.getColumnSource("Timestamp");
             final ColumnSource<Boolean> inWindow = windowed.first.getColumnSource("InWindow");
 
-            final long now = timeProvider.now;
+            final long now = clock.now;
 
             for (final RowSet.Iterator it = windowed.first.getRowSet().iterator(); it.hasNext();) {
                 final long key = it.nextLong();

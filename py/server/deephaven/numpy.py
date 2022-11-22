@@ -47,6 +47,8 @@ def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
         elif col_def.data_type == dtypes.bool_:
             bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
             np_array = np.frombuffer(bytes_, col_def.data_type.np_type)
+        elif col_def.data_type == dtypes.string:
+            np_array = np.array([s for s in j_array], dtypes.string.np_type)
         elif col_def.data_type.np_type is not np.object_:
             try:
                 np_array = np.frombuffer(j_array, col_def.data_type.np_type)
@@ -158,10 +160,10 @@ def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
         dtype = dtypes.from_np_dtype(np_array.dtype)
 
         if len(cols) == 1:
-            input_cols.append(_make_input_column(cols[0], np_array, dtype))
+            input_cols.append(_make_input_column(cols[0], np.stack(np_array, axis=1)[0], dtype))
         else:
             for i, col in enumerate(cols):
-                input_cols.append(_make_input_column(col, np_array[:, [i]], dtype))
+                input_cols.append(_make_input_column(col, np.stack(np_array[:, [i]], axis=1)[0], dtype))
 
         return new_table(cols=input_cols)
     except DHError:

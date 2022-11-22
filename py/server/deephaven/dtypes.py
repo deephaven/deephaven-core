@@ -92,7 +92,7 @@ double = float64
 """Double-precision floating-point number type"""
 float_ = float64
 """Double-precision floating-point number type"""
-string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
+string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
 """String type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
@@ -170,7 +170,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
                 bytes_ = seq.astype(dtype=np.int8)
                 j_bytes = array(byte, bytes_)
                 seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
-            if dtype == DateTime:
+            elif dtype == DateTime:
                 longs = jpy.array('long', seq.astype('datetime64[ns]').astype('int64'))
                 seq = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(longs)
 

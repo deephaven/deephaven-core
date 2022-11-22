@@ -3,8 +3,8 @@
  */
 package io.deephaven.engine.table.impl.replay;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 
 import java.io.IOException;
 import java.util.TimerTask;
@@ -59,13 +59,6 @@ public interface ReplayerInterface {
     void schedule(TimerTask task, long delay, long period);
 
     /**
-     * Simulated time.
-     *
-     * @return simulated time.
-     */
-    DateTime currentTime() throws IOException;
-
-    /**
      * Prepares a historical table for replaying.
      *
      * @param dataSource historical table to replay
@@ -101,4 +94,6 @@ public interface ReplayerInterface {
      * @return handle to the replayer.
      */
     ReplayerHandle getHandle();
+
+    Clock clock();
 }

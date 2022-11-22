@@ -27,17 +27,15 @@
 
 namespace deephaven::client::server {
 struct CompletionQueueCallback {
-  typedef deephaven::client::utility::FailureCallback FailureCallback;
-
 public:
-  explicit CompletionQueueCallback(std::shared_ptr<FailureCallback> failureCallback);
+  CompletionQueueCallback();
   CompletionQueueCallback(const CompletionQueueCallback &other) = delete;
   CompletionQueueCallback(CompletionQueueCallback &&other) = delete;
   virtual ~CompletionQueueCallback();
 
   virtual void onSuccess() = 0;
+  virtual void onFailure(std::exception_ptr eptr) = 0;
 
-  std::shared_ptr<FailureCallback> failureCallback_;
   grpc::ClientContext ctx_;
   grpc::Status status_;
 };
@@ -49,16 +47,19 @@ struct ServerResponseHolder final : public CompletionQueueCallback {
 
 public:
   explicit ServerResponseHolder(std::shared_ptr<SFCallback<Response>> callback) :
-      CompletionQueueCallback(std::move(callback)) {}
+      callback_(std::move(callback)) {}
 
   ~ServerResponseHolder() final = default;
 
   void onSuccess() final {
-    // The type is valid because this is how we set it in the constructor.
-    auto *typedCallback = static_cast<SFCallback<Response> *>(failureCallback_.get());
-    typedCallback->onSuccess(std::move(response_));
+    callback_->onSuccess(std::move(response_));
   }
 
+  void onFailure(std::exception_ptr eptr) final {
+    callback_->onFailure(std::move(eptr));
+  }
+
+  std::shared_ptr<SFCallback<Response>> callback_;
   Response response_;
 };
 

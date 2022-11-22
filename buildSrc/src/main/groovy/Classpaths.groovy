@@ -68,7 +68,7 @@ class Classpaths {
 
     static final String IMMUTABLES_GROUP = 'org.immutables'
     static final String IMMUTABLES_NAME = 'value'
-    static final String IMMUTABLES_VERSION = '2.8.1'
+    static final String IMMUTABLES_VERSION = '2.9.2'
 
     static final String JUNIT_GROUP = 'org.junit'
     static final String JUNIT_NAME = 'junit-bom'
@@ -96,7 +96,8 @@ class Classpaths {
 
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'
-    static final String GRPC_VERSION = '1.49.2'
+    // Only bump this in concert w/ BORINGSSL_VERSION
+    static final String GRPC_VERSION = '1.50.1'
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
@@ -106,7 +107,8 @@ class Classpaths {
     // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
     static final String BORINGSSL_GROUP = 'io.netty'
     static final String BORINGSSL_NAME = 'netty-tcnative-boringssl-static'
-    static final String BORINGSSL_VERSION = '2.0.46.Final'
+    // Only bump this in concert w/ GRPC_VERSION
+    static final String BORINGSSL_VERSION = '2.0.54.Final'
 
     static final String JACKSON_GROUP = 'com.fasterxml.jackson'
     static final String JACKSON_NAME = 'jackson-bom'

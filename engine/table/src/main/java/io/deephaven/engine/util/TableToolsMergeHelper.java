@@ -69,7 +69,7 @@ public class TableToolsMergeHelper {
 
                 QueryTable viewedTable = new QueryTable(component.getRowSet(), componentSources);
                 if (component.isRefreshing()) {
-                    component.listenForUpdates(
+                    component.addUpdateListener(
                             new BaseTable.ListenerImpl("union view", component, viewedTable));
                 }
                 result.add(viewedTable);

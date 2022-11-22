@@ -238,7 +238,7 @@ public class ColumnsToRowsTransform {
 
             final ModifiedColumnSet.Transformer transformer =
                     querySource.newModifiedColumnSetTransformer(sourceColumns, resultColumnSets);
-            querySource.listenForUpdates(new BaseTable.ListenerImpl("columnsToRows(" + labelColumn + ", "
+            querySource.addUpdateListener(new BaseTable.ListenerImpl("columnsToRows(" + labelColumn + ", "
                     + Arrays.toString(valueColumns) + ", " + Arrays.deepToString(transposeColumns) + ")", querySource,
                     result) {
                 @Override
