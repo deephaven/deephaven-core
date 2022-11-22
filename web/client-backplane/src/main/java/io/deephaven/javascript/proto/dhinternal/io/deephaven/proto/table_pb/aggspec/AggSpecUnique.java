@@ -15,30 +15,132 @@ import jsinterop.base.JsPropertyMap;
 public class AggSpecUnique {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface NonUniqueSentinelFieldType {
+            @JsOverlay
+            static AggSpecUnique.ToObjectReturnType.NonUniqueSentinelFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getDoubleValue();
+
+            @JsProperty
+            double getFloatValue();
+
+            @JsProperty
+            double getIntValue();
+
+            @JsProperty
+            String getLongValue();
+
+            @JsProperty
+            String getStringValue();
+
+            @JsProperty
+            boolean isBoolValue();
+
+            @JsProperty
+            void setBoolValue(boolean boolValue);
+
+            @JsProperty
+            void setDoubleValue(double doubleValue);
+
+            @JsProperty
+            void setFloatValue(double floatValue);
+
+            @JsProperty
+            void setIntValue(double intValue);
+
+            @JsProperty
+            void setLongValue(String longValue);
+
+            @JsProperty
+            void setStringValue(String stringValue);
+        }
+
         @JsOverlay
         static AggSpecUnique.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
+        AggSpecUnique.ToObjectReturnType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+
+        @JsProperty
         boolean isIncludeNulls();
 
         @JsProperty
         void setIncludeNulls(boolean includeNulls);
+
+        @JsProperty
+        void setNonUniqueSentinel(
+                AggSpecUnique.ToObjectReturnType.NonUniqueSentinelFieldType nonUniqueSentinel);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface NonUniqueSentinelFieldType {
+            @JsOverlay
+            static AggSpecUnique.ToObjectReturnType0.NonUniqueSentinelFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getDoubleValue();
+
+            @JsProperty
+            double getFloatValue();
+
+            @JsProperty
+            double getIntValue();
+
+            @JsProperty
+            String getLongValue();
+
+            @JsProperty
+            String getStringValue();
+
+            @JsProperty
+            boolean isBoolValue();
+
+            @JsProperty
+            void setBoolValue(boolean boolValue);
+
+            @JsProperty
+            void setDoubleValue(double doubleValue);
+
+            @JsProperty
+            void setFloatValue(double floatValue);
+
+            @JsProperty
+            void setIntValue(double intValue);
+
+            @JsProperty
+            void setLongValue(String longValue);
+
+            @JsProperty
+            void setStringValue(String stringValue);
+        }
+
         @JsOverlay
         static AggSpecUnique.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
+        AggSpecUnique.ToObjectReturnType0.NonUniqueSentinelFieldType getNonUniqueSentinel();
+
+        @JsProperty
         boolean isIncludeNulls();
 
         @JsProperty
         void setIncludeNulls(boolean includeNulls);
+
+        @JsProperty
+        void setNonUniqueSentinel(
+                AggSpecUnique.ToObjectReturnType0.NonUniqueSentinelFieldType nonUniqueSentinel);
     }
 
     public static native AggSpecUnique deserializeBinary(Uint8Array bytes);
@@ -53,13 +155,23 @@ public class AggSpecUnique {
 
     public native void clearIncludeNulls();
 
+    public native void clearNonUniqueSentinel();
+
     public native boolean getIncludeNulls();
 
+    public native AggSpecNonUniqueSentinel getNonUniqueSentinel();
+
     public native boolean hasIncludeNulls();
+
+    public native boolean hasNonUniqueSentinel();
 
     public native Uint8Array serializeBinary();
 
     public native void setIncludeNulls(boolean value);
+
+    public native void setNonUniqueSentinel();
+
+    public native void setNonUniqueSentinel(AggSpecNonUniqueSentinel value);
 
     public native AggSpecUnique.ToObjectReturnType0 toObject();
 

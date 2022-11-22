@@ -212,19 +212,7 @@ public class AggAllByRequest {
                     String getColumnName();
 
                     @JsProperty
-                    double getDirection();
-
-                    @JsProperty
-                    boolean isIsAbsolute();
-
-                    @JsProperty
                     void setColumnName(String columnName);
-
-                    @JsProperty
-                    void setDirection(double direction);
-
-                    @JsProperty
-                    void setIsAbsolute(boolean isAbsolute);
                 }
 
                 @JsOverlay
@@ -264,16 +252,67 @@ public class AggAllByRequest {
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface UniqueFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface NonUniqueSentinelFieldType {
+                    @JsOverlay
+                    static AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getDoubleValue();
+
+                    @JsProperty
+                    double getFloatValue();
+
+                    @JsProperty
+                    double getIntValue();
+
+                    @JsProperty
+                    String getLongValue();
+
+                    @JsProperty
+                    String getStringValue();
+
+                    @JsProperty
+                    boolean isBoolValue();
+
+                    @JsProperty
+                    void setBoolValue(boolean boolValue);
+
+                    @JsProperty
+                    void setDoubleValue(double doubleValue);
+
+                    @JsProperty
+                    void setFloatValue(double floatValue);
+
+                    @JsProperty
+                    void setIntValue(double intValue);
+
+                    @JsProperty
+                    void setLongValue(String longValue);
+
+                    @JsProperty
+                    void setStringValue(String stringValue);
+                }
+
                 @JsOverlay
                 static AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
+                AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+
+                @JsProperty
                 boolean isIncludeNulls();
 
                 @JsProperty
                 void setIncludeNulls(boolean includeNulls);
+
+                @JsProperty
+                void setNonUniqueSentinel(
+                        AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -671,19 +710,7 @@ public class AggAllByRequest {
                     String getColumnName();
 
                     @JsProperty
-                    double getDirection();
-
-                    @JsProperty
-                    boolean isIsAbsolute();
-
-                    @JsProperty
                     void setColumnName(String columnName);
-
-                    @JsProperty
-                    void setDirection(double direction);
-
-                    @JsProperty
-                    void setIsAbsolute(boolean isAbsolute);
                 }
 
                 @JsOverlay
@@ -723,16 +750,67 @@ public class AggAllByRequest {
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface UniqueFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface NonUniqueSentinelFieldType {
+                    @JsOverlay
+                    static AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getDoubleValue();
+
+                    @JsProperty
+                    double getFloatValue();
+
+                    @JsProperty
+                    double getIntValue();
+
+                    @JsProperty
+                    String getLongValue();
+
+                    @JsProperty
+                    String getStringValue();
+
+                    @JsProperty
+                    boolean isBoolValue();
+
+                    @JsProperty
+                    void setBoolValue(boolean boolValue);
+
+                    @JsProperty
+                    void setDoubleValue(double doubleValue);
+
+                    @JsProperty
+                    void setFloatValue(double floatValue);
+
+                    @JsProperty
+                    void setIntValue(double intValue);
+
+                    @JsProperty
+                    void setLongValue(String longValue);
+
+                    @JsProperty
+                    void setStringValue(String stringValue);
+                }
+
                 @JsOverlay
                 static AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
+                AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+
+                @JsProperty
                 boolean isIncludeNulls();
 
                 @JsProperty
                 void setIncludeNulls(boolean includeNulls);
+
+                @JsProperty
+                void setNonUniqueSentinel(
+                        AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

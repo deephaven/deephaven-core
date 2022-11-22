@@ -2,7 +2,6 @@ package io.deephaven.client.impl;
 
 import com.google.protobuf.MessageOrBuilder;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.SortColumn.Order;
 import io.deephaven.proto.backplane.grpc.AggSpec;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecBlank;
@@ -10,14 +9,14 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecMedian;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecPercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSorted;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSortedColumn;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecTDigest;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.Builder;
-import io.deephaven.proto.backplane.grpc.SortDescriptor;
-import io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -123,11 +122,9 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
                 .setAverageEvenlyDivided(pct.averageEvenlyDivided()));
     }
 
-    private static SortDescriptor adapt(SortColumn sortColumn) {
-        return SortDescriptor.newBuilder()
+    private static AggSpecSortedColumn adapt(SortColumn sortColumn) {
+        return AggSpecSortedColumn.newBuilder()
                 .setColumnName(sortColumn.column().name())
-                .setDirection(
-                        sortColumn.order() == Order.ASCENDING ? SortDirection.ASCENDING : SortDirection.DESCENDING)
                 .build();
     }
 
@@ -167,8 +164,35 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecUnique unique) {
-        out = otherSpec(Builder::setUnique, AggSpecUnique.newBuilder()
-                .setIncludeNulls(unique.includeNulls()));
+        final AggSpecUnique.Builder builder = AggSpecUnique.newBuilder();
+        final Boolean includeNulls = unique.includeNulls();
+        if (includeNulls != null) {
+            builder.setIncludeNulls(includeNulls);
+        }
+        unique.nonUniqueSentinel().map(AggSpecBuilder::adapt).ifPresent(builder::setNonUniqueSentinel);
+        out = otherSpec(Builder::setUnique, builder);
+    }
+
+    private static AggSpecNonUniqueSentinel adapt(Object o) {
+        if (o instanceof String) {
+            return AggSpecNonUniqueSentinel.newBuilder().setStringValue((String) o).build();
+        }
+        if (o instanceof Integer) {
+            return AggSpecNonUniqueSentinel.newBuilder().setIntValue((Integer) o).build();
+        }
+        if (o instanceof Long) {
+            return AggSpecNonUniqueSentinel.newBuilder().setLongValue((Long) o).build();
+        }
+        if (o instanceof Float) {
+            return AggSpecNonUniqueSentinel.newBuilder().setFloatValue((Float) o).build();
+        }
+        if (o instanceof Double) {
+            return AggSpecNonUniqueSentinel.newBuilder().setDoubleValue((Double) o).build();
+        }
+        if (o instanceof Boolean) {
+            return AggSpecNonUniqueSentinel.newBuilder().setBoolValue((Boolean) o).build();
+        }
+        throw new IllegalArgumentException(String.format("Unable to adapt '%s' as non unique sentinel", o.getClass()));
     }
 
     @Override

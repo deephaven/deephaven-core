@@ -2,7 +2,6 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.agg
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortDescriptor;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -28,19 +27,7 @@ public class AggSpecSorted {
             String getColumnName();
 
             @JsProperty
-            double getDirection();
-
-            @JsProperty
-            boolean isIsAbsolute();
-
-            @JsProperty
             void setColumnName(String columnName);
-
-            @JsProperty
-            void setDirection(double direction);
-
-            @JsProperty
-            void setIsAbsolute(boolean isAbsolute);
         }
 
         @JsOverlay
@@ -76,19 +63,7 @@ public class AggSpecSorted {
             String getColumnName();
 
             @JsProperty
-            double getDirection();
-
-            @JsProperty
-            boolean isIsAbsolute();
-
-            @JsProperty
             void setColumnName(String columnName);
-
-            @JsProperty
-            void setDirection(double direction);
-
-            @JsProperty
-            void setIsAbsolute(boolean isAbsolute);
         }
 
         @JsOverlay
@@ -122,24 +97,24 @@ public class AggSpecSorted {
     public static native AggSpecSorted.ToObjectReturnType toObject(
             boolean includeInstance, AggSpecSorted msg);
 
-    public native SortDescriptor addColumns();
+    public native AggSpecSortedColumn addColumns();
 
-    public native SortDescriptor addColumns(SortDescriptor value, double index);
+    public native AggSpecSortedColumn addColumns(AggSpecSortedColumn value, double index);
 
-    public native SortDescriptor addColumns(SortDescriptor value);
+    public native AggSpecSortedColumn addColumns(AggSpecSortedColumn value);
 
     public native void clearColumnsList();
 
-    public native JsArray<SortDescriptor> getColumnsList();
+    public native JsArray<AggSpecSortedColumn> getColumnsList();
 
     public native Uint8Array serializeBinary();
 
-    public native void setColumnsList(JsArray<SortDescriptor> value);
-
     @JsOverlay
-    public final void setColumnsList(SortDescriptor[] value) {
-        setColumnsList(Js.<JsArray<SortDescriptor>>uncheckedCast(value));
+    public final void setColumnsList(AggSpecSortedColumn[] value) {
+        setColumnsList(Js.<JsArray<AggSpecSortedColumn>>uncheckedCast(value));
     }
+
+    public native void setColumnsList(JsArray<AggSpecSortedColumn> value);
 
     public native AggSpecSorted.ToObjectReturnType0 toObject();
 

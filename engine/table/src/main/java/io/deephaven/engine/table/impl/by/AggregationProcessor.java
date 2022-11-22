@@ -798,8 +798,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            addBasicOperators((t, n) -> makeUniqueOperator(t, n,
-                    unique.includeNulls(), null, unique.nonUniqueSentinel(), false, false));
+            addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNullsOrDefault(), null,
+                    unique.nonUniqueSentinel().orElse(null), false, false));
         }
 
         @Override
@@ -1022,8 +1022,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            addBasicOperators((t, n) -> makeUniqueOperator(t, n,
-                    unique.includeNulls(), null, unique.nonUniqueSentinel(), true, false));
+            addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNullsOrDefault(), null,
+                    unique.nonUniqueSentinel().orElse(null), true, false));
         }
 
         @Override
@@ -1159,8 +1159,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeUniqueOperator(
-                    priorResultSrc.getType(), n, unique.includeNulls(), null, unique.nonUniqueSentinel(), true, true));
+            reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeUniqueOperator(priorResultSrc.getType(), n,
+                    unique.includeNullsOrDefault(), null, unique.nonUniqueSentinel().orElse(null), true, true));
         }
 
         @Override

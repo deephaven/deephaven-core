@@ -647,8 +647,13 @@ message AggSpec {
   }
 
   message AggSpecSorted {
-    // TODO: should we use a stricter type? This construction is limited to ASC/DESC and is_absolute doesn't make sense
-    repeated SortDescriptor columns = 1;
+    // Using a message instead of string to support backwards-compatibility in the future
+    repeated AggSpecSortedColumn columns = 1;
+  }
+
+  message AggSpecSortedColumn {
+    // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
+    string column_name = 1;
   }
 
   message AggSpecTDigest {
@@ -659,11 +664,18 @@ message AggSpec {
   message AggSpecUnique {
     // Whether to include null values as a distinct value for determining if there is only one unique value to output.
     optional bool include_nulls = 1;
+    optional AggSpecNonUniqueSentinel non_unique_sentinel = 2;
+  }
 
-    // Note: should we model this?
-    //oneof non_unique_sentinel {
-    //  string string_value = 2;
-    //}
+  message AggSpecNonUniqueSentinel {
+    oneof type {
+      string string_value = 1;
+      sint32 int_value = 2;
+      sint64 long_value = 3 [jstype=JS_STRING];
+      float float_value = 4;
+      double double_value = 5;
+      bool bool_value = 6;
+    }
   }
 
   message AggSpecWeighted {

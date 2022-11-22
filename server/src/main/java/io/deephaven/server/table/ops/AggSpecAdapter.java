@@ -14,12 +14,13 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecMedian;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecPercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSorted;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSortedColumn;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecTDigest;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
-import io.deephaven.proto.backplane.grpc.SortDescriptor;
 
 class AggSpecAdapter {
     public static void validate(io.deephaven.proto.backplane.grpc.AggSpec spec) {
@@ -117,29 +118,21 @@ class AggSpecAdapter {
                 : AggSpec.percentile(percentile.getPercentile());
     }
 
-    private static SortColumn adapt(SortDescriptor descriptor) {
-        final ColumnName columnName = ColumnName.of(descriptor.getColumnName());
-        switch (descriptor.getDirection()) {
-            case DESCENDING:
-                return SortColumn.desc(columnName);
-            case ASCENDING:
-                return SortColumn.asc(columnName);
-            default:
-                throw new IllegalArgumentException("todo");
-        }
+    private static SortColumn adapt(AggSpecSortedColumn sortedColumn) {
+        return SortColumn.asc(ColumnName.of(sortedColumn.getColumnName()));
     }
 
     private static AggSpecSortedFirst adaptFirst(AggSpecSorted sorted) {
         AggSpecSortedFirst.Builder builder = AggSpecSortedFirst.builder();
-        for (SortDescriptor sortDescriptor : sorted.getColumnsList()) {
-            builder.addColumns(adapt(sortDescriptor));
+        for (AggSpecSortedColumn sortedColumn : sorted.getColumnsList()) {
+            builder.addColumns(adapt(sortedColumn));
         }
         return builder.build();
     }
 
     private static AggSpecSortedLast adaptLast(AggSpecSorted sorted) {
         AggSpecSortedLast.Builder builder = AggSpecSortedLast.builder();
-        for (SortDescriptor sortDescriptor : sorted.getColumnsList()) {
+        for (AggSpecSortedColumn sortDescriptor : sorted.getColumnsList()) {
             builder.addColumns(adapt(sortDescriptor));
         }
         return builder.build();
@@ -150,9 +143,38 @@ class AggSpecAdapter {
     }
 
     private static io.deephaven.api.agg.spec.AggSpecUnique adapt(AggSpecUnique unique) {
-        final Object nonUniqueSentinel = null; // todo
-        return unique.hasIncludeNulls() ? AggSpec.unique(unique.getIncludeNulls(), nonUniqueSentinel)
-                : AggSpec.unique();
+        Boolean includeNull = unique.hasIncludeNulls() ? unique.getIncludeNulls() : null;
+        Object nonUniqueSentinel = unique.hasNonUniqueSentinel() ? adapt(unique.getNonUniqueSentinel()) : null;
+        io.deephaven.api.agg.spec.AggSpecUnique.Builder builder = io.deephaven.api.agg.spec.AggSpecUnique.builder();
+        if (includeNull != null) {
+            builder.includeNulls(includeNull);
+        }
+        if (nonUniqueSentinel != null) {
+            builder.nonUniqueSentinel(nonUniqueSentinel);
+        }
+        return builder.build();
+    }
+
+    private static Object adapt(AggSpecNonUniqueSentinel nonUniqueSentinel) {
+        switch (nonUniqueSentinel.getTypeCase()) {
+            case STRING_VALUE:
+                return nonUniqueSentinel.getStringValue();
+            case INT_VALUE:
+                return nonUniqueSentinel.getIntValue();
+            case LONG_VALUE:
+                return nonUniqueSentinel.getLongValue();
+            case FLOAT_VALUE:
+                return nonUniqueSentinel.getFloatValue();
+            case DOUBLE_VALUE:
+                return nonUniqueSentinel.getDoubleValue();
+            case BOOL_VALUE:
+                return nonUniqueSentinel.getBoolValue();
+            case TYPE_NOT_SET:
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "AggSpecNonUniqueSentinel type not set");
+            default:
+                throw GrpcUtil.statusRuntimeException(Code.INTERNAL, String
+                        .format("Server is missing AggSpecNonUniqueSentinel case %s", nonUniqueSentinel.getTypeCase()));
+        }
     }
 
     private static AggSpecWAvg adaptWeightedAvg(AggSpecWeighted weighted) {

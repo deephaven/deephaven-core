@@ -8,6 +8,7 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 
 /**
  * Specifies an aggregation that outputs the single unique input value for groups that have one, {@code null} if all
@@ -17,6 +18,12 @@ import javax.annotation.Nullable;
 @BuildableStyle
 public abstract class AggSpecUnique extends AggSpecBase {
 
+    public static final boolean INCLUDE_NULLS_DEFAULT = false;
+
+    public static Builder builder() {
+        return ImmutableAggSpecUnique.builder();
+    }
+
     /**
      * Specify a "unique" aggregation that does not treat {@code null} as a value for purposes of determining if the
      * values in a group are unique. If a group is non-empty but contains only {@code null} values, its result will be
@@ -25,7 +32,7 @@ public abstract class AggSpecUnique extends AggSpecBase {
      * @return The "unique" aggregation specification
      */
     public static AggSpecUnique of() {
-        return ImmutableAggSpecUnique.builder().build();
+        return builder().build();
     }
 
     /**
@@ -39,7 +46,7 @@ public abstract class AggSpecUnique extends AggSpecBase {
      * @return The "unique" aggregation specification
      */
     public static AggSpecUnique of(boolean includeNulls, Object nonUniqueSentinel) {
-        return ImmutableAggSpecUnique.builder()
+        return builder()
                 .includeNulls(includeNulls)
                 .nonUniqueSentinel(nonUniqueSentinel)
                 .build();
@@ -47,7 +54,7 @@ public abstract class AggSpecUnique extends AggSpecBase {
 
     @Override
     public final String description() {
-        return "unique" + (includeNulls() ? " (including nulls)" : "");
+        return "unique" + (includeNullsOrDefault() ? " (including nulls)" : "");
     }
 
     /**
@@ -56,25 +63,32 @@ public abstract class AggSpecUnique extends AggSpecBase {
      *
      * @return Whether to include nulls
      */
-    @Default
-    public boolean includeNulls() {
-        return false;
-    }
+    @Nullable
+    public abstract Boolean includeNulls();
 
     /**
      * The output value to use for groups that don't have a single unique input value.
      *
      * @return The non-unique sentinel value
      */
-    @Nullable
-    @Default
-    public Object nonUniqueSentinel() {
-        return null;
+    public abstract Optional<Object> nonUniqueSentinel();
+
+    public final boolean includeNullsOrDefault() {
+        final Boolean includeNulls = includeNulls();
+        return includeNulls == null ? INCLUDE_NULLS_DEFAULT : includeNulls;
     }
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
+    }
+
+    public interface Builder {
+        Builder includeNulls(Boolean includeNulls);
+
+        Builder nonUniqueSentinel(Object nonUniqueSentinel);
+
+        AggSpecUnique build();
     }
 }

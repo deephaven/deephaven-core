@@ -130,21 +130,39 @@ public class BatchTableRequest {
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface SortedFirstFieldType {
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface ColumnsListFieldType {
+                            @JsOverlay
+                            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            String getColumnName();
+
+                            @JsProperty
+                            void setColumnName(String columnName);
+                        }
+
                         @JsOverlay
                         static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        JsArray<Object> getColumnsList();
-
-                        @JsProperty
-                        void setColumnsList(JsArray<Object> columnsList);
+                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
 
                         @JsOverlay
-                        default void setColumnsList(Object[] columnsList) {
-                            setColumnsList(Js.<JsArray<Object>>uncheckedCast(columnsList));
+                        default void setColumnsList(
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
+                            setColumnsList(
+                                    Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
+                                            columnsList));
                         }
+
+                        @JsProperty
+                        void setColumnsList(
+                                JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -163,16 +181,67 @@ public class BatchTableRequest {
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface UniqueFieldType {
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface NonUniqueSentinelFieldType {
+                            @JsOverlay
+                            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            double getDoubleValue();
+
+                            @JsProperty
+                            double getFloatValue();
+
+                            @JsProperty
+                            double getIntValue();
+
+                            @JsProperty
+                            String getLongValue();
+
+                            @JsProperty
+                            String getStringValue();
+
+                            @JsProperty
+                            boolean isBoolValue();
+
+                            @JsProperty
+                            void setBoolValue(boolean boolValue);
+
+                            @JsProperty
+                            void setDoubleValue(double doubleValue);
+
+                            @JsProperty
+                            void setFloatValue(double floatValue);
+
+                            @JsProperty
+                            void setIntValue(double intValue);
+
+                            @JsProperty
+                            void setLongValue(String longValue);
+
+                            @JsProperty
+                            void setStringValue(String stringValue);
+                        }
+
                         @JsOverlay
                         static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+
+                        @JsProperty
                         boolean isIncludeNulls();
 
                         @JsProperty
                         void setIncludeNulls(boolean includeNulls);
+
+                        @JsProperty
+                        void setNonUniqueSentinel(
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2500,21 +2569,39 @@ public class BatchTableRequest {
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface SortedFirstFieldType {
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface ColumnsListFieldType {
+                            @JsOverlay
+                            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            String getColumnName();
+
+                            @JsProperty
+                            void setColumnName(String columnName);
+                        }
+
                         @JsOverlay
                         static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        JsArray<Object> getColumnsList();
-
-                        @JsProperty
-                        void setColumnsList(JsArray<Object> columnsList);
+                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
 
                         @JsOverlay
-                        default void setColumnsList(Object[] columnsList) {
-                            setColumnsList(Js.<JsArray<Object>>uncheckedCast(columnsList));
+                        default void setColumnsList(
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
+                            setColumnsList(
+                                    Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
+                                            columnsList));
                         }
+
+                        @JsProperty
+                        void setColumnsList(
+                                JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2533,16 +2620,67 @@ public class BatchTableRequest {
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface UniqueFieldType {
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface NonUniqueSentinelFieldType {
+                            @JsOverlay
+                            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            double getDoubleValue();
+
+                            @JsProperty
+                            double getFloatValue();
+
+                            @JsProperty
+                            double getIntValue();
+
+                            @JsProperty
+                            String getLongValue();
+
+                            @JsProperty
+                            String getStringValue();
+
+                            @JsProperty
+                            boolean isBoolValue();
+
+                            @JsProperty
+                            void setBoolValue(boolean boolValue);
+
+                            @JsProperty
+                            void setDoubleValue(double doubleValue);
+
+                            @JsProperty
+                            void setFloatValue(double floatValue);
+
+                            @JsProperty
+                            void setIntValue(double intValue);
+
+                            @JsProperty
+                            void setLongValue(String longValue);
+
+                            @JsProperty
+                            void setStringValue(String stringValue);
+                        }
+
                         @JsOverlay
                         static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+
+                        @JsProperty
                         boolean isIncludeNulls();
 
                         @JsProperty
                         void setIncludeNulls(boolean includeNulls);
+
+                        @JsProperty
+                        void setNonUniqueSentinel(
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
