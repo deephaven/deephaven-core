@@ -19,9 +19,8 @@ public class DebuggingInitializer implements ThreadInitializationFactory {
             // python not enabled, don't accidentally start it
             return runnable;
         }
-        DeephavenModule py_deephaven = (DeephavenModule) PyModule.importModule("deephaven")
+        DeephavenModule py_deephaven = (DeephavenModule) PyModule.importModule("deephaven_internal.java_threads")
                 .createProxy(PyLib.CallableKind.FUNCTION, DeephavenModule.class);
-
 
         return () -> {
             // First call in to create a custom function that has the same name as the Java thread (plus a prefix)

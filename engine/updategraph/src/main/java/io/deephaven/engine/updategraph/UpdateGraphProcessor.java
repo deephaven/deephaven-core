@@ -266,14 +266,20 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         notificationProcessor = makeNotificationProcessor();
         jvmIntrospectionContext = new JvmIntrospectionContext();
 
-        refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
-            configureRefreshThread();
-            // noinspection InfiniteLoopStatement
-            while (true) {
-                Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
-                refreshTablesAndFlushNotifications();
+        refreshThread = new Thread(() -> {
+            try {
+                configureRefreshThread();
+                // noinspection InfiniteLoopStatement
+                ThreadInitializationFactory.wrapRunnable(() -> {
+                    while (true) {
+                        Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
+                        refreshTablesAndFlushNotifications();
+                    }
+                }).run();
+            } catch (Throwable e) {
+                e.printStackTrace();
             }
-        }), "UpdateGraphProcessor." + name() + ".refreshThread");
+        }, "UpdateGraphProcessor." + name() + ".refreshThread");
         refreshThread.setDaemon(true);
 
         final int updateThreads =
