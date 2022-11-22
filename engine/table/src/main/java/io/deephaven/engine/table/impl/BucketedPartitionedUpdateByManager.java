@@ -79,7 +79,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             // create a recorder instance sourced from the source table
             ListenerRecorder sourceRecorder = new ListenerRecorder(description, source, result);
             sourceRecorder.setMergedListener(listener);
-            source.listenForUpdates(sourceRecorder);
+            source.addUpdateListener(sourceRecorder);
             result.addParentReference(listener);
             recorders.offerLast(sourceRecorder);
 
@@ -118,7 +118,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             if (listener != null) {
                 ListenerRecorder recorder = new ListenerRecorder(description, updateBy.result, result);
                 recorder.setMergedListener(listener);
-                updateBy.result.listenForUpdates(recorder);
+                updateBy.result.addUpdateListener(recorder);
 
                 // add the listener only while synchronized
                 synchronized (recorders) {
@@ -139,7 +139,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             // create a recorder instance sourced from the transformed table
             ListenerRecorder sourceRecorder = new ListenerRecorder(description, transformed.table(), result);
             sourceRecorder.setMergedListener(listener);
-            transformed.table().listenForUpdates(sourceRecorder);
+            transformed.table().addUpdateListener(sourceRecorder);
             result.addParentReference(listener);
             recorders.offerLast(sourceRecorder);
         }

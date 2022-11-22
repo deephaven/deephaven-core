@@ -38,7 +38,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             // create a recorder instance sourced from the source table
             ListenerRecorder sourceRecorder = new ListenerRecorder(description, source, result);
             sourceRecorder.setMergedListener(listener);
-            source.listenForUpdates(sourceRecorder);
+            source.addUpdateListener(sourceRecorder);
             result.addParentReference(listener);
             recorders.offerLast(sourceRecorder);
 
@@ -56,7 +56,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             // create a recorder instance sourced from the bucket helper
             ListenerRecorder recorder = new ListenerRecorder(description, zeroKeyUpdateBy.result, result);
             recorder.setMergedListener(listener);
-            zeroKeyUpdateBy.result.listenForUpdates(recorder);
+            zeroKeyUpdateBy.result.addUpdateListener(recorder);
             recorders.offerLast(recorder);
         } else {
             // no shifting will be needed, can create directly from source

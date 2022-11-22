@@ -107,7 +107,7 @@ class UpdateByBucketHelper {
 
         if (source.isRefreshing()) {
             final ZeroKeyUpdateByListener listener = newListener(description, result);
-            source.listenForUpdates(listener);
+            source.addUpdateListener(listener);
             result.addParentReference(listener);
         }
     }
