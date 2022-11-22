@@ -3,6 +3,7 @@ package io.deephaven.engine.table.hierarchical;
 import io.deephaven.api.ColumnName;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.GridAttributes;
@@ -35,9 +36,15 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
 
     /**
      * Opaque interface for objects used to cache snapshot state across multiple invocations of
-     * {@link #fillSnapshotChunks(SnapshotState, Table, BitSet, RowSequence, WritableChunk[])}.
+     * {@link #fillSnapshotChunks(SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])}.
+     * <p>
+     * Implementations may have limited support for concurrency, meaning that multiple concurrent snapshot calls
+     * using the same state may be internally serialized.
+     * <p>
+     * In order to ensure that a state remains usable, all dependent objects should maintain a liveness reference
+     * using {@link LivenessReferent#retainReference()} and {@link LivenessReferent#dropReference()}.
      */
-    interface SnapshotState extends SafeCloseable {
+    interface SnapshotState extends LivenessReferent {
     }
 
     /**
@@ -48,7 +55,8 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     /**
      * Populate data chunks for a snapshot of this HierarchicalTable.
      *
-     * @param snapshotState Snapshot state object used to cache data across invocations
+     * @param snapshotState Snapshot state object used to cache data across invocations. Must have been created by this
+     *        HierarchicalTable with {@link #makeSnapshotState()}.
      * @param keyTable Type-specific "key" table specifying expanded and contracted nodes
      * @param columns Optional bit-set of columns to include, {@code null} to include all columns
      * @param rows Position-space rows to include from the expanded data specified by {@code keyTable}
@@ -58,7 +66,7 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     long fillSnapshotChunks(
             @NotNull SnapshotState snapshotState,
             @NotNull Table keyTable,
-            @NotNull ColumnName keyTableExpandDescendantsColumn,
+            @Nullable ColumnName keyTableExpandDescendantsColumn,
             @Nullable BitSet columns,
             @NotNull RowSequence rows,
             @NotNull WritableChunk<? extends Values>[] destinations);
