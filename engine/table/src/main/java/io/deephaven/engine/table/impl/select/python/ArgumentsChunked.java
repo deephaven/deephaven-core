@@ -68,6 +68,9 @@ public class ArgumentsChunked {
         } else if (argType == PyObject.class) {
             chunkedArgTypes[argIdx] = PyObject[].class;
             chunkedArgs[argIdx] = new PyObject[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((PyObject[]) chunkedArgs[argIdx], (PyObject) argValue);
+            }
         } else {
             chunkedArgTypes[argIdx] = Object[].class;
             chunkedArgs[argIdx] = new Object[maxChunkSize];
