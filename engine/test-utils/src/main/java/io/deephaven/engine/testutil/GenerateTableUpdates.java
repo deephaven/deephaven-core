@@ -1,19 +1,21 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.testutil;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.sources.DateTimeTreeMapSource;
+import io.deephaven.engine.testutil.sources.TreeMapSource;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.DateTimeTreeMapSource;
-import io.deephaven.engine.table.impl.sources.TreeMapSource;
-import io.deephaven.engine.table.impl.util.*;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.ArrayList;
@@ -118,9 +120,9 @@ public class GenerateTableUpdates {
 
     public static class SimulationProfile {
         // Shift Strategy. Must sum to <= 100%.
-        int SHIFT_10_PERCENT_KEY_SPACE = 10;
-        int SHIFT_10_PERCENT_POS_SPACE = 30;
-        int SHIFT_AGGRESSIVELY = 10;
+        public int SHIFT_10_PERCENT_KEY_SPACE = 10;
+        public int SHIFT_10_PERCENT_POS_SPACE = 30;
+        public int SHIFT_AGGRESSIVELY = 10;
 
         int SHIFT_LIMIT_50_PERCENT = 80; // limit shift domain to less than 50% of keyspace
 

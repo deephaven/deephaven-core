@@ -6,6 +6,10 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.table.impl.*;
@@ -21,8 +25,8 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.AggSortedLast;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.TstUtils.addToTable;
+import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.addToTable;
 
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {

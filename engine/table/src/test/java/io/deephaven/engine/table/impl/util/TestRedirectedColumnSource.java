@@ -15,12 +15,12 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.ColumnSource;
 
 import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
-import static io.deephaven.engine.table.impl.TstUtils.prevTable;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.prevTable;
 
 import io.deephaven.chunk.attributes.Values;
 

@@ -8,24 +8,21 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.base.testing.Shuffle;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.testutil.Shuffle;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.junit4.EngineCleanup;
 import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,7 +32,8 @@ import java.util.Random;
 import java.util.stream.LongStream;
 
 import static io.deephaven.chunk.ArrayGenerator.indexDataGenerator;
-import static junit.framework.TestCase.*;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
 public class TestObjectArraySource {
     @Rule

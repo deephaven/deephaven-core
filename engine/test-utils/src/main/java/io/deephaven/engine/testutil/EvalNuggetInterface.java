@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.testutil;
 
 import java.io.IOException;
 

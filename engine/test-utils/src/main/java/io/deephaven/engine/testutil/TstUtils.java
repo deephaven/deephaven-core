@@ -1,40 +1,46 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.testutil;
 
 import io.deephaven.base.Pair;
-import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.RowSetTstUtils;
-import io.deephaven.engine.table.ElementSource;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.stringset.HashStringSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ElementSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.stringset.StringSet;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
+import io.deephaven.engine.testutil.sources.DateTimeTreeMapSource;
+import io.deephaven.engine.testutil.sources.ImmutableColumnHolder;
+import io.deephaven.engine.testutil.sources.ImmutableTreeMapSource;
+import io.deephaven.engine.testutil.sources.TreeMapSource;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.tuple.ArrayTuple;
-import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.stringset.HashStringSet;
+import io.deephaven.stringset.StringSet;
+import io.deephaven.time.DateTime;
+import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.type.ArrayTypeUtils;
 import junit.framework.AssertionFailedError;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
@@ -47,8 +53,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class TstUtils {
     public static boolean SHORT_TESTS = Configuration.getInstance()
@@ -1657,12 +1661,12 @@ public class TstUtils {
         }
     }
 
-    static class UniqueIntGenerator extends AbstractUniqueGenerator<Integer> {
+    public static class UniqueIntGenerator extends AbstractUniqueGenerator<Integer> {
 
         private final int to, from;
         private final double nullFraction;
 
-        UniqueIntGenerator(int from, int to) {
+        public UniqueIntGenerator(int from, int to) {
             this(from, to, 0.0);
         }
 
@@ -1689,12 +1693,12 @@ public class TstUtils {
         }
     }
 
-    static class UniqueLongGenerator extends AbstractUniqueGenerator<Long> {
+    public static class UniqueLongGenerator extends AbstractUniqueGenerator<Long> {
 
         private final int to, from;
         private final double nullFraction;
 
-        UniqueLongGenerator(int from, int to) {
+        public UniqueLongGenerator(int from, int to) {
             this(from, to, 0.0);
         }
 
@@ -1721,12 +1725,12 @@ public class TstUtils {
         }
     }
 
-    static class UniqueShortGenerator extends AbstractUniqueGenerator<Short> {
+    public static class UniqueShortGenerator extends AbstractUniqueGenerator<Short> {
 
         private final short to, from;
         private final double nullFraction;
 
-        UniqueShortGenerator(short from, short to) {
+        public UniqueShortGenerator(short from, short to) {
             this(from, to, 0.0);
         }
 
@@ -1753,12 +1757,12 @@ public class TstUtils {
         }
     }
 
-    static class UniqueByteGenerator extends AbstractUniqueGenerator<Byte> {
+    public static class UniqueByteGenerator extends AbstractUniqueGenerator<Byte> {
 
         private final byte to, from;
         private final double nullFraction;
 
-        UniqueByteGenerator(byte from, byte to) {
+        public UniqueByteGenerator(byte from, byte to) {
             this(from, to, 0.0);
         }
 
@@ -1785,11 +1789,11 @@ public class TstUtils {
         }
     }
 
-    static class UniqueCharGenerator extends AbstractUniqueGenerator<Character> {
+    public static class UniqueCharGenerator extends AbstractUniqueGenerator<Character> {
         private final char to, from;
         private final double nullFraction;
 
-        UniqueCharGenerator(char from, char to) {
+        public UniqueCharGenerator(char from, char to) {
             this(from, to, 0.0);
         }
 
@@ -1816,7 +1820,7 @@ public class TstUtils {
         }
     }
 
-    static class UniqueStringGenerator extends AbstractUniqueGenerator<String> {
+    public static class UniqueStringGenerator extends AbstractUniqueGenerator<String> {
         @Override
         public String nextValue(TreeMap<Long, String> values, long key, Random random) {
             return Long.toString(random.nextLong(), 'z' - 'a' + 10);
@@ -1828,10 +1832,10 @@ public class TstUtils {
         }
     }
 
-    static class UniqueTupleGenerator extends AbstractUniqueGenerator<ArrayTuple> {
+    public static class UniqueTupleGenerator extends AbstractUniqueGenerator<ArrayTuple> {
         private final AbstractGenerator[] generators;
 
-        UniqueTupleGenerator(AbstractGenerator... generators) {
+        public UniqueTupleGenerator(AbstractGenerator... generators) {
             this.generators = generators;
         }
 
@@ -1847,10 +1851,10 @@ public class TstUtils {
         }
     }
 
-    static class TupleGenerator extends AbstractGenerator<ArrayTuple> {
+    public static class TupleGenerator extends AbstractGenerator<ArrayTuple> {
         private final AbstractGenerator[] generators;
 
-        TupleGenerator(AbstractGenerator... generators) {
+        public TupleGenerator(AbstractGenerator... generators) {
             this.generators = generators;
         }
 
@@ -1866,8 +1870,8 @@ public class TstUtils {
         }
     }
 
-    static class FromUniqueStringGenerator extends AbstractFromUniqueGenerator<String> {
-        FromUniqueStringGenerator(UniqueStringGenerator uniqueStringGenerator, double existingFraction) {
+    public static class FromUniqueStringGenerator extends AbstractFromUniqueGenerator<String> {
+        public FromUniqueStringGenerator(UniqueStringGenerator uniqueStringGenerator, double existingFraction) {
             this(uniqueStringGenerator, existingFraction, new StringGenerator());
         }
 
@@ -1877,27 +1881,27 @@ public class TstUtils {
         }
     }
 
-    static class FromUniqueTupleGenerator extends AbstractFromUniqueGenerator<ArrayTuple> {
-        FromUniqueTupleGenerator(UniqueTupleGenerator uniqueGenerator, TupleGenerator defaultGenerator,
-                double existingFraction) {
+    public static class FromUniqueTupleGenerator extends AbstractFromUniqueGenerator<ArrayTuple> {
+        public FromUniqueTupleGenerator(UniqueTupleGenerator uniqueGenerator, TupleGenerator defaultGenerator,
+                                        double existingFraction) {
             super(ArrayTuple.class, uniqueGenerator, defaultGenerator, ArrayTuple[]::new, existingFraction);
         }
     }
 
-    static class FromUniqueIntGenerator extends AbstractFromUniqueGenerator<Integer> {
-        FromUniqueIntGenerator(UniqueIntGenerator uniqueGenerator, IntGenerator defaultGenerator,
-                double existingFraction) {
+    public static class FromUniqueIntGenerator extends AbstractFromUniqueGenerator<Integer> {
+        public FromUniqueIntGenerator(UniqueIntGenerator uniqueGenerator, IntGenerator defaultGenerator,
+                                      double existingFraction) {
             super(Integer.class, uniqueGenerator, defaultGenerator, Integer[]::new, existingFraction);
         }
     }
 
-    static class CompositeGenerator<T> implements Generator<T, T> {
+    public static class CompositeGenerator<T> implements Generator<T, T> {
         @NotNull
         private final List<Generator<T, T>> generators;
         @NotNull
         private final double[] fractions;
 
-        CompositeGenerator(List<Generator<T, T>> generators, double... fractions) {
+        public CompositeGenerator(List<Generator<T, T>> generators, double... fractions) {
             if (fractions.length != generators.size() - 1) {
                 throw new IllegalArgumentException("Generators must have one more element than fractions!");
             }
@@ -2074,7 +2078,7 @@ public class TstUtils {
             data.put(to, movedValue);
         }
 
-        ColumnHolder populateMapAndC(RowSet keysToModify, Random random) {
+        public ColumnHolder populateMapAndC(RowSet keysToModify, Random random) {
             final Collection<U> newValues = populateMap(keysToModify, random).values();
             // noinspection unchecked
             final U[] valueArray = newValues.toArray((U[]) Array.newInstance(dataType, newValues.size()));
@@ -2116,7 +2120,7 @@ public class TstUtils {
 
         private boolean invoked = false;
 
-        protected TstNotification() {
+        public TstNotification() {
             super(false);
         }
 
@@ -2172,7 +2176,7 @@ public class TstUtils {
     public static void assertEqualsByElements(Table actual, Table expected) {
         final Map<String, ? extends ColumnSource<?>> mapActual = actual.getColumnSourceMap();
         final Map<String, ? extends ColumnSource<?>> mapExpected = expected.getColumnSourceMap();
-        assertThat(mapActual.keySet()).containsExactlyInAnyOrderElementsOf(mapExpected.keySet());
+        Assertions.assertThat(mapActual.keySet()).containsExactlyInAnyOrderElementsOf(mapExpected.keySet());
         for (String key : mapActual.keySet()) {
             final ColumnSource<?> srcActual = mapActual.get(key);
             final ColumnSource<?> srcExpected = mapExpected.get(key);
@@ -2186,7 +2190,7 @@ public class TstUtils {
     public static <T> void assertEquals(
             RowSet rowsActual, ElementSource<T> srcActual,
             RowSet rowsExpected, ElementSource<T> srcExpected) {
-        assertThat(rowsActual.size()).isEqualTo(rowsExpected.size());
+        Assertions.assertThat(rowsActual.size()).isEqualTo(rowsExpected.size());
         try (
                 final RowSet.Iterator itActual = rowsActual.iterator();
                 final RowSet.Iterator itExpected = rowsExpected.iterator()) {
@@ -2194,7 +2198,7 @@ public class TstUtils {
                 if (!itExpected.hasNext()) {
                     throw new IllegalStateException();
                 }
-                assertThat(srcActual.get(itActual.nextLong())).isEqualTo(srcExpected.get(itExpected.nextLong()));
+                Assertions.assertThat(srcActual.get(itActual.nextLong())).isEqualTo(srcExpected.get(itExpected.nextLong()));
             }
             if (itExpected.hasNext()) {
                 throw new IllegalStateException();

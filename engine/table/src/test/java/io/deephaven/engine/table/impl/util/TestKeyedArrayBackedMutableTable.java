@@ -27,7 +27,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
 public class TestKeyedArrayBackedMutableTable {
 

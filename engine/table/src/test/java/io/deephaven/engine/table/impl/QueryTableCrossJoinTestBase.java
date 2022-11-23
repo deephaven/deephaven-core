@@ -9,6 +9,10 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Maps;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -26,7 +30,7 @@ import java.util.*;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.longCol;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {

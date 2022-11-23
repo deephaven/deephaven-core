@@ -20,7 +20,7 @@ import java.util.Map;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.show;
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableHugeSortTest {

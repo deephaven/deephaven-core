@@ -9,6 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
@@ -24,7 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
 public class TestSelectPreserveGrouping extends QueryTableTestBase {
     private static final String ROOT = "TestSelectPreserveGrouping_Root";

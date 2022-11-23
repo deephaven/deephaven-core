@@ -4,14 +4,17 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.table.impl.*;
-import org.junit.Assert;
 
 import java.util.*;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.diff;
 
 public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {

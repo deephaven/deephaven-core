@@ -8,6 +8,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import junit.framework.TestCase;
 import org.junit.Assert;
@@ -18,7 +21,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class QueryTableFlattenTest extends QueryTableTestBase {
 

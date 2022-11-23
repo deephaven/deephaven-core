@@ -10,17 +10,24 @@ import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.vector.CharVector;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTime;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.IntVector;
+import org.junit.experimental.categories.Category;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -30,14 +37,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
-import io.deephaven.vector.DoubleVector;
-import io.deephaven.vector.IntVector;
-import org.junit.experimental.categories.Category;
-
 import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -45,7 +48,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class TestAggBy extends RefreshingTableTestCase {
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
     }
 

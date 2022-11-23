@@ -11,6 +11,9 @@ package io.deephaven.engine.table.impl.ssms;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.compare.DoubleComparisons;
@@ -37,8 +40,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static org.junit.Assert.assertArrayEquals;
 

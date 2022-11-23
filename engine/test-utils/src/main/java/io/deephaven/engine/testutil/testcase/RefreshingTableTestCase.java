@@ -1,17 +1,22 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.testutil.testcase;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
@@ -48,7 +53,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     }
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -69,7 +74,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
         UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckLtm);
         QueryCompiler.setLogEnabled(oldLogEnabled);
@@ -112,7 +117,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         this.expectError = expectError;
     }
 
-    <T> T allowingError(Supplier<T> function, Predicate<List<Throwable>> errorsAcceptable) {
+    public <T> T allowingError(Supplier<T> function, Predicate<List<Throwable>> errorsAcceptable) {
         final boolean original = getExpectError();
         T retval;
         try {
@@ -135,7 +140,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     }
 
     public static void simulateShiftAwareStep(int targetUpdateSize, Random random, QueryTable table,
-            TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
+                                              TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
         simulateShiftAwareStep("", targetUpdateSize, random, table, columnInfo, en);
     }
 
@@ -158,10 +163,10 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         // System.gc();
     }
 
-    class ErrorExpectation implements Closeable {
+    public class ErrorExpectation implements Closeable {
         final boolean originalExpectError;
 
-        ErrorExpectation() {
+        public ErrorExpectation() {
             originalExpectError = expectError;
             expectError = true;
         }

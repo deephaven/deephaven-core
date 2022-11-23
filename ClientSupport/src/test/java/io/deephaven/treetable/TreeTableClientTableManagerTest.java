@@ -64,7 +64,7 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
     }
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         clients = new TreeTableClientTableManager.Client[5];

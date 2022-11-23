@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.ssa;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class SsaTestHelpers {

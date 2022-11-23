@@ -5,6 +5,9 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.DoubleVector;
@@ -25,9 +28,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.table.impl.RefreshingTableTestCase.printTableUpdates;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 

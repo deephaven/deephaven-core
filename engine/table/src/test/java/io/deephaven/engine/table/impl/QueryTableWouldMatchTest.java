@@ -4,6 +4,9 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ShiftObliviousListener;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.WouldMatchPair;
@@ -16,7 +19,7 @@ import java.util.Random;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.show;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableWouldMatchTest extends QueryTableTestBase {

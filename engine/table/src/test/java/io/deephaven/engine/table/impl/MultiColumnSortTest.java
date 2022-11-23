@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.benchmarking.BenchmarkTable;
@@ -14,8 +14,6 @@ import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -23,8 +21,8 @@ import org.junit.experimental.categories.Category;
 import java.math.BigInteger;
 import java.util.*;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 @Category(SerialTest.class)
 public class MultiColumnSortTest {

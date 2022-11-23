@@ -1,12 +1,16 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.testutil;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateValidator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
@@ -115,12 +119,12 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         recomputedTable = null;
     }
 
-    void showResult(String label, Table e) {
+    public void showResult(String label, Table e) {
         System.out.println(label);
         showWithRowSet(e, 100);
     }
 
-    void checkDifferences(String msg, Table recomputed) {
+    protected void checkDifferences(String msg, Table recomputed) {
         TstUtils.assertTableEquals(msg, forComparison(recomputed), forComparison(originalValue), diffItems());
     }
 
@@ -129,7 +133,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         return EnumSet.of(TableDiff.DiffItems.DoublesExact);
     }
 
-    Table forComparison(Table t) {
+    protected Table forComparison(Table t) {
         return t;
     }
 
@@ -180,7 +184,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         }
 
         @Override
-        Table forComparison(Table t) {
+        protected Table forComparison(Table t) {
             return t.sort(sortColumns);
         }
 

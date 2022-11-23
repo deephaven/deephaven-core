@@ -3,6 +3,8 @@
  */
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.testutil.rowset.PerfStats;
+
 public class RowSetCreationSeqPerfTest {
     private final RowSetLike il;
     private final int sz;

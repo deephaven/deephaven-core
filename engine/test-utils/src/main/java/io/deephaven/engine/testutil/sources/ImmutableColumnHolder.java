@@ -1,8 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl.util;
+package io.deephaven.engine.testutil.sources;
 
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

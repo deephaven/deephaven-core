@@ -4,6 +4,10 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.util.TotalsTableBuilder;
 import io.deephaven.function.Numeric;
 import io.deephaven.vector.DoubleVectorDirect;
@@ -17,8 +21,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class TestTotalsTable extends RefreshingTableTestCase {
 

@@ -7,6 +7,8 @@ import io.deephaven.base.Procedure;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSet;
@@ -21,8 +23,8 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.engine.util.TableTools.diff;
 import static io.deephaven.engine.util.TableTools.emptyTable;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 @Category(OutOfBandTest.class)
 public class QueryTableSliceTest extends QueryTableTestBase {

@@ -3,52 +3,14 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.base.Function;
-import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.*;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.io.log.LogLevel;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.logger.StreamLoggerImpl;
-import io.deephaven.engine.util.TableDiff;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.TableToolsShowControl;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.ReflexiveUse;
-import junit.framework.TestCase;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 /**
  * Test of Tree Tables and rollups.

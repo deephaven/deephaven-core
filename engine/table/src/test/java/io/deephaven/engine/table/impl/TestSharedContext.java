@@ -3,11 +3,12 @@
  */
 package io.deephaven.engine.table.impl;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
 
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.junit4.EngineCleanup;
 import org.junit.Rule;
@@ -16,7 +17,7 @@ import org.junit.Test;
 import java.util.Random;
 import java.util.function.Consumer;
 
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static org.junit.Assert.*;
 
 public class TestSharedContext {

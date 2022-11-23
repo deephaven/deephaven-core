@@ -12,6 +12,11 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.UpdateValidatorNugget;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
@@ -34,7 +39,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 /**
  * Test QueryTable select and update operations.
@@ -261,7 +266,7 @@ public class QueryTableSelectUpdateTest {
     }
 
     private EvalNugget partialEvalNuggetFrom(Table sourceTable, boolean indexPositionChangesAllowed,
-            Supplier<Table> makeTable) {
+                                             Supplier<Table> makeTable) {
         return new PartialEvalNugget(sourceTable, indexPositionChangesAllowed) {
             @Override
             protected Table e() {

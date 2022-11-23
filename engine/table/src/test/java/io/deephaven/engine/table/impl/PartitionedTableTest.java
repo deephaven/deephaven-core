@@ -11,43 +11,46 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.UpdateValidatorNugget;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.process.ProcessEnvironment;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.experimental.categories.Category;
 
-import java.util.*;
+import java.util.List;
+import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.experimental.categories.Category;
-
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.TstUtils.c;
-import static io.deephaven.engine.table.impl.TstUtils.i;
 
 @Category(OutOfBandTest.class)
 public class PartitionedTableTest extends RefreshingTableTestCase {
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         if (null == ProcessEnvironment.tryGet()) {
             ProcessEnvironment.basicServerInitialization(Configuration.getInstance(),
                     "TestTransformablePartitionedTableThenMerge", new StreamLoggerImpl());
@@ -57,7 +60,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testMergeSimple() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable queryTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bb", "aa", "bb"),
                 c("intCol", 10, 20, 40, 60),
                 c("doubleCol", 0.1, 0.2, 0.4, 0.6));
@@ -90,12 +93,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testMergePopulate() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable queryTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bb", "aa", "bb"), c("intCol", 10, 20, 40, 60), c("doubleCol", 0.1, 0.2, 0.4, 0.6));
 
         final Table withK = queryTable.update("K=k");
 
-        final QueryTable keyTable = TstUtils.testTable(c("Sym", "cc", "dd"));
+        final QueryTable keyTable = testTable(c("Sym", "cc", "dd"));
         final PartitionedTable partitionedTable = withK.partitionedAggBy(List.of(), true, keyTable, "Sym");
 
         final Table merged = partitionedTable.merge();
@@ -132,13 +135,13 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final int size = 100;
 
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final String[] syms = {"aa", "bb", "cc", "dd"};
         final QueryTable table = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new SetGenerator<>(syms),
-                        new TstUtils.IntGenerator(0, 20),
-                        new TstUtils.DoubleGenerator(0, 100)));
+                        new IntGenerator(0, 20),
+                        new DoubleGenerator(0, 100)));
 
         final EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
@@ -190,19 +193,19 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final int size = 100;
 
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Indices"},
                         new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
-                        new TstUtils.IntGenerator(0, 20),
-                        new TstUtils.DoubleGenerator(0, 100),
-                        new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
+                        new IntGenerator(0, 20),
+                        new DoubleGenerator(0, 100),
+                        new SortedLongGenerator(0, Long.MAX_VALUE - 1)));
 
         final Table withK = table.update("K=Indices");
 
         final QueryTable rightTable = getTable(size, random, initColumnInfos(new String[] {"Sym", "RightCol"},
                 new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
-                new TstUtils.IntGenerator(100, 200)));
+                new IntGenerator(100, 200)));
 
         final PartitionedTable leftPT =
                 withK.partitionedAggBy(List.of(), true, testTable(c("Sym", "aa", "bb", "cc", "dd")), "Sym");
@@ -239,7 +242,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     public void testTransformPartitionedTableThenMerge() {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
 
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1).toTracking(),
+        final QueryTable sourceTable = testRefreshingTable(i(1).toTracking(),
                 intCol("Key", 1), intCol("Sentinel", 1), col("Sym", "a"), doubleCol("DoubleCol", 1.1));
 
         final PartitionedTable partitionedTable = sourceTable.partitionBy("Key");
@@ -289,12 +292,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                     TableTools.showWithRowSet(sourceTable);
                 }
             });
-            TstUtils.validate("iteration = " + iteration, en);
+            validate("iteration = " + iteration, en);
         }
     }
 
     public void testAttributes() {
-        final QueryTable queryTable = TstUtils.testTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable queryTable = testTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bb", "aa", "bb"),
                 c("intCol", 10, 20, 40, 60),
                 c("doubleCol", 0.1, 0.2, 0.4, 0.6));
@@ -341,11 +344,11 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testJoinSanity() {
-        final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable left = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
                 c("LeftSentinel", 10, 20, 40, 60));
-        final QueryTable right = TstUtils.testRefreshingTable(i(3, 5, 7, 9).toTracking(),
+        final QueryTable right = testRefreshingTable(i(3, 5, 7, 9).toTracking(),
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
                 c("RightSentinel", 30, 50, 70, 90));
@@ -379,7 +382,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testDependencies() {
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable sourceTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sentinel", 10, 20, 40, 60));
 
@@ -444,11 +447,11 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     public void testCrossDependencies() {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2).toTracking(),
+        final QueryTable sourceTable = testRefreshingTable(i(1, 2).toTracking(),
                 c("USym", "aa", "bb"),
                 c("Sentinel", 10, 20));
 
-        final QueryTable sourceTable2 = TstUtils.testRefreshingTable(i(3, 5).toTracking(),
+        final QueryTable sourceTable2 = testRefreshingTable(i(3, 5).toTracking(),
                 c("USym2", "aa", "bb"),
                 c("Sentinel2", 30, 50));
 
@@ -534,11 +537,11 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     public void testCrossDependencies2() {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2).toTracking(),
+        final QueryTable sourceTable = testRefreshingTable(i(1, 2).toTracking(),
                 c("USym", "aa", "bb"),
                 c("Sentinel", 10, 20));
 
-        final QueryTable sourceTable2 = TstUtils.testRefreshingTable(i(3, 5, 9).toTracking(),
+        final QueryTable sourceTable2 = testRefreshingTable(i(3, 5, 9).toTracking(),
                 c("USym2", "aa", "bb", "dd"),
                 c("Sentinel2", 30, 50, 90));
 
@@ -647,7 +650,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testMemoize() {
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable sourceTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sentinel", 10, 20, 40, 60));
 
@@ -673,7 +676,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "IntCol", "DoubleCol"},
-                        new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
+                        new TstUtils.SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 10)));
 
@@ -842,8 +845,8 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final TstUtils.ColumnInfo<?, ?>[] columnInfo;
         final QueryTable table = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"intCol", "indices"},
-                        new TstUtils.IntGenerator(0, 100000),
-                        new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
+                        new IntGenerator(0, 100000),
+                        new SortedLongGenerator(0, Long.MAX_VALUE - 1)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 newExecutionContextNugget(table, src -> src.update("K = queryScopeVar")),

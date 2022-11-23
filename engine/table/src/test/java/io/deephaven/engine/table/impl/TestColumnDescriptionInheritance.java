@@ -4,12 +4,13 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.deephaven.engine.table.impl.TstUtils.c;
-import static io.deephaven.engine.table.impl.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.c;
+import static io.deephaven.engine.testutil.TstUtils.i;
 
 public class TestColumnDescriptionInheritance extends QueryTableTestBase {
 

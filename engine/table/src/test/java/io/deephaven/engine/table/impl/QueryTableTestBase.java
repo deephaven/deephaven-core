@@ -5,14 +5,18 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.ShiftObliviousUpdateCoalescer;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
-import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.util.TableTools;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Random;
 
 /**
  * QueryTable tests can extend this to get convenient EvalNuggets, JoinIncrementors, etc.
@@ -138,8 +142,8 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
 
     protected interface JoinIncrement {
         void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
-                Random random);
+                  TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                  Random random);
     }
 
     public static class TableComparator implements EvalNuggetInterface {

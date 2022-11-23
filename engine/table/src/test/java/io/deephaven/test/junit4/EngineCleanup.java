@@ -5,7 +5,7 @@ package io.deephaven.test.junit4;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.QueryTableTestBase;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.util.SafeCloseable;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;

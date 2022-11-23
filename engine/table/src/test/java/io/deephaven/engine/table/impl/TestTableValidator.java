@@ -6,12 +6,15 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class TestTableValidator extends RefreshingTableTestCase {
     public void testValidator() {
