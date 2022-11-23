@@ -8,14 +8,12 @@ package io.deephaven.engine.table.impl.updateby.prod;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
     // region extra-fields
@@ -47,11 +45,11 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
     }
 
     public DoubleCumProdOperator(@NotNull final MatchPair pair,
-                                @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                 // region extra-constructor-args
                                 // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, redirContext);
+        super(pair, new String[] { pair.rightColumn }, redirHelper);
         // region constructor
         // endregion constructor
     }

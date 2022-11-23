@@ -1,19 +1,11 @@
 package io.deephaven.engine.table.impl.updateby.internal;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOperator<T> {
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
@@ -48,8 +40,8 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
     public BaseObjectBinaryOperator(@NotNull final Class<T> type,
                                     @NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
-        super(pair, affectingColumns, redirContext, type);
+                                    @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
+        super(pair, affectingColumns, redirHelper, type);
     }
 
     protected abstract T doOperation(T bucketCurVal, T chunkCurVal);

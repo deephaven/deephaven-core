@@ -18,10 +18,17 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
     /**
      * {@link RowSet} used to map from outer key (position in the index) to inner key.
      */
-    private final TrackingRowSet wrappedIndex;
+    private final RowSet wrappedRowSet;
 
-    public InverseRowRedirectionImpl(final TrackingRowSet wrappedIndex) {
-        this.wrappedIndex = wrappedIndex;
+    /**
+     * This class accepts a {@link RowSet} and attempts to cast to a {@link TrackingRowSet} if {@link #getPrev(long)} or
+     * {@link #fillPrevChunk(ChunkSource.FillContext, WritableLongChunk, RowSequence)} is called. Calling these
+     * functions on a non-tracking RowSet will result in a {@link ClassCastException}.
+     *
+     * @param wrappedRowSet the RowSet (or TrackingRowSet) to use as the redirection source
+     */
+    public InverseRowRedirectionImpl(final RowSet wrappedRowSet) {
+        this.wrappedRowSet = wrappedRowSet;
     }
 
     @Override
@@ -36,25 +43,25 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
 
     @Override
     public synchronized long get(long key) {
-        if (key < 0 || key > wrappedIndex.lastRowKey()) {
+        if (key < 0 || key > wrappedRowSet.lastRowKey()) {
             return RowSet.NULL_ROW_KEY;
         }
-        return wrappedIndex.find(key);
+        return wrappedRowSet.find(key);
     }
 
     @Override
     public synchronized long getPrev(long key) {
-        if (key < 0 || key > wrappedIndex.lastRowKeyPrev()) {
+        if (key < 0 || key > wrappedRowSet.trackingCast().lastRowKeyPrev()) {
             return RowSet.NULL_ROW_KEY;
         }
-        return wrappedIndex.findPrev(key);
+        return wrappedRowSet.trackingCast().findPrev(key);
     }
 
     @Override
     public void fillChunk(@NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableLongChunk<? extends RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
-        try (final RowSequence.Iterator okit = wrappedIndex.getRowSequenceIterator()) {
+        try (final RowSequence.Iterator okit = wrappedRowSet.getRowSequenceIterator()) {
             doMapping(mappedKeysOut, keysToMap, okit);
         }
     }
@@ -63,7 +70,7 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
     public void fillPrevChunk(@NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableLongChunk<? extends RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
-        try (final RowSet prevWrappedIndex = wrappedIndex.copyPrev();
+        try (final RowSet prevWrappedIndex = wrappedRowSet.trackingCast().copyPrev();
                 final RowSequence.Iterator prevOkIt = prevWrappedIndex.getRowSequenceIterator()) {
             doMapping(mappedKeysOut, keysToMap, prevOkIt);
         }
@@ -101,7 +108,7 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
 
         long positionStart = 0;
 
-        for (final RowSet.RangeIterator rangeIterator = wrappedIndex.rangeIterator(); rangeIterator.hasNext();) {
+        for (final RowSet.RangeIterator rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext();) {
             rangeIterator.next();
 
             if (positionStart > 0) {

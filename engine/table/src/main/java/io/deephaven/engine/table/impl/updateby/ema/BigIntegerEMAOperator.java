@@ -105,16 +105,16 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
      *                            integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *        in ticks, otherwise it is measured in nanoseconds
-     * @param redirContext the row redirection context to use for the EMA
+     * @param redirHelper the row redirection context to use for the EMA
      */
     public BigIntegerEMAOperator(@NotNull final MatchPair pair,
                                  @NotNull final String[] affectingColumns,
                                  @NotNull final OperationControl control,
                                  @Nullable final String timestampColumnName,
                                  final long timeScaleUnits,
-                                 @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+                                 @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
                                  final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirContext, valueSource);
+        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirHelper, valueSource);
     }
 
     @NotNull

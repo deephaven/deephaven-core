@@ -16,9 +16,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
@@ -122,16 +120,16 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
                                             @Nullable final String timestampColumnName,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
-                                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                             // region extra-constructor-args
                                             // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
-        if (this.redirContext.isRedirected()) {
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirHelper);
+        if (this.redirHelper.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = makeDenseSource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(this.redirContext.getRowRedirection(), maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(this.redirHelper.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -166,7 +164,7 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if (redirContext.isRedirected()) {
+        if (redirHelper.isRedirected()) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -184,7 +182,7 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
 
     @Override
     public void prepareForParallelPopulation(final RowSet added) {
-        if (redirContext.isRedirected()) {
+        if (redirHelper.isRedirected()) {
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);

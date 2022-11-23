@@ -5,27 +5,22 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOperator {
@@ -101,20 +96,20 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param redirContext the {@link UpdateBy.UpdateByRedirectionContext} for the overall update
+     * @param redirHelper the {@link UpdateBy.UpdateByRedirectionHelper} for the overall update
      */
     public BaseDoubleUpdateByOperator(@NotNull final MatchPair pair,
                                      @NotNull final String[] affectingColumns,
-                                     @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                     @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                      // region extra-constructor-args
                                      // endregion extra-constructor-args
                                      ) {
-        super(pair, affectingColumns, redirContext);
-        if(this.redirContext.isRedirected()) {
+        super(pair, affectingColumns, redirHelper);
+        if(this.redirHelper.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new DoubleArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(this.redirContext.getRowRedirection(), maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(this.redirHelper.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -142,7 +137,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if (redirContext.isRedirected()) {
+        if (redirHelper.isRedirected()) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -156,7 +151,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
 
     @Override
     public void prepareForParallelPopulation(final RowSet added) {
-        if (redirContext.isRedirected()) {
+        if (redirHelper.isRedirected()) {
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);

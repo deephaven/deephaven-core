@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl;
 
-import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -11,6 +10,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
+import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,16 +21,16 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * An helper class of {@link UpdateBy} dedicated to zero key computation. This will manage the computation of a single
- * bucket of rows
+ * bucket of rows.
  */
-class UpdateByBucketHelper {
+class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucketHelper> {
     protected final ColumnSource<?>[] inputSources;
     // some columns will have multiple inputs, such as time-based and Weighted computations
     final int[][] operatorInputSourceSlots;
     final UpdateByOperator[] operators;
     final UpdateByWindow[] windows;
     final QueryTable source;
-    final UpdateBy.UpdateByRedirectionContext redirContext;
+    final UpdateBy.UpdateByRedirectionHelper redirHelper;
     final UpdateByControl control;
     final QueryTable result;
 
@@ -56,7 +56,7 @@ class UpdateByBucketHelper {
      * @param operatorInputSourceSlots the mapping from operator index to needed input source indices
      * @param resultSources the result sources
      * @param timestampColumnName the timestamp column used for time-based operations
-     * @param redirContext the row redirection shared context
+     * @param redirHelper the row redirection shared context
      * @param control the control object.
      */
 
@@ -68,7 +68,7 @@ class UpdateByBucketHelper {
             @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
-            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
             @NotNull final UpdateByControl control) {
 
         this.source = source;
@@ -76,7 +76,7 @@ class UpdateByBucketHelper {
         this.windows = windows;
         this.inputSources = inputSources;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
-        this.redirContext = redirContext;
+        this.redirHelper = redirHelper;
         this.control = control;
 
         result = new QueryTable(source.getRowSet(), resultSources);
@@ -106,14 +106,14 @@ class UpdateByBucketHelper {
         prepareForUpdate(initialUpdate, true);
 
         if (source.isRefreshing()) {
-            final ZeroKeyUpdateByListener listener = newListener(description, result);
+            final UpdateByBucketHelperListener listener = newListener(description);
             source.addUpdateListener(listener);
             result.addParentReference(listener);
         }
     }
 
-    ZeroKeyUpdateByListener newListener(@NotNull final String description, @NotNull final QueryTable result) {
-        return new ZeroKeyUpdateByListener(description, source);
+    UpdateByBucketHelperListener newListener(@NotNull final String description) {
+        return new UpdateByBucketHelperListener(description, source);
     }
 
     private void processUpdateForSsa(TableUpdate upstream) {
@@ -318,8 +318,8 @@ class UpdateByBucketHelper {
     /**
      * The Listener for apply an upstream {@link InstrumentedTableUpdateListenerAdapter#onUpdate(TableUpdate) update}
      */
-    class ZeroKeyUpdateByListener extends InstrumentedTableUpdateListenerAdapter {
-        public ZeroKeyUpdateByListener(@Nullable String description,
+    class UpdateByBucketHelperListener extends InstrumentedTableUpdateListenerAdapter {
+        public UpdateByBucketHelperListener(@Nullable String description,
                 @NotNull final QueryTable source) {
             super(description, source, false);
         }

@@ -863,7 +863,7 @@ public interface Table extends
      * result's constituent tables.
      *
      * @param dropKeys Whether to drop key columns in the output constituent tables
-     * @param keyColumnNames The name of the key columns to partition by
+     * @param keyColumnNames The names of the key columns to partition by
      * @return A {@link PartitionedTable} keyed by {@code keyColumnNames}
      */
     @ConcurrentMethod
@@ -876,7 +876,7 @@ public interface Table extends
      * result's constituent tables.
      *
      * @param dropKeys Whether to drop key columns in the output constituent tables
-     * @param keyColumnNames The name of the key columns to partition by
+     * @param keyColumnNames The names of the key columns to partition by
      * @return A {@link PartitionedTable} keyed by {@code keyColumnNames}
      */
     @ConcurrentMethod
@@ -891,7 +891,7 @@ public interface Table extends
      * The underlying partitioned table backing the result contains each row in {@code this} table in exactly one of the
      * result's constituent tables.
      *
-     * @param keyColumnNames The name of the key columns to partition by
+     * @param keyColumnNames The names of the key columns to partition by
      * @return A {@link PartitionedTable} keyed by {@code keyColumnNames}
      */
     @ConcurrentMethod

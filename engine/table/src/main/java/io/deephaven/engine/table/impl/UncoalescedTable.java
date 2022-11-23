@@ -373,21 +373,8 @@ public abstract class UncoalescedTable extends BaseTable {
 
     @Override
     @ConcurrentMethod
-    public PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
-        return coalesce().partitionBy(dropKeys, keyColumnNames);
-    }
-
-    @Override
-    @ConcurrentMethod
     public PartitionedTable partitionBy(boolean dropKeys, @NotNull Collection<? extends ColumnName> columns) {
         return coalesce().partitionBy(dropKeys, columns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-            Table initialGroups, String... keyColumnNames) {
-        return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, keyColumnNames);
     }
 
     @Override

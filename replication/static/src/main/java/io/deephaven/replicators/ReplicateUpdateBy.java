@@ -34,8 +34,8 @@ public class ReplicateUpdateBy {
         String objectResult = ReplicatePrimitiveCode.charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/fill/CharFillByOperator.java");
         fixupStandardObject(objectResult, "ObjectFillByOperator", false,
-                "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, redirContext\\);",
-                "super(fillPair, new String[] { fillPair.rightColumn }, redirContext, colType);",
+                "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, redirHelper\\);",
+                "super(fillPair, new String[] { fillPair.rightColumn }, redirHelper, colType);",
                 " BaseObjectUpdateByOperator", " BaseObjectUpdateByOperator<T>",
                 "public ObjectChunk<Object,", "public ObjectChunk<T,");
 

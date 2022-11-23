@@ -73,9 +73,9 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
             final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, redirContext, BigDecimal.class);
+        super(pair, affectingColumns, redirHelper, BigDecimal.class);
 
         this.control = control;
         this.timestampColumnName = timestampColumnName;

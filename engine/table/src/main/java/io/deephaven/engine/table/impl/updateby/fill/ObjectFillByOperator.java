@@ -8,7 +8,6 @@ package io.deephaven.engine.table.impl.updateby.fill;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
@@ -41,12 +40,12 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     }
 
     public ObjectFillByOperator(@NotNull final MatchPair fillPair,
-                              @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                              @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                               // region extra-constructor-args
                                       , final Class<T> colType
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, redirContext, colType);
+        super(fillPair, new String[] { fillPair.rightColumn }, redirHelper, colType);
         // region constructor
         // endregion constructor
     }

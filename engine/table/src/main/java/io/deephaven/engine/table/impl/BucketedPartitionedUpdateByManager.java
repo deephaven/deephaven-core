@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.base.Pair;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
@@ -14,46 +15,29 @@ import java.util.*;
  * An implementation of {@link UpdateBy} dedicated to bucketed computation.
  */
 class BucketedPartitionedUpdateByManager extends UpdateBy {
+    /** The output table for this UpdateBy operation */
+    final QueryTable result;
+
+    /** The partitioned table used for identifying buckets */
+    final Table transformedTable;
+
     /**
      * Perform a bucketed updateBy using {@code byColumns} as the keys
      *
      * @param description the operation description
+     * @param operators the operations to perform
+     * @param windows the unique windows for this UpdateBy
+     * @param inputSources the primitive input sources
+     * @param operatorInputSourceSlots maps the operators to source indices
      * @param source the source table
-     * @param ops the operations to perform
      * @param resultSources the result sources
      * @param byColumns the columns to use for the bucket keys
-     * @param redirContext the row redirection shared context
+     * @param timestampColumnName the column to use for all time-aware operators
+     * @param redirHelper the row redirection helper for dense output sources
      * @param control the control object.
-     * @return the result table
      */
-    public static Table compute(@NotNull final String description,
-            @NotNull final QueryTable source,
-            @NotNull final UpdateByOperator[] ops,
-            @NotNull final UpdateByWindow[] windows,
-            @NotNull final ColumnSource<?>[] inputSources,
-            @NotNull final int[][] operatorInputSourceSlots,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @NotNull final Collection<? extends ColumnName> byColumns,
-            @Nullable final String timestampColumnName,
-            @NotNull final UpdateByRedirectionContext redirContext,
-            @NotNull final UpdateByControl control) {
-
-        final BucketedPartitionedUpdateByManager updateBy = new BucketedPartitionedUpdateByManager(description,
-                ops,
-                windows,
-                inputSources,
-                operatorInputSourceSlots,
-                source,
-                resultSources,
-                byColumns,
-                timestampColumnName,
-                redirContext,
-                control);
-
-        return updateBy.result;
-    }
-
-    protected BucketedPartitionedUpdateByManager(@NotNull final String description,
+    protected BucketedPartitionedUpdateByManager(
+            @NotNull final String description,
             @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
@@ -62,26 +46,21 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
             @Nullable final String timestampColumnName,
-            @NotNull final UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateByRedirectionHelper redirHelper,
             @NotNull final UpdateByControl control) {
-        super(description, source, operators, windows, inputSources, operatorInputSourceSlots, resultSources,
-                timestampColumnName, redirContext, control);
+        super(source, operators, windows, inputSources, operatorInputSourceSlots, timestampColumnName, redirHelper,
+                control);
 
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
 
         final PartitionedTable pt;
         if (source.isRefreshing()) {
-            // this is a refreshing source, we will need a listener and recorders
-            recorders = new LinkedList<>();
-            listener = newListener(description);
-
-            // create a recorder instance sourced from the source table
-            ListenerRecorder sourceRecorder = new ListenerRecorder(description, source, result);
-            sourceRecorder.setMergedListener(listener);
-            source.addUpdateListener(sourceRecorder);
+            // this is a refreshing source, we will need a listener
+            listener = newUpdateByListener(description);
+            source.addUpdateListener(listener);
+            // result will depend on listener
             result.addParentReference(listener);
-            recorders.offerLast(sourceRecorder);
 
             // create input and output modified column sets
             for (UpdateByOperator op : operators) {
@@ -89,21 +68,15 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                 op.createOutputModifiedColumnSet(result);
             }
             pt = source.partitionedAggBy(List.of(), true, null, byColumns);
-        } else {
-            // no shifting will be needed, can create directly from source
-            pt = source.partitionedAggBy(List.of(), true, null, byColumns);
 
-            // create input modified column sets only
-            for (UpdateByOperator op : operators) {
-                op.createInputModifiedColumnSet(source);
-            }
+            // make the source->result transformer
+            transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
+        } else {
+            pt = source.partitionedAggBy(List.of(), true, null, byColumns);
         }
 
-        // make the source->result transformer
-        transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
-
         final PartitionedTable transformed = pt.transform(t -> {
-            UpdateByBucketHelper updateBy = new UpdateByBucketHelper(
+            UpdateByBucketHelper bucket = new UpdateByBucketHelper(
                     description,
                     (QueryTable) t,
                     operators,
@@ -112,38 +85,25 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                     operatorInputSourceSlots,
                     resultSources,
                     timestampColumnName,
-                    redirContext,
+                    redirHelper,
                     control);
 
-            if (listener != null) {
-                ListenerRecorder recorder = new ListenerRecorder(description, updateBy.result, result);
-                recorder.setMergedListener(listener);
-                updateBy.result.addUpdateListener(recorder);
-
-                // add the listener only while synchronized
-                synchronized (recorders) {
-                    recorders.offerLast(recorder);
-                }
-            }
             // add this to the bucket list
             synchronized (buckets) {
-                buckets.offerLast(updateBy);
+                buckets.offer(bucket);
             }
             // return the table
-            return updateBy.result;
+            return bucket.result;
         });
 
-        result.addParentReference(transformed);
-
         if (source.isRefreshing()) {
-            // create a recorder instance sourced from the transformed table
-            ListenerRecorder sourceRecorder = new ListenerRecorder(description, transformed.table(), result);
-            sourceRecorder.setMergedListener(listener);
-            transformed.table().addUpdateListener(sourceRecorder);
-            result.addParentReference(listener);
-            recorders.offerLast(sourceRecorder);
-        }
+            transformedTable = transformed.table();
 
+            // result also depends on the transformedTable
+            result.addParentReference(transformedTable);
+        } else {
+            transformedTable = null;
+        }
 
         // make a dummy update to generate the initial row keys
         final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
@@ -153,7 +113,19 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                 ModifiedColumnSet.EMPTY);
 
         // do the actual computations
-        final StateManager sm = new StateManager(fakeUpdate, true);
+        final PhasedUpdateProcessor sm = new PhasedUpdateProcessor(fakeUpdate, true);
         sm.processUpdate();
     }
+
+    @Override
+    protected QueryTable result() {
+        return result;
+    }
+
+    @Override
+    protected boolean upstreamSatisfied(final long step) {
+        // For bucketed, need to verify the source and the transformed table is satisfied.
+        return source.satisfied(step) && transformedTable.satisfied(step);
+    }
+
 }

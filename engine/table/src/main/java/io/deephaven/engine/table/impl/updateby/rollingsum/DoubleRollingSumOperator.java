@@ -95,11 +95,11 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
                                    @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                   @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirHelper);
         // region constructor
         // endregion constructor
     }

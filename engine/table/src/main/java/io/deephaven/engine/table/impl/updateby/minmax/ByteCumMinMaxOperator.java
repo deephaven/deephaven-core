@@ -8,7 +8,6 @@ package io.deephaven.engine.table.impl.updateby.minmax;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
@@ -52,11 +51,11 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
 
     public ByteCumMinMaxOperator(@NotNull final MatchPair pair,
                                   final boolean isMax,
-                                  @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                  @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                 // region extra-constructor-args
                                 // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, redirContext);
+        super(pair, new String[] { pair.rightColumn }, redirHelper);
         this.isMax = isMax;
         // region constructor
         // endregion constructor

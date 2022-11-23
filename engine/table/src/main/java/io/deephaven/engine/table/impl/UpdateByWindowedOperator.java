@@ -33,7 +33,7 @@ public abstract class UpdateByWindowedOperator extends UpdateByOperator {
      * @param timestampColumnName the optional time stamp column for windowing (uses ticks if not provided)
      * @param reverseTimeScaleUnits the time (us) or ticks to extend the window backwards
      * @param forwardTimeScaleUnits the time (us) or ticks to extend the window forwards
-     * @param redirContext the row redirection context to use for the operation
+     * @param redirHelper the row redirection context to use for the operation
      */
     public UpdateByWindowedOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
@@ -41,9 +41,9 @@ public abstract class UpdateByWindowedOperator extends UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseTimeScaleUnits,
             final long forwardTimeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
+            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
         super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits,
-                redirContext);
+                redirHelper);
     }
 
     /**

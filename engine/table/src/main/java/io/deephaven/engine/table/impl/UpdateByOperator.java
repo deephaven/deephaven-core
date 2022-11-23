@@ -36,7 +36,7 @@ public abstract class UpdateByOperator {
 
     protected final MatchPair pair;
     protected final String[] affectingColumns;
-    protected final UpdateBy.UpdateByRedirectionContext redirContext;
+    protected final UpdateBy.UpdateByRedirectionHelper redirHelper;
 
 
     // these will be used by the timestamp-aware operators (EMA for example)
@@ -99,10 +99,10 @@ public abstract class UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseTimeScaleUnits,
             final long forwardTimeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
+            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
-        this.redirContext = redirContext;
+        this.redirHelper = redirHelper;
         this.timestampColumnName = timestampColumnName;
         this.control = control;
         this.reverseTimeScaleUnits = reverseTimeScaleUnits;

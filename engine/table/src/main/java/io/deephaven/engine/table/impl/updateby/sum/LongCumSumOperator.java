@@ -7,7 +7,6 @@ package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
@@ -45,11 +44,11 @@ public class LongCumSumOperator extends BaseLongUpdateByOperator {
     }
 
     public LongCumSumOperator(@NotNull final MatchPair pair,
-                               @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                               @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                // region extra-constructor-args
                                // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, redirContext);
+        super(pair, new String[] { pair.rightColumn }, redirHelper);
         // region constructor
         // endregion constructor
     }

@@ -13,7 +13,6 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;

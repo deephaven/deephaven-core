@@ -11,9 +11,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedObjectChunk;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
@@ -117,17 +115,17 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
                                             @Nullable final String timestampColumnName,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
-                                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                             // region extra-constructor-args
                                       , final Class<T> colType
                                             // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
-        if (this.redirContext.isRedirected()) {
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirHelper);
+        if (this.redirHelper.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new ObjectArraySource(colType);
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(this.redirContext.getRowRedirection(), maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(this.redirHelper.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -150,7 +148,7 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if (redirContext.isRedirected()) {
+        if (redirHelper.isRedirected()) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -164,7 +162,7 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
 
     @Override
     public void prepareForParallelPopulation(final RowSet added) {
-        if (redirContext.isRedirected()) {
+        if (redirHelper.isRedirected()) {
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);

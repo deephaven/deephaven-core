@@ -13,8 +13,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-
 public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdateByOperator<BigInteger> {
     protected class Context extends BaseWindowedObjectUpdateByOperator<BigInteger>.Context {
         protected ObjectChunk<BigInteger, ? extends Values> objectInfluencerValuesChunk;
@@ -88,11 +86,11 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
                                         @Nullable final String timestampColumnName,
                                         final long reverseTimeScaleUnits,
                                         final long forwardTimeScaleUnits,
-                                        @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                        @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                         // region extra-constructor-args
                                         // endregion extra-constructor-args
                                         ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext, BigInteger.class);
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirHelper, BigInteger.class);
         // region constructor
         // endregion constructor        
     }

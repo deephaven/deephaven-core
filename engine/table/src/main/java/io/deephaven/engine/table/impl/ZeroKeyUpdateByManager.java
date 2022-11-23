@@ -11,36 +11,48 @@ import java.util.LinkedList;
 import java.util.Map;
 
 public class ZeroKeyUpdateByManager extends UpdateBy {
+    /** The output table for this UpdateBy operation */
+    final QueryTable result;
+
     // this manager has only one bucket, managed by this object
     final UpdateByBucketHelper zeroKeyUpdateBy;
 
-    protected ZeroKeyUpdateByManager(@NotNull final String description,
-            @NotNull QueryTable source,
+    /**
+     * Perform an updateBy without any key columns.
+     *
+     * @param description the operation description
+     * @param operators the operations to perform
+     * @param windows the unique windows for this UpdateBy
+     * @param inputSources the primitive input sources
+     * @param operatorInputSourceSlots maps the operators to source indices
+     * @param source the source table
+     * @param resultSources the result sources
+     * @param timestampColumnName the column to use for all time-aware operators
+     * @param redirHelper the row redirection helper for dense output sources
+     * @param control the control object.
+     */
+    protected ZeroKeyUpdateByManager(
+            @NotNull final String description,
             @NotNull UpdateByOperator[] operators,
             @NotNull UpdateByWindow[] windows,
             @NotNull ColumnSource<?>[] inputSources,
             @NotNull int[][] operatorInputSourceSlots,
+            @NotNull QueryTable source,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
-            @NotNull UpdateByRedirectionContext redirContext,
+            @NotNull UpdateByRedirectionHelper redirHelper,
             @NotNull UpdateByControl control) {
-        super(description, source, operators, windows, inputSources, operatorInputSourceSlots, resultSources,
-                timestampColumnName, redirContext, control);
-
-        // this table will always have the rowset of the source
-        result = new QueryTable(source.getRowSet(), resultSources);
+        super(source, operators, windows, inputSources, operatorInputSourceSlots, timestampColumnName, redirHelper,
+                control);
 
         if (source.isRefreshing()) {
-            // this is a refreshing source, we will need a listener and recorders
-            recorders = new LinkedList<>();
-            listener = newListener(description);
+            result = new QueryTable(source.getRowSet(), resultSources);
 
-            // create a recorder instance sourced from the source table
-            ListenerRecorder sourceRecorder = new ListenerRecorder(description, source, result);
-            sourceRecorder.setMergedListener(listener);
-            source.addUpdateListener(sourceRecorder);
+            // this is a refreshing source, we will need a listener
+            listener = newUpdateByListener(description);
+            source.addUpdateListener(listener);
+            // result will depend on listener
             result.addParentReference(listener);
-            recorders.offerLast(sourceRecorder);
 
             // create input and output modified column sets
             for (UpdateByOperator op : operators) {
@@ -48,31 +60,22 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
                 op.createOutputModifiedColumnSet(result);
             }
 
-            // create an updateby bucket instance sourced from the source table
+            // create an updateby bucket instance directly from the source table
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    operatorInputSourceSlots, resultSources, timestampColumnName, redirContext, control);
-            buckets.offerLast(zeroKeyUpdateBy);
+                    operatorInputSourceSlots, resultSources, timestampColumnName, redirHelper, control);
+            buckets.offer(zeroKeyUpdateBy);
 
-            // create a recorder instance sourced from the bucket helper
-            ListenerRecorder recorder = new ListenerRecorder(description, zeroKeyUpdateBy.result, result);
-            recorder.setMergedListener(listener);
-            zeroKeyUpdateBy.result.addUpdateListener(recorder);
-            recorders.offerLast(recorder);
+            // make the source->result transformer
+            transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
+
+            // result will depend on zeroKeyUpdateBy
+            result.addParentReference(zeroKeyUpdateBy);
         } else {
-            // no shifting will be needed, can create directly from source
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    operatorInputSourceSlots, resultSources, timestampColumnName, redirContext, control);
-            this.result = zeroKeyUpdateBy.result;
-            buckets.offerLast(zeroKeyUpdateBy);
-
-            // create input modified column sets only
-            for (UpdateByOperator op : operators) {
-                op.createInputModifiedColumnSet(source);
-            }
+                    operatorInputSourceSlots, resultSources, timestampColumnName, redirHelper, control);
+            result = zeroKeyUpdateBy.result;
+            buckets.offer(zeroKeyUpdateBy);
         }
-
-        // make the source->result transformer
-        transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
 
         // make a dummy update to generate the initial row keys
         final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
@@ -82,34 +85,18 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
                 ModifiedColumnSet.EMPTY);
 
         // do the actual computations
-        final StateManager sm = new StateManager(fakeUpdate, true);
+        final PhasedUpdateProcessor sm = new PhasedUpdateProcessor(fakeUpdate, true);
         sm.processUpdate();
     }
 
-    /**
-     * Perform an updateBy without any key columns.
-     *
-     * @param description the operation description
-     * @param source the source table
-     * @param operators the operations to perform
-     * @param resultSources the result sources
-     * @param redirContext the row redirection shared context
-     * @param control the control object.
-     * @return the result table
-     */
-    public static Table compute(@NotNull final String description,
-            @NotNull final QueryTable source,
-            @NotNull final UpdateByOperator[] operators,
-            @NotNull final UpdateByWindow[] windows,
-            @NotNull final ColumnSource<?>[] inputSources,
-            @NotNull final int[][] operatorInputSourceSlots,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @Nullable final String timestampColumnName,
-            @NotNull final UpdateByRedirectionContext redirContext,
-            @NotNull final UpdateByControl control) {
+    @Override
+    protected QueryTable result() {
+        return result;
+    }
 
-        final ZeroKeyUpdateByManager manager = new ZeroKeyUpdateByManager(description, source, operators, windows,
-                inputSources, operatorInputSourceSlots, resultSources, timestampColumnName, redirContext, control);
-        return manager.result;
+    @Override
+    protected boolean upstreamSatisfied(final long step) {
+        // for Zero-Key, only need to verify the source is satisfied
+        return source.satisfied(step);
     }
 }

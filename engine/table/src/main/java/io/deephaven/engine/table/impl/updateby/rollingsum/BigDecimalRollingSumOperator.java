@@ -12,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.MathContext;
 
 public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdateByOperator<BigDecimal> {
@@ -91,10 +90,10 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
             @Nullable final String timestampColumnName,
             final long reverseTimeScaleUnits,
             final long forwardTimeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
             @NotNull final MathContext mathContext) {
         super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits,
-                redirContext, BigDecimal.class);
+                redirHelper, BigDecimal.class);
         this.mathContext = mathContext;
     }
 }

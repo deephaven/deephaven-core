@@ -5,11 +5,9 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -99,20 +97,20 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param redirContext the {@link UpdateBy.UpdateByRedirectionContext} for the overall update
+     * @param redirHelper the {@link UpdateBy.UpdateByRedirectionHelper} for the overall update
      */
     public BaseLongUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                    @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, redirContext);
-        if(this.redirContext.isRedirected()) {
+        super(pair, affectingColumns, redirHelper);
+        if(this.redirHelper.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new LongArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(this.redirContext.getRowRedirection(), maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(this.redirHelper.getRowRedirection(), maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -141,7 +139,7 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if (redirContext.isRedirected()) {
+        if (redirHelper.isRedirected()) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -155,7 +153,7 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
 
     @Override
     public void prepareForParallelPopulation(final RowSet added) {
-        if (redirContext.isRedirected()) {
+        if (redirHelper.isRedirected()) {
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);

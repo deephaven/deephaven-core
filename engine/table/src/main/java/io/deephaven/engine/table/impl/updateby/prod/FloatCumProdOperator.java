@@ -3,14 +3,12 @@ package io.deephaven.engine.table.impl.updateby.prod;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
     // region extra-fields
@@ -42,11 +40,11 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
     }
 
     public FloatCumProdOperator(@NotNull final MatchPair pair,
-                                @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                 // region extra-constructor-args
                                 // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, redirContext);
+        super(pair, new String[] { pair.rightColumn }, redirHelper);
         // region constructor
         // endregion constructor
     }

@@ -121,12 +121,12 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
                             @NotNull final OperationControl control,
                             @Nullable final String timestampColumnName,
                             final long timeScaleUnits,
-                            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext,
+                            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
                             final ColumnSource<?> valueSource
                             // region extra-constructor-args
                             // endregion extra-constructor-args
                             ) {
-        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits,redirContext);
+        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits,redirHelper);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor

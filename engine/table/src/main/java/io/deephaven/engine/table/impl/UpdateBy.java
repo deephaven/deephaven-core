@@ -9,7 +9,6 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -32,6 +31,8 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
+import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
+import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +42,7 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -52,11 +53,11 @@ public abstract class UpdateBy {
     /** When caching a column source, how many rows should we process in each parallel batch? (1M default) */
     public static final int PARALLEL_CACHE_BATCH_SIZE =
             Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheBatchSize", 1 << 20);
-    /** When caching a column source, what size chunks should be used to move data to the cache? (65K default) */
+    /** When caching a column source, what size chunks should be used to move data to the cache? (64K default) */
     public static final int PARALLEL_CACHE_CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheChunkSize", 1 << 16);
 
-    /** Input sources may be reused by mutiple operators, only store and cache unique ones */
+    /** Input sources may be reused by multiple operators, only store and cache unique ones (post-reinterpret) */
     protected final ColumnSource<?>[] inputSources;
     /** Map operators to input sources, note some operators need more than one input, WAvg e.g. */
     protected final int[][] operatorInputSourceSlots;
@@ -67,20 +68,18 @@ public abstract class UpdateBy {
     /** The source table for the UpdateBy operators */
     protected final QueryTable source;
     /** Helper class for maintaining the RowRedirection when using redirected output sources */
-    protected final UpdateByRedirectionContext redirContext;
+    protected final UpdateByRedirectionHelper redirHelper;
     /** User control to specify UpdateBy parameters */
     protected final UpdateByControl control;
     /** The single timestamp column used by all time-based operators */
     protected final String timestampColumnName;
-    /** Store every bucket in this list for processing */
-    protected final LinkedList<UpdateByBucketHelper> buckets;
     /** Whether caching benefits this UpdateBy operation */
     protected final boolean inputCacheNeeded;
     /** Whether caching benefits each input source */
     protected final boolean[] inputSourceCacheNeeded;
     /**
-     * References to the dense array sources we are using for the cached sources, it's expected that these will be
-     * released and need to be created
+     * References to the dense array sources we are using for the cached sources. It's expected that these will be
+     * released and need to be created.
      */
     protected final SoftReference<WritableColumnSource<?>>[] inputSourceCaches;
     /** For easy iteration, create a list of the source indices that need to be cached */
@@ -88,24 +87,23 @@ public abstract class UpdateBy {
 
     /** ColumnSet transformer from source to downstream */
     protected ModifiedColumnSet.Transformer transformer;
-    /** The output table for this UpdateBy operation */
-    protected QueryTable result;
 
-    /** For refreshing sources, maintain a list of each of the bucket listeners */
-    protected LinkedList<ListenerRecorder> recorders;
-    /** For refreshing sources, need a merged listener to produce downstream updates */
+    /** For refreshing sources, need a listener to react to upstream updates */
     protected UpdateByListener listener;
 
-    public static class UpdateByRedirectionContext implements Context {
+    /** Store every bucket in this list for processing */
+    protected final IntrusiveDoublyLinkedQueue<UpdateByBucketHelper> buckets;
+
+    public static class UpdateByRedirectionHelper {
         @Nullable
         protected final WritableRowRedirection rowRedirection;
         protected final WritableRowSet freeRows;
-        protected long maxInnerIndex;
+        protected long maxInnerRowKey;
 
-        public UpdateByRedirectionContext(@Nullable final WritableRowRedirection rowRedirection) {
+        public UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
             this.rowRedirection = rowRedirection;
             this.freeRows = rowRedirection == null ? null : RowSetFactory.empty();
-            this.maxInnerIndex = 0;
+            this.maxInnerRowKey = 0;
         }
 
         public boolean isRedirected() {
@@ -113,7 +111,7 @@ public abstract class UpdateBy {
         }
 
         public long requiredCapacity() {
-            return maxInnerIndex + 1;
+            return maxInnerRowKey + 1;
         }
 
         @Nullable
@@ -121,7 +119,9 @@ public abstract class UpdateBy {
             return rowRedirection;
         }
 
-        public void processUpdateForRedirection(@NotNull final TableUpdate upstream, final TrackingRowSet prevRowSet) {
+        public void processUpdateForRedirection(@NotNull final TableUpdate upstream,
+                final TrackingRowSet sourceRowSet) {
+            assert rowRedirection != null;
             if (upstream.removed().isNonempty()) {
                 final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
                 upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
@@ -129,23 +129,25 @@ public abstract class UpdateBy {
             }
 
             if (upstream.shifted().nonempty()) {
-                try (final WritableRowSet prevIndexLessRemoves = prevRowSet.copyPrev()) {
-                    prevIndexLessRemoves.remove(upstream.removed());
-                    final RowSet.SearchIterator fwdIt = prevIndexLessRemoves.searchIterator();
+                try (final WritableRowSet prevRowSetLessRemoves = sourceRowSet.copyPrev()) {
+                    prevRowSetLessRemoves.remove(upstream.removed());
+                    final RowSet.SearchIterator fwdIt = prevRowSetLessRemoves.searchIterator();
 
                     upstream.shifted().apply((start, end, delta) -> {
                         if (delta < 0 && fwdIt.advance(start)) {
                             for (long key = fwdIt.currentValue(); fwdIt.currentValue() <= end; key = fwdIt.nextLong()) {
-                                if (shiftRedirectedKey(fwdIt, delta, key))
+                                if (shiftRedirectedKey(fwdIt, delta, key)) {
                                     break;
+                                }
                             }
                         } else {
-                            try (final RowSet.SearchIterator revIt = prevIndexLessRemoves.reverseIterator()) {
+                            try (final RowSet.SearchIterator revIt = prevRowSetLessRemoves.reverseIterator()) {
                                 if (revIt.advance(end)) {
                                     for (long key = revIt.currentValue(); revIt.currentValue() >= start; key =
                                             revIt.nextLong()) {
-                                        if (shiftRedirectedKey(revIt, delta, key))
+                                        if (shiftRedirectedKey(revIt, delta, key)) {
                                             break;
+                                        }
                                     }
                                 }
                             }
@@ -158,7 +160,7 @@ public abstract class UpdateBy {
                 final MutableLong lastAllocated = new MutableLong(0);
                 final WritableRowSet.Iterator freeIt = freeRows.iterator();
                 upstream.added().forAllRowKeys(outerKey -> {
-                    final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
+                    final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerRowKey;
                     lastAllocated.setValue(innerKey);
                     rowRedirection.put(outerKey, innerKey);
                 });
@@ -168,6 +170,7 @@ public abstract class UpdateBy {
 
         private boolean shiftRedirectedKey(@NotNull final RowSet.SearchIterator iterator, final long delta,
                 final long key) {
+            assert rowRedirection != null;
             final long inner = rowRedirection.remove(key);
             if (inner != NULL_ROW_KEY) {
                 rowRedirection.put(key + delta, inner);
@@ -175,14 +178,14 @@ public abstract class UpdateBy {
             return !iterator.hasNext();
         }
 
-        public RowSet getInnerKeys(final RowSet outerKeys, final SharedContext sharedContext) {
+        public RowSet getInnerKeys(final RowSet outerKeys) {
             if (rowRedirection == null) {
                 return null;
             }
             RowSetBuilderRandom builder = RowSetFactory.builderRandom();
             final int chunkSize = Math.min(outerKeys.intSize(), 4096);
             try (final RowSequence.Iterator it = outerKeys.getRowSequenceIterator();
-                    ChunkSource.FillContext fillContext = rowRedirection.makeFillContext(chunkSize, sharedContext);
+                    ChunkSource.FillContext fillContext = rowRedirection.makeFillContext(chunkSize, null);
                     WritableLongChunk<? extends RowKeys> chunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
                 while (it.hasMore()) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
@@ -192,23 +195,16 @@ public abstract class UpdateBy {
             }
             return builder.build();
         }
-
-        @Override
-        public void close() {
-            try (final WritableRowSet ignored = freeRows) {
-            }
-        }
     }
 
-    protected UpdateBy(@NotNull final String description,
+    protected UpdateBy(
             @NotNull final QueryTable source,
             @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final int[][] operatorInputSourceSlots,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
-            @NotNull final UpdateByRedirectionContext redirContext,
+            @NotNull final UpdateByRedirectionHelper redirHelper,
             @NotNull final UpdateByControl control) {
 
         if (operators.length == 0) {
@@ -221,68 +217,58 @@ public abstract class UpdateBy {
         this.inputSources = inputSources;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.timestampColumnName = timestampColumnName;
-        this.redirContext = redirContext;
+        this.redirHelper = redirHelper;
         this.control = control;
 
         this.inputSourceCacheNeeded = new boolean[inputSources.length];
+        cacheableSourceIndices = IntStream.range(0, inputSources.length)
+                .filter(ii -> !FillUnordered.providesFillUnordered(inputSources[ii]))
+                .peek(ii -> inputSourceCacheNeeded[ii] = true)
+                .toArray();
+        inputCacheNeeded = cacheableSourceIndices.length > 0;
 
-        boolean cacheNeeded = false;
-        TIntArrayList cacheableSourceIndicesList = new TIntArrayList(inputSources.length);
-        for (int ii = 0; ii < inputSources.length; ii++) {
-            if (!FillUnordered.providesFillUnordered(inputSources[ii])) {
-                cacheNeeded = inputSourceCacheNeeded[ii] = true;
-                cacheableSourceIndicesList.add(ii);
-            }
-        }
-        // store this list for fast iteration
-        cacheableSourceIndices = cacheableSourceIndicesList.toArray();
-
-        this.inputCacheNeeded = cacheNeeded;
-        // noinspection unchecked
         inputSourceCaches = new SoftReference[inputSources.length];
 
-        buckets = new LinkedList<>();
+        buckets =
+                new IntrusiveDoublyLinkedQueue<>(IntrusiveDoublyLinkedNode.Adapter.<UpdateByBucketHelper>getInstance());
     }
 
-    /** Remove all references to Objects for this column source */
-    private void fillObjectArraySourceWithNull(ObjectArraySource<?> sourceToNull) {
-        Assert.neqNull(sourceToNull, "cached column source was null, must have been GC'd");
-        try (final ResettableWritableObjectChunk<?, ?> backingChunk =
-                ResettableWritableObjectChunk.makeResettableChunk()) {
-            Assert.neqNull(sourceToNull, "cached column source was already GC'd");
-            final long targetCapacity = sourceToNull.getCapacity();
-            for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull += backingChunk.size()) {
-                sourceToNull.resetWritableChunkToBackingStore(backingChunk, positionToNull);
-                backingChunk.fillWithNullValue(0, backingChunk.size());
-            }
-        }
-    }
 
     /** Release the input sources that will not be needed for the rest of this update */
     private void releaseInputSources(int winIdx, ColumnSource<?>[] maybeCachedInputSources,
-            TrackingWritableRowSet[] inputSourceRowSets, AtomicInteger[] inputSourceReferenceCounts) {
+            WritableRowSet[] inputSourceRowSets, int[] inputSourceReferenceCounts) {
         final UpdateByWindow win = windows[winIdx];
         final int[] uniqueWindowSources = win.getUniqueSourceIndices();
-        for (int srcIdx : uniqueWindowSources) {
-            if (inputSourceReferenceCounts[srcIdx] != null) {
-                if (inputSourceReferenceCounts[srcIdx].decrementAndGet() == 0) {
-                    // do the cleanup immediately
-                    inputSourceRowSets[srcIdx].close();
-                    inputSourceRowSets[srcIdx] = null;
 
-                    // release any objects we are holding in the cache
-                    if (inputSourceCaches[srcIdx].get() instanceof ObjectArraySource) {
-                        fillObjectArraySourceWithNull((ObjectArraySource<?>) inputSourceCaches[srcIdx].get());
+        try (final ResettableWritableObjectChunk<?, ?> backingChunk =
+                ResettableWritableObjectChunk.makeResettableChunk()) {
+            for (int srcIdx : uniqueWindowSources) {
+                if (inputSourceCacheNeeded[srcIdx]) {
+                    if (--inputSourceReferenceCounts[srcIdx] == 0) {
+                        // do the cleanup immediately
+                        inputSourceRowSets[srcIdx].close();
+                        inputSourceRowSets[srcIdx] = null;
+
+                        // release any objects we are holding in the cache
+                        if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
+                            final long targetCapacity = inputSourceRowSets[srcIdx].size();
+                            for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
+                                    backingChunk.size()) {
+                                ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
+                                        .resetWritableChunkToBackingStore(backingChunk, positionToNull);
+                                backingChunk.fillWithNullValue(0, backingChunk.size());
+                            }
+                        }
+
+                        maybeCachedInputSources[srcIdx] = null;
                     }
-
-                    maybeCachedInputSources[srcIdx] = null;
                 }
             }
         }
     }
 
     /**
-     * Overview of work performed by {@link StateManager}:
+     * Overview of work performed by {@link PhasedUpdateProcessor}:
      * <ol>
      * <li>Create `shiftedRows`, the set of rows for the output sources that are affected by shifts</li>
      * <li>Compute a rowset for each cacheable input source identifying which rows will be needed for processing</li>
@@ -294,7 +280,7 @@ public abstract class UpdateBy {
      * done in parallel with the caching</li>
      * <li>When prepareForParallelPopulation() complete, apply upstream shifts to the output sources</li>
      * <li>When caching and shifts are complete, process the data in this window in parallel by dividing the buckets
-     * into sets (N/num_threads) and running a job for each bucket_set 3e) when all buckets processed</li>
+     * into sets (N/num_threads) and running a job for each bucket_set</li>
      * <li>When all buckets processed, release the input source caches that will not be re-used later</li>
      * </ul>
      * </li>
@@ -303,23 +289,24 @@ public abstract class UpdateBy {
      * </ol>
      */
 
-    protected class StateManager implements LogOutputAppendable {
+    class PhasedUpdateProcessor implements LogOutputAppendable {
         final TableUpdate update;
         final boolean initialStep;
         final UpdateByBucketHelper[] dirtyBuckets;
 
+        /** The active set of sources to use for processing, each source may be cached or original */
         final ColumnSource<?>[] maybeCachedInputSources;
-        final TrackingWritableRowSet[] inputSourceRowSets;
-        final AtomicInteger[] inputSourceReferenceCounts;
+        /** For cacheable sources, the minimal rowset to cache (union of bucket influencer rows) */
+        final WritableRowSet[] inputSourceRowSets;
+        /** For cacheable sources, track how many windows require this source */
+        final int[] inputSourceReferenceCounts;
 
         final JobScheduler jobScheduler;
         final CompletableFuture<Void> waitForResult;
 
-        final SharedContext sharedContext;
-
         WritableRowSet shiftedRows;
 
-        public StateManager(TableUpdate update, boolean initialStep) {
+        PhasedUpdateProcessor(TableUpdate update, boolean initialStep) {
             this.update = update;
             this.initialStep = initialStep;
 
@@ -328,8 +315,8 @@ public abstract class UpdateBy {
 
             if (inputCacheNeeded) {
                 maybeCachedInputSources = new ColumnSource[inputSources.length];
-                inputSourceRowSets = new TrackingWritableRowSet[inputSources.length];
-                inputSourceReferenceCounts = new AtomicInteger[inputSources.length];
+                inputSourceRowSets = new WritableRowSet[inputSources.length];
+                inputSourceReferenceCounts = new int[inputSources.length];
             } else {
                 maybeCachedInputSources = inputSources;
                 inputSourceRowSets = null;
@@ -351,18 +338,21 @@ public abstract class UpdateBy {
                 }
                 waitForResult = null;
             }
-
-            sharedContext = SharedContext.makeSharedContext();
         }
 
         @Override
         public LogOutput append(LogOutput logOutput) {
-            return logOutput.append("UpdateBy.StateManager");
+            return logOutput.append("UpdateBy.PhasedUpdateProcessor");
         }
 
         private void onError(Exception error) {
-            // signal to the future that an exception has occured
-            waitForResult.completeExceptionally(error);
+            if (waitForResult != null) {
+                // signal to the future that an exception has occurred
+                waitForResult.completeExceptionally(error);
+            } else {
+                // this is part of an update, need to notify downstream
+                result().notifyListenersOnError(error, null);
+            }
         }
 
         /**
@@ -378,17 +368,14 @@ public abstract class UpdateBy {
             // initially everything is dirty so cache everything
             if (initialStep) {
                 for (int srcIdx : cacheableSourceIndices) {
-                    // create a TrackingRowSet to be used by `InverseRowRedirectionImpl`
-                    inputSourceRowSets[srcIdx] = source.getRowSet().copy().toTracking();
+                    if (inputSourceCacheNeeded[srcIdx]) {
+                        // create a RowSet to be used by `InverseRowRedirectionImpl`
+                        inputSourceRowSets[srcIdx] = source.getRowSet().copy();
 
-                    // how many windows require this input source?
-                    int refCount = 0;
-                    for (UpdateByWindow win : windows) {
-                        if (win.isSourceInUse(srcIdx)) {
-                            refCount++;
-                        }
+                        // record how many windows require this input source
+                        inputSourceReferenceCounts[srcIdx] =
+                                (int) Arrays.stream(windows).filter(win -> win.isSourceInUse(srcIdx)).count();
                     }
-                    inputSourceReferenceCounts[srcIdx] = new AtomicInteger(refCount);
                 }
                 completeAction.run();
                 return;
@@ -398,7 +385,6 @@ public abstract class UpdateBy {
                     0, cacheableSourceIndices.length,
                     idx -> {
                         int srcIdx = cacheableSourceIndices[idx];
-                        int refCount = 0;
                         for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                             UpdateByWindow win = windows[winIdx];
                             if (win.isSourceInUse(srcIdx)) {
@@ -415,10 +401,9 @@ public abstract class UpdateBy {
                                         }
                                     }
                                 }
-                                refCount++;
+                                inputSourceReferenceCounts[srcIdx]++;
                             }
                         }
-                        inputSourceReferenceCounts[srcIdx] = new AtomicInteger(refCount);
                     },
                     completeAction,
                     this::onError);
@@ -436,7 +421,7 @@ public abstract class UpdateBy {
             }
 
             final ColumnSource<?> inputSource = inputSources[srcIdx];
-            final TrackingWritableRowSet inputRowSet = inputSourceRowSets[srcIdx];
+            final WritableRowSet inputRowSet = inputSourceRowSets[srcIdx];
 
             // re-use the dense column cache if it still exists
             WritableColumnSource<?> innerSource;
@@ -451,7 +436,7 @@ public abstract class UpdateBy {
             // there will be no updates to this cached column source, so use a simple redirection
             final WritableRowRedirection rowRedirection = new InverseRowRedirectionImpl(inputRowSet);
             final WritableColumnSource<?> outputSource =
-                    new WritableRedirectedColumnSource(rowRedirection, innerSource, 0);
+                    new WritableRedirectedColumnSource<>(rowRedirection, innerSource, 0);
 
             // holding this reference should protect `rowDirection` and `innerSource` from GC
             maybeCachedInputSources[srcIdx] = outputSource;
@@ -571,8 +556,8 @@ public abstract class UpdateBy {
                             // prepare each operator for the parallel updates to come
                             if (initialStep) {
                                 // prepare the entire set of rows on the initial step
-                                try (final RowSet changedRows = redirContext.isRedirected()
-                                        ? RowSetFactory.flat(redirContext.requiredCapacity())
+                                try (final RowSet changedRows = redirHelper.isRedirected()
+                                        ? RowSetFactory.flat(redirHelper.requiredCapacity())
                                         : source.getRowSet().copy()) {
                                     for (UpdateByOperator op : win.getOperators()) {
                                         op.prepareForParallelPopulation(changedRows);
@@ -586,8 +571,8 @@ public abstract class UpdateBy {
                                             windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
                                         }
                                     }
-                                    try (final RowSet changedRows = redirContext.isRedirected()
-                                            ? redirContext.getInnerKeys(windowRowSet, sharedContext)
+                                    try (final RowSet changedRows = redirHelper.isRedirected()
+                                            ? redirHelper.getInnerKeys(windowRowSet)
                                             : windowRowSet.copy()) {
                                         for (UpdateByOperator op : win.getOperators()) {
                                             op.prepareForParallelPopulation(changedRows);
@@ -596,7 +581,7 @@ public abstract class UpdateBy {
                                 }
                             }
 
-                            if (!redirContext.isRedirected() && update.shifted().nonempty()) {
+                            if (!redirHelper.isRedirected() && update.shifted().nonempty()) {
                                 // shift the non-redirected output sources now, after parallelPopulation
                                 try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
                                     update.shifted().apply((begin, end, delta) -> {
@@ -629,8 +614,7 @@ public abstract class UpdateBy {
          * {@code completedAction} when the work is complete
          */
         private void cleanUpAndNotify(final Runnable completeAction) {
-            try (final RowSet ignoredRs = shiftedRows;
-                    final SharedContext ignoredCtx = sharedContext) {
+            try (final RowSet ignoredRs = shiftedRows) {
                 // auto close these resources
             }
 
@@ -649,7 +633,7 @@ public abstract class UpdateBy {
 
             // pass the result downstream
             if (downstream != null) {
-                result.notifyListeners(downstream);
+                result().notifyListeners(downstream);
             }
 
             completeAction.run();
@@ -666,7 +650,7 @@ public abstract class UpdateBy {
             downstream.shifted = update.shifted();
 
             // union the modifies from all the tables (including source)
-            downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+            downstream.modifiedColumnSet = result().getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();
 
             // get the adds/removes/shifts from upstream, make a copy since TableUpdateImpl#reset will
@@ -710,10 +694,10 @@ public abstract class UpdateBy {
          * leverages {@link JobScheduler} extensively
          */
         public void processUpdate() {
-            if (redirContext.isRedirected()) {
+            if (redirHelper.isRedirected()) {
                 // this call does all the work needed for redirected output sources, for sparse output sources
                 // we will process shifts only after a call to `prepareForParallelPopulation()` on each source
-                redirContext.processUpdateForRedirection(update, source.getRowSet());
+                redirHelper.processUpdateForRedirection(update, source.getRowSet());
                 shiftedRows = RowSetFactory.empty();
             } else {
                 // for our sparse array output sources, we need to identify which rows will be affected by the upstream
@@ -775,33 +759,35 @@ public abstract class UpdateBy {
     /**
      * The Listener for apply to the constituent table updates
      */
-    class UpdateByListener extends MergedListener {
+    class UpdateByListener extends InstrumentedTableUpdateListenerAdapter {
         public UpdateByListener(@Nullable String description) {
-            super(UpdateBy.this.recorders, List.of(), description, UpdateBy.this.result);
+            super(description, UpdateBy.this.source, false);
         }
 
         @Override
-        protected void process() {
-            final ListenerRecorder sourceRecorder = recorders.peekFirst();
-            final TableUpdate upstream = sourceRecorder.getUpdate();
-
-            // we need to keep a reference to TableUpdate during our computation
-            final StateManager sm = new StateManager(upstream.acquire(), false);
+        public void onUpdate(final TableUpdate upstream) {
+            final PhasedUpdateProcessor sm = new PhasedUpdateProcessor(upstream.acquire(), false);
             sm.processUpdate();
         }
 
         @Override
-        protected boolean canExecute(final long step) {
-
-            synchronized (recorders) {
-                return recorders.stream().allMatch(lr -> lr.satisfied(step));
+        public boolean canExecute(final long step) {
+            if (!upstreamSatisfied(step)) {
+                return false;
+            }
+            synchronized (buckets) {
+                return buckets.stream().allMatch(b -> b.result.satisfied(step));
             }
         }
     }
 
-    public UpdateByListener newListener(@NotNull final String description) {
+    public UpdateByListener newUpdateByListener(@NotNull final String description) {
         return new UpdateByListener(description);
     }
+
+    protected abstract QueryTable result();
+
+    protected abstract boolean upstreamSatisfied(final long step);
 
     // region UpdateBy implementation
 
@@ -847,15 +833,15 @@ public abstract class UpdateBy {
             rowRedirection = null;
         }
 
-        // create an UpdateByRedirectionContext for use by the UpdateByBucketHelper objects
-        UpdateByRedirectionContext redirContext = new UpdateByRedirectionContext(rowRedirection);
+        // create an UpdateByRedirectionHelper for use by the UpdateByBucketHelper objects
+        UpdateByRedirectionHelper redirHelper = new UpdateByRedirectionHelper(rowRedirection);
 
         // TODO(deephaven-core#2693): Improve UpdateByBucketHelper implementation for ColumnName
         // generate a MatchPair array for use by the existing algorithm
         MatchPair[] pairs = MatchPair.fromPairs(byColumns);
 
         final UpdateByOperatorFactory updateByOperatorFactory =
-                new UpdateByOperatorFactory(source, pairs, redirContext, control);
+                new UpdateByOperatorFactory(source, pairs, redirHelper, control);
         final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
         final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
@@ -972,16 +958,16 @@ public abstract class UpdateBy {
 
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
-            Table ret = ZeroKeyUpdateByManager.compute(
+            final ZeroKeyUpdateByManager zkm = new ZeroKeyUpdateByManager(
                     descriptionBuilder.toString(),
-                    source,
                     opArr,
                     windowArr,
                     inputSourceArr,
                     operatorInputSourceSlotArr,
+                    source,
                     resultSources,
                     timestampColumnName,
-                    redirContext,
+                    redirHelper,
                     control);
 
             if (source.isRefreshing()) {
@@ -991,7 +977,7 @@ public abstract class UpdateBy {
                 }
                 ops.forEach(UpdateByOperator::startTrackingPrev);
             }
-            return ret;
+            return zkm.result;
         }
 
         descriptionBuilder.append(", pairs={").append(MatchPair.matchString(pairs)).append("})");
@@ -1008,17 +994,17 @@ public abstract class UpdateBy {
                     String.join(", ", problems) + "}");
         }
 
-        Table ret = BucketedPartitionedUpdateByManager.compute(
+        final BucketedPartitionedUpdateByManager bm = new BucketedPartitionedUpdateByManager(
                 descriptionBuilder.toString(),
-                source,
                 opArr,
                 windowArr,
                 inputSourceArr,
                 operatorInputSourceSlotArr,
+                source,
                 resultSources,
                 byColumns,
                 timestampColumnName,
-                redirContext,
+                redirHelper,
                 control);
 
         if (source.isRefreshing()) {
@@ -1028,7 +1014,7 @@ public abstract class UpdateBy {
             }
             ops.forEach(UpdateByOperator::startTrackingPrev);
         }
-        return ret;
+        return bm.result;
     }
     // endregion
 }

@@ -2,12 +2,8 @@ package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -56,15 +52,15 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
      *        integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds.
-     * @param redirContext the row redirection context to use for the EMA
+     * @param redirHelper the row redirection context to use for the EMA
      */
     public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionContext redirContext) {
-        super(pair, affectingColumns, redirContext);
+            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
+        super(pair, affectingColumns, redirHelper);
         this.control = control;
         this.timestampColumnName = timestampColumnName;
         this.timeScaleUnits = (double) timeScaleUnits;

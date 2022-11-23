@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
@@ -50,12 +49,12 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     }
 
     public LongFillByOperator(@NotNull final MatchPair fillPair,
-                              @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                              @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                               // region extra-constructor-args
                               ,@NotNull final Class<?> type
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, redirContext);
+        super(fillPair, new String[] { fillPair.rightColumn }, redirHelper);
         // region constructor
         this.type = type;
         // endregion constructor

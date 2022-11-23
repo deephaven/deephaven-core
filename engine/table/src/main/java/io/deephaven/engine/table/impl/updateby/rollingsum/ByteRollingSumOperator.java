@@ -10,7 +10,6 @@ import io.deephaven.base.ringbuffer.ByteRingBuffer;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedLongUpdateByOperator;
@@ -97,12 +96,12 @@ public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
                                    @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final UpdateBy.UpdateByRedirectionContext redirContext
+                                   @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                    // region extra-constructor-args
                                ,final byte nullValue
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirContext);
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirHelper);
         // region constructor
         this.nullValue = nullValue;
         // endregion constructor
