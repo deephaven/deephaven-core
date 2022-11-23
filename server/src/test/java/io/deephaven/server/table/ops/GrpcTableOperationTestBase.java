@@ -2,6 +2,7 @@ package io.deephaven.server.table.ops;
 
 import com.google.protobuf.Message;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -12,6 +13,9 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -20,16 +24,30 @@ public abstract class GrpcTableOperationTestBase<Request extends Message>
 
     private SafeCloseable executionContext;
 
+    private List<ExportObject<?>> exports;
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
         executionContext = ExecutionContext.createForUnitTests().open();
+        exports = new ArrayList<>();
     }
 
     @Override
     public void tearDown() throws Exception {
+        for (ExportObject<?> export : exports) {
+            export.cancel();
+        }
+        exports = null;
         executionContext.close();
+        executionContext = null;
         super.tearDown();
+    }
+
+    public TableReference ref(Table table) {
+        final ExportObject<Table> export = authenticatedSessionState().newServerSideExport(table);
+        exports.add(export);
+        return ref(export);
     }
 
     public abstract ExportedTableCreationResponse send(Request request);
