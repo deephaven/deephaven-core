@@ -46,10 +46,11 @@ public abstract class AggSpecUnique extends AggSpecBase {
      * @return The "unique" aggregation specification
      */
     public static AggSpecUnique of(boolean includeNulls, Object nonUniqueSentinel) {
-        return builder()
-                .includeNulls(includeNulls)
-                .nonUniqueSentinel(nonUniqueSentinel)
-                .build();
+        AggSpecUnique.Builder builder = builder().includeNulls(includeNulls);
+        if (nonUniqueSentinel != null) {
+            builder.nonUniqueSentinel(nonUniqueSentinel);
+        }
+        return builder().build();
     }
 
     @Override
