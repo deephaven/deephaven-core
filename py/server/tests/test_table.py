@@ -782,6 +782,33 @@ class TableTestCase(BaseTestCase):
         self.assertIn("AAPL-GOOG", html_output)
         self.assertIn("2000", html_output)
 
+    def test_slice(self):
+        with ugp.shared_lock():
+            t = time_table("00:00:00.01")
+        rt = t.slice(0, 3)
+        self.assert_table_equals(t.head(3), rt)
+
+        self.wait_ticking_table_update(t, row_count=5, timeout=5)
+        with ugp.exclusive_lock():
+            rt = t.slice(t.size, -2)
+            self.assertEqual(0, rt.size)
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.assertGreaterEqual(rt.size, 1)
+
+        rt = t.slice(-3, 0)
+        self.assert_table_equals(t.tail(3), rt)
+
+        rt = t.slice(-3, -2)
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.assertEqual(1, rt.size)
+
+        rt = t.slice(1, 3)
+        self.wait_ticking_table_update(rt, row_count=2, timeout=5)
+        self.assertEqual(2, rt.size)
+
+        with self.assertRaises(DHError):
+            rt = t.slice(3, 2)
+
 
 def global_fn() -> str:
     return "global str"
