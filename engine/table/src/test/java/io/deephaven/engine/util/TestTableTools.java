@@ -23,10 +23,11 @@ import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.EvalNuggetSet;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.DoubleGenerator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SortedIntGenerator;
+import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -126,21 +127,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         tableRangesAreEqual(table1, result, 0, table1.size() * 2, table1.size());
     }
 
-    private static void assertThrows(final Runnable runnable) {
-        boolean threwException = false;
-        try {
-            runnable.run();
-        } catch (final Exception ignored) {
-            threwException = true;
-        }
-        TestCase.assertTrue(threwException);
-    }
-
     @Test
     public void testMergeWithNullTables() {
-        TestTableTools.assertThrows(TableTools::merge);
-        TestTableTools.assertThrows(() -> TableTools.merge(null, null));
-        TestTableTools.assertThrows(() -> TableTools.merge(null, null, null));
+        assertThrows(TableTools::merge);
+        assertThrows(() -> TableTools.merge(null, null));
+        assertThrows(() -> TableTools.merge(null, null, null));
 
         Table result = TableTools.merge(null, table1, null, null, null);
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
@@ -505,7 +496,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         LogicalClock clock = LogicalClock.DEFAULT;
         Random random = new Random(0);
 
-        TstUtils.ColumnInfo[] info1;
+        ColumnInfo[] info1;
         final QueryTable table1 = getTable(random.nextInt(20), random,
                 info1 = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new StringGenerator(),
@@ -840,12 +831,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         table1.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
-    }
-
-    public static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {
-        Assert.assertEquals("",
-                TableTools.diff(table1.tail(table1.size() - from1).head(size),
-                        table2.tail(table2.size() - from2).head(size), 10));
     }
 
     @Test

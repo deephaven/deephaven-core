@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
@@ -140,18 +141,18 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     }
 
     public static void simulateShiftAwareStep(int targetUpdateSize, Random random, QueryTable table,
-                                              TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
+                                              ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
         simulateShiftAwareStep("", targetUpdateSize, random, table, columnInfo, en);
     }
 
     public static void simulateShiftAwareStep(final String ctxt, int targetUpdateSize, Random random, QueryTable table,
-            TstUtils.ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
+                                              ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
         simulateShiftAwareStep(GenerateTableUpdates.DEFAULT_PROFILE, ctxt, targetUpdateSize, random, table, columnInfo,
                 en);
     }
 
     protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
-            final String ctxt, int targetUpdateSize, Random random, QueryTable table, TstUtils.ColumnInfo[] columnInfo,
+            final String ctxt, int targetUpdateSize, Random random, QueryTable table, ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
                 .generateShiftAwareTableUpdates(simulationProfile, targetUpdateSize, random, table, columnInfo));

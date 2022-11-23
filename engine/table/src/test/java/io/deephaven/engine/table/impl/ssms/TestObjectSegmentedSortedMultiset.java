@@ -11,8 +11,8 @@ package io.deephaven.engine.table.impl.ssms;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.compare.ObjectComparisons;
@@ -128,7 +128,7 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
 
     private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNull) {
         final Random random = new Random(desc.seed());
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
                 SsaTestHelpers.getGeneratorForObject()));
 

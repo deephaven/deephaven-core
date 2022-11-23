@@ -10,7 +10,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.parquet.table.ParquetTools;

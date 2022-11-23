@@ -20,7 +20,7 @@ import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;

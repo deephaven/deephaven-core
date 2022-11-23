@@ -27,13 +27,13 @@ import java.util.function.BiConsumer;
 public class GenerateTableUpdates {
 
     static public void generateTableUpdates(int size, Random random, QueryTable table,
-            TstUtils.ColumnInfo[] columnInfo) {
+            ColumnInfo[] columnInfo) {
         final RowSet[] result = computeTableUpdates(size, random, table, columnInfo);
         table.notifyListeners(result[0], result[1], result[2]);
     }
 
     public static void generateAppends(final int size, Random random, QueryTable table,
-            TstUtils.ColumnInfo[] columnInfos) {
+            ColumnInfo[] columnInfos) {
         final long firstKey = table.getRowSet().lastRowKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
         final RowSet keysToAdd = RowSetFactory.fromRange(firstKey, firstKey + randomSize - 1);
@@ -58,12 +58,12 @@ public class GenerateTableUpdates {
     }
 
     static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-            TstUtils.ColumnInfo[] columnInfo) {
+            ColumnInfo[] columnInfo) {
         return computeTableUpdates(size, random, table, columnInfo, true, true, true);
     }
 
     static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-            TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
+                                               ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
         final RowSet keysToRemove;
         if (remove && table.getRowSet().size() > 0) {
             keysToRemove =
@@ -78,7 +78,7 @@ public class GenerateTableUpdates {
         TstUtils.removeRows(table, keysToRemove);
         for (final RowSet.Iterator iterator = keysToRemove.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
-            for (final TstUtils.ColumnInfo info : columnInfo) {
+            for (final ColumnInfo info : columnInfo) {
                 info.remove(next);
             }
         }
@@ -148,12 +148,12 @@ public class GenerateTableUpdates {
 
     static public void generateShiftAwareTableUpdates(final SimulationProfile profile, final int targetUpdateSize,
             final Random random, final QueryTable table,
-            final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
+            final ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
 
         try (final WritableRowSet rowSet = table.getRowSet().copy()) {
-            final TstUtils.ColumnInfo<?, ?>[] mutableColumns =
-                    Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(TstUtils.ColumnInfo[]::new);
+            final ColumnInfo<?, ?>[] mutableColumns =
+                    Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(ColumnInfo[]::new);
             final boolean hasImmutableColumns = columnInfo.length > mutableColumns.length;
 
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -263,7 +263,7 @@ public class GenerateTableUpdates {
 
                 final String mustModifyColumn = (mutableColumns.length == 0) ? null
                         : mutableColumns[random.nextInt(mutableColumns.length)].name;
-                for (final TstUtils.ColumnInfo<?, ?> ci : columnInfo) {
+                for (final ColumnInfo<?, ?> ci : columnInfo) {
                     if (ci.name.equals(mustModifyColumn)
                             || (!ci.immutable && random.nextInt(100) < profile.MOD_ADDITIONAL_COLUMN)) {
                         modifiedColumns.add(ci.name);
@@ -280,7 +280,7 @@ public class GenerateTableUpdates {
 
     static public void generateTableUpdates(final TableUpdate update,
             final Random random, final QueryTable table,
-            final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
+            final ColumnInfo<?, ?>[] columnInfo) {
         final WritableRowSet rowSet = table.getRowSet().writableCast();
 
         if (RefreshingTableTestCase.printTableUpdates) {
@@ -292,7 +292,7 @@ public class GenerateTableUpdates {
         TstUtils.removeRows(table, update.removed());
         for (final RowSet.Iterator iterator = update.removed().iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
-            for (final TstUtils.ColumnInfo<?, ?> info : columnInfo) {
+            for (final ColumnInfo<?, ?> info : columnInfo) {
                 info.remove(next);
             }
         }
@@ -308,7 +308,7 @@ public class GenerateTableUpdates {
                     if (idx < start || idx > end) {
                         break;
                     }
-                    for (final TstUtils.ColumnInfo<?, ?> info : columnInfo) {
+                    for (final ColumnInfo<?, ?> info : columnInfo) {
                         info.move(idx, idx + delta);
                     }
                     idx = iter.hasNext() ? iter.nextLong() : RowSequence.NULL_ROW_KEY;
@@ -332,7 +332,7 @@ public class GenerateTableUpdates {
 
         final BitSet dirtyColumns = update.modifiedColumnSet().extractAsBitSet();
         for (int i = 0; i < columnInfo.length; i++) {
-            final TstUtils.ColumnInfo<?, ?> ci = columnInfo[i];
+            final ColumnInfo<?, ?> ci = columnInfo[i];
             final RowSet keys = dirtyColumns.get(i) ? update.modified() : TstUtils.i();
             cModsOnly[i] = ci.populateMapAndC(keys, random);
             cAddsOnly[i] = ci.populateMapAndC(update.added(), random);

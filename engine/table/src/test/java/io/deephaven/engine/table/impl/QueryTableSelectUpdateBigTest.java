@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Rule;
 import org.junit.Test;

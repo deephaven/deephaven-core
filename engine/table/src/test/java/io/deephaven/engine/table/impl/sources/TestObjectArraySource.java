@@ -21,7 +21,7 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;

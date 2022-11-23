@@ -10,7 +10,7 @@ import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.tablelogger.Row;
 import org.junit.Rule;

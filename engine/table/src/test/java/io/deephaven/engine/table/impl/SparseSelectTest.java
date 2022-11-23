@@ -9,13 +9,12 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -56,22 +55,22 @@ public class SparseSelectTest {
 
     private void testSparseSelect(int size, int seed) {
         final Random random = new Random(seed);
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
 
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(
                         new String[] {"Sym", "intCol", "doubleCol", "boolCol", "floatCol", "longCol", "charCol",
                                 "byteCol", "shortCol", "dateTime"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                        new TstUtils.BooleanGenerator(0.5, 0.1),
-                        new TstUtils.FloatGenerator(-1000.0f, 1000.0f),
-                        new TstUtils.LongGenerator(),
-                        new TstUtils.CharGenerator('a', 'z'),
-                        new TstUtils.ByteGenerator(),
-                        new TstUtils.ShortGenerator(),
-                        new TstUtils.UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2019-01-10T00:00:00 NY"),
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1),
+                        new BooleanGenerator(0.5, 0.1),
+                        new FloatGenerator(-1000.0f, 1000.0f),
+                        new LongGenerator(),
+                        new CharGenerator('a', 'z'),
+                        new ByteGenerator(),
+                        new ShortGenerator(),
+                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2019-01-10T00:00:00 NY"),
                                 DateTimeUtils.convertDateTime("2019-01-20T00:00:00 NY"))));
 
         final Table sortedTable = queryTable.sort("intCol");

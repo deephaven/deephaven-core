@@ -13,7 +13,7 @@ import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.table.impl.FailureListener;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.FunctionalInterfaces;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;

@@ -4,6 +4,9 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.generator.DateGenerator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
@@ -71,13 +74,13 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
-        TstUtils.ColumnInfo[] columnInfo;
+        ColumnInfo[] columnInfo;
         int size = 100;
         final Date startDate = format.parse("2015-03-23");
         Date endDate = format.parse("2015-03-24");
         final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Date", "C1"},
-                new TstUtils.DateGenerator(startDate, endDate),
-                new TstUtils.IntGenerator(1, 100)));
+                new DateGenerator(startDate, endDate),
+                new IntGenerator(1, 100)));
 
         final UnitTestTimeSeriesFilter unitTestTimeSeriesFilter =
                 new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");

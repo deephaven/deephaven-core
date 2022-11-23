@@ -6,7 +6,11 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
@@ -50,13 +54,13 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
     private void incrementalTest(int seed, int size, final String... sortColumns) {
         final Random random = new Random(seed);
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
                 colNames,
-                new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                new TstUtils.IntGenerator(10, 100, 0.1),
-                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                new TstUtils.SortedLongGenerator(0, Integer.MAX_VALUE)));
+                new SetGenerator<>("a", "b", "c", "d"),
+                new IntGenerator(10, 100, 0.1),
+                new SetGenerator<>(10.1, 20.1, 30.1),
+                new SortedLongGenerator(0, Integer.MAX_VALUE)));
         if (printTableUpdates) {
             showWithRowSet(queryTable);
         }

@@ -2,9 +2,10 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.testutil.TstUtils.*;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.generator.*;
 
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 
 import java.math.BigInteger;

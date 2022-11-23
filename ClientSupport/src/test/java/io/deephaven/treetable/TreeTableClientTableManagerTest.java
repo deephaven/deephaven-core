@@ -5,8 +5,7 @@ package io.deephaven.treetable;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.table.impl.QueryTableTestBase;
-import org.hamcrest.Matcher;
+import io.deephaven.engine.testutil.QueryTableTestBase;
 import org.jmock.AbstractExpectations;
 
 import java.lang.ref.WeakReference;

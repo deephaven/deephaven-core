@@ -7,8 +7,13 @@ import io.deephaven.base.Procedure;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSet;
@@ -37,13 +42,13 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
     private void testSliceIncremental(final String ctxt, final int size) throws IOException {
         final Random random = new Random(0);
-        final TstUtils.ColumnInfo columnInfo[];
+        final ColumnInfo columnInfo[];
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Indices"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                        new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1),
+                        new SortedLongGenerator(0, Long.MAX_VALUE - 1)));
         final EvalNugget en[] = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.head(0)),
                 EvalNugget.from(() -> queryTable.update("x = Indices").head(0)),

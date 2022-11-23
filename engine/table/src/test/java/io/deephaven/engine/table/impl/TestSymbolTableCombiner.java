@@ -5,8 +5,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.StringGenerator;
+import io.deephaven.engine.testutil.generator.UniqueLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
@@ -35,12 +37,12 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
         final int size = 1000;
         final Random random = new Random(seed);
 
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final QueryTable symbolTable = getTable(size, random,
                 columnInfo = initColumnInfos(
                         new String[] {SymbolTableSource.ID_COLUMN_NAME, SymbolTableSource.SYMBOL_COLUMN_NAME},
-                        new TstUtils.UniqueLongGenerator(1, 10000000),
-                        new TstUtils.StringGenerator(34000)));
+                        new UniqueLongGenerator(1, 10000000),
+                        new StringGenerator(34000)));
 
         // noinspection unchecked
         final ColumnSource<String> symbolSource = symbolTable.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);

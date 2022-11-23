@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.test.types.OutOfBandTest;
 
 import java.util.*;
@@ -10,7 +11,6 @@ import java.util.*;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.testutil.TstUtils.*;
 
 /**
  * Test of Tree Tables and rollups.

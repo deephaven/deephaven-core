@@ -4,7 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
@@ -45,16 +46,16 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 initColumnInfos(
                         new String[] {"Sym", "intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
                                 "floatCol", "charCol", "byteCol", "shortCol"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.IntGenerator(1, 1000),
-                        new TstUtils.DoubleGenerator(0, 100),
-                        new TstUtils.DoubleGenerator(0, 100, 0.1, 0.001),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                        new TstUtils.FloatGenerator(0, 100, 0.1, 0.001),
-                        new TstUtils.CharGenerator('a', 'z'),
-                        new TstUtils.ByteGenerator(),
-                        new TstUtils.ShortGenerator()));
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100),
+                        new IntGenerator(1, 1000),
+                        new DoubleGenerator(0, 100),
+                        new DoubleGenerator(0, 100, 0.1, 0.001),
+                        new SetGenerator<>(10.1, 20.1, 30.1),
+                        new FloatGenerator(0, 100, 0.1, 0.001),
+                        new CharGenerator('a', 'z'),
+                        new ByteGenerator(),
+                        new ShortGenerator()));
 
         final TotalsTableBuilder builder = new TotalsTableBuilder();
         final Table totals = UpdateGraphProcessor.DEFAULT.exclusiveLock()
@@ -132,17 +133,17 @@ public class TestTotalsTable extends RefreshingTableTestCase {
     public void testTotalsTableIncremental() throws IOException {
         final int size = 1000;
         final Random random = new Random(0);
-        final TstUtils.ColumnInfo columnInfo[];
+        final ColumnInfo columnInfo[];
 
         final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
                 new String[] {"Sym", "intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2", "shortCol"},
-                new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                new TstUtils.IntGenerator(10, 100),
-                new TstUtils.IntGenerator(1, 1000),
-                new TstUtils.DoubleGenerator(0, 100),
-                new TstUtils.DoubleGenerator(0, 100, 0.1, 0.001),
-                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                new TstUtils.ShortGenerator()));
+                new SetGenerator<>("a", "b", "c", "d"),
+                new IntGenerator(10, 100),
+                new IntGenerator(1, 1000),
+                new DoubleGenerator(0, 100),
+                new DoubleGenerator(0, 100, 0.1, 0.001),
+                new SetGenerator<>(10.1, 20.1, 30.1),
+                new ShortGenerator()));
 
         final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new EvalNugget() {

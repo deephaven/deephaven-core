@@ -8,9 +8,10 @@ import static io.deephaven.engine.testutil.TstUtils.getTable;
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.Generator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -85,14 +86,14 @@ public class TestSharedContext {
         final int size = 16 * 1024; // hopefully bigger that twice our chunk size.
         final Random random = new Random(1);
         final int nCols = 4;
-        final TstUtils.Generator[] gs = new TstUtils.Generator[nCols];
+        final Generator[] gs = new Generator[nCols];
         final String[] cols = new String[nCols];
         final int imin = 1;
         final int imax = 100000;
         final String[] conditions = new String[nCols];
         for (int i = 0; i < nCols; ++i) {
             cols[i] = "I" + i;
-            gs[i] = new TstUtils.IntGenerator(imin, imax);
+            gs[i] = new IntGenerator(imin, imax);
             conditions[i] = cols[i] + " <= " + (nCols - 1) * (imax + imin) / nCols;
         }
         final String condition = String.join(" && ", conditions);
@@ -123,7 +124,7 @@ public class TestSharedContext {
         final int size = 16 * 1024; // hopefully bigger that twice our chunk size.
         final Random random = new Random(1);
         final int nCols = 4;
-        final TstUtils.Generator[] gs = new TstUtils.Generator[nCols];
+        final Generator[] gs = new Generator[nCols];
         final String[] cols = new String[nCols];
         final int imin = 1;
         final int imax = 100000;
@@ -133,7 +134,7 @@ public class TestSharedContext {
         final String[] joinColumnsToAdd = new String[nCols];
         for (int i = 0; i < nCols; ++i) {
             cols[i] = "I" + i;
-            gs[i] = new TstUtils.IntGenerator(imin, imax);
+            gs[i] = new IntGenerator(imin, imax);
             conditions[i] = cols[i] + " <= " + threshold;
             final String joinRename = "J" + cols[i];
             joinColumnsToAdd[i] = joinRename + "=" + cols[i];

@@ -7,8 +7,9 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.testutil.generator.Generator;
+import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.ParallelTest;
 import org.junit.Test;
@@ -64,7 +65,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     private void doTestTicking(boolean redirected, boolean bucketed, boolean appendOnly, int steps, int size,
             int seed) {
         final CreateResult result = createTestTable(size, bucketed, false, true, seed,
-                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
 

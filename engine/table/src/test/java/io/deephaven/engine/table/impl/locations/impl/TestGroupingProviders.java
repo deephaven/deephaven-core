@@ -14,7 +14,7 @@ import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;

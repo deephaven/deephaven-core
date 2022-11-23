@@ -12,7 +12,8 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.time.DateTimeUtils.nanosToTime;
-import static io.deephaven.engine.testutil.TstUtils.StepClock;
+
+import io.deephaven.engine.testutil.StepClock;
 
 /**
  * Test for Sorted and Unsorted ClockFilter implementations.

@@ -15,8 +15,14 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.generator.BooleanGenerator;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.DoubleGenerator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -662,7 +668,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     private void testIterative(List<Function<Table, Table>> transformations, int seed, MutableInt numSteps) {
-        final TstUtils.ColumnInfo[] columnInfos;
+        final ColumnInfo[] columnInfos;
 
         final int size = 100;
         final Random random = new Random(seed);

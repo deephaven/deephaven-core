@@ -28,6 +28,7 @@ import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -731,9 +732,9 @@ public class QueryTableTest extends QueryTableTestBase {
         final ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
+                        new SetGenerator<>("a", "b", "c", "d"),
                         new IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.renameColumns(List.of())),

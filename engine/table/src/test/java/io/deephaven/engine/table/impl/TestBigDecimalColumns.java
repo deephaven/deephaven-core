@@ -10,7 +10,7 @@ import io.deephaven.engine.util.TableTools;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.*;
 
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
 

@@ -20,10 +20,11 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.UpdateValidatorNugget;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.DoubleGenerator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -196,7 +197,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Indices"},
-                        new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
+                        new SetGenerator<>("aa", "bb", "cc", "dd"),
                         new IntGenerator(0, 20),
                         new DoubleGenerator(0, 100),
                         new SortedLongGenerator(0, Long.MAX_VALUE - 1)));
@@ -204,7 +205,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Table withK = table.update("K=Indices");
 
         final QueryTable rightTable = getTable(size, random, initColumnInfos(new String[] {"Sym", "RightCol"},
-                new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
+                new SetGenerator<>("aa", "bb", "cc", "dd"),
                 new IntGenerator(100, 200)));
 
         final PartitionedTable leftPT =
@@ -676,7 +677,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "IntCol", "DoubleCol"},
-                        new TstUtils.SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
+                        new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 10)));
 
@@ -842,7 +843,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final int size = 100;
 
-        final TstUtils.ColumnInfo<?, ?>[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable table = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"intCol", "indices"},
                         new IntGenerator(0, 100000),

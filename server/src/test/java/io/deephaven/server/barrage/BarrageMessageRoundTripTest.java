@@ -10,23 +10,21 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.BarrageSubscriptionImpl.BarrageDataMarshaller;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.testutill.EvalNuggetInterface;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
-import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
@@ -53,23 +51,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Deque;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.table.impl.TstUtils.c;
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.i;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
@@ -99,7 +86,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         updateSourceCombiner = new UpdateSourceCombiner();
         scheduler = new TestControlledScheduler();
@@ -113,7 +100,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         updateSourceCombiner = null;
         scheduler = null;
         exceptions = null;
@@ -415,7 +402,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final List<RemoteNugget> nuggets = new ArrayList<>();
 
         QueryTable sourceTable;
-        TstUtils.ColumnInfo<?, ?>[] columnInfo;
+        ColumnInfo<?, ?>[] columnInfo;
 
         TestHelper(final int numProducerCoalesce, final int numConsumerCoalesce, final int size, final int seed,
                 final MutableInt numSteps) {
@@ -431,12 +418,12 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     columnInfo =
                             initColumnInfos(
                                     new String[] {"Sym", "intCol", "doubleCol", "Indices", "boolCol", "TimeStamp"},
-                                    new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                                    new TstUtils.IntGenerator(10, 100),
-                                    new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                                    new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
-                                    new TstUtils.BooleanGenerator(0.2),
-                                    new TstUtils.UnsortedDateTimeGenerator(
+                                    new SetGenerator<>("a", "b", "c", "d"),
+                                    new IntGenerator(10, 100),
+                                    new SetGenerator<>(10.1, 20.1, 30.1),
+                                    new SortedLongGenerator(0, Long.MAX_VALUE - 1),
+                                    new BooleanGenerator(0.2),
+                                    new UnsortedDateTimeGenerator(
                                             DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
                                             DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY"))));
         }
@@ -1293,18 +1280,18 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
                                             "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol"},
-                                    new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
-                                    new TstUtils.IntGenerator(10, 100, 0.1),
-                                    new TstUtils.SetGenerator<>("a", "b", "c", "d"), // covers object
-                                    new TstUtils.ByteGenerator((byte) 0, (byte) 127, 0.1),
-                                    new TstUtils.DoubleGenerator(100.1, 200.1, 0.1),
-                                    new TstUtils.FloatGenerator(100.1f, 200.1f, 0.1),
-                                    new TstUtils.ShortGenerator((short) 0, (short) 20000, 0.1),
-                                    new TstUtils.CharGenerator('a', 'z', 0.1),
-                                    new TstUtils.BooleanGenerator(0.2),
-                                    new TstUtils.SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
+                                    new SortedLongGenerator(0, Long.MAX_VALUE - 1),
+                                    new IntGenerator(10, 100, 0.1),
+                                    new SetGenerator<>("a", "b", "c", "d"), // covers object
+                                    new ByteGenerator((byte) 0, (byte) 127, 0.1),
+                                    new DoubleGenerator(100.1, 200.1, 0.1),
+                                    new FloatGenerator(100.1f, 200.1f, 0.1),
+                                    new ShortGenerator((short) 0, (short) 20000, 0.1),
+                                    new CharGenerator('a', 'z', 0.1),
+                                    new BooleanGenerator(0.2),
+                                    new SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
                                             new String[] {}, null),
-                                    new TstUtils.UnsortedDateTimeGenerator(
+                                    new UnsortedDateTimeGenerator(
                                             DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
                                             DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
                             sourceTable = getTable(size / 4, random, columnInfo);
@@ -1356,19 +1343,19 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
                                             "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol"},
-                                    new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
-                                    new TstUtils.IntGenerator(10, 100, 0.1),
-                                    new TstUtils.SetGenerator<>("a", "b", "c", "d"), // covers strings
-                                    new TstUtils.ByteGenerator((byte) 0, (byte) 127, 0.1),
-                                    new TstUtils.DoubleGenerator(100.1, 200.1, 0.1),
-                                    new TstUtils.FloatGenerator(100.1f, 200.1f, 0.1),
-                                    new TstUtils.ShortGenerator((short) 0, (short) 20000, 0.1),
-                                    new TstUtils.CharGenerator('a', 'z', 0.1),
-                                    new TstUtils.BooleanGenerator(0.2),
-                                    new TstUtils.StringGenerator(),
-                                    new TstUtils.SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
+                                    new SortedLongGenerator(0, Long.MAX_VALUE - 1),
+                                    new IntGenerator(10, 100, 0.1),
+                                    new SetGenerator<>("a", "b", "c", "d"), // covers strings
+                                    new ByteGenerator((byte) 0, (byte) 127, 0.1),
+                                    new DoubleGenerator(100.1, 200.1, 0.1),
+                                    new FloatGenerator(100.1f, 200.1f, 0.1),
+                                    new ShortGenerator((short) 0, (short) 20000, 0.1),
+                                    new CharGenerator('a', 'z', 0.1),
+                                    new BooleanGenerator(0.2),
+                                    new StringGenerator(),
+                                    new SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
                                             new String[] {}, null),
-                                    new TstUtils.UnsortedDateTimeGenerator(
+                                    new UnsortedDateTimeGenerator(
                                             DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
                                             DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
                             sourceTable = getTable(size / 4, random, columnInfo);

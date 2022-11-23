@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -47,7 +48,7 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
 
         final Table result = HashSetBackedTableFactory.create(() -> set, 0, "Arg");
 
-        final TstUtils.StringGenerator generator = new TstUtils.StringGenerator();
+        final StringGenerator generator = new StringGenerator();
         final Random random = new Random();
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {

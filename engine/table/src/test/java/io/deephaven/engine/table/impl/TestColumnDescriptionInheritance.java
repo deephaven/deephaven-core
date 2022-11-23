@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.engine.testutil.TstUtils;
 
 import java.util.HashMap;

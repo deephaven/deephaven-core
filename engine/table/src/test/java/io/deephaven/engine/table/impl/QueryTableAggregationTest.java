@@ -18,7 +18,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator;
+import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
@@ -27,10 +27,8 @@ import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.UpdateValidatorNugget;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.sources.TreeMapSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -38,7 +36,7 @@ import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -2784,7 +2782,7 @@ public class QueryTableAggregationTest {
                 // Modifies and Adds in post-shift keyspace.
                 final ColumnHolder[] columnHolders = new ColumnHolder[columnInfos.length];
                 for (int ii = 0; ii < columnInfos.length; ii++) {
-                    final TstUtils.ColumnInfo<?, ?> ci = columnInfos[ii];
+                    final ColumnInfo<?, ?> ci = columnInfos[ii];
                     columnHolders[ii] = ci.populateMapAndC(added, random);
                 }
                 addToTable(queryTable, added, columnHolders);
@@ -3062,7 +3060,7 @@ public class QueryTableAggregationTest {
     public void testSelectDistinctUpdates() {
         final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(), c("x", 1, 2, 3, 2));
         final QueryTable result = (QueryTable) (table.selectDistinct("x"));
-        final io.deephaven.engine.table.impl.QueryTableTestBase.ListenerWithGlobals listener;
+        final QueryTableTestBase.ListenerWithGlobals listener;
         result.addUpdateListener(listener = base.newListenerWithGlobals(result));
 
         // this should result in an new output row

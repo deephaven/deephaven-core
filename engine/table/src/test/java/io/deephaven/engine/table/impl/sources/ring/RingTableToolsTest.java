@@ -12,7 +12,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTime;
 import org.junit.Rule;
 import org.junit.Test;

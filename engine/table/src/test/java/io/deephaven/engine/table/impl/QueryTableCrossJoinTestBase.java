@@ -9,10 +9,9 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Maps;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -41,12 +40,12 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         this.numRightBitsToReserve = numRightBitsToReserve;
     }
 
-    private TstUtils.ColumnInfo<?, ?>[] getIncrementalColumnInfo(final String prefix, int numGroups) {
+    private ColumnInfo<?, ?>[] getIncrementalColumnInfo(final String prefix, int numGroups) {
         String[] names = new String[] {"Sym", "IntCol"};
 
         return initColumnInfos(Arrays.stream(names).map(name -> prefix + name).toArray(String[]::new),
-                new TstUtils.IntGenerator(0, numGroups - 1),
-                new TstUtils.IntGenerator(10, 100000));
+                new IntGenerator(0, numGroups - 1),
+                new IntGenerator(10, 100000));
     }
 
     public void testZeroKeyJoinBitExpansionOnAdd() {
@@ -221,10 +220,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(leftSize)));
-        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(leftSize, random, leftColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(size, random, rightColumns);
 
         final QueryTable leftStatic = getTable(false, leftSize, random, getIncrementalColumnInfo("ls", numGroups));
@@ -459,13 +458,13 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         // Note: make our join helper think this left table might tick
         final QueryTable leftNotTicking = getTable(1000, random, getIncrementalColumnInfo("lt", numGroups));
 
-        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(0, random, leftColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] leftShiftingColumns = getIncrementalColumnInfo("lt", numGroups);
+        final ColumnInfo<?, ?>[] leftShiftingColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftShifting = getTable(1000, random, leftShiftingColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(0, random, rightColumns);
 
         final JoinControl control = new JoinControl() {
@@ -544,10 +543,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(initialSize)));
-        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(initialSize, random, leftColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(initialSize, random, rightColumns);
 
         final QueryTable leftStatic = getTable(false, initialSize, random, getIncrementalColumnInfo("ls", numGroups));

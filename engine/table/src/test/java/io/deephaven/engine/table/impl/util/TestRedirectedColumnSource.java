@@ -31,7 +31,7 @@ import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 
 import gnu.trove.list.TByteList;
 import gnu.trove.list.array.TByteArrayList;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;

@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.test.junit4;
+package io.deephaven.engine.testutil.junit4;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.impl.QueryTableTestBase;
+import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.util.SafeCloseable;
 import org.junit.rules.TestRule;

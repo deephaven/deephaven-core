@@ -6,7 +6,9 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.table.Table;
@@ -41,40 +43,40 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         final Logger log = new StreamLoggerImpl();
         final Random random = new Random(seed);
 
-        final TstUtils.Generator leftGenerator;
-        final TstUtils.Generator rightGenerator;
+        final Generator leftGenerator;
+        final Generator rightGenerator;
 
         if (dataType == int.class) {
-            leftGenerator = new TstUtils.IntGenerator(1, 10 * rightSize);
-            rightGenerator = new TstUtils.UniqueIntGenerator(1, rightSize * 8);
+            leftGenerator = new IntGenerator(1, 10 * rightSize);
+            rightGenerator = new UniqueIntGenerator(1, rightSize * 8);
         } else if (dataType == short.class) {
-            leftGenerator = new TstUtils.ShortGenerator((short) 1, (short) (2 * rightSize));
-            rightGenerator = new TstUtils.UniqueShortGenerator((short) 1, (short) (2 * rightSize));
+            leftGenerator = new ShortGenerator((short) 1, (short) (2 * rightSize));
+            rightGenerator = new UniqueShortGenerator((short) 1, (short) (2 * rightSize));
         } else if (dataType == byte.class) {
-            leftGenerator = new TstUtils.ByteGenerator((byte) 1, (byte) rightSize);
-            rightGenerator = new TstUtils.UniqueByteGenerator((byte) 1, (byte) rightSize);
+            leftGenerator = new ByteGenerator((byte) 1, (byte) rightSize);
+            rightGenerator = new UniqueByteGenerator((byte) 1, (byte) rightSize);
         } else if (dataType == char.class) {
-            leftGenerator = new TstUtils.CharGenerator((char) 1, (char) rightSize);
-            rightGenerator = new TstUtils.UniqueCharGenerator((char) 1, (char) rightSize);
+            leftGenerator = new CharGenerator((char) 1, (char) rightSize);
+            rightGenerator = new UniqueCharGenerator((char) 1, (char) rightSize);
         } else if (dataType == String.class) {
-            final TstUtils.UniqueStringGenerator uniqueStringGenerator = new TstUtils.UniqueStringGenerator();
+            final UniqueStringGenerator uniqueStringGenerator = new UniqueStringGenerator();
 
             final Set<String> duplicateRights = new HashSet<>();
             while (duplicateRights.size() < ((rightSize * 0.1) / 10)) {
                 duplicateRights.add("Dup-" + Long.toHexString(random.nextLong()));
             }
 
-            final List<TstUtils.Generator<String, String>> generatorList = Arrays.asList(uniqueStringGenerator,
-                    new TstUtils.SetGenerator<>(duplicateRights.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
-            rightGenerator = new TstUtils.CompositeGenerator<>(generatorList, 0.9);
-            leftGenerator = new TstUtils.FromUniqueStringGenerator(uniqueStringGenerator, 0.5);
+            final List<Generator<String, String>> generatorList = Arrays.asList(uniqueStringGenerator,
+                    new SetGenerator<>(duplicateRights.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+            rightGenerator = new CompositeGenerator<>(generatorList, 0.9);
+            leftGenerator = new FromUniqueStringGenerator(uniqueStringGenerator, 0.5);
         } else if (dataType == ArrayTuple.class) {
             final UniqueTupleGenerator uniqueTupleGenerator =
-                    new UniqueTupleGenerator(new TstUtils.LongGenerator(0, 2 * (long) Math.sqrt(rightSize)),
-                            new TstUtils.IntGenerator(0, 2 * (int) Math.sqrt(rightSize)));
+                    new UniqueTupleGenerator(new LongGenerator(0, 2 * (long) Math.sqrt(rightSize)),
+                            new IntGenerator(0, 2 * (int) Math.sqrt(rightSize)));
             final TupleGenerator defaultGenerator =
-                    new TupleGenerator(new TstUtils.LongGenerator(0, (long) Math.sqrt(rightSize)),
-                            new TstUtils.IntGenerator(0, (int) Math.sqrt(rightSize)));
+                    new TupleGenerator(new LongGenerator(0, (long) Math.sqrt(rightSize)),
+                            new IntGenerator(0, (int) Math.sqrt(rightSize)));
             rightGenerator = uniqueTupleGenerator;
             leftGenerator = new FromUniqueTupleGenerator(uniqueTupleGenerator, defaultGenerator, 0.75);
         } else {
@@ -84,14 +86,14 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         final QueryTable rightTable = getTable(false, rightSize, random,
                 initColumnInfos(new String[] {"JoinKey", "RightSentinel"},
                         rightGenerator,
-                        new TstUtils.IntGenerator()));
-        final List<TstUtils.ColumnInfo.ColAttributes> leftKeyAttributes =
-                grouped ? Collections.singletonList(TstUtils.ColumnInfo.ColAttributes.Grouped)
+                        new IntGenerator()));
+        final List<ColumnInfo.ColAttributes> leftKeyAttributes =
+                grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Grouped)
                         : Collections.emptyList();
         final QueryTable leftTable = getTable(false, leftSize, random,
                 initColumnInfos(new String[] {"JoinKey", "LeftSentinel"},
                         Arrays.asList(leftKeyAttributes, Collections.emptyList()), leftGenerator,
-                        new TstUtils.IntGenerator()));
+                        new IntGenerator()));
 
         String matchKeys = "JoinKey";
         Table rightJoinTable = rightTable;
