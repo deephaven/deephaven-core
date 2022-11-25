@@ -11,14 +11,18 @@ from deephaven import DHError
 
 
 def garbage_collect() -> None:
-    """Runs full garbage collection in Python first and then requests the JVM to run its garbage collector. Since there
-    is no way to force the Java garbage collector to run, the effect of calling this function is non-deterministic.
+    """Runs full garbage collection in Python first and then requests the JVM to run its garbage collector twice due
+    to the cross-referencing nature of the Python/Java integration in Deephaven. Since there is no way to force the
+    Java garbage collector to run, the effect of calling this function is non-deterministic. Users also need to be
+    mindful of the overhead that running garbage collection generally incurs.
 
     Raises:
         DHError
     """
     try:
         gc.collect()
-        jpy.get_type("java.lang.System").gc()
+        _j_system = jpy.get_type("java.lang.System")
+        _j_system.gc()
+        _j_system.gc()
     except Exception as e:
         raise DHError(e, "failed to initiate system-wide garbage collection.")
