@@ -8,7 +8,7 @@ import gnu.trove.list.array.TLongArrayList;
 import java.util.Random;
 
 /**
- * Fisher–Yates shuffle
+ * Fisher-Yates shuffle
  */
 public class Shuffle {
 
