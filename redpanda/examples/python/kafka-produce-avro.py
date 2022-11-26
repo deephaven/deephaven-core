@@ -38,7 +38,7 @@
 #    $ sh ./post-share-price-schema.sh
 #
 # The last command above should have loaded the avro schema in the file avro/share_price.json
-# to the apicurio registry. You can check it was loaded visiting on the host the URL:
+# to the schema registry. You can check it was loaded visiting on the host the URL:
 #   http://localhost:8081/subjects/share_price_record/versions/1
 # That page should now list 'share_price_record' as an available schema.
 #
@@ -61,7 +61,7 @@
 #    $ sh post-avro-schema.sh avro/metric_sample.json metric_sample_record
 #
 # The last command above should have loaded the avro schema in the file avro/metric_sample.json
-# to the apicurio registry. You can check it was loaded visiting on the host the URL:
+# to the schema registry. You can check it was loaded visiting on the host the URL:
 #   http://localhost:8081/subjects/metric_sample_record/versions/1
 # That page should now list 'metric_sample_record' as an available schema.
 #
