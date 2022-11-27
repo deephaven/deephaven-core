@@ -37,7 +37,7 @@ CMAKE_PREFIX_PATH=\
 (if you used `build-dependencies.sh` to build them, the script created a `env.sh` script for you
 that you can source to set CMAKE_PREFIX_PATH to the targets it created for you).
 
-Then run:
+Then, in the `py/client2` directory, run:
 
 ```
   $ python3 setup.py build_ext --inplace
