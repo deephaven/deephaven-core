@@ -4,10 +4,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
@@ -36,8 +33,9 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
  */
 public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImpl> implements TreeTable {
 
-    public static final ColumnName TREE_COLUMN = ColumnName.of("__TREE__");
-    public static final ColumnName EXPANDABLE_COLUMN = ColumnName.of("__EXPANDABLE__");
+    private static final ColumnName TREE_COLUMN = ColumnName.of("__TREE__");
+    private static final ColumnName EXPANDABLE_COLUMN = ColumnName.of("__EXPANDABLE__");
+    private static final ColumnName DEPTH_COLUMN = ColumnName.of("__DEPTH__");
     public static final ColumnName REVERSE_LOOKUP_ROW_KEY_COLUMN = ColumnName.of("__ROW_KEY__");
 
     private final QueryTable tree;
@@ -90,6 +88,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     public ColumnName getExpandableColumn() {
         return EXPANDABLE_COLUMN;
+    }
+
+    @Override
+    public ColumnName getDepthColumn() {
+        return DEPTH_COLUMN;
     }
 
     @Override
@@ -207,6 +210,16 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         return source.aggNoMemo(AggregationProcessor.forTreeReverseLookup(), false, null, List.of(idColumn));
     }
 
+    @Override
+    NotificationStepSource[] getSourceDependencies() {
+        return new NotificationStepSource[] {source, reverseLookup};
+    }
+
+    @Override
+    void maybeWaitForStructuralSatisfaction() {
+        maybeWaitForSatisfaction(tree);
+    }
+
     static final class TreeReverseLookup
             extends LivenessArtifact
             implements ReverseLookup, NotificationStepSource {
@@ -254,14 +267,5 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         public boolean satisfied(final long step) {
             return parent.satisfied(step);
         }
-    }
-
-    @Override
-    public long fillSnapshotChunks(
-            @NotNull final Table keyTable,
-            @Nullable final BitSet columns,
-            @NotNull final RowSequence rows,
-            @NotNull final WritableChunk<? extends Values>[] destinations) {
-        return 0;
     }
 }
