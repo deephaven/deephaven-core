@@ -145,16 +145,17 @@ message HierarchicalTableViewKeyTableDescriptor {
    * Ticket that represents expanded or contracted keys from a hierarchical (rollup or tree) table.
    * If empty or not present, the result will have all nodes collapsed.
    * The format for the key table is dictated by the corresponding HierarchicalTableViewDescriptor. It is expected to
-   * have one column for each "expand-by column", one for the "rollup key width column" for rollups, and (optionally)
-   * an "expand descendants" column of booleans that dictates that descendant nodes should be expanded if not included
-   * in the key table instead of contracted if not included.
+   * have one column for each "expand-by column", one for the "rollup key width column" for rollups only, and
+    (optionally) an "action" column.
    */
   Ticket key_table = 1;
   /*
-   * The name of a column found in the key table that specifies whether descendants of an expanded node should be
-   * expanded by default instead of contracted by default
+   * The name of a column of bytes found in the key table that specifies the action desired for the node selected by
+   * the other columns for each row. Takes on the value 1 for nodes that should be expanded, 3 for nodes that should be
+   * expanded along with their descendants, and 4 for nodes that should be contracted.
+   * If this column name is not present, all nodes in the key table will be expanded without their descendants.
    */
-  optional string key_table_expand_descendants_column = 2;
+  optional string key_table_action_column = 2;
 }
 
 message HierarchicalTableViewOperations {

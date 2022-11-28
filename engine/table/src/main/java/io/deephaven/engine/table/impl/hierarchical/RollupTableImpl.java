@@ -8,15 +8,13 @@ import io.deephaven.api.agg.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
@@ -88,7 +86,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         this.aggregatedNodeOperations = aggregatedNodeOperations;
         if (includesConstituents()) {
             this.constituentNodeDefinition = constituentNodeDefinition == null
-                    ? computeConstituentNodeDefinition(getSource(), constituentNodeOperations)
+                    ? computeConstituentNodeDefinition(source, constituentNodeOperations)
                     : constituentNodeDefinition;
             this.constituentNodeOperations = constituentNodeOperations;
         } else {
@@ -334,12 +332,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    public long fillSnapshotChunks(
-            @NotNull final Table keyTable,
-            @Nullable final BitSet columns,
-            @NotNull final RowSequence rows,
-            @NotNull final WritableChunk<? extends Values>[] destinations) {
+    NotificationStepSource[] getSourceDependencies() {
+        return new NotificationStepSource[] {source};
+    }
 
-        return 0;
+    @Override
+    void maybeWaitForStructuralSatisfaction() {
+        // It's sufficient to wait for the root node, which is done at the beginning of traversal.
     }
 }
