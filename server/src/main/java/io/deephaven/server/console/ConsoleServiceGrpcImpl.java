@@ -11,45 +11,32 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
 import io.deephaven.io.logger.LogBufferRecordListener;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.lang.completion.ChunkerCompleter;
-import io.deephaven.lang.completion.CompletionLookups;
-import io.deephaven.lang.parse.CompletionParser;
-import io.deephaven.lang.parse.LspTools;
-import io.deephaven.lang.parse.ParsedDocument;
-import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.*;
+import io.deephaven.server.console.completer.JavaAutoCompleteObserver;
+import io.deephaven.server.console.completer.PythonAutoCompleteObserver;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
-import org.jpy.PyListWrapper;
 import org.jpy.PyObject;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
@@ -271,256 +258,20 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             StreamObserver<AutoCompleteResponse> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-//            if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
-//                return new NoopAutoCompleteObserver(responseObserver);
-//            }
+            if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
+                PyObject[] settings = new PyObject[1];
+                safelyExecute(()->{
+                    final ScriptSession scriptSession = scriptSessionProvider.get();
+                    scriptSession.evaluateScript("from deephaven.completer import jedi_settings\nimport jedi");
+                    settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
+                });
+                boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
+                log.info().append("can jedi? ").append(canJedi).endl();
+                return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session) : new NoopAutoCompleteObserver(responseObserver);
+            }
 
             return new JavaAutoCompleteObserver(session, responseObserver);
         });
-    }
-
-    /**
-     * Autocomplete handling for JVM languages, that directly can interact with Java instances without any name
-     * mangling, and are able to use our flexible parser.
-     */
-    private static class JavaAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
-
-        private boolean canJedi, checkedJedi;
-        private final CompletionParser parser;
-        private final SessionState session;
-        private final StreamObserver<AutoCompleteResponse> responseObserver;
-
-        private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
-
-        private CompletionParser ensureParserForSession(SessionState session) {
-            return parsers.computeIfAbsent(session, s -> {
-                CompletionParser parser = new CompletionParser();
-                s.addOnCloseCallback(() -> {
-                    parsers.remove(s);
-                    parser.close();
-                });
-                return parser;
-            });
-        }
-
-
-        public JavaAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
-            this.session = session;
-            this.responseObserver = responseObserver;
-            parser = ensureParserForSession(session);
-        }
-
-        @Override
-        public void onNext(AutoCompleteRequest value) {
-            switch (value.getRequestCase()) {
-                case OPEN_DOCUMENT: {
-                    final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
-
-                    parser.open(doc.getText(), doc.getUri(), Integer.toString(doc.getVersion()));
-                    break;
-                }
-                case CHANGE_DOCUMENT: {
-                    ChangeDocumentRequest request = value.getChangeDocument();
-                    final VersionedTextDocumentIdentifier text = request.getTextDocument();
-                    parser.update(text.getUri(), Integer.toString(text.getVersion()),
-                            request.getContentChangesList());
-                    break;
-                }
-                case GET_COMPLETION_ITEMS: {
-                    GetCompletionItemsRequest request = value.getGetCompletionItems();
-                    SessionState.ExportObject<ScriptSession> exportedConsole =
-                            session.getExport(request.getConsoleId(), "consoleId");
-                    session.nonExport()
-                            .require(exportedConsole)
-                            .onError(responseObserver)
-                            .submit(() -> {
-                                getCompletionItems(request, exportedConsole, parser, responseObserver);
-                            });
-                    break;
-                }
-                case CLOSE_DOCUMENT: {
-                    CloseDocumentRequest request = value.getCloseDocument();
-                    parser.remove(request.getTextDocument().getUri());
-                    break;
-                }
-                case REQUEST_NOT_SET: {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Autocomplete command missing request");
-                }
-            }
-        }
-
-        private void getCompletionItems(GetCompletionItemsRequest request,
-                SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
-                StreamObserver<AutoCompleteResponse> responseObserver) {
-            final ScriptSession scriptSession = exportedConsole.get();
-            try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
-                final VariableProvider vars = scriptSession.getVariableProvider();
-                if (!checkedJedi) {
-                    checkedJedi = true;
-                    long checkStart = System.currentTimeMillis();
-                    final ScriptSession.Changes result = scriptSession.evaluateScript("try:\n" +
-                            "  import jedi\n" +
-                            "  jedi.preload_module('deephaven')\n" +
-                            "  no_jedi=False\n" +
-                            "except:\n" +
-                            "  no_jedi=True");
-                    canJedi = !vars.getVariable("no_jedi", true);
-                    log.info().append("Prepared for jedi in ").append(System.currentTimeMillis() - checkStart).append("ms").endl();
-                    log.info().append("Can Jedi? ").append(canJedi).endl();
-                }
-                final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-                if (canJedi) {
-                    final long startNano = System.nanoTime();
-                    String text = parser.getText(doc.getUri());
-                    try {
-                        final Position pos = request.getPosition();
-                        String completionVar = "completions";
-                        scriptSession.setVariable("__jedi_source__", text);
-                        final ScriptSession.Changes changes = scriptSession.evaluateScript(
-                                completionVar + " = jedi.Interpreter(__jedi_source__, [globals()]).complete(" +
-                                        (pos.getLine() + 1) + "," + pos.getCharacter() + ")"
-                        );
-                        final PyListWrapper completes = vars.getVariable(completionVar, null);
-                        List<CompletionItem.Builder> completionResults = new ArrayList<>();
-                        List<CompletionItem.Builder> completionResults_ = new ArrayList<>();
-                        List<CompletionItem.Builder> completionResults__ = new ArrayList<>();
-                        for (PyObject completion : completes) {
-                            String completionName = completion.getAttribute("name").getStringValue();
-                            int completionPrefix = completion.call("get_completion_prefix_length").getIntValue();
-                            final CompletionItem.Builder item = CompletionItem.newBuilder();
-                            final TextEdit.Builder textEdit = item.getTextEditBuilder();
-                            textEdit.setText(completionName);
-                            final DocumentRange.Builder range = textEdit.getRangeBuilder();
-                            int start = pos.getCharacter() - completionPrefix;
-                            item.setStart(start);
-                            item.setLabel(completionName);
-                            item.setLength(completionName.length());
-                            range.getStartBuilder().setLine(pos.getLine()).setCharacter(start);
-                            range.getEndBuilder().setLine(pos.getLine()).setCharacter(start + completionName.length());
-                            item.setInsertTextFormat(2);
-                            if (completionName.startsWith("__")) {
-                                completionResults__.add(item);
-                            } else if (completionName.startsWith("_")) {
-                                completionResults_.add(item);
-                            } else {
-                                completionResults.add(item);
-                            }
-                        }
-                        int sortPos = 0;
-                        List<CompletionItem> finalItems = new ArrayList<>();
-                        for (CompletionItem.Builder res : completionResults) {
-                            res.setSortText(ChunkerCompleter.sortable(sortPos++));
-                            finalItems.add(res.build());
-                        }
-                        for (CompletionItem.Builder res : completionResults_) {
-                            res.setSortText(ChunkerCompleter.sortable(sortPos++));
-                            finalItems.add(res.build());
-                        }
-                        for (CompletionItem.Builder res : completionResults__) {
-                            res.setSortText(ChunkerCompleter.sortable(sortPos++));
-                            finalItems.add(res.build());
-                        }
-
-                        final GetCompletionItemsResponse builtItems = GetCompletionItemsResponse.newBuilder()
-                                .setSuccess(true)
-                                .setRequestId(request.getRequestId())
-                                .addAllItems(finalItems)
-                                .build();
-
-                        safelyExecuteLocked(responseObserver,
-                                () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                                                .setCompletionItems(builtItems)
-                                        .build()));
-                        String totalNano = Long.toString(System.nanoTime() - startNano );
-                        // lets track how long completions take, as it's known that some
-                        // modules like numpy can cause slow completion, and we'll want to know
-                        //
-                        log.info().append("Jedi completions took ")
-                                .append(
-                                        totalNano.length() > 6 ?
-                                        totalNano.substring(0, totalNano.length() - 6) :
-                                        "0"
-                                )
-                                .append('.')
-                                .append(totalNano.substring(6, Math.min(8, totalNano.length())))
-                                .append("ms").endl();
-                        // for now, we'll just return right away so we only see jedi results
-                        return;
-                    } catch (Throwable e) {
-                        log.error().append("Jedi completion failure ").append(e).endl();
-                    }
-                }
-                final CompletionLookups h = CompletionLookups.preload(scriptSession);
-                // The only stateful part of a completer is the CompletionLookups, which are already
-                // once-per-session-cached
-                // so, we'll just create a new completer for each request. No need to hang onto these guys.
-                final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
-
-                final ParsedDocument parsed;
-                try {
-                    parsed = parser.finish(doc.getUri());
-                } catch (CompletionCancelled exception) {
-                    if (log.isTraceEnabled()) {
-                        log.trace().append("Completion canceled").append(exception).endl();
-                    }
-                    safelyExecuteLocked(responseObserver,
-                            () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                                    .setCompletionItems(GetCompletionItemsResponse.newBuilder()
-                                            .setSuccess(false)
-                                            .setRequestId(request.getRequestId()))
-                                    .build()));
-                    return;
-                }
-
-                int offset = LspTools.getOffsetFromPosition(parsed.getSource(),
-                        request.getPosition());
-                final Collection<CompletionItem.Builder> results =
-                        completer.runCompletion(parsed, request.getPosition(), offset);
-                final GetCompletionItemsResponse mangledResults =
-                        GetCompletionItemsResponse.newBuilder()
-                                .setSuccess(true)
-                                .setRequestId(request.getRequestId())
-                                .addAllItems(results.stream().map(
-                                        // insertTextFormat is a default we used to set in constructor; for now, we'll
-                                        // just process the objects before sending back to client
-                                        item -> item.setInsertTextFormat(2).build())
-                                        .collect(Collectors.toSet()))
-                                .build();
-
-                safelyExecuteLocked(responseObserver,
-                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                                .setCompletionItems(mangledResults)
-                                .build()));
-            } catch (Exception exception) {
-                if (QUIET_AUTOCOMPLETE_ERRORS) {
-                    if (log.isTraceEnabled()) {
-                        log.trace().append("Exception occurred during autocomplete").append(exception).endl();
-                    }
-                } else {
-                    log.error().append("Exception occurred during autocomplete").append(exception).endl();
-                }
-                safelyExecuteLocked(responseObserver,
-                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                                .setCompletionItems(GetCompletionItemsResponse.newBuilder()
-                                        .setSuccess(false)
-                                        .setRequestId(request.getRequestId()))
-                                .build()));
-            }
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            // ignore, client doesn't need us, will be cleaned up later
-        }
-
-        @Override
-        public void onCompleted() {
-            // just hang up too, browser will reconnect if interested
-            synchronized (responseObserver) {
-                responseObserver.onCompleted();
-            }
-        }
     }
 
     private static class NoopAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {

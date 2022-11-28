@@ -24,6 +24,35 @@ public class CompletionParser implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
     private final Map<String, PendingParse> docs = new ConcurrentHashMap<>();
 
+    public static String updateDocumentChanges(final String uri, final int version, String document, final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
+        for (ChangeDocumentRequest.TextDocumentContentChangeEventOrBuilder change : changes) {
+            DocumentRange range = change.getRange();
+            int length = change.getRangeLength();
+
+            int offset = LspTools.getOffsetFromPosition(document, range.getStart());
+            if (offset < 0) {
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn()
+                            .append("Invalid change in document ")
+                            .append(uri)
+                            .append("[")
+                            .append(version)
+                            .append("] @")
+                            .append(range.getStart().getLine())
+                            .append(":")
+                            .append(range.getStart().getCharacter())
+                            .endl();
+                }
+                return null;
+            }
+
+            String prefix = offset > 0 && offset <= document.length() ? document.substring(0, offset) : "";
+            String suffix = offset + length < document.length() ? document.substring(offset + length) : "";
+            document = prefix + change.getText() + suffix;
+        }
+        return document;
+    }
+
     public ParsedDocument parse(String document) throws ParseException {
         Chunker chunker = new Chunker(document);
         final ChunkerDocument doc = chunker.Document();
@@ -49,7 +78,7 @@ public class CompletionParser implements Closeable {
         return docs.computeIfAbsent(uri, k -> new PendingParse(uri));
     }
 
-    public void update(final String uri, final String version,
+    public void update(final String uri, final int version,
             final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
@@ -74,32 +103,11 @@ public class CompletionParser implements Closeable {
             forceParse = true;
         }
         String document = doc.getText();
-        for (ChangeDocumentRequest.TextDocumentContentChangeEventOrBuilder change : changes) {
-            DocumentRange range = change.getRange();
-            int length = change.getRangeLength();
-
-            int offset = LspTools.getOffsetFromPosition(document, range.getStart());
-            if (offset < 0) {
-                if (LOGGER.isWarnEnabled()) {
-                    LOGGER.warn()
-                            .append("Invalid change in document ")
-                            .append(uri)
-                            .append("[")
-                            .append(version)
-                            .append("] @")
-                            .append(range.getStart().getLine())
-                            .append(":")
-                            .append(range.getStart().getCharacter())
-                            .endl();
-                }
-                return;
-            }
-
-            String prefix = offset > 0 && offset <= document.length() ? document.substring(0, offset) : "";
-            String suffix = offset + length < document.length() ? document.substring(offset + length) : "";
-            document = prefix + change.getText() + suffix;
+        document = updateDocumentChanges(uri, version, document, changes);
+        if (document == null) {
+            return;
         }
-        doc.requestParse(version, document, forceParse);
+        doc.requestParse(Integer.toString(version), document, forceParse);
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
                     .append("Finished updating ")

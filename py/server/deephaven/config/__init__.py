@@ -19,6 +19,6 @@ def get_server_timezone() -> TimeZone:
         for tz in TimeZone:
             if j_timezone == tz.value.getTimeZone():
                 return tz
-        raise NotImplementedError("can't find the time zone in the TImeZone Enum.")
+        raise NotImplementedError("can't find the time zone in the TimeZone Enum.")
     except Exception as e:
         raise DHError(e, message=f"failed to find a recognized time zone") from e
