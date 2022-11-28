@@ -686,7 +686,8 @@ public class TstUtils {
                 if (!itExpected.hasNext()) {
                     throw new IllegalStateException();
                 }
-                Assertions.assertThat(srcActual.get(itActual.nextLong())).isEqualTo(srcExpected.get(itExpected.nextLong()));
+                Assertions.assertThat(srcActual.get(itActual.nextLong()))
+                        .isEqualTo(srcExpected.get(itExpected.nextLong()));
             }
             if (itExpected.hasNext()) {
                 throw new IllegalStateException();

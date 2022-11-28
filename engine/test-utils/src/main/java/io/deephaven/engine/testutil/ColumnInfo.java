@@ -35,7 +35,7 @@ public class ColumnInfo<T, U> {
     }
 
     private ColumnInfo(Class<U> dataType, Class<T> type, Generator<T, U> generator, String name, boolean immutable,
-                       boolean grouped, TreeMap<Long, U> data) {
+            boolean grouped, TreeMap<Long, U> data) {
         this.dataType = dataType;
         this.type = type;
         this.generator = generator;

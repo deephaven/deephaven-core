@@ -12,13 +12,13 @@ public abstract class AbstractUniqueGenerator<T> implements Generator<T, T> {
         if (toAdd.size() == 0)
             return result;
 
-        for (final RowSet.Iterator it = toAdd.iterator(); it.hasNext(); ) {
+        for (final RowSet.Iterator it = toAdd.iterator(); it.hasNext();) {
             values.remove(it.nextLong());
         }
 
         final HashSet<T> usedValues = new HashSet<>(values.values());
 
-        for (final RowSet.Iterator iterator = toAdd.iterator(); iterator.hasNext(); ) {
+        for (final RowSet.Iterator iterator = toAdd.iterator(); iterator.hasNext();) {
             final long nextKey = iterator.nextLong();
             final T value = getNextUniqueValue(usedValues, values, nextKey, random);
             usedValues.add(value);

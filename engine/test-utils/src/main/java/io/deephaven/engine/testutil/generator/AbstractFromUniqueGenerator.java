@@ -14,7 +14,7 @@ public class AbstractFromUniqueGenerator<T> extends AbstractGenerator<T> {
     T[] lastValues;
 
     AbstractFromUniqueGenerator(Class<T> type, AbstractUniqueGenerator<T> uniqueGenerator,
-                                AbstractGenerator<T> defaultGenerator, IntFunction<T[]> arrayFactory, double existingFraction) {
+            AbstractGenerator<T> defaultGenerator, IntFunction<T[]> arrayFactory, double existingFraction) {
         this.type = type;
         this.uniqueGenerator = uniqueGenerator;
         this.defaultGenerator = defaultGenerator;

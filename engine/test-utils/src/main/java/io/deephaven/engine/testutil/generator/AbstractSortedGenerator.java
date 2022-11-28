@@ -16,7 +16,7 @@ public abstract class AbstractSortedGenerator<T extends Comparable<? super T>> i
         if (toAdd.size() == 0)
             return result;
 
-        for (final RowSet.Iterator it = toAdd.iterator(); it.hasNext(); ) {
+        for (final RowSet.Iterator it = toAdd.iterator(); it.hasNext();) {
             values.remove(it.nextLong());
         }
 
@@ -83,7 +83,7 @@ public abstract class AbstractSortedGenerator<T extends Comparable<? super T>> i
         }
         Arrays.sort(values);
         int ii = 0;
-        for (final RowSet.Iterator it = toadd.iterator(); it.hasNext(); ) {
+        for (final RowSet.Iterator it = toadd.iterator(); it.hasNext();) {
             result.put(it.nextLong(), values[ii++]);
         }
     }

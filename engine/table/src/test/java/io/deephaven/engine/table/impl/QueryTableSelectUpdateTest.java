@@ -265,7 +265,7 @@ public class QueryTableSelectUpdateTest {
     }
 
     private EvalNugget partialEvalNuggetFrom(Table sourceTable, boolean indexPositionChangesAllowed,
-                                             Supplier<Table> makeTable) {
+            Supplier<Table> makeTable) {
         return new PartialEvalNugget(sourceTable, indexPositionChangesAllowed) {
             @Override
             protected Table e() {

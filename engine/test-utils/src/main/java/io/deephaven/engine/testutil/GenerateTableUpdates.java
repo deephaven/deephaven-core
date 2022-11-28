@@ -63,7 +63,7 @@ public class GenerateTableUpdates {
     }
 
     static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-                                               ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
+            ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
         final RowSet keysToRemove;
         if (remove && table.getRowSet().size() > 0) {
             keysToRemove =

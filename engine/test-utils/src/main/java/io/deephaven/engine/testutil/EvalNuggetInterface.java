@@ -9,5 +9,6 @@ import static io.deephaven.engine.util.TableTools.diff;
 
 public interface EvalNuggetInterface {
     void validate(final String msg);
+
     void show() throws IOException;
 }

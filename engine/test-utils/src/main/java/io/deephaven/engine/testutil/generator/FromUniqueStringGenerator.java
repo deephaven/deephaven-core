@@ -6,7 +6,7 @@ public class FromUniqueStringGenerator extends AbstractFromUniqueGenerator<Strin
     }
 
     FromUniqueStringGenerator(UniqueStringGenerator uniqueGenerator, double existingFraction,
-                              AbstractGenerator<String> defaultGenerator) {
+            AbstractGenerator<String> defaultGenerator) {
         super(String.class, uniqueGenerator, defaultGenerator, String[]::new, existingFraction);
     }
 }

@@ -141,12 +141,12 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     }
 
     public static void simulateShiftAwareStep(int targetUpdateSize, Random random, QueryTable table,
-                                              ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
+            ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
         simulateShiftAwareStep("", targetUpdateSize, random, table, columnInfo, en);
     }
 
     public static void simulateShiftAwareStep(final String ctxt, int targetUpdateSize, Random random, QueryTable table,
-                                              ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
+            ColumnInfo[] columnInfo, EvalNuggetInterface[] en) {
         simulateShiftAwareStep(GenerateTableUpdates.DEFAULT_PROFILE, ctxt, targetUpdateSize, random, table, columnInfo,
                 en);
     }

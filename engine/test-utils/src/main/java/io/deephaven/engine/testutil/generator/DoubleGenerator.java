@@ -31,7 +31,7 @@ public class DoubleGenerator extends AbstractGenerator<Double> {
     }
 
     public DoubleGenerator(double from, double to, double nullFraction, double nanFraction, double negInfFraction,
-                           double posInfFraction) {
+            double posInfFraction) {
         this.from = from;
         this.to = to;
         this.nullFraction = nullFraction;

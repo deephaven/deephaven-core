@@ -31,7 +31,7 @@ public class FloatGenerator extends AbstractGenerator<Float> {
     }
 
     public FloatGenerator(float from, float to, double nullFraction, double nanFraction, double negInfFraction,
-                          double posInfFraction) {
+            double posInfFraction) {
         this.from = from;
         this.to = to;
         this.nullFraction = nullFraction;
