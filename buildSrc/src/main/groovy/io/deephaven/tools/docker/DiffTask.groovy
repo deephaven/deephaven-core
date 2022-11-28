@@ -9,6 +9,7 @@ import org.gradle.api.file.FileVisitDetails
 import org.gradle.api.internal.file.FileLookup
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
@@ -32,7 +33,7 @@ abstract class DiffTask extends DefaultTask {
     abstract Property<Object> getExpectedContents()
     // In contrast, this is assumed to be a source directory, to easily allow some Sync action
     // to easily be the "fix this mistake" counterpart to this task
-    @Input
+    @InputDirectory
     abstract DirectoryProperty getActualContents()
 
     private final PatternSet ignoreInActual = new PatternSet();
