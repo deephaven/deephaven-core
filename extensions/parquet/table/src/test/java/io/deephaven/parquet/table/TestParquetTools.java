@@ -391,6 +391,20 @@ public class TestParquetTools {
         assertTableEquals(stuff, readBack);
     }
 
+    @Test
+    public void testColumnSwapping() {
+        final Table stuff = emptyTable(10)
+                .update("X = ii * 2",
+                        "Y = ii * 2 + 1");
+
+        final File f2w = new File(testRoot, "columnSwap.parquet");
+        ParquetTools.writeTable(stuff, f2w);
+
+        final Table readBack = ParquetTools.readTable(f2w).updateView("T = X", "X = Y", "Y = T");
+
+        assertTableEquals(stuff.updateView("T = X", "X = Y", "Y = T"), readBack);
+    }
+
     public static DoubleVector generateDoubles(int howMany) {
         final double[] yarr = new double[howMany];
         for (int ii = 0; ii < howMany; ii++) {

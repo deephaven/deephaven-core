@@ -9,9 +9,11 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.select.*;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -25,16 +27,27 @@ public abstract class RedefinableTable extends UncoalescedTable {
 
     @Override
     public Table view(Collection<? extends Selectable> selectables) {
+        return viewInternal(selectables, false);
+    }
+
+    @Override
+    public Table updateView(Collection<? extends Selectable> selectables) {
+        return viewInternal(selectables, true);
+    }
+
+    private Table viewInternal(Collection<? extends Selectable> selectables, boolean isUpdate) {
         if (selectables == null || selectables.isEmpty()) {
             return this;
         }
-        final SelectColumn[] columns = SelectColumn.from(selectables);
-        Set<ColumnDefinition<?>> resultColumnsInternal = new HashSet<>();
-        Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
-        Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
-        Map<String, Set<String>> columnDependency = new HashMap<>();
-        boolean simpleRetain = true;
-        for (SelectColumn selectColumn : columns) {
+
+        final List<SelectColumn> columns = new ArrayList<>();
+        final Set<ColumnDefinition<?>> resultColumnsInternal = new HashSet<>();
+        final Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
+        final Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
+        final Map<String, Set<String>> columnDependency = new HashMap<>();
+        final MutableBoolean simpleRetain = new MutableBoolean(true);
+        final Consumer<SelectColumn> columnVisitor = selectColumn -> {
+            columns.add(selectColumn);
             List<String> usedColumnNames = selectColumn.initDef(allColumns);
             columnDependency.put(selectColumn.getName(), new HashSet<>(usedColumnNames));
             resultColumnsInternal.addAll(usedColumnNames.stream()
@@ -44,39 +57,36 @@ public abstract class RedefinableTable extends UncoalescedTable {
             if (selectColumn.isRetain()) {
                 columnDef = definition.getColumn(selectColumn.getName());
             } else {
-                simpleRetain = false;
+                simpleRetain.setFalse();
                 columnDef = ColumnDefinition.fromGenericType(selectColumn.getName(), selectColumn.getReturnedType());
             }
             resultColumnsExternal.put(selectColumn.getName(), columnDef);
             allColumns.put(selectColumn.getName(), columnDef);
+        };
+
+        if (isUpdate) {
+            // we must first populate our linked maps with existing columns
+            for (ColumnDefinition<?> cDef : definition.getColumns()) {
+                columnVisitor.accept(new SourceColumn(cDef.getName()));
+            }
+        }
+
+        // process the new columns
+        for (SelectColumn selectColumn : SelectColumn.from(selectables)) {
+            columnVisitor.accept(selectColumn);
         }
 
         TableDefinition newDefExternal = TableDefinition.of(
                 resultColumnsExternal.values().toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY));
-        if (simpleRetain) {
+        if (simpleRetain.booleanValue()) {
             // NB: We use the *external* TableDefinition because it's ordered appropriately.
             return redefine(newDefExternal);
         }
         TableDefinition newDefInternal =
                 TableDefinition.of(
                         resultColumnsInternal.toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY));
-        return redefine(newDefExternal, newDefInternal, columns, columnDependency);
-    }
 
-    @Override
-    public Table updateView(Collection<? extends Selectable> selectables) {
-        if (selectables == null || selectables.isEmpty()) {
-            return this;
-        }
-        final SelectColumn[] columns = SelectColumn.from(selectables);
-        LinkedHashMap<String, SelectColumn> viewColumns = new LinkedHashMap<>();
-        for (ColumnDefinition<?> cDef : definition.getColumns()) {
-            viewColumns.put(cDef.getName(), new SourceColumn(cDef.getName()));
-        }
-        for (SelectColumn updateColumn : columns) {
-            viewColumns.put(updateColumn.getName(), updateColumn);
-        }
-        return view(viewColumns.values().toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+        return redefine(newDefExternal, newDefInternal, columns.toArray(SelectColumn[]::new), columnDependency);
     }
 
     @Override
