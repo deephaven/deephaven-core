@@ -267,7 +267,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
             if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
-                return new NoopAutoCompleteObserver(responseObserver);
+                return new NoopAutoCompleteObserver(session, responseObserver);
             }
 
             return new JavaAutoCompleteObserver(session, responseObserver);
@@ -278,7 +278,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
      * Autocomplete handling for JVM languages, that directly can interact with Java instances without any name
      * mangling, and are able to use our flexible parser.
      */
-    private static class JavaAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
+    private static class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
+            implements StreamObserver<AutoCompleteRequest> {
         private final CompletionParser parser;
         private final SessionState session;
         private final StreamObserver<AutoCompleteResponse> responseObserver;
@@ -298,6 +299,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
 
         public JavaAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
+            super(session, responseObserver);
             this.session = session;
             this.responseObserver = responseObserver;
             parser = ensureParserForSession(session);
@@ -423,10 +425,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         }
     }
 
-    private static class NoopAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
+    private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
+            implements StreamObserver<AutoCompleteRequest> {
         private final StreamObserver<AutoCompleteResponse> responseObserver;
 
-        public NoopAutoCompleteObserver(StreamObserver<AutoCompleteResponse> responseObserver) {
+        public NoopAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
+            super(session, responseObserver);
             this.responseObserver = responseObserver;
         }
 
