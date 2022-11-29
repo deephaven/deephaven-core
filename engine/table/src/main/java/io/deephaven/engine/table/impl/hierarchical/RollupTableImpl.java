@@ -8,10 +8,9 @@ import io.deephaven.api.agg.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
 import io.deephaven.engine.table.impl.NotificationStepSource;
@@ -329,6 +328,103 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private static Stream<ColumnDefinition<?>> filterRollupInternalColumns(
             @NotNull final Stream<ColumnDefinition<?>> columnDefinitions) {
         return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX));
+    }
+
+    @Override
+    ChunkSource<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
+        return new RollupRowLookupKeySource(
+                nodeKeyTable.getColumnSource(getKeyWidthColumn().name()),
+                groupByColumns.stream()
+                        .map(cn -> nodeKeyTable.getColumnSource(cn.name()))
+                        .toArray(ColumnSource[]::new));
+    }
+
+    private static int nodeKeyWidth(@Nullable final Object nodeKey) {
+        if (nodeKey instanceof Object[]) {
+            return ((Object[]) nodeKey).length;
+        }
+        return 1;
+    }
+
+    private static int nodeKeyWidth(final long nodeId) {
+        return (int) (nodeId >>> 32);
+    }
+
+    private static int nodeSlot(final long nodeId) {
+        return (int) nodeId;
+    }
+
+    private static long makeNodeId(final int nodeKeyWidth, final int nodeSlot) {
+        // NB: nodeKeyWidth is an integer in [0, groupByColumns.size()], and nodeSlot is an integer in [0, 1 << 30)
+        return ((long) nodeKeyWidth << 32) | nodeSlot;
+    }
+
+    @Override
+    @Nullable
+    Object nodeKeyToParentNodeKey(@Nullable final Object childNodeKey) {
+        final int nodeKeyWidth = nodeKeyWidth(childNodeKey);
+        switch (nodeKeyWidth) {
+            case 0:
+                return null;
+            case 1:
+                return AggregationRowLookup.EMPTY_KEY;
+            default:
+                return Arrays.copyOf(((Object[]) childNodeKey), nodeKeyWidth - 1);
+        }
+    }
+
+    @Override
+    boolean isRootNodeKey(@Nullable final Object nodeKey) {
+        return nodeKeyWidth(nodeKey) == 0;
+    }
+
+    @Override
+    long nodeKeyToNodeId(@Nullable final Object nodeKey) {
+        final int nodeKeyWidth = nodeKeyWidth(nodeKey);
+        final int nodeSlot = levelRowLookups[nodeKeyWidth].get(nodeKey);
+        return makeNodeId(nodeKeyWidth, nodeSlot);
+    }
+
+    @Nullable
+    @Override
+    Table nodeIdToNodeBaseTable(final long nodeId) {
+        final int nodeKeyWidth = nodeKeyWidth(nodeId);
+        if (nodeKeyWidth < groupByColumns.size() || includesConstituents()) {
+            final int nodeSlot = nodeSlot(nodeId);
+            return (Table) levelTables[nodeKeyWidth].getColumnSource(ROLLUP_COLUMN.name()).get(nodeSlot);
+        }
+        return null;
+    }
+
+    private RollupNodeOperationsRecorder nodeOperations(final long nodeId) {
+        final int nodeKeyWidth = nodeKeyWidth(nodeId);
+        if (nodeKeyWidth == groupByColumns.size()) {
+            // We must be including constituents
+            return constituentNodeOperations;
+        }
+        return aggregatedNodeOperations;
+    }
+
+    @Override
+    Table applyNodeFormattingAndFiltering(final long nodeId, @NotNull final Table nodeBaseTable) {
+        final RollupNodeOperationsRecorder operations = nodeOperations(nodeId);
+        // NB: There is no node-level filtering for rollups
+        if (operations != null && !operations.getRecordedFormats().isEmpty()) {
+            return nodeBaseTable.updateView(operations.getRecordedFormats());
+        }
+        return nodeBaseTable;
+    }
+
+    @Override
+    Table applyNodeSorting(final long nodeId, @NotNull final Table nodeFilteredTable) {
+        final RollupNodeOperationsRecorder operations = nodeOperations(nodeId);
+        if (operations != null && !operations.getRecordedSorts().isEmpty()) {
+            return (operations.getRecordedAbsoluteViews().isEmpty()
+                    ? nodeFilteredTable
+                    : nodeFilteredTable.updateView(operations.getRecordedAbsoluteViews()))
+                            .sort(operations.getRecordedSorts());
+        }
+        return nodeFilteredTable;
     }
 
     @Override

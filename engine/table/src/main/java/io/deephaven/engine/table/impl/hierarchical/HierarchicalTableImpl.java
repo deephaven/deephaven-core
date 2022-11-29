@@ -374,9 +374,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     /**
      * @param childNodeKey The node key to map
-     * @return The parent node key for {@code childNodeKey}
+     * @return The parent node key for {@code childNodeKey}, or {@code null} if {@code childNodeKey} represents the
+     * root node key
      */
-    abstract Object nodeKeyToParentNodeKey(@NotNull Object childNodeKey);
+    @Nullable
+    abstract Object nodeKeyToParentNodeKey(@Nullable Object childNodeKey);
 
     /**
      * @param nodeKey The node key to test
@@ -392,7 +394,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     /**
      * @param nodeId The internal identifier to map
-     * @return The base table at the node identified by {@code nodeId}
+     * @return The base table at the node identified by {@code nodeId}, or {@code null} if the node is not expandable
      */
     abstract Table nodeIdToNodeBaseTable(long nodeId);
 
