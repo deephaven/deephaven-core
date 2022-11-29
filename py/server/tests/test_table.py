@@ -789,7 +789,7 @@ class TableTestCase(BaseTestCase):
         self.assert_table_equals(t.head(3), rt)
 
         self.wait_ticking_table_update(t, row_count=5, timeout=5)
-        with ugp.exclusive_lock():
+        with ugp.shared_lock():
             rt = t.slice(t.size, -2)
             self.assertEqual(0, rt.size)
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
@@ -800,11 +800,11 @@ class TableTestCase(BaseTestCase):
 
         rt = t.slice(-3, -2)
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
-        self.assertEqual(1, rt.size)
+        self.assert_table_equals(t.tail(3).head(1), rt)
 
         rt = t.slice(1, 3)
         self.wait_ticking_table_update(rt, row_count=2, timeout=5)
-        self.assertEqual(2, rt.size)
+        self.assert_table_equals(t.head(3).tail(2), rt)
 
         with self.assertRaises(DHError):
             rt = t.slice(3, 2)
