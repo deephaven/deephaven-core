@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -148,28 +149,55 @@ public class DeferredViewTable extends RedefinableTable {
 
         for (WhereFilter filter : filters) {
             filter.init(definition);
-            ArrayList<String> usedColumns = new ArrayList<>();
+            final Set<String> usedColumns = new HashSet<>();
             usedColumns.addAll(filter.getColumns());
             usedColumns.addAll(filter.getColumnArrays());
 
-            Map<String, String> renames = new HashMap<>();
             boolean postFilter = false;
+            Map<String, String> renames = new HashMap<>();
+            final Map<String, Set<String>> reverseLookup = new HashMap<>();
 
-            for (String column : usedColumns) {
-                for (SelectColumn selectColumn : deferredViewColumns) {
-                    if (selectColumn.getName().equals(column)) {
-                        if (selectColumn instanceof SwitchColumn) {
-                            selectColumn.initDef(tableReference.getDefinition().getColumnNameMap());
-                            selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
-                        }
+            // determine if filter has any dependencies on deferred columns
+            for (int ii = deferredViewColumns.length - 1; ii >= 0; --ii) {
+                // traverse columns in reverse order to handle scenarios where a deferred column is renamed
+                SelectColumn selectColumn = deferredViewColumns[ii];
+                final String columnName = selectColumn.getName();
+                if (selectColumn.isRetain()) {
+                    continue;
+                }
+                if (!usedColumns.contains(columnName) && !reverseLookup.containsKey(columnName)) {
+                    continue;
+                }
+                if (selectColumn instanceof SwitchColumn) {
+                    selectColumn.initDef(tableReference.getDefinition().getColumnNameMap());
+                    selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
+                }
 
-                        // we need to rename this column
-                        if (selectColumn instanceof SourceColumn) {
-                            // this is a rename of the getSourceName to the innerName
-                            renames.put(selectColumn.getName(), ((SourceColumn) selectColumn).getSourceName());
-                        } else {
-                            postFilter = true;
-                            break;
+                final String innerName;
+                if (selectColumn instanceof SourceColumn) {
+                    innerName = ((SourceColumn) selectColumn).getSourceName();
+                } else {
+                    // this is a deferred column
+                    postFilter = true;
+                    break;
+                }
+
+                // we need to rename this column
+                renames.put(columnName, innerName);
+                reverseLookup.putIfAbsent(innerName, new HashSet<>());
+
+                // check if this is an explicit rename
+                if (usedColumns.remove(columnName)) {
+                    reverseLookup.get(innerName).add(columnName);
+                }
+
+                // apply this rename to any other deferred columns that depend on this one
+                if (!selectColumn.isRetain()) {
+                    final Set<String> multiLevelRenames = reverseLookup.remove(columnName);
+                    if (multiLevelRenames != null) {
+                        for (final String resultColumnName : multiLevelRenames) {
+                            renames.put(resultColumnName, innerName);
+                            reverseLookup.get(innerName).add(resultColumnName);
                         }
                     }
                 }
@@ -177,24 +205,20 @@ public class DeferredViewTable extends RedefinableTable {
 
             if (postFilter) {
                 postViewFilters.add(filter);
+            } else if (renames.isEmpty()) {
+                preViewFilters.add(filter);
+            } else if (filter instanceof io.deephaven.engine.table.impl.select.MatchFilter) {
+                io.deephaven.engine.table.impl.select.MatchFilter matchFilter =
+                        (io.deephaven.engine.table.impl.select.MatchFilter) filter;
+                Assert.assertion(renames.size() == 1, "Match Filters should only use one column!");
+                String newName = renames.get(matchFilter.getColumnName());
+                Assert.neqNull(newName, "newName");
+                preViewFilters.add(matchFilter.renameFilter(newName));
+            } else if (filter instanceof ConditionFilter) {
+                ConditionFilter conditionFilter = (ConditionFilter) filter;
+                preViewFilters.add(conditionFilter.renameFilter(renames));
             } else {
-                if (!renames.isEmpty()) {
-                    if (filter instanceof io.deephaven.engine.table.impl.select.MatchFilter) {
-                        io.deephaven.engine.table.impl.select.MatchFilter matchFilter =
-                                (io.deephaven.engine.table.impl.select.MatchFilter) filter;
-                        Assert.assertion(renames.size() == 1, "Match Filters should only use one column!");
-                        String newName = renames.get(matchFilter.getColumnName());
-                        Assert.neqNull(newName, "newName");
-                        preViewFilters.add(matchFilter.renameFilter(newName));
-                    } else if (filter instanceof ConditionFilter) {
-                        ConditionFilter conditionFilter = (ConditionFilter) filter;
-                        preViewFilters.add(conditionFilter.renameFilter(renames));
-                    } else {
-                        postViewFilters.add(filter);
-                    }
-                } else {
-                    preViewFilters.add(filter);
-                }
+                postViewFilters.add(filter);
             }
         }
 

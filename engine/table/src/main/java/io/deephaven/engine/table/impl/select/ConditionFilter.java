@@ -46,7 +46,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     public static final int CHUNK_SIZE = 4096;
     private Class<?> filterKernelClass = null;
-    private List<Pair<String, Class>> usedInputs; // that is columns and special variables
+    private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
     private boolean filterValidForCopy = true;
@@ -368,8 +368,6 @@ public class ConditionFilter extends AbstractConditionFilter {
                 return resultBuilder.build();
             }
         }
-
-
     }
 
     private static String toTitleCase(String input) {
@@ -378,7 +376,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     protected void generateFilterCode(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
-            QueryLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException {
+            QueryLanguageParser.Result result) {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
             return;
@@ -390,12 +388,14 @@ public class ConditionFilter extends AbstractConditionFilter {
                     paramClasses.add(cls);
                 }
             };
-            for (final String usedColumn : usedColumns) {
+            for (String usedColumn : usedColumns) {
+                usedColumn = outerToInnerNames.getOrDefault(usedColumn, usedColumn);
                 final ColumnDefinition<?> column = tableDefinition.getColumn(usedColumn);
                 addParamClass.accept(column.getDataType());
                 addParamClass.accept(column.getComponentType());
             }
-            for (final String usedColumn : usedColumnArrays) {
+            for (String usedColumn : usedColumnArrays) {
+                usedColumn = outerToInnerNames.getOrDefault(usedColumn, usedColumn);
                 final ColumnDefinition<?> column = tableDefinition.getColumn(usedColumn);
                 addParamClass.accept(column.getDataType());
                 addParamClass.accept(column.getComponentType());
@@ -420,8 +420,9 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
         usedInputs = new ArrayList<>();
         for (String usedColumn : usedColumns) {
-            final ColumnDefinition column = tableDefinition.getColumn(usedColumn);
-            final Class columnType = column.getDataType();
+            final String innerName = outerToInnerNames.getOrDefault(usedColumn, usedColumn);
+            final ColumnDefinition<?> column = tableDefinition.getColumn(innerName);
+            final Class<?> columnType = column.getDataType();
             usedInputs.add(new Pair<>(usedColumn, columnType));
         }
         if (usesI) {
@@ -442,10 +443,15 @@ public class ConditionFilter extends AbstractConditionFilter {
                 .append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
         classBody.append("\n").append(timeConversionResult.getInstanceVariablesString()).append("\n");
         final Indenter indenter = new Indenter();
-        for (QueryScopeParam param : params) {
+        for (QueryScopeParam<?> param : params) {
             /*
-             * adding context param fields like: "            final int p1;\n" + "            final float p2;\n" +
-             * "            final String p3;\n" +
+             * @formatter:off
+             * adding context param fields like:
+             *
+             * final int p1;
+             * final float p2;
+             * final String p3;
+             * @formatter:on
              */
             classBody.append(indenter).append("private final ")
                     .append(QueryScopeParamTypeUtil.getPrimitiveTypeNameIfAvailable(param.getValue()))
@@ -454,12 +460,13 @@ public class ConditionFilter extends AbstractConditionFilter {
         if (!usedColumnArrays.isEmpty()) {
             classBody.append(indenter).append("// Array Column Variables\n");
             for (String columnName : usedColumnArrays) {
-                final ColumnDefinition column = tableDefinition.getColumn(columnName);
+                final String innerColumnName = outerToInnerNames.getOrDefault(columnName, columnName);
+                final ColumnDefinition<?> column = tableDefinition.getColumn(innerColumnName);
                 if (column == null) {
-                    throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table");
+                    throw new RuntimeException("Column \"" + innerColumnName + "\" doesn't exist in this table");
                 }
-                final Class dataType = column.getDataType();
-                final Class columnType = DhFormulaColumn.getVectorType(dataType);
+                final Class<?> dataType = column.getDataType();
+                final Class<?> columnType = DhFormulaColumn.getVectorType(dataType);
 
                 /*
                  * Adding array column fields.
@@ -467,7 +474,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 classBody.append(indenter).append("private final ").append(columnType.getCanonicalName())
                         .append(TypeUtils.isConvertibleToPrimitive(dataType) ? ""
                                 : "<" + dataType.getCanonicalName() + ">")
-                        .append(" ").append(column.getName()).append(COLUMN_SUFFIX).append(";\n");
+                        .append(" ").append(columnName).append(COLUMN_SUFFIX).append(";\n");
             }
             classBody.append("\n");
         }
@@ -476,7 +483,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 .append("public $CLASSNAME$(Table __table, RowSet __fullSet, QueryScopeParam... __params) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < params.length; i++) {
-            final QueryScopeParam param = params[i];
+            final QueryScopeParam<?> param = params[i];
             /*
              * @formatter:off
              * Initializing context parameters:
@@ -496,12 +503,13 @@ public class ConditionFilter extends AbstractConditionFilter {
             classBody.append("\n");
             classBody.append(indenter).append("// Array Column Variables\n");
             for (String columnName : usedColumnArrays) {
-                final ColumnDefinition column = tableDefinition.getColumn(columnName);
+                final String innerColumnName = outerToInnerNames.getOrDefault(columnName, columnName);
+                final ColumnDefinition<?> column = tableDefinition.getColumn(innerColumnName);
                 if (column == null) {
-                    throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table");
+                    throw new RuntimeException("Column \"" + innerColumnName + "\" doesn't exist in this table");
                 }
-                final Class dataType = column.getDataType();
-                final Class columnType = DhFormulaColumn.getVectorType(dataType);
+                final Class<?> dataType = column.getDataType();
+                final Class<?> columnType = DhFormulaColumn.getVectorType(dataType);
 
                 final String arrayType = columnType.getCanonicalName().replace(
                         "io.deephaven.vector",
@@ -510,8 +518,8 @@ public class ConditionFilter extends AbstractConditionFilter {
                 /*
                  * Adding array column fields.
                  */
-                classBody.append(indenter).append(column.getName()).append(COLUMN_SUFFIX).append(" = new ")
-                        .append(arrayType).append("(__table.getColumnSource(\"").append(columnName)
+                classBody.append(indenter).append(columnName).append(COLUMN_SUFFIX).append(" = new ")
+                        .append(arrayType).append("(__table.getColumnSource(\"").append(innerColumnName)
                         .append("\"), __fullSet);\n");
             }
         }
@@ -528,7 +536,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 "public LongChunk<OrderedRowKeys> filter(Context __context, LongChunk<OrderedRowKeys> __indices, Chunk... __inputChunks) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < usedInputs.size(); i++) {
-            final Class columnType = usedInputs.get(i).second;
+            final Class<?> columnType = usedInputs.get(i).second;
             final String chunkType;
             if (columnType.isPrimitive() && columnType != boolean.class) {
                 chunkType = toTitleCase(columnType.getSimpleName()) + "Chunk";
@@ -544,8 +552,8 @@ public class ConditionFilter extends AbstractConditionFilter {
                 "for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < usedInputs.size(); i++) {
-            final Pair<String, Class> usedInput = usedInputs.get(i);
-            final Class columnType = usedInput.second;
+            final Pair<String, Class<?>> usedInput = usedInputs.get(i);
+            final Class<?> columnType = usedInput.second;
             final String canonicalName = columnType.getCanonicalName();
             classBody.append(indenter).append("final ").append(canonicalName).append(" ").append(usedInput.first)
                     .append(" =  (").append(canonicalName).append(")__columnChunk").append(i)
@@ -569,7 +577,9 @@ public class ConditionFilter extends AbstractConditionFilter {
             final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClass
                     .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
                     .newInstance(table, fullSet, (Object) params);
-            final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
+            final String[] columnNames = usedInputs.stream()
+                    .map(p -> outerToInnerNames.getOrDefault(p.first, p.first))
+                    .toArray(String[]::new);
             filter = new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
             // note this filter is not valid for use in other contexts, as it captures references from the source table
             filterValidForCopy = false;
