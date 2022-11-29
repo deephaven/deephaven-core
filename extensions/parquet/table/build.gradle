@@ -45,7 +45,11 @@ dependencies {
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 
+    brotliTestImplementation project(':extensions-parquet-table')
     brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')
+    brotliTestRuntimeOnly project(':log-to-slf4j'),
+                         project(path: ':configs'),
+                         project(path: ':test-configs')
 }
 
 // if architecture is x86, run the brotli test
