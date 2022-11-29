@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -57,6 +58,26 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
 
     Collection<? extends SelectColumn> getRecordedAbsoluteViews() {
         return recordedAbsoluteViews;
+    }
+
+    static Table applyFormats(
+            @Nullable final BaseNodeOperationsRecorder<?> nodeOperations,
+            @NotNull final Table input) {
+        if (nodeOperations != null && !nodeOperations.getRecordedFormats().isEmpty()) {
+            return input.updateView(nodeOperations.getRecordedFormats());
+        }
+        return input;
+    }
+
+    static Table applySorts(@Nullable final BaseNodeOperationsRecorder<?> nodeOperations, @NotNull final Table input) {
+        if (nodeOperations != null && !nodeOperations.getRecordedSorts().isEmpty()) {
+            return (nodeOperations.getRecordedAbsoluteViews().isEmpty()
+                    ? input
+                    : input.updateView(nodeOperations.getRecordedAbsoluteViews()))
+                            .sort(nodeOperations.getRecordedSorts());
+        }
+        // NB: We don't bother to drop the absolute columns; nothing gets to consume the output node tables directly.
+        return input;
     }
 
     TableDefinition getResultDefinition() {

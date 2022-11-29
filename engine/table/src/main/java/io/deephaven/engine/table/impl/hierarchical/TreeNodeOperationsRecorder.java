@@ -8,12 +8,10 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,6 +39,13 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
 
     Collection<? extends WhereFilter> getRecordedFilters() {
         return recordedFilters;
+    }
+
+    static Table applyFilters(@Nullable final TreeNodeOperationsRecorder nodeOperations, @NotNull final Table input) {
+        if (nodeOperations != null && !nodeOperations.getRecordedFilters().isEmpty()) {
+            return input.where(nodeOperations.getRecordedFilters());
+        }
+        return input;
     }
 
     @Override

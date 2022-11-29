@@ -331,7 +331,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    ChunkSource<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
+    ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
         return new RollupRowLookupKeySource(
                 nodeKeyTable.getColumnSource(getKeyWidthColumn().name()),
                 groupByColumns.stream()
@@ -361,7 +361,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     @Nullable
-    Object nodeKeyToParentNodeKey(@Nullable final Object childNodeKey) {
+    Object nodeKeyToParentNodeKey(@Nullable final Object childNodeKey, final boolean usePrev) {
         final int nodeKeyWidth = nodeKeyWidth(childNodeKey);
         switch (nodeKeyWidth) {
             case 0:
@@ -385,13 +385,13 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return makeNodeId(nodeKeyWidth, nodeSlot);
     }
 
-    @Nullable
     @Override
+    @Nullable
     Table nodeIdToNodeBaseTable(final long nodeId) {
         final int nodeKeyWidth = nodeKeyWidth(nodeId);
         if (nodeKeyWidth < groupByColumns.size() || includesConstituents()) {
             final int nodeSlot = nodeSlot(nodeId);
-            return (Table) levelTables[nodeKeyWidth].getColumnSource(ROLLUP_COLUMN.name()).get(nodeSlot);
+            return levelTables[nodeKeyWidth].getColumnSource(ROLLUP_COLUMN.name(), Table.class).get(nodeSlot);
         }
         return null;
     }
@@ -406,25 +406,14 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    Table applyNodeFormattingAndFiltering(final long nodeId, @NotNull final Table nodeBaseTable) {
-        final RollupNodeOperationsRecorder operations = nodeOperations(nodeId);
+    Table applyNodeFormatsAndFilters(final long nodeId, @NotNull final Table nodeBaseTable) {
+        return BaseNodeOperationsRecorder.applyFormats(nodeOperations(nodeId), nodeBaseTable);
         // NB: There is no node-level filtering for rollups
-        if (operations != null && !operations.getRecordedFormats().isEmpty()) {
-            return nodeBaseTable.updateView(operations.getRecordedFormats());
-        }
-        return nodeBaseTable;
     }
 
     @Override
-    Table applyNodeSorting(final long nodeId, @NotNull final Table nodeFilteredTable) {
-        final RollupNodeOperationsRecorder operations = nodeOperations(nodeId);
-        if (operations != null && !operations.getRecordedSorts().isEmpty()) {
-            return (operations.getRecordedAbsoluteViews().isEmpty()
-                    ? nodeFilteredTable
-                    : nodeFilteredTable.updateView(operations.getRecordedAbsoluteViews()))
-                            .sort(operations.getRecordedSorts());
-        }
-        return nodeFilteredTable;
+    Table applyNodeSorts(final long nodeId, @NotNull final Table nodeFilteredTable) {
+        return BaseNodeOperationsRecorder.applySorts(nodeOperations(nodeId), nodeFilteredTable);
     }
 
     @Override
@@ -434,6 +423,6 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     void maybeWaitForStructuralSatisfaction() {
-        // It's sufficient to wait for the root node, which is done at the beginning of traversal.
+        // NB: It's sufficient to wait for the root node, which is done at the beginning of traversal.
     }
 }

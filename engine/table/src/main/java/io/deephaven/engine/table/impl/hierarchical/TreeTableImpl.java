@@ -4,12 +4,11 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.*;
@@ -17,6 +16,7 @@ import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +38,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     private static final ColumnName DEPTH_COLUMN = ColumnName.of("__DEPTH__");
     public static final ColumnName REVERSE_LOOKUP_ROW_KEY_COLUMN = ColumnName.of("__ROW_KEY__");
 
+    private final ColumnSource<Table> sourceParentIdSource;
     private final QueryTable tree;
+    private final AggregationRowLookup treeRowLookup;
     private final TreeReverseLookup reverseLookup;
     private final ColumnName identifierColumn;
     private final ColumnName parentIdentifierColumn;
@@ -59,7 +61,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             manage(tree);
             manage(reverseLookup);
         }
+        sourceParentIdSource = source.getColumnSource(parentIdentifierColumn.name(), Table.class);
         this.tree = tree;
+        treeRowLookup = AggregationProcessor.getRowLookup(tree);
         this.reverseLookup = reverseLookup;
         this.identifierColumn = identifierColumn;
         this.parentIdentifierColumn = parentIdentifierColumn;
@@ -199,7 +203,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     private static QueryTable getTreeRoot(@NotNull final QueryTable tree) {
-        // This is "safe" because we rely on the implementation details of aggregation and the partition operator,
+        // NB: This is "safe" because we rely on the implementation details of aggregation and the partition operator,
         // which ensure that the initial groups are bucketed first and the result row set is flat.
         return (QueryTable) tree.getColumnSource(CONSTITUENT.name()).get(0);
     }
@@ -211,12 +215,69 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
+    ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
+        return ReinterpretUtils.maybeConvertToPrimitive(nodeKeyTable.getColumnSource(identifierColumn.name()));
+    }
+
+    @Override
+    @Nullable
+    Object nodeKeyToParentNodeKey(@Nullable final Object childNodeKey, final boolean usePrev) {
+        if (childNodeKey == null) {
+            return null;
+        }
+        if (usePrev) {
+            final long sourceRowKey = reverseLookup.getPrev(childNodeKey);
+            if (getSource().getRowSet().getPrev(sourceRowKey) == RowSequence.NULL_ROW_KEY) {
+                return null;
+            }
+            return sourceParentIdSource.getPrev(sourceRowKey);
+        } else {
+            final long sourceRowKey = reverseLookup.get(childNodeKey);
+            if (getSource().getRowSet().get(sourceRowKey) == RowSequence.NULL_ROW_KEY) {
+                return null;
+            }
+            return sourceParentIdSource.get(sourceRowKey);
+        }
+    }
+
+    @Override
+    boolean isRootNodeKey(@Nullable final Object nodeKey) {
+        return nodeKey == null;
+    }
+
+    @Override
+    long nodeKeyToNodeId(@Nullable final Object nodeKey) {
+        return treeRowLookup.get(nodeKey);
+    }
+
+    @Override
+    @Nullable
+    Table nodeIdToNodeBaseTable(final long nodeId) {
+        return tree.getColumnSource(TREE_COLUMN.name(), Table.class).get(nodeId);
+    }
+
+    @Override
+    Table applyNodeFormatsAndFilters(final long nodeId, @NotNull final Table nodeBaseTable) {
+        final Table nodeFormattedTable = BaseNodeOperationsRecorder.applyFormats(nodeOperations, nodeBaseTable);
+        return TreeNodeOperationsRecorder.applyFilters(nodeOperations, nodeFormattedTable);
+    }
+
+    @Override
+    Table applyNodeSorts(final long nodeId, @NotNull final Table nodeFilteredTable) {
+        return BaseNodeOperationsRecorder.applySorts(nodeOperations, nodeFilteredTable);
+    }
+
+    @Override
     NotificationStepSource[] getSourceDependencies() {
+        // NB: The reverse lookup may be derived from an unfiltered parent of our source, hence we need to treat it as a
+        // separate dependency.
         return new NotificationStepSource[] {source, reverseLookup};
     }
 
     @Override
     void maybeWaitForStructuralSatisfaction() {
+        // NB: Our root is just a node in the tree (which is a partitioned table of constituent nodes), so waiting for
+        // satisfaction of the root would be insufficient (and unnecessary if we're waiting for the tree).
         maybeWaitForSatisfaction(tree);
     }
 
