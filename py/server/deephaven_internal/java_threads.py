@@ -13,12 +13,14 @@ def create_thread_entry(thread_name):
     thread.name = 'java-' + thread_name
     # Then, if pydevd has already been initialized, we should attempt to make ourselves known to it.
     try:
-        # TODO can we conditionally import the other ones, try each module until we find a working one?
-        import pydevd
+        # Test each of our known
+        for name in ['pydevd', 'pydevd_pycharm']:
+            debugger = __import__(name)
 
-        # We don't want to be the first one to call settrace(), so check to see if setup completed on another thread before attemption it here
-        if pydevd.SetupHolder.setup is not None:
-            pydevd.settrace(suspend=False)
+            # We don't want to be the first one to call settrace(), so check to see if setup completed on another
+            # thread before attempting it here
+            if debugger.SetupHolder.setup is not None:
+                debugger.settrace(suspend=False)
     except ImportError:
         # Debugger hasn't started yet (or we don't know which one is in use), so registering our thread
         # above should be sufficient
