@@ -203,12 +203,13 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private NodeState(final long id) {
             this.id = id;
             this.base = nodeIdToNodeBaseTable(id);
-            // NB: No current implementation requires NodeState to ensure liveness for its base
+            // NB: No current implementation requires NodeState to ensure liveness for its base. If that changes,
+            // we'll need to add liveness retention for base here.
         }
 
         private void ensurePreparedForSize() {
             if (filtered == null) {
-                filtered = applyNodeFormattingAndFiltering(id, base);
+                filtered = applyNodeFormatsAndFilters(id, base);
                 if (filtered != base && filtered.isRefreshing()) {
                     filtered.retainReference();
                 }
@@ -218,7 +219,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private void ensurePreparedForData() {
             if (sorted == null) {
                 ensurePreparedForSize();
-                sorted = applyNodeSorting(id, filtered);
+                sorted = applyNodeSorts(id, filtered);
                 if (sorted != filtered) {
                     // NB: We can safely assume that sorted != base if sorted != filtered
                     if (sorted.isRefreshing()) {
@@ -370,7 +371,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * @param nodeKeyTable The table of node key values to create a node key source from
      * @return A {@link ChunkSource} of opaque node key values from {@code nodeKeyTable}
      */
-    abstract ChunkSource<? extends Values> makeNodeKeySource(@NotNull Table nodeKeyTable);
+    abstract ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull Table nodeKeyTable);
 
     /**
      * @param childNodeKey The node key to map
@@ -378,7 +379,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * root node key
      */
     @Nullable
-    abstract Object nodeKeyToParentNodeKey(@Nullable Object childNodeKey);
+    abstract Object nodeKeyToParentNodeKey(@Nullable Object childNodeKey, boolean usePrev);
 
     /**
      * @param nodeKey The node key to test
@@ -403,14 +404,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * @param nodeBaseTable The base table at this node
      * @return The formatted and filtered table at this node, which may be {@code nodeBaseTable}
      */
-    abstract Table applyNodeFormattingAndFiltering(long nodeId, @NotNull Table nodeBaseTable);
+    abstract Table applyNodeFormatsAndFilters(long nodeId, @NotNull Table nodeBaseTable);
 
     /**
      * @param nodeId The internal identifier for this node
      * @param nodeFilteredTable The formatted and filtered table at this node
      * @return The sorted table at this node, which may be {@code nodeFilteredTable}
      */
-    abstract Table applyNodeSorting(long nodeId, @NotNull Table nodeFilteredTable);
+    abstract Table applyNodeSorts(long nodeId, @NotNull Table nodeFilteredTable);
 
     abstract NotificationStepSource[] getSourceDependencies();
 

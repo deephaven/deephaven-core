@@ -16,8 +16,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.stream.Stream;
 
 /**
- * {@link ColumnSource} that combines rollup group-by column values as {@link Object[] object arrays} from multiple
- * {@link ColumnSource sources}.
+ * {@link ChunkSource} that produces rollup {@link AggregationRowLookup} keys from multiple {@link ColumnSource
+ * sources}.
  */
 final class RollupRowLookupKeySource implements DefaultChunkSource.WithPrev<Values> {
 
