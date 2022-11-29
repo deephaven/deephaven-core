@@ -125,6 +125,9 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
     @Override
     protected boolean upstreamSatisfied(final long step) {
         // For bucketed, need to verify the source and the transformed table is satisfied.
+        if (transformedTable == null) {
+            return false;
+        }
         return source.satisfied(step) && transformedTable.satisfied(step);
     }
 
