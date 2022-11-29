@@ -1,8 +1,8 @@
 #
 #     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-"""This module provides the helper and convenience functions that are not part of the Deephaven server but
-nonetheless uniquely useful to user applications built on top of Deephaven."""
+"""This module defines a convenience function for running both Python and Java garbage collection utilities."""
+
 import gc
 
 import jpy

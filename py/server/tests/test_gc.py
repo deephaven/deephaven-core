@@ -4,11 +4,11 @@
 
 import unittest
 
-from deephaven.utils import garbage_collect
+from deephaven import garbage_collect
 from tests.testbase import BaseTestCase
 
 
-class UtilsTestCase(BaseTestCase):
+class GcTestCase(BaseTestCase):
     def test_garbage_collect(self):
         self.assertIsNone(garbage_collect())
 
