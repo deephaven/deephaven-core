@@ -350,6 +350,7 @@ public abstract class UpdateBy {
                 // signal to the future that an exception has occurred
                 waitForResult.completeExceptionally(error);
             } else {
+                cleanUpAfterError();
                 // this is part of an update, need to notify downstream
                 result().notifyListenersOnError(error, null);
             }
@@ -640,6 +641,20 @@ public abstract class UpdateBy {
         }
 
         /**
+         * Clean up the resources created during this update.
+         */
+        private void cleanUpAfterError() {
+            try (final RowSet ignoredRs = shiftedRows) {
+                // auto close these resources
+            }
+
+            // allow the helpers to release their resources
+            for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                bucket.finalizeUpdate();
+            }
+        }
+
+        /**
          * Create the update for downstream listeners. This combines all bucket updates/modifies into a unified update
          */
         private TableUpdate computeDownstreamUpdate() {
@@ -743,11 +758,14 @@ public abstract class UpdateBy {
                     // need to wait until this future is complete
                     waitForResult.get();
                 } catch (InterruptedException e) {
+                    cleanUpAfterError();
                     throw new CancellationException("interrupted while processing updateBy");
                 } catch (ExecutionException e) {
+                    cleanUpAfterError();
                     if (e.getCause() instanceof RuntimeException) {
                         throw (RuntimeException) e.getCause();
                     } else {
+                        // rethrow the error
                         throw new UncheckedDeephavenException("Failure while processing updateBy",
                                 e.getCause());
                     }
