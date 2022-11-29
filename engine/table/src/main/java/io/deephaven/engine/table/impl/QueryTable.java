@@ -36,7 +36,7 @@ import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.qst.table.AggregateAllByTable;
+import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -629,7 +629,7 @@ public class QueryTable extends BaseTable {
         }
         final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
         final List<ColumnName> tableColumns = definition.getTypedColumnNames();
-        final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
+        final Optional<Aggregation> agg = AggregateAllTable.singleAggregation(spec, groupByList, tableColumns);
         if (agg.isEmpty()) {
             throw new IllegalArgumentException(
                     "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns=" + toString(groupByList));

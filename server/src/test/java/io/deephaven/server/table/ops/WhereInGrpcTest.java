@@ -1,5 +1,7 @@
 package io.deephaven.server.table.ops;
 
+import com.google.protobuf.UnknownFieldSet;
+import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -59,9 +61,25 @@ public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> 
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setLeftId(emptyTable)
                 .setRightId(emptyTable)
+                .addColumnsToMatch("Id")
+                .setUnknownFields(UnknownFieldSet.newBuilder()
+                        .addField(9999, Field.newBuilder().addFixed32(32).build())
+                        .build())
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "io.deephaven.proto.backplane.grpc.WhereInRequest must have at least one columns_to_match (5)");
+    }
+
+    @Test
+    public void unknownField() {
+        final TableReference emptyTable = ref(TableTools.emptyTable(1).view("Id=ii"));
+        final WhereInRequest request = WhereInRequest.newBuilder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setLeftId(emptyTable)
+                .setRightId(emptyTable)
+                .build();
+        assertError(request, Code.INVALID_ARGUMENT,
+                "io.deephaven.proto.backplane.grpc.WhereInRequest has unknown field(s)");
     }
 
     @Test

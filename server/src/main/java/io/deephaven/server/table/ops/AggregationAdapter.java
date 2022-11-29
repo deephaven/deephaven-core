@@ -1,7 +1,12 @@
 package io.deephaven.server.table.ops;
 
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Message;
 import com.google.rpc.Code;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Aggregations;
+import io.deephaven.api.agg.ColumnAggregation;
+import io.deephaven.api.agg.ColumnAggregations;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.FirstRowKey;
 import io.deephaven.api.agg.LastRowKey;
@@ -12,56 +17,53 @@ import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
+import io.deephaven.proto.backplane.grpc.Aggregation.TypeCase;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static io.deephaven.server.table.ops.GrpcErrorHelper.extractField;
 
 class AggregationAdapter {
+
+    enum Singleton {
+        INSTANCE;
+
+        private final Adapters adapters;
+
+        Singleton() {
+            adapters = new Adapters();
+            Aggregation.visitAll(adapters);
+        }
+
+        Adapters adapters() {
+            return adapters;
+        }
+    }
+
     public static void validate(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
         // It's a bit unfortunate that generated protobuf objects don't have the names as constants (like it does with
         // field numbers). For example, Aggregation.TYPE_NAME.
         GrpcErrorHelper.checkHasOneOf(aggregation, "type");
-        switch (aggregation.getTypeCase()) {
-            case COLUMNS:
-                validate(aggregation.getColumns());
-                break;
-            case COUNT:
-            case FIRST_ROW_KEY:
-            case LAST_ROW_KEY:
-            case PARTITION:
-                // No "structural" verification here; will rely on parsing later
-                break;
-            case TYPE_NOT_SET:
-                throw new IllegalStateException("checkHasOneOf should have caught TYPE_NOT_SET");
-            default:
-                throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
-                        String.format("Server is missing Aggregation case %s", aggregation.getTypeCase()));
-        }
+        GrpcErrorHelper.checkHasNoUnknownFields(aggregation);
+        Singleton.INSTANCE.adapters().validate(aggregation);
+    }
+
+    public static Aggregation adapt(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
+        return Singleton.INSTANCE.adapters().adapt(aggregation);
     }
 
     public static void validate(AggregationColumns columns) {
         GrpcErrorHelper.checkHasField(columns, AggregationColumns.SPEC_FIELD_NUMBER);
         GrpcErrorHelper.checkRepeatedFieldNonEmpty(columns, AggregationColumns.MATCH_PAIRS_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasNoUnknownFields(columns);
         AggSpecAdapter.validate(columns.getSpec());
-    }
-
-    public static Aggregation adapt(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
-        switch (aggregation.getTypeCase()) {
-            case COLUMNS:
-                return adapt(aggregation.getColumns());
-            case COUNT:
-                return adapt(aggregation.getCount());
-            case FIRST_ROW_KEY:
-                return adaptFirst(aggregation.getFirstRowKey());
-            case LAST_ROW_KEY:
-                return adaptLast(aggregation.getLastRowKey());
-            case PARTITION:
-                return adapt(aggregation.getPartition());
-            case TYPE_NOT_SET:
-                // Note: we don't expect this case to be hit - it should be noticed earlier, and can provide a better
-                // error message via validate.
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Aggregation type not set");
-            default:
-                throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
-                        String.format("Server is missing Aggregation case %s", aggregation.getTypeCase()));
-        }
     }
 
     public static Aggregation adapt(AggregationColumns aggregationColumns) {
@@ -82,8 +84,151 @@ class AggregationAdapter {
     }
 
     public static Partition adapt(AggregationPartition partition) {
-        return partition.hasIncludeGroupByColumns()
-                ? Aggregation.AggPartition(partition.getColumnName(), partition.getIncludeGroupByColumns())
-                : Aggregation.AggPartition(partition.getColumnName());
+        return Aggregation.AggPartition(partition.getColumnName(), partition.getIncludeGroupByColumns());
+    }
+
+    static class Adapters implements Aggregation.Visitor {
+
+        final Map<TypeCase, Adapter<?, ?>> adapters = new HashMap<>();
+        final Set<TypeCase> unimplemented = new HashSet<>();
+
+        public void validate(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
+            get(aggregation.getTypeCase()).validate(aggregation);
+        }
+
+        public Aggregation adapt(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
+            return get(aggregation.getTypeCase()).adapt(aggregation);
+        }
+
+        private Adapter<?, ?> get(io.deephaven.proto.backplane.grpc.Aggregation.TypeCase type) {
+            final Adapter<?, ?> adapter = adapters.get(type);
+            if (adapter != null) {
+                return adapter;
+            }
+            if (unimplemented.contains(type)) {
+                throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED,
+                        String.format("Aggregation type %s is unimplemented", type));
+            }
+            throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
+                    String.format("Server is missing Aggregation type %s", type));
+        }
+
+        private <I extends Message, T extends Aggregation> void add(
+                io.deephaven.proto.backplane.grpc.Aggregation.TypeCase typeCase,
+                Class<I> iClazz,
+                // Used to help with type-safety
+                @SuppressWarnings("unused") Class<T> tClazz,
+                Consumer<I> validator,
+                Function<I, T> adapter) {
+            try {
+                if (adapters.put(typeCase, Adapter.create(typeCase, iClazz, validator, adapter)) != null) {
+                    throw new IllegalStateException("Adapters have been constructed incorrectly");
+                }
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new IllegalStateException("Adapters logical error", e);
+            }
+        }
+
+        @Override
+        public void visit(Aggregations aggregations) {
+            // no direct equivalent, handled by higher layers
+        }
+
+        @Override
+        public void visit(ColumnAggregation columnAgg) {
+            // see ColumnAggregations
+        }
+
+        @Override
+        public void visit(ColumnAggregations columnAggs) {
+            add(
+                    TypeCase.COLUMNS,
+                    AggregationColumns.class,
+                    // may be ColumnAggregation or ColumnAggregations
+                    Aggregation.class,
+                    AggregationAdapter::validate,
+                    AggregationAdapter::adapt);
+        }
+
+        @Override
+        public void visit(Count count) {
+            add(
+                    TypeCase.COUNT,
+                    AggregationCount.class,
+                    Count.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggregationAdapter::adapt);
+        }
+
+        @Override
+        public void visit(FirstRowKey firstRowKey) {
+            add(
+                    TypeCase.FIRST_ROW_KEY,
+                    AggregationRowKey.class,
+                    FirstRowKey.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggregationAdapter::adaptFirst);
+        }
+
+        @Override
+        public void visit(LastRowKey lastRowKey) {
+            add(
+                    TypeCase.LAST_ROW_KEY,
+                    AggregationRowKey.class,
+                    LastRowKey.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggregationAdapter::adaptLast);
+        }
+
+        @Override
+        public void visit(Partition partition) {
+            add(
+                    TypeCase.PARTITION,
+                    AggregationPartition.class,
+                    Partition.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggregationAdapter::adapt);
+        }
+
+        // New types _can_ be added as unimplemented.
+        // If so, please create and link to a ticket.
+        // @Override
+        // public void visit(SomeNewType someNewType) {
+        // unimplemented.add(TypeCase.SOME_NEW_TYPE);
+        // }
+    }
+
+    private static class Adapter<I extends Message, T extends Aggregation> {
+
+        public static <I extends Message, T extends Aggregation> Adapter<I, T> create(
+                TypeCase typeCase,
+                Class<I> clazz,
+                Consumer<I> validator,
+                Function<I, T> adapter)
+                throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+            final FieldDescriptor field = extractField(io.deephaven.proto.backplane.grpc.Aggregation.getDescriptor(),
+                    typeCase.getNumber(), clazz);
+            return new Adapter<>(field, validator, adapter);
+        }
+
+        private final FieldDescriptor field;
+        private final Consumer<I> validator;
+        private final Function<I, T> adapter;
+
+        private Adapter(FieldDescriptor field, Consumer<I> validator, Function<I, T> adapter) {
+            this.field = field;
+            this.validator = Objects.requireNonNull(validator);
+            this.adapter = Objects.requireNonNull(adapter);
+        }
+
+        public void validate(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
+            // noinspection unchecked
+            validator.accept((I) aggregation.getField(field));
+        }
+
+        public T adapt(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
+            // noinspection unchecked
+            return adapter.apply((I) aggregation.getField(field));
+        }
     }
 }

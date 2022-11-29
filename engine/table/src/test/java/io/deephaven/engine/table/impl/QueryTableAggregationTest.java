@@ -15,7 +15,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.qst.table.AggregateAllByTable;
+import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
@@ -86,7 +86,7 @@ public class QueryTableAggregationTest {
     private static AggregationContextFactory makeGroupByACF(
             @NotNull final Table table, @NotNull final String... groupByColumns) {
         return AggregationProcessor.forAggregation(List.of(
-                AggregateAllByTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
+                AggregateAllTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
                         table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                                 .map(ColumnName::of).collect(Collectors.toList()))
                         .orElseThrow()));

@@ -39,6 +39,9 @@ public class WhereInGrpcImpl extends GrpcTableOperation<WhereInRequest> {
         GrpcErrorHelper.checkHasField(request, WhereInRequest.LEFT_ID_FIELD_NUMBER);
         GrpcErrorHelper.checkHasField(request, WhereInRequest.RIGHT_ID_FIELD_NUMBER);
         GrpcErrorHelper.checkRepeatedFieldNonEmpty(request, WhereInRequest.COLUMNS_TO_MATCH_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasNoUnknownFields(request);
+        Common.validate(request.getLeftId());
+        Common.validate(request.getRightId());
     }
 
     @Override

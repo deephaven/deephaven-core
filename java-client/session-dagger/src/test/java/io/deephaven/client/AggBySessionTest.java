@@ -10,7 +10,6 @@ import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.FirstRowKey;
 import io.deephaven.api.agg.LastRowKey;
 import io.deephaven.api.agg.Partition;
-import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
 import org.junit.runner.RunWith;
@@ -26,7 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 @RunWith(Parameterized.class)
-public class AggregationSessionTest extends TableSpecTestBase {
+public class AggBySessionTest extends TableSpecTestBase {
 
     private static final TableSpec STATIC_BASE = TableSpec.empty(1000).view(
             "Key=ii%3",
@@ -56,18 +55,18 @@ public class AggregationSessionTest extends TableSpecTestBase {
         final CreateAggregations examples = new CreateAggregations();
         Aggregation.visitAll(examples);
         return () -> Stream.of(
-                examples.out.stream().map(AggregationSessionTest::aggByStatic),
-                examples.out.stream().map(AggregationSessionTest::aggByKeyStatic),
-                examples.out.stream().map(AggregationSessionTest::aggByKeysStatic),
-                examples.out.stream().map(AggregationSessionTest::aggByPreserveEmptyStatic),
-                examples.out.stream().map(AggregationSessionTest::aggByKeyPreserveEmptyStatic),
-                examples.out.stream().map(AggregationSessionTest::aggByKeysPreserveEmptyStatic),
-                examples.out.stream().map(AggregationSessionTest::aggByTicking),
-                examples.out.stream().map(AggregationSessionTest::aggByKeyTicking),
-                examples.out.stream().map(AggregationSessionTest::aggByKeysTicking),
-                examples.out.stream().map(AggregationSessionTest::aggByPreserveEmptyTicking),
-                examples.out.stream().map(AggregationSessionTest::aggByKeyPreserveEmptyTicking),
-                examples.out.stream().map(AggregationSessionTest::aggByKeysPreserveEmptyTicking))
+                examples.out.stream().map(AggBySessionTest::aggByStatic),
+                examples.out.stream().map(AggBySessionTest::aggByKeyStatic),
+                examples.out.stream().map(AggBySessionTest::aggByKeysStatic),
+                examples.out.stream().map(AggBySessionTest::aggByPreserveEmptyStatic),
+                examples.out.stream().map(AggBySessionTest::aggByKeyPreserveEmptyStatic),
+                examples.out.stream().map(AggBySessionTest::aggByKeysPreserveEmptyStatic),
+                examples.out.stream().map(AggBySessionTest::aggByTicking),
+                examples.out.stream().map(AggBySessionTest::aggByKeyTicking),
+                examples.out.stream().map(AggBySessionTest::aggByKeysTicking),
+                examples.out.stream().map(AggBySessionTest::aggByPreserveEmptyTicking),
+                examples.out.stream().map(AggBySessionTest::aggByKeyPreserveEmptyTicking),
+                examples.out.stream().map(AggBySessionTest::aggByKeysPreserveEmptyTicking))
                 .flatMap(Function.identity())
                 .map(e -> new Object[] {e})
                 .iterator();
@@ -125,7 +124,7 @@ public class AggregationSessionTest extends TableSpecTestBase {
 
     // TODO: add initial group testings
 
-    public AggregationSessionTest(TableSpec table) {
+    public AggBySessionTest(TableSpec table) {
         super(table);
     }
 

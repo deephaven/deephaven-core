@@ -1,10 +1,10 @@
 package io.deephaven.client.impl;
 
+import com.google.protobuf.Empty;
 import com.google.protobuf.MessageOrBuilder;
 import io.deephaven.api.SortColumn;
 import io.deephaven.proto.backplane.grpc.AggSpec;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
-import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecBlank;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
@@ -35,89 +35,90 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
         return Objects.requireNonNull(out);
     }
 
-    private static AggSpec blankSpec(BiFunction<Builder, AggSpecBlank, Builder> setter) {
-        return setter.apply(newBuilder(), AggSpecBlank.getDefaultInstance()).build();
+    private static AggSpec emptySpec(BiFunction<Builder, Empty, Builder> setter) {
+        return setter.apply(newBuilder(), Empty.getDefaultInstance()).build();
     }
 
-    private static <T extends MessageOrBuilder> AggSpec otherSpec(BiFunction<Builder, T, Builder> setter, T obj) {
+    private static <T extends MessageOrBuilder> AggSpec spec(BiFunction<Builder, T, Builder> setter, T obj) {
         return setter.apply(newBuilder(), obj).build();
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecAbsSum absSum) {
-        out = blankSpec(Builder::setAbsSum);
+        out = emptySpec(Builder::setAbsSum);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecApproximatePercentile approxPct) {
-        out = otherSpec(Builder::setApproximatePercentile, AggSpecApproximatePercentile.newBuilder()
-                .setPercentile(approxPct.percentile())
-                .setCompression(approxPct.compression()));
+        final AggSpecApproximatePercentile.Builder builder = AggSpecApproximatePercentile.newBuilder()
+                .setPercentile(approxPct.percentile());
+        approxPct.compression().ifPresent(builder::setCompression);
+        out = spec(Builder::setApproximatePercentile, builder);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecAvg avg) {
-        out = blankSpec(Builder::setAvg);
+        out = emptySpec(Builder::setAvg);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecCountDistinct countDistinct) {
-        out = otherSpec(Builder::setCountDistinct, AggSpecCountDistinct.newBuilder()
+        out = spec(Builder::setCountDistinct, AggSpecCountDistinct.newBuilder()
                 .setCountNulls(countDistinct.countNulls()));
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecDistinct distinct) {
-        out = otherSpec(Builder::setDistinct, AggSpecDistinct.newBuilder()
+        out = spec(Builder::setDistinct, AggSpecDistinct.newBuilder()
                 .setIncludeNulls(distinct.includeNulls()));
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecFirst first) {
-        out = blankSpec(Builder::setFirst);
+        out = emptySpec(Builder::setFirst);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecFormula formula) {
-        out = otherSpec(Builder::setFormula, AggSpecFormula.newBuilder()
+        out = spec(Builder::setFormula, AggSpecFormula.newBuilder()
                 .setFormula(formula.formula())
                 .setParamToken(formula.paramToken()));
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecFreeze freeze) {
-        out = blankSpec(Builder::setFreeze);
+        out = emptySpec(Builder::setFreeze);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecGroup group) {
-        out = blankSpec(Builder::setGroup);
+        out = emptySpec(Builder::setGroup);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecLast last) {
-        out = blankSpec(Builder::setLast);
+        out = emptySpec(Builder::setLast);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecMax max) {
-        out = blankSpec(Builder::setMax);
+        out = emptySpec(Builder::setMax);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecMedian median) {
-        out = otherSpec(Builder::setMedian, AggSpecMedian.newBuilder()
+        out = spec(Builder::setMedian, AggSpecMedian.newBuilder()
                 .setAverageEvenlyDivided(median.averageEvenlyDivided()));
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecMin min) {
-        out = blankSpec(Builder::setMin);
+        out = emptySpec(Builder::setMin);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecPercentile pct) {
-        out = otherSpec(Builder::setPercentile, AggSpecPercentile.newBuilder()
+        out = spec(Builder::setPercentile, AggSpecPercentile.newBuilder()
                 .setPercentile(pct.percentile())
                 .setAverageEvenlyDivided(pct.averageEvenlyDivided()));
     }
@@ -134,7 +135,7 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
         for (SortColumn column : sortedFirst.columns()) {
             builder.addColumns(adapt(column));
         }
-        out = otherSpec(Builder::setSortedFirst, builder);
+        out = spec(Builder::setSortedFirst, builder);
     }
 
     @Override
@@ -143,34 +144,31 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
         for (SortColumn column : sortedLast.columns()) {
             builder.addColumns(adapt(column));
         }
-        out = otherSpec(Builder::setSortedLast, builder);
+        out = spec(Builder::setSortedLast, builder);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecStd std) {
-        out = blankSpec(Builder::setStd);
+        out = emptySpec(Builder::setStd);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecSum sum) {
-        out = blankSpec(Builder::setSum);
+        out = emptySpec(Builder::setSum);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecTDigest tDigest) {
-        out = otherSpec(Builder::setTDigest, AggSpecTDigest.newBuilder()
-                .setCompression(tDigest.compression()));
+        final AggSpecTDigest.Builder builder = AggSpecTDigest.newBuilder();
+        tDigest.compression().ifPresent(builder::setCompression);
+        out = spec(Builder::setTDigest, builder);
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecUnique unique) {
-        final AggSpecUnique.Builder builder = AggSpecUnique.newBuilder();
-        final Boolean includeNulls = unique.includeNulls();
-        if (includeNulls != null) {
-            builder.setIncludeNulls(includeNulls);
-        }
+        final AggSpecUnique.Builder builder = AggSpecUnique.newBuilder().setIncludeNulls(unique.includeNulls());
         unique.nonUniqueSentinel().map(AggSpecBuilder::adapt).ifPresent(builder::setNonUniqueSentinel);
-        out = otherSpec(Builder::setUnique, builder);
+        out = spec(Builder::setUnique, builder);
     }
 
     private static AggSpecNonUniqueSentinel adapt(Object o) {
@@ -197,18 +195,18 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecWAvg wAvg) {
-        out = otherSpec(Builder::setWeightedAvg, AggSpecWeighted.newBuilder()
+        out = spec(Builder::setWeightedAvg, AggSpecWeighted.newBuilder()
                 .setWeightColumn(wAvg.weight().name()));
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecWSum wSum) {
-        out = otherSpec(Builder::setWeightedSum, AggSpecWeighted.newBuilder()
+        out = spec(Builder::setWeightedSum, AggSpecWeighted.newBuilder()
                 .setWeightColumn(wSum.weight().name()));
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecVar var) {
-        out = blankSpec(Builder::setVar);
+        out = emptySpec(Builder::setVar);
     }
 }

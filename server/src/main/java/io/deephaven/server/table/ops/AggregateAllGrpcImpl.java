@@ -3,8 +3,8 @@ package io.deephaven.server.table.ops;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.proto.backplane.grpc.AggAllByRequest;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
+import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.grpc.StatusRuntimeException;
@@ -14,22 +14,25 @@ import javax.inject.Singleton;
 import java.util.List;
 
 @Singleton
-public final class AggAllByGrpcImpl extends GrpcTableOperation<AggAllByRequest> {
+public final class AggregateAllGrpcImpl extends GrpcTableOperation<AggregateAllRequest> {
 
     @Inject
-    public AggAllByGrpcImpl() {
-        super(BatchTableRequest.Operation::getAggAllBy, AggAllByRequest::getResultId, AggAllByRequest::getSourceId);
+    public AggregateAllGrpcImpl() {
+        super(BatchTableRequest.Operation::getAggregateAll, AggregateAllRequest::getResultId,
+                AggregateAllRequest::getSourceId);
     }
 
     @Override
-    public void validateRequest(AggAllByRequest request) throws StatusRuntimeException {
-        GrpcErrorHelper.checkHasField(request, AggAllByRequest.SOURCE_ID_FIELD_NUMBER);
-        GrpcErrorHelper.checkHasField(request, AggAllByRequest.SPEC_FIELD_NUMBER);
+    public void validateRequest(AggregateAllRequest request) throws StatusRuntimeException {
+        GrpcErrorHelper.checkHasField(request, AggregateAllRequest.SOURCE_ID_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasField(request, AggregateAllRequest.SPEC_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasNoUnknownFields(request);
+        Common.validate(request.getSourceId());
         AggSpecAdapter.validate(request.getSpec());
     }
 
     @Override
-    public Table create(AggAllByRequest request, List<ExportObject<Table>> sourceTables) {
+    public Table create(AggregateAllRequest request, List<ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         Assert.eqTrue(request.hasSpec(), "request.hasSpec()");
         Assert.neq(request.getSpec().getTypeCase(), "request.getSpec().getTypeCase()", TypeCase.TYPE_NOT_SET);

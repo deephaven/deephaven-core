@@ -701,7 +701,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecApproximatePercentile approxPct) {
-            addApproximatePercentileOperators(approxPct.percentile(), approxPct.compression());
+            addApproximatePercentileOperators(approxPct.percentile(),
+                    approxPct.compression().orElse(TDigestPercentileOperator.COMPRESSION_DEFAULT));
         }
 
         @Override
@@ -792,13 +793,14 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         public void visit(@NotNull final AggSpecTDigest tDigest) {
-            addBasicOperators((t, n) -> new TDigestPercentileOperator(t, tDigest.compression(), n,
+            addBasicOperators((t, n) -> new TDigestPercentileOperator(t,
+                    tDigest.compression().orElse(TDigestPercentileOperator.COMPRESSION_DEFAULT), n,
                     ZERO_LENGTH_DOUBLE_ARRAY, ZERO_LENGTH_STRING_ARRAY));
         }
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNullsOrDefault(), null,
+            addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNulls(), null,
                     unique.nonUniqueSentinel().orElse(null), false, false));
         }
 
@@ -1022,7 +1024,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNullsOrDefault(), null,
+            addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNulls(), null,
                     unique.nonUniqueSentinel().orElse(null), true, false));
         }
 
@@ -1160,7 +1162,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeUniqueOperator(priorResultSrc.getType(), n,
-                    unique.includeNullsOrDefault(), null, unique.nonUniqueSentinel().orElse(null), true, true));
+                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, true));
         }
 
         @Override

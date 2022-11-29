@@ -24,8 +24,8 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
-import io.deephaven.proto.backplane.grpc.AggAllByRequest;
-import io.deephaven.proto.backplane.grpc.AggregationRequest;
+import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
+import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -65,8 +65,8 @@ import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.qst.table.AggregationTable;
+import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.Clock.Visitor;
 import io.deephaven.qst.table.ClockSystem;
@@ -391,39 +391,36 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(AggregateAllByTable aggAllByTable) {
-            AggAllByRequest.Builder builder = AggAllByRequest.newBuilder()
+        public void visit(AggregateAllTable aggregateAllTable) {
+            AggregateAllRequest.Builder builder = AggregateAllRequest.newBuilder()
                     .setResultId(ticket)
-                    .setSourceId(ref(aggAllByTable.parent()))
-                    .setSpec(AggSpecBuilder.adapt(aggAllByTable.spec()));
-            for (ColumnName column : aggAllByTable.groupByColumns()) {
+                    .setSourceId(ref(aggregateAllTable.parent()))
+                    .setSpec(AggSpecBuilder.adapt(aggregateAllTable.spec()));
+            for (ColumnName column : aggregateAllTable.groupByColumns()) {
                 builder.addGroupByColumns(Strings.of(column));
             }
-            out = op(Builder::setAggAllBy, builder.build());
+            out = op(Builder::setAggregateAll, builder.build());
         }
 
         @Override
-        public void visit(AggregationTable aggregationTable) {
-            AggregationRequest.Builder builder = AggregationRequest.newBuilder()
+        public void visit(AggregateTable aggregateTable) {
+            AggregateRequest.Builder builder = AggregateRequest.newBuilder()
                     .setResultId(ticket)
-                    .setSourceId(ref(aggregationTable.parent()));
-            final Boolean preserveEmpty = aggregationTable.preserveEmpty();
-            if (preserveEmpty != null) {
-                builder.setPreserveEmpty(preserveEmpty);
-            }
-            aggregationTable
+                    .setSourceId(ref(aggregateTable.parent()))
+                    .setPreserveEmpty(aggregateTable.preserveEmpty());
+            aggregateTable
                     .initialGroups()
                     .map(this::ref)
                     .ifPresent(builder::setInitialGroupsId);
-            for (Aggregation aggregation : aggregationTable.aggregations()) {
+            for (Aggregation aggregation : aggregateTable.aggregations()) {
                 for (io.deephaven.proto.backplane.grpc.Aggregation adapted : AggregationBuilder.adapt(aggregation)) {
                     builder.addAggregations(adapted);
                 }
             }
-            for (ColumnName column : aggregationTable.groupByColumns()) {
+            for (ColumnName column : aggregateTable.groupByColumns()) {
                 builder.addGroupByColumns(Strings.of(column));
             }
-            out = op(Builder::setAggregation, builder.build());
+            out = op(Builder::setAggregate, builder.build());
         }
 
         @Override

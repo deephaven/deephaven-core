@@ -1,11 +1,26 @@
 package io.deephaven.server.table.ops;
 
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Empty;
+import com.google.protobuf.Message;
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpec.Visitor;
+import io.deephaven.api.agg.spec.AggSpecAbsSum;
+import io.deephaven.api.agg.spec.AggSpecAvg;
+import io.deephaven.api.agg.spec.AggSpecFirst;
+import io.deephaven.api.agg.spec.AggSpecFreeze;
+import io.deephaven.api.agg.spec.AggSpecGroup;
+import io.deephaven.api.agg.spec.AggSpecLast;
+import io.deephaven.api.agg.spec.AggSpecMax;
+import io.deephaven.api.agg.spec.AggSpecMin;
 import io.deephaven.api.agg.spec.AggSpecSortedFirst;
 import io.deephaven.api.agg.spec.AggSpecSortedLast;
+import io.deephaven.api.agg.spec.AggSpecStd;
+import io.deephaven.api.agg.spec.AggSpecSum;
+import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -21,70 +36,47 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSortedColumn;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecTDigest;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
+import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static io.deephaven.server.table.ops.GrpcErrorHelper.extractField;
 
 class AggSpecAdapter {
+
+    enum Singleton {
+        INSTANCE;
+
+        private final Adapters adapters;
+
+        Singleton() {
+            adapters = new Adapters();
+            AggSpec.visitAll(adapters);
+        }
+
+        Adapters adapters() {
+            return adapters;
+        }
+    }
+
     public static void validate(io.deephaven.proto.backplane.grpc.AggSpec spec) {
         // It's a bit unfortunate that generated protobuf objects don't have the names as constants (like it does with
         // field numbers). For example, AggSpec.TYPE_NAME.
         GrpcErrorHelper.checkHasOneOf(spec, "type");
+        GrpcErrorHelper.checkHasNoUnknownFields(spec);
+        Singleton.INSTANCE.adapters.validate(spec);
     }
 
     public static AggSpec adapt(io.deephaven.proto.backplane.grpc.AggSpec spec) {
-        switch (spec.getTypeCase()) {
-            case ABS_SUM:
-                return AggSpec.absSum();
-            case APPROXIMATE_PERCENTILE:
-                return adapt(spec.getApproximatePercentile());
-            case AVG:
-                return AggSpec.avg();
-            case COUNT_DISTINCT:
-                return adapt(spec.getCountDistinct());
-            case DISTINCT:
-                return adapt(spec.getDistinct());
-            case FIRST:
-                return AggSpec.first();
-            case FORMULA:
-                return adapt(spec.getFormula());
-            case FREEZE:
-                return AggSpec.freeze();
-            case GROUP:
-                return AggSpec.group();
-            case LAST:
-                return AggSpec.last();
-            case MAX:
-                return AggSpec.max();
-            case MEDIAN:
-                return adapt(spec.getMedian());
-            case MIN:
-                return AggSpec.min();
-            case PERCENTILE:
-                return adapt(spec.getPercentile());
-            case SORTED_FIRST:
-                return adaptFirst(spec.getSortedFirst());
-            case SORTED_LAST:
-                return adaptLast(spec.getSortedLast());
-            case STD:
-                return AggSpec.std();
-            case SUM:
-                return AggSpec.sum();
-            case T_DIGEST:
-                return adapt(spec.getTDigest());
-            case UNIQUE:
-                return adapt(spec.getUnique());
-            case WEIGHTED_AVG:
-                return adaptWeightedAvg(spec.getWeightedAvg());
-            case WEIGHTED_SUM:
-                return adaptWeightedSum(spec.getWeightedSum());
-            case VAR:
-                return AggSpec.var();
-            case TYPE_NOT_SET:
-                // Note: we don't expect this case to be hit - it should be noticed earlier, and can provide a better
-                // error message via validate.
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "AggSpec type not set");
-            default:
-                throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
-                        String.format("Server is missing AggSpec case %s", spec.getTypeCase()));
-        }
+        return Singleton.INSTANCE.adapters.adapt(spec);
     }
 
     private static io.deephaven.api.agg.spec.AggSpecApproximatePercentile adapt(
@@ -95,27 +87,23 @@ class AggSpecAdapter {
     }
 
     private static io.deephaven.api.agg.spec.AggSpecCountDistinct adapt(AggSpecCountDistinct countDistinct) {
-        return countDistinct.hasCountNulls() ? AggSpec.countDistinct(countDistinct.getCountNulls())
-                : AggSpec.countDistinct();
+        return AggSpec.countDistinct(countDistinct.getCountNulls());
     }
 
     private static io.deephaven.api.agg.spec.AggSpecDistinct adapt(AggSpecDistinct distinct) {
-        return distinct.hasIncludeNulls() ? AggSpec.distinct(distinct.getIncludeNulls()) : AggSpec.distinct();
+        return AggSpec.distinct(distinct.getIncludeNulls());
     }
 
     private static io.deephaven.api.agg.spec.AggSpecFormula adapt(AggSpecFormula formula) {
-        return formula.hasParamToken() ? AggSpec.formula(formula.getFormula(), formula.getParamToken())
-                : AggSpec.formula(formula.getFormula());
+        return AggSpec.formula(formula.getFormula(), formula.getParamToken());
     }
 
     private static io.deephaven.api.agg.spec.AggSpecMedian adapt(AggSpecMedian median) {
-        return median.hasAverageEvenlyDivided() ? AggSpec.median(median.getAverageEvenlyDivided()) : AggSpec.median();
+        return AggSpec.median(median.getAverageEvenlyDivided());
     }
 
     private static io.deephaven.api.agg.spec.AggSpecPercentile adapt(AggSpecPercentile percentile) {
-        return percentile.hasAverageEvenlyDivided()
-                ? AggSpec.percentile(percentile.getPercentile(), percentile.getAverageEvenlyDivided())
-                : AggSpec.percentile(percentile.getPercentile());
+        return AggSpec.percentile(percentile.getPercentile(), percentile.getAverageEvenlyDivided());
     }
 
     private static SortColumn adapt(AggSpecSortedColumn sortedColumn) {
@@ -143,16 +131,8 @@ class AggSpecAdapter {
     }
 
     private static io.deephaven.api.agg.spec.AggSpecUnique adapt(AggSpecUnique unique) {
-        Boolean includeNull = unique.hasIncludeNulls() ? unique.getIncludeNulls() : null;
         Object nonUniqueSentinel = unique.hasNonUniqueSentinel() ? adapt(unique.getNonUniqueSentinel()) : null;
-        io.deephaven.api.agg.spec.AggSpecUnique.Builder builder = io.deephaven.api.agg.spec.AggSpecUnique.builder();
-        if (includeNull != null) {
-            builder.includeNulls(includeNull);
-        }
-        if (nonUniqueSentinel != null) {
-            builder.nonUniqueSentinel(nonUniqueSentinel);
-        }
-        return builder.build();
+        return io.deephaven.api.agg.spec.AggSpecUnique.of(unique.getIncludeNulls(), nonUniqueSentinel);
     }
 
     private static Object adapt(AggSpecNonUniqueSentinel nonUniqueSentinel) {
@@ -183,5 +163,329 @@ class AggSpecAdapter {
 
     private static AggSpecWSum adaptWeightedSum(AggSpecWeighted weighted) {
         return AggSpec.wsum(weighted.getWeightColumn());
+    }
+
+    static class Adapters implements Visitor {
+        final Map<TypeCase, Adapter<?, ?>> adapters = new HashMap<>();
+        final Set<TypeCase> unimplemented = new HashSet<>();
+
+        public void validate(io.deephaven.proto.backplane.grpc.AggSpec spec) {
+            get(spec.getTypeCase()).validate(spec);
+        }
+
+        public AggSpec adapt(io.deephaven.proto.backplane.grpc.AggSpec spec) {
+            return get(spec.getTypeCase()).adapt(spec);
+        }
+
+        private Adapter<?, ?> get(TypeCase type) {
+            final Adapter<?, ?> adapter = adapters.get(type);
+            if (adapter != null) {
+                return adapter;
+            }
+            if (unimplemented.contains(type)) {
+                throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED,
+                        String.format("AggSpec type %s is unimplemented", type));
+            }
+            throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
+                    String.format("Server is missing AggSpec type %s", type));
+        }
+
+        private <I extends Message, T extends AggSpec> void add(
+                TypeCase typeCase,
+                Class<I> iClazz,
+                // Used to help with type-safety
+                @SuppressWarnings("unused") Class<T> tClazz,
+                Consumer<I> validator,
+                Function<I, T> adapter) {
+            try {
+                if (adapters.put(typeCase, Adapter.create(typeCase, iClazz, validator, adapter)) != null) {
+                    throw new IllegalStateException("Adapters have been constructed incorrectly");
+                }
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new IllegalStateException("Adapters logical error", e);
+            }
+        }
+
+        private <I extends Message, T extends AggSpec> void add(
+                TypeCase typeCase,
+                Class<I> iClazz,
+                // Used to help with type-safety
+                @SuppressWarnings("unused") Class<T> tClazz,
+                Consumer<I> validator,
+                Supplier<T> supplier) {
+            add(typeCase, iClazz, tClazz, validator, m -> supplier.get());
+        }
+
+        @Override
+        public void visit(AggSpecAbsSum absSum) {
+            add(
+                    TypeCase.ABS_SUM,
+                    Empty.class,
+                    AggSpecAbsSum.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::absSum);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecApproximatePercentile approxPct) {
+            add(
+                    TypeCase.APPROXIMATE_PERCENTILE,
+                    AggSpecApproximatePercentile.class,
+                    io.deephaven.api.agg.spec.AggSpecApproximatePercentile.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
+        }
+
+        @Override
+        public void visit(AggSpecAvg avg) {
+            add(
+                    TypeCase.AVG,
+                    Empty.class,
+                    AggSpecAvg.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::avg);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecCountDistinct countDistinct) {
+            add(
+                    TypeCase.COUNT_DISTINCT,
+                    AggSpecCountDistinct.class,
+                    io.deephaven.api.agg.spec.AggSpecCountDistinct.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecDistinct distinct) {
+            add(
+                    TypeCase.DISTINCT,
+                    AggSpecDistinct.class,
+                    io.deephaven.api.agg.spec.AggSpecDistinct.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
+        }
+
+        @Override
+        public void visit(AggSpecFirst first) {
+            add(
+                    TypeCase.FIRST,
+                    Empty.class,
+                    AggSpecFirst.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::first);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecFormula formula) {
+            add(
+                    TypeCase.FORMULA,
+                    AggSpecFormula.class,
+                    io.deephaven.api.agg.spec.AggSpecFormula.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
+        }
+
+        @Override
+        public void visit(AggSpecFreeze freeze) {
+            add(
+                    TypeCase.FREEZE,
+                    Empty.class,
+                    AggSpecFreeze.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::freeze);
+        }
+
+        @Override
+        public void visit(AggSpecGroup group) {
+            add(
+                    TypeCase.GROUP,
+                    Empty.class,
+                    AggSpecGroup.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::group);
+        }
+
+        @Override
+        public void visit(AggSpecLast last) {
+            add(
+                    TypeCase.LAST,
+                    Empty.class,
+                    AggSpecLast.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::last);
+        }
+
+        @Override
+        public void visit(AggSpecMax max) {
+            add(
+                    TypeCase.MAX,
+                    Empty.class,
+                    AggSpecMax.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::max);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecMedian median) {
+            add(
+                    TypeCase.MEDIAN,
+                    AggSpecMedian.class,
+                    io.deephaven.api.agg.spec.AggSpecMedian.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
+        }
+
+        @Override
+        public void visit(AggSpecMin min) {
+            add(
+                    TypeCase.MIN,
+                    Empty.class,
+                    AggSpecMin.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::min);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecPercentile pct) {
+            add(
+                    TypeCase.PERCENTILE,
+                    AggSpecPercentile.class,
+                    io.deephaven.api.agg.spec.AggSpecPercentile.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
+        }
+
+        @Override
+        public void visit(AggSpecSortedFirst sortedFirst) {
+            add(
+                    TypeCase.SORTED_FIRST,
+                    AggSpecSorted.class,
+                    AggSpecSortedFirst.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adaptFirst);
+        }
+
+        @Override
+        public void visit(AggSpecSortedLast sortedLast) {
+            add(
+                    TypeCase.SORTED_LAST,
+                    AggSpecSorted.class,
+                    AggSpecSortedLast.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adaptLast);
+        }
+
+        @Override
+        public void visit(AggSpecStd std) {
+            add(
+                    TypeCase.STD,
+                    Empty.class,
+                    AggSpecStd.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::std);
+        }
+
+        @Override
+        public void visit(AggSpecSum sum) {
+            add(
+                    TypeCase.SUM,
+                    Empty.class,
+                    AggSpecSum.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::sum);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecTDigest tDigest) {
+            add(
+                    TypeCase.T_DIGEST,
+                    AggSpecTDigest.class,
+                    io.deephaven.api.agg.spec.AggSpecTDigest.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecUnique unique) {
+            add(
+                    TypeCase.UNIQUE,
+                    AggSpecUnique.class,
+                    io.deephaven.api.agg.spec.AggSpecUnique.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
+        }
+
+        @Override
+        public void visit(AggSpecWAvg wAvg) {
+            add(
+                    TypeCase.WEIGHTED_AVG,
+                    AggSpecWeighted.class,
+                    AggSpecWAvg.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adaptWeightedAvg);
+        }
+
+        @Override
+        public void visit(AggSpecWSum wSum) {
+            add(
+                    TypeCase.WEIGHTED_SUM,
+                    AggSpecWeighted.class,
+                    AggSpecWSum.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adaptWeightedSum);
+        }
+
+        @Override
+        public void visit(AggSpecVar var) {
+            add(
+                    TypeCase.VAR,
+                    Empty.class,
+                    AggSpecVar.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpec::var);
+
+        }
+
+        // New types _can_ be added as unimplemented.
+        // If so, please create and link to a ticket.
+        // @Override
+        // public void visit(SomeNewType someNewType) {
+        // unimplemented.add(TypeCase.SOME_NEW_TYPE);
+        // }
+    }
+
+    private static class Adapter<I extends Message, T extends AggSpec> {
+
+        public static <I extends Message, T extends AggSpec> Adapter<I, T> create(
+                TypeCase typeCase,
+                Class<I> clazz,
+                Consumer<I> validator,
+                Function<I, T> adapter)
+                throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+            final FieldDescriptor field = extractField(io.deephaven.proto.backplane.grpc.AggSpec.getDescriptor(),
+                    typeCase.getNumber(), clazz);
+            return new Adapter<>(field, validator, adapter);
+        }
+
+        private final FieldDescriptor field;
+        private final Consumer<I> validator;
+        private final Function<I, T> adapter;
+
+        private Adapter(FieldDescriptor field, Consumer<I> validator, Function<I, T> adapter) {
+            this.field = field;
+            this.validator = Objects.requireNonNull(validator);
+            this.adapter = Objects.requireNonNull(adapter);
+        }
+
+        public void validate(io.deephaven.proto.backplane.grpc.AggSpec spec) {
+            // noinspection unchecked
+            validator.accept((I) spec.getField(field));
+        }
+
+        public T adapt(io.deephaven.proto.backplane.grpc.AggSpec spec) {
+            // noinspection unchecked
+            return adapter.apply((I) spec.getField(field));
+        }
     }
 }

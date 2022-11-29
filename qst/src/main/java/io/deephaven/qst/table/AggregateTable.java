@@ -6,9 +6,9 @@ package io.deephaven.qst.table;
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.agg.Aggregation;
 import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -18,20 +18,17 @@ import java.util.Optional;
  */
 @Immutable
 @NodeStyle
-public abstract class AggregationTable extends ByTableBase {
+public abstract class AggregateTable extends ByTableBase {
 
     public static Builder builder() {
-        return ImmutableAggregationTable.builder();
+        return ImmutableAggregateTable.builder();
     }
 
     public abstract List<Aggregation> aggregations();
 
-    @Nullable
-    public abstract Boolean preserveEmpty();
-
-    public final boolean preserveEmptyOrDefault() {
-        final Boolean preserveEmpty = preserveEmpty();
-        return preserveEmpty == null ? AGG_BY_PRESERVE_EMPTY_DEFAULT : preserveEmpty;
+    @Default
+    public boolean preserveEmpty() {
+        return AGG_BY_PRESERVE_EMPTY_DEFAULT;
     }
 
     public abstract Optional<TableSpec> initialGroups();
@@ -56,14 +53,14 @@ public abstract class AggregationTable extends ByTableBase {
         }
     }
 
-    public interface Builder extends ByTableBase.Builder<AggregationTable, Builder> {
+    public interface Builder extends ByTableBase.Builder<AggregateTable, Builder> {
         Builder addAggregations(Aggregation element);
 
         Builder addAggregations(Aggregation... elements);
 
         Builder addAllAggregations(Iterable<? extends Aggregation> elements);
 
-        Builder preserveEmpty(Boolean preserveEmpty);
+        Builder preserveEmpty(boolean preserveEmpty);
 
         Builder initialGroups(TableSpec initialGroups);
 

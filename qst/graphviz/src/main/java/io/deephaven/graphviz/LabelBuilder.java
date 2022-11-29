@@ -4,8 +4,8 @@
 package io.deephaven.graphviz;
 
 import io.deephaven.api.Strings;
-import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.qst.table.AggregationTable;
+import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
@@ -141,18 +141,18 @@ public class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
+    public void visit(AggregateAllTable aggregateAllTable) {
         sb.append("aggAllBy(");
-        sb.append(aggAllByTable.spec()).append(',');
-        append(Strings::of, aggAllByTable.groupByColumns(), sb);
+        sb.append(aggregateAllTable.spec()).append(',');
+        append(Strings::of, aggregateAllTable.groupByColumns(), sb);
         sb.append(')');
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
+    public void visit(AggregateTable aggregateTable) {
         // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
         sb.append("aggBy([");
-        append(Strings::of, aggregationTable.groupByColumns(), sb);
+        append(Strings::of, aggregateTable.groupByColumns(), sb);
         sb.append("],[ todo ])");
     }
 

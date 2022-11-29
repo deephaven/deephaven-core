@@ -10,6 +10,7 @@ option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/table";
 
 import "deephaven/proto/ticket.proto";
+import "google/protobuf/empty.proto";
 
 service TableService {
   /*
@@ -159,9 +160,9 @@ service TableService {
   rpc ComboAggregate(ComboAggregateRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Aggregates all non-grouping grouping columns against a single aggregation specification.
+   * Aggregates all non-grouping columns against a single aggregation specification.
    */
-  rpc AggAllBy(AggAllByRequest) returns (ExportedTableCreationResponse) {};
+  rpc AggregateAll(AggregateAllRequest) returns (ExportedTableCreationResponse) {};
 
   /*
    * Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
@@ -169,7 +170,7 @@ service TableService {
    * the encounter order within the source_id table, thereby ensuring that the row key for a given group never
    * changes.
    */
-  rpc Aggregate(AggregationRequest) returns (ExportedTableCreationResponse) {};
+  rpc Aggregate(AggregateRequest) returns (ExportedTableCreationResponse) {};
 
   /*
    * Snapshot rightId, triggered by leftId, and export the resulting new Table.
@@ -592,7 +593,7 @@ message ComboAggregateRequest {
   }
 }
 
-message AggAllByRequest {
+message AggregateAllRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
   AggSpec spec = 3;
@@ -600,41 +601,37 @@ message AggAllByRequest {
 }
 
 message AggSpec {
-
-  // This is a catch-all blank message. It is for AggSpecs that don't have any fields. This construction allows for
-  // AggSpec specialization in the future with breaking backwards compatibility.
-  message AggSpecBlank {}
-
   message AggSpecApproximatePercentile {
     // Percentile. Must be in range [0.0, 1.0].
     double percentile = 1;
 
-    // T-Digest compression factor. Must be greater than or equal to 1. Defaults to 100. 1000 is extremely large.
+    // T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
+    // When not specified, the server will choose a compression value.
     optional double compression = 2;
   }
 
   message AggSpecCountDistinct {
     // Whether null input values should be included when counting the distinct input values.
-    optional bool count_nulls = 1;
+    bool count_nulls = 1;
   }
 
   message AggSpecDistinct {
     // Whether null input values should be included in the distinct output values.
-    optional bool include_nulls = 1;
+    bool include_nulls = 1;
   }
 
   message AggSpecFormula {
     // The formula to use to calculate output values from grouped input values.
     string formula = 1;
 
-    // The formula parameter token to be replaced with the input column name for evaluation. Defaults to "each".
-    optional string param_token = 2;
+    // The formula parameter token to be replaced with the input column name for evaluation.
+    string param_token = 2;
   }
 
   message AggSpecMedian {
     // Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and high-bucket
     // are of equal size. Only applies to numeric types.
-    optional bool average_evenly_divided = 1;
+    bool average_evenly_divided = 1;
   }
 
   message AggSpecPercentile {
@@ -643,7 +640,7 @@ message AggSpec {
 
     // Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and high-bucket
     // are of equal size. Only applies to numeric types.
-    optional bool average_evenly_divided = 2;
+    bool average_evenly_divided = 2;
   }
 
   message AggSpecSorted {
@@ -657,14 +654,15 @@ message AggSpec {
   }
 
   message AggSpecTDigest {
-    // T-Digest compression factor. Must be greater than or equal to 1. Defaults to 100. 1000 is extremely large.
+    // T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
+    // When not specified, the server will choose a compression value.
     optional double compression = 1;
   }
 
   message AggSpecUnique {
     // Whether to include null values as a distinct value for determining if there is only one unique value to output.
-    optional bool include_nulls = 1;
-    optional AggSpecNonUniqueSentinel non_unique_sentinel = 2;
+    bool include_nulls = 1;
+    AggSpecNonUniqueSentinel non_unique_sentinel = 2;
   }
 
   message AggSpecNonUniqueSentinel {
@@ -684,37 +682,46 @@ message AggSpec {
   }
 
   oneof type {
-      AggSpecBlank abs_sum = 1;
-      AggSpecApproximatePercentile approximate_percentile = 2;
-      AggSpecBlank avg = 3;
-      AggSpecCountDistinct count_distinct = 4;
-      AggSpecDistinct distinct = 5;
-      AggSpecBlank first = 6;
-      AggSpecFormula formula = 7;
-      AggSpecBlank freeze = 8;
-      AggSpecBlank group = 9;
-      AggSpecBlank last = 10;
-      AggSpecBlank max = 11;
-      AggSpecMedian median = 12;
-      AggSpecBlank min = 13;
-      AggSpecPercentile percentile = 14;
-      AggSpecSorted sorted_first = 15;
-      AggSpecSorted sorted_last = 16;
-      AggSpecBlank std = 17;
-      AggSpecBlank sum = 18;
-      AggSpecTDigest t_digest = 19;
-      AggSpecUnique unique = 20;
-      AggSpecWeighted weighted_avg = 21;
-      AggSpecWeighted weighted_sum = 22;
-      AggSpecBlank var = 23;
+    google.protobuf.Empty abs_sum = 1;
+    AggSpecApproximatePercentile approximate_percentile = 2;
+    google.protobuf.Empty avg = 3;
+    AggSpecCountDistinct count_distinct = 4;
+    AggSpecDistinct distinct = 5;
+    google.protobuf.Empty first = 6;
+    AggSpecFormula formula = 7;
+    google.protobuf.Empty freeze = 8;
+    google.protobuf.Empty group = 9;
+    google.protobuf.Empty last = 10;
+    google.protobuf.Empty max = 11;
+    AggSpecMedian median = 12;
+    google.protobuf.Empty min = 13;
+    AggSpecPercentile percentile = 14;
+    AggSpecSorted sorted_first = 15;
+    AggSpecSorted sorted_last = 16;
+    google.protobuf.Empty std = 17;
+    google.protobuf.Empty sum = 18;
+    AggSpecTDigest t_digest = 19;
+    AggSpecUnique unique = 20;
+    AggSpecWeighted weighted_avg = 21;
+    AggSpecWeighted weighted_sum = 22;
+    google.protobuf.Empty var = 23;
   }
 }
 
-message AggregationRequest {
+message AggregateRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
-  optional TableReference initial_groups_id = 3;
-  optional bool preserve_empty = 4;
+  // A table whose distinct combinations of values for the group_by_columns should be used
+  // to create an initial set of aggregation groups. All other columns are ignored. This is useful in
+  // combination with preserve_empty == true to ensure that particular groups appear in the result
+  // table, or with preserve_empty == false to control the encounter order for a collection of groups
+  // and thus their relative order in the result. Changes to initial_group_ids are not expected or handled;
+  // if initial_groups_id is a refreshing table, only its contents at instantiation time will be used. If
+  // initial_groups_id is not present, the result will be the same as if a table with no rows was supplied.
+  TableReference initial_groups_id = 3;
+  // Whether to keep result rows for groups that are initially empty or become empty as a result
+  // of updates. Each aggregation operator defines its own value for empty groups.
+  bool preserve_empty = 4;
   repeated Aggregation aggregations = 5;
   repeated string group_by_columns = 6;
 }
@@ -736,7 +743,7 @@ message Aggregation {
 
   message AggregationPartition {
     string column_name = 1;
-    optional bool include_group_by_columns = 2;
+    bool include_group_by_columns = 2;
   }
 
   oneof type {
@@ -984,8 +991,8 @@ message BatchTableRequest {
       CreateInputTableRequest create_input_table = 31;
       UpdateByRequest update_by = 32;
       WhereInRequest where_in = 33;
-      AggAllByRequest agg_all_by = 34;
-      AggregationRequest aggregation = 35;
+      AggregateAllRequest aggregate_all = 34;
+      AggregateRequest aggregate = 35;
     }
   }
 }
