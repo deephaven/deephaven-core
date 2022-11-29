@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
+import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -109,16 +110,22 @@ final class RollupRowLookupKeySource implements DefaultChunkSource.WithPrev<Valu
             @NotNull final RowSequence rowSequence,
             @NotNull final IntChunk<? extends Values> keyWidths,
             @NotNull final ObjectChunk<?, ? extends Values>[] groupByValues,
-            @NotNull final WritableObjectChunk<Object[], ? super Values> destination) {
+            @NotNull final WritableObjectChunk<Object, ? super Values> destination) {
         final int size = rowSequence.intSize();
         destination.setSize(size);
         for (int ri = 0; ri < size; ++ri) {
             final int keyWidth = keyWidths.get(ri);
-            final Object[] columnValues = new Object[keyWidth];
-            for (int ci = 0; ci < keyWidth; ++ci) {
-                columnValues[ci] = groupByValues[ci].get(ri);
+            if (keyWidth == 0) {
+                destination.set(ri, AggregationRowLookup.EMPTY_KEY);
+            } else if (keyWidth == 1) {
+                destination.set(ri, groupByValues[0].get(ri));
+            } else {
+                final Object[] columnValues = new Object[keyWidth];
+                for (int ci = 0; ci < keyWidth; ++ci) {
+                    columnValues[ci] = groupByValues[ci].get(ri);
+                }
+                destination.set(ri, columnValues);
             }
-            destination.set(ri, columnValues);
         }
     }
 
