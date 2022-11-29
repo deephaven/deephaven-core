@@ -33,7 +33,6 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -207,12 +206,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             Path path = resolveOrThrow(request.getPath());
             requireNotRoot(path, "Can't overwrite the root directory");
             StandardOpenOption option =
-                    request.getAllowOverwrite() ? StandardOpenOption.CREATE : StandardOpenOption.CREATE_NEW;
+                    request.getAllowOverwrite() ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
 
             byte[] bytes = request.getContents().toByteArray();
             String etag = ByteSource.wrap(bytes).hash(HASH_FUNCTION).toString();
             try {
-                Files.write(path, bytes, option);
+                Files.write(path, bytes, StandardOpenOption.CREATE, option);
             } catch (FileAlreadyExistsException alreadyExistsException) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File already exists");
             } catch (NoSuchFileException noSuchFileException) {
