@@ -102,7 +102,7 @@ class Classpaths {
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
     static final String PROTOBUF_NAME = 'protobuf-java'
-    static final String PROTOBUF_VERSION = '3.20.1'
+    static final String PROTOBUF_VERSION = '3.21.9'
 
     // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
     static final String BORINGSSL_GROUP = 'io.netty'
@@ -112,7 +112,7 @@ class Classpaths {
 
     static final String JACKSON_GROUP = 'com.fasterxml.jackson'
     static final String JACKSON_NAME = 'jackson-bom'
-    static final String JACKSON_VERSION = '2.13.3'
+    static final String JACKSON_VERSION = '2.14.1'
 
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
     static final String SSLCONTEXT_VERSION = '7.4.3'
