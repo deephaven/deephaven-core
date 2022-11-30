@@ -5,8 +5,7 @@ package io.deephaven.treetable;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.table.impl.QueryTableTestBase;
-import org.hamcrest.Matcher;
+import io.deephaven.engine.testutil.QueryTableTestBase;
 import org.jmock.AbstractExpectations;
 
 import java.lang.ref.WeakReference;
@@ -64,7 +63,7 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
     }
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         clients = new TreeTableClientTableManager.Client[5];

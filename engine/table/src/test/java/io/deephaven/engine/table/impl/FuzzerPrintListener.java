@@ -7,7 +7,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.util.TableTools;
 
-import static io.deephaven.engine.table.impl.TstUtils.prevTable;
+import static io.deephaven.engine.testutil.TstUtils.prevTable;
 
 public class FuzzerPrintListener extends InstrumentedTableUpdateListener {
     private final String description;

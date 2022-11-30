@@ -3,7 +3,7 @@
  */
 package io.deephaven.treetable;
 
-import io.deephaven.engine.table.impl.QueryTableTestBase;
+import io.deephaven.engine.testutil.QueryTableTestBase;
 
 import java.util.*;
 

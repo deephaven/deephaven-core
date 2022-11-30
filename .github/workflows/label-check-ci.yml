@@ -24,3 +24,15 @@ jobs:
           HAS_DocumentationNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'DocumentationNeeded') }}
           HAS_NoDocumentationNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'NoDocumentationNeeded') }}
         run: .github/scripts/check-doc-labels.sh
+
+  releasenotes-labels:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Check Release Notes Labels
+        env:
+          HAS_ReleaseNotesNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'ReleaseNotesNeeded') }}
+          HAS_NoReleaseNotesNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'NoReleaseNotesNeeded') }}
+        run: .github/scripts/check-releasenotes-labels.sh

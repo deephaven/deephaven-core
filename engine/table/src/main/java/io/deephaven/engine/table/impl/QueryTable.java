@@ -1176,7 +1176,7 @@ public class QueryTable extends BaseTable {
         return getResult(new FlattenOperation(this));
     }
 
-    protected void setFlat() {
+    public void setFlat() {
         flat = true;
     }
 

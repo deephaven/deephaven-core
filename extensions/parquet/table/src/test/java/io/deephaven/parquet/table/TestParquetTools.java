@@ -11,13 +11,12 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.TestTableTools;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.junit.*;
@@ -35,7 +34,8 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
 import static io.deephaven.engine.util.TableTools.*;
 
 /**
@@ -134,7 +134,7 @@ public class TestParquetTools {
         Table result = ParquetTools.readTable(new File(path));
         TableTools.show(result);
         TableTools.show(table1);
-        TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
+        tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
 
         ExecutionContext.getContext().getQueryLibrary().importClass(TestEnum.class);
@@ -212,7 +212,7 @@ public class TestParquetTools {
         final File dest = new File(testRoot + File.separator + "Empty.parquet");
         ParquetTools.writeTable(emptyTable, dest);
         Table result = ParquetTools.readTable(dest);
-        TestTableTools.tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
+        tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
         result.close();
     }
 
@@ -304,7 +304,7 @@ public class TestParquetTools {
         File dest = new File(testRoot + File.separator + "Table1.parquet");
         ParquetTools.writeTable(table1, dest);
         Table result = ParquetTools.readTable(dest);
-        TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
+        tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
         ParquetTools.deleteTable(dest);
         TestCase.assertFalse(dest.exists());
@@ -335,7 +335,7 @@ public class TestParquetTools {
         TableTools.show(readBackTable);
         TableTools.show(table);
         final long sz = table.size();
-        TestTableTools.tableRangesAreEqual(table, readBackTable, 0, 0, sz);
+        tableRangesAreEqual(table, readBackTable, 0, 0, sz);
         readBackTable.close();
     }
 

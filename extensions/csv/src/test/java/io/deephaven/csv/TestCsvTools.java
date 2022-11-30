@@ -8,7 +8,7 @@ import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.TimeZone;
 import io.deephaven.engine.util.TableTools;

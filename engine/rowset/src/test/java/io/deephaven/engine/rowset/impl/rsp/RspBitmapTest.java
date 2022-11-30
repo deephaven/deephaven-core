@@ -3,30 +3,31 @@
  */
 package io.deephaven.engine.rowset.impl.rsp;
 
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.base.testing.Shuffle;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-
 import io.deephaven.engine.rowset.impl.*;
-import io.deephaven.engine.testutil.Shuffle;
-import io.deephaven.util.datastructures.LongAbortableConsumer;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.test.types.OutOfBandTest;
-import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
-import io.deephaven.engine.rowset.impl.rsp.container.Container;
+import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.*;
-
-import org.junit.experimental.categories.Category;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;

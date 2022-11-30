@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.rsp.container.MutableInteger;
+import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -44,7 +45,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.rowset.impl.RowSetTstUtils.rowSetFromString;
+import static io.deephaven.engine.testutil.rowset.RowSetTstUtils.rowSetFromString;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static java.lang.Math.max;
