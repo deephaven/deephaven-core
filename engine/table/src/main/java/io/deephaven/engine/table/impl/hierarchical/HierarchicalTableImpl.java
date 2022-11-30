@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -20,7 +21,9 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
+import io.deephaven.hash.KeyedObjectKey;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,9 +95,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      */
     final class SnapshotStateImpl extends LivenessArtifact implements SnapshotState {
 
-        private final KeyedLongObjectHashMap<NodeState> cachedNodes =
-                new KeyedLongObjectHashMap<>(new NodeStateIdKey());
-        private final KeyedLongObjectHash.ValueFactory<NodeState> nodeStateFactory = new NodeStateIdFactory();
+        private final KeyedLongObjectHashMap<NodeTableState> nodeTableStates =
+                new KeyedLongObjectHashMap<>(new NodeTableStateIdKey());
+        private final KeyedLongObjectHash.ValueFactory<NodeTableState> nodeTableStateFactory =
+                new NodeTableStateIdFactory();
 
         private int snapshotClock = 0;
 
@@ -109,25 +113,25 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
 
         private void endSnapshot() {
-            final Iterator<NodeState> cachedNodesIterator = cachedNodes.iterator();
+            final Iterator<NodeTableState> cachedNodesIterator = nodeTableStates.iterator();
             while (cachedNodesIterator.hasNext()) {
-                final NodeState nodeState = cachedNodesIterator.next();
-                if (!nodeState.visited(snapshotClock)) {
-                    nodeState.release();
+                final NodeTableState nodeTableState = cachedNodesIterator.next();
+                if (!nodeTableState.visited(snapshotClock)) {
+                    nodeTableState.release();
                     cachedNodesIterator.remove();
                 }
             }
         }
 
-        NodeState getNodeState(final long id) {
-            return cachedNodes.putIfAbsent(id, nodeStateFactory);
+        NodeTableState getNodeTableState(final long nodeId) {
+            return nodeTableStates.putIfAbsent(nodeId, nodeTableStateFactory);
         }
 
         @Override
         protected void destroy() {
             super.destroy();
-            cachedNodes.forEach(NodeState::release);
-            cachedNodes.clear();
+            nodeTableStates.forEach(NodeTableState::release);
+            nodeTableStates.clear();
         }
 
         private void verifyOwner(@NotNull final HierarchicalTableImpl owner) {
@@ -138,26 +142,26 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
     }
 
-    private final class NodeStateIdKey extends KeyedLongObjectKey.BasicStrict<NodeState> {
+    private final class NodeTableStateIdKey extends KeyedLongObjectKey.BasicStrict<NodeTableState> {
 
         @Override
-        public long getLongKey(@NotNull final NodeState nodeState) {
-            return nodeState.id;
+        public long getLongKey(@NotNull final NodeTableState nodeTableState) {
+            return nodeTableState.id;
         }
     }
 
-    private final class NodeStateIdFactory extends KeyedLongObjectHash.ValueFactory.Strict<NodeState> {
+    private final class NodeTableStateIdFactory extends KeyedLongObjectHash.ValueFactory.Strict<NodeTableState> {
 
         @Override
-        public NodeState newValue(final long nodeId) {
-            return new NodeState(nodeId);
+        public NodeTableState newValue(final long nodeId) {
+            return new NodeTableState(nodeId);
         }
     }
 
     /**
-     * State tracking for nodes in this HierarchicalTableImpl.
+     * State tracking for node tables in this HierarchicalTableImpl.
      */
-    final class NodeState {
+    final class NodeTableState {
 
         /**
          * Node identifier, a type-specific identifier that uniquely maps to a single table node in the
@@ -200,10 +204,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          */
         private int visitedSnapshotClock;
 
-        private NodeState(final long id) {
-            this.id = id;
-            this.base = nodeIdToNodeBaseTable(id);
-            // NB: No current implementation requires NodeState to ensure liveness for its base. If that changes,
+        private NodeTableState(final long nodeId) {
+            this.id = nodeId;
+            this.base = nodeIdToNodeBaseTable(nodeId);
+            // NB: No current implementation requires NodeTableState to ensure liveness for its base. If that changes,
             // we'll need to add liveness retention for base here.
         }
 
@@ -286,7 +290,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         /**
          * @param snapshotClock The {@link SnapshotStateImpl#snapshotClock snapshot clock} value
-         * @return Whether this NodeState was last visited in on the supplied snapshot clock value
+         * @return Whether this NodeTableState was last visited in on the supplied snapshot clock value
          */
         private boolean visited(final long snapshotClock) {
             return snapshotClock == visitedSnapshotClock;
@@ -302,21 +306,90 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
     }
 
-    enum KeyAction {
-        // @formatter:off
-        Undefined((byte) 0),
-        Expand(EXPAND),
-        ExpandAll(EXPAND_ALL),
-        Contract(CONTRACT);
-        // @formatter:on
+    private static final class KeyTableNodeInfoKey implements KeyedObjectKey<Object, KeyTableNodeInfo> {
 
-        private final byte wireValue;
-
-        KeyAction(byte wireValue) {
-            this.wireValue = wireValue;
+        @Override
+        public Object getKey(@NotNull final KeyTableNodeInfo info) {
+            return info.getAction();
         }
 
-        static KeyAction lookup(final byte wireValue) {
+        @Override
+        public int hashKey(@Nullable final Object nodeKey) {
+            if (nodeKey instanceof Object[]) {
+                return Arrays.hashCode((Object[]) nodeKey);
+            }
+            return Objects.hashCode(nodeKey);
+        }
+
+        @Override
+        public boolean equalKey(@Nullable final Object nodeKey, @NotNull final KeyTableNodeInfo info) {
+            if (nodeKey instanceof Object[] && info.getNodeKey() instanceof Object[]) {
+                return Arrays.equals((Object[]) nodeKey, (Object[]) info.getNodeKey());
+            }
+            return Objects.equals(nodeKey, info.getNodeKey());
+        }
+    }
+
+    /**
+     * Information about a node that's referenced directly or implicitly from the key table for a snapshot.
+     */
+    private static class KeyTableNodeInfo {
+
+        /**
+         * The node key for this node.
+         */
+        private final Object nodeKey;
+
+        /**
+         * The action that should be taken for this node. Will be {@link KeyTableNodeAction#Undefined undefined} if a
+         * node was created in order to parent a node that occurred directly in the key table for the current snapshot
+         * and has not yet been found to occur directly itself.
+         */
+        private KeyTableNodeAction action = KeyTableNodeAction.Undefined;
+
+        /**
+         * This is not a complete list of children, just those that occur in the key table for the current snapshot, or
+         * are found in order to parent such nodes.
+         */
+        private List<KeyTableNodeInfo> children;
+
+
+        private KeyTableNodeInfo(final Object nodeKey) {
+            this.nodeKey = nodeKey;
+        }
+
+        private void defineAction(@NotNull final KeyTableNodeAction action) {
+            Assert.neq(action, "action", KeyTableNodeAction.Undefined, "Undefined");
+            // Allow repeats, accept last
+            this.action = action;
+        }
+
+        private void addChild(@NotNull final KeyTableNodeInfo childInfo) {
+            (children == null ? children = new ArrayList<>() : children).add(childInfo);
+        }
+
+        public Object getNodeKey() {
+            return nodeKey;
+        }
+
+        private KeyTableNodeAction getAction() {
+            return action;
+        }
+
+        private List<KeyTableNodeInfo> getChildren() {
+            return children;
+        }
+    }
+
+    enum KeyTableNodeAction {
+        // @formatter:off
+        Undefined,
+        Expand,
+        ExpandAll,
+        Contract;
+        // @formatter:on
+
+        static KeyTableNodeAction lookup(final byte wireValue) {
             switch (wireValue) {
                 case EXPAND:
                     return Expand;
@@ -368,24 +441,43 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     /**
+     * @param keyTable The key table to extract
+     * @param keyTableActionColumn See {@link #fillSnapshotChunks(SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])}.
+     * @return The root node info of the resulting extracted key table node information
+     */
+    KeyTableNodeInfo extractKeyTable(@NotNull final Table keyTable, @Nullable final ColumnName keyTableActionColumn) {
+        // TODO-RWC: Do the thing, and snapshot it
+    }
+
+    /**
      * @param nodeKeyTable The table of node key values to create a node key source from
      * @return A {@link ChunkSource} of opaque node key values from {@code nodeKeyTable}
      */
     abstract ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull Table nodeKeyTable);
 
     /**
-     * @param childNodeKey The node key to map
-     * @return The parent node key for {@code childNodeKey}, or {@code null} if {@code childNodeKey} represents the
-     * root node key
+     * @param childNodeKey The child node key to map to its parent node key; should not be the
+     *        {@link #isRootNodeKey(Object) root node key}.
+     * @param usePrev Whether to use previous row sets and values for determining the parent node key
+     * @param parentNodeKeyHolder Holder for the result, which is the parent node key for {@code childNodeKey}; only
+     *        valid if this method returns {@code true}.
+     * @return Whether the parent node key was found
      */
-    @Nullable
-    abstract Object nodeKeyToParentNodeKey(@Nullable Object childNodeKey, boolean usePrev);
+    abstract boolean nodeKeyToParentNodeKey(
+            @Nullable Object childNodeKey,
+            boolean usePrev,
+            @NotNull MutableObject<Object> parentNodeKeyHolder);
 
     /**
      * @param nodeKey The node key to test
      * @return Whether {@code nodeKey} maps to the root node for this HierarchicalTableImpl
      */
     abstract boolean isRootNodeKey(@Nullable Object nodeKey);
+
+    /**
+     * @return The root node key to use for this type
+     */
+    abstract Object getRootNodeKey();
 
     /**
      * @param nodeKey The node key to map
