@@ -772,7 +772,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                                 decimalLogicalType.getPrecision(), decimalLogicalType.getScale(),
                                                 encodedSizeInBytes),
                                         columnChunkReader.getDictionarySupplier()));
-                    } else if(BigInteger.class.equals(componentType)) {
+                    } else if (BigInteger.class.equals(componentType)) {
                         return Optional.of(
                                 ToObjectPage.create(
                                         BigInteger.class,
@@ -780,7 +780,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                         columnChunkReader.getDictionarySupplier()));
                     }
 
-                    // We won't blow up here,  Maybe someone will provide us a codec instead.
+                    // We won't blow up here, Maybe someone will provide us a codec instead.
                 default:
                     return Optional.empty();
             }

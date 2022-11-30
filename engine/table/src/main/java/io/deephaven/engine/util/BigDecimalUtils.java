@@ -64,7 +64,7 @@ public class BigDecimalUtils {
     public static PrecisionAndScale computePrecisionAndScale(
             final RowSet rowSet,
             final ColumnSource<BigDecimal> source) {
-        if(rowSet.isEmpty()) {
+        if (rowSet.isEmpty()) {
             return EMPTY_TABLE_PRECISION_AND_SCALE;
         }
 
@@ -79,7 +79,8 @@ public class BigDecimalUtils {
             final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, rowSeq).asObjectChunk();
             for (int i = 0; i < chunk.size(); ++i) {
                 final BigDecimal x = chunk.get(i);
-                    if (x == null) continue;
+                if (x == null)
+                    continue;
                 final int precision = x.precision();
                 final int scale = x.scale();
                 final int precisionMinusScale = precision - scale;

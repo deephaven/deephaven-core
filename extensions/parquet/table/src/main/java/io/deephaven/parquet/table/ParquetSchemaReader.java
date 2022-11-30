@@ -328,7 +328,7 @@ public class ParquetSchemaReader {
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
-                if(decimalLogicalType.getPrecision() == 1 && decimalLogicalType.getScale() == 0) {
+                if (decimalLogicalType.getPrecision() == 1 && decimalLogicalType.getScale() == 0) {
                     return Optional.of(BigInteger.class);
                 }
                 return Optional.of(java.math.BigDecimal.class);

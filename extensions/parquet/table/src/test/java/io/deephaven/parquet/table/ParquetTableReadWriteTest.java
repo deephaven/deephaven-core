@@ -317,10 +317,10 @@ public class ParquetTableReadWriteTest {
     }
 
     /**
-     * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically.  Because of that
-     * tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation may not be
-     * so we have to coerce the expected values to the same precision and scale value.  We know how it should be doing
-     * it, so we can use the same pattern of encoding/decoding with the codec.
+     * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
+     * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation
+     * may not be so we have to coerce the expected values to the same precision and scale value. We know how it should
+     * be doing it, so we can use the same pattern of encoding/decoding with the codec.
      *
      * @param toFix
      * @return
@@ -330,8 +330,10 @@ public class ParquetTableReadWriteTest {
         final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
 
         ExecutionContext.getContext()
-                        .getQueryScope()
-                                .putParam("__codec", codec);
-        return toFix.updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)").dropColumns("bdColE");
+                .getQueryScope()
+                .putParam("__codec", codec);
+        return toFix
+                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
+                .dropColumns("bdColE");
     }
 }

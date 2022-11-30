@@ -784,8 +784,9 @@ public class ParquetTableWriter {
             final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                     precisionAndScale.precision, precisionAndScale.scale, -1);
             return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage);
-        } else if(BigInteger.class.equals(columnType)) {
-            return new CodecTransfer<>((ColumnSource<BigInteger>)columnSource, new BigIntegerParquetBytesCodec(-1), maxValuesPerPage);
+        } else if (BigInteger.class.equals(columnType)) {
+            return new CodecTransfer<>((ColumnSource<BigInteger>) columnSource, new BigIntegerParquetBytesCodec(-1),
+                    maxValuesPerPage);
         }
 
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);

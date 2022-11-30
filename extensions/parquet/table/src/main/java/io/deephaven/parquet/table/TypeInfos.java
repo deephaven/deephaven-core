@@ -368,8 +368,8 @@ class TypeInfos {
     }
 
     /**
-     * We will encode BigIntegers as Decimal types.  Parquet has no special type for BigIntegers, but we can maintain
-     * external compatibility by encoding them as fixed length decimals of scale 1.  Internally, we'll record that we
+     * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
+     * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
      * wrote this as a decimal, so we can properly decode it back to BigInteger.
      */
     private enum BigIntegerType implements TypeInfo {
@@ -385,7 +385,7 @@ class TypeInfos {
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.BINARY, required, repeating)
-                        .as(LogicalTypeAnnotation.decimalType(0, 1));
+                    .as(LogicalTypeAnnotation.decimalType(0, 1));
         }
     }
 
