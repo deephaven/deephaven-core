@@ -124,7 +124,7 @@ project(':server-jetty-app').projectDir = file('server/jetty-app')
 
 include(':Base')
 
-include(':Base-Test')
+include(':base-test-utils')
 
 include(':SevenZip')
 

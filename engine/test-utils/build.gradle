@@ -11,7 +11,7 @@ dependencies {
 
     implementation project(':Configuration')
     implementation project(':engine-tuple')
-    implementation project(':Base-Test')
+    implementation project(':base-test-utils')
     implementation project(':engine-rowset-test-utils')
 
     implementation depCommonsLang3

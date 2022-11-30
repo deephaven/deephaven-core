@@ -15,7 +15,7 @@ dependencies {
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
     Classpaths.inheritJMock(project, 'testImplementation')
-    testImplementation project(":Base-Test")
+    testImplementation project(":base-test-utils")
 }
 
 sourceSets {
