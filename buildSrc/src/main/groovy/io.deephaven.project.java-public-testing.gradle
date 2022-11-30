@@ -11,8 +11,5 @@ plugins {
 
 def quickTask = project.tasks.getByName('quick')
 
-// We need to make sure that all JAVA_PUBLIC dependencies are public
+// We need to make sure that all JAVA_PUBLIC_TESTING dependencies are public
 quickTask.dependsOn JavaDependencies.verifyRuntimeClasspathIsPublicTask(project)
-
-// We also need to sure that no JAVA_PUBLIC dependencies are JAVA_PUBLIC_TESTING
-quickTask.dependsOn JavaDependencies.verifyRuntimeClasspathHasNoPublicTestingDependenciesTask(project)
