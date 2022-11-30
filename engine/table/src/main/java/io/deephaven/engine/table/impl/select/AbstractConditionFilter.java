@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
 
@@ -65,20 +66,18 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
     @Override
     public List<String> getColumns() {
-        final ArrayList<String> result = new ArrayList<>(usedColumns.size());
-        for (final String usedColumn : usedColumns) {
-            result.add(outerToInnerNames.getOrDefault(usedColumn, usedColumn));
-        }
-        return result;
+        return usedColumns.stream()
+                .map(name -> outerToInnerNames.getOrDefault(name, name))
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<String> getColumnArrays() {
-        final ArrayList<String> result = new ArrayList<>(usedColumnArrays.size());
-        for (final String usedColumn : usedColumnArrays) {
-            result.add(outerToInnerNames.getOrDefault(usedColumn, usedColumn));
-        }
-        return result;
+        return usedColumnArrays.stream()
+                .map(name -> outerToInnerNames.getOrDefault(name, name))
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -116,7 +115,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 possibleVariables.put(columnName, column.getDataType());
                 possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType);
 
-                Class<?> compType = column.getComponentType();
+                final Class<?> compType = column.getComponentType();
                 if (compType != null && !compType.isPrimitive()) {
                     possibleVariableParameterizedTypes.put(columnName, new Class[] {compType});
                 }
