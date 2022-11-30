@@ -36,7 +36,7 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    testImplementation project(':Base-Test')
+    testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
