@@ -366,15 +366,15 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    boolean nodeKeyToParentNodeKey(
+    @Nullable
+    Boolean nodeKeyToParentNodeKey(
             @Nullable final Object childNodeKey,
             final boolean usePrev,
             @NotNull final MutableObject<Object> parentNodeKeyHolder) {
         final int nodeKeyWidth = nodeKeyWidth(childNodeKey);
         switch (nodeKeyWidth) {
             case 0:
-                // Root has no parent...
-                return false;
+                return null;
             case 1:
                 parentNodeKeyHolder.setValue(AggregationRowLookup.EMPTY_KEY);
                 return true;

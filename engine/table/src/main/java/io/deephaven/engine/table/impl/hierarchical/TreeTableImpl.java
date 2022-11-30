@@ -225,13 +225,13 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    boolean nodeKeyToParentNodeKey(
+    @Nullable
+    Boolean nodeKeyToParentNodeKey(
             @Nullable final Object childNodeKey,
             final boolean usePrev,
             @NotNull final MutableObject<Object> parentNodeKeyHolder) {
         if (isRootNodeKey(childNodeKey)) {
-            // Root has no parent...
-            return false;
+            return null;
         }
         final long sourceRowKey = usePrev
                 ? reverseLookup.getPrev(childNodeKey)
