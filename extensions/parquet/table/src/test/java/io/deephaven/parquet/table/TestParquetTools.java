@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -393,16 +394,21 @@ public class TestParquetTools {
 
     @Test
     public void testColumnSwapping() {
-        final Table stuff = emptyTable(10)
-                .update("X = ii * 2",
-                        "Y = ii * 2 + 1");
+        testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
+                t -> t.updateView("T = X", "X = Y", "Y = T"));
+    }
 
-        final File f2w = new File(testRoot, "columnSwap.parquet");
-        ParquetTools.writeTable(stuff, f2w);
+    @Test
+    public void testColumnRedefineArrayDep() {
+        testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
+                t -> t.view("T = X_[i-1]"));
+    }
 
-        final Table readBack = ParquetTools.readTable(f2w).updateView("T = X", "X = Y", "Y = T");
-
-        assertTableEquals(stuff.updateView("T = X", "X = Y", "Y = T"), readBack);
+    private void testWriteRead(Table source, Function<Table, Table> transform) {
+        final File f2w = new File(testRoot, "testWriteRead.parquet");
+        ParquetTools.writeTable(source, f2w);
+        final Table readBack = ParquetTools.readTable(f2w);
+        assertTableEquals(transform.apply(source), transform.apply(readBack));
     }
 
     public static DoubleVector generateDoubles(int howMany) {
