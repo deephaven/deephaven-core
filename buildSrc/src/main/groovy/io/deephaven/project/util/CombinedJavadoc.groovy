@@ -18,6 +18,7 @@ class CombinedJavadoc {
         }
         switch (type) {
             case ProjectType.BOM_PUBLIC:
+            case ProjectType.JAVA_PUBLIC_TESTING:
                 return false
             case ProjectType.JAVA_EXTERNAL:
             case ProjectType.JAVA_PUBLIC:

@@ -10,17 +10,23 @@ import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.vector.CharVector;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTime;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.IntVector;
+import org.junit.experimental.categories.Category;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -30,14 +36,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
-import io.deephaven.vector.DoubleVector;
-import io.deephaven.vector.IntVector;
-import org.junit.experimental.categories.Category;
-
 import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -45,7 +47,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class TestAggBy extends RefreshingTableTestCase {
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
     }
 
@@ -138,19 +140,19 @@ public class TestAggBy extends RefreshingTableTestCase {
                 columnInfo = initColumnInfos(
                         new String[] {"Sym", "intCol", "shortCol", "byteCol", "longCol", "charCol", "doubleCol",
                                 "floatCol", "DateTime", "BoolCol", "bigI", "bigD"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.ShortGenerator(),
-                        new TstUtils.ByteGenerator(),
-                        new TstUtils.LongGenerator(),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                        new TstUtils.FloatGenerator(0, 10.0f),
-                        new TstUtils.UnsortedDateTimeGenerator(convertDateTime("2020-03-17T12:00:00 NY"),
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100),
+                        new ShortGenerator(),
+                        new ByteGenerator(),
+                        new LongGenerator(),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1),
+                        new FloatGenerator(0, 10.0f),
+                        new UnsortedDateTimeGenerator(convertDateTime("2020-03-17T12:00:00 NY"),
                                 convertDateTime("2020-03-18T12:00:00 NY")),
-                        new TstUtils.BooleanGenerator(),
-                        new TstUtils.BigIntegerGenerator(),
-                        new TstUtils.BigDecimalGenerator()));
+                        new BooleanGenerator(),
+                        new BigIntegerGenerator(),
+                        new BigDecimalGenerator()));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.aggAllBy(AggSpec.min())),
@@ -184,11 +186,11 @@ public class TestAggBy extends RefreshingTableTestCase {
         final QueryTable queryTable = getTable(size, random,
                 columnInfo =
                         initColumnInfos(new String[] {"Sym", "intCol", "intColNulls", "doubleCol", "doubleColNulls"},
-                                new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                                new TstUtils.IntGenerator(10, 100),
-                                new TstUtils.IntGenerator(10, 100, .1),
-                                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1, QueryConstants.NULL_DOUBLE)));
+                                new SetGenerator<>("a", "b", "c", "d"),
+                                new IntGenerator(10, 100),
+                                new IntGenerator(10, 100, .1),
+                                new SetGenerator<>(10.1, 20.1, 30.1),
+                                new SetGenerator<>(10.1, 20.1, 30.1, QueryConstants.NULL_DOUBLE)));
 
         ExecutionContext.getContext().getQueryLibrary().importClass(TestAggBy.class);
 
@@ -366,9 +368,9 @@ public class TestAggBy extends RefreshingTableTestCase {
         final ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new QueryTableTest.TableComparator(

@@ -1,10 +1,7 @@
 package io.deephaven.project
 
 import groovy.transform.CompileStatic
-import io.deephaven.project.util.JavaDependencies
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPlatformPlugin
-import org.gradle.api.plugins.JavaPlugin
 
 @CompileStatic
 enum ProjectType {
@@ -13,7 +10,9 @@ enum ProjectType {
     DOCKER_REGISTRY(false, 'io.deephaven.project.docker-registry'),
     JAVA_EXTERNAL(true, 'io.deephaven.project.java-external'),
     JAVA_LOCAL(false, 'io.deephaven.project.java-local'),
+    JAVA_APPLICATION(false, 'io.deephaven.project.java-application'),
     JAVA_PUBLIC(true, 'io.deephaven.project.java-public'),
+    JAVA_PUBLIC_TESTING(true, 'io.deephaven.project.java-public-testing'),
     BOM_PUBLIC(true, 'io.deephaven.project.bom-public'),
     ROOT(false, 'io.deephaven.project.root');
 

@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
-import io.deephaven.engine.rowset.impl.RowSetTstUtils;
+import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import org.junit.Test;
 

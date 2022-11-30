@@ -1,0 +1,15 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Test Utils for Engine RowSets'
+
+dependencies {
+    api project(':engine-rowset')
+
+    implementation depCommonsLang3
+    implementation depTrove3
+
+    Classpaths.inheritJUnitClassic(project, 'implementation')
+}

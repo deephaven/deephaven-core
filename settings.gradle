@@ -124,6 +124,8 @@ project(':server-jetty-app').projectDir = file('server/jetty-app')
 
 include(':Base')
 
+include(':base-test-utils')
+
 include(':SevenZip')
 
 include(':IO')
@@ -185,6 +187,9 @@ project(':engine-api').projectDir = file('engine/api')
 include(':engine-rowset')
 project(':engine-rowset').projectDir = file('engine/rowset')
 
+include(':engine-rowset-test-utils')
+project(':engine-rowset-test-utils').projectDir = file('engine/rowset-test-utils')
+
 include(':engine-base')
 project(':engine-base').projectDir = file('engine/base')
 
@@ -196,6 +201,9 @@ project(':engine-table').projectDir = file('engine/table')
 
 include(':engine-benchmark')
 project(':engine-benchmark').projectDir = file('engine/benchmark')
+
+include(':engine-test-utils')
+project(':engine-test-utils').projectDir = file('engine/test-utils')
 
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')

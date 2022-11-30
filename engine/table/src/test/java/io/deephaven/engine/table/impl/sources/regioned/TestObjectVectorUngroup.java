@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.Table;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;

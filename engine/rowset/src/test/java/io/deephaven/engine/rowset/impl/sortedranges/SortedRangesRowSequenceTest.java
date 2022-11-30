@@ -8,7 +8,7 @@ import static org.junit.Assert.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
-import io.deephaven.engine.rowset.impl.RowSetTstUtils;
+import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;

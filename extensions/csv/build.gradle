@@ -19,7 +19,9 @@ dependencies {
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
+    testImplementation depCommonsCompress
+    testImplementation depCommonsIo
+    testImplementation project(':engine-test-utils'),
             TestTools.projectDependency(project, 'engine-base')
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')

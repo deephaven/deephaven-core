@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.RspRangeIterator;
+import io.deephaven.engine.testutil.rowset.PerfStats;
 
 
 import java.text.DecimalFormat;
