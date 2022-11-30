@@ -24,6 +24,8 @@ import java.util.Properties;
  * refreshing tables, we need the user to tell us.
  */
 public class BigDecimalUtils {
+    private static final PrecisionAndScale EMPTY_TABLE_PRECISION_AND_SCALE = new PrecisionAndScale(1, 1);
+    private static final int PRECISION_SCALE_N_TO_INSPECT = 4096;
     public static final int INVALID_PRECISION_OR_SCALE = -1;
 
     /**
@@ -62,18 +64,22 @@ public class BigDecimalUtils {
     public static PrecisionAndScale computePrecisionAndScale(
             final RowSet rowSet,
             final ColumnSource<BigDecimal> source) {
-        final int sz = 4096;
+        if(rowSet.isEmpty()) {
+            return EMPTY_TABLE_PRECISION_AND_SCALE;
+        }
+
         // we first compute max(precision - scale) and max(scale), which corresponds to
         // max(digits left of the decimal point), max(digits right of the decimal point).
         // Then we convert to (precision, scale) before returning.
         int maxPrecisionMinusScale = 0;
         int maxScale = 0;
-        try (final ChunkSource.GetContext context = source.makeGetContext(sz);
+        try (final ChunkSource.GetContext context = source.makeGetContext(PRECISION_SCALE_N_TO_INSPECT);
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
-            final RowSequence rowSeq = it.getNextRowSequenceWithLength(sz);
+            final RowSequence rowSeq = it.getNextRowSequenceWithLength(PRECISION_SCALE_N_TO_INSPECT);
             final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, rowSeq).asObjectChunk();
             for (int i = 0; i < chunk.size(); ++i) {
                 final BigDecimal x = chunk.get(i);
+                    if (x == null) continue;
                 final int precision = x.precision();
                 final int scale = x.scale();
                 final int precisionMinusScale = precision - scale;

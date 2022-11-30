@@ -53,6 +53,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -783,6 +784,8 @@ public class ParquetTableWriter {
             final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                     precisionAndScale.precision, precisionAndScale.scale, -1);
             return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage);
+        } else if(BigInteger.class.equals(columnType)) {
+            return new CodecTransfer<>((ColumnSource<BigInteger>)columnSource, new BigIntegerParquetBytesCodec(-1), maxValuesPerPage);
         }
 
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
