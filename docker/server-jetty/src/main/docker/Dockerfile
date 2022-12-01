@@ -10,12 +10,12 @@ COPY licenses/ /
 ARG SERVER
 COPY $SERVER/requirements.txt requirements.txt
 RUN set -eux; \
-    python -m pip install -q  --no-cache-dir -r requirements.txt; \
+    python -m pip install -q --no-index --no-cache-dir -r requirements.txt; \
     rm requirements.txt
 
 COPY wheels/ /wheels
 RUN set -eux; \
-    python -m pip install -q --no-cache-dir /wheels/*.whl; \
+    python -m pip install -q --no-index --no-cache-dir /wheels/*.whl; \
     rm -r /wheels
 
 ARG DEEPHAVEN_VERSION
