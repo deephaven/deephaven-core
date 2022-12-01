@@ -266,7 +266,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
                 });
                 boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
-                log.info().append("can jedi? ").append(canJedi).endl();
+                log.info().append(canJedi ? "Using jedi for python autocomplete" : "No jedi dependency available in python environment; disabling autocomplete.").endl();
                 return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session) : new NoopAutoCompleteObserver(responseObserver);
             }
 

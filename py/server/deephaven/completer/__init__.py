@@ -85,7 +85,6 @@ class Completer(object):
     def do_completion(self, uri: str, version: int, line: int, col: int) -> list[list[Any]]:
         if not self._versions[uri] == version:
             # if you aren't the newest completion, you get nothing, quickly
-            print("No text for v{}".format(version))
             return []
 
         # run jedi
