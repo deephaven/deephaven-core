@@ -28,6 +28,7 @@ import io.deephaven.server.table.ops.RunChartDownsampleGrpcImpl;
 import io.deephaven.server.table.ops.SelectDistinctGrpcImpl;
 import io.deephaven.server.table.ops.SnapshotTableGrpcImpl;
 import io.deephaven.server.table.ops.SortTableGrpcImpl;
+import io.deephaven.server.table.ops.TableServiceGrpcImpl;
 import io.deephaven.server.table.ops.TimeTableGrpcImpl;
 import io.deephaven.server.table.ops.UngroupGrpcImpl;
 import io.deephaven.server.table.ops.UnstructuredFilterTableGrpcImpl;

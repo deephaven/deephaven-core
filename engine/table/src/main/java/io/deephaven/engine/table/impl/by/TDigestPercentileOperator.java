@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  */
 public class TDigestPercentileOperator implements IterativeChunkedAggregationOperator {
 
-    public static final double COMPRESSION_DEFAULT = 100.0;
+    static final double COMPRESSION_DEFAULT = 100.0;
 
     private final double compression;
     private final double[] percentiles;

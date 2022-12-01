@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.table;
+package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
@@ -14,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
@@ -50,8 +51,7 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.server.table.ops.GrpcTableOperation;
-import io.grpc.Status;
+import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -299,6 +299,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     public void batch(final BatchTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            GrpcErrorHelper.checkRepeatedFieldNonEmpty(request, BatchTableRequest.OPS_FIELD_NUMBER);
+            GrpcErrorHelper.checkHasNoUnknownFields(request);
+            for (Operation operation : request.getOpsList()) {
+                GrpcErrorHelper.checkHasOneOf(operation, "op");
+                GrpcErrorHelper.checkHasNoUnknownFields(operation);
+            }
             final SessionState session = sessionService.getCurrentSession();
 
             // step 1: initialize exports
