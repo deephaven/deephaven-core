@@ -32,13 +32,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
 
 public abstract class AbstractConditionFilter extends WhereFilterImpl {
     private static final Logger log = LoggerFactory.getLogger(AbstractConditionFilter.class);
     final Map<String, String> outerToInnerNames;
-    final Map<String, String> innerToOuterNames;
     @NotNull
     protected final String formula;
     List<String> usedColumns;
@@ -55,27 +56,28 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         this.formula = formula;
         this.unboxArguments = unboxArguments;
         this.outerToInnerNames = Collections.emptyMap();
-        this.innerToOuterNames = Collections.emptyMap();
     }
 
     protected AbstractConditionFilter(@NotNull String formula, Map<String, String> renames, boolean unboxArguments) {
         this.formula = formula;
         this.outerToInnerNames = renames;
         this.unboxArguments = unboxArguments;
-        this.innerToOuterNames = new HashMap<>();
-        for (Map.Entry<String, String> outerInnerEntry : outerToInnerNames.entrySet()) {
-            innerToOuterNames.put(outerInnerEntry.getValue(), outerInnerEntry.getKey());
-        }
     }
 
     @Override
     public List<String> getColumns() {
-        return usedColumns;
+        return usedColumns.stream()
+                .map(name -> outerToInnerNames.getOrDefault(name, name))
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<String> getColumnArrays() {
-        return usedColumnArrays;
+        return usedColumnArrays.stream()
+                .map(name -> outerToInnerNames.getOrDefault(name, name))
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -107,15 +109,13 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 }
             }
 
-            Class<?> compType;
-            for (ColumnDefinition<?> column : tableDefinition.getColumns()) {
+            final BiConsumer<String, ColumnDefinition<?>> createColumnMappings = (columnName, column) -> {
                 final Class<?> vectorType = DhFormulaColumn.getVectorType(column.getDataType());
-                final String columnName = innerToOuterNames.getOrDefault(column.getName(), column.getName());
 
                 possibleVariables.put(columnName, column.getDataType());
                 possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType);
 
-                compType = column.getComponentType();
+                final Class<?> compType = column.getComponentType();
                 if (compType != null && !compType.isPrimitive()) {
                     possibleVariableParameterizedTypes.put(columnName, new Class[] {compType});
                 }
@@ -123,6 +123,17 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                     possibleVariableParameterizedTypes.put(columnName + COLUMN_SUFFIX,
                             new Class[] {column.getDataType()});
                 }
+            };
+
+            // By default all columns are available to the formula
+            for (final ColumnDefinition<?> column : tableDefinition.getColumns()) {
+                createColumnMappings.accept(column.getName(), column);
+            }
+            // Overwrite any existing column mapping using the provided renames.
+            for (final Map.Entry<String, String> entry : outerToInnerNames.entrySet()) {
+                final String columnName = entry.getKey();
+                final ColumnDefinition<?> column = tableDefinition.getColumn(entry.getValue());
+                createColumnMappings.accept(columnName, column);
             }
 
             log.debug("Expression (before) : " + formula);
@@ -149,11 +160,13 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             for (String variable : result.getVariablesUsed()) {
                 final String columnToFind = outerToInnerNames.getOrDefault(variable, variable);
                 final String arrayColumnToFind;
+                final String arrayColumnOuterName;
                 if (variable.endsWith(COLUMN_SUFFIX)) {
-                    final String originalName = variable.substring(0, variable.length() - COLUMN_SUFFIX.length());
-                    arrayColumnToFind = outerToInnerNames.getOrDefault(originalName, originalName);
+                    arrayColumnOuterName = variable.substring(0, variable.length() - COLUMN_SUFFIX.length());
+                    arrayColumnToFind = outerToInnerNames.getOrDefault(arrayColumnOuterName, arrayColumnOuterName);
                 } else {
                     arrayColumnToFind = null;
+                    arrayColumnOuterName = null;
                 }
 
                 if (variable.equals("i")) {
@@ -163,9 +176,9 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 } else if (variable.equals("k")) {
                     usesK = true;
                 } else if (tableDefinition.getColumn(columnToFind) != null) {
-                    usedColumns.add(columnToFind);
+                    usedColumns.add(variable);
                 } else if (arrayColumnToFind != null && tableDefinition.getColumn(arrayColumnToFind) != null) {
-                    usedColumnArrays.add(arrayColumnToFind);
+                    usedColumnArrays.add(arrayColumnOuterName);
                 } else if (possibleParams.containsKey(variable)) {
                     paramsList.add(possibleParams.get(variable));
                 }

@@ -822,7 +822,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                         .captureQueryLibrary()
                         .newQueryScope()
                         .build().open()) {
-                    ;
+
                     ExecutionContext.getContext().getQueryScope().putParam("queryScopeVar", "queryScopeValue");
                     ExecutionContext.getContext().getQueryScope().putParam("queryScopeFilter", 50000);
 
