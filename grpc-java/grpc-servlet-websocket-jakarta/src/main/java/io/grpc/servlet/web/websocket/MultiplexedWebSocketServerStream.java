@@ -47,7 +47,7 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
     public static final String GRACEFUL_CLOSE = MultiplexedWebSocketServerStream.class.getName() + ".graceful_close";
 
     /**
-     * Callback to initiate a gradeful shutdown of this websocket instance, as an alternative to just closing the
+     * Callback to initiate a graceful shutdown of this websocket instance, as an alternative to just closing the
      * websocket. Since this websocket behaves like gRPC transport, we give the client a chance to finish up and close
      * itself before the server does it.
      */
@@ -77,7 +77,7 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
     }
 
     private ClosedState closed = ClosedState.OPEN;
-    private CompletableFuture<Void> closingFuture = new CompletableFuture<>();
+    private final CompletableFuture<Void> closingFuture = new CompletableFuture<>();
 
     public MultiplexedWebSocketServerStream(ServerTransportListener transportListener,
             List<? extends ServerStreamTracer.Factory> streamTracerFactories, int maxInboundMessageSize,
@@ -89,8 +89,8 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
      * Stops this multiplexed transport from accepting new streams. Instead, it will reply with its version of GO_AWAY,
      * a stream of Integer.MAX_INTEGER to the client to signal that new requests will not be accepted, and future
      * incoming streams will be closed by the server right away. In keeping with h2, until the client ACKs the close, we
-     * will permit incoming streams that are were sent before we closed, but they likely will not have a large window to
-     * get their work done before they are closed the rest of the way.
+     * will permit incoming streams that were sent before we closed, but they likely will not have a large window to get
+     * their work done before they are closed the rest of the way.
      */
     private CompletableFuture<Void> stopAcceptingNewStreams() {
         if (closed != ClosedState.OPEN) {
@@ -178,8 +178,10 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
         // if this is the first message on this websocket, it is the request headers
         if (stream == null) {
             if (this.closed == ClosedState.CLOSED) {
-                // Not accepting more calls, client sent this before they saw that, be clear that this is closed
-                // We treat this as an error, since the client isn't behaving.
+                // Not accepting new streams on existing websockets, and the client knew that when they sent this (since
+                // the GO_AWAY was ACK'd). We treat this as an error, since the client isn't behaving. If instead closed
+                // was still CLOSING, then, client sent this before they saw that, we permit them to still open streams,
+                // though the application likely has begun to clean up state.
                 websocketSession.close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR,
                         "Stream created after closing initiated"));
 

@@ -281,9 +281,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private static class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
             implements StreamObserver<AutoCompleteRequest> {
         private final CompletionParser parser;
-        private final SessionState session;
-        private final StreamObserver<AutoCompleteResponse> responseObserver;
-
         private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
 
         private CompletionParser ensureParserForSession(SessionState session) {
@@ -297,11 +294,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             });
         }
 
-
         public JavaAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
             super(session, responseObserver);
-            this.session = session;
-            this.responseObserver = responseObserver;
             parser = ensureParserForSession(session);
         }
 
@@ -427,11 +421,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
     private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
             implements StreamObserver<AutoCompleteRequest> {
-        private final StreamObserver<AutoCompleteResponse> responseObserver;
-
         public NoopAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
             super(session, responseObserver);
-            this.responseObserver = responseObserver;
         }
 
         @Override
