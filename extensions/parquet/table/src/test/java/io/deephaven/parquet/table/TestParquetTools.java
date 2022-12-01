@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -389,6 +390,25 @@ public class TestParquetTools {
 
         final Table readBack = ParquetTools.readTable(f2w);
         assertTableEquals(stuff, readBack);
+    }
+
+    @Test
+    public void testColumnSwapping() {
+        testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
+                t -> t.updateView("T = X", "X = Y", "Y = T"));
+    }
+
+    @Test
+    public void testColumnRedefineArrayDep() {
+        testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
+                t -> t.view("T = X_[i-1]"));
+    }
+
+    private void testWriteRead(Table source, Function<Table, Table> transform) {
+        final File f2w = new File(testRoot, "testWriteRead.parquet");
+        ParquetTools.writeTable(source, f2w);
+        final Table readBack = ParquetTools.readTable(f2w);
+        assertTableEquals(transform.apply(source), transform.apply(readBack));
     }
 
     public static DoubleVector generateDoubles(int howMany) {
