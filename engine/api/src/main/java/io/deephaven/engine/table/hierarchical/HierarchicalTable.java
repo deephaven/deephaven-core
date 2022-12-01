@@ -35,7 +35,7 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
 
     /**
      * Opaque interface for objects used to cache snapshot state across multiple invocations of
-     * {@link #fillSnapshotChunks(SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])}.
+     * {@link #snapshot(SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])}.
      * <p>
      * Implementations may have limited support for concurrency, meaning that multiple concurrent snapshot calls using
      * the same state may be internally serialized.
@@ -55,33 +55,34 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
      * Key table action value specifying that a node should be expanded. This is the default action if no action column
      * is specified.
      */
-    byte EXPAND = 0b001;
+    byte ACTION_EXPAND = 0b001;
     /**
      * Key table action value specifying that a node should be expanded, and that its descendants should all be expanded
-     * unless they are included in the key table with a {@link #CONTRACT contraction}.
+     * unless they are included in the key table with a {@link #ACTION_CONTRACT contraction}.
      */
-    byte EXPAND_ALL = 0b011;
+    byte ACTION_EXPAND_ALL = 0b011;
     /**
      * Key table action value specifying that a node should be contracted. The node must descend from a node that was
-     * {@link #EXPAND_ALL expanded with its descendants}.
+     * {@link #ACTION_EXPAND_ALL expanded with its descendants}.
      */
-    byte CONTRACT = 0b100;
+    byte ACTION_CONTRACT = 0b100;
 
     /**
-     * Populate data chunks for a snapshot of this HierarchicalTable.
+     * Take a snapshot of the data in the grid defined by {@code columns}, {@code rows}, and the directives in
+     * {@code keyTable}. Accumulate the results in {@code destinations}.
      *
      * @param snapshotState Snapshot state object used to cache data across invocations. Must have been created by this
      *        HierarchicalTable with {@link #makeSnapshotState()}.
      * @param keyTable Type-specific "key" table specifying expanded and contracted nodes
      * @param keyTableActionColumn The name of a column of {@code byte} on {@code keyTable} that specifies whether nodes
-     *        should be {@link #EXPAND expanded}, {@link #EXPAND_ALL expanded with their descendants}, or
-     *        {@link #CONTRACT contracted}. If {@code null}, all rows are treated as simple expansions.
+     *        should be {@link #ACTION_EXPAND expanded}, {@link #ACTION_EXPAND_ALL expanded with their descendants}, or
+     *        {@link #ACTION_CONTRACT contracted}. If {@code null}, all rows are treated as simple expansions.
      * @param columns Optional bit-set of columns to include, {@code null} to include all columns
      * @param rows Position-space rows to include from the expanded data specified by {@code keyTable}
      * @param destinations The destination {@link WritableChunk chunks}
      * @return The total expanded data size or an estimate thereof
      */
-    long fillSnapshotChunks(
+    long snapshot(
             @NotNull SnapshotState snapshotState,
             @NotNull Table keyTable,
             @Nullable ColumnName keyTableActionColumn,
