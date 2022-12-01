@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -18,6 +19,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -181,30 +184,26 @@ public class DeferredViewTable extends RedefinableTable {
             }
         }
 
-        for (WhereFilter filter : filters) {
+        for (final WhereFilter filter : filters) {
             filter.init(definition);
-            final Set<String> usedColumns = new HashSet<>();
-            usedColumns.addAll(filter.getColumns());
-            usedColumns.addAll(filter.getColumnArrays());
 
-            if (usedColumns.stream().anyMatch(postViewColumns::contains)) {
+            final boolean isPostView = Stream.of(filter.getColumns(), filter.getColumnArrays())
+                    .flatMap(Collection::stream)
+                    .anyMatch(postViewColumns::contains);
+            if (isPostView) {
                 postViewFilters.add(filter);
                 continue;
             }
 
-            final Map<String, String> myRenames = new HashMap<>();
-            for (final String usedColumn : usedColumns) {
-                final String rename = renames.get(usedColumn);
-                if (rename != null) {
-                    myRenames.put(usedColumn, rename);
-                }
-            }
+            final Map<String, String> myRenames = Stream.of(filter.getColumns(), filter.getColumnArrays())
+                    .flatMap(Collection::stream)
+                    .filter(renames::containsKey)
+                    .collect(Collectors.toMap(Function.identity(), renames::get));
 
             if (myRenames.isEmpty()) {
                 preViewFilters.add(filter);
-            } else if (filter instanceof io.deephaven.engine.table.impl.select.MatchFilter) {
-                io.deephaven.engine.table.impl.select.MatchFilter matchFilter =
-                        (io.deephaven.engine.table.impl.select.MatchFilter) filter;
+            } else if (filter instanceof MatchFilter) {
+                MatchFilter matchFilter = (MatchFilter) filter;
                 Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
                 String newName = myRenames.get(matchFilter.getColumnName());
                 Assert.neqNull(newName, "newName");
