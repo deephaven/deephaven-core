@@ -78,6 +78,9 @@ public class CodecLookup {
                 // unless the user explicitly requested something else
                 // via instructions.
                 dataType == BigDecimal.class ||
+
+                // BigIntegers can be encoded as a DecimalLogicalType using a precision of 1 and scale of 0, which lets
+                // them be read by other parquet tools.
                 dataType == BigInteger.class;
     }
 
