@@ -19,7 +19,11 @@ public enum ChartType {
 
     /**
      * Open-high-low-close chart.
+     * <p>
+     * </p>
+     * Deprecated, use XY instead.
      */
+    @Deprecated(since = "0.18", forRemoval = true)
     OHLC,
 
     /**
