@@ -106,9 +106,13 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
             boolean canJedi = completer.callMethod("is_enabled").getBooleanValue();
             if (!canJedi) {
                 log.trace().append("Ignoring completion request because jedi is disabled").endl();
-                // send back an empty response. We may want to include a "don't ask again" flag in the response...
+                // send back an empty, failed response...
                 safelyExecuteLocked(responseObserver,
-                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder().build()));
+                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                            .setCompletionItems(GetCompletionItemsResponse.newBuilder()
+                                    .setSuccess(false)
+                                    .setRequestId(request.getRequestId()))
+                            .build()));
                 return;
             }
             final VersionedTextDocumentIdentifier doc = request.getTextDocument();
