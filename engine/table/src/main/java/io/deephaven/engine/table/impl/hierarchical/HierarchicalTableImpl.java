@@ -114,7 +114,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             }
         }
 
-        private void beginSnapshot() {
+        private void beginSnapshotAttempt() {
             snapshotClock++;
         }
 
@@ -329,11 +329,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         static KeyTableNodeAction lookup(final byte wireValue) {
             switch (wireValue) {
-                case EXPAND:
+                case ACTION_EXPAND:
                     return Expand;
-                case EXPAND_ALL:
+                case ACTION_EXPAND_ALL:
                     return ExpandAll;
-                case CONTRACT:
+                case ACTION_CONTRACT:
                     return Contract;
                 default:
                     throw new IllegalArgumentException("Unrecognized key action " + wireValue);
@@ -447,64 +447,53 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     @Override
-    public long fillSnapshotChunks(
+    public long snapshot(
             @NotNull final SnapshotState snapshotState,
             @NotNull final Table keyTable,
             @Nullable final ColumnName keyTableActionColumn,
             @Nullable final BitSet columns,
             @NotNull final RowSequence rows,
             @NotNull final WritableChunk<? extends Values>[] destinations) {
+
+        if (columns != null && columns.cardinality() != destinations.length) {
+            throw new IllegalArgumentException("Requested " + columns.cardinality() + ", but only supplied "
+                    + destinations.length + " destination chunks");
+        }
+
         if (!rows.isContiguous()) {
             throw new UnsupportedOperationException(
                     "Only contiguous row sequences are supported for hierarchical table snapshots, input=" + rows);
         }
+
         // noinspection unchecked
         final SnapshotStateImpl typedSnapshotState = ((SnapshotStateImpl) snapshotState);
         typedSnapshotState.verifyOwner(this);
 
         final Collection<NodeDirective> rawKeyTableNodeDirectives =
-                maybeSnapshotKeyTableNodeDirectives(keyTable, keyTableActionColumn);
+                snapshotKeyTableNodeDirectives(keyTable, keyTableActionColumn);
 
-        final MutableLong expandedSize = new MutableLong();
-        synchronized (typedSnapshotState) {
-            // NB: Our snapshot control must be notification-aware, because if our sources tick we cannot guarantee that
-            // we won't observe some newly created components on their instantiation step.
-            final SnapshotControl sourceSnapshotControl =
-                    makeSnapshotControl(true, getSource().isRefreshing(), getSourceDependencies());
-            callDataSnapshotFunction(getClass().getSimpleName() + "-source", sourceSnapshotControl,
-                    (final boolean usePrev, final long beforeClockValue) -> {
-                        maybeWaitForStructuralSatisfaction();
-
-                        final LinkedNodeDirective rootNodeDirective =
-                                linkKeyTableNodeDirectives(rawKeyTableNodeDirectives, usePrev);
-
-                        expandedSize.setValue(0);
-                        typedSnapshotState.beginSnapshot();
-
-                        // TODO-RWC: Actual snapshot work.
-
-                        return true;
-                    });
-            typedSnapshotState.endSnapshot();
-        }
-        return expandedSize.longValue();
+        return snapshotData(typedSnapshotState, rawKeyTableNodeDirectives, columns, rows, destinations);
     }
 
-    private Collection<NodeDirective> maybeSnapshotKeyTableNodeDirectives(
+    private Collection<NodeDirective> snapshotKeyTableNodeDirectives(
             @NotNull final Table keyTable,
             @Nullable final ColumnName keyTableActionColumn) {
-        if (!keyTable.isRefreshing()) {
+        if (keyTable.isRefreshing()) {
+            final MutableObject<Collection<NodeDirective>> rootNodeInfoHolder = new MutableObject<>();
+            // NB: This snapshot need not be notification-aware. If the key table ticks so be it, as long as we
+            // extracted a consistent view of its contents.
+            final SnapshotControl keyTableSnapshotControl =
+                    makeSnapshotControl(false, true, (NotificationStepSource) keyTable);
+            callDataSnapshotFunction(getClass().getSimpleName() + "-keys", keyTableSnapshotControl,
+                    (final boolean usePrev, final long beforeClockValue) -> {
+                        rootNodeInfoHolder.setValue(extractKeyTableNodeDirectives(
+                                keyTable, keyTableActionColumn, usePrev));
+                        return true;
+                    });
+            return rootNodeInfoHolder.getValue();
+        } else {
             return extractKeyTableNodeDirectives(keyTable, keyTableActionColumn, false);
         }
-        final MutableObject<Collection<NodeDirective>> rootNodeInfoHolder = new MutableObject<>();
-        final SnapshotControl keyTableSnapshotControl =
-                makeSnapshotControl(false, true, (NotificationStepSource) keyTable);
-        callDataSnapshotFunction(getClass().getSimpleName() + "-keys", keyTableSnapshotControl,
-                (final boolean usePrev, final long beforeClockValue) -> {
-                    rootNodeInfoHolder.setValue(extractKeyTableNodeDirectives(keyTable, keyTableActionColumn, usePrev));
-                    return true;
-                });
-        return rootNodeInfoHolder.getValue();
     }
 
     /**
@@ -512,7 +501,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      *
      * @param keyTable The key table to extract node directives from
      * @param keyTableActionColumn See
-     *        {@link #fillSnapshotChunks(SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])}
+     *        {@link #snapshot(SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])}
      * @param usePrev Whether to use the previous state of {@code keyTable}
      * @return A collection of node directives described by the key table
      */
@@ -590,6 +579,56 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             }
         }
         return rootNodeDirective;
+    }
+
+    private long snapshotData(
+            @NotNull final SnapshotStateImpl snapshotState,
+            @NotNull final Collection<NodeDirective> rawKeyTableNodeDirectives,
+            @Nullable final BitSet columns,
+            @NotNull final RowSequence rows,
+            @NotNull final WritableChunk<? extends Values>[] destinations) {
+
+        final long expandedSize;
+        // noinspection SynchronizationOnLocalVariabeOrMethodParameter
+        synchronized (snapshotState) {
+            if (source.isRefreshing()) {
+                final MutableLong expandedSizeHolder = new MutableLong();
+                // NB: This snapshot control must be notification-aware, because if our sources tick we cannot guarantee
+                // that we won't observe some newly-created components on their instantiation step.
+                final SnapshotControl sourceSnapshotControl = makeSnapshotControl(true, true, getSourceDependencies());
+                callDataSnapshotFunction(getClass().getSimpleName() + "-source", sourceSnapshotControl,
+                        (final boolean usePrev, final long beforeClockValue) -> {
+                            maybeWaitForStructuralSatisfaction();
+                            expandedSizeHolder.setValue(traverseExpansionsAndFillSnapshotChunks(
+                                    snapshotState, rawKeyTableNodeDirectives, columns, rows, destinations, usePrev));
+                            return true;
+                        });
+                expandedSize = expandedSizeHolder.longValue();
+            } else {
+                expandedSize = traverseExpansionsAndFillSnapshotChunks(
+                        snapshotState, rawKeyTableNodeDirectives, columns, rows, destinations, false);
+            }
+            // NB: This is only done after a successful snapshot; we don't want to clean up if we were inconsistent.
+            snapshotState.endSnapshot();
+        }
+        return expandedSize;
+    }
+
+    private long traverseExpansionsAndFillSnapshotChunks(
+            @NotNull final SnapshotStateImpl snapshotState,
+            @NotNull final Collection<NodeDirective> rawKeyTableNodeDirectives,
+            @Nullable final BitSet columns,
+            @NotNull final RowSequence rows,
+            @NotNull final WritableChunk<? extends Values>[] destinations,
+            final boolean usePrev) {
+        long expandedSize = 0;
+        snapshotState.beginSnapshotAttempt();
+        final LinkedNodeDirective rootNodeDirective =
+                linkKeyTableNodeDirectives(rawKeyTableNodeDirectives, usePrev);
+
+        // Depth-first traversal of expanded nodes
+
+        return expandedSize;
     }
 
     /**
