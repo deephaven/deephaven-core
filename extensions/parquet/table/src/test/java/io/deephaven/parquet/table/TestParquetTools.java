@@ -428,7 +428,8 @@ public class TestParquetTools {
                 t -> t.updateView("Y = X").where("(X_[ii] + Y_[ii]) % 2 == 0"));
     }
 
-    @Test public void testMultipleRenamesWithSameOuterName() {
+    @Test
+    public void testMultipleRenamesWithSameOuterName() {
         testWriteRead(emptyTable(10).update("X = ii", "Y = ii", "Z = ii % 3"),
                 t -> t.updateView("Y = Z", "Y = X").where("Y % 2 == 0"));
     }
