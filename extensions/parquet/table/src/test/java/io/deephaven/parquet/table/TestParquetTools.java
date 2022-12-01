@@ -404,6 +404,36 @@ public class TestParquetTools {
                 t -> t.view("T = X_[i-1]"));
     }
 
+    @Test
+    public void testMultipleIdenticalRenames() {
+        testWriteRead(emptyTable(10).update("X = `` + ii"),
+                t -> t.updateView("A = X", "B = X").where("(A + B).length() > 0"));
+        testWriteRead(emptyTable(10).update("X = `` + ii"),
+                t -> t.updateView("A = X", "B = X").where("(A_[ii] + B_[ii]).length() > 0"));
+    }
+
+    @Test
+    public void testChangedThenRenamed() {
+        testWriteRead(emptyTable(10).update("X = ii", "Y = ii"),
+                t -> t.updateView("Y = ii * 2", "X = Y").where("X % 2 == 0"));
+        testWriteRead(emptyTable(10).update("X = ii", "Y = ii"),
+                t -> t.updateView("Y = ii * 2", "X = Y").where("X_[ii] % 2 == 0"));
+    }
+
+    @Test
+    public void testOverloadAsRename() {
+        testWriteRead(emptyTable(10).update("X = ii"),
+                t -> t.updateView("Y = X").where("(X + Y) % 2 == 0"));
+        testWriteRead(emptyTable(10).update("X = ii"),
+                t -> t.updateView("Y = X").where("(X_[ii] + Y_[ii]) % 2 == 0"));
+    }
+
+    @Test
+    public void testMultipleRenamesWithSameOuterName() {
+        testWriteRead(emptyTable(10).update("X = ii", "Y = ii", "Z = ii % 3"),
+                t -> t.updateView("Y = Z", "Y = X").where("Y % 2 == 0"));
+    }
+
     private void testWriteRead(Table source, Function<Table, Table> transform) {
         final File f2w = new File(testRoot, "testWriteRead.parquet");
         ParquetTools.writeTable(source, f2w);
