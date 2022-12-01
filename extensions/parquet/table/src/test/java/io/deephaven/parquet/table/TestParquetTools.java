@@ -428,6 +428,11 @@ public class TestParquetTools {
                 t -> t.updateView("Y = X").where("(X_[ii] + Y_[ii]) % 2 == 0"));
     }
 
+    @Test public void testMultipleRenamesWithSameOuterName() {
+        testWriteRead(emptyTable(10).update("X = ii", "Y = ii", "Z = ii % 3"),
+                t -> t.updateView("Y = Z", "Y = X").where("Y % 2 == 0"));
+    }
+
     private void testWriteRead(Table source, Function<Table, Table> transform) {
         final File f2w = new File(testRoot, "testWriteRead.parquet");
         ParquetTools.writeTable(source, f2w);

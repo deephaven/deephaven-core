@@ -149,14 +149,9 @@ public class DeferredViewTable extends RedefinableTable {
         final Set<String> postViewColumns = new HashSet<>();
         final Map<String, String> renames = new HashMap<>();
 
-        // keep track of renames already applied, so that we can detect the case when a rename is renamed
-        final Map<String, Set<String>> reverseLookup = new HashMap<>();
-
-        // determine if filter has any dependencies on deferred columns
-        for (int ii = deferredViewColumns.length - 1; ii >= 0; --ii) {
-            // traverse columns in reverse order to handle scenarios where a deferred column is renamed
-            SelectColumn selectColumn = deferredViewColumns[ii];
-            final String columnName = selectColumn.getName();
+        // prepare data structures needed to determine if filter can be applied pre-view or if it must be post-view
+        for (SelectColumn selectColumn : deferredViewColumns) {
+            final String outerName = selectColumn.getName();
             if (selectColumn.isRetain()) {
                 continue;
             }
@@ -164,32 +159,25 @@ public class DeferredViewTable extends RedefinableTable {
                 selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
             }
 
+            // This column is being defined; whatever we currently believe might be wrong
+            renames.remove(outerName);
+            postViewColumns.remove(outerName);
+
             if (selectColumn instanceof SourceColumn) {
                 // this is a renamed column
                 final String innerName = ((SourceColumn) selectColumn).getSourceName();
-                final Set<String> myOuterNames = reverseLookup.computeIfAbsent(innerName, name -> new HashSet<>());
+                final String sourceName = renames.getOrDefault(innerName, innerName);
 
-                myOuterNames.add(columnName);
-                renames.put(columnName, innerName);
-
-                final Set<String> multiLevelRenames = reverseLookup.remove(columnName);
-                if (multiLevelRenames != null) {
-                    myOuterNames.addAll(multiLevelRenames);
-                    for (final String resultColumnName : multiLevelRenames) {
-                        renames.put(resultColumnName, innerName);
-                    }
+                if (postViewColumns.contains(sourceName)) {
+                    // but it is renamed to a deferred column
+                    postViewColumns.add(outerName);
+                } else {
+                    // this is renamed to a real source column
+                    renames.put(outerName, sourceName);
                 }
             } else {
                 // this is a deferred column
-                postViewColumns.add(columnName);
-
-                final Set<String> multiLevelRenames = reverseLookup.remove(columnName);
-                if (multiLevelRenames != null) {
-                    for (final String outerName : multiLevelRenames) {
-                        renames.remove(outerName);
-                        postViewColumns.add(outerName);
-                    }
-                }
+                postViewColumns.add(outerName);
             }
         }
 
