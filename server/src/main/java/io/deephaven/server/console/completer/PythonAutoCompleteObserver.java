@@ -7,24 +7,17 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.completion.ChunkerCompleter;
-import io.deephaven.lang.completion.CompletionLookups;
 import io.deephaven.lang.parse.CompletionParser;
-import io.deephaven.lang.parse.LspTools;
-import io.deephaven.lang.parse.ParsedDocument;
-import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.proto.backplane.script.grpc.*;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
-import org.jpy.PyListWrapper;
 import org.jpy.PyObject;
 
 import javax.inject.Provider;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 
@@ -34,9 +27,13 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
 
     private static final Logger log = LoggerFactory.getLogger(PythonAutoCompleteObserver.class);
+
+    /**
+     * We only log timing for completions that take longer than, currently, 100ms
+     */
+    private static final long HUNDRED_MS_IN_NS = 100_000_000;
     private final Provider<ScriptSession> scriptSession;
     private final SessionState session;
-    private boolean canJedi, checkedJedi;
     private final StreamObserver<AutoCompleteResponse> responseObserver;
 
     public PythonAutoCompleteObserver(StreamObserver<AutoCompleteResponse> responseObserver, Provider<ScriptSession> scriptSession, final SessionState session) {
@@ -104,94 +101,97 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
                                     StreamObserver<AutoCompleteResponse> responseObserver) {
         final ScriptSession scriptSession = exportedConsole.get();
         try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
-            final VariableProvider vars = scriptSession.getVariableProvider();
 
             PyObject completer = (PyObject) scriptSession.getVariable("jedi_settings");
             boolean canJedi = completer.callMethod("is_enabled").getBooleanValue();
             if (!canJedi) {
                 log.trace().append("Ignoring completion request because jedi is disabled").endl();
+                // send back an empty response. We may want to include a "don't ask again" flag in the response...
+                safelyExecuteLocked(responseObserver,
+                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder().build()));
                 return;
             }
             final VersionedTextDocumentIdentifier doc = request.getTextDocument();
+            final Position pos = request.getPosition();
             final long startNano = System.nanoTime();
-            String text = completer.call("get_doc", doc.getUri()).getStringValue();
+
+            if (log.isTraceEnabled()) {
+                String text = completer.call("get_doc", doc.getUri()).getStringValue();
+                log.trace().append("Completion version ").append(doc.getVersion())
+                        .append(" has source code:").append(text).endl();
+            }
+            final PyObject results = completer.callMethod("do_completion", doc.getUri(), doc.getVersion(),
+                    // our java is 0-indexed lines, 1-indexed chars. jedi is 1-indexed-both.
+                    // we'll keep that translation ugliness to the in-java result-processing.
+                    pos.getLine() + 1, pos.getCharacter());
+            if (!results.isList()) {
+                throw new UnsupportedOperationException("Expected list from jedi_settings.do_completion, got " + results.call("repr"));
+            }
+            log.info().append("Got ").append(results.asList().size()).append(" completions from jedi at ")
+                    .append(pos.getLine()).append(", ").append(pos.getCharacter()).endl();
+            final long nanosJedi = System.nanoTime();
+            // translate from-python list of completion results. For now, each item in the outer list is a [str, int]
+            // which contains the text of the replacement, and the column where is should be inserted.
+            List<CompletionItem> finalItems = new ArrayList<>();
+
+            for (PyObject result : results.asList()) {
+                if (!result.isList()) {
+                    throw new UnsupportedOperationException("Expected list-of-lists from jedi_settings.do_completion, " +
+                            "got bad result " + result.call("repr") + " from full results: " + results.call("repr"));
+                }
+                // we expect [ "completion text", start_column ] as our result.
+                // in the future we may want to get more interesting info from jedi to pass back to client
+                final List<PyObject> items = result.asList();
+                String completionName = items.get(0).getStringValue();
+                int start = items.get(1).getIntValue();
+                final CompletionItem.Builder item = CompletionItem.newBuilder();
+                final TextEdit.Builder textEdit = item.getTextEditBuilder();
+                textEdit.setText(completionName);
+                final DocumentRange.Builder range = textEdit.getRangeBuilder();
+                item.setStart(start);
+                item.setLabel(completionName);
+                item.setLength(completionName.length());
+                range.getStartBuilder().setLine(pos.getLine()).setCharacter(start);
+                range.getEndBuilder().setLine(pos.getLine()).setCharacter(start + completionName.length());
+                item.setInsertTextFormat(2);
+                item.setSortText(ChunkerCompleter.sortable(finalItems.size()));
+                finalItems.add(item.build());
+            }
+            final long nanosBuiltResponse = System.nanoTime();
+
+            final GetCompletionItemsResponse builtItems = GetCompletionItemsResponse.newBuilder()
+                    .setSuccess(true)
+                    .setRequestId(request.getRequestId())
+                    .addAllItems(finalItems)
+                    .build();
+
             try {
-                final Position pos = request.getPosition();
-                String completionVar = "completions";
-                scriptSession.setVariable("__jedi_source__", text);
-                final ScriptSession.Changes changes = scriptSession.evaluateScript(
-                        completionVar + " = jedi.Interpreter(jedi_settings.get_doc('" + doc.getUri() + "'), [globals()]).complete(" +
-                                (pos.getLine() + 1) + "," + pos.getCharacter() + ")"
-                );
-                final PyListWrapper completes = vars.getVariable(completionVar, null);
-                List<CompletionItem.Builder> completionResults = new ArrayList<>();
-                List<CompletionItem.Builder> completionResults_ = new ArrayList<>();
-                List<CompletionItem.Builder> completionResults__ = new ArrayList<>();
-                for (PyObject completion : completes) {
-                    String completionName = completion.getAttribute("name").getStringValue();
-                    int completionPrefix = completion.call("get_completion_prefix_length").getIntValue();
-                    final CompletionItem.Builder item = CompletionItem.newBuilder();
-                    final TextEdit.Builder textEdit = item.getTextEditBuilder();
-                    textEdit.setText(completionName);
-                    final DocumentRange.Builder range = textEdit.getRangeBuilder();
-                    int start = pos.getCharacter() - completionPrefix;
-                    item.setStart(start);
-                    item.setLabel(completionName);
-                    item.setLength(completionName.length());
-                    range.getStartBuilder().setLine(pos.getLine()).setCharacter(start);
-                    range.getEndBuilder().setLine(pos.getLine()).setCharacter(start + completionName.length());
-                    item.setInsertTextFormat(2);
-                    if (completionName.startsWith("__")) {
-                        completionResults__.add(item);
-                    } else if (completionName.startsWith("_")) {
-                        completionResults_.add(item);
-                    } else {
-                        completionResults.add(item);
-                    }
-                }
-                int sortPos = 0;
-                List<CompletionItem> finalItems = new ArrayList<>();
-                for (CompletionItem.Builder res : completionResults) {
-                    res.setSortText(ChunkerCompleter.sortable(sortPos++));
-                    finalItems.add(res.build());
-                }
-                for (CompletionItem.Builder res : completionResults_) {
-                    res.setSortText(ChunkerCompleter.sortable(sortPos++));
-                    finalItems.add(res.build());
-                }
-                for (CompletionItem.Builder res : completionResults__) {
-                    res.setSortText(ChunkerCompleter.sortable(sortPos++));
-                    finalItems.add(res.build());
-                }
-
-                final GetCompletionItemsResponse builtItems = GetCompletionItemsResponse.newBuilder()
-                        .setSuccess(true)
-                        .setRequestId(request.getRequestId())
-                        .addAllItems(finalItems)
-                        .build();
-
                 safelyExecuteLocked(responseObserver,
                         () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
                                 .setCompletionItems(builtItems)
                                 .build()));
-                String totalNano = Long.toString(System.nanoTime() - startNano);
-                // lets track how long completions take, as it's known that some
+            } finally {
+                // let's track how long completions take, as it's known that some
                 // modules like numpy can cause slow completion, and we'll want to know what was causing them
-                log.info().append("Jedi completions took ")
-                        .append(
-                                totalNano.length() > 6 ?
-                                        totalNano.substring(0, totalNano.length() - 6) :
-                                        "0"
-                        )
-                        .append('.')
-                        .append(totalNano.substring(6, Math.min(8, totalNano.length())))
-                        .append("ms").endl();
-
-            } catch (Throwable e) {
-                log.error().append("Jedi completion failure ").append(e).endl();
+                final long totalCompletionNanos = nanosBuiltResponse - startNano;
+                final long totalJediNanos = nanosJedi - startNano;
+                final long totalResponseBuildNanos = nanosBuiltResponse - nanosJedi;
+                // only log completions taking more than 100ms
+                if (totalCompletionNanos > HUNDRED_MS_IN_NS && log.isTraceEnabled()) {
+                    log.trace().append("Jedi completions timing for ")
+                            .append(finalItems.size())
+                            .append(" results from doc ")
+                            .append(doc.getUri())
+                                .append(" (").append(doc.getVersion()).append(")")
+                            .endl();
+                    log.trace().append("Python time (jedi): ").append(toMillis(totalJediNanos)).endl();
+                    log.trace().append("Build response time (java): ").append(toMillis(totalResponseBuildNanos)).endl();
+                    log.trace().append("Total server time: ").append(toMillis(totalCompletionNanos)).endl();
+                }
             }
-        } catch (Exception exception) {
+        } catch (Throwable exception) {
             if (ConsoleServiceGrpcImpl.QUIET_AUTOCOMPLETE_ERRORS) {
+                exception.printStackTrace();
                 if (log.isTraceEnabled()) {
                     log.trace().append("Exception occurred during autocomplete").append(exception).endl();
                 }
@@ -204,7 +204,19 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
                                     .setSuccess(false)
                                     .setRequestId(request.getRequestId()))
                             .build()));
+            if (exception instanceof Error) {
+                throw exception;
+            }
         }
+    }
+
+    private String toMillis(final long totalNanos) {
+        String totalNano = Long.toString(totalNanos);
+        return (totalNano.length() > 6 ?
+                totalNano.substring(0, totalNano.length() - 6) :
+                "0") + "." + (
+                totalNano.substring(6, Math.min(8, totalNano.length()))
+        ) + "ms";
     }
 
     @Override
