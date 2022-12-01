@@ -262,7 +262,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 PyObject[] settings = new PyObject[1];
                 safelyExecute(()->{
                     final ScriptSession scriptSession = scriptSessionProvider.get();
-                    scriptSession.evaluateScript("from deephaven.completer import jedi_settings\nimport jedi");
+                    scriptSession.evaluateScript("from deephaven.completer import jedi_settings");
                     settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
                 });
                 boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();

@@ -2,7 +2,6 @@ package io.deephaven.server.console.completer;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -131,8 +130,6 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
             if (!results.isList()) {
                 throw new UnsupportedOperationException("Expected list from jedi_settings.do_completion, got " + results.call("repr"));
             }
-            log.info().append("Got ").append(results.asList().size()).append(" completions from jedi at ")
-                    .append(pos.getLine()).append(", ").append(pos.getCharacter()).endl();
             final long nanosJedi = System.nanoTime();
             // translate from-python list of completion results. For now, each item in the outer list is a [str, int]
             // which contains the text of the replacement, and the column where is should be inserted.
@@ -161,6 +158,7 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
                 item.setSortText(ChunkerCompleter.sortable(finalItems.size()));
                 finalItems.add(item.build());
             }
+
             final long nanosBuiltResponse = System.nanoTime();
 
             final GetCompletionItemsResponse builtItems = GetCompletionItemsResponse.newBuilder()
@@ -182,15 +180,14 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
                 final long totalResponseBuildNanos = nanosBuiltResponse - nanosJedi;
                 // only log completions taking more than 100ms
                 if (totalCompletionNanos > HUNDRED_MS_IN_NS && log.isTraceEnabled()) {
-                    log.trace().append("Jedi completions timing for ")
+                    log.trace().append("Found ")
                             .append(finalItems.size())
-                            .append(" results from doc ")
-                            .append(doc.getUri())
-                                .append(" (").append(doc.getVersion()).append(")")
+                            .append(" jedi completions from doc ")
+                            .append(doc.getVersion())
+                            .append("\tjedi_time=").append(toMillis(totalJediNanos))
+                            .append("\tbuild_response_time=").append(toMillis(totalResponseBuildNanos))
+                            .append("\ttotal_complete_time=").append(toMillis(totalCompletionNanos))
                             .endl();
-                    log.trace().append("Python time (jedi): ").append(toMillis(totalJediNanos)).endl();
-                    log.trace().append("Build response time (java): ").append(toMillis(totalResponseBuildNanos)).endl();
-                    log.trace().append("Total server time: ").append(toMillis(totalCompletionNanos)).endl();
                 }
             }
         } catch (Throwable exception) {
@@ -215,11 +212,13 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
     }
 
     private String toMillis(final long totalNanos) {
-        String totalNano = Long.toString(totalNanos);
-        return (totalNano.length() > 6 ?
-                totalNano.substring(0, totalNano.length() - 6) :
-                "0") + "." + (
-                totalNano.substring(6, Math.min(8, totalNano.length()))
+        StringBuilder totalNano = new StringBuilder(Long.toString(totalNanos));
+        while (totalNano.length() < 7) {
+            totalNano.insert(0, "0");
+        }
+        int milliCutoff = totalNano.length() - 6;
+        return totalNano.substring(0, milliCutoff) + "." + (
+                totalNano.substring(milliCutoff, Math.min(milliCutoff + 2, totalNano.length()))
         ) + "ms";
     }
 
