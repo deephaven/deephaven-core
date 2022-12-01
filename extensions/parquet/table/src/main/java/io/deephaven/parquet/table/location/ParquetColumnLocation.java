@@ -595,7 +595,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
             ToPage<ATTR, ?> toPage = null;
 
-            if (logicalTypeAnnotation != null) {
+            if (!isCodec && logicalTypeAnnotation != null) {
                 toPage = logicalTypeAnnotation.accept(
                         new LogicalTypeVisitor<ATTR>(parquetColumnName, columnChunkReader, pageType))
                         .orElse(null);
