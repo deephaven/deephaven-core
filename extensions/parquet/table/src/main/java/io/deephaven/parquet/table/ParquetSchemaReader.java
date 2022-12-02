@@ -328,6 +328,8 @@ public class ParquetSchemaReader {
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
+                // This pair of values (precision=1, scale=0) is set at write tiem as a marker so that we can recover
+                // the fact that the type is a BigInteger, not a BigDecimal when the fies are read.
                 if (decimalLogicalType.getPrecision() == 1 && decimalLogicalType.getScale() == 0) {
                     return Optional.of(BigInteger.class);
                 }

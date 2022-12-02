@@ -68,8 +68,8 @@ public class BigDecimalUtils {
             return EMPTY_TABLE_PRECISION_AND_SCALE;
         }
 
-        // we first compute max(precision - scale) and max(scale), which corresponds to
-        // max(digits left of the decimal point), max(digits right of the decimal point).
+        // We first use the initial PRECISION_SCALE_N_TO_INSPECT values to estimate the max(precision - scale) and
+        // max(scale), which corresponds to max(digits left of the decimal point), max(digits right of the decimal point).
         // Then we convert to (precision, scale) before returning.
         int maxPrecisionMinusScale = 0;
         int maxScale = 0;
