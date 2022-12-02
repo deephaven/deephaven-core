@@ -6,7 +6,7 @@
 See https://github.com/davidhalter/jedi for information on jedi.
 
 # To disable autocompletion
-from deephaven.completer import jedi_settings
+from deephaven_internal.completer import jedi_settings
 jedi_settings.mode = 'off'
 
 Valid options for completer_mode are one of: [off, safe, strong].
@@ -16,7 +16,7 @@ strong mode: looks in your globals() for answers to autocomplete and analyzes yo
 later, we may add slow mode, which uses both static and interpreted completion modes.
 """
 
-from deephaven.completer._completer import Completer
+from ._completer import Completer
 from jedi import preload_module, Interpreter
 
 jedi_settings = Completer()
