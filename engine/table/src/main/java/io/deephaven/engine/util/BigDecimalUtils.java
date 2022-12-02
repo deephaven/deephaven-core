@@ -56,7 +56,7 @@ public class BigDecimalUtils {
     }
 
     /**
-     * Compute an overall precision and scale that would fit all existing values in a column source.  Note that this
+     * Compute an overall precision and scale that would fit all existing values in a column source. Note that this
      * requires a full table scan to ensure the correct values are determined.
      *
      * @param rowSet The rowset for the provided column
@@ -79,7 +79,8 @@ public class BigDecimalUtils {
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             while (it.hasMore()) {
                 final RowSequence rowSeq = it.getNextRowSequenceWithLength(PRECISION_SCALE_N_TO_INSPECT);
-                final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, rowSeq).asObjectChunk();
+                final ObjectChunk<BigDecimal, ? extends Values> chunk =
+                        source.getChunk(context, rowSeq).asObjectChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     final BigDecimal x = chunk.get(i);
                     if (x == null) {
@@ -100,7 +101,7 @@ public class BigDecimalUtils {
         }
 
         // If these are < 0, then every value we visited was null
-        if(maxPrecisionMinusScale < 0 && maxScale < 0) {
+        if (maxPrecisionMinusScale < 0 && maxScale < 0) {
             return EMPTY_TABLE_PRECISION_AND_SCALE;
         }
 
