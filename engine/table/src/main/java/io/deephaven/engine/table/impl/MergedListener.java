@@ -112,13 +112,25 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         UpdateGraphProcessor.DEFAULT.addNotification(new MergedNotification());
     }
 
-    private void propagateProcessError(Exception updateException) {
-        propagateErrorInternal(updateException, entry);
+    private void propagateProcessError(@NotNull final Exception updateException, final long currentStep) {
+        if (result.getLastNotificationStep() == currentStep) {
+            // If the result managed to send its notification, we should not send our own.
+            if (result.isFailed()) {
+                // That said, if the result is now failed, let's make sure we're out of the DAG.
+                unlink();
+            }
+        } else {
+            propagateErrorInternal(updateException, entry);
+        }
+    }
+
+    private void unlink() {
+        forceReferenceCountToZero();
+        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
     }
 
     private void propagateErrorInternal(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
-        forceReferenceCountToZero();
-        recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
+        unlink();
         propagateErrorDownstream(error, entry);
         try {
             if (systemicResult()) {
@@ -129,11 +141,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         }
     }
 
-    protected boolean systemicResult() {
+    private boolean systemicResult() {
         return SystemicObjectTracker.isSystemic(MergedListener.this.result);
     }
 
-    protected void propagateErrorDownstream(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+    private void propagateErrorDownstream(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
         result.notifyListenersOnError(error, entry);
     }
 
@@ -264,7 +276,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             } catch (Exception updateException) {
                 log.error().append(logPrefix).append("Uncaught exception for entry= ").append(entry)
                         .append(": ").append(updateException).endl();
-                propagateProcessError(updateException);
+                propagateProcessError(updateException, currentStep);
             } finally {
                 lastCompletedStep = currentStep;
                 releaseFromRecorders();
