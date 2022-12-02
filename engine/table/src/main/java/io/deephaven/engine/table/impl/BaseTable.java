@@ -739,6 +739,11 @@ public abstract class BaseTable extends LivenessArtifact
      *        callers should pass a {@code copy} for updates they intend to further use.
      */
     public final void notifyListeners(final TableUpdate update) {
+        Assert.eqFalse(isFailed, "isFailed");
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        // tables may only be updated once per cycle
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
+
         Assert.eqTrue(update.valid(), "update.valid()");
         if (update.empty()) {
             update.release();
@@ -749,8 +754,6 @@ public abstract class BaseTable extends LivenessArtifact
 
         final boolean hasNoListeners = !hasListeners();
         if (hasNoListeners) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
-            Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
             lastNotificationStep = currentStep;
             update.release();
             return;
@@ -783,10 +786,6 @@ public abstract class BaseTable extends LivenessArtifact
         if (VALIDATE_UPDATE_OVERLAPS) {
             validateUpdateOverlaps(update);
         }
-
-        // tables may only be updated once per cycle
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
-        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
 
         lastNotificationStep = currentStep;
 
@@ -892,11 +891,14 @@ public abstract class BaseTable extends LivenessArtifact
      * @param e error
      * @param sourceEntry performance tracking
      */
-    public final void notifyListenersOnError(final Throwable e,
-            @Nullable final TableListener.Entry sourceEntry) {
+    public final void notifyListenersOnError(final Throwable e, @Nullable final TableListener.Entry sourceEntry) {
+        Assert.eqFalse(isFailed, "isFailed");
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
+
         isFailed = true;
         maybeSignal();
-        lastNotificationStep = LogicalClock.DEFAULT.currentStep();
+        lastNotificationStep = currentStep;
 
         final NotificationQueue notificationQueue = getNotificationQueue();
         childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
