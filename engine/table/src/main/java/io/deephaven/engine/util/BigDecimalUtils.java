@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 
 import java.math.BigDecimal;
 import java.util.Properties;
@@ -26,7 +25,7 @@ import java.util.Properties;
  */
 public class BigDecimalUtils {
     private static final PrecisionAndScale EMPTY_TABLE_PRECISION_AND_SCALE = new PrecisionAndScale(1, 1);
-    private static final int PRECISION_SCALE_N_TO_INSPECT = 4096;
+    private static final int TARGET_CHUNK_SIZE = 4096;
     public static final int INVALID_PRECISION_OR_SCALE = -1;
 
     /**
@@ -70,15 +69,15 @@ public class BigDecimalUtils {
             return EMPTY_TABLE_PRECISION_AND_SCALE;
         }
 
-        // We first use the initial PRECISION_SCALE_N_TO_INSPECT values to estimate the max(precision - scale) and
+        // We will walk the entire table to determine the max(precision - scale) and
         // max(scale), which corresponds to max(digits left of the decimal point), max(digits right of the decimal
         // point). Then we convert to (precision, scale) before returning.
         int maxPrecisionMinusScale = -1;
         int maxScale = -1;
-        try (final ChunkSource.GetContext context = source.makeGetContext(PRECISION_SCALE_N_TO_INSPECT);
-                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+        try (final ChunkSource.GetContext context = source.makeGetContext(TARGET_CHUNK_SIZE);
+             final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             while (it.hasMore()) {
-                final RowSequence rowSeq = it.getNextRowSequenceWithLength(PRECISION_SCALE_N_TO_INSPECT);
+                final RowSequence rowSeq = it.getNextRowSequenceWithLength(TARGET_CHUNK_SIZE);
                 final ObjectChunk<BigDecimal, ? extends Values> chunk =
                         source.getChunk(context, rowSeq).asObjectChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
