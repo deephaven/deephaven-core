@@ -269,14 +269,16 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
                 log.info().append(canJedi ? "Using jedi for python autocomplete"
                         : "No jedi dependency available in python environment; disabling autocomplete.").endl();
-                return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session) : new NoopAutoCompleteObserver(session, responseObserver);
+                return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session)
+                        : new NoopAutoCompleteObserver(session, responseObserver);
             }
 
             return new JavaAutoCompleteObserver(session, responseObserver);
         });
     }
 
-    private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse> implements StreamObserver<AutoCompleteRequest> {
+    private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
+            implements StreamObserver<AutoCompleteRequest> {
         public NoopAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
             super(session, responseObserver);
         }

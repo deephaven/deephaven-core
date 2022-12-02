@@ -30,7 +30,8 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
  * Autocomplete handling for JVM languages, that directly can interact with Java instances without any name mangling,
  * and are able to use our flexible parser.
  */
-public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse> implements StreamObserver<AutoCompleteRequest> {
+public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
+        implements StreamObserver<AutoCompleteRequest> {
 
     private static final Logger log = LoggerFactory.getLogger(JavaAutoCompleteObserver.class);
     private final CompletionParser parser;

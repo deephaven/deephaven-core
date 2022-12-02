@@ -24,7 +24,8 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 /**
  * Autocomplete handling for python that will use the jedi library, if it is installed.
  */
-public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse> implements StreamObserver<AutoCompleteRequest> {
+public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
+        implements StreamObserver<AutoCompleteRequest> {
 
     private static final Logger log = LoggerFactory.getLogger(PythonAutoCompleteObserver.class);
 
