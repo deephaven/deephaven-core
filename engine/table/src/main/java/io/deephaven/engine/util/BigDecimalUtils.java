@@ -75,7 +75,7 @@ public class BigDecimalUtils {
         int maxPrecisionMinusScale = -1;
         int maxScale = -1;
         try (final ChunkSource.GetContext context = source.makeGetContext(TARGET_CHUNK_SIZE);
-             final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             while (it.hasMore()) {
                 final RowSequence rowSeq = it.getNextRowSequenceWithLength(TARGET_CHUNK_SIZE);
                 final ObjectChunk<BigDecimal, ? extends Values> chunk =
