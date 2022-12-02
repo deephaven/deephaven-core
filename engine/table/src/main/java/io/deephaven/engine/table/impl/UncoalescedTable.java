@@ -398,7 +398,6 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    @ConcurrentMethod
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<? extends UpdateByOperation> ops,
             @NotNull final Collection<? extends ColumnName> byColumns) {
