@@ -5,10 +5,10 @@ from typing import Any
 from jedi import Interpreter, Script
 
 
-class CompleterMode(Enum):
-    off = "off"
-    safe = "safe"
-    strong = "strong"
+class Mode(Enum):
+    OFF = "OFF"
+    SAFE = "SAFE"
+    STRONG = "STRONG"
 
     def __str__(self) -> str:
         return self.value
@@ -26,19 +26,19 @@ class Completer(object):
             import jedi
 
             self.__can_jedi = True
-            self.mode = CompleterMode.strong
+            self.mode = Mode.STRONG
         except ImportError:
             self.__can_jedi = False
-            self.mode = CompleterMode.off
+            self.mode = Mode.OFF
 
     @property
-    def mode(self) -> CompleterMode:
+    def mode(self) -> Mode:
         return self.__mode
 
     @mode.setter
     def mode(self, mode) -> None:
         if type(mode) == "str":
-            mode = CompleterMode[mode]
+            mode = Mode[mode]
         self.__mode = mode
 
     def open_doc(self, text: str, uri: str, version: int) -> None:
@@ -62,7 +62,7 @@ class Completer(object):
             pending.set()
 
     def is_enabled(self) -> bool:
-        return self.__mode != CompleterMode.off
+        return self.__mode != Mode.OFF
 
     def can_jedi(self) -> bool:
         return self.__can_jedi
@@ -81,7 +81,7 @@ class Completer(object):
         txt = self.get_doc(uri)
         # The Script completer is static analysis only, so we should actually be feeding it a whole document at once.
 
-        completer = Script if self.__mode == CompleterMode.safe else Interpreter
+        completer = Script if self.__mode == Mode.SAFE else Interpreter
 
         completions = completer(txt, [self.__scope]).complete(line, col)
         # for now, a simple sorting based on number of preceding _
