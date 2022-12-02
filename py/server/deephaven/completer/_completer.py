@@ -81,7 +81,7 @@ class Completer(object):
 
         completer = Script if self.__mode == CompleterMode.safe else Interpreter
 
-        completions = completer(txt, [this.__scope]).complete(line, col)
+        completions = completer(txt, [self.__scope]).complete(line, col)
         # for now, a simple sorting based on number of preceding _
         # we may want to apply additional sorting to each list before combining
         results: list = []
