@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * Utility class to concentrate {@link ObjectCodec} lookups.
@@ -76,7 +77,11 @@ public class CodecLookup {
                 // appropriate precision and scale calculated from column data,
                 // unless the user explicitly requested something else
                 // via instructions.
-                dataType == BigDecimal.class;
+                dataType == BigDecimal.class ||
+
+                // BigIntegers can be encoded as a DecimalLogicalType using a precision of 1 and scale of 0, which lets
+                // them be read by other parquet tools.
+                dataType == BigInteger.class;
     }
 
     /**

@@ -9,6 +9,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -73,7 +74,9 @@ public class ParquetTableReadWriteTest {
                         "someCharColumn = (char)i",
                         "someTime = DateTime.now() + i",
                         "someKey = `` + (int)(i /100)",
-                        "nullKey = i < -1?`123`:null"));
+                        "nullKey = i < -1?`123`:null",
+                        "bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()",
+                        "biColumn = java.math.BigInteger.valueOf(ii)"));
         if (includeSerializable) {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }
@@ -162,7 +165,7 @@ public class ParquetTableReadWriteTest {
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
         ParquetTools.writeTable(tableToSave, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
-        TstUtils.assertTableEquals(tableToSave, fromDisk);
+        TstUtils.assertTableEquals(maybeFixBigDecimal(tableToSave), fromDisk);
     }
 
     private void groupedTable(String tableName, int size, boolean includeSerializable) {
@@ -274,7 +277,7 @@ public class ParquetTableReadWriteTest {
             ParquetTools.writeTable(table1, path);
             assertTrue(new File(path).length() > 0);
             final Table table2 = ParquetTools.readTable(path);
-            TstUtils.assertTableEquals(table1, table2);
+            TstUtils.assertTableEquals(maybeFixBigDecimal(table1), table2);
         } finally {
             ParquetInstructions.setDefaultCompressionCodecName(currentCodec);
         }
@@ -311,5 +314,26 @@ public class ParquetTableReadWriteTest {
         // while Snappy is covered by other tests, this is a very fast test to quickly confirm that it works in the same
         // way as the other similar codec tests.
         compressionCodecTestHelper("SNAPPY");
+    }
+
+    /**
+     * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
+     * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation
+     * may not be so we have to coerce the expected values to the same precision and scale value. We know how it should
+     * be doing it, so we can use the same pattern of encoding/decoding with the codec.
+     *
+     * @param toFix
+     * @return
+     */
+    private Table maybeFixBigDecimal(Table toFix) {
+        final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
+        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
+
+        ExecutionContext.getContext()
+                .getQueryScope()
+                .putParam("__codec", codec);
+        return toFix
+                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
+                .dropColumns("bdColE");
     }
 }
