@@ -160,8 +160,8 @@ b = 2
 c = 3
 """
         String src2 = "t = "
-        p.update(uri, "0", [ makeChange(0, 0, src1) ])
-        p.update(uri, "1", [ makeChange(3, 0, src2) ])
+        p.update(uri, 0, [ makeChange(0, 0, src1) ])
+        p.update(uri, 1, [ makeChange(3, 0, src2) ])
         doc = p.finish(uri)
 
         VariableProvider variables = Mock(VariableProvider) {

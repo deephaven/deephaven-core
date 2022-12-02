@@ -65,6 +65,10 @@ if (hasProperty('debug')) {
     extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
 }
 
+if (hasProperty('debugAutocomplete')) {
+    extraJvmArgs += ['-Ddeephaven.console.autocomplete.quiet=false']
+}
+
 if (hasProperty('gcApplication')) {
     extraJvmArgs += ['-Dio.deephaven.app.GcApplication.enabled=true']
 }
