@@ -24,7 +24,8 @@ public class CompletionParser implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
     private final Map<String, PendingParse> docs = new ConcurrentHashMap<>();
 
-    public static String updateDocumentChanges(final String uri, final int version, String document, final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
+    public static String updateDocumentChanges(final String uri, final int version, String document,
+            final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
         for (ChangeDocumentRequest.TextDocumentContentChangeEventOrBuilder change : changes) {
             DocumentRange range = change.getRange();
             int length = change.getRangeLength();
@@ -133,6 +134,7 @@ public class CompletionParser implements Closeable {
         }
         return doc.getText();
     }
+
     public ParsedDocument finish(String uri) {
         final PendingParse doc = docs.get(uri);
         if (doc == null) {

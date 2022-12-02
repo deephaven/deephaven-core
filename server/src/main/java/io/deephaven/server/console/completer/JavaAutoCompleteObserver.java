@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 
 /**
- * Autocomplete handling for JVM languages, that directly can interact with Java instances without any name
- * mangling, and are able to use our flexible parser.
+ * Autocomplete handling for JVM languages, that directly can interact with Java instances without any name mangling,
+ * and are able to use our flexible parser.
  */
 public class JavaAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
 
@@ -97,8 +97,8 @@ public class JavaAutoCompleteObserver implements StreamObserver<AutoCompleteRequ
     }
 
     private void getCompletionItems(GetCompletionItemsRequest request,
-                                    SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
-                                    StreamObserver<AutoCompleteResponse> responseObserver) {
+            SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
+            StreamObserver<AutoCompleteResponse> responseObserver) {
         final ScriptSession scriptSession = exportedConsole.get();
         try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
             final VariableProvider vars = scriptSession.getVariableProvider();
@@ -134,9 +134,9 @@ public class JavaAutoCompleteObserver implements StreamObserver<AutoCompleteRequ
                             .setSuccess(true)
                             .setRequestId(request.getRequestId())
                             .addAllItems(results.stream().map(
-                                            // insertTextFormat is a default we used to set in constructor; for now, we'll
-                                            // just process the objects before sending back to client
-                                            item -> item.setInsertTextFormat(2).build())
+                                    // insertTextFormat is a default we used to set in constructor; for now, we'll
+                                    // just process the objects before sending back to client
+                                    item -> item.setInsertTextFormat(2).build())
                                     .collect(Collectors.toSet()))
                             .build();
 

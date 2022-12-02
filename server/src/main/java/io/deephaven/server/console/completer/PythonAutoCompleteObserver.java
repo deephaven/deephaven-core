@@ -35,7 +35,8 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
     private final SessionState session;
     private final StreamObserver<AutoCompleteResponse> responseObserver;
 
-    public PythonAutoCompleteObserver(StreamObserver<AutoCompleteResponse> responseObserver, Provider<ScriptSession> scriptSession, final SessionState session) {
+    public PythonAutoCompleteObserver(StreamObserver<AutoCompleteResponse> responseObserver,
+            Provider<ScriptSession> scriptSession, final SessionState session) {
         this.scriptSession = scriptSession;
         this.session = session;
         this.responseObserver = responseObserver;
@@ -61,7 +62,8 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
                 int version = text.getVersion();
                 String document = completer.callMethod("get_doc", text.getUri()).getStringValue();
 
-                final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes = request.getContentChangesList();
+                final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes =
+                        request.getContentChangesList();
                 document = CompletionParser.updateDocumentChanges(uri, version, document, changes);
                 if (document == null) {
                     return;
@@ -96,8 +98,8 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
     }
 
     private void getCompletionItems(GetCompletionItemsRequest request,
-                                    SessionState.ExportObject<ScriptSession> exportedConsole,
-                                    StreamObserver<AutoCompleteResponse> responseObserver) {
+            SessionState.ExportObject<ScriptSession> exportedConsole,
+            StreamObserver<AutoCompleteResponse> responseObserver) {
         final ScriptSession scriptSession = exportedConsole.get();
         try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
 
@@ -108,10 +110,10 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
                 // send back an empty, failed response...
                 safelyExecuteLocked(responseObserver,
                         () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                            .setCompletionItems(GetCompletionItemsResponse.newBuilder()
-                                    .setSuccess(false)
-                                    .setRequestId(request.getRequestId()))
-                            .build()));
+                                .setCompletionItems(GetCompletionItemsResponse.newBuilder()
+                                        .setSuccess(false)
+                                        .setRequestId(request.getRequestId()))
+                                .build()));
                 return;
             }
             final VersionedTextDocumentIdentifier doc = request.getTextDocument();
@@ -128,7 +130,8 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
                     // we'll keep that translation ugliness to the in-java result-processing.
                     pos.getLine() + 1, pos.getCharacter());
             if (!results.isList()) {
-                throw new UnsupportedOperationException("Expected list from jedi_settings.do_completion, got " + results.call("repr"));
+                throw new UnsupportedOperationException(
+                        "Expected list from jedi_settings.do_completion, got " + results.call("repr"));
             }
             final long nanosJedi = System.nanoTime();
             // translate from-python list of completion results. For now, each item in the outer list is a [str, int]
@@ -137,7 +140,8 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
 
             for (PyObject result : results.asList()) {
                 if (!result.isList()) {
-                    throw new UnsupportedOperationException("Expected list-of-lists from jedi_settings.do_completion, " +
+                    throw new UnsupportedOperationException("Expected list-of-lists from jedi_settings.do_completion, "
+                            +
                             "got bad result " + result.call("repr") + " from full results: " + results.call("repr"));
                 }
                 // we expect [ "completion text", start_column ] as our result.
@@ -217,9 +221,8 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
             totalNano.insert(0, "0");
         }
         int milliCutoff = totalNano.length() - 6;
-        return totalNano.substring(0, milliCutoff) + "." + (
-                totalNano.substring(milliCutoff, Math.min(milliCutoff + 2, totalNano.length()))
-        ) + "ms";
+        return totalNano.substring(0, milliCutoff) + "."
+                + (totalNano.substring(milliCutoff, Math.min(milliCutoff + 2, totalNano.length()))) + "ms";
     }
 
     @Override
