@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 
 import java.math.BigDecimal;
 import java.util.Properties;
@@ -55,7 +56,8 @@ public class BigDecimalUtils {
     }
 
     /**
-     * Compute an overall precision and scale that would fit all existing values in a column source.
+     * Compute an overall precision and scale that would fit all existing values in a column source.  Note that this
+     * requires a full table scan to ensure the correct values are determined.
      *
      * @param rowSet The rowset for the provided column
      * @param source a {@code ColumnSource} of {@code BigDecimal} type
@@ -71,27 +73,37 @@ public class BigDecimalUtils {
         // We first use the initial PRECISION_SCALE_N_TO_INSPECT values to estimate the max(precision - scale) and
         // max(scale), which corresponds to max(digits left of the decimal point), max(digits right of the decimal
         // point). Then we convert to (precision, scale) before returning.
-        int maxPrecisionMinusScale = 0;
-        int maxScale = 0;
+        int maxPrecisionMinusScale = -1;
+        int maxScale = -1;
         try (final ChunkSource.GetContext context = source.makeGetContext(PRECISION_SCALE_N_TO_INSPECT);
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
-            final RowSequence rowSeq = it.getNextRowSequenceWithLength(PRECISION_SCALE_N_TO_INSPECT);
-            final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, rowSeq).asObjectChunk();
-            for (int i = 0; i < chunk.size(); ++i) {
-                final BigDecimal x = chunk.get(i);
-                if (x == null)
-                    continue;
-                final int precision = x.precision();
-                final int scale = x.scale();
-                final int precisionMinusScale = precision - scale;
-                if (precisionMinusScale > maxPrecisionMinusScale) {
-                    maxPrecisionMinusScale = precisionMinusScale;
-                }
-                if (scale > maxScale) {
-                    maxScale = scale;
+            while (it.hasMore()) {
+                final RowSequence rowSeq = it.getNextRowSequenceWithLength(PRECISION_SCALE_N_TO_INSPECT);
+                final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, rowSeq).asObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    final BigDecimal x = chunk.get(i);
+                    if (x == null) {
+                        continue;
+                    }
+
+                    final int precision = x.precision();
+                    final int scale = x.scale();
+                    final int precisionMinusScale = precision - scale;
+                    if (precisionMinusScale > maxPrecisionMinusScale) {
+                        maxPrecisionMinusScale = precisionMinusScale;
+                    }
+                    if (scale > maxScale) {
+                        maxScale = scale;
+                    }
                 }
             }
         }
+
+        // If these are < 0, then every value we visited was null
+        if(maxPrecisionMinusScale < 0 && maxScale < 0) {
+            return EMPTY_TABLE_PRECISION_AND_SCALE;
+        }
+
         return new PrecisionAndScale(maxPrecisionMinusScale + maxScale, maxScale);
     }
 
