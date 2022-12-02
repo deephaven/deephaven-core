@@ -673,6 +673,7 @@ message AggSpec {
       float float_value = 4;
       double double_value = 5;
       bool bool_value = 6;
+      TableReference cell_value = 7;
     }
   }
 
