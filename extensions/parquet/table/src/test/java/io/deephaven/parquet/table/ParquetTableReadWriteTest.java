@@ -63,6 +63,7 @@ public class ParquetTableReadWriteTest {
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
                         "nonNullString = `` + (i % 60)",
+                        "nullString = (String) null",
                         "nonNullPolyString = `` + (i % 600)",
                         "someIntColumn = i",
                         "someLongColumn = ii",

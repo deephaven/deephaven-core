@@ -7,6 +7,9 @@ import shutil
 import unittest
 import tempfile
 
+import pandas
+from deephaven.pandas import to_pandas, to_table
+
 from deephaven import empty_table, dtypes, new_table
 from deephaven.column import InputColumn
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
@@ -141,6 +144,41 @@ class ParquetTestCase(BaseTestCase):
 
         self.assertTrue(os.path.exists(file_location))
         shutil.rmtree(base_dir)
+
+    def test_round_trip_data(self):
+        """
+        Pass data between DH and pandas via pyarrow, making sure each side can read data the other side writes
+        """
+
+        # create a table with columns to test different types and edge cases
+        dh_table = empty_table(5).update("Name=(String) null")
+
+        # Round-trip the data through parquet:
+        #   * dh->parquet->dataframe (via pyarrow)->dh
+        #   * dh->parquet->dataframe (via pyarrow)->parquet->dh
+        #   * dh->dataframe (via pyarrow)->parquet->dh
+        # These tests are done with each of the fully-supported compression formats
+        self.round_trip_with_compression("UNCOMPRESSED", dh_table)
+        self.round_trip_with_compression("SNAPPY", dh_table)
+        self.round_trip_with_compression("LZO", dh_table)
+        self.round_trip_with_compression("LZ4", dh_table)
+        self.round_trip_with_compression("GZIP", dh_table)
+        self.round_trip_with_compression("ZSTD", dh_table)
+
+        self.assertFalse(True, "fail to verify the test is run")
+
+    def round_trip_with_compression(self, compression_codec_name, dh_table):
+        write(dh_table, "data_from_dh.parquet", compression_codec_name=compression_codec_name)
+        dataframe = pandas.read_parquet('data_from_dh.parquet')
+        result_table = to_table(dataframe)
+        self.assert_table_equals(dh_table, result_table)
+        dataframe.to_parquet('data_from_pandas.parquet', compression=compression_codec_name)
+        result_table = read('data_from_pandas.parquet')
+        self.assert_table_equals(dh_table, result_table)
+        dataframe = to_pandas(dh_table)
+        dataframe.to_parquet('data_from_pandas.parquet', compression=compression_codec_name)
+        result_table = read('data_from_pandas.parquet')
+        self.assert_table_equals(dh_table, result_table)
 
 
 if __name__ == '__main__':
