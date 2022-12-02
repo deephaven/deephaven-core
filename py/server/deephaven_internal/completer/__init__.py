@@ -21,5 +21,5 @@ from jedi import preload_module, Interpreter
 
 jedi_settings = Completer()
 # warm jedi up a little. We could probably off-thread this.
-preload_module('deephaven')
-Interpreter('', []).complete(1, 0)
+preload_module("deephaven")
+Interpreter("", []).complete(1, 0)

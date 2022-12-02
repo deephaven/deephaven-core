@@ -6,16 +6,15 @@ from jedi import Interpreter, Script
 
 
 class CompleterMode(Enum):
-    off = 'off'
-    safe = 'safe'
-    strong = 'strong'
+    off = "off"
+    safe = "safe"
+    strong = "strong"
 
     def __str__(self) -> str:
         return self.value
 
 
 class Completer(object):
-
     def __init__(self):
         self._docs = {}
         self._versions = {}
@@ -25,6 +24,7 @@ class Completer(object):
         self.pending = []
         try:
             import jedi
+
             self.__can_jedi = True
             self.mode = CompleterMode.strong
         except ImportError:
@@ -37,7 +37,7 @@ class Completer(object):
 
     @mode.setter
     def mode(self, mode) -> None:
-        if type(mode) == 'str':
+        if type(mode) == "str":
             mode = CompleterMode[mode]
         self.__mode = mode
 
@@ -70,7 +70,9 @@ class Completer(object):
     def set_scope(self, scope: dict) -> None:
         self.__scope = scope
 
-    def do_completion(self, uri: str, version: int, line: int, col: int) -> list[list[Any]]:
+    def do_completion(
+        self, uri: str, version: int, line: int, col: int
+    ) -> list[list[Any]]:
         if not self._versions[uri] == version:
             # if you aren't the newest completion, you get nothing, quickly
             return []
@@ -92,9 +94,9 @@ class Completer(object):
             if not self._versions[uri] == version:
                 return []
             result: list = self.to_result(complete, col)
-            if result[0].startswith('__'):
+            if result[0].startswith("__"):
                 results__.append(result)
-            elif result[0].startswith('_'):
+            elif result[0].startswith("_"):
                 results_.append(result)
             else:
                 results.append(result)
