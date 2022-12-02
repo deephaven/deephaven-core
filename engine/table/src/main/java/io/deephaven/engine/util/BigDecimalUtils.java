@@ -69,8 +69,8 @@ public class BigDecimalUtils {
         }
 
         // We first use the initial PRECISION_SCALE_N_TO_INSPECT values to estimate the max(precision - scale) and
-        // max(scale), which corresponds to max(digits left of the decimal point), max(digits right of the decimal point).
-        // Then we convert to (precision, scale) before returning.
+        // max(scale), which corresponds to max(digits left of the decimal point), max(digits right of the decimal
+        // point). Then we convert to (precision, scale) before returning.
         int maxPrecisionMinusScale = 0;
         int maxScale = 0;
         try (final ChunkSource.GetContext context = source.makeGetContext(PRECISION_SCALE_N_TO_INSPECT);
