@@ -9,6 +9,8 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.TreeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
@@ -742,8 +744,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         });
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTreeTable> rollup(Object configObject) {
         Objects.requireNonNull(configObject, "Table.rollup configuration");
         final JsRollupConfig config;
@@ -752,18 +753,39 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else {
             config = new JsRollupConfig(Js.cast(configObject));
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            // RollupTableRequest rollupRequest = config.buildRequest();
-            // rollupRequest.setTable(state().getHandle());
-            // rollupRequest.setResultHandle(state.getHandle());
-            // workerConnection.getServer().rollup(rollupRequest, c);
-            throw new UnsupportedOperationException("rollup");
-        }, "rollup " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata())
-                .then(state -> new JsTreeTable(state, workerConnection).finishFetch());
+
+        Ticket rollupTicket = workerConnection.getConfig().newTicket();
+
+        Promise<Object> rollupPromise = Callbacks.grpcUnaryPromise(c -> {
+            RollupRequest request = new RollupRequest();
+            request.setSourceId(state().getHandle().makeTicket());
+            request.setResultViewId(rollupTicket);
+//            request.setAggregationsList(config.buildRequest().TODO);
+            request.setGroupByColumnsList(Js.<String[]>cast(config.groupingColumns));
+            request.setIncludeConstituents(config.includeConstituents);
+            //TODO
+//            config.includeDescriptions
+//            config.includeOriginalColumns
+            workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
+        });
+
+        Promise<JsTreeTable> fetchPromise =
+                new JsTreeTable(workerConnection, new JsWidget(workerConnection, c -> {
+                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+                    partitionedTableRequest.setSourceId(new TypedTicket());
+                    partitionedTableRequest.getSourceId().setType(JsVariableChanges.TREETABLE);
+                    partitionedTableRequest.getSourceId().setTicket(rollupTicket);
+                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                            workerConnection.metadata(), (fail, success) -> {
+                                c.handleResponse(fail, success, rollupTicket);
+                            });
+                })).finishFetch();
+
+
+        return rollupPromise.then(ignore -> fetchPromise);
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTreeTable> treeTable(Object configObject) {
         Objects.requireNonNull(configObject, "Table.treeTable configuration");
         final JsTreeTableConfig config;
@@ -772,18 +794,33 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else {
             config = new JsTreeTableConfig(Js.cast(configObject));
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            // workerConnection.getServer().treeTable(
-            // state().getHandle(),
-            // state.getHandle(),
-            // config.idColumn,
-            // config.parentColumn,
-            // config.promoteOrphansToRoot,
-            // c
-            // );
-            throw new UnsupportedOperationException("treeTable");
-        }, "treeTable " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata())
-                .then(state -> new JsTreeTable(state, workerConnection).finishFetch());
+
+        Ticket treeTicket = workerConnection.getConfig().newTicket();
+
+        Promise<Object> treePromise = Callbacks.grpcUnaryPromise(c -> {
+            TreeRequest requestMessage = new TreeRequest();
+            requestMessage.setSourceId(state().getHandle().makeTicket());
+            requestMessage.setResultViewId(treeTicket);
+            requestMessage.setIdentifierColumn(config.idColumn);
+            requestMessage.setParentIdentifierColumn(config.parentColumn);
+
+            workerConnection.hierarchicalTableServiceClient().tree(requestMessage, workerConnection.metadata(), c::apply);
+        });
+
+        Promise<JsTreeTable> fetchPromise =
+                new JsTreeTable(workerConnection, new JsWidget(workerConnection, c -> {
+                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+                    partitionedTableRequest.setSourceId(new TypedTicket());
+                    partitionedTableRequest.getSourceId().setType(JsVariableChanges.TREETABLE);
+                    partitionedTableRequest.getSourceId().setTicket(treeTicket);
+                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                            workerConnection.metadata(), (fail, success) -> {
+                                c.handleResponse(fail, success, treeTicket);
+                            });
+                })).finishFetch();
+
+
+        return treePromise.then(ignore -> fetchPromise);
     }
 
     @JsMethod

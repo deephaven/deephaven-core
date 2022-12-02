@@ -40,6 +40,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_ser
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb_service.HierarchicalTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
@@ -188,6 +189,7 @@ public class WorkerConnection {
     private PartitionedTableServiceClient partitionedTableServiceClient;
     private StorageServiceClient storageServiceClient;
     private ConfigServiceClient configServiceClient;
+    private HierarchicalTableServiceClient hierarchicalTableServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -233,6 +235,7 @@ public class WorkerConnection {
                 new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         storageServiceClient = new StorageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         configServiceClient = new ConfigServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        hierarchicalTableServiceClient = new HierarchicalTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -943,6 +946,9 @@ public class WorkerConnection {
 
     public ConfigServiceClient configServiceClient() {
         return configServiceClient;
+    }
+    public HierarchicalTableServiceClient hierarchicalTableServiceClient() {
+        return hierarchicalTableServiceClient;
     }
 
     public BrowserHeaders metadata() {

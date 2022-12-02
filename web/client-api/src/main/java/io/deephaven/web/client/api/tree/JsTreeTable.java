@@ -16,6 +16,7 @@ import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.subscription.ViewportRow;
 import io.deephaven.web.client.api.tree.JsTreeTable.TreeViewportData.TreeRow;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
+import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -321,11 +322,8 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
 
     private boolean closed = false;
 
-    public JsTreeTable(ClientTableState state, WorkerConnection workerConnection) {
-        this.baseTable = state;
+    public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
-
-        baseTable.retain(this);
 
         expandedMap.put(Key.root(), new TreeNodeState(Key.root(), 0));
 
