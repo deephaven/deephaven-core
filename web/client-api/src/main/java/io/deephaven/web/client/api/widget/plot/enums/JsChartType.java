@@ -11,6 +11,8 @@ import jsinterop.annotations.JsType;
 public class JsChartType {
     public static final int XY = ChartDescriptor.ChartType.getXY();
     public static final int PIE = ChartDescriptor.ChartType.getPIE();
+
+    @Deprecated
     public static final int OHLC = ChartDescriptor.ChartType.getOHLC();
     public static final int CATEGORY = ChartDescriptor.ChartType.getCATEGORY();
     public static final int XYZ = ChartDescriptor.ChartType.getXYZ();

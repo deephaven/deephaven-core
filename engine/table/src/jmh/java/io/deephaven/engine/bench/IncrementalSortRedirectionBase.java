@@ -4,7 +4,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;

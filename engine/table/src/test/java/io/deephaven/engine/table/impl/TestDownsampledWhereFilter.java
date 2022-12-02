@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.generator.DoubleGenerator;
+import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.DownsampledWhereFilter;
@@ -19,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class TestDownsampledWhereFilter {
     private SafeCloseable executionContext;

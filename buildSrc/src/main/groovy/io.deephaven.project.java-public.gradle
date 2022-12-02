@@ -9,6 +9,10 @@ plugins {
     id 'io.deephaven.default-description'
 }
 
-project.tasks
-        .getByName('quick')
-        .dependsOn JavaDependencies.verifyRuntimeClasspathIsPublicTask(project)
+def quickTask = project.tasks.getByName('quick')
+
+// We need to make sure that all JAVA_PUBLIC dependencies are public
+quickTask.dependsOn JavaDependencies.verifyRuntimeClasspathIsPublicTask(project)
+
+// We also need to sure that no JAVA_PUBLIC dependencies are JAVA_PUBLIC_TESTING
+quickTask.dependsOn JavaDependencies.verifyRuntimeClasspathHasNoPublicTestingDependenciesTask(project)

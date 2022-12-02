@@ -69,11 +69,12 @@ dependencies {
 
     Classpaths.inheritGuava(project)
 
-    testImplementation TestTools.projectDependency(project, 'Base')
     testImplementation TestTools.projectDependency(project, 'Util')
     testImplementation TestTools.projectDependency(project, 'engine-chunk')
-    testImplementation TestTools.projectDependency(project, 'engine-rowset')
     testImplementation TestTools.projectDependency(project, 'Numerics')
+    testImplementation project(':base-test-utils')
+    testImplementation project(':engine-rowset-test-utils')
+    testImplementation project(':engine-test-utils')
     testImplementation project(':Base')
     testImplementation project(':BenchmarkSupport')
     testImplementation project(':extensions-csv')

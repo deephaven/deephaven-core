@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
@@ -36,7 +36,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     private ColumnSource<Long> column;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         clock = new TestClock(0);
@@ -44,7 +44,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         validator.deepValidation();
 
         clock = null;

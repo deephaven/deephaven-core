@@ -9,6 +9,12 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
@@ -20,9 +26,9 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.QueryTableTestBase.JoinIncrement;
+import io.deephaven.engine.testutil.QueryTableTestBase.JoinIncrement;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import gnu.trove.list.array.TIntArrayList;
@@ -43,8 +49,8 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.TableOperationsDefaults.splitToCollection;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.QueryTableTestBase.intColumn;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.QueryTableTestBase.intColumn;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
@@ -488,16 +494,16 @@ public class QueryTableAjTest {
                 initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
                         Arrays.asList(Collections.singletonList(leftAttributes), Collections.emptyList(),
                                 Collections.emptyList()),
-                        new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
-                        new TstUtils.IntGenerator(0, 10000),
-                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+                        new SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
+                        new IntGenerator(0, 10000),
+                        new IntGenerator(10_000_000, 10_010_000)));
         final QueryTable rightTable = getTable(false, rightSize, random,
                 initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
                         Arrays.asList(Collections.singletonList(rightAttributes), Collections.emptyList(),
                                 Collections.emptyList()),
-                        new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
-                        new TstUtils.SortedIntGenerator(0, 10000),
-                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+                        new SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
+                        new SortedIntGenerator(0, 10000),
+                        new IntGenerator(20_000_000, 20_010_000)));
 
         final String stampMatch = "LeftStamp" + (noexact ? (reverse ? ">" : "<") : "=") + "RightStamp";
         final Table result;
@@ -533,14 +539,14 @@ public class QueryTableAjTest {
 
         final QueryTable leftTable = getTable(false, leftSize, random,
                 initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
-                        new TstUtils.StringGenerator(leftSize / 10),
-                        new TstUtils.IntGenerator(0, 100000),
-                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+                        new StringGenerator(leftSize / 10),
+                        new IntGenerator(0, 100000),
+                        new IntGenerator(10_000_000, 10_010_000)));
         final QueryTable rightTable = getTable(false, rightSize, random,
                 initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
-                        new TstUtils.StringGenerator(rightSize / 10),
-                        new TstUtils.SortedIntGenerator(0, 100000),
-                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+                        new StringGenerator(rightSize / 10),
+                        new SortedIntGenerator(0, 100000),
+                        new IntGenerator(20_000_000, 20_010_000)));
 
         final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
                 (QueryTable) rightTable.reverse(), MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
@@ -877,14 +883,14 @@ public class QueryTableAjTest {
                         new BooleanGenerator(),
                         new SetGenerator<>(String.class, set1),
                         leftStampGenerator,
-                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+                        new IntGenerator(10_000_000, 10_010_000)));
         final ColumnInfo[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightRefreshing, rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Truthiness", "Bucket", "RightStamp", "RightSentinel"},
                         new BooleanGenerator(),
-                        new TstUtils.SetGenerator<>(String.class, set2),
+                        new SetGenerator<>(String.class, set2),
                         rightStampGenerator,
-                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+                        new IntGenerator(20_000_000, 20_010_000)));
 
         final QueryTable rightSorted = sortRight ? (QueryTable) rightTable.sort("RightStamp") : rightTable;
 
@@ -1068,15 +1074,15 @@ public class QueryTableAjTest {
         final ColumnInfo[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftRefreshing, leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
-                        new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
-                        new TstUtils.IntGenerator(0, 10000),
-                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+                        new SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
+                        new IntGenerator(0, 10000),
+                        new IntGenerator(10_000_000, 10_010_000)));
         final ColumnInfo[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightRefreshing, rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
-                        new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
-                        new TstUtils.SortedIntGenerator(0, 10000),
-                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+                        new SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
+                        new SortedIntGenerator(0, 10000),
+                        new IntGenerator(20_000_000, 20_010_000)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
@@ -1156,15 +1162,15 @@ public class QueryTableAjTest {
         final int rightSize = 32000;
         final QueryTable leftTable = getTable(true, 100000, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
-                        new TstUtils.StringGenerator(leftSize),
-                        new TstUtils.IntGenerator(0, 100000),
-                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+                        new StringGenerator(leftSize),
+                        new IntGenerator(0, 100000),
+                        new IntGenerator(10_000_000, 10_010_000)));
         final ColumnInfo[] rightColumnInfo;
         final QueryTable rightTable = getTable(false, 100000, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
-                        new TstUtils.StringGenerator(leftSize),
-                        new TstUtils.SortedIntGenerator(0, 100000),
-                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+                        new StringGenerator(leftSize),
+                        new SortedIntGenerator(0, 100000),
+                        new IntGenerator(20_000_000, 20_010_000)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
@@ -1378,15 +1384,15 @@ public class QueryTableAjTest {
             final int rightSize = 32000;
             final QueryTable leftTable = getTable(true, 100000, random,
                     leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
-                            new TstUtils.StringGenerator(leftSize),
-                            new TstUtils.IntGenerator(0, 100000),
-                            new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+                            new StringGenerator(leftSize),
+                            new IntGenerator(0, 100000),
+                            new IntGenerator(10_000_000, 10_010_000)));
             final ColumnInfo[] rightColumnInfo;
             final QueryTable rightTable = getTable(true, 100000, random,
                     rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
-                            new TstUtils.StringGenerator(leftSize),
-                            new TstUtils.SortedIntGenerator(0, 100000),
-                            new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+                            new StringGenerator(leftSize),
+                            new SortedIntGenerator(0, 100000),
+                            new IntGenerator(20_000_000, 20_010_000)));
 
             final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                     new EvalNugget() {
@@ -1431,16 +1437,16 @@ public class QueryTableAjTest {
             // fairly small LHS will speed up detection of the error but will not affect correctness
             final QueryTable leftTable = getTable(true, 1000, random,
                     initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
-                            new TstUtils.StringGenerator(leftSize),
-                            new TstUtils.IntGenerator(0, 100000),
-                            new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+                            new StringGenerator(leftSize),
+                            new IntGenerator(0, 100000),
+                            new IntGenerator(10_000_000, 10_010_000)));
 
             // need RHS with unique bucket count > rehash threshold of 4096
             final QueryTable rightTable = getTable(true, 32000, random,
                     initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
-                            new TstUtils.StringGenerator(leftSize),
-                            new TstUtils.SortedIntGenerator(0, 100000),
-                            new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+                            new StringGenerator(leftSize),
+                            new SortedIntGenerator(0, 100000),
+                            new IntGenerator(20_000_000, 20_010_000)));
 
             final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
                     (QueryTable) rightTable.reverse(),

@@ -92,16 +92,16 @@ tasks.withType(JavaCompile).configureEach {
 
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
+  def compilerDirectivesText = new JsonBuilder([{
+    match (['*.*'] as List)
+    // Note: there seems to be a bug where this option doesn't actually get picked up
+    // So using '-XX:DisableIntrinsic=_currentThread' explicitly
+    // DisableIntrinsic('_currentThread')
+  }]).toPrettyString()
+  it.inputs.property('compilerDirectivesText', compilerDirectivesText)
   it.outputs.file(compilerDirectivesFile)
-
   doFirst {
-    def builder = new JsonBuilder([{
-      match (['*.*'] as List)
-      // Note: there seems to be a bug where this option doesn't actually get picked up
-      // So using '-XX:DisableIntrinsic=_currentThread' explicitly
-      // DisableIntrinsic('_currentThread')
-    }])
-    compilerDirectivesFile.get().asFile.text = builder.toPrettyString()
+    compilerDirectivesFile.get().asFile.text = compilerDirectivesText
   }
 }
 
@@ -123,19 +123,49 @@ def devJvmArgs = [
 //  '-XX:+PrintCompilation',          // this optional line shows jit operations as they happen
 ]
 
+// These are supposed to be generally applicable and recommended JVM options, but they aren't hard requirements.
+// Overly specific options do *not* belong here. For example, we should _not_ be setting something like `-Xmx4g` here.
+// If you are tempted to try and put system properties here (`-Dkey=value`), think again; there should be a more
+// appropriate place to set those.
+//
+// From the perspective of our application distribution, these options will be used as defaults for JAVA_OPTS
+// (if the user already has JAVA_OPTS set, these VM options will _not_ apply).
+def defaultJvmOptions = [
+  '-XX:+UseG1GC',
+  '-XX:MaxGCPauseMillis=100',
+  '-XX:+UseStringDeduplication',
+]
+
+def createVmOptions = tasks.register('createVmOptions') {
+  def vmOptionsFile = project.layout.buildDirectory.file('dh-default.vmoptions')
+  def vmOptionsText = defaultJvmOptions.join('\n')
+  it.inputs.property('vmOptionsText', vmOptionsText)
+  it.outputs.file(vmOptionsFile)
+  doFirst {
+    vmOptionsFile.get().asFile.text = vmOptionsText
+  }
+}
+
 tasks.withType(JavaExec).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
+  def vmOptionsFile = createVmOptions.get().outputs.files
   inputs.files compilerDirectivesFile
+  inputs.files vmOptionsFile
   javaLauncher.set runtimeLauncher
-  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + devJvmArgs
+  // Note: we _could_ have the vmOptionsFile constituents directly listed instead of using -XX:VMOptionsFile.
+  // That said, the current approach used here more closely matches how the application start script is defined.
+  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFile.singleFile.path}"] + devJvmArgs
 }
 
 tasks.withType(Test).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
+  def vmOptionsFile = createVmOptions.get().outputs.files
   inputs.files compilerDirectivesFile
-
+  inputs.files vmOptionsFile
   javaLauncher.set testRuntimeLauncher
-  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + devJvmArgs
+  // Note: we _could_ have the vmOptionsFile constituents directly listed instead of using -XX:VMOptionsFile.
+  // That said, the current approach used here more closely matches how the application start script is defined.
+  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFile.singleFile.path}"] + devJvmArgs
 }
 
 tasks.withType(GroovyCompile).configureEach {
@@ -143,10 +173,12 @@ tasks.withType(GroovyCompile).configureEach {
 }
 
 plugins.withType(ApplicationPlugin) {
-  applicationDistribution.into('lib') {
+  applicationDistribution.into('etc') {
     from(createCompilerDirectives.get().outputs.files)
+    from(createVmOptions.get().outputs.files)
   }
 }
+
 tasks.withType(CreateStartScripts).configureEach {
   def unixStartScript = resources.text.fromUri(getClass().classLoader.getResource('unixStartScript.txt'))
   inputs.files unixStartScript

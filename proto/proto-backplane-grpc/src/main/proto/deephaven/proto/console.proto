@@ -248,7 +248,7 @@ message FigureDescriptor {
         enum ChartType {
             XY = 0;
             PIE = 1;
-            OHLC = 2;
+            OHLC = 2 [deprecated=true];
             CATEGORY = 3;
             XYZ = 4;
             CATEGORY_3D = 5;

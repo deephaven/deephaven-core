@@ -11,6 +11,7 @@ import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.server.appmode.ApplicationsModule;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.notebook.FilesystemStorageServiceModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
@@ -50,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 
 @Module(includes = {
         AppModeModule.class,
+        ApplicationsModule.class,
         ArrowModule.class,
         AuthContextModule.class,
         UriModule.class,
