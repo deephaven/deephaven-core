@@ -58,6 +58,7 @@ public class ConstituentDependency implements Dependency {
     private final ColumnSource<? extends Dependency>[] dependencyColumns;
 
     private volatile long lastSatisfiedStep;
+    private long firstUnsatisfiedRowPosition = 0;
 
     private ConstituentDependency(
             @NotNull final Dependency resultUpdatedDependency,
@@ -90,41 +91,53 @@ public class ConstituentDependency implements Dependency {
             lastSatisfiedStep = step;
             return true;
         }
-        final int chunkSize = Math.toIntExact(Math.min(ColumnIterator.DEFAULT_CHUNK_SIZE, resultRows.size()));
-        final int numColumns = dependencyColumns.length;
-        final ChunkSource.GetContext[] contexts = new ChunkSource.GetContext[numColumns];
-        try (final SharedContext sharedContext = numColumns > 1 ? SharedContext.makeSharedContext() : null;
-                final SafeCloseable ignored = new SafeCloseableArray<>(contexts);
-                final RowSequence.Iterator rows = resultRows.getRowSequenceIterator()) {
-            for (int ci = 0; ci < numColumns; ++ci) {
-                contexts[ci] = dependencyColumns[ci].makeGetContext(chunkSize, sharedContext);
+        synchronized (this) {
+            if (lastSatisfiedStep == step) {
+                return true;
             }
-            while (rows.hasMore()) {
-                final RowSequence sliceRows = rows.getNextRowSequenceWithLength(chunkSize);
-                final int numConstituents = sliceRows.intSize();
+            final int chunkSize = Math.toIntExact(Math.min(ColumnIterator.DEFAULT_CHUNK_SIZE, resultRows.size()));
+            final int numColumns = dependencyColumns.length;
+            final ChunkSource.GetContext[] contexts = new ChunkSource.GetContext[numColumns];
+            try (final SharedContext sharedContext = numColumns > 1 ? SharedContext.makeSharedContext() : null;
+                 final SafeCloseable ignored = new SafeCloseableArray<>(contexts);
+                 final RowSequence.Iterator rows = resultRows.getRowSequenceIterator()) {
+                if (firstUnsatisfiedRowPosition > 0) {
+                    rows.advance(resultRows.get(firstUnsatisfiedRowPosition));
+                }
                 for (int ci = 0; ci < numColumns; ++ci) {
-                    final ObjectChunk<? extends Dependency, ? extends Values> dependencies =
-                            dependencyColumns[ci].getChunk(contexts[ci], sliceRows).asObjectChunk();
-                    for (int di = 0; di < numConstituents; ++di) {
-                        final Dependency constituent = dependencies.get(di);
-                        if (constituent != null && !constituent.satisfied(step)) {
-                            UpdateGraphProcessor.DEFAULT.logDependencies()
-                                    .append("Constituent dependencies not satisfied for ")
-                                    .append(this).append(", constituent=").append(constituent)
-                                    .endl();
-                            return false;
+                    contexts[ci] = dependencyColumns[ci].makeGetContext(chunkSize, sharedContext);
+                }
+                while (rows.hasMore()) {
+                    final RowSequence sliceRows = rows.getNextRowSequenceWithLength(chunkSize);
+                    final int numConstituents = sliceRows.intSize();
+                    for (int ci = 0; ci < numColumns; ++ci) {
+                        final ObjectChunk<? extends Dependency, ? extends Values> dependencies =
+                                dependencyColumns[ci].getChunk(contexts[ci], sliceRows).asObjectChunk();
+                        for (int di = 0; di < numConstituents; ++di) {
+                            final Dependency constituent = dependencies.get(di);
+                            if (constituent != null && !constituent.satisfied(step)) {
+                                UpdateGraphProcessor.DEFAULT.logDependencies()
+                                        .append("Constituent dependencies not satisfied for ")
+                                        .append(this).append(", constituent=").append(constituent)
+                                        .endl();
+                                firstUnsatisfiedRowPosition += di;
+                                return false;
+                            }
                         }
                     }
-                }
-                if (sharedContext != null) {
-                    sharedContext.reset();
+                    firstUnsatisfiedRowPosition += numConstituents;
+                    if (sharedContext != null) {
+                        sharedContext.reset();
+                    }
                 }
             }
+            UpdateGraphProcessor.DEFAULT.logDependencies()
+                    .append("All constituent dependencies satisfied for ").append(this)
+                    .endl();
+            lastSatisfiedStep = step;
+            firstUnsatisfiedRowPosition = 0; // Re-initialize for next cycle
+
+            return true;
         }
-        UpdateGraphProcessor.DEFAULT.logDependencies()
-                .append("All constituent dependencies satisfied for ").append(this)
-                .endl();
-        lastSatisfiedStep = step;
-        return true;
     }
 }
