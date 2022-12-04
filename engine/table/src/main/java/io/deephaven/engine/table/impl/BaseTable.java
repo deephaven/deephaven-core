@@ -893,10 +893,12 @@ public abstract class BaseTable extends LivenessArtifact
      */
     public final void notifyListenersOnError(final Throwable e, @Nullable final TableListener.Entry sourceEntry) {
         Assert.eqFalse(isFailed, "isFailed");
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
 
         isFailed = true;
         maybeSignal();
-        lastNotificationStep =  LogicalClock.DEFAULT.currentStep();
+        lastNotificationStep = currentStep;
 
         final NotificationQueue notificationQueue = getNotificationQueue();
         childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
