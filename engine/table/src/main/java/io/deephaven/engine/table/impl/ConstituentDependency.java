@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -131,6 +132,7 @@ public class ConstituentDependency implements Dependency {
                     }
                 }
             }
+            Assert.eq(firstUnsatisfiedRowPosition, "firstUnsatisfiedRowPosition", resultRows.size(), "resultRows.size()");
             UpdateGraphProcessor.DEFAULT.logDependencies()
                     .append("All constituent dependencies satisfied for ").append(this)
                     .endl();
