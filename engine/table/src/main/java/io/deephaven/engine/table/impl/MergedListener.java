@@ -113,7 +113,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     private void propagateProcessError(@NotNull final Exception updateException, final long currentStep) {
-        if (result.getLastNotificationStep() == currentStep) {
+        if (result != null && result.getLastNotificationStep() == currentStep) {
             // If the result managed to send its notification, we should not send our own.
             if (result.isFailed()) {
                 // That said, if the result is now failed, let's make sure we're out of the DAG.
@@ -141,11 +141,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         }
     }
 
-    private boolean systemicResult() {
+    protected boolean systemicResult() {
         return SystemicObjectTracker.isSystemic(MergedListener.this.result);
     }
 
-    private void propagateErrorDownstream(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+    protected void propagateErrorDownstream(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
         result.notifyListenersOnError(error, entry);
     }
 
