@@ -100,8 +100,8 @@ public class ConstituentDependency implements Dependency {
             final int numColumns = dependencyColumns.length;
             final ChunkSource.GetContext[] contexts = new ChunkSource.GetContext[numColumns];
             try (final SharedContext sharedContext = numColumns > 1 ? SharedContext.makeSharedContext() : null;
-                 final SafeCloseable ignored = new SafeCloseableArray<>(contexts);
-                 final RowSequence.Iterator rows = resultRows.getRowSequenceIterator()) {
+                    final SafeCloseable ignored = new SafeCloseableArray<>(contexts);
+                    final RowSequence.Iterator rows = resultRows.getRowSequenceIterator()) {
                 if (firstUnsatisfiedRowPosition > 0) {
                     rows.advance(resultRows.get(firstUnsatisfiedRowPosition));
                 }
@@ -132,7 +132,8 @@ public class ConstituentDependency implements Dependency {
                     }
                 }
             }
-            Assert.eq(firstUnsatisfiedRowPosition, "firstUnsatisfiedRowPosition", resultRows.size(), "resultRows.size()");
+            Assert.eq(firstUnsatisfiedRowPosition, "firstUnsatisfiedRowPosition", resultRows.size(),
+                    "resultRows.size()");
             UpdateGraphProcessor.DEFAULT.logDependencies()
                     .append("All constituent dependencies satisfied for ").append(this)
                     .endl();
