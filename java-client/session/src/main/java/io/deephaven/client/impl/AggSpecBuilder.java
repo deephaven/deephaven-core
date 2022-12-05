@@ -3,6 +3,8 @@ package io.deephaven.client.impl;
 import com.google.protobuf.Empty;
 import com.google.protobuf.MessageOrBuilder;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.object.AnnotatedObject;
+import io.deephaven.api.object.AnnotatedObject.Visitor;
 import io.deephaven.proto.backplane.grpc.AggSpec;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
@@ -171,26 +173,74 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
         out = spec(Builder::setUnique, builder);
     }
 
-    private static AggSpecNonUniqueSentinel adapt(Object o) {
-        if (o instanceof String) {
-            return AggSpecNonUniqueSentinel.newBuilder().setStringValue((String) o).build();
-        }
-        if (o instanceof Integer) {
-            return AggSpecNonUniqueSentinel.newBuilder().setIntValue((Integer) o).build();
-        }
-        if (o instanceof Long) {
-            return AggSpecNonUniqueSentinel.newBuilder().setLongValue((Long) o).build();
-        }
-        if (o instanceof Float) {
-            return AggSpecNonUniqueSentinel.newBuilder().setFloatValue((Float) o).build();
-        }
-        if (o instanceof Double) {
-            return AggSpecNonUniqueSentinel.newBuilder().setDoubleValue((Double) o).build();
-        }
-        if (o instanceof Boolean) {
-            return AggSpecNonUniqueSentinel.newBuilder().setBoolValue((Boolean) o).build();
-        }
-        throw new IllegalArgumentException(String.format("Unable to adapt '%s' as non unique sentinel", o.getClass()));
+    private static AggSpecNonUniqueSentinel adapt(AnnotatedObject o) {
+
+        return o.visit(new Visitor<AggSpecNonUniqueSentinel>() {
+            @Override
+            public AggSpecNonUniqueSentinel visit(boolean x) {
+                return AggSpecNonUniqueSentinel.newBuilder().setBoolValue(x).build();
+            }
+
+            @Override
+            public AggSpecNonUniqueSentinel visit(char x) {
+                return null;
+            }
+
+            @Override
+            public AggSpecNonUniqueSentinel visit(byte x) {
+                return null;
+            }
+
+            @Override
+            public AggSpecNonUniqueSentinel visit(short x) {
+                return null;
+            }
+
+            @Override
+            public AggSpecNonUniqueSentinel visit(int x) {
+                return AggSpecNonUniqueSentinel.newBuilder().setIntValue(x).build();
+            }
+
+            @Override
+            public AggSpecNonUniqueSentinel visit(long x) {
+                return AggSpecNonUniqueSentinel.newBuilder().setLongValue(x).build();
+            }
+
+            @Override
+            public AggSpecNonUniqueSentinel visit(float x) {
+                return AggSpecNonUniqueSentinel.newBuilder().setFloatValue(x).build();
+            }
+
+            @Override
+            public AggSpecNonUniqueSentinel visit(double x) {
+                return AggSpecNonUniqueSentinel.newBuilder().setDoubleValue(x).build();
+            }
+
+            @Override
+            public AggSpecNonUniqueSentinel visit(Object x) {
+                return null;
+            }
+        });
+
+//        if (o instanceof String) {
+//            return AggSpecNonUniqueSentinel.newBuilder().setStringValue((String) o).build();
+//        }
+//        if (o instanceof Integer) {
+//            return AggSpecNonUniqueSentinel.newBuilder().setIntValue((Integer) o).build();
+//        }
+//        if (o instanceof Long) {
+//            return AggSpecNonUniqueSentinel.newBuilder().setLongValue((Long) o).build();
+//        }
+//        if (o instanceof Float) {
+//            return AggSpecNonUniqueSentinel.newBuilder().setFloatValue((Float) o).build();
+//        }
+//        if (o instanceof Double) {
+//            return AggSpecNonUniqueSentinel.newBuilder().setDoubleValue((Double) o).build();
+//        }
+//        if (o instanceof Boolean) {
+//            return AggSpecNonUniqueSentinel.newBuilder().setBoolValue((Boolean) o).build();
+//        }
+//        throw new IllegalArgumentException(String.format("Unable to adapt '%s' as non unique sentinel", o.getClass()));
     }
 
     @Override

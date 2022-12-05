@@ -4,6 +4,7 @@
 package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.api.object.AnnotatedObject;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
@@ -69,7 +70,7 @@ public abstract class AggSpecUnique extends AggSpecBase {
      *
      * @return The non-unique sentinel value
      */
-    public abstract Optional<Object> nonUniqueSentinel();
+    public abstract Optional<AnnotatedObject> nonUniqueSentinel();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

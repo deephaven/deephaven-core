@@ -37,6 +37,7 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecTDigest;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
+import io.deephaven.proto.backplane.grpc.TableReference;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -149,6 +150,8 @@ class AggSpecAdapter {
                 return nonUniqueSentinel.getDoubleValue();
             case BOOL_VALUE:
                 return nonUniqueSentinel.getBoolValue();
+            case CELL_VALUE:
+                throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED, "AggSpecNonUniqueSentinel cell_value not implemented, see <todo>");
             case TYPE_NOT_SET:
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "AggSpecNonUniqueSentinel type not set");
             default:
