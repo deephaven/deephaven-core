@@ -1427,7 +1427,7 @@ public abstract class BaseTable extends LivenessArtifact
         return result;
     }
 
-    public static  void initializeWithSnapshot(
+    public static void initializeWithSnapshot(
             String logPrefix, SwapListener swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
             snapshotFunction.call(false, LogicalClock.DEFAULT.currentValue());
