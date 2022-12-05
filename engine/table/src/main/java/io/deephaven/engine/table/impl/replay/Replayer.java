@@ -7,6 +7,7 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
@@ -19,7 +20,6 @@ import io.deephaven.io.logger.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -186,6 +186,9 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public Table replay(Table dataSource, String timeColumn) {
+        if (dataSource.isRefreshing()) {
+            dataSource = TableTools.emptyTable(0).snapshot(dataSource);
+        }
         final ReplayTable result =
                 new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
