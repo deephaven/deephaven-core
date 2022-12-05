@@ -1,5 +1,6 @@
 package io.deephaven.jsoningester.example;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
@@ -7,11 +8,11 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.ProcessStreamLoggerImpl;
-import io.deephaven.jsoningester.*;
+import io.deephaven.jsoningester.JSONToInMemoryTableAdapterBuilder;
+import io.deephaven.jsoningester.JSONToTableWriterAdapter;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.clock.MicroTimer;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.type.TypeUtils;
 
@@ -30,7 +31,7 @@ public class ComplexJsonImportTest {
 
 
     private static final Logger log =
-            ProcessStreamLoggerImpl.makeLogger(MicroTimer::currentTimeMicros, TimeZone.getDefault());
+            ProcessStreamLoggerImpl.makeLogger(() -> Clock.system().currentTimeMicros(), TimeZone.getDefault());
 
     public static void main(String[] args) throws IOException, InterruptedException, TimeoutException {
 

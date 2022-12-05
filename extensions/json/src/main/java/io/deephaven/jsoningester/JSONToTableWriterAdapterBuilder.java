@@ -309,7 +309,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
 
     private void checkAlreadyDefined(final String column) {
         if (allowedUnmappedColumns.contains(column)) {
-            throw new JSONIngesterException("Column \"" + column + "\" is already defined: allows unmapped");
+            throw new JSONIngesterException("Column \"" + column + "\" is already defined: allowed unmapped");
         } else if (columnToJsonField.containsKey(column)) {
             throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to field \""
                     + columnToJsonField.get(column) + '"');

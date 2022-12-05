@@ -147,6 +147,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      */
     private final int instanceId;
 
+    /**
+     * Function to run after processing a JSON record.
+     */
+    private BiConsumer<MessageMetadata, JsonNode> afterProcess;
+
     JSONToTableWriterAdapter(final TableWriter<?> writer,
             @NotNull final Logger log,
             final boolean allowMissingKeys,
@@ -1116,7 +1121,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                         // next message
                         if (unparseableMessagesLogged++ < MAX_UNPARSEABLE_LOG_MESSAGES) {
                             log.error()
-                                    .append("Unable to parse JSON message: \"" + finalHolder.getOriginalText() + "\": ")
+                                    .append("Unable to parse JSON message: ")
+                                    .append(finalHolder.getOriginalText() == null ? "null" : "\"" + finalHolder.getOriginalText() + "\": ")
                                     .append(finalHolder.getParseException()).endl();
                         }
                         if (!skipUnparseableMessages) {
@@ -1587,6 +1593,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 holders[holder].inTransaction();
             }
             processHolder(holder, true);
+        }
+
+        if(afterProcess != null) {
+            log.debug().append(Thread.currentThread().getName()).append(": Running afterProcess function")
+            afterProcess.accept(msgData, record);
         }
     }
 

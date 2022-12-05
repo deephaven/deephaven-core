@@ -29,6 +29,7 @@ public class JSONToInMemoryTableAdapterBuilder {
 
     private final List<String> colNames = new ArrayList<>();
     private final List<Class<?>> colTypes = new ArrayList<>();
+    private long flushIntervalMillis = 5000L;
 
     public static class TableAndAdapterBuilderResult {
 
@@ -87,7 +88,9 @@ public class JSONToInMemoryTableAdapterBuilder {
         final JSONToTableWriterAdapter jsonAdapter =
                 jsonAdpaterBuilder.makeAdapter(log, thisTableWriter, subtableWriters);
 
-        jsonAdapter.createCleanupThread(5000L);
+        if(flushIntervalMillis > 0) {
+            jsonAdapter.createCleanupThread(flushIntervalMillis);
+        }
 
         return new TableAndAdapterBuilderResult(resultTables, resultTableWriters, jsonAdapter);
     }
@@ -228,4 +231,10 @@ public class JSONToInMemoryTableAdapterBuilder {
         jsonAdpaterBuilder.allowNullValues(allowNullValues);
         return this;
     }
+
+    public JSONToInMemoryTableAdapterBuilder flushIntervalMillis(long flushIntervalMillis) {
+        this.flushIntervalMillis = flushIntervalMillis;
+        return this;
+    }
+
 }

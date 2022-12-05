@@ -11,7 +11,6 @@ import io.deephaven.jsoningester.JSONToTableWriterAdapter;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.clock.MicroTimer;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.type.TypeUtils;
 
@@ -29,7 +28,7 @@ public class ComplexJsonImportTest2 {
 
 
     private static final Logger log =
-            ProcessStreamLoggerImpl.makeLogger(MicroTimer::currentTimeMicros, TimeZone.getDefault());
+            ProcessStreamLoggerImpl.makeLogger(() -> DateTimeUtils.currentClock().currentTimeMicros(), TimeZone.getDefault());
 
     public static void main(String[] args) {
 
@@ -105,7 +104,7 @@ public class ComplexJsonImportTest2 {
 
         // Create DynamicTableWriter for the main table (now that we've defined all its columns)
 
-        JSONToInMemoryTableAdapterBuilder outerBuilder = new JSONToInMemoryTableAdapterBuilder();
+        JSONToInMemoryTableAdapterBuilder outerBuilder = new JSONToInMemoryTableAdapterBuilder("observations");
         outerBuilder.addFieldToSubTableMapping("features", featuresBuilder);
         outerBuilder.addColumnFromField("Type", "type", String.class);
 
@@ -114,7 +113,7 @@ public class ComplexJsonImportTest2 {
         final JSONToTableWriterAdapter adapter = result.tableWriterAdapter;
 
         // Get the output tables:
-        final Table observationsTable = result.resultTables.get("MAIN_TABLE");
+        final Table observationsTable = result.resultTables.get("observations");
         final Table featuresTable = result.resultTables.get("features");
         final Table cloudsTable = result.resultTables.get("cloudLayers");
 

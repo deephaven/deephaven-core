@@ -1518,7 +1518,7 @@ public class JsonAdapterTest {
             r.run();
             TestCase.fail();
         } catch (final JSONIngesterException e) {
-            Assert.assertEquals("Column is already defined A", e.getMessage());
+            Assert.assertEquals("Column \"A\" is already defined: allowed unmapped", e.getMessage());
         }
     }
 

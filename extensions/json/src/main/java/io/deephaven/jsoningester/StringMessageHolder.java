@@ -1,7 +1,5 @@
 package io.deephaven.jsoningester;
 
-import io.deephaven.util.clock.MicroTimer;
-
 /**
  * Created by rbasralian on 10/3/22
  */
