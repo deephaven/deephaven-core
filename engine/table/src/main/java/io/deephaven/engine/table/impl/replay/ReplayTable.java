@@ -64,7 +64,8 @@ public class ReplayTable extends QueryTable implements Runnable {
             nextTimeNanos = nanoTimeSource.getLong(nextRowKey);
             if (nextTimeNanos == QueryConstants.NULL_LONG || nextTimeNanos < currentTimeNanos) {
                 throw new RuntimeException(
-                    "The historical table contains a null or decreasing time value at row number " + nextRowKey + ".");
+                        "The historical table contains a null or decreasing time value at row number " + nextRowKey
+                                + ".");
             }
         } else {
             // NB: It would be best to ensure that if this is hit during construction, we're never added to the UGP.
