@@ -260,10 +260,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public StreamObserver<AutoCompleteRequest> autoCompleteStream(
             StreamObserver<AutoCompleteResponse> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            if (AUTOCOMPLETE_DISABLED) {
-                return new NoopAutoCompleteObserver(responseObserver);
-            }
             final SessionState session = sessionService.getCurrentSession();
+            if (AUTOCOMPLETE_DISABLED) {
+                return new NoopAutoCompleteObserver(session, responseObserver);
+            }
             if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
                 PyObject[] settings = new PyObject[1];
                 safelyExecute(() -> {
