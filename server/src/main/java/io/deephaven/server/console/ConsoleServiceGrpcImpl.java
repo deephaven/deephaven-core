@@ -48,6 +48,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public static final boolean REMOTE_CONSOLE_DISABLED =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.disable", false);
 
+    public static final boolean AUTOCOMPLETE_DISABLED =
+            Configuration.getInstance().getBooleanWithDefault("deephaven.console.autocomplete.disable", false);
+
     public static final boolean QUIET_AUTOCOMPLETE_ERRORS =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.autocomplete.quiet", true);
 
@@ -257,6 +260,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public StreamObserver<AutoCompleteRequest> autoCompleteStream(
             StreamObserver<AutoCompleteResponse> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            if (AUTOCOMPLETE_DISABLED) {
+                return new NoopAutoCompleteObserver(responseObserver);
+            }
             final SessionState session = sessionService.getCurrentSession();
             if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
                 PyObject[] settings = new PyObject[1];
