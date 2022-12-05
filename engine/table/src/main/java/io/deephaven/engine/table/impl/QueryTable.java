@@ -1086,7 +1086,6 @@ public class QueryTable extends BaseTable {
                                         filteredTable.setWhereListener(whereListener);
                                         recorder.setMergedListener(whereListener);
                                         swapListener.setListenerAndResult(recorder, filteredTable);
-                                        filteredTable.addParentReference(swapListener);
                                         filteredTable.addParentReference(whereListener);
                                     } else if (refreshingFilters) {
                                         final StaticWhereListener whereListener =
@@ -1445,7 +1444,6 @@ public class QueryTable extends BaseTable {
                                     final TableUpdateListener listener =
                                             new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
                                     swapListener.setListenerAndResult(listener, queryTable);
-                                    queryTable.addParentReference(swapListener);
                                 }
 
                                 propagateFlatness(queryTable);
@@ -1589,7 +1587,6 @@ public class QueryTable extends BaseTable {
                                 }
                             };
                             swapListener.setListenerAndResult(listener, resultTable);
-                            resultTable.addParentReference(swapListener);
                         }
 
                         result.setValue(resultTable);
@@ -3020,7 +3017,6 @@ public class QueryTable extends BaseTable {
                 if (swapListener != null) {
                     final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                     swapListener.setListenerAndResult(listener, resultTable);
-                    resultTable.addParentReference(swapListener);
                 }
 
                 result.setValue(resultTable);
@@ -3203,7 +3199,6 @@ public class QueryTable extends BaseTable {
                 if (swapListener != null) {
                     swapListener.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
                             result.resultNode);
-                    result.resultNode.addParentReference(swapListener);
                 }
 
                 return true;

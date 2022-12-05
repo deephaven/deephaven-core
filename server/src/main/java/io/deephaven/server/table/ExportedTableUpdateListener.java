@@ -131,7 +131,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         final SwapListener swapListener = new SwapListener(table);
         swapListener.subscribeForUpdates();
-        final ListenerImpl listener = new ListenerImpl(table, exportId, swapListener);
+        final ListenerImpl listener = new ListenerImpl(table, exportId);
         listener.tryRetainReference();
         updateListenerMap.put(exportId, listener);
 
@@ -182,15 +182,10 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         final private BaseTable table;
         final private int exportId;
 
-        @ReferentialIntegrity
-        final SwapListener swapListener;
-
-        private ListenerImpl(final BaseTable table, final int exportId, final SwapListener swapListener) {
+        private ListenerImpl(final BaseTable table, final int exportId) {
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
             this.exportId = exportId;
-            this.swapListener = swapListener;
-            manage(swapListener);
         }
 
         @Override

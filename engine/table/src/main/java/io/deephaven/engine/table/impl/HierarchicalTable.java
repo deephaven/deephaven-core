@@ -321,7 +321,6 @@ public class HierarchicalTable extends QueryTable {
                 final ListenerImpl listener =
                         new ListenerImpl("hierarchicalTable()", rootTable, table);
                 swapListener.setListenerAndResult(listener, table);
-                table.addParentReference(swapListener);
             }
 
             resultHolder.setValue(table);

@@ -677,11 +677,15 @@ public abstract class BaseTable extends LivenessArtifact
     private SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> ensureChildListenerReferences() {
         // noinspection unchecked
         return ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES,
-                () -> new SimpleReferenceManager<>((
-                        final TableUpdateListener tableUpdateListener) -> tableUpdateListener instanceof LegacyListenerAdapter
-                                ? (LegacyListenerAdapter) tableUpdateListener
-                                : new WeakSimpleReference<>(tableUpdateListener),
-                        true));
+                () -> new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) -> {
+                    if (tableUpdateListener instanceof LegacyListenerAdapter) {
+                        return (LegacyListenerAdapter) tableUpdateListener;
+                    } else if (tableUpdateListener instanceof SwapListener) {
+                        return ((SwapListener) tableUpdateListener).getReferenceForSource();
+                    } else {
+                        return new WeakSimpleReference<>(tableUpdateListener);
+                    }
+                }, true));
     }
 
     @Override
@@ -1392,7 +1396,6 @@ public abstract class BaseTable extends LivenessArtifact
                 if (swapListener != null) {
                     final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                     swapListener.setListenerAndResult(listener, resultTable);
-                    resultTable.addParentReference(swapListener);
                 }
 
                 result.setValue(resultTable);

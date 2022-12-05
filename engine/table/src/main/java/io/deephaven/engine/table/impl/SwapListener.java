@@ -4,6 +4,9 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.reference.SimpleReference;
+import io.deephaven.base.reference.SwappableDelegatingReference;
+import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
@@ -16,17 +19,20 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 /**
  * Watch for ticks and when initialization is complete forward to the eventual listener.
- *<p>
- * The SwapListener is attached to a table so that we can listen for updates during the UGP cycle; and if any
- * updates occur, we'll be able to notice them and retry initialization. If no ticks were received before the result is
- * ready, then we should forward all calls to our eventual listener.
- *<p>
+ * <p>
+ * The SwapListener is attached to a table so that we can listen for updates during the UGP cycle; and if any updates
+ * occur, we'll be able to notice them and retry initialization. If no ticks were received before the result is ready,
+ * then we should forward all calls to our eventual listener.
+ * <p>
  * Callers should use our start and end functions. The start function is called at the beginning of a data snapshot; and
  * allows us to setup our state variables. At the end of the snapshot attempt, end() is called; and if there were no
  * clock changes, we were not gotNotification, and no notifications were enqueued; then we have a successful snapshot
- * and can return true. We then set the currentListener, so that all future calls are forwarded to the listener.
+ * and can return true. We then set the {@code eventualListener}, so that all future calls are forwarded to the
+ * listener, and replace our
  */
 public class SwapListener extends LivenessArtifact implements TableUpdateListener {
 
@@ -55,9 +61,20 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
      */
     final BaseTable sourceTable;
 
+    /**
+     * {@link WeakSimpleReference} to {@code this}, for capturing notifications from {@code sourceTable} before
+     * successful {@link #end(long)}.
+     */
+    private final SimpleReference<TableUpdateListener> initialDelegate = new WeakSimpleReference<>(this);
+    /**
+     * {@link SwappableDelegatingReference}, to be swapped to a reference to the {@code eventualListener} upon
+     * successful {@link #end(long)}.
+     */
+    private final SwappableDelegatingReference<TableUpdateListener> referenceForSource =
+            new SwappableDelegatingReference<>(initialDelegate);
+
     public SwapListener(final BaseTable sourceTable) {
         this.sourceTable = sourceTable;
-        manage(sourceTable);
     }
 
     public ConstructSnapshot.SnapshotControl makeSnapshotControl() {
@@ -81,31 +98,27 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
         final boolean updatedOnThisCycle = currentStep == lastNotificationStep;
         final boolean updating = LogicalClock.getState(clockCycle) == LogicalClock.State.Updating;
         if (DEBUG) {
-            log.info().append("Swap ShiftObliviousListener source=")
-                    .append(System.identityHashCode(sourceTable))
-                    .append(" swap=")
-                    .append(System.identityHashCode(this))
-                    .append(" start: ")
-                    .append(currentStep)
-                    .append(" ")
-                    .append(LogicalClock.getState(clockCycle).toString())
+            log.info().append("SwapListener {source=").append(System.identityHashCode(sourceTable))
+                    .append(", swap=").append(System.identityHashCode(this))
+                    .append("} Start: currentStep=").append(currentStep)
                     .append(", last=").append(lastNotificationStep)
-                    .append(", updating=")
-                    .append(updating)
-                    .append(", updatedOnThisCycle=")
-                    .append(updatedOnThisCycle).endl();
+                    .append(", updating=").append(updating)
+                    .append(", updatedOnThisCycle=").append(updatedOnThisCycle)
+                    .endl();
         }
         return updating && !updatedOnThisCycle;
     }
 
     /**
-     * Ends a snapshot.
+     * Ends a snapshot. Overriding methods must call {@code super} in order to ensure that the source's reference to the
+     * child listener is properly swapped to the eventual listener.
      *
      * @param clockCycle The {@link LogicalClock logical clock} cycle we are ending a snapshot on
      * @return true if the snapshot was successful, false if we should try again.
      * @throws IllegalStateException If the snapshot was successful (consistent), but the snapshot function failed to
      *         set the eventual listener or eventual result
      */
+    @OverridingMethodsMustInvokeSuper
     protected synchronized boolean end(@SuppressWarnings("unused") final long clockCycle) {
         if (isInInitialNotificationWindow()) {
             if (eventualListener == null) {
@@ -120,21 +133,30 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
         }
 
         if (DEBUG) {
-            log.info().append("Swap ShiftObliviousListener ")
-                    .append(System.identityHashCode(sourceTable))
-                    .append(" swap=")
-                    .append(System.identityHashCode(this))
-                    .append(" End: success=")
-                    .append(success)
-                    .append(", last=")
-                    .append(lastNotificationStep).endl();
+            log.info().append("SwapListener {source=").append(System.identityHashCode(sourceTable))
+                    .append(" swap=").append(System.identityHashCode(this))
+                    .append("} End: success=").append(success)
+                    .append(", last=").append(lastNotificationStep)
+                    .endl();
         }
 
         if (success) {
             eventualResult.setLastNotificationStep(lastNotificationStep);
+            referenceForSource.swapDelegate(initialDelegate, eventualListener instanceof LegacyListenerAdapter
+                    ? (LegacyListenerAdapter) eventualListener
+                    : new WeakSimpleReference<>(eventualListener));
         }
 
         return success;
+    }
+
+    /**
+     * Get a {@link SimpleReference} to be used in the source table's list of child listener references.
+     *
+     * @return A (swappable) {@link SimpleReference} to {@code this}
+     */
+    public SimpleReference<TableUpdateListener> getReferenceForSource() {
+        return referenceForSource;
     }
 
     @Override
@@ -147,11 +169,10 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
     @Override
     public synchronized NotificationQueue.ErrorNotification getErrorNotification(
             final Throwable originalException, final Entry sourceEntry) {
-        if (success && !isInInitialNotificationWindow()) {
-            return eventualListener.getErrorNotification(originalException, sourceEntry);
-        } else {
+        if (!success || isInInitialNotificationWindow()) {
             return new EmptyErrorNotification();
         }
+        return eventualListener.getErrorNotification(originalException, sourceEntry);
     }
 
     @Override
@@ -161,8 +182,49 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
     }
 
     @Override
-    public synchronized NotificationQueue.Notification getNotification(final TableUpdate update) {
-        return doGetNotification(() -> eventualListener.getNotification(update));
+    public synchronized NotificationQueue.Notification getNotification(final TableUpdate upstream) {
+        if (!success || isInInitialNotificationWindow()) {
+            return new EmptyNotification();
+        }
+
+        final NotificationQueue.Notification notification = eventualListener.getNotification(upstream);
+        if (!DEBUG_NOTIFICATIONS) {
+            return notification;
+        }
+
+        return new AbstractNotification(notification.isTerminal()) {
+
+            @Override
+            public boolean canExecute(final long step) {
+                return notification.canExecute(step);
+            }
+
+            @Override
+            public LogOutput append(final LogOutput logOutput) {
+                return logOutput.append("Wrapped(SwapListener {source=").append(System.identityHashCode(sourceTable))
+                        .append(" swap=").append(System.identityHashCode(SwapListener.this))
+                        .append("}, notification=").append(notification).append(")");
+            }
+
+            @Override
+            public void run() {
+                log.info().append("SwapListener {source=").append(System.identityHashCode(sourceTable))
+                        .append(" swap=").append(System.identityHashCode(SwapListener.this))
+                        .append(", clock=").append(LogicalClock.DEFAULT.currentStep())
+                        .append("} Firing notification")
+                        .endl();
+                notification.runInContext();
+                log.info().append("SwapListener {source=").append(System.identityHashCode(sourceTable))
+                        .append(" swap=").append(System.identityHashCode(SwapListener.this))
+                        .append("} Complete notification")
+                        .endl();
+            }
+
+            @Override
+            public ExecutionContext getExecutionContext() {
+                return null;
+            }
+        };
     }
 
     boolean isInInitialNotificationWindow() {
@@ -176,16 +238,17 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
      * @param listener The listener that we will eventually forward all updates to
      * @param resultTable The table that will result from this operation
      */
-    public synchronized void setListenerAndResult(@NotNull final TableUpdateListener listener,
+    public synchronized void setListenerAndResult(
+            @NotNull final TableUpdateListener listener,
             @NotNull final NotificationStepReceiver resultTable) {
         eventualListener = listener;
         eventualResult = resultTable;
         if (DEBUG) {
-            log.info().append("SwapListener source=")
-                    .append(System.identityHashCode(sourceTable))
-                    .append(", swap=")
-                    .append(System.identityHashCode(this)).append(", result=")
-                    .append(System.identityHashCode(resultTable)).endl();
+            log.info().append("SwapListener {source=").append(System.identityHashCode(sourceTable))
+                    .append(", swap=").append(System.identityHashCode(this))
+                    .append(", result=").append(System.identityHashCode(resultTable))
+                    .append('}')
+                    .endl();
         }
     }
 
@@ -200,59 +263,5 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
     public void destroy() {
         super.destroy();
         sourceTable.removeUpdateListener(this);
-    }
-
-    interface NotificationFactory {
-        NotificationQueue.Notification newNotification();
-    }
-
-    NotificationQueue.Notification doGetNotification(final NotificationFactory factory) {
-        if (!success || isInInitialNotificationWindow()) {
-            return new EmptyNotification();
-        }
-
-        final NotificationQueue.Notification notification = factory.newNotification();
-        if (!DEBUG_NOTIFICATIONS) {
-            return notification;
-        }
-
-        return new AbstractNotification(notification.isTerminal()) {
-
-            @Override
-            public boolean canExecute(final long step) {
-                return notification.canExecute(step);
-            }
-
-            @Override
-            public LogOutput append(final LogOutput logOutput) {
-                return logOutput.append("Wrapped(SwapListener=")
-                        .append(System.identityHashCode(sourceTable))
-                        .append(" swap=")
-                        .append(System.identityHashCode(SwapListener.this))
-                        .append("){")
-                        .append(notification)
-                        .append("}");
-            }
-
-            @Override
-            public void run() {
-                log.info().append("SwapListener: Firing notification ")
-                        .append(System.identityHashCode(sourceTable))
-                        .append(" swap=")
-                        .append(System.identityHashCode(SwapListener.this))
-                        .append(", clock=")
-                        .append(LogicalClock.DEFAULT.currentStep()).endl();
-                notification.runInContext();
-                log.info().append("SwapListener: Complete notification ")
-                        .append(System.identityHashCode(sourceTable))
-                        .append(" swap=")
-                        .append(System.identityHashCode(SwapListener.this)).endl();
-            }
-
-            @Override
-            public ExecutionContext getExecutionContext() {
-                return null;
-            }
-        };
     }
 }

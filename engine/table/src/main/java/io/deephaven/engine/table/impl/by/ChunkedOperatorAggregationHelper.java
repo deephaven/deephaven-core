@@ -280,13 +280,6 @@ public class ChunkedOperatorAggregationHelper {
                     };
 
             swapListener.setListenerAndResult(listener, result);
-            result.addParentReference(swapListener);
-            // In general, result listeners depend on the swap listener for continued liveness, but most
-            // operations handle this by having the result table depend on both (in both a reachability sense
-            // and a liveness sense). That said, it is arguably very natural for the result listener to manage
-            // the swap listener. We do so in this case because partitionBy requires it in order for the
-            // sub-tables to continue ticking if the result Table and TableMap are released.
-            listener.manage(swapListener);
         }
 
         return ac.transformResult(result);
@@ -2120,8 +2113,6 @@ public class ChunkedOperatorAggregationHelper {
                         }
                     };
             swapListener.setListenerAndResult(listener, result);
-            result.addParentReference(swapListener);
-            listener.manage(swapListener); // See note on keyed version
         }
 
         ac.setReverseLookupFunction(key -> SmartKey.EMPTY.equals(key) ? 0 : -1);

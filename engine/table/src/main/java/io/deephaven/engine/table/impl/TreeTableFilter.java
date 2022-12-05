@@ -153,7 +153,6 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
             if (swapListener != null) {
                 treeListener = new TreeTableFilterListener("treeTable filter", source, filteredRaw);
                 swapListener.setListenerAndResult(treeListener, filteredRaw);
-                filteredRaw.addParentReference(swapListener);
                 filteredRaw.addParentReference(treeListener);
             }
 

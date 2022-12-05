@@ -196,11 +196,7 @@ public class ReverseLookupListener extends LivenessArtifact
                     return true;
                 });
 
-        final ReverseLookupListener resultListenerValue = resultListener.getValue();
-        if (swapListener != null) {
-            resultListenerValue.listener.manage(swapListener);
-        }
-        return resultListenerValue;
+        return resultListener.getValue();
     }
 
     public static ReverseLookupListener makeReverseLookupListenerWithLock(Table source, String... columns) {

@@ -80,7 +80,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
         final QueryTable viewed = (QueryTable) source.updateView("UC=Str.toUpperCase()");
-        final Table filtered = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filtered = viewed.where("UC=`A`");
 
         TableTools.showWithRowSet(filtered);
 
@@ -91,8 +91,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         assertFalse(filtered.isFailed());
 
-        final Table filteredAgain =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredAgain = viewed.where("UC=`A`");
         assertSame(filtered, filteredAgain);
 
         allowingError(() -> {
@@ -111,8 +110,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
             source.notifyListeners(i(), i(5), i());
         });
 
-        final Table filteredYetAgain =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredYetAgain = viewed.where("UC=`A`");
         assertNotSame(filtered, filteredYetAgain);
         assertFalse(filteredYetAgain.isFailed());
         assertTableEquals(TableTools.newTable(TableTools.col("Str", "A"), TableTools.col("UC", "A")), filteredYetAgain);
