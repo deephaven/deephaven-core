@@ -24,6 +24,7 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -214,6 +215,20 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
             // use a listener to decide when the table is complete
             listener = new InstrumentedTableUpdateListener("example-listener") {
+                @ReferentialIntegrity
+                final BarrageTable tableRef = resultTable;
+                {
+                    // Maintain a liveness ownership relationship with resultTable for the lifetime of the
+                    // listener
+                    manage(tableRef);
+                }
+
+                @Override
+                protected void destroy() {
+                    super.destroy();
+                    tableRef.removeUpdateListener(this);
+                }
+
                 @Override
                 protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     exceptionWhileCompleting = originalException;

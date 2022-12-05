@@ -20,7 +20,6 @@ import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -186,6 +185,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
             this.exportId = exportId;
+            manage(table);
         }
 
         @Override
@@ -196,6 +196,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         @Override
         public void onFailureInternal(final Throwable error, final Entry sourceEntry) {
             sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), error);
+        }
+
+        @Override
+        public void destroy() {
+            super.destroy();
+            table.removeUpdateListener(this);
         }
     }
 
