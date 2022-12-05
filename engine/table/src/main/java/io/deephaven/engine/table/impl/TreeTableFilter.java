@@ -564,7 +564,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
 
         @Override
         public synchronized boolean end(final long afterClockValue) {
-            if (ShiftObliviousSwapListener.DEBUG) {
+            if (SwapListener.DEBUG) {
                 log.info().append("SwapListenerWithRLL end() swap=").append(System.identityHashCode(this))
                         .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
                         .append(LogicalClock.getState(afterClockValue).toString())
@@ -579,7 +579,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
         public synchronized void setListenerAndResult(@NotNull final TableUpdateListener listener,
                 @NotNull final NotificationStepReceiver resultTable) {
             super.setListenerAndResult(listener, resultTable);
-            if (ShiftObliviousSwapListener.DEBUG) {
+            if (SwapListener.DEBUG) {
                 log.info().append("SwapListenerWithRLL swap=").append(System.identityHashCode(SwapListenerWithRLL.this))
                         .append(", result=").append(System.identityHashCode(resultTable)).endl();
             }

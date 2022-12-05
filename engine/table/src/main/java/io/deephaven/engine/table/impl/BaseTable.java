@@ -1424,8 +1424,8 @@ public abstract class BaseTable extends LivenessArtifact
         return result;
     }
 
-    public static <SL extends SwapListenerBase<?>> void initializeWithSnapshot(
-            String logPrefix, SL swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
+    public static  void initializeWithSnapshot(
+            String logPrefix, SwapListener swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
             snapshotFunction.call(false, LogicalClock.DEFAULT.currentValue());
             return;
@@ -1433,7 +1433,7 @@ public abstract class BaseTable extends LivenessArtifact
         ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);
     }
 
-    public interface SwapListenerFactory<T extends SwapListenerBase<?>> {
+    public interface SwapListenerFactory<T extends SwapListener> {
         T newListener(BaseTable sourceTable);
     }
 
@@ -1445,7 +1445,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @return a swap listener for this table (or null)
      */
     @Nullable
-    public <T extends SwapListenerBase<?>> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
+    public <T extends SwapListener> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
         if (!isRefreshing()) {
             return null;
         }

@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 /**
- * Used by {@link SwapListenerBase swap listeners} to set the notification step of elements in our DAG.
+ * Used by {@link SwapListener swap listeners} to set the notification step of elements in our DAG.
  */
 public interface NotificationStepReceiver {
 
