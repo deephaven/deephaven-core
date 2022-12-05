@@ -15,12 +15,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 
 public class ReplayTable extends QueryTable implements Runnable {
-
+    /**
+     * Creates a new ReplayTable based on a row set, set of column sources, time column, and a replayer
+     */
     private final Replayer replayer;
     private final ColumnSource<Long> nanoTimeSource;
     private final RowSet.Iterator rowSetIterator;
 
     private long nextRowKey = RowSequence.NULL_ROW_KEY;
+    private long currentTimeNanos = QueryConstants.NULL_LONG;
     private long nextTimeNanos = QueryConstants.NULL_LONG;
     private boolean done;
 
@@ -49,10 +52,20 @@ public class ReplayTable extends QueryTable implements Runnable {
         }
     }
 
+    /**
+     * Advance the row key and time iterators if there are any left in the table.
+     * 
+     * @throws RuntimeException if time is null, or if the next time is before the current time.
+     */
     private void advanceIterators() {
         if (rowSetIterator.hasNext()) {
             nextRowKey = rowSetIterator.nextLong();
+            currentTimeNanos = nextTimeNanos;
             nextTimeNanos = nanoTimeSource.getLong(nextRowKey);
+            if (nextTimeNanos == QueryConstants.NULL_LONG || nextTimeNanos < currentTimeNanos) {
+                throw new RuntimeException(
+                    "The historical table contains a null or decreasing time value at row number " + nextRowKey + ".");
+            }
         } else {
             // NB: It would be best to ensure that if this is hit during construction, we're never added to the UGP.
             // If this is hit during update processing, it would be great to remove ourselves from the UGP right away.
@@ -60,6 +73,9 @@ public class ReplayTable extends QueryTable implements Runnable {
         }
     }
 
+    /**
+     * Advance iterators to the current time.
+     */
     private RowSet advanceToCurrentTime() {
         final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
         final long currentReplayTimeNanos = replayer.clock().currentTimeNanos();
