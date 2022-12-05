@@ -214,7 +214,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             subscribed = true;
 
             // use a listener to decide when the table is complete
-            listener = new InstrumentedTableUpdateListener("example-listener") {
+            listener = new InstrumentedTableUpdateListener("completeness-listener") {
                 @ReferentialIntegrity
                 final BarrageTable tableRef = resultTable;
                 {
