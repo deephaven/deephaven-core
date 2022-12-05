@@ -443,10 +443,10 @@ public class WorkerConnection {
                         if (checkStatus((ResponseStreamWrapper.Status) fail)) {
                             // restart the termination notification
                             subscribeToTerminationNotification();
-                            return;
                         } else {
                             info.notifyConnectionError(Js.cast(fail));
                         }
+                        return;
                     }
                     assert success != null;
 

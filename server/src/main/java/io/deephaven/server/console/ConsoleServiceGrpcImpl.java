@@ -276,18 +276,17 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 log.info().append(canJedi ? "Using jedi for python autocomplete"
                         : "No jedi dependency available in python environment; disabling autocomplete.").endl();
                 return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session)
-                        : new NoopAutoCompleteObserver(responseObserver);
+                        : new NoopAutoCompleteObserver(session, responseObserver);
             }
 
             return new JavaAutoCompleteObserver(session, responseObserver);
         });
     }
 
-    private static class NoopAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
-        private final StreamObserver<AutoCompleteResponse> responseObserver;
-
-        public NoopAutoCompleteObserver(StreamObserver<AutoCompleteResponse> responseObserver) {
-            this.responseObserver = responseObserver;
+    private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
+            implements StreamObserver<AutoCompleteRequest> {
+        public NoopAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
+            super(session, responseObserver);
         }
 
         @Override

@@ -27,6 +27,7 @@ import javax.inject.Singleton;
         HealthCheckModule.class,
         PythonPluginsRegistration.Module.class,
         JettyServerModule.class,
+        HealthCheckModule.class,
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         SessionToExecutionStateModule.class,

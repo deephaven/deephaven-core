@@ -9,6 +9,7 @@ import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.proto.backplane.script.grpc.*;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
+import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
@@ -23,7 +24,8 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 /**
  * Autocomplete handling for python that will use the jedi library, if it is installed.
  */
-public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
+public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
+        implements StreamObserver<AutoCompleteRequest> {
 
     private static final Logger log = LoggerFactory.getLogger(PythonAutoCompleteObserver.class);
 
@@ -32,14 +34,11 @@ public class PythonAutoCompleteObserver implements StreamObserver<AutoCompleteRe
      */
     private static final long HUNDRED_MS_IN_NS = 100_000_000;
     private final Provider<ScriptSession> scriptSession;
-    private final SessionState session;
-    private final StreamObserver<AutoCompleteResponse> responseObserver;
 
     public PythonAutoCompleteObserver(StreamObserver<AutoCompleteResponse> responseObserver,
             Provider<ScriptSession> scriptSession, final SessionState session) {
+        super(session, responseObserver);
         this.scriptSession = scriptSession;
-        this.session = session;
-        this.responseObserver = responseObserver;
     }
 
     @Override

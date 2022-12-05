@@ -27,6 +27,7 @@ import javax.inject.Singleton;
         HealthCheckModule.class,
         PythonPluginsRegistration.Module.class,
         NettyServerModule.class,
+        HealthCheckModule.class,
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         SessionToExecutionStateModule.class,

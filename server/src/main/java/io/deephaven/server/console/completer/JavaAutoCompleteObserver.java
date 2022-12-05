@@ -14,6 +14,7 @@ import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.proto.backplane.script.grpc.*;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
+import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
@@ -29,12 +30,11 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
  * Autocomplete handling for JVM languages, that directly can interact with Java instances without any name mangling,
  * and are able to use our flexible parser.
  */
-public class JavaAutoCompleteObserver implements StreamObserver<AutoCompleteRequest> {
+public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
+        implements StreamObserver<AutoCompleteRequest> {
 
     private static final Logger log = LoggerFactory.getLogger(JavaAutoCompleteObserver.class);
     private final CompletionParser parser;
-    private final SessionState session;
-    private final StreamObserver<AutoCompleteResponse> responseObserver;
 
     private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
 
@@ -49,10 +49,8 @@ public class JavaAutoCompleteObserver implements StreamObserver<AutoCompleteRequ
         });
     }
 
-
     public JavaAutoCompleteObserver(SessionState session, StreamObserver<AutoCompleteResponse> responseObserver) {
-        this.session = session;
-        this.responseObserver = responseObserver;
+        super(session, responseObserver);
         parser = ensureParserForSession(session);
     }
 

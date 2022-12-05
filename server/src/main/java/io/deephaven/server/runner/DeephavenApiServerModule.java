@@ -31,7 +31,6 @@ import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
-import io.grpc.protobuf.services.HealthStatusManager;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Named;
@@ -64,15 +63,14 @@ import java.util.concurrent.TimeUnit;
         PluginsModule.class,
         PartitionedTableServiceModule.class,
         FilesystemStorageServiceModule.class,
-        HealthCheckModule.class,
         ConfigServiceModule.class,
 })
 public class DeephavenApiServerModule {
 
     @Provides
     @ElementsIntoSet
-    static Set<BindableService> primeServices(HealthStatusManager healthStatusManager) {
-        return Collections.singleton(healthStatusManager.getHealthService());
+    static Set<BindableService> primeServices() {
+        return Collections.emptySet();
     }
 
     @Provides
