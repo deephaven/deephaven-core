@@ -9,7 +9,6 @@ dependencies {
     api project(":engine-table")
     api project(":engine-rowset")
 
-    implementation TestTools.projectDependency(project, 'engine-context')
     implementation project(':Configuration')
     implementation project(':engine-tuple')
     implementation project(':base-test-utils')

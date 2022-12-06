@@ -4,6 +4,7 @@
 package io.deephaven.auth;
 
 import com.google.rpc.Code;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -70,6 +71,12 @@ public interface ServiceAuthWiring<ServiceImplBase> {
             mustHaveRequest = method.getMethodDescriptor().getType().clientSendsOneMessage();
             serviceName = method.getMethodDescriptor().getServiceName();
             methodName = method.getMethodDescriptor().getFullMethodName();
+
+            // validate that we have handlers for the methods we will try to invoke
+            if (mustHaveRequest) {
+                Assert.neqNull(callStartedCallback, "callStartedCallback");
+            }
+            Assert.neqNull(messageReceivedCallback, "messageReceivedCallback");
         }
 
         @Override

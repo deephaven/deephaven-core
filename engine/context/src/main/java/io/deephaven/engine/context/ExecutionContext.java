@@ -115,7 +115,7 @@ public class ExecutionContext {
      * @return the execution context
      */
     public ExecutionContext withAuthContext(final AuthContext authContext) {
-        if (authContext == null || authContext == this.authContext) {
+        if (authContext == this.authContext) {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler);
