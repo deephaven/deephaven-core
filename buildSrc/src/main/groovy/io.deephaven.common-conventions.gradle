@@ -1,6 +1,7 @@
 plugins {
     id 'base'
     id 'io.deephaven.lifecycle-conventions'
+    id 'io.deephaven.java-repository-conventions'
 }
 
 group = 'io.deephaven'
