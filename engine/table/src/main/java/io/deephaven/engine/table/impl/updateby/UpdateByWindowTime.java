@@ -243,7 +243,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
             context.dirtySourceIndices = getUniqueSourceIndices();
 
             makeOperatorContexts(ctx);
-            ctx.isDirty = true;
+            ctx.isDirty = !upstream.empty();;
             return;
         }
 

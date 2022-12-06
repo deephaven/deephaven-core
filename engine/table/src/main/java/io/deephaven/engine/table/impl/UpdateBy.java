@@ -23,14 +23,8 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
-import io.deephaven.engine.table.impl.util.InverseRowRedirectionImpl;
-import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
-import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
-import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -324,7 +318,8 @@ public abstract class UpdateBy {
             }
 
             if (initialStep) {
-                if (OperationInitializationThreadPool.NUM_THREADS > 1) {
+                if (OperationInitializationThreadPool.NUM_THREADS > 1
+                    && !OperationInitializationThreadPool.isInitializationThread()) {
                     jobScheduler = new OperationInitializationPoolJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;

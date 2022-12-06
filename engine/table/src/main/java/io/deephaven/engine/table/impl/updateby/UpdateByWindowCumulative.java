@@ -67,7 +67,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
             context.dirtySourceIndices = getUniqueSourceIndices();
 
             makeOperatorContexts(context);
-            context.isDirty = true;
+            context.isDirty = !upstream.empty();
             return;
         }
 
