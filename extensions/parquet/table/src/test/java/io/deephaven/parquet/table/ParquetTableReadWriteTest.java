@@ -77,7 +77,18 @@ public class ParquetTableReadWriteTest {
                         "someKey = `` + (int)(i /100)",
                         "nullKey = i < -1?`123`:null",
                         "bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()",
-                        "biColumn = java.math.BigInteger.valueOf(ii)"));
+                        "biColumn = java.math.BigInteger.valueOf(ii)",
+                        "nullKey = i < -1?`123`:null",
+                        "nullIntColumn = (int)null",
+                        "nullLongColumn = (long)null",
+                        "nullDoubleColumn = (double)null",
+                        "nullFloatColumn = (float)null",
+                        "nullBoolColumn = (Boolean)null",
+                        "nullShortColumn = (short)null",
+                        "nullByteColumn = (byte)null",
+                        "nullCharColumn = (char)null",
+                        "nullTime = (DateTime)null",
+                        "nullString = (String)null"));
         if (includeSerializable) {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }

@@ -177,7 +177,7 @@ class ParquetTestCase(BaseTestCase):
             "nullByteColumn = (byte)null",
             "nullCharColumn = (char)null",
             "nullTime = (DateTime)null",
-            "nullKey = i == 50 ? `hi` : (String)null",
+            "nullString = (String)null",
             # TODO(deephaven-core#3151) BigInteger/BigDecimal columns don't roundtrip cleanly
             # "nullBigDecColumn = (java.math.BigDecimal)null",
             # "nullBigIntColumn = (java.math.BigInteger)null"
