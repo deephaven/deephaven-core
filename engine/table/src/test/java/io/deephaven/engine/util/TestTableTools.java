@@ -7,8 +7,8 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -84,7 +84,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
 
         scope = new LivenessScope();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
         LivenessScopeStack.push(scope);
 
         oldReporter = AsyncClientErrorNotifier.setReporter(this);

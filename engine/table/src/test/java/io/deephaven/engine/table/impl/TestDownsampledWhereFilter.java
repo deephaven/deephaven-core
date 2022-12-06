@@ -3,8 +3,8 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.time.DateTimeUtils;
@@ -28,7 +28,7 @@ public class TestDownsampledWhereFilter {
 
     @Before
     public void setUp() throws Exception {
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @After

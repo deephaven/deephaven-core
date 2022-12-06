@@ -11,6 +11,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
@@ -871,30 +872,33 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         filter.getRowSet().writableCast().remove(1);
 
         final PartitionedTable partitioned = input.partitionBy("First");
-        final PartitionedTable transformed = partitioned.transform(ExecutionContext.createForUnitTests(), tableIn -> {
-            final QueryTable tableOut = (QueryTable) tableIn.getSubTable(tableIn.getRowSet());
-            tableIn.addUpdateListener(new BaseTable.ListenerImpl("Slow Listener", tableIn, tableOut) {
-                @Override
-                public void onUpdate(TableUpdate upstream) {
-                    try {
-                        // This is lame, but a better approach requires very strict notification execution ordering,
-                        // and will *break* correct implementations since the requisite ordering to trigger the desired
-                        // error case is prevented by correct constituent dependency management.
-                        Thread.sleep(100);
-                    } catch (InterruptedException ignored) {
-                    }
-                    super.onUpdate(upstream);
-                }
-            });
-            return tableOut;
-        });
+        final PartitionedTable transformed =
+                partitioned.transform(TestExecutionContext.createForUnitTests(), tableIn -> {
+                    final QueryTable tableOut = (QueryTable) tableIn.getSubTable(tableIn.getRowSet());
+                    tableIn.addUpdateListener(new BaseTable.ListenerImpl("Slow Listener", tableIn, tableOut) {
+                        @Override
+                        public void onUpdate(TableUpdate upstream) {
+                            try {
+                                // This is lame, but a better approach requires very strict notification execution
+                                // ordering,
+                                // and will *break* correct implementations since the requisite ordering to trigger the
+                                // desired
+                                // error case is prevented by correct constituent dependency management.
+                                Thread.sleep(100);
+                            } catch (InterruptedException ignored) {
+                            }
+                            super.onUpdate(upstream);
+                        }
+                    });
+                    return tableOut;
+                });
 
         final PartitionedTable filtered = PartitionedTableFactory.of(transformed.table().whereIn(filter, "First=Only"),
                 transformed.keyColumnNames(), transformed.uniqueKeys(), transformed.constituentColumnName(),
                 transformed.constituentDefinition(), transformed.constituentChangesPermitted());
         // If we (incorrectly) deliver PT notifications ahead of constituent notifications, we will cause a
         // notification-on-instantiation-step error for this update.
-        final PartitionedTable filteredTransformed = filtered.transform(ExecutionContext.createForUnitTests(),
+        final PartitionedTable filteredTransformed = filtered.transform(TestExecutionContext.createForUnitTests(),
                 t -> t.update("Third=22.2*Second"));
 
         TestCase.assertEquals(1, filteredTransformed.table().size());

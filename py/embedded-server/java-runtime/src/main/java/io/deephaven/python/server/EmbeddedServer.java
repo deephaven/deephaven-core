@@ -12,6 +12,8 @@ import io.deephaven.internal.log.Bootstrap;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
+import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.console.SessionToExecutionStateModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
@@ -59,6 +61,9 @@ public class EmbeddedServer {
             @BindsInstance
             Builder withJettyConfig(JettyConfig config);
 
+            @BindsInstance
+            Builder withAuthorizationProvider(AuthorizationProvider authorizationProvider);
+
             PythonServerComponent build();
         }
 
@@ -96,6 +101,7 @@ public class EmbeddedServer {
         DaggerEmbeddedServer_PythonServerComponent
                 .builder()
                 .withJettyConfig(builder.build())
+                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(null)
                 .withErr(null)
                 .build()
