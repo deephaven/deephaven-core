@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation project(':authentication')
+    implementation project(':authorization')
     implementation project(':engine-table')
     implementation project(':extensions-csv')
     implementation project(':extensions-parquet-table')
@@ -90,6 +91,7 @@ dependencies {
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
+    testImplementation TestTools.projectDependency(project, 'engine-context')
     testImplementation TestTools.projectDependency(project, 'Util')
 
     runtimeOnly project(':Numerics'), project(':extensions-kafka')

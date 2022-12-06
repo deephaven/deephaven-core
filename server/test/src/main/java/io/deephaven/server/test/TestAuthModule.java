@@ -5,7 +5,6 @@ package io.deephaven.server.test;
 
 import dagger.Module;
 import dagger.Provides;
-import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.auth.AuthContext;
@@ -17,12 +16,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Module
-public class AuthTestModule {
+public class TestAuthModule {
     public static class BasicAuthTestImpl implements BasicAuthMarshaller.Handler {
         public Map<String, String> validLogins = new HashMap<>();
 
         @Override
-        public Optional<AuthContext> login(String username, String password) throws AuthenticationException {
+        public Optional<AuthContext> login(String username, String password) {
             final String validPassword = validLogins.get(username);
             if (Objects.equals(validPassword, password)) {
                 return Optional.of(new AuthContext.SuperUser());

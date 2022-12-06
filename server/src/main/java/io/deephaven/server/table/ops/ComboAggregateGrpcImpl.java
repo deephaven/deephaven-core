@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -32,9 +33,9 @@ import static io.deephaven.api.agg.Aggregation.*;
 public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateRequest> {
 
     @Inject
-    public ComboAggregateGrpcImpl() {
-        super(BatchTableRequest.Operation::getComboAggregate, ComboAggregateRequest::getResultId,
-                ComboAggregateRequest::getSourceId);
+    public ComboAggregateGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionComboAggregate, BatchTableRequest.Operation::getComboAggregate,
+                ComboAggregateRequest::getResultId, ComboAggregateRequest::getSourceId);
     }
 
     @Override

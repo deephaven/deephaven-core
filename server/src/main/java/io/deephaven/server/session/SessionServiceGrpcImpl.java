@@ -57,7 +57,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     private final TicketRouter ticketRouter;
 
     @Inject()
-    public SessionServiceGrpcImpl(final SessionService service, final TicketRouter ticketRouter) {
+    public SessionServiceGrpcImpl(
+            final SessionService service,
+            final TicketRouter ticketRouter) {
         this.service = service;
         this.ticketRouter = ticketRouter;
     }
@@ -126,6 +128,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void release(final ReleaseRequest request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = service.getCurrentSession();
+
             if (!request.hasId()) {
                 responseObserver
                         .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
@@ -157,6 +160,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void exportFromTicket(ExportRequest request, StreamObserver<ExportResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = service.getCurrentSession();
+
             if (!request.hasSourceId()) {
                 responseObserver
                         .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Source ticket not supplied"));
@@ -282,6 +286,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 final Metadata metadata,
                 final ServerCallHandler<ReqT, RespT> serverCallHandler) {
             SessionState session = null;
+
+            // Lookup the session using Flight Auth 1.0 token.
             final byte[] altToken = metadata.get(AuthConstants.TOKEN_KEY);
             if (altToken != null) {
                 try {
@@ -290,6 +296,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 }
             }
 
+            // Lookup the session using Flight Auth 2.0 token.
             final String token = metadata.get(SESSION_HEADER_KEY);
             if (session == null && token != null) {
                 try {
@@ -304,10 +311,12 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     return new ServerCall.Listener<>() {};
                 }
             }
+
+            // On the outer half of the call we'll install the context that includes our session.
             final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session);
-            final Context newContext = Context.current().withValues(
+            final Context context = Context.current().withValues(
                     SESSION_CONTEXT_KEY, session, SESSION_CALL_KEY, serverCall);
-            return Contexts.interceptCall(newContext, serverCall, metadata, serverCallHandler);
+            return Contexts.interceptCall(context, serverCall, metadata, serverCallHandler);
         }
     }
 }

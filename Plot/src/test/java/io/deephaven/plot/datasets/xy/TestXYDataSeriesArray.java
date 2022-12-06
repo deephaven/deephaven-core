@@ -4,7 +4,7 @@
 package io.deephaven.plot.datasets.xy;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.color.Color;
@@ -29,7 +29,7 @@ public class TestXYDataSeriesArray extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @Override

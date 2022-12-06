@@ -5,15 +5,22 @@ package io.deephaven.server.session;
 
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
 import dagger.multibindings.IntoSet;
+import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.util.AuthorizationWrappedGrpcBinding;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
 
 @Module
 public interface SessionModule {
-    @Binds
+    @Provides
     @IntoSet
-    BindableService bindSessionServiceGrpcImpl(SessionServiceGrpcImpl sessionServiceGrpc);
+    static BindableService bindSessionServiceGrpcImpl(
+            AuthorizationProvider authProvider, SessionServiceGrpcImpl sessionServiceGrpc) {
+        return new AuthorizationWrappedGrpcBinding<>(
+                authProvider.getSessionServiceAuthWiring(), sessionServiceGrpc);
+    }
 
     @Binds
     @IntoSet
