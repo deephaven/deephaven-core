@@ -91,7 +91,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByCumulativeOperato
             outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_BYTE;
         }

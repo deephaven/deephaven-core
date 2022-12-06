@@ -85,7 +85,7 @@ public abstract class BaseIntUpdateByOperator extends UpdateByCumulativeOperator
             outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_INT;
         }

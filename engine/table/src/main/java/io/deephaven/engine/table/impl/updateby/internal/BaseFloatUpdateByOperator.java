@@ -79,7 +79,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
             outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_FLOAT;
         }

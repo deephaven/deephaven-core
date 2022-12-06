@@ -101,7 +101,7 @@ public abstract class BaseWindowedIntUpdateByOperator extends UpdateByWindowedOp
             outputFillContext.close();
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_INT;
             nullCount = 0;

@@ -86,7 +86,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
             outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = null;
         }

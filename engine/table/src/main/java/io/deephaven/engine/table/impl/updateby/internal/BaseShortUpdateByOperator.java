@@ -85,7 +85,7 @@ public abstract class BaseShortUpdateByOperator extends UpdateByCumulativeOperat
             outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_SHORT;
         }

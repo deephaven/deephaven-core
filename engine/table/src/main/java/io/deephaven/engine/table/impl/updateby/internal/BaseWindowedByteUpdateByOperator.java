@@ -107,7 +107,7 @@ public abstract class BaseWindowedByteUpdateByOperator extends UpdateByWindowedO
             outputFillContext.close();
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_BYTE;
             nullCount = 0;

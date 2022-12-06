@@ -95,7 +95,7 @@ public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowed
             outputFillContext.close();
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_FLOAT;
             nullCount = 0;

@@ -96,7 +96,7 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
             outputFillContext.close();
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_CHAR;
             nullCount = 0;

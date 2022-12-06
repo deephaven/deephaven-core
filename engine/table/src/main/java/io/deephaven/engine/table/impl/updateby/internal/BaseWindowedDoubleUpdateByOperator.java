@@ -100,7 +100,7 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
             outputFillContext.close();
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_DOUBLE;
             nullCount = 0;

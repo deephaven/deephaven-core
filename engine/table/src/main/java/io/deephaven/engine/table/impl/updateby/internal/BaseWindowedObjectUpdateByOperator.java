@@ -102,7 +102,7 @@ public abstract class BaseWindowedObjectUpdateByOperator<T> extends UpdateByWind
             outputFillContext.close();
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = null;
             nullCount = 0;

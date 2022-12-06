@@ -84,7 +84,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
             outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_DOUBLE;
         }

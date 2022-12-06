@@ -80,7 +80,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
             outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_CHAR;
         }

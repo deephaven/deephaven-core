@@ -101,7 +101,7 @@ public abstract class BaseWindowedShortUpdateByOperator extends UpdateByWindowed
             outputFillContext.close();
         }
 
-        @FinalDefault
+        @Override
         public void reset() {
             curVal = NULL_SHORT;
             nullCount = 0;
