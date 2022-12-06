@@ -60,48 +60,64 @@ class JavaDependencies {
         }
     }
 
-    private static void allDependencies(Configuration configuration, Consumer<Project> consumer) {
+    private static void allDependencies(Configuration configuration, Consumer<ProjectDependency> consumer) {
         configuration
                 .getAllDependencies()
                 .findAll { it instanceof ProjectDependency }
-                .collect { ((ProjectDependency)it).dependencyProject }
+                .collect { it ->
+                    (ProjectDependency)it
+                }
                 .each { it ->
                     consumer.accept(it)
                 }
     }
 
-    private static void allDependencyConstraints(Configuration configuration, Consumer<Project> consumer) {
+    private static void allDependencyConstraints(Configuration configuration, Consumer<ProjectDependency> consumer) {
         configuration
                 .getAllDependencyConstraints()
                 .findAll { it instanceof DefaultProjectDependencyConstraint }
-                .collect { ((DefaultProjectDependencyConstraint) it).projectDependency.dependencyProject }
+                .collect { it -> ((DefaultProjectDependencyConstraint) it).projectDependency }
                 .each { it ->
                     consumer.accept(it)
                 }
+    }
+
+    private static void verifyDefaultConfiguration(Project project, ProjectDependency dep) {
+        if (dep.targetConfiguration != null && dep.targetConfiguration != 'default') {
+            throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on the '${dep.targetConfiguration}' configuration of project '${dep.name}'")
+        }
     }
 
     private static void verifyConfigurationHasPublicDependencies(Project project, Configuration configuration) {
         allDependencies(configuration, { dependency ->
-            if (!ProjectType.isPublic(dependency)) {
-                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on a non-public project '${dependency.name}' [${ProjectType.getType(dependency)}]")
+            verifyDefaultConfiguration(project, dependency)
+            def dp = dependency.dependencyProject
+            if (!ProjectType.isPublic(dp)) {
+                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on a non-public project '${dp.name}' [${ProjectType.getType(dp)}]")
             }
         })
         allDependencyConstraints(configuration, { dependency ->
-            if (!ProjectType.isPublic(dependency)) {
-                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency constraint on a non-public project '${dependency.name}' [${ProjectType.getType(dependency)}]")
+            verifyDefaultConfiguration(project, dependency)
+            def dp = dependency.dependencyProject
+            if (!ProjectType.isPublic(dp)) {
+                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency constraint on a non-public project '${dp.name}' [${ProjectType.getType(dp)}]")
             }
         })
     }
 
     private static void verifyConfigurationHasNoPublicTestingDependencies(Project project, Configuration configuration) {
         allDependencies(configuration, { dependency ->
-            if (ProjectType.getType(dependency) == ProjectType.JAVA_PUBLIC_TESTING) {
-                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on a testing project '${dependency.name}' [${ProjectType.getType(dependency)}]")
+            verifyDefaultConfiguration(project, dependency)
+            def dp = dependency.dependencyProject
+            if (ProjectType.getType(dp) == ProjectType.JAVA_PUBLIC_TESTING) {
+                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on a testing project '${dp.name}' [${ProjectType.getType(dp)}]")
             }
         })
         allDependencyConstraints(configuration, { dependency ->
-            if (ProjectType.getType(dependency) == ProjectType.JAVA_PUBLIC_TESTING) {
-                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency constraint on a testing project '${dependency.name}' [${ProjectType.getType(dependency)}]")
+            verifyDefaultConfiguration(project, dependency)
+            def dp = dependency.dependencyProject
+            if (ProjectType.getType(dp) == ProjectType.JAVA_PUBLIC_TESTING) {
+                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency constraint on a testing project '${dp.name}' [${ProjectType.getType(dp)}]")
             }
         })
     }
