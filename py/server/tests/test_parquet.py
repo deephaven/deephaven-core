@@ -164,7 +164,7 @@ class ParquetTestCase(BaseTestCase):
             "someShortColumn = (short)i",
             "someByteColumn = (byte)i",
             "someCharColumn = (char)i",
-            # TODO pyarrow indicates this value is out of the allowed range
+            # TODO(deephaven-core#3151) pyarrow indicates this value is out of the allowed range
             # "someTime = DateTime.now() + i",
             "someKey = `` + (int)(i /100)",
             "nullKey = i < -1?`123`:null",
@@ -178,7 +178,7 @@ class ParquetTestCase(BaseTestCase):
             "nullCharColumn = (char)null",
             "nullTime = (DateTime)null",
             "nullKey = i == 50 ? `hi` : (String)null",
-            # TODO BigInteger/BigDecimal columns don't roundtrip cleanly
+            # TODO(deephaven-core#3151) BigInteger/BigDecimal columns don't roundtrip cleanly
             # "nullBigDecColumn = (java.math.BigDecimal)null",
             # "nullBigIntColumn = (java.math.BigInteger)null"
         ])
