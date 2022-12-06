@@ -24,10 +24,6 @@ public final class SwapListenerEx extends SwapListener {
 
     public SwapListenerEx(@NotNull final BaseTable sourceTable, @NotNull final NotificationStepSource extra) {
         super(sourceTable);
-        // TODO-RWC: Fix this
-        if (extra instanceof LivenessReferent) {
-            manage((LivenessReferent) extra);
-        }
         this.extra = extra;
     }
 

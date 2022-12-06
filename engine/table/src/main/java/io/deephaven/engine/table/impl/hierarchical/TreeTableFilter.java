@@ -470,6 +470,7 @@ class TreeTableFilter {
 
         private Listener() {
             super("tree filter", source, result);
+            manage(reverseLookup);
             inputColumns = source.newModifiedColumnSet(idColumnName.name(), parentIdColumnName.name());
             Stream.of(filters).flatMap(filter -> Stream.concat(
                     filter.getColumns().stream(),
