@@ -16,10 +16,7 @@ import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.PartitionedTableFactory;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -861,5 +858,56 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         for (int i = 0; i < 100; i++) {
             simulateShiftAwareStep(size, random, table, columnInfo, en);
         }
+    }
+
+    public void testTransformDependencyCorrectness() {
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
+
+        final Table input = emptyTable(2).update("First=ii", "Second=100*ii");
+        input.setRefreshing(true);
+
+        final Table filter = emptyTable(2).update("Only=ii");
+        filter.setRefreshing(true);
+        filter.getRowSet().writableCast().remove(1);
+
+        final PartitionedTable partitioned = input.partitionBy("First");
+        final PartitionedTable transformed = partitioned.transform(ExecutionContext.createForUnitTests(), tableIn -> {
+            final QueryTable tableOut = (QueryTable) tableIn.getSubTable(tableIn.getRowSet());
+            tableIn.addUpdateListener(new BaseTable.ListenerImpl("Slow Listener", tableIn, tableOut) {
+                @Override
+                public void onUpdate(TableUpdate upstream) {
+                    try {
+                        // This is lame, but a better approach requires very strict notification execution ordering,
+                        // and will *break* correct implementations since the requisite ordering to trigger the desired
+                        // error case is prevented by correct constituent dependency management.
+                        Thread.sleep(100);
+                    } catch (InterruptedException ignored) {
+                    }
+                    super.onUpdate(upstream);
+                }
+            });
+            return tableOut;
+        });
+
+        final PartitionedTable filtered = PartitionedTableFactory.of(transformed.table().whereIn(filter, "First=Only"),
+                transformed.keyColumnNames(), transformed.uniqueKeys(), transformed.constituentColumnName(),
+                transformed.constituentDefinition(), transformed.constituentChangesPermitted());
+        // If we (incorrectly) deliver PT notifications ahead of constituent notifications, we will cause a
+        // notification-on-instantiation-step error for this update.
+        final PartitionedTable filteredTransformed = filtered.transform(ExecutionContext.createForUnitTests(),
+                t -> t.update("Third=22.2*Second"));
+
+        TestCase.assertEquals(1, filteredTransformed.table().size());
+
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        try {
+            ((BaseTable) input).notifyListeners(i(), i(), i(1));
+            filter.getRowSet().writableCast().insert(1);
+            ((BaseTable) filter).notifyListeners(i(1), i(), i());
+        } finally {
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        }
+
+        TestCase.assertEquals(2, filteredTransformed.table().size());
     }
 }

@@ -171,9 +171,9 @@ public class ReverseLookupListener extends LivenessArtifact
     private Object reference;
 
     public static ReverseLookupListener makeReverseLookupListenerWithSnapshot(BaseTable source, String... columns) {
-        final ShiftObliviousSwapListener swapListener;
+        final SwapListener swapListener;
         if (source.isRefreshing()) {
-            swapListener = new ShiftObliviousSwapListener(source);
+            swapListener = new SwapListener(source);
             source.addUpdateListener(swapListener);
         } else {
             swapListener = null;
@@ -188,18 +188,15 @@ public class ReverseLookupListener extends LivenessArtifact
                 (usePrev, beforeClock) -> {
                     final ReverseLookupListener value = new ReverseLookupListener(source, false, usePrev, columns);
                     if (swapListener != null) {
-                        swapListener.setListenerAndResult(value.listener, value.listener);
+                        swapListener.setListenerAndResult(
+                                new LegacyListenerAdapter(value.listener, source.getRowSet()), value.listener);
                         value.reference = swapListener;
                     }
                     resultListener.setValue(value);
                     return true;
                 });
 
-        final ReverseLookupListener resultListenerValue = resultListener.getValue();
-        if (swapListener != null) {
-            resultListenerValue.listener.manage(swapListener);
-        }
-        return resultListenerValue;
+        return resultListener.getValue();
     }
 
     public static ReverseLookupListener makeReverseLookupListenerWithLock(Table source, String... columns) {

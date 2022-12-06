@@ -11,7 +11,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.updategraph.TerminalNotification;
@@ -29,7 +28,7 @@ import java.util.concurrent.locks.Condition;
  * Replay historical data as simulated real-time data.
  */
 public class Replayer implements ReplayerInterface, Runnable {
-    private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
+    private static final Logger log = LoggerFactory.getLogger(Replayer.class);
 
     protected DateTime startTime;
     protected DateTime endTime;

@@ -1822,8 +1822,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable setTable = testRefreshingTable(TableTools.stringCol("Key"));
 
         // Owned by setScope, rc == 1
-        // It will also manage setTable whose rc == 3 after (1 ShiftObliviousSwapListener, one
-        // ShiftObliviousListenerImpl from groupBy)
+        // It will also manage setTable whose rc == 3 after (1 SwapListener, 1 SwapListener from groupBy)
         final Table whereIn = toBeFiltered.whereIn(setTable, "Key");
 
         // Manage it rcs == (2,3)
