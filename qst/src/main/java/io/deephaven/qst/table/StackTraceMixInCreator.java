@@ -6,11 +6,11 @@ package io.deephaven.qst.table;
 import io.deephaven.api.TableOperations;
 import io.deephaven.qst.TableCreator;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TABLE>, TABLE>
@@ -107,7 +107,7 @@ public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TAB
             // Note: depending on the exact call site, the first call into StackTraceMixIn or
             // StackTraceMixInCreator may provide useful context. We can try to be smarter about
             // this in the future.
-            return Stream.of(elements).skip(lastMixInIndex).toArray(StackTraceElement[]::new);
+            return Arrays.stream(elements).skip(lastMixInIndex).toArray(StackTraceElement[]::new);
         }
         return elements;
     }

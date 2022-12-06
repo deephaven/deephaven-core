@@ -1004,10 +1004,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     }
 
                                     final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                            Stream.of(filters)
+                                            Arrays.stream(filters)
                                                     .filter(f -> f instanceof NotificationQueue.Dependency)
                                                     .map(f -> (NotificationQueue.Dependency) f),
-                                            Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider)
+                                            Arrays.stream(filters).filter(f -> f instanceof DependencyStreamProvider)
                                                     .flatMap(f -> ((DependencyStreamProvider) f)
                                                             .getDependencyStream()))
                                             .collect(Collectors.toList());

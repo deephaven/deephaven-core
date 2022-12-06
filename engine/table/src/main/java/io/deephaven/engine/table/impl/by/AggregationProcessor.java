@@ -427,7 +427,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 @Nullable final ChunkSource.WithPrev<Values> inputSource,
                 @NotNull final Stream<String>... inputColumnNames) {
             addOperator(operator, inputSource,
-                    Stream.of(inputColumnNames).flatMap(Function.identity()).toArray(String[]::new));
+                    Arrays.stream(inputColumnNames).flatMap(Function.identity()).toArray(String[]::new));
         }
 
         final void addOperator(@NotNull final IterativeChunkedAggregationOperator operator,
