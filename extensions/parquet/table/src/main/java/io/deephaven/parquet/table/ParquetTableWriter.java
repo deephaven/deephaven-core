@@ -688,6 +688,10 @@ public class ParquetTableWriter {
                 }
             }
 
+            if (keyCount == 0 && hasNulls) {
+                return false;
+            }
+
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
             final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
             for (final IntBuffer pageBuffer : pageBuffers) {
