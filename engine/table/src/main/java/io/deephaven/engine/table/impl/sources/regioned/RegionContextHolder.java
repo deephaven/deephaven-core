@@ -57,7 +57,7 @@ public class RegionContextHolder implements ChunkSource.FillContext {
      * @return The inner context value.
      * @param <T> The desired result type
      */
-    public <T> T getInnerContext() {
+    public <T extends Context> T getInnerContext() {
         // noinspection unchecked
         return (T) innerContext;
     }
