@@ -308,12 +308,12 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage) {
+    default void addUpdateListener(ShiftObliviousListener listener, boolean replayInitialImage) {
         throwUnsupported();
     }
 
     @Override
-    default void listenForUpdates(TableUpdateListener listener) {
+    default void addUpdateListener(TableUpdateListener listener) {
         throwUnsupported();
     }
 
