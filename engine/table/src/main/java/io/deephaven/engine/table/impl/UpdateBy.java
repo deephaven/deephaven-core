@@ -319,7 +319,7 @@ public abstract class UpdateBy {
 
             if (initialStep) {
                 if (OperationInitializationThreadPool.NUM_THREADS > 1
-                    && !OperationInitializationThreadPool.isInitializationThread()) {
+                        && !OperationInitializationThreadPool.isInitializationThread()) {
                     jobScheduler = new OperationInitializationPoolJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
