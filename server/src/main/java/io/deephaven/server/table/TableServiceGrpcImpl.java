@@ -10,7 +10,42 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.*;
+import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
+import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
+import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
+import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
+import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
+import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
+import io.deephaven.proto.backplane.grpc.FetchTableRequest;
+import io.deephaven.proto.backplane.grpc.FilterTableRequest;
+import io.deephaven.proto.backplane.grpc.FlattenRequest;
+import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
+import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
+import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.Literal;
+import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
+import io.deephaven.proto.backplane.grpc.SeekRowRequest;
+import io.deephaven.proto.backplane.grpc.SeekRowResponse;
+import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
+import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
+import io.deephaven.proto.backplane.grpc.SortTableRequest;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TimeTableRequest;
+import io.deephaven.proto.backplane.grpc.UngroupRequest;
+import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest;
+import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -308,7 +343,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         } else if (literal.hasBoolValue()) {
             return literal.getBoolValue();
         }
-        throw new UnsupportedOperationException("Invalid column type for numeric seek: " + dataType);
+        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid column type for seek: " + dataType);
     }
 
     @Override
@@ -331,28 +366,22 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .require(exportedTable)
                     .onError(responseObserver)
                     .submit(() -> {
-                        try {
-                            final Table table = exportedTable.get();
-                            final String columnName = request.getColumnName();
-                            final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
-                            final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
-                            final Long result = table.apply(new SeekRow(
-                                    request.getStartingRow(),
-                                    columnName,
-                                    seekValue,
-                                    request.getInsensitive(),
-                                    request.getContains(),
-                                    request.getIsBackward()));
-                            safelyExecuteLocked(responseObserver, () -> {
-                                SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
-                                responseObserver.onNext(rowResponse.setResultRow(result).build());
-                                responseObserver.onCompleted();
-                            });
-                        } catch (Exception e) {
-                            safelyExecuteLocked(responseObserver, () -> {
-                                responseObserver.onError(e);
-                            });
-                        }
+                        final Table table = exportedTable.get();
+                        final String columnName = request.getColumnName();
+                        final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
+                        final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
+                        final Long result = table.apply(new SeekRow(
+                                request.getStartingRow(),
+                                columnName,
+                                seekValue,
+                                request.getInsensitive(),
+                                request.getContains(),
+                                request.getIsBackward()));
+                        safelyExecuteLocked(responseObserver, () -> {
+                            SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
+                            responseObserver.onNext(rowResponse.setResultRow(result).build());
+                            responseObserver.onCompleted();
+                        });
                     });
         });
     }
