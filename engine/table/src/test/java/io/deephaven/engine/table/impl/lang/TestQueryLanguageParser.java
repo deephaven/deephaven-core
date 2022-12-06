@@ -74,6 +74,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myInt", int.class);
         variables.put("myOtherInt", int.class);
         variables.put("myLong", long.class);
+        variables.put("myOtherLong", long.class);
         variables.put("myFloat", float.class);
         variables.put("myDouble", double.class);
         variables.put("myBoolean", boolean.class);
@@ -102,6 +103,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myHashMap", HashMap.class);
         variables.put("myParameterizedHashMap", HashMap.class);
         variables.put("myVector", ObjectVector.class);
+        variables.put("myLongVector", LongVector.class);
         variables.put("myEnumValue", LanguageParserDummyEnum.class);
         variables.put("myObjectVector", ObjectVector.class);
         variables.put("myIntVector", IntVector.class);
@@ -212,6 +214,12 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "!false";
         resultExpression = "!false";
         check(expression, resultExpression, boolean.class, new String[] {});
+
+        expression = "myInt * myLong + myOtherInt * myOtherLong + myLongVector[myInt - 1]";
+        resultExpression =
+                "plus(plus(multiply(myInt, myLong), multiply(myOtherInt, myOtherLong)), myLongVector.get(longCast(minus(myInt, 1))))";
+        check(expression, resultExpression, long.class,
+                new String[] {"myInt", "myLong", "myOtherInt", "myOtherLong", "myLongVector"});
     }
 
     /**
@@ -1013,6 +1021,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "!(myInt==myOtherInt)";
         resultExpression = "!(eq(myInt, myOtherInt))";
         check(expression, resultExpression, boolean.class, new String[] {"myInt", "myOtherInt"});
+
+        expression = "myInt != 0 && myInt != myIntArray[myOtherInt-1]";
+        resultExpression = "!eq(myInt, 0) && !eq(myInt, myIntArray[minus(myOtherInt, 1)])";
+        check(expression, resultExpression, boolean.class, new String[] {"myInt", "myIntArray", "myOtherInt"});
     }
 
     public void testArrayOperatorOverloading() throws Exception {
@@ -1082,13 +1094,29 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     }
 
     public void testArrayAccessOperatorOverloading() throws Exception {
-        String expression = "myArrayList[15]";
-        String resultExpression = "myArrayList.get(15)";
+        String expression = "myIntArray[15]";
+        String resultExpression = "myIntArray[15]";
+        check(expression, resultExpression, int.class, new String[] {"myIntArray"});
+
+        expression = "myArrayList[15]";
+        resultExpression = "myArrayList.get(15)";
         check(expression, resultExpression, Object.class, new String[] {"myArrayList"});
+
+        expression = "myIntArray[myInt + 1]";
+        resultExpression = "myIntArray[plus(myInt, 1)]";
+        check(expression, resultExpression, int.class, new String[] {"myIntArray", "myInt"});
+
+        expression = "myArrayList[myInt + 1]";
+        resultExpression = "myArrayList.get(plus(myInt, 1))";
+        check(expression, resultExpression, Object.class, new String[] {"myArrayList", "myInt"});
 
         expression = "myHashMap[\"test\"]";
         resultExpression = "myHashMap.get(\"test\")";
         check(expression, resultExpression, Object.class, new String[] {"myHashMap"});
+
+        expression = "myIntVector[15]";
+        resultExpression = "myIntVector.get(longCast(15))";
+        check(expression, resultExpression, int.class, new String[] {"myIntVector"});
 
         expression = "myParameterizedArrayList[15]";
         resultExpression = "myParameterizedArrayList.get(15)";

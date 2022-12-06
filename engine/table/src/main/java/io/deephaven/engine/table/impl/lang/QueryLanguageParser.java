@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.lang;
 
+import com.github.javaparser.TokenRange;
 import com.github.javaparser.ast.ArrayCreationLevel;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
@@ -924,100 +925,19 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
 
     /**
-     * TODO: deprecated now that they have {@link Node#replace(Node)}?
+     * Replaces {@code origExpr} with {@code newExpr} in {@code parentNode}. Throws an exception if {@code origExpr}
+     * could not be found in the parent.
      * 
      * @param parentNode The parent node in which a child should be replaced
      * @param origExpr The original expression to find & replace in the {@code parentNode}
      * @param newExpr The new expression to put in the place of the {@code origExpr}
      */
     private static void replaceChildExpression(Node parentNode, Expression origExpr, Expression newExpr) {
-        // childrenNodes.set(exprIndex, newExpr);
-        final String parentTypeName = parentNode.getClass().getSimpleName();
-        switch (parentTypeName) {
-            case "WrapperNode":
-                final WrapperNode wrapperNode = (WrapperNode) parentNode;
-                Require.eqTrue(wrapperNode.replace(origExpr, newExpr), "wrapperNode.replace(origExpr, newExpr)");
-                return;
-            case "UnaryExpr":
-                ((UnaryExpr) parentNode).setExpression(newExpr);
-                return;
-            case "BinaryExpr":
-                final BinaryExpr binaryExpr = (BinaryExpr) parentNode;
-                if (binaryExpr.getLeft() == origExpr) {
-                    binaryExpr.setLeft(newExpr);
-                } else if (binaryExpr.getRight() == origExpr) {
-                    binaryExpr.setRight(newExpr);
-                } else {
-                    throw new RuntimeException("origExpr not recognized as BinaryExpr component");
-                }
-                return;
-            case "MethodCallExpr":
-                final MethodCallExpr methodCallExpr = (MethodCallExpr) parentNode;
-                final int argIdxToReplace;
-                if (methodCallExpr.getScope().orElse(null) == origExpr) {
-                    methodCallExpr.setScope(newExpr);
-                    return;
-                } else if (methodCallExpr.getNameAsExpression() == origExpr) {
-                    Require.instanceOf(newExpr, "newExpr", NameExpr.class);
-                    methodCallExpr.setName(((NameExpr) newExpr).getName());
-                    return;
-                } else if ((argIdxToReplace = methodCallExpr.getArguments().indexOf(origExpr)) >= 0) {
-                    final NodeList<Expression> args = new NodeList<>(methodCallExpr.getArguments());
-                    args.set(argIdxToReplace, newExpr);
-                    methodCallExpr.setArguments(args);
-                    return;
-                }
-                break;
-            case "CastExpr":
-                final CastExpr castExpr = (CastExpr) parentNode;
-                Assert.equals(castExpr.getExpression(), "castExpr.getExpr()", origExpr, "origExpr");
-                castExpr.setExpression(newExpr);
-                origExpr.setParentNode(null);
-                return;
-            case "ArrayInitializerExpr":
-                final ArrayInitializerExpr arrayInitializerExpr = (ArrayInitializerExpr) parentNode;
-                final List<Expression> arrayInitializerExprValues = arrayInitializerExpr.getValues();
-                final int idxToReplace = arrayInitializerExprValues.indexOf(origExpr);
-                if (idxToReplace < 0) {
-                    throw new RuntimeException(
-                            "Could not find original expression within parent's array values! Expression: "
-                                    + origExpr.toString());
-                }
-                arrayInitializerExprValues.set(idxToReplace, newExpr);
-                return;
-            case "ArrayAccessExpr":
-                final ArrayAccessExpr arrayAccessExpr = (ArrayAccessExpr) parentNode;
-                if (arrayAccessExpr.getName() == origExpr) {
-                    arrayAccessExpr.setName(newExpr);
-                    return;
-                } else if (arrayAccessExpr.getIndex() == origExpr) {
-                    arrayAccessExpr.setIndex(newExpr);
-                    return;
-                }
-                break;
-            case "ConditionalExpr":
-                final ConditionalExpr conditionalExpr = (ConditionalExpr) parentNode;
-                if (conditionalExpr.getCondition() == origExpr) {
-                    conditionalExpr.setCondition(newExpr);
-                } else if (conditionalExpr.getThenExpr() == origExpr) {
-                    conditionalExpr.setThenExpr(newExpr);
-                } else if (conditionalExpr.getElseExpr() == origExpr) {
-                    conditionalExpr.setElseExpr(newExpr);
-                } else {
-                    throw new RuntimeException("Could not find original expression within parent ConditionalExpr!");
-                }
-                return;
-            case "EnclosedExpr":
-                final EnclosedExpr enclosedExpr = (EnclosedExpr) parentNode;
-                if (enclosedExpr.getInner() == origExpr) {
-                    enclosedExpr.setInner(newExpr);
-                    return;
-                }
-                break;
+        if (parentNode.replace(origExpr, newExpr)) {
+            return;
         }
-
-
-        throw new UnsupportedOperationException("Could not replace expression within parent of type " + parentTypeName);
+        throw new RuntimeException(
+                "Could not replace expression within parent of type " + parentNode.getClass().getSimpleName());
     }
 
     private Class<?> getTypeWithCaching(Node n) {
@@ -1115,6 +1035,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         for (int ai = 0; ai < (executable.isVarArgs() ? nArgs - 1 : nArgs); ai++) {
             if (argumentTypes[ai] != expressionTypes[ai] && argumentTypes[ai].isPrimitive()
                     && expressionTypes[ai].isPrimitive()) {
+                // replace node in its parent, otherwise setArguments() will clear the parent of 'expressions[ai]'
+                expressions[ai].replace(new DummyExpr());
                 expressions[ai] = new CastExpr(
                         new PrimitiveType(PrimitiveType.Primitive
                                 .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())),
@@ -1459,7 +1381,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final Class<?> retForCheck = n.getExpression().accept(this, printer);
             Assert.equals(retForCheck, "retForCheck", ret, "ret");
 
-            if (isNonequalOpOverload) {
+            if (isNonequalOpOverload && printer.hasStringBuilder()) {
                 // sanity checks -- the inner expression *must* be a BinaryExpr (for ==), and it must be replaced in
                 // this
                 // UnaryExpr with a MethodCallExpr (for "eq()" or possibly "isNull()").
@@ -1593,6 +1515,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 // Set the unboxing MethodCallExpr as the target of the original CastExpr 'n'.
                 // Next, the CastExpr is replaced with another MethodCallExpr.
                 n.setExpression(unboxingCastExpr);
+                origExprToCast.setParentNode(unboxingCastExpr);
 
                 Class<?> unboxingMethodCallReturnType = unboxingCastExpr.accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
                 Assert.equals(unboxingMethodCallReturnType, "unboxingMethodCallReturnType", unboxedExprType,
@@ -2847,6 +2770,22 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             setTokenRange(replacementNode.getTokenRange().orElse(null));
 
             return true;
+        }
+    }
+
+    private static class DummyExpr extends Expression {
+        protected DummyExpr() {
+            super(TokenRange.INVALID);
+        }
+
+        @Override
+        public <R, A> R accept(GenericVisitor<R, A> v, A arg) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <A> void accept(VoidVisitor<A> v, A arg) {
+            throw new UnsupportedOperationException();
         }
     }
 }
