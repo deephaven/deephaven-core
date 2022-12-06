@@ -311,6 +311,11 @@ public abstract class UpdateBy {
                 maybeCachedInputSources = new ColumnSource[inputSources.length];
                 inputSourceRowSets = new WritableRowSet[inputSources.length];
                 inputSourceReferenceCounts = new int[inputSources.length];
+
+                // set the uncacheable columns into the array
+                for (int ii = 0; ii < inputSources.length; ii++) {
+                    maybeCachedInputSources[ii] = inputSourceCacheNeeded[ii] ? inputSources[ii] : null;
+                }
             } else {
                 maybeCachedInputSources = inputSources;
                 inputSourceRowSets = null;
@@ -380,10 +385,11 @@ public abstract class UpdateBy {
             jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
                     0, cacheableSourceIndices.length,
                     idx -> {
-                        int srcIdx = cacheableSourceIndices[idx];
+                        final int srcIdx = cacheableSourceIndices[idx];
                         for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                             UpdateByWindow win = windows[winIdx];
                             if (win.isSourceInUse(srcIdx)) {
+                                boolean srcNeeded = false;
                                 for (UpdateByBucketHelper bucket : dirtyBuckets) {
                                     UpdateByWindow.UpdateByWindowContext winCtx = bucket.windowContexts[winIdx];
 
@@ -391,13 +397,17 @@ public abstract class UpdateBy {
                                         // add this rowset to the running total for this input source
                                         if (inputSourceRowSets[srcIdx] == null) {
                                             inputSourceRowSets[srcIdx] =
-                                                    win.getInfluencerRows(winCtx).copy().toTracking();
+                                                    win.getInfluencerRows(winCtx).copy();
                                         } else {
                                             inputSourceRowSets[srcIdx].insert(win.getInfluencerRows(winCtx));
                                         }
+                                        // at least one dirty bucket will need this source
+                                        srcNeeded = true;
                                     }
                                 }
-                                inputSourceReferenceCounts[srcIdx]++;
+                                if (srcNeeded) {
+                                    inputSourceReferenceCounts[srcIdx]++;
+                                }
                             }
                         }
                     },
@@ -410,7 +420,7 @@ public abstract class UpdateBy {
          * when the work is complete
          */
         private void createCachedColumnSource(int srcIdx, final Runnable completeAction) {
-            if (maybeCachedInputSources[srcIdx] != null) {
+            if (maybeCachedInputSources[srcIdx] != null || inputSourceRowSets[srcIdx] == null) {
                 // already cached from another operator (or caching not needed)
                 completeAction.run();
                 return;
