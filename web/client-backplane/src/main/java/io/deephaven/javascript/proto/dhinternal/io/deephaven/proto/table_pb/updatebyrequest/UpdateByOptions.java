@@ -181,9 +181,9 @@ public class UpdateByOptions {
 
     public native void clearUseRedirection();
 
-    public native double getChunkCapacity();
+    public native int getChunkCapacity();
 
-    public native double getInitialHashTableSize();
+    public native int getInitialHashTableSize();
 
     public native MathContext getMathContext();
 
@@ -211,9 +211,9 @@ public class UpdateByOptions {
 
     public native Uint8Array serializeBinary();
 
-    public native void setChunkCapacity(double value);
+    public native void setChunkCapacity(int value);
 
-    public native void setInitialHashTableSize(double value);
+    public native void setInitialHashTableSize(int value);
 
     public native void setMathContext();
 
