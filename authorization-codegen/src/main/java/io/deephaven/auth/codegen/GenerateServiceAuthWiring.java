@@ -138,8 +138,11 @@ public class GenerateServiceAuthWiring {
                 .addSuperinterface(superInterface)
                 .addMethod(interceptMethod.build());
         visitAllMethods(service, typeMap, typeSpec, (methodName, method) -> {
+            boolean hasRequest = false;
+
             method.addModifiers(Modifier.ABSTRACT);
             if (methodName.startsWith(ON_MESSAGE_RECEIVED)) {
+                hasRequest = true;
                 methodName = methodName.substring(ON_MESSAGE_RECEIVED.length());
                 method.addJavadoc("Authorize a request to $L.\n\n", methodName);
             } else if (methodName.startsWith(ON_CALL_STARTED)) {
@@ -148,7 +151,9 @@ public class GenerateServiceAuthWiring {
             }
 
             method.addJavadoc("@param authContext the authentication context of the request\n");
-            method.addJavadoc("@param request the request to authorize\n");
+            if (hasRequest) {
+                method.addJavadoc("@param request the request to authorize\n");
+            }
             method.addJavadoc("@throws io.grpc.StatusRuntimeException if the user is not authorized to invoke $L\n",
                     methodName);
         });

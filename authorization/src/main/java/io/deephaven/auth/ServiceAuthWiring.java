@@ -76,10 +76,8 @@ public interface ServiceAuthWiring<ServiceImplBase> {
         public ServerCall.Listener<ReqT> startCall(ServerCall<ReqT, RespT> call, Metadata headers) {
             final AuthContext authContext = ExecutionContext.getContext().getAuthContext();
 
-            if (!mustHaveRequest) {
-                if (!validateAuth(call, () -> callStartedCallback.callStarted(authContext))) {
-                    return new ServerCall.Listener<>() {};
-                }
+            if (!mustHaveRequest && !validateAuth(call, () -> callStartedCallback.callStarted(authContext))) {
+                return new ServerCall.Listener<>() {};
             }
 
             final ServerCall.Listener<ReqT> delegateCall = delegate.startCall(call, headers);
@@ -133,19 +131,12 @@ public interface ServiceAuthWiring<ServiceImplBase> {
 
                 // this is an unexpected error from the auth wiring invocation, be loud about it
                 log.error().append("Failed to invoke auth method: ").append(originalErr).endl();
-                quietlyCloseCall(call);
+                quietlyCloseCall(call, Status.UNAUTHENTICATED, new Metadata());
                 return false;
             }
 
             return true;
         }
-    }
-
-    /**
-     * Close the call, but don't throw any exceptions. We were not given details about the error.
-     */
-    private static <ReqT, RespT> void quietlyCloseCall(final ServerCall<ReqT, RespT> call) {
-        quietlyCloseCall(call, Status.UNAUTHENTICATED, new Metadata());
     }
 
     /**
@@ -156,8 +147,7 @@ public interface ServiceAuthWiring<ServiceImplBase> {
         try {
             call.close(status, trailers);
         } catch (IllegalStateException ignored) {
-            // could be thrown if the call was already closed. As an interceptor, we can't throw,
-            // so ignoring this and just returning the no-op listener.
+            // could be thrown if the call was already closed; it's ok to ignore these race conditions
         }
     }
 

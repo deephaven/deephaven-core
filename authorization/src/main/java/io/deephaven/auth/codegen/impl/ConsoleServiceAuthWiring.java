@@ -128,7 +128,6 @@ public interface ConsoleServiceAuthWiring extends ServiceAuthWiring<ConsoleServi
      * Authorize a request to open a client-streaming rpc AutoCompleteStream.
      *
      * @param authContext the authentication context of the request
-     * @param request the request to authorize
      * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke AutoCompleteStream
      */
     void onCallStartedAutoCompleteStream(AuthContext authContext);
