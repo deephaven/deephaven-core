@@ -16,7 +16,12 @@ import io.deephaven.auth.codegen.impl.StorageServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.server.session.TicketResolverBase;
 
+import javax.inject.Inject;
+
 public class CommunityAuthorizationProvider implements AuthorizationProvider {
+    @Inject
+    public CommunityAuthorizationProvider() {}
+
     @Override
     public ApplicationServiceAuthWiring getApplicationServiceAuthWiring() {
         return new ApplicationServiceAuthWiring.AllowAll();

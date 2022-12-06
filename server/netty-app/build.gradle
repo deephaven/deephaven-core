@@ -9,6 +9,7 @@ configurations {
 
 dependencies {
     implementation project(':server-netty')
+    Classpaths.inheritDagger(project)
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')

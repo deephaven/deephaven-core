@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.runner;
 
+import dagger.Module;
 import io.deephaven.base.system.PrintStreamGlobals;
 import io.deephaven.configuration.CacheDir;
 import io.deephaven.configuration.ConfigDir;
@@ -14,10 +15,16 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.io.logger.LogBufferInterceptor;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.server.console.SessionToExecutionStateModule;
+import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
+import io.deephaven.server.console.python.PythonConsoleSessionModule;
+import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
+import io.deephaven.server.healthcheck.HealthCheckModule;
+import io.deephaven.server.log.LogModule;
+import io.deephaven.server.plugin.python.PythonPluginsRegistration;
 import io.deephaven.ssl.config.Identity;
 import io.deephaven.ssl.config.IdentityPrivateKey;
 import io.deephaven.ssl.config.SSLConfig;
-import io.deephaven.ssl.config.SSLConfig.Builder;
 import io.deephaven.ssl.config.SSLConfig.ClientAuth;
 import io.deephaven.ssl.config.Trust;
 import io.deephaven.ssl.config.TrustCertificates;
@@ -27,13 +34,15 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
-public class Main {
+public abstract class MainBase<Self extends MainBase<Self, Builder, Component>, Builder extends DeephavenApiServerComponent.Builder<Builder, Component>, Component extends DeephavenApiServerComponent> {
 
     public static final String SSL_IDENTITY_TYPE = "ssl.identity.type";
     public static final String SSL_IDENTITY_CERT_CHAIN_PATH = "ssl.identity.certChainPath";
@@ -65,7 +74,7 @@ public class Main {
 
     private static void bootstrapProjectDirectories() throws IOException {
         final String applicationName =
-                applicationProperty().or(Main::applicationEnvironmentVariable).orElse("deephaven");
+                applicationProperty().or(MainBase::applicationEnvironmentVariable).orElse("deephaven");
 
         // Default directories based on the underlying OS conventions
         final dev.dirs.ProjectDirectories defaultDirectories =
@@ -132,6 +141,35 @@ public class Main {
     }
 
     /**
+     * Creates and populates the builder with implementation specific details.
+     *
+     * @param config the config
+     * @return the builder
+     */
+    public abstract Builder builderFrom(Configuration config);
+
+    /**
+     * Creates the {@link Configuration}, calls {@link #builderFrom(Configuration)}, sets
+     * {@link DeephavenApiServerComponent.Builder#withOut(PrintStream)} to {@link PrintStreamGlobals#getOut()}, sets
+     * {@link DeephavenApiServerComponent.Builder#withErr(PrintStream)} to {@link PrintStreamGlobals#getErr()}, runs the
+     * {@link DeephavenApiServer}, and blocks until the server is done.
+     * 
+     * @param args the arguments
+     * @param clazz the class
+     */
+    public void main(String[] args, Class<Self> clazz)
+            throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
+        final Configuration config = init(args, clazz);
+        builderFrom(config)
+                .withOut(PrintStreamGlobals.getOut())
+                .withErr(PrintStreamGlobals.getErr())
+                .build()
+                .getServer()
+                .run()
+                .join();
+    }
+
+    /**
      * Parses the configuration properties {@value SSL_IDENTITY_TYPE}, {@value SSL_IDENTITY_CERT_CHAIN_PATH},
      * {@value SSL_IDENTITY_PRIVATE_KEY_PATH}, {@value SSL_TRUST_TYPE}, {@value SSL_TRUST_PATH}, and
      * {@value SSL_CLIENT_AUTH}. Currently, the only valid identity type is {@value PRIVATEKEY}, and the only valid
@@ -160,7 +198,7 @@ public class Main {
         if (needsIdentity && identity.isEmpty()) {
             return Optional.empty();
         }
-        final Builder builder = SSLConfig.builder();
+        final SSLConfig.Builder builder = SSLConfig.builder();
         identity.ifPresent(builder::identity);
         parseTrustConfig(prefix, config).ifPresent(builder::trust);
         parseClientAuth(prefix, config).ifPresent(builder::clientAuthentication);
@@ -218,5 +256,40 @@ public class Main {
 
     private static Optional<String> applicationEnvironmentVariable() {
         return Optional.ofNullable(System.getenv(DEEPHAVEN_APPLICATION_ENV));
+    }
+
+    /**
+     * Includes some of the common modules necessary for creating a {@link DeephavenApiServerComponent} /
+     * {@link DeephavenApiServer}.
+     *
+     * <p>
+     * As use-cases arise, modules may be removed from these defaults to better support common cases where integrators
+     * want to provide their own implementation of some feature.
+     *
+     * <p>
+     * Advanced integrators may choose to declare all of their own modules instead of depending on the defaults here.
+     *
+     * @see DeephavenApiServerModule
+     * @see LogModule
+     * @see DeephavenApiConfigModule
+     * @see PythonGlobalScopeCopyModule
+     * @see HealthCheckModule
+     * @see PythonPluginsRegistration.Module
+     * @see PythonConsoleSessionModule
+     * @see GroovyConsoleSessionModule
+     * @see SessionToExecutionStateModule
+     */
+    @Module(includes = {
+            DeephavenApiServerModule.class,
+            LogModule.class,
+            DeephavenApiConfigModule.class,
+            PythonGlobalScopeCopyModule.class,
+            HealthCheckModule.class,
+            PythonPluginsRegistration.Module.class,
+            PythonConsoleSessionModule.class,
+            GroovyConsoleSessionModule.class,
+            SessionToExecutionStateModule.class,
+    })
+    public interface DefaultsModule {
     }
 }

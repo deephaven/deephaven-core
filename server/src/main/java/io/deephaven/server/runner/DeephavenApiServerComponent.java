@@ -13,11 +13,13 @@ public interface DeephavenApiServerComponent {
 
     DeephavenApiServer getServer();
 
-    interface Builder<B extends Builder<B>> {
+    interface Builder<Self extends Builder<Self, Component>, Component extends DeephavenApiServerComponent> {
         @BindsInstance
-        B withOut(@Nullable @Named("out") PrintStream out);
+        Self withOut(@Nullable @Named("out") PrintStream out);
 
         @BindsInstance
-        B withErr(@Nullable @Named("err") PrintStream err);
+        Self withErr(@Nullable @Named("err") PrintStream err);
+
+        Component build();
     }
 }
