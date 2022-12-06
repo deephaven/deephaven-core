@@ -127,8 +127,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("genericSub", TestGenericSub.class);
 
         variableParameterizedTypes = new HashMap<>();
-        variableParameterizedTypes.put("myParameterizedArrayList", new Class[]{Long.class});
-        variableParameterizedTypes.put("myParameterizedHashMap", new Class[]{Integer.class, Double.class});
+        variableParameterizedTypes.put("myParameterizedArrayList", new Class[] {Long.class});
+        variableParameterizedTypes.put("myParameterizedHashMap", new Class[] {Integer.class, Double.class});
         variableParameterizedTypes.put("myVector", new Class[] {Double.class});
     }
 
@@ -988,6 +988,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "minus(myTestClass, 'c')";
         check(expression, resultExpression, String.class, new String[] {"myTestClass"});
     }
+
     public void testNegation() throws Exception {
         String expression = "!myBoolean";
         String resultExpression = "!myBoolean";
@@ -1007,12 +1008,13 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         expression = "myInt!=myOtherInt";
         resultExpression = "!eq(myInt, myOtherInt)";
-        check(expression, resultExpression, boolean.class, new String[] {"myInt", "myOtherInt" });
+        check(expression, resultExpression, boolean.class, new String[] {"myInt", "myOtherInt"});
 
         expression = "!(myInt==myOtherInt)";
         resultExpression = "!(eq(myInt, myOtherInt))";
-        check(expression, resultExpression, boolean.class, new String[] {"myInt", "myOtherInt" });
+        check(expression, resultExpression, boolean.class, new String[] {"myInt", "myOtherInt"});
     }
+
     public void testArrayOperatorOverloading() throws Exception {
         String expression = "myIntArray+myDoubleArray";
         String resultExpression = "plusArray(myIntArray, myDoubleArray)";
@@ -1195,33 +1197,33 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 "testImplicitConversion1(new double[] { doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt", "myLong"});
 
-        expression="testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
-        resultExpression="testVarArgs(myInt, 'a', new double[] { myDouble, 1.0, 5.0, myDouble })";
-        check(expression, resultExpression, new double[0].getClass(), new String[]{"myDouble", "myInt"});
+        expression = "testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
+        resultExpression = "testVarArgs(myInt, 'a', new double[] { myDouble, 1.0, 5.0, myDouble })";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt"});
 
-        expression="testVarArgs(myDouble)";
-        resultExpression="testVarArgs(new double[] { myDouble })";
-        check(expression, resultExpression, double.class, new String[]{"myDouble"});
+        expression = "testVarArgs(myDouble)";
+        resultExpression = "testVarArgs(new double[] { myDouble })";
+        check(expression, resultExpression, double.class, new String[] {"myDouble"});
 
-        expression="testVarArgs(myDouble, myDouble)";
-        resultExpression="testVarArgs(new double[] { myDouble, myDouble })";
-        check(expression, resultExpression, double.class, new String[]{"myDouble"});
+        expression = "testVarArgs(myDouble, myDouble)";
+        resultExpression = "testVarArgs(new double[] { myDouble, myDouble })";
+        check(expression, resultExpression, double.class, new String[] {"myDouble"});
 
-        expression="testVarArgs(myInt, 'a', myDouble)";
-        resultExpression="testVarArgs(myInt, 'a', new double[] { myDouble })";
-        check(expression, resultExpression, new double[0].getClass(), new String[]{"myDouble", "myInt"});
+        expression = "testVarArgs(myInt, 'a', myDouble)";
+        resultExpression = "testVarArgs(myInt, 'a', new double[] { myDouble })";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt"});
 
-        expression="testVarArgs(myInt, 'a', myDoubleArray)";
-        resultExpression="testVarArgs(myInt, 'a', myDoubleArray)";
-        check(expression, resultExpression, new double[0].getClass(), new String[]{"myDoubleArray", "myInt"});
+        expression = "testVarArgs(myInt, 'a', myDoubleArray)";
+        resultExpression = "testVarArgs(myInt, 'a', myDoubleArray)";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
-        expression="testVarArgsVector(myIntVector)";
-        resultExpression="testVarArgsVector(myIntVector)";
-        check(expression, resultExpression, new IntVector[0].getClass(), new String[]{"myIntVector"});
+        expression = "testVarArgsVector(myIntVector)";
+        resultExpression = "testVarArgsVector(myIntVector)";
+        check(expression, resultExpression, new IntVector[0].getClass(), new String[] {"myIntVector"});
 
-        expression="testVarArgsVector(myIntVector, myIntVector)";
-        resultExpression="testVarArgsVector(myIntVector, myIntVector)";
-        check(expression, resultExpression, new IntVector[0].getClass(), new String[]{"myIntVector"});
+        expression = "testVarArgsVector(myIntVector, myIntVector)";
+        resultExpression = "testVarArgsVector(myIntVector, myIntVector)";
+        check(expression, resultExpression, new IntVector[0].getClass(), new String[] {"myIntVector"});
 
         expression = "testImplicitConversion1(myDoubleVector)";
         resultExpression = "testImplicitConversion1(VectorConversions.nullSafeVectorToArray(myDoubleVector))";
@@ -1624,7 +1626,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Number[].class, new String[] {});
 
         // check object array super casting
-        expression = resultExpression = "testImplicitConversionNestedArraySuper(new Integer[][] { new Integer[] { 1 } })";
+        expression =
+                resultExpression = "testImplicitConversionNestedArraySuper(new Integer[][] { new Integer[] { 1 } })";
         check(expression, resultExpression, Number[][].class, new String[] {});
 
         // See (deephaven-core#1201): do not widen primitive array elements
@@ -1871,13 +1874,13 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "genericDoubleArrayToSingle(new Double[0][0])";
         check(expression, resultExpression, Double.class, new String[] {});
 
-        expression="genericGetKey(myParameterizedHashMap)";
-        resultExpression="genericGetKey(myParameterizedHashMap)";
-        check(expression, resultExpression, Integer.class, new String[]{"myParameterizedHashMap"});
+        expression = "genericGetKey(myParameterizedHashMap)";
+        resultExpression = "genericGetKey(myParameterizedHashMap)";
+        check(expression, resultExpression, Integer.class, new String[] {"myParameterizedHashMap"});
 
-        expression="genericGetValue(myParameterizedHashMap)";
-        resultExpression="genericGetValue(myParameterizedHashMap)";
-        check(expression, resultExpression, Double.class, new String[]{"myParameterizedHashMap"});
+        expression = "genericGetValue(myParameterizedHashMap)";
+        resultExpression = "genericGetValue(myParameterizedHashMap)";
+        check(expression, resultExpression, Double.class, new String[] {"myParameterizedHashMap"});
     }
 
     public void testVectorUnboxing() throws Exception {
@@ -1926,31 +1929,31 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     }
 
     public void testInnerClassesMethods() throws Exception {
-        String expression="myDummyClass.innerClassInstance.innerClassMethod()";
-        String resultExpression="myDummyClass.innerClassInstance.innerClassMethod()";
-        check(expression, resultExpression, String.class, new String[]{"myDummyClass"});
+        String expression = "myDummyClass.innerClassInstance.innerClassMethod()";
+        String resultExpression = "myDummyClass.innerClassInstance.innerClassMethod()";
+        check(expression, resultExpression, String.class, new String[] {"myDummyClass"});
 
-        expression="myDummyInnerClass.innerClassMethod()";
-        resultExpression="myDummyInnerClass.innerClassMethod()";
-        check(expression, resultExpression, String.class, new String[]{"myDummyInnerClass"});
+        expression = "myDummyInnerClass.innerClassMethod()";
+        resultExpression = "myDummyInnerClass.innerClassMethod()";
+        check(expression, resultExpression, String.class, new String[] {"myDummyInnerClass"});
 
-        expression="myDummyInnerClass.innerClassMethod()";
-        resultExpression="myDummyInnerClass.innerClassMethod()";
-        check(expression, resultExpression, String.class, new String[]{"myDummyInnerClass"});
+        expression = "myDummyInnerClass.innerClassMethod()";
+        resultExpression = "myDummyInnerClass.innerClassMethod()";
+        check(expression, resultExpression, String.class, new String[] {"myDummyInnerClass"});
     }
 
     public void testStaticNestedClassMethod() throws Exception {
-        String expression="LanguageParserDummyClass.StaticNestedClass.staticMethod()";
-        String resultExpression="LanguageParserDummyClass.StaticNestedClass.staticMethod()";
-        check(expression, resultExpression, String.class, new String[]{});
+        String expression = "LanguageParserDummyClass.StaticNestedClass.staticMethod()";
+        String resultExpression = "LanguageParserDummyClass.StaticNestedClass.staticMethod()";
+        check(expression, resultExpression, String.class, new String[] {});
 
-        expression="myDummyStaticNestedClass.staticMethod()";
-        resultExpression="myDummyStaticNestedClass.staticMethod()";
-        check(expression, resultExpression, String.class, new String[]{"myDummyStaticNestedClass"});
+        expression = "myDummyStaticNestedClass.staticMethod()";
+        resultExpression = "myDummyStaticNestedClass.staticMethod()";
+        check(expression, resultExpression, String.class, new String[] {"myDummyStaticNestedClass"});
 
-        expression="myDummyStaticNestedClass.instanceMethod()";
-        resultExpression="myDummyStaticNestedClass.instanceMethod()";
-        check(expression, resultExpression, String.class, new String[]{"myDummyStaticNestedClass"});
+        expression = "myDummyStaticNestedClass.instanceMethod()";
+        resultExpression = "myDummyStaticNestedClass.instanceMethod()";
+        check(expression, resultExpression, String.class, new String[] {"myDummyStaticNestedClass"});
     }
 
     public void testInnerClasses() throws Exception {
@@ -2262,92 +2265,101 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
 
     public void testGenericMethodCall() throws Exception {
-        String expression="LanguageParserDummyClass.typedRefWithCapture(`hello`)";
-        String resultExpression="LanguageParserDummyClass.typedRefWithCapture(\"hello\")";
-        check(expression, resultExpression, String.class, new String[]{});
+        String expression = "LanguageParserDummyClass.typedRefWithCapture(`hello`)";
+        String resultExpression = "LanguageParserDummyClass.typedRefWithCapture(\"hello\")";
+        check(expression, resultExpression, String.class, new String[] {});
 
-//        // Call generic method with explicit type arguments:
-//        expression="LanguageParserDummyClass.<String>typedRef()";
-//        resultExpression="LanguageParserDummyClass.<String>typedRef()";
-//        check(expression, resultExpression, String.class, new String[]{});
+        // // Call generic method with explicit type arguments:
+        // expression="LanguageParserDummyClass.<String>typedRef()";
+        // resultExpression="LanguageParserDummyClass.<String>typedRef()";
+        // check(expression, resultExpression, String.class, new String[]{});
 
         // Same method, no type args:
-        expression="LanguageParserDummyClass.typedRef()";
-        resultExpression="LanguageParserDummyClass.typedRef()";
-        check(expression, resultExpression, Object.class, new String[]{});
+        expression = "LanguageParserDummyClass.typedRef()";
+        resultExpression = "LanguageParserDummyClass.typedRef()";
+        check(expression, resultExpression, Object.class, new String[] {});
 
-//        // Test when type is bounded:
-//        expression="LanguageParserDummyClass.<String>typedRefBounded()";
-//        resultExpression="LanguageParserDummyClass.<String>typedRefBounded()";
-//        check(expression, resultExpression, String.class, new String[]{});
+        // // Test when type is bounded:
+        // expression="LanguageParserDummyClass.<String>typedRefBounded()";
+        // resultExpression="LanguageParserDummyClass.<String>typedRefBounded()";
+        // check(expression, resultExpression, String.class, new String[]{});
 
-        expression="LanguageParserDummyClass.typedRefBounded()";
-        resultExpression="LanguageParserDummyClass.typedRefBounded()";
-        check(expression, resultExpression, CharSequence.class, new String[]{});
+        expression = "LanguageParserDummyClass.typedRefBounded()";
+        resultExpression = "LanguageParserDummyClass.typedRefBounded()";
+        check(expression, resultExpression, CharSequence.class, new String[] {});
     }
 
-//    public void testGenericConstructor() throws Exception {
-//        String expression="genericGetKey(new HashMap<String, Integer>())";
-//        String resultExpression="genericGetKey(new HashMap<String, Integer>())";
-//        check(expression, resultExpression, String.class, new String[]{});
-//
-//        expression="genericGetValue(new HashMap<String, Integer>())";
-//        resultExpression="genericGetValue(new HashMap<String, Integer>())";
-//        check(expression, resultExpression, Integer.class, new String[]{});
-//
-//        expression="new HashMap<String, String>().get(\"test\")";
-//        resultExpression="new HashMap<String, String>().get(\"test\")";
-//        check(expression, resultExpression, String.class, new String[]{});
-//
-//        expression="new HashMap<String, Integer>().get(\"test\")";
-//        resultExpression="new HashMap<String, Integer>().get(\"test\")";
-//        check(expression, resultExpression, Integer.class, new String[]{});
-//
-//        /*
-//        This one fails because WildcardType is not supported (because we have not implemented `visit(WildcardType n, StringBuilder printer)`)
-//        expression="new HashMap<String, ? extends Number>().get(\"test\")";
-//        resultExpression="new HashMap<String, ? extends Number>().get(\"test\")";
-//        check(expression, resultExpression, Number.class, new String[]{});
-//         */
-//    }
+    // public void testGenericConstructor() throws Exception {
+    // String expression="genericGetKey(new HashMap<String, Integer>())";
+    // String resultExpression="genericGetKey(new HashMap<String, Integer>())";
+    // check(expression, resultExpression, String.class, new String[]{});
+    //
+    // expression="genericGetValue(new HashMap<String, Integer>())";
+    // resultExpression="genericGetValue(new HashMap<String, Integer>())";
+    // check(expression, resultExpression, Integer.class, new String[]{});
+    //
+    // expression="new HashMap<String, String>().get(\"test\")";
+    // resultExpression="new HashMap<String, String>().get(\"test\")";
+    // check(expression, resultExpression, String.class, new String[]{});
+    //
+    // expression="new HashMap<String, Integer>().get(\"test\")";
+    // resultExpression="new HashMap<String, Integer>().get(\"test\")";
+    // check(expression, resultExpression, Integer.class, new String[]{});
+    //
+    // /*
+    // This one fails because WildcardType is not supported (because we have not implemented `visit(WildcardType n,
+    // StringBuilder printer)`)
+    // expression="new HashMap<String, ? extends Number>().get(\"test\")";
+    // resultExpression="new HashMap<String, ? extends Number>().get(\"test\")";
+    // check(expression, resultExpression, Number.class, new String[]{});
+    // */
+    // }
 
     public void testGenericReturnTypeOfScopeVar() throws Exception {
-        String expression="myParameterizedHashMap.get(0)";
-        String resultExpression="myParameterizedHashMap.get(0)";
-        check(expression, resultExpression, Double.class, new String[]{"myParameterizedHashMap"});
+        String expression = "myParameterizedHashMap.get(0)";
+        String resultExpression = "myParameterizedHashMap.get(0)";
+        check(expression, resultExpression, Double.class, new String[] {"myParameterizedHashMap"});
     }
 
     public void testGenericVectorToArray() throws Exception {
-        String expression="myParameterizedHashMap.get(0)";
-        String resultExpression="myParameterizedHashMap.get(0)";
-        check(expression, resultExpression, Double.class, new String[]{"myParameterizedHashMap"});
+        String expression = "myParameterizedHashMap.get(0)";
+        String resultExpression = "myParameterizedHashMap.get(0)";
+        check(expression, resultExpression, Double.class, new String[] {"myParameterizedHashMap"});
     }
 
-//    public void testGenericNested() throws Exception {
-//        String expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().var";
-//        String resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().var";
-//        check(expression, resultExpression, String.class, new String[]{});
-//
-//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().getVar()";
-//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().getVar()";
-//        check(expression, resultExpression, String.class, new String[]{});
-//
-//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfOuterType";
-//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfOuterType";
-//        check(expression, resultExpression, String.class, new String[]{});
-//
-//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfOuterType()";
-//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfOuterType()";
-//        check(expression, resultExpression, String.class, new String[]{});
-//
-//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfInnerType";
-//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfInnerType";
-//        check(expression, resultExpression, Double.class, new String[]{});
-//
-//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfInnerType()";
-//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfInnerType()";
-//        check(expression, resultExpression, Double.class, new String[]{});
-//    }
+    // public void testGenericNested() throws Exception {
+    // String expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().var";
+    // String resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().var";
+    // check(expression, resultExpression, String.class, new String[]{});
+    //
+    // expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().getVar()";
+    // resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().getVar()";
+    // check(expression, resultExpression, String.class, new String[]{});
+    //
+    // expression="new
+    // LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfOuterType";
+    // resultExpression="new
+    // LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfOuterType";
+    // check(expression, resultExpression, String.class, new String[]{});
+    //
+    // expression="new
+    // LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfOuterType()";
+    // resultExpression="new
+    // LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfOuterType()";
+    // check(expression, resultExpression, String.class, new String[]{});
+    //
+    // expression="new
+    // LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfInnerType";
+    // resultExpression="new
+    // LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfInnerType";
+    // check(expression, resultExpression, Double.class, new String[]{});
+    //
+    // expression="new
+    // LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfInnerType()";
+    // resultExpression="new
+    // LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfInnerType()";
+    // check(expression, resultExpression, Double.class, new String[]{});
+    // }
 
     public void testDhqlIsAssignableFrom() {
         assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(String.class, String.class));
@@ -2565,9 +2577,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         return f;
     }
 
-    public static IntVector[] testVarArgsVector(final IntVector... a){
+    public static IntVector[] testVarArgsVector(final IntVector... a) {
         return a;
     }
+
     public static <T> T genericSingleToSingle(T t) {
         return null;
     }

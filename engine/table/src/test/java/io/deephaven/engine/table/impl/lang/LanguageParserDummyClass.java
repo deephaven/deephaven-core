@@ -161,13 +161,14 @@ public class LanguageParserDummyClass {
             return null;
         }
 
-        public class DoubleNestedGenericClass <U> {
+        public class DoubleNestedGenericClass<U> {
             public final T varOfOuterType = null;
             public final U varOfInnerType = null;
 
             public T getVarOfOuterType() {
                 return null;
             }
+
             public U getVarOfInnerType() {
                 return null;
             }

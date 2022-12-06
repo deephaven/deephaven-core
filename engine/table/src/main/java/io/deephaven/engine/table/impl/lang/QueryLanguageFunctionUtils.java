@@ -19274,7 +19274,8 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static int intCast(Object a) {
-        // TODO: change 8900c427 is iffy; (1) was not introduced in this file's generator; (2) now `intCast(NULL_DOUBLE)` will provide an incorrect value instead of throwing an exception
+        // TODO: change 8900c427 is iffy; (1) was not introduced in this file's generator; (2) now
+        // `intCast(NULL_DOUBLE)` will provide an incorrect value instead of throwing an exception
         return a == null ? QueryConstants.NULL_INT : ((Number) a).intValue();
     }
 
