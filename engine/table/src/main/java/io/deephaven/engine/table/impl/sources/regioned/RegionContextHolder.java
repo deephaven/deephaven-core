@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
 public class RegionContextHolder implements ChunkSource.FillContext {
