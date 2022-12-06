@@ -33,7 +33,7 @@ public class Logic {
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
     static public Boolean and(boolean... values) {
-        for (Boolean b : values) {
+        for (boolean b : values) {
             if (!b) {
                 return false;
             }

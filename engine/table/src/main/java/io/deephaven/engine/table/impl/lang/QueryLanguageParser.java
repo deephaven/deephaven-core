@@ -21,6 +21,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.BlockComment;
+import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
 import com.github.javaparser.ast.expr.ArrayAccessExpr;
@@ -81,7 +82,10 @@ import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.TypeParameter;
 import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.type.WildcardType;
+import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
+import com.github.javaparser.ast.visitor.VoidVisitor;
+import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import io.deephaven.DeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -106,6 +110,7 @@ import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
 import java.lang.reflect.Array;
@@ -132,6 +137,8 @@ import java.util.stream.Stream;
 
 
 public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, QueryLanguageParser.VisitArgs> {
+    private static final boolean VERIFY_AST_CHANGES = true;
+
     private static final Logger log = LoggerFactory.getLogger(QueryLanguageParser.class);
     private final Collection<Package> packageImports;
     private final Collection<Class<?>> classImports;
@@ -190,7 +197,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
      *        imported.
      * @param variables A map of the names of scope variables to their types
-     * @param variableParameterizedTypes A map of the names of scope variables to their paramterized types
+     * @param variableParameterizedTypes A map of the names of scope variables to their parameterized types
      * @param unboxArguments If true it will unbox the query scope arguments
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
@@ -221,11 +228,29 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         final VisitArgs printer = VisitArgs.create();
         try {
             Expression expr = JavaExpressionParser.parseExpression(expression);
+            WrapperNode wrapperNode = new WrapperNode(expr);
+            expr.setParentNode(wrapperNode);
 
             Class<?> type = expr.accept(this, printer);
 
             if (type == NULL_CLASS) {
                 type = Object.class;
+            }
+
+            final String printedSource = printer.builder.toString();
+
+            if (VERIFY_AST_CHANGES) {
+                final Node parsedNode = wrapperNode.getChildNodes().get(0);
+                parsedNode.setParentNode(null); // LexicalPreservingPrinter crashes on WrapperNode.
+                final String parserExpressionDumped = LexicalPreservingPrinter.print(parsedNode);
+
+                // Compare the output from the LexicalPreservingPrinter (after modifying the AST) with the
+                // output from the printer to ensure behavior is the same:
+                if (!parserExpressionDumped.equals(printedSource)) {
+                    throw new RuntimeException("Expression changed!\n" +
+                            "    Orig result               : " + printedSource + ".\n" +
+                            "    Printed parsed expression : " + parserExpressionDumped);
+                }
             }
 
             result = new Result(type, printer.builder.toString(), variablesUsed);
@@ -237,7 +262,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     .append(expression)
                     .append('\n')
                     .append("Expression having trouble : ")
-                    .append(printer)
+                    .append(printer.builder)
                     .append('\n');
 
             final boolean VERBOSE_EXCEPTION_MESSAGES = Configuration
@@ -251,6 +276,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         .append('\n');
             } else {
                 exceptionMessageBuilder
+                        .append("Exception type            : ")
+                        .append(e.getClass().getName())
+                        .append('\n')
                         .append("Exception message         : ")
                         .append(e.getMessage())
                         .append('\n');
@@ -281,7 +309,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     /**
      * Convert single equals signs (the assignment operator) to double-equals signs (equality operator). The parser will
      * then replace the equality operator with an appropriate equality-checking methods. Assignments are not supported.
-     *
+     * <p>
      * This method does not have any special handling for backticks; accordingly this method should be run <b>after</b>
      * {@link #convertBackticks(String)}.
      *
@@ -325,7 +353,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     /**
      * Convert backticks into double-quote characters, unless the backticks are already enclosed in double-quotes.
-     *
+     * <p>
      * Also, within backticks, double-quotes are automatically re-escaped. For example, in the following string "`This
      * expression uses \"double quotes\"!`" The string will be converted to: "\"This expression uses \\\"double
      * quotes\\\"!\""
@@ -525,7 +553,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     private Class<?> calculateMethodReturnTypeUsingGenerics(
-            Class<?> scope, Method method, Class<?>[] paramTypes, Class<?>[][] parameterizedTypes) {
+            final Class<?> scope,
+            final Expression scopeExpr,
+            final Method method,
+            final Class<?>[] paramTypes,
+            final Class<?>[][] parameterizedTypes) {
         Type methodReturnType = method.getGenericReturnType();
 
         int arrayDimensions = 0;
@@ -541,9 +573,24 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         final TypeVariable<?> genericReturnType = (TypeVariable<?>) methodReturnType;
 
+        // if the method is being invoked on a variable (i.e. NameExpr) of a parameterized type, and we have
+        // type arguments for that variable, then check whether the return type is one of the scope's type parameters.
+        if (scopeExpr instanceof NameExpr) {
+            Class<?>[] typeArguments = variableParameterizedTypes.get(((NameExpr) scopeExpr).getNameAsString());
+            if (typeArguments != null) {
+                final TypeVariable<? extends Class<?>>[] scopeTypeParameters = scope.getTypeParameters();
+                for (int i = 0; i < scopeTypeParameters.length; i++) {
+                    if (scopeTypeParameters[i].equals(genericReturnType)) {
+                        return typeArguments[i];
+                    }
+                }
+            }
+        }
+
+
         // check for the generic type in a param
 
-        Type[] genericParameterTypes = method.getGenericParameterTypes();
+        final Type[] genericParameterTypes = method.getGenericParameterTypes();
 
         for (int i = 0; i < genericParameterTypes.length; i++) {
             Type genericParamType = genericParameterTypes[i];
@@ -730,12 +777,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     private static boolean canAssignType(final Class<?> candidateParamType, final Class<?> paramType) {
-        if (isAssignableFrom(candidateParamType, paramType)) {
+        if (dhqlIsAssignableFrom(candidateParamType, paramType)) {
             return true;
         }
 
         final Class<?> maybePrimitive = ClassUtils.wrapperToPrimitive(paramType);
-        if (maybePrimitive != null && isAssignableFrom(candidateParamType, maybePrimitive)) {
+        if (maybePrimitive != null && dhqlIsAssignableFrom(candidateParamType, maybePrimitive)) {
             return true;
         }
 
@@ -751,10 +798,18 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return executableResult;
     }
 
+    /**
+     * Is m2 more specific than m1?
+     *
+     * @param m1 the current best method
+     * @param m2 the method that might be better
+     *
+     * @return true if m2 is more specific than m1
+     */
     private static boolean isMoreSpecificMethod(final Method m1, final Method m2) {
         final Boolean executableResult = isMoreSpecificExecutable(m1, m2);
         // NB: executableResult can be null in cases where an override narrows its return type
-        return executableResult == null ? isAssignableFrom(m1.getReturnType(), m2.getReturnType()) : executableResult;
+        return executableResult == null ? dhqlIsAssignableFrom(m1.getReturnType(), m2.getReturnType()) : executableResult;
     }
 
     private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(
@@ -791,7 +846,21 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return null;
     }
 
-    private static boolean isAssignableFrom(Class<?> classA, Class<?> classB) {
+    /**
+     * This checks whether {@code classA} is assignable from {@code classB} <b>for operations in the query engine</b>.
+     * In particular, it is distinct from {@link Class#isAssignableFrom} in its handling of numeric types — if
+     * {@code classA} is a primitive or boxed type (except boolean/Boolean), the result is true if {@code classA} is the
+     * {@link #binaryNumericPromotionType  binary numeric promotion type} of {@code classB}.
+     * For example, {@code Double.TYPE.isAssignableFrom(Integer.TYPE)} and
+     * {@code Double.TYPE.isAssignableFrom(Integer.class)} are both {@code false}, but
+     * {@code QueryLanguageParser.dhqlIsAssignableFrom(Double.TYPE, Integer.TYPE)} and
+     * {@code QueryLanguageParser.dhqlIsAssignableFrom(Double.TYPE, Integer.class)} are both {@code true}.
+     * <p>
+     * @param classA The potential target type for a reference/primitive value of {@code classB}
+     * @param classB The class whose assignability to {@code classA} should be checked
+     * @return {@code true} if it's acceptable to cast {@code classB} to {@code classA}
+     */
+    static boolean dhqlIsAssignableFrom(Class<?> classA, Class<?> classB) {
         if (classA == classB) {
             return true;
         }
@@ -809,7 +878,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     private Class<?>[][] getParameterizedTypes(Expression... expressions) {
-        Class<?>[][] parameterizedTypes = new Class[expressions.length][];
+        final Class<?>[][] parameterizedTypes = new Class[expressions.length][];
 
         for (int i = 0; i < expressions.length; i++) {
             if ((expressions[i] instanceof NameExpr)) {
@@ -850,6 +919,101 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return float[].class;
         }
         throw new RuntimeException("Unknown Vector type : " + type);
+    }
+
+
+    /**
+     * TODO: deprecated now that they have {@link Node#replace(Node)}?
+     * @param parentNode The parent node in which a child should be replaced
+     * @param origExpr The original expression to find & replace in the {@code parentNode}
+     * @param newExpr The new expression to put in the place of the {@code origExpr}
+     */
+    private static void replaceChildExpression(Node parentNode, Expression origExpr, Expression newExpr) {
+//        childrenNodes.set(exprIndex, newExpr);
+        final String parentTypeName = parentNode.getClass().getSimpleName();
+        switch (parentTypeName) {
+            case "WrapperNode":
+                final WrapperNode wrapperNode = (WrapperNode) parentNode;
+                Require.eqTrue(wrapperNode.replace(origExpr, newExpr), "wrapperNode.replace(origExpr, newExpr)");
+                return;
+            case "UnaryExpr":
+                ((UnaryExpr) parentNode).setExpression(newExpr);
+                return;
+            case "BinaryExpr":
+                final BinaryExpr binaryExpr = (BinaryExpr) parentNode;
+                if (binaryExpr.getLeft() == origExpr) {
+                    binaryExpr.setLeft(newExpr);
+                } else if (binaryExpr.getRight() == origExpr) {
+                    binaryExpr.setRight(newExpr);
+                } else {
+                    throw new RuntimeException("origExpr not recognized as BinaryExpr component");
+                }
+                return;
+            case "MethodCallExpr":
+                final MethodCallExpr methodCallExpr = (MethodCallExpr) parentNode;
+                final int argIdxToReplace;
+                if (methodCallExpr.getScope().orElse(null) == origExpr) {
+                    methodCallExpr.setScope(newExpr);
+                    return;
+                } else if (methodCallExpr.getNameAsExpression() == origExpr) {
+                    Require.instanceOf(newExpr, "newExpr", NameExpr.class);
+                    methodCallExpr.setName(((NameExpr) newExpr).getName());
+                    return;
+                } else if ((argIdxToReplace = methodCallExpr.getArguments().indexOf(origExpr)) >= 0) {
+                    final NodeList<Expression> args = new NodeList<>(methodCallExpr.getArguments());
+                    args.set(argIdxToReplace, newExpr);
+                    methodCallExpr.setArguments(args);
+                    return;
+                }
+                break;
+            case "CastExpr":
+                final CastExpr castExpr = (CastExpr) parentNode;
+                Assert.equals(castExpr.getExpression(), "castExpr.getExpr()", origExpr, "origExpr");
+                castExpr.setExpression(newExpr);
+                origExpr.setParentNode(null);
+                return;
+            case "ArrayInitializerExpr":
+                final ArrayInitializerExpr arrayInitializerExpr = (ArrayInitializerExpr) parentNode;
+                final List<Expression> arrayInitializerExprValues = arrayInitializerExpr.getValues();
+                final int idxToReplace = arrayInitializerExprValues.indexOf(origExpr);
+                if(idxToReplace < 0) {
+                    throw new RuntimeException("Could not find original expression within parent's array values! Expression: " + origExpr.toString());
+                }
+                arrayInitializerExprValues.set(idxToReplace, newExpr);
+                return;
+            case "ArrayAccessExpr":
+                final ArrayAccessExpr arrayAccessExpr = (ArrayAccessExpr) parentNode;
+                if(arrayAccessExpr.getName() == origExpr) {
+                    arrayAccessExpr.setName(newExpr);
+                    return;
+                } else if(arrayAccessExpr.getIndex() == origExpr) {
+                    arrayAccessExpr.setIndex(newExpr);
+                    return;
+                }
+                break;
+            case "ConditionalExpr":
+                final ConditionalExpr conditionalExpr = (ConditionalExpr) parentNode;
+                if(conditionalExpr.getCondition() == origExpr) {
+                    conditionalExpr.setCondition(newExpr);
+                } else if(conditionalExpr.getThenExpr() == origExpr) {
+                    conditionalExpr.setThenExpr(newExpr);
+                } else if(conditionalExpr.getElseExpr() == origExpr) {
+                    conditionalExpr.setElseExpr(newExpr);
+                } else {
+                    throw new RuntimeException("Could not find original expression within parent ConditionalExpr!");
+                }
+                return;
+            case "EnclosedExpr":
+                final EnclosedExpr enclosedExpr = (EnclosedExpr) parentNode;
+                if(enclosedExpr.getInner() == origExpr) {
+                    enclosedExpr.setInner(newExpr);
+                    return;
+                }
+                break;
+        }
+
+
+        throw new UnsupportedOperationException("Could not replace expression within parent of type " + parentTypeName);
     }
 
     private Class<?> getTypeWithCaching(Node n) {
@@ -929,7 +1093,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * Converts the provided argument {@code expressions} for the given {@code executable} so that the expressions whose
      * types (expressionTypes) do not match the corresponding declared argument types ({@code argumentTypes}) may still
      * be used as arguments.
-     *
+     * <p>
      * Conversions include casts & unwrapping of Vectors to Java arrays.
      *
      * @param executable The executable (method) to be called
@@ -981,7 +1145,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);
                 allExpressionTypesArePrimitive = false;
             } else if (nArgExpressions == nArgs
-                    && isAssignableFrom(argumentTypes[lastArgIndex], expressionTypes[lastArgIndex])) {
+                    && dhqlIsAssignableFrom(argumentTypes[lastArgIndex], expressionTypes[lastArgIndex])) {
                 allExpressionTypesArePrimitive = false;
             } else {
                 for (int ei = nArgs - 1; ei < nArgExpressions; ei++) {
@@ -1006,7 +1170,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
 
             if (varArgType.isPrimitive() && allExpressionTypesArePrimitive) {
-                // there are ambiguous oddities with primitive varargs, so if its primitive lets just box it ourselves
+                // there are ambiguous oddities with primitive varargs, so if it's primitive let's just box it ourselves
                 Expression[] temp = new Expression[nArgs];
                 Expression[] varArgExpressions = new Expression[nArgExpressions - nArgs + 1];
                 System.arraycopy(expressions, 0, temp, 0, temp.length - 1);
@@ -1105,6 +1269,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     @Override
     public Class<?> visit(ArrayAccessExpr n, VisitArgs printer) {
+        final Runnable nothingPrintedAssertion = getNothingPrintedAssertion(printer);
+
         /*
          * ArrayAccessExprs are permitted even when the 'array' is not really an array. The main use of this is for
          * Vectors, such as:
@@ -1119,100 +1285,103 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
          * As of July 2017, I don't know if anyone uses this, or if it has ever been advertised.
          */
 
-        Class<?> type = n.getName().accept(this, printer);
+        if(n.getName() instanceof LiteralExpr) {    // a sanity check
+            throw new RuntimeException("Invalid expression: indexing into literal value");
+        }
+
+        Class<?> type = n.getName().accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
 
         if (type.isArray()) {
+            n.getName().accept(this, printer);
             printer.append('[');
             n.getIndex().accept(this, printer);
             printer.append(']');
 
             return type.getComponentType();
-        } else {
-            printer.append(".get(");
-            Class<?> paramType = n.getIndex().accept(this, printer);
-            printer.append(')');
-
-            // We'll check for a known component type if this a NameExpr.
-            if (n.getName() instanceof NameExpr) {
-                Class<?>[] classes = variableParameterizedTypes.get(((NameExpr) n.getName()).getNameAsString());
-
-                if (classes != null) {
-                    Class<?> ret = null;
-
-                    if (classes.length == 1) {
-                        ret = classes[0]; // scenario 1: this is a list-like type
-                    } else if (classes.length == 2) {
-                        ret = classes[1]; // scenario 2: this is a map-like type
-                    }
-
-                    if (ret != null) {
-                        return ret;
-                    }
-                }
-            }
-
-            return getMethodReturnType(type, "get", new Class[] {paramType}, getParameterizedTypes(n.getIndex()));
+        } else {  // An array access on something that's not an array should be replaced with a MethodCallExpr calling get()
+            final Node origParent = n.getParentNode().orElseThrow();
+            final MethodCallExpr newExpr = new MethodCallExpr(n.getName(), "get", NodeList.nodeList(n.getIndex()));
+            replaceChildExpression(origParent, n, newExpr);
+            nothingPrintedAssertion.run();
+            return newExpr.accept(this, printer);
         }
     }
 
     @Override
-    public Class<?> visit(BinaryExpr n, VisitArgs printer) {
+    public Class<?> visit(final BinaryExpr n, VisitArgs printer) {
+        final Runnable assertNothingPrinted = getNothingPrintedAssertion(printer);
+
         BinaryExpr.Operator op = n.getOperator();
+        final Node origParent = n.getParentNode().orElseThrow();
+
+        Class<?> lhType = getTypeWithCaching(n.getLeft());
+        Class<?> rhType = getTypeWithCaching(n.getRight());
+
         final Expression leftExpr = n.getLeft();
         final Expression rightExpr = n.getRight();
 
-        Class<?> lhType = getTypeWithCaching(leftExpr);
-        Class<?> rhType = getTypeWithCaching(rightExpr);
-
         if ((lhType == String.class || rhType == String.class) && op == BinaryExpr.Operator.PLUS) {
-            if (printer.hasStringBuilder()) {
+
                 leftExpr.accept(this, printer);
-                printer.append(getOperatorSymbol(op));
+                printer.append(' ').append(getOperatorSymbol(op)).append(' ');
                 rightExpr.accept(this, printer);
-            }
+
             return String.class;
         }
 
         if (op == BinaryExpr.Operator.OR || op == BinaryExpr.Operator.AND) {
-            if (printer.hasStringBuilder()) {
+
                 leftExpr.accept(this, printer);
-                printer.append(getOperatorSymbol(op));
+                printer.append(' ').append(getOperatorSymbol(op)).append(' ');
                 rightExpr.accept(this, printer);
-            }
+
             return boolean.class;
         }
 
-        if (op == BinaryExpr.Operator.NOT_EQUALS) {
-            printer.append('!');
-            op = BinaryExpr.Operator.EQUALS;
+        // "Replace "x!=y" with "!(x==y)")
+        if (op==BinaryExpr.Operator.NOT_EQUALS){
+            // Update the AST -- create an EQUALS BinaryExpr, then invert its result.
+            final BinaryExpr equalsExpr = new BinaryExpr(n.getLeft(), n.getRight(), BinaryExpr.Operator.EQUALS);
+
+            final UnaryExpr newExpr = new UnaryExpr(equalsExpr, UnaryExpr.Operator.LOGICAL_COMPLEMENT);
+            newExpr.setComment(QueryLanguageParserComment.BINARY_OP_NEQ_CONVERSION_FLAG);
+            replaceChildExpression(origParent, n, newExpr);
+
+
+            assertNothingPrinted.run();
+            return newExpr.accept(this, printer);
         }
 
-        boolean isArray = lhType.isArray() || rhType.isArray() || isTypedVector(lhType) || isTypedVector(rhType);
-
         if (op == BinaryExpr.Operator.EQUALS) {
+            // TODO: it's bit weird to use isNull() here as it's not part of QueryLanguageFunctionUtils.
             if (leftExpr.isNullLiteralExpr()) {
                 if (printer.hasStringBuilder()) {
-                    printer.append("isNull(");
-                    rightExpr.accept(this, printer);
-                    printer.append(")");
+                    final MethodCallExpr isNullExpr = new MethodCallExpr("isNull", rightExpr);
+                    replaceChildExpression(origParent, n, isNullExpr);
+                    return isNullExpr.accept(this, printer);
                 }
                 return boolean.class;
             }
             if (rightExpr.isNullLiteralExpr()) {
                 if (printer.hasStringBuilder()) {
-                    printer.append("isNull(");
-                    leftExpr.accept(this, printer);
-                    printer.append(")");
+                    final MethodCallExpr isNullExpr = new MethodCallExpr("isNull", leftExpr);
+                    replaceChildExpression(origParent, n, isNullExpr);
+                    return isNullExpr.accept(this, printer);
                 }
                 return boolean.class;
             }
         }
 
+        boolean isArray = lhType.isArray() || rhType.isArray() || isTypedVector(lhType) || isTypedVector(rhType);
+
         String methodName = getOperatorName(op) + (isArray ? "Array" : "");
 
         if (printer.hasStringBuilder()) {
-            new MethodCallExpr(null, methodName, new NodeList<>(n.getLeft(), n.getRight()))
-                    .accept(this, printer);
+            final MethodCallExpr binaryOpOverloadMethod = new MethodCallExpr(null, methodName, NodeList.nodeList(n.getLeft(), n.getRight()));
+            replaceChildExpression(origParent, n, binaryOpOverloadMethod);   // Replace the BinaryExpr with a method call, e.g. "x==y" --> "eq(x, y)"
+
+            assertNothingPrinted.run();
+            return binaryOpOverloadMethod.accept(this, printer);
         }
 
         // printer.append(methodName + '(');
@@ -1225,9 +1394,37 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 getParameterizedTypes(n.getLeft(), n.getRight()));
     }
 
+    /**
+     * Creates a Procedure that can be used to assert that nothing has been written to the given {@code printer}
+     * since this method was called. This is used as a sanity check before calling {@link Node#accept(com.github.javaparser.ast.visitor.GenericVisitor, Object)}
+     * on a newly-created {@link Expression}.
+     * <p>
+     * The initial length of the {@code printer} is captured when the {@code Runnable} is created; an invocation
+     * of {@link Runnable#run()} will throw an exception if its length has changed since then.
+     *
+     * @param printer The printer whose initial length should be captured
+     */
+    @NotNull
+    private Runnable getNothingPrintedAssertion(VisitArgs printer) {
+        return new Runnable() {
+            final int initialLen = !printer.hasStringBuilder() ? -1 : printer.builder.length();
+
+            @Override
+            public void run() {
+                if(printer.hasStringBuilder()) {
+                    if (printer.builder.length() - initialLen != 0) {
+                        throw new IllegalStateException("printer.builder.length() - initialLen != 0 --> printer.builder.length() = " + printer.builder.length() + "; initialLen = " + initialLen);
+                    }
+                }
+            }
+        };
+    }
+
+
     @Override
     public Class<?> visit(UnaryExpr n, VisitArgs printer) {
-        String opName;
+        final Runnable nothingPrintedAssertion = getNothingPrintedAssertion(printer);
+        final String opName;
 
         if (n.getOperator() == UnaryExpr.Operator.LOGICAL_COMPLEMENT) {
             opName = "not";
@@ -1237,29 +1434,57 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             throw new RuntimeException("Unary operation (" + n.getOperator().name() + ") not supported");
         }
 
-        printer.append(opName).append('(');
-        Class<?> type = n.getExpression().accept(this, printer);
-        printer.append(')');
+        final Class<?> ret = getTypeWithCaching(n.getExpression());
 
-        return getMethodReturnType(null, opName, new Class[] {type}, getParameterizedTypes(n));
+        final boolean isNonequalOpOverload = n.getComment().orElse(null) == QueryLanguageParserComment.BINARY_OP_NEQ_CONVERSION_FLAG;
+        if(isNonequalOpOverload) {
+            Assert.equals(ret, "ret", boolean.class, "boolean.class");
+        }
+
+        if(boolean.class.equals(ret)) {
+            // primitive booleans don't need a 'not()' method; they can't be null anyway
+            printer.append('!');
+
+            final Class<?> retForCheck = n.getExpression().accept(this, printer);
+            Assert.equals(retForCheck, "retForCheck", ret, "ret");
+
+            if (isNonequalOpOverload) {
+                // sanity checks -- the inner expression *must* be a BinaryExpr (for ==), and it must be replaced in this
+                // UnaryExpr with a MethodCallExpr (for "eq()" or possibly "isNull()").
+                Assert.instanceOf(n.getExpression(), "n.getExpression()", MethodCallExpr.class);
+                final MethodCallExpr methodCall = (MethodCallExpr) n.getExpression();
+                final String methodName = methodCall.getNameAsString();
+                if (!"eq".equals(methodName) && !"isNull".equals(methodName)) {
+                    throw new IllegalStateException("Unexpected node with BINARY_OP_NEQ_CONVERSION_FLAG: " + methodCall);
+                }
+            }
+
+            return ret;
+        } else {
+            Node origParent = n.getParentNode().orElseThrow();
+            MethodCallExpr unaryOpOverloadMethod = new MethodCallExpr(null, opName, NodeList.nodeList(n.getExpression()));
+            replaceChildExpression(origParent, n, unaryOpOverloadMethod);
+
+            nothingPrintedAssertion.run();
+            return unaryOpOverloadMethod.accept(this, printer);
+        }
     }
 
     @Override
     public Class<?> visit(CastExpr n, VisitArgs printer) {
-        final Class<?> ret = n.getType().accept(this, VisitArgs.WITHOUT_STRING_BUILDER); // the target type
-        final Expression expr = n.getExpression();
+        final Runnable nothingPrintedAssertion = getNothingPrintedAssertion(printer);
 
-        final VisitArgs innerArgs = VisitArgs.create().cloneWithCastingContext(ret);
-        final Class<?> exprType = expr.accept(this, innerArgs);
-        final String exprPrinted = innerArgs.builder.toString();
+        final Class<?> ret = n.getType().accept(this, VisitArgs.WITHOUT_STRING_BUILDER); // the target type
+        final Expression origExprToCast = n.getExpression();
+
+        final Class<?> exprType = origExprToCast.accept(this, VisitArgs.WITHOUT_STRING_BUILDER); // ignore the StringBuilder; just need the type.
 
         final boolean fromPrimitive = exprType.isPrimitive();
-        final boolean fromBoxedType = io.deephaven.util.type.TypeUtils.isBoxedType(exprType);
-        final Class<?> unboxedExprType =
-                !fromBoxedType ? null : io.deephaven.util.type.TypeUtils.getUnboxedType(exprType);
+        final boolean fromBoxedType = TypeUtils.isBoxedType(exprType);
+        final Class<?> unboxedExprType = !fromBoxedType ? null : TypeUtils.getUnboxedType(exprType);
 
         final boolean toPrimitive = ret.isPrimitive();
-        final boolean isWidening;
+        final boolean isUnboxingAndWidening;
 
         /*
          * Here are the rules for casting: https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.5
@@ -1279,23 +1504,23 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
             // Now check whether we're converting from a boxed type
             else if (fromBoxedType) {
-                isWidening = isWideningPrimitiveConversion(unboxedExprType, ret);
+                isUnboxingAndWidening = isWideningPrimitiveConversion(unboxedExprType, ret);
                 // Unboxing and Identity conversions are always OK
                 if (!ret.equals(unboxedExprType) &&
-                /*
-                 * Boolean is the only boxed type that can be cast to boolean, and boolean is the only primitive type to
-                 * which Boolean can be cast:
-                 */
+                        /*
+                         * Boolean is the only boxed type that can be cast to boolean, and boolean is the only primitive type to
+                         * which Boolean can be cast:
+                         */
                         (boolean.class.equals(ret) ^ Boolean.class.equals(exprType)
                                 // Only Character can be cast to char:
                                 || char.class.equals(ret) && !Character.class.equals(exprType)
                                 // Other than that, only widening conversions are allowed:
-                                || !isWidening)) {
+                                || !isUnboxingAndWidening)) {
                     throw new RuntimeException("Incompatible types; " + exprType.getName() +
                             " cannot be converted to " + ret.getName());
                 }
             } else {
-                isWidening = false;
+                isUnboxingAndWidening = false;
             }
         }
         /*
@@ -1308,7 +1533,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 throw new RuntimeException("Incompatible types; " + exprType.getName() +
                         " cannot be converted to " + ret.getName());
             }
-            isWidening = false;
+            isUnboxingAndWidening = false;
         }
 
         /*
@@ -1323,75 +1548,119 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 ((ret.equals(boolean.class) || ret.equals(Boolean.class) || ret.equals(String.class))
                         && exprType.equals(PyObject.class));
 
-        if ((toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) || isPyUpgrade) {
-            // Casting to a primitive, except booleans and the identity conversion
-            if (!toPrimitive) {
-                // these methods look like `doStringPyCast` and `doBooleanPyCast`
-                printer.append("do");
-            }
-            printer.append(ret.getSimpleName());
+        final boolean isPyCast = exprType != NULL_CLASS && dhqlIsAssignableFrom(PyObject.class, exprType);
 
-            if (exprType != NULL_CLASS && isAssignableFrom(PyObject.class, exprType)) {
-                printer.append("PyCast(");
-            } else {
-                printer.append("Cast(");
-            }
+        // check if cast is redundant (e.g. identity conversion or simple unboxing)
+        final boolean isRedundantCast = ret.isAssignableFrom(exprType);
+
+        // determine whether to use a straight java cast or a method call
+        final boolean useCastFunction = (toPrimitive && !isRedundantCast && !ret.equals(boolean.class) && !ret.equals(exprType)) || isPyUpgrade;
+        if (useCastFunction) {
+            // Casting to a primitive, except booleans and the identity conversion.
+            // Replace with a function (e.g. 'intCast(blah)' or 'doPyBooleanCast(blah)')
 
             /*
              * When unboxing to a wider type, do an unboxing conversion followed by a widening conversion. See table
              * 5.5-A in the JLS, at the link above.
              */
-            if (isWidening) {
+            if (isUnboxingAndWidening) {
+                // Replacing the original expression with an unboxing conversion. (Then we will cast that.)
+                // e.g. in "(long) myInteger", replace "myInteger" with "intCast(myInteger)", the final expression
+                // will be "longCast(intCast(myInteger))".
                 Assert.neqNull(unboxedExprType, "unboxedExprType");
-                printer.append(unboxedExprType.getSimpleName());
-                printer.append("Cast(");
+
+                final String unboxingMethodName = unboxedExprType.getSimpleName() + "Cast";
+                final MethodCallExpr unboxingCastExpr = new MethodCallExpr(null, unboxingMethodName, NodeList.nodeList(origExprToCast));
+                unboxingCastExpr.setComment(QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG);
+                // Set the unboxing MethodCallExpr as the target of the original CastExpr 'n'.
+                // Next, the CastExpr is replaced with another MethodCallExpr.
+                n.setExpression(unboxingCastExpr);
+
+                Class<?> unboxingMethodCallReturnType = unboxingCastExpr.accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
+                Assert.equals(unboxingMethodCallReturnType, "unboxingMethodCallReturnType", unboxedExprType, "unboxedExprType");    // verify type is as expected
             }
 
-            printer.append(exprPrinted);
+            final Expression finalExprToCast = n.getExpression(); // Note that the handling of unboxing/widening may have changed the expression-to-cast.
 
-            if (isWidening) { // Close the unboxing conversion, if there was one
-                printer.append(')');
-            }
 
-            printer.append(')');
-        } else { // Casting to a reference type or a boolean, or a redundant primitive cast
-
-            /* Print the cast normally - "(targetType) (expression)" */
-            printer.append('(');
-            if (ret.getPackage() != null && simpleNameWhiteList.contains(ret.getPackage().getName())) {
-                printer.append(ret.getSimpleName());
+            final String castMethodName;
+            if(isPyCast) {
+                if(!toPrimitive) {
+                    // e.g. "doStringPyCast"
+                    castMethodName = "do" + ret.getSimpleName() + "PyCast";
+                } else {
+                    // e.g. "intPyCast"
+                    castMethodName = ret.getSimpleName() + "PyCast";
+                }
             } else {
-                printer.append(ret.getCanonicalName());
+                // e.g. "intCast"
+                castMethodName = ret.getSimpleName() + "Cast";
             }
-            printer.append(')');
 
-            /*
-             * If the expression is anything more complex than a simple name or literal, then enclose it in parentheses
-             * to ensure the order of operations is not altered.
-             */
-            boolean isNameOrLiteral = (expr instanceof NameExpr) || (expr instanceof LiteralExpr);
 
-            if (!isNameOrLiteral) {
+            final Node origParent = n.getParentNode().orElseThrow();
+            final MethodCallExpr primitiveCastExpr = new MethodCallExpr(null, castMethodName, NodeList.nodeList(finalExprToCast));
+            if (ret.equals(unboxedExprType)) {
+                // tell parser not to rewrite this method call (only needed when unboxing)
+                primitiveCastExpr.setComment(QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG);
+            }
+            replaceChildExpression(origParent, n, primitiveCastExpr);
+            nothingPrintedAssertion.run();
+            Class<?> primitiveCastMethodCallReturnType = primitiveCastExpr.accept(this, printer);
+            Assert.equals(primitiveCastMethodCallReturnType, "primitiveCastMethodCallReturnType", ret, "ret");    // verify type is as expected
+            return primitiveCastMethodCallReturnType;
+        } else {
+            // Casting to a reference type or a boolean, or a redundant primitive cast.
+            // Use a straight cast (e.g. '(int) blah') not a function (e.g. 'intCast(blah)')
+
+            /* If the expression is anything more complex than a simple name or literal, then enclose it in parentheses
+               to ensure the order of operations is not altered. */
+
+            if (!isAssociativitySafeExpression(origExprToCast)) {
+                EnclosedExpr newExpr = new EnclosedExpr(origExprToCast); // TODO: unclear whether this matters with AST modifications/pretty printing, but it's required for compatibility w/ original 'printer' method
+                nothingPrintedAssertion.run();
+                n.setExpression(newExpr);
+                origExprToCast.setParentNode(newExpr);
+            }
+
+            if (printer.hasStringBuilder()) {
+                /* Print the cast normally - "(targetType) (expression)" */
                 printer.append('(');
-            }
-
-            printer.append(exprPrinted);
-
-            if (!isNameOrLiteral) {
+                if (ret.getPackage() != null && simpleNameWhiteList.contains(ret.getPackage().getName())) {
+                    printer.append(ret.getSimpleName());
+                } else {
+                    printer.append(ret.getCanonicalName());
+                }
                 printer.append(')');
-            }
-        }
+                printer.append(' ');
 
-        return ret;
+                n.getExpression().accept(this, printer);
+            }
+
+            return ret;
+        }
+    }
+
+    /**
+     * Returns true if you can put an "!" in front of an expression to invert the whole thing instead of part.
+     * So {@code true} for {@code myMethod("some", "args"} or {@code myVar}, {@code false} for {@code a&&b}. (Because
+     * {@code !myMethod("some", "args")} or {@code !myVar} work fine, but {@code !a&&b} is very different from
+     * {@code !(a&&b)}.)
+     * @param expr
+     * @return {@code true} if prepending a unary operator will apply the operator to the entire expression instead
+     * of just its first term.
+     */
+    private static boolean isAssociativitySafeExpression(Expression expr) {
+        return (expr instanceof NameExpr) || (expr instanceof LiteralExpr) || (expr instanceof EnclosedExpr) || (expr instanceof MethodCallExpr);
     }
 
     /**
      * Checks whether the conversion from {@code original} to {@code target} is a widening primitive conversion. The
      * arguments must be primitive types (not boxed types).
-     *
+     * <p>
      * This method return false if {@code original} and {@code target} represent the same type, as such a conversion is
      * the identity conversion, not a widening conversion.
-     *
+     * <p>
      * See <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.1.2">the JLS</a> for more info.
      *
      * @param original The type to convert <b>from</b>.
@@ -1527,12 +1796,20 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         if (classA == boolean.class && classB == Boolean.class) {
             // a little hacky, but this handles the null case where it unboxes. very weird stuff
-            n.setThenExpr(new CastExpr(new ClassOrInterfaceType("java.lang.Boolean"), n.getThenExpr()));
+            final Expression uncastExpr = n.getThenExpr();
+            final CastExpr castExpr = new CastExpr(new ClassOrInterfaceType("Boolean"), uncastExpr);
+            n.setThenExpr(castExpr);
+            // fix parent in uncastExpr (it is cleared when it is replaced with the CastExpr)
+            uncastExpr.setParentNode(castExpr);
         }
 
         if (classA == Boolean.class && classB == boolean.class) {
             // a little hacky, but this handles the null case where it unboxes. very weird stuff
-            n.setElseExpr(new CastExpr(new ClassOrInterfaceType("java.lang.Boolean"), n.getElseExpr()));
+            final Expression uncastExpr = n.getElseExpr();
+            final CastExpr castExpr = new CastExpr(new ClassOrInterfaceType("Boolean"), uncastExpr);
+            n.setElseExpr(castExpr);
+            // fix parent in uncastExpr (it is cleared when it is replaced with the CastExpr)
+            uncastExpr.setParentNode(castExpr);
         }
 
         if (printer.hasStringBuilder()) {
@@ -1544,8 +1821,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         printer.append(" : ");
         classB = n.getElseExpr().accept(this, printer);
 
-        boolean isAssignableFromA = isAssignableFrom(classA, classB);
-        boolean isAssignableFromB = isAssignableFrom(classB, classA);
+        boolean isAssignableFromA = dhqlIsAssignableFrom(classA, classB);
+        boolean isAssignableFromB = dhqlIsAssignableFrom(classB, classA);
 
         if (isAssignableFromA && isAssignableFromB) {
             return classA.isPrimitive() ? classA : classB;
@@ -1684,9 +1961,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     @Override
     public Class<?> visit(IntegerLiteralExpr n, VisitArgs printer) {
-        String value = n.getValue();
-
-        printer.append(value);
+        final Runnable nothingPrintedAssertion = getNothingPrintedAssertion(printer);
+        String origValue=n.getValue();
 
         /*
          * In java, you can't compile if your code contains an integer literal that's too big to fit in an int. You'd
@@ -1696,11 +1972,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
          * 'integer' literal is too big to fit in an int, we automatically add on the "L" to promote the literal from an
          * int to a long.
          *
-         * Also, note that the 'x' and 'b' for hexadecimal/binary literals are _not_ case sensitive.
+         * Also, note that the 'x' and 'b' for hexadecimal/binary literals are _not_ case-sensitive.
          */
 
         // First, we need to remove underscores from the value before we can parse it.
-        value = value.chars()
+        final String value = origValue.chars()
                 .filter((c) -> c != '_')
                 .collect(StringBuilder::new, (sb, c) -> sb.append((char) c), StringBuilder::append)
                 .toString();
@@ -1717,10 +1993,14 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             longValue = Long.parseLong(value);
         }
 
-        if (longValue < Integer.MIN_VALUE || longValue > Integer.MAX_VALUE) {
-            printer.append('L');
-            return long.class;
+        if (longValue<Integer.MIN_VALUE || longValue>Integer.MAX_VALUE){
+            LongLiteralExpr newExpr = new LongLiteralExpr(origValue + 'L');
+            replaceChildExpression(n.getParentNode().orElseThrow(), n, newExpr);
+            nothingPrintedAssertion.run();
+            return newExpr.accept(this, printer);
         }
+
+        printer.append(origValue);
 
         return int.class;
     }
@@ -1759,6 +2039,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     @Override
     public Class<?> visit(MethodCallExpr n, VisitArgs printer) {
+
         final VisitArgs innerPrinter = VisitArgs.create();
 
         Class<?> scope = n.getScope().map(sc -> {
@@ -1775,12 +2056,24 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         Class<?>[][] parameterizedTypes = getParameterizedTypes(expressions);
 
         Method method = getMethod(scope, n.getNameAsString(), expressionTypes, parameterizedTypes);
+        
+        
+//      TODO: we can swap out method calls for better ones here, e.g. python functions to Java ones, or
+//      replacing boxed stuff with primitives (e.g. DateTime methods), etc.
+//      if(methodToOptimizerMap.containsKey(method)) {
+//          methodToOptimizerMap.get(method).apply(n, printer);
+//      }
 
         Class<?>[] argumentTypes = method.getParameterTypes();
 
         // now do some parameter conversions...
-        expressions = convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, expressions);
+        if(n.getComment().orElse(null) != QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG) {
+            expressions = convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, expressions);
+        }
+        n.setArguments(NodeList.nodeList(expressions));
 
+
+        // TODO: the parameter-replacement here has not been updated to modify the AST yet.
         if (isPotentialImplicitCall(method.getDeclaringClass())) {
             if (scope == null) { // python func call or Groovy closure call
                 /*
@@ -1826,7 +2119,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             vectorizePythonCallable(n, expressions, argTypes);
         }
 
-        return calculateMethodReturnTypeUsingGenerics(scope, method, expressionTypes, parameterizedTypes);
+        return calculateMethodReturnTypeUsingGenerics(scope, n.getScope().orElse(null), method, expressionTypes, parameterizedTypes);
     }
 
     private void vectorizePythonCallable(MethodCallExpr n, Expression[] expressions, Class<?>[] argTypes) {
@@ -1989,6 +2282,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // now do some parameter conversions...
 
         expressions = convertParameters(constructor, argumentTypes, expressionTypes, parameterizedTypes, expressions);
+        n.setArguments(NodeList.nodeList(expressions));
 
         if (printer.hasStringBuilder()) {
             printArguments(expressions, printer);
@@ -2011,7 +2305,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             ret = Array.newInstance(ret, 0).getClass();
         }
 
-        n.getInitializer().ifPresent(init -> init.accept(this, printer));
+        n.getInitializer().ifPresent(init -> {
+            printer.append(' ');
+            init.accept(this, printer);
+        });
         return ret;
     }
 
@@ -2088,7 +2385,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         //
         // StringBuilder tempPrinter = new StringBuilder();
         // new MethodCallExpr(parent.getScope(), parent).ac
-        // // .filter((m) -> m.getParameterTypes()[argIndex].isAssignableFrom())
+        // // .filter((m) -> m.getParameterTypes()[argIndex].dhqlIsAssignableFrom())
         //
         // // so, have to find out what kind of argument we need,
         // // and what kind of return types [scope]::[methodName] could possibly
@@ -2446,6 +2743,77 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 builder.append(va.builder);
             }
             return this;
+        }
+    }
+
+    /**
+     * These are comments that are used as internal flags to control the parser's behavior. (Comments are not supported
+     * within DHQL expressions anyway.)
+     */
+    private static class QueryLanguageParserComment extends Comment {
+
+        /**
+         * This "comment" is a flag used to indicate that a logical complement expr (e.g. "!(a==b)") has been
+         * inserted by the parser and should *NOT* be replaced with an operator overload. In other words, it's
+         * used to make sure "a!=b" is transformed first into "!(a==b)" and then into "!(equals(a, b))", rather than
+         * being transformed into "not(equals(a, b))".
+         */
+        private static final QueryLanguageParserComment BINARY_OP_NEQ_CONVERSION_FLAG = new QueryLanguageParserComment("NODE NEEDS LOGICAL COMPLEMENT");
+
+        /**
+         * This "comment" is a flag used to indicate that {@link #convertParameters} should be skipped for a method
+         * call. This is used to ensure that {@code (int) myInteger} is rewritten to {@code intCast(myInteger)} and not
+         * {@code intCast(myInteger.longValue()}, which is what normally would happen because the parser will prefer a
+         * method call with primitive arguments over a method call with reference arguments when possible.
+         */
+        private static final QueryLanguageParserComment NO_PARAMETER_REWRITING_FLAG = new QueryLanguageParserComment("ARGUMENTS MUST NOT BE MODIFIED");
+
+        private QueryLanguageParserComment(String content) {
+            super(content);
+        }
+
+        @Override
+        public <R, A> R accept(GenericVisitor<R, A> v, A arg) {
+            return null;
+        }
+
+        @Override
+        public <A> void accept(VoidVisitor<A> v, A arg) {
+        }
+    }
+
+    private static class WrapperNode extends Node {
+
+        Node wrappedNode;
+
+        protected WrapperNode(Expression origExpr) {
+            super(origExpr.getTokenRange().orElse(null));
+            wrappedNode = origExpr;
+        }
+
+        @Override
+        public <R, A> R accept(GenericVisitor<R, A> v, A arg) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <A> void accept(VoidVisitor<A> v, A arg) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean replace(Node node, Node replacementNode) {
+            if(wrappedNode != node) {
+                return false;
+            }
+
+            wrappedNode.setParentNode(null);
+            wrappedNode = replacementNode;
+            replacementNode.setParentNode(this);
+
+            setTokenRange(replacementNode.getTokenRange().orElse(null));
+
+            return true;
         }
     }
 }

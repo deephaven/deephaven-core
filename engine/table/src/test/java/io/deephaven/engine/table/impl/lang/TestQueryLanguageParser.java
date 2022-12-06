@@ -53,6 +53,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         classImports.add(Color.class);
         classImports.add(VectorConversions.class);
         classImports.add(HashSet.class);
+        classImports.add(HashMap.class);
         classImports.add(Vector.class);
         classImports.add(LanguageParserDummyClass.class);
         classImports.add(LanguageParserDummyClass.SubclassOfLanguageParserDummyClass.class);
@@ -60,6 +61,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         classImports.add(LanguageParserDummyInterface.class);
 
         staticImports = new HashSet<>();
+        staticImports.add(io.deephaven.function.Basic.class);
         staticImports.add(QueryLanguageFunctionUtils.class);
         staticImports.add(Math.class);
         staticImports.add(QueryConstants.class);
@@ -96,7 +98,9 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myDoubleObj", Double.class);
         variables.put("myBooleanObj", Boolean.class);
         variables.put("myArrayList", ArrayList.class);
+        variables.put("myParameterizedArrayList", ArrayList.class);
         variables.put("myHashMap", HashMap.class);
+        variables.put("myParameterizedHashMap", HashMap.class);
         variables.put("myVector", ObjectVector.class);
         variables.put("myEnumValue", LanguageParserDummyEnum.class);
         variables.put("myObjectVector", ObjectVector.class);
@@ -107,6 +111,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myBooleanVector", BooleanVector.class);
         variables.put("myDummyClass", LanguageParserDummyClass.class);
         variables.put("myDummyInnerClass", LanguageParserDummyClass.InnerClass.class);
+        variables.put("myDummyStaticNestedClass", LanguageParserDummyClass.StaticNestedClass.class);
         variables.put("myClosure", Closure.class);
         variables.put("myDateTime", DateTime.class);
 
@@ -122,8 +127,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("genericSub", TestGenericSub.class);
 
         variableParameterizedTypes = new HashMap<>();
-        variableParameterizedTypes.put("myArrayList", new Class[] {Long.class});
-        variableParameterizedTypes.put("myHashMap", new Class[] {Integer.class, Double.class});
+        variableParameterizedTypes.put("myParameterizedArrayList", new Class[]{Long.class});
+        variableParameterizedTypes.put("myParameterizedHashMap", new Class[]{Integer.class, Double.class});
         variableParameterizedTypes.put("myVector", new Class[] {Double.class});
     }
 
@@ -157,7 +162,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Boolean.class, new String[] {});
 
         expression = "1>1+2*3/4 || true";
-        resultExpression = "greater(1, plus(1, divide(multiply(2, 3), 4)))||true";
+        resultExpression = "greater(1, plus(1, divide(multiply(2, 3), 4))) || true";
         check(expression, resultExpression, boolean.class, new String[] {});
 
         expression = "(1>1+2*3/4) | true";
@@ -165,23 +170,23 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Boolean.class, new String[] {});
 
         expression = "1+\"test\"";
-        resultExpression = "1+\"test\"";
+        resultExpression = "1 + \"test\"";
         check(expression, resultExpression, String.class, new String[] {});
 
-        expression = "1==1 ? 1+1 : 1.0";
+        expression = "1==1 ? 1 + 1 : 1.0";
         resultExpression = "eq(1, 1) ? plus(1, 1) : 1.0";
         check(expression, resultExpression, double.class, new String[] {});
 
-        expression = "(double)1";
+        expression = "(double) 1";
         resultExpression = "doubleCast(1)";
         check(expression, resultExpression, double.class, new String[] {});
 
-        expression = "(double[])myObject";
-        resultExpression = "(double[])myObject";
+        expression = "(double[]) myObject";
+        resultExpression = "(double[]) myObject";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myObject"});
 
-        expression = "(double[][])myObject";
-        resultExpression = "(double[][])myObject";
+        expression = "(double[][]) myObject";
+        resultExpression = "(double[][]) myObject";
         check(expression, resultExpression, new double[0][0].getClass(), new String[] {"myObject"});
 
         expression = "1<2";
@@ -205,8 +210,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {});
 
         expression = "!false";
-        resultExpression = "not(false)";
-        check(expression, resultExpression, Boolean.class, new String[] {});
+        resultExpression = "!false";
+        check(expression, resultExpression, boolean.class, new String[] {});
     }
 
     /**
@@ -514,19 +519,19 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         // Test casting to object types:
         expression = "(CharSequence)myString";
-        resultExpression = "(CharSequence)myString";
+        resultExpression = "(CharSequence) myString";
         check(expression, resultExpression, CharSequence.class, new String[] {"myString"});
 
         expression = "(String)(CharSequence)myString";
-        resultExpression = "(String)((CharSequence)myString)";
+        resultExpression = "(String) ((CharSequence) myString)";
         check(expression, resultExpression, String.class, new String[] {"myString"});
 
         expression = "(Double)myDouble";
-        resultExpression = "(Double)myDouble";
+        resultExpression = "(Double) myDouble";
         check(expression, resultExpression, Double.class, new String[] {"myDouble"});
 
         expression = "(Double)(double)myInt";
-        resultExpression = "(Double)(doubleCast(myInt))";
+        resultExpression = "(Double) (doubleCast(myInt))";
         check(expression, resultExpression, Double.class, new String[] {"myInt"});
 
         expression = "(double)(int)myIntObj";
@@ -539,7 +544,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {"myIntObj"});
 
         expression = "(short)(double)(Double)(double)myInt";
-        resultExpression = "shortCast(doubleCast((Double)(doubleCast(myInt))))";
+        resultExpression = "shortCast(doubleCast((Double) (doubleCast(myInt))))";
         check(expression, resultExpression, short.class, new String[] {"myInt"});
 
         // TOOD: Test some invalid casts?
@@ -547,7 +552,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         try {
             // Test invalid boxing
             expression = "(Double)myInt";
-            resultExpression = "(Double)myInt";
+            resultExpression = "(Double) myInt";
             check(expression, resultExpression, Double.class, new String[] {"myInt"});
             fail("Should have throw a QueryLanguageParser.QueryLanguageParseException");
         } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
@@ -586,7 +591,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
          */
         for (Pair<String, Class<?>> literal : literals) {
             for (Pair<String, Class<?>> targetType : targetTypes) {
-                expression = '(' + targetType.first + ')' + literal.first; // e.g. "(int)42"
+                expression = '(' + targetType.first + ") " + literal.first; // e.g. "(int)42"
                 if (targetType.second == literal.second) {
                     resultExpression = expression;
                 } else {
@@ -626,7 +631,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         }
 
         // Test the identity conversion for booleans
-        expression = resultExpression = "(boolean)true"; // e.g. "(int)true"
+        expression = resultExpression = "(boolean) true"; // e.g. "(int)true"
         check(expression, resultExpression, boolean.class, new String[] {});
     }
 
@@ -669,7 +674,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
          */
         for (Pair<String, Class<?>> var : numericAndCharVars) {
             for (Pair<String, Class<?>> targetType : numericAndCharTypes) {
-                expression = '(' + targetType.first + ')' + var.first; // e.g. "(int)myDouble"
+                expression = '(' + targetType.first + ") " + var.first; // e.g. "(int)myDouble"
                 if (targetType.second == var.second) {
                     resultExpression = expression;
                 } else {
@@ -709,7 +714,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         }
 
         // Test the identity conversion for booleans
-        expression = resultExpression = "(boolean)true"; // e.g. "(int)true"
+        expression = resultExpression = "(boolean) true"; // e.g. "(int)true"
         check(expression, resultExpression, boolean.class, new String[] {});
 
     }
@@ -757,7 +762,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 final Class<?> primitiveType = primitiveTypes.get(j);
                 final String primitiveTypeName = primitiveType.getName();
 
-                expression = '(' + primitiveTypeName + ")" + boxedTypeTestVarName;
+                expression = '(' + primitiveTypeName + ") " + boxedTypeTestVarName;
                 if (primitiveType == boolean.class) {
                     resultExpression = expression; // There is no "booleanCast()" function
                 } else if (i == j) { // Unboxing conversion only
@@ -809,7 +814,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
         for (Class<?> type : boxedAndPrimitiveTypes) {
-            expression = '(' + type.getSimpleName() + ")myObject";
+            expression = '(' + type.getSimpleName() + ") myObject";
             if (type.isPrimitive() && type != boolean.class) {
                 resultExpression = io.deephaven.util.type.TypeUtils.getUnboxedType(type) + "Cast(myObject)";
             } else {
@@ -830,7 +835,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         boxedAndPrimitiveTypes.addAll(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
         for (Class<?> type : boxedAndPrimitiveTypes) {
-            expression = '(' + type.getSimpleName() + ")myObject";
+            expression = '(' + type.getSimpleName() + ") myObject";
             if (type.isPrimitive() && type != boolean.class) {
                 resultExpression = TypeUtils.getUnboxedType(type) + "Cast(myObject)";
             } else {
@@ -904,7 +909,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myInt"});
 
         expression = "myInt>1+2*myInt/4 || myBoolean";
-        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myInt), 4)))||myBoolean";
+        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myInt), 4))) || myBoolean";
         check(expression, resultExpression, boolean.class, new String[] {"myBoolean", "myInt"});
 
         expression = "myInt>1+2*myInt/4 | myBoolean";
@@ -912,7 +917,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Boolean.class, new String[] {"myBoolean", "myInt"});
 
         expression = "myInt+myString";
-        resultExpression = "myInt+myString";
+        resultExpression = "myInt + myString";
         check(expression, resultExpression, String.class, new String[] {"myInt", "myString"});
 
         expression = "myTestClass";
@@ -928,15 +933,21 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myInt"});
 
         expression = "!myBoolean";
-        resultExpression = "not(myBoolean)";
-        check(expression, resultExpression, Boolean.class, new String[] {"myBoolean"});
+        resultExpression = "!myBoolean";
+        check(expression, resultExpression, boolean.class, new String[] {"myBoolean"});
 
         expression = "(String)myString==null";
-        resultExpression = "isNull((String)myString)";
+        resultExpression = "isNull((String) myString)";
         check(expression, resultExpression, boolean.class, new String[] {"myString"});
 
-        expression = "1==1 ? myString : null";
-        resultExpression = "eq(1, 1) ? myString : null";
+        expression = "myDoubleArray.length";
+        resultExpression = "myDoubleArray.length";
+        check(expression, resultExpression, int.class, new String[] {"myDoubleArray"});
+    }
+
+    public void testConditionalExpressions() throws Exception {
+        String expression = "1==1 ? myString : null";
+        String resultExpression = "eq(1, 1) ? myString : null";
         check(expression, resultExpression, String.class, new String[] {"myString"});
 
         expression = "1==1 ? null : myString";
@@ -952,16 +963,16 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[0]);
 
         expression = "1==1 ? true : null";
-        resultExpression = "eq(1, 1) ? (Boolean)true : NULL_BOOLEAN";
+        resultExpression = "eq(1, 1) ? (Boolean) true : NULL_BOOLEAN";
         check(expression, resultExpression, Boolean.class, new String[0]);
 
         expression = "1==1 ? true && true : null";
-        resultExpression = "eq(1, 1) ? (Boolean)(true&&true) : NULL_BOOLEAN";
+        resultExpression = "eq(1, 1) ? (Boolean) (true && true) : NULL_BOOLEAN";
         check(expression, resultExpression, Boolean.class, new String[0]);
 
-        expression = "myDoubleArray.length";
-        resultExpression = "myDoubleArray.length";
-        check(expression, resultExpression, int.class, new String[] {"myDoubleArray"});
+        expression = "1==1 ? true && true && true : null";
+        resultExpression = "eq(1, 1) ? (Boolean) (true && true && true) : NULL_BOOLEAN";
+        check(expression, resultExpression, Boolean.class, new String[0]);
     }
 
     public void testOperatorOverloading() throws Exception {
@@ -977,7 +988,31 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "minus(myTestClass, 'c')";
         check(expression, resultExpression, String.class, new String[] {"myTestClass"});
     }
+    public void testNegation() throws Exception {
+        String expression = "!myBoolean";
+        String resultExpression = "!myBoolean";
+        check(expression, resultExpression, boolean.class, new String[] {"myBoolean"});
 
+        expression = "!myBooleanObj";
+        resultExpression = "not(myBooleanObj)";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanObj"});
+
+        expression = "!myBoolean&&myBoolean";
+        resultExpression = "!myBoolean && myBoolean";
+        check(expression, resultExpression, boolean.class, new String[] {"myBoolean"});
+
+        expression = "!myBooleanObj&&myBoolean";
+        resultExpression = "not(myBooleanObj) && myBoolean";
+        check(expression, resultExpression, boolean.class, new String[] {"myBooleanObj", "myBoolean"});
+
+        expression = "myInt!=myOtherInt";
+        resultExpression = "!eq(myInt, myOtherInt)";
+        check(expression, resultExpression, boolean.class, new String[] {"myInt", "myOtherInt" });
+
+        expression = "!(myInt==myOtherInt)";
+        resultExpression = "!(eq(myInt, myOtherInt))";
+        check(expression, resultExpression, boolean.class, new String[] {"myInt", "myOtherInt" });
+    }
     public void testArrayOperatorOverloading() throws Exception {
         String expression = "myIntArray+myDoubleArray";
         String resultExpression = "plusArray(myIntArray, myDoubleArray)";
@@ -990,14 +1025,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "1.0+myIntArray";
         resultExpression = "plusArray(1.0, myIntArray)";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myIntArray"});
-
-        expression = "myArrayList[15]";
-        resultExpression = "myArrayList.get(15)";
-        check(expression, resultExpression, Long.class, new String[] {"myArrayList"});
-
-        expression = "myHashMap[\"test\"]";
-        resultExpression = "myHashMap.get(\"test\")";
-        check(expression, resultExpression, Double.class, new String[] {"myHashMap"});
 
         expression = "myIntArray==myDoubleArray";
         resultExpression = "eqArray(myIntArray, myDoubleArray)";
@@ -1050,6 +1077,24 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "greaterArray(myTestClass, myTestClassArray)";
         check(expression, resultExpression, new boolean[0].getClass(),
                 new String[] {"myTestClass", "myTestClassArray"});
+    }
+
+    public void testArrayAccessOperatorOverloading() throws Exception {
+        String expression = "myArrayList[15]";
+        String resultExpression = "myArrayList.get(15)";
+        check(expression, resultExpression, Object.class, new String[] {"myArrayList"});
+
+        expression = "myHashMap[\"test\"]";
+        resultExpression = "myHashMap.get(\"test\")";
+        check(expression, resultExpression, Object.class, new String[] {"myHashMap"});
+
+        expression = "myParameterizedArrayList[15]";
+        resultExpression = "myParameterizedArrayList.get(15)";
+        check(expression, resultExpression, Long.class, new String[] {"myParameterizedArrayList"});
+
+        expression = "myParameterizedHashMap[\"test\"]";
+        resultExpression = "myParameterizedHashMap.get(\"test\")";
+        check(expression, resultExpression, Double.class, new String[] {"myParameterizedHashMap"});
     }
 
     public void testResolution() throws Exception {
@@ -1147,23 +1192,43 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     public void testImplicitConversion() throws Exception {
         String expression = "testImplicitConversion1(myInt, myDouble, myLong, myInt, myDouble, myLong)";
         String resultExpression =
-                "testImplicitConversion1(new double[]{ doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
+                "testImplicitConversion1(new double[] { doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt", "myLong"});
 
-        expression = "testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
-        resultExpression = "testVarArgs(myInt, 'a', new double[]{ myDouble, 1.0, 5.0, myDouble })";
-        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt"});
+        expression="testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
+        resultExpression="testVarArgs(myInt, 'a', new double[] { myDouble, 1.0, 5.0, myDouble })";
+        check(expression, resultExpression, new double[0].getClass(), new String[]{"myDouble", "myInt"});
 
-        expression = "testVarArgs(myInt, 'a', myDoubleArray)";
-        resultExpression = "testVarArgs(myInt, 'a', myDoubleArray)";
-        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleArray", "myInt"});
+        expression="testVarArgs(myDouble)";
+        resultExpression="testVarArgs(new double[] { myDouble })";
+        check(expression, resultExpression, double.class, new String[]{"myDouble"});
+
+        expression="testVarArgs(myDouble, myDouble)";
+        resultExpression="testVarArgs(new double[] { myDouble, myDouble })";
+        check(expression, resultExpression, double.class, new String[]{"myDouble"});
+
+        expression="testVarArgs(myInt, 'a', myDouble)";
+        resultExpression="testVarArgs(myInt, 'a', new double[] { myDouble })";
+        check(expression, resultExpression, new double[0].getClass(), new String[]{"myDouble", "myInt"});
+
+        expression="testVarArgs(myInt, 'a', myDoubleArray)";
+        resultExpression="testVarArgs(myInt, 'a', myDoubleArray)";
+        check(expression, resultExpression, new double[0].getClass(), new String[]{"myDoubleArray", "myInt"});
+
+        expression="testVarArgsVector(myIntVector)";
+        resultExpression="testVarArgsVector(myIntVector)";
+        check(expression, resultExpression, new IntVector[0].getClass(), new String[]{"myIntVector"});
+
+        expression="testVarArgsVector(myIntVector, myIntVector)";
+        resultExpression="testVarArgsVector(myIntVector, myIntVector)";
+        check(expression, resultExpression, new IntVector[0].getClass(), new String[]{"myIntVector"});
 
         expression = "testImplicitConversion1(myDoubleVector)";
         resultExpression = "testImplicitConversion1(VectorConversions.nullSafeVectorToArray(myDoubleVector))";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleVector"});
 
         expression = "testImplicitConversion2(myInt, myInt)";
-        resultExpression = "testImplicitConversion2(new int[]{ myInt, myInt })";
+        resultExpression = "testImplicitConversion2(new int[] { myInt, myInt })";
         check(expression, resultExpression, new int[0].getClass(), new String[] {"myInt"});
 
         expression = "testImplicitConversion3(myLongArray)";
@@ -1179,7 +1244,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
 
         expression = "testImplicitConversion3((Object) myDoubleArray)";
-        resultExpression = "testImplicitConversion3((Object)myDoubleArray)"; // test a workaround for the above
+        resultExpression = "testImplicitConversion3((Object) myDoubleArray)"; // test a workaround for the above
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
 
         expression = "testImplicitConversion3(myDoubleArray, myInt)";
@@ -1205,7 +1270,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myVector"});
 
         expression = "testImplicitConversion5((Vector) myVector)"; // Workaround for the above.
-        resultExpression = "testImplicitConversion5((Vector)myVector)"; // vararg of Vector -- don't convert!
+        resultExpression = "testImplicitConversion5((Vector) myVector)"; // vararg of Vector -- don't convert!
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
 
         expression = "testImplicitConversion5(myVector, myVector)";
@@ -1477,8 +1542,16 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     }
 
     public void testBoxing() throws Exception {
-        String expression = "1+myIntObj";
-        String resultExpression = "plus(1, myIntObj.intValue())";
+        String expression = "myIntObj";
+        String resultExpression = "myIntObj";
+        check(expression, resultExpression, Integer.class, new String[] {"myIntObj"});
+
+        expression = "LanguageParserDummyClass.boxedIntResult()";
+        resultExpression = "LanguageParserDummyClass.boxedIntResult()";
+        check(expression, resultExpression, Integer.class, new String[] {});
+
+        expression = "1+myIntObj";
+        resultExpression = "plus(1, myIntObj.intValue())";
         check(expression, resultExpression, int.class, new String[] {"myIntObj"});
 
         expression = "1*myDoubleObj";
@@ -1502,11 +1575,11 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myIntObj"});
 
         expression = "myInt>1+2*myIntObj/4 || myBooleanObj";
-        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myIntObj.intValue()), 4)))||myBooleanObj";
+        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myIntObj.intValue()), 4))) || myBooleanObj";
         check(expression, resultExpression, boolean.class, new String[] {"myBooleanObj", "myInt", "myIntObj"});
 
         expression = "myIntObj+myString";
-        resultExpression = "myIntObj+myString";
+        resultExpression = "myIntObj + myString";
         check(expression, resultExpression, String.class, new String[] {"myIntObj", "myString"});
 
         expression = "myIntObj>2";
@@ -1537,21 +1610,21 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         // check vararg widen
         expression = "testImplicitConversion1(myFloat, myFloat)";
-        resultExpression = "testImplicitConversion1(new double[]{ doubleCast(myFloat), doubleCast(myFloat) })";
+        resultExpression = "testImplicitConversion1(new double[] { doubleCast(myFloat), doubleCast(myFloat) })";
         check(expression, resultExpression, double[].class, new String[] {"myFloat"});
 
         // check vararg unbox and widen
         expression = "testImplicitConversion1(myFloatObj, myFloatObj)";
         resultExpression =
-                "testImplicitConversion1(new double[]{ myFloatObj.doubleValue(), myFloatObj.doubleValue() })";
+                "testImplicitConversion1(new double[] { myFloatObj.doubleValue(), myFloatObj.doubleValue() })";
         check(expression, resultExpression, double[].class, new String[] {"myFloatObj"});
 
         // check object array super casting
-        expression = resultExpression = "testImplicitConversionArraySuper(new Integer[]{ 1, 2, 3, 4 })";
+        expression = resultExpression = "testImplicitConversionArraySuper(new Integer[] { 1, 2, 3, 4 })";
         check(expression, resultExpression, Number[].class, new String[] {});
 
         // check object array super casting
-        expression = resultExpression = "testImplicitConversionNestedArraySuper(new Integer[][]{ new Integer[]{ 1 } })";
+        expression = resultExpression = "testImplicitConversionNestedArraySuper(new Integer[][] { new Integer[] { 1 } })";
         check(expression, resultExpression, Number[][].class, new String[] {});
 
         // See (deephaven-core#1201): do not widen primitive array elements
@@ -1598,7 +1671,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         result = new QueryLanguageParser("1=1 || 2=2 && (3=3 && 4==4)", null, null, staticImports, null, null)
                 .getResult();
-        assertEquals("eq(1, 1)||eq(2, 2)&&(eq(3, 3)&&eq(4, 4))", result.getConvertedExpression());
+        assertEquals("eq(1, 1) || eq(2, 2) && (eq(3, 3) && eq(4, 4))", result.getConvertedExpression());
 
         result = new QueryLanguageParser("1<=1", null, null, staticImports, null, null).getResult();
         assertEquals("lessEquals(1, 1)", result.getConvertedExpression());
@@ -1670,15 +1743,15 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new int[0][0].getClass(), new String[] {});
 
         expression = "new int[]{ 1, 2, 3, 4 }";
-        resultExpression = "new int[]{ 1, 2, 3, 4 }";
+        resultExpression = "new int[] { 1, 2, 3, 4 }";
         check(expression, resultExpression, new int[0].getClass(), new String[] {});
 
         expression = "new int[] {1,2,3,4}";
-        resultExpression = "new int[]{ 1, 2, 3, 4 }"; // note that the parser alters spacing
+        resultExpression = "new int[] { 1, 2, 3, 4 }"; // note that the parser alters spacing
         check(expression, resultExpression, new int[0].getClass(), new String[] {});
 
         expression = "new String[]{ `This`, `is`, `a`, `test` }";
-        resultExpression = "new String[]{ \"This\", \"is\", \"a\", \"test\" }";
+        resultExpression = "new String[] { \"This\", \"is\", \"a\", \"test\" }";
         check(expression, resultExpression, new String[0].getClass(), new String[] {});
 
         expression = "new SubclassOfLanguageParserDummyClass[] { " +
@@ -1686,7 +1759,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 "LanguageParserDummyClass.innerClass2Instance, " +
                 "new LanguageParserDummyClass.StaticNestedClass(), " +
                 "myDummyInnerClass }";
-        resultExpression = "new SubclassOfLanguageParserDummyClass[]{ " +
+        resultExpression = "new SubclassOfLanguageParserDummyClass[] { " +
                 "LanguageParserDummyClass.innerClassInstance, " +
                 "LanguageParserDummyClass.innerClass2Instance, " +
                 "new LanguageParserDummyClass.StaticNestedClass(), " +
@@ -1731,7 +1804,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, String.class, new String[] {});
 
         expression = "new String(new char[]{ 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
-        resultExpression = "new String(new char[]{ 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
+        resultExpression = "new String(new char[] { 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
         check(expression, resultExpression, String.class, new String[] {});
 
         expression = "new HashSet()";
@@ -1798,13 +1871,13 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "genericDoubleArrayToSingle(new Double[0][0])";
         check(expression, resultExpression, Double.class, new String[] {});
 
-        expression = "genericGetKey(myHashMap)";
-        resultExpression = "genericGetKey(myHashMap)";
-        check(expression, resultExpression, Integer.class, new String[] {"myHashMap"});
+        expression="genericGetKey(myParameterizedHashMap)";
+        resultExpression="genericGetKey(myParameterizedHashMap)";
+        check(expression, resultExpression, Integer.class, new String[]{"myParameterizedHashMap"});
 
-        expression = "genericGetValue(myHashMap)";
-        resultExpression = "genericGetValue(myHashMap)";
-        check(expression, resultExpression, Double.class, new String[] {"myHashMap"});
+        expression="genericGetValue(myParameterizedHashMap)";
+        resultExpression="genericGetValue(myParameterizedHashMap)";
+        check(expression, resultExpression, Double.class, new String[]{"myParameterizedHashMap"});
     }
 
     public void testVectorUnboxing() throws Exception {
@@ -1852,6 +1925,34 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, String.class, new String[] {"myByteVector"});
     }
 
+    public void testInnerClassesMethods() throws Exception {
+        String expression="myDummyClass.innerClassInstance.innerClassMethod()";
+        String resultExpression="myDummyClass.innerClassInstance.innerClassMethod()";
+        check(expression, resultExpression, String.class, new String[]{"myDummyClass"});
+
+        expression="myDummyInnerClass.innerClassMethod()";
+        resultExpression="myDummyInnerClass.innerClassMethod()";
+        check(expression, resultExpression, String.class, new String[]{"myDummyInnerClass"});
+
+        expression="myDummyInnerClass.innerClassMethod()";
+        resultExpression="myDummyInnerClass.innerClassMethod()";
+        check(expression, resultExpression, String.class, new String[]{"myDummyInnerClass"});
+    }
+
+    public void testStaticNestedClassMethod() throws Exception {
+        String expression="LanguageParserDummyClass.StaticNestedClass.staticMethod()";
+        String resultExpression="LanguageParserDummyClass.StaticNestedClass.staticMethod()";
+        check(expression, resultExpression, String.class, new String[]{});
+
+        expression="myDummyStaticNestedClass.staticMethod()";
+        resultExpression="myDummyStaticNestedClass.staticMethod()";
+        check(expression, resultExpression, String.class, new String[]{"myDummyStaticNestedClass"});
+
+        expression="myDummyStaticNestedClass.instanceMethod()";
+        resultExpression="myDummyStaticNestedClass.instanceMethod()";
+        check(expression, resultExpression, String.class, new String[]{"myDummyStaticNestedClass"});
+    }
+
     public void testInnerClasses() throws Exception {
         QueryLanguageParser.Result result =
                 new QueryLanguageParser(
@@ -1865,7 +1966,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         String expression =
                 "java.util.stream.Stream.of(new String[]{ `a`, `b`, `c`, myInt > 0 ? myString=Double.toString(myDouble) ? `1` : `2` : new LanguageParserDummyClass().toString() }).count()";
         String resultExpression =
-                "java.util.stream.Stream.of(new String[]{ \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new LanguageParserDummyClass().toString() }).count()";
+                "java.util.stream.Stream.of(new String[] { \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new LanguageParserDummyClass().toString() }).count()";
         check(expression, resultExpression, long.class, new String[] {"myDouble", "myInt", "myString"});
 
         expression = "myDummyClass.innerClassInstance.staticVar == 1_000_000L" +
@@ -1873,7 +1974,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 +
                 ": myIntArray";
         resultExpression = "eq(myDummyClass.innerClassInstance.staticVar, 1_000_000L)" +
-                " ? new int[]{ java.util.stream.Stream.of(new String[]{ \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new LanguageParserDummyClass().toString() }).count() }"
+                " ? new int[] { java.util.stream.Stream.of(new String[] { \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new LanguageParserDummyClass().toString() }).count() }"
                 + " : myIntArray";
         check(expression, resultExpression, int[].class,
                 new String[] {"myDouble", "myDummyClass", "myInt", "myIntArray", "myString"});
@@ -1890,14 +1991,14 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression =
                 "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-                "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(), myDoubleVector.toArray(), new double[]{ myDouble }, io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+                "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(), myDoubleVector.toArray(), new double[] { myDouble }, io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleVector"});
 
         // For good measure, same test as above w/ implicit array conversions:
         expression =
                 "LanguageParserDummyClass.interpolate(myDoubleVector,myDoubleVector,new double[]{myDouble},LanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-                "LanguageParserDummyClass.interpolate(VectorConversions.nullSafeVectorToArray(myDoubleVector), VectorConversions.nullSafeVectorToArray(myDoubleVector), new double[]{ myDouble }, LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+                "LanguageParserDummyClass.interpolate(VectorConversions.nullSafeVectorToArray(myDoubleVector), VectorConversions.nullSafeVectorToArray(myDoubleVector), new double[] { myDouble }, LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleVector"});
     }
 
@@ -2159,6 +2260,121 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, LanguageParserDummyInterface.class.getClass(), new String[] {});
     }
 
+
+    public void testGenericMethodCall() throws Exception {
+        String expression="LanguageParserDummyClass.typedRefWithCapture(`hello`)";
+        String resultExpression="LanguageParserDummyClass.typedRefWithCapture(\"hello\")";
+        check(expression, resultExpression, String.class, new String[]{});
+
+//        // Call generic method with explicit type arguments:
+//        expression="LanguageParserDummyClass.<String>typedRef()";
+//        resultExpression="LanguageParserDummyClass.<String>typedRef()";
+//        check(expression, resultExpression, String.class, new String[]{});
+
+        // Same method, no type args:
+        expression="LanguageParserDummyClass.typedRef()";
+        resultExpression="LanguageParserDummyClass.typedRef()";
+        check(expression, resultExpression, Object.class, new String[]{});
+
+//        // Test when type is bounded:
+//        expression="LanguageParserDummyClass.<String>typedRefBounded()";
+//        resultExpression="LanguageParserDummyClass.<String>typedRefBounded()";
+//        check(expression, resultExpression, String.class, new String[]{});
+
+        expression="LanguageParserDummyClass.typedRefBounded()";
+        resultExpression="LanguageParserDummyClass.typedRefBounded()";
+        check(expression, resultExpression, CharSequence.class, new String[]{});
+    }
+
+//    public void testGenericConstructor() throws Exception {
+//        String expression="genericGetKey(new HashMap<String, Integer>())";
+//        String resultExpression="genericGetKey(new HashMap<String, Integer>())";
+//        check(expression, resultExpression, String.class, new String[]{});
+//
+//        expression="genericGetValue(new HashMap<String, Integer>())";
+//        resultExpression="genericGetValue(new HashMap<String, Integer>())";
+//        check(expression, resultExpression, Integer.class, new String[]{});
+//
+//        expression="new HashMap<String, String>().get(\"test\")";
+//        resultExpression="new HashMap<String, String>().get(\"test\")";
+//        check(expression, resultExpression, String.class, new String[]{});
+//
+//        expression="new HashMap<String, Integer>().get(\"test\")";
+//        resultExpression="new HashMap<String, Integer>().get(\"test\")";
+//        check(expression, resultExpression, Integer.class, new String[]{});
+//
+//        /*
+//        This one fails because WildcardType is not supported (because we have not implemented `visit(WildcardType n, StringBuilder printer)`)
+//        expression="new HashMap<String, ? extends Number>().get(\"test\")";
+//        resultExpression="new HashMap<String, ? extends Number>().get(\"test\")";
+//        check(expression, resultExpression, Number.class, new String[]{});
+//         */
+//    }
+
+    public void testGenericReturnTypeOfScopeVar() throws Exception {
+        String expression="myParameterizedHashMap.get(0)";
+        String resultExpression="myParameterizedHashMap.get(0)";
+        check(expression, resultExpression, Double.class, new String[]{"myParameterizedHashMap"});
+    }
+
+    public void testGenericVectorToArray() throws Exception {
+        String expression="myParameterizedHashMap.get(0)";
+        String resultExpression="myParameterizedHashMap.get(0)";
+        check(expression, resultExpression, Double.class, new String[]{"myParameterizedHashMap"});
+    }
+
+//    public void testGenericNested() throws Exception {
+//        String expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().var";
+//        String resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().var";
+//        check(expression, resultExpression, String.class, new String[]{});
+//
+//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().getVar()";
+//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().getVar()";
+//        check(expression, resultExpression, String.class, new String[]{});
+//
+//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfOuterType";
+//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfOuterType";
+//        check(expression, resultExpression, String.class, new String[]{});
+//
+//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfOuterType()";
+//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfOuterType()";
+//        check(expression, resultExpression, String.class, new String[]{});
+//
+//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfInnerType";
+//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().varOfInnerType";
+//        check(expression, resultExpression, Double.class, new String[]{});
+//
+//        expression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfInnerType()";
+//        resultExpression="new LanguageParserDummyClass.StaticNestedGenericClass<String>().<Double>getInnerInstance().getVarOfInnerType()";
+//        check(expression, resultExpression, Double.class, new String[]{});
+//    }
+
+    public void testDhqlIsAssignableFrom() {
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(String.class, String.class));
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(Object.class, String.class));
+        assertFalse(QueryLanguageParser.dhqlIsAssignableFrom(Integer.class, String.class));
+
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(int.class, int.class));
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(Integer.class, Integer.class));
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(int.class, Integer.class));
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(Integer.class, int.class));
+
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(double[].class, double[].class));
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(DoubleVector.class, DoubleVector.class));
+        assertFalse(QueryLanguageParser.dhqlIsAssignableFrom(double[].class, DoubleVector.class));
+        assertFalse(QueryLanguageParser.dhqlIsAssignableFrom(DoubleVector.class, double[].class));
+
+        assertFalse(QueryLanguageParser.dhqlIsAssignableFrom(char.class, int.class));
+        assertFalse(QueryLanguageParser.dhqlIsAssignableFrom(byte.class, int.class));
+        assertFalse(QueryLanguageParser.dhqlIsAssignableFrom(short.class, int.class));
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(float.class, int.class));
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(double.class, int.class));
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(long.class, int.class));
+
+        assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(Vector.class, new ObjectVectorDirect<String>().getClass()));
+        assertFalse(QueryLanguageParser.dhqlIsAssignableFrom(double[].class, Vector.class));
+    }
+
     public void testInvalidExpr() throws Exception {
         String expression = "1+";
         expectFailure(expression, int.class);
@@ -2349,6 +2565,9 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         return f;
     }
 
+    public static IntVector[] testVarArgsVector(final IntVector... a){
+        return a;
+    }
     public static <T> T genericSingleToSingle(T t) {
         return null;
     }
