@@ -180,12 +180,7 @@ class Classpaths {
 
     static void inheritCommonsText(Project p, String configName) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency config, COMMONS_GROUP, 'commons-text', "1.6", {
-            // commons-text depends on commons-lang3; sadly, our version of lang3 is so old,
-            // there is no version of commons-text which depends on it.  So, we just exclude it.
-            // we only want some small, self-contained classes in commons-text anyway.
-            dep -> dep.exclude(['module': 'commons-lang3'])
-        }
+        addDependency config, COMMONS_GROUP, 'commons-text', "1.10.0"
     }
 
     static void inheritArrow(Project p, String name, String configName) {
