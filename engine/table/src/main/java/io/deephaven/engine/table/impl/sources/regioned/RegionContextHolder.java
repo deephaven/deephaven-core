@@ -65,7 +65,7 @@ public class RegionContextHolder implements ChunkSource.FillContext {
 
     @Override
     public void close() {
-        if(innerContext != null) {
+        if (innerContext != null) {
             innerContext.close();
             innerContext = null;
         }
