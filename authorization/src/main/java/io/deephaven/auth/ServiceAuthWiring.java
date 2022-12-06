@@ -73,7 +73,7 @@ public interface ServiceAuthWiring<ServiceImplBase> {
             methodName = method.getMethodDescriptor().getFullMethodName();
 
             // validate that we have handlers for the methods we will try to invoke
-            if (mustHaveRequest) {
+            if (!mustHaveRequest) {
                 Assert.neqNull(callStartedCallback, "callStartedCallback");
             }
             Assert.neqNull(messageReceivedCallback, "messageReceivedCallback");
