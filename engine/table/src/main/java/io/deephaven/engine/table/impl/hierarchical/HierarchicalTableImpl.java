@@ -101,7 +101,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     /**
      * Re-usable {@link SnapshotState} implementation, used for keeping track of clock information and node caching.
      */
-    final class SnapshotStateImpl extends LivenessArtifact implements SnapshotState {
+    private final class SnapshotStateImpl extends LivenessArtifact implements SnapshotState {
 
         private final KeyedLongObjectHashMap<NodeTableState> nodeTableStates =
                 new KeyedLongObjectHashMap<>(new NodeTableStateIdKey());
@@ -128,7 +128,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          */
         private int snapshotClock = 0;
 
-        SnapshotStateImpl() {
+        private SnapshotStateImpl() {
             if (HierarchicalTableImpl.this.getSource().isRefreshing()) {
                 manage(HierarchicalTableImpl.this);
             }
@@ -201,7 +201,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             destinationSlices = null;
         }
 
-        NodeTableState getNodeTableState(final long nodeId) {
+        private NodeTableState getNodeTableState(final long nodeId) {
             return nodeTableStates.putIfAbsent(nodeId, nodeTableStateFactory);
         }
 
@@ -239,7 +239,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     /**
      * State tracking for node tables in this HierarchicalTableImpl.
      */
-    final class NodeTableState {
+    private final class NodeTableState {
 
         /**
          * Node identifier, a type-specific identifier that uniquely maps to a single table node in the
@@ -378,7 +378,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          *          snapshot attempt
          */
         @Nullable
-        RowRedirection getDataRedirection() {
+        private RowRedirection getDataRedirection() {
             return sortRedirection;
         }
 
@@ -388,7 +388,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          * @apiNote {@link #ensurePreparedForDataRetrieval(int, BitSet)} must have been called previously during this
          *          snapshot attempt
          */
-        ChunkSource.WithPrev<? extends Values>[] getDataSources() {
+        private ChunkSource.WithPrev<? extends Values>[] getDataSources() {
             return dataSources;
         }
 
@@ -496,7 +496,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             action = Undefined;
         }
 
-        public Object getNodeKey() {
+        private Object getNodeKey() {
             return nodeKey;
         }
 
