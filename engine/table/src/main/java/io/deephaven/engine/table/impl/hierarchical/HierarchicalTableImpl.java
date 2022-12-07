@@ -5,6 +5,9 @@ package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
@@ -12,19 +15,17 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.iterators.ByteColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.*;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.KeyTableNodeAction.*;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.callDataSnapshotFunction;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.makeSnapshotControl;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Base result class for operations that produce hierarchical tables, for example {@link Table#rollup rollup} and
@@ -106,6 +108,24 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private final KeyedLongObjectHash.ValueFactory<NodeTableState> nodeTableStateFactory =
                 new NodeTableStateIdFactory();
 
+        // region Per-snapshot parameters and state
+        private BitSet columns;
+        private RowSequence rows;
+        private int numRowsToInclude = NULL_INT;
+        private WritableChunk<? extends Values>[] destinations;
+        private ResettableWritableChunk<? extends Values>[] destinationSlices;
+        // endregion Per-snapshot parameters and state
+
+        // region Per-attempt parameters and state
+        private boolean usePrev;
+        private long expandedSize = NULL_LONG;
+        private long nextRowPositionToInclude = NULL_LONG;
+        private int remainingNumRowsToInclude = NULL_INT;
+        // endregion Per-attempt parameters and state
+
+        /**
+         * Logical clock, incremented per-attempt, used to decide which node table states can be released upon success.
+         */
         private int snapshotClock = 0;
 
         SnapshotStateImpl() {
@@ -114,11 +134,47 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             }
         }
 
-        private void beginSnapshotAttempt() {
+        /**
+         * Initialize structures that will be used across multiple attempts with the same inputs.
+         *
+         * @param columns The included columns, or {@code null} to include all
+         * @param rows The included row positions from the total set of expanded rows
+         * @param destinations The destination writable chunks (which should be in reinterpreted-to-primitive types)
+         * @return A {@link SafeCloseable} that will clean up pooled state that was allocated for this snapshot
+         */
+        private SafeCloseable initializeSnapshot(
+                @Nullable final BitSet columns,
+                @NotNull final RowSequence rows,
+                @NotNull final WritableChunk<? extends Values>[] destinations) {
+            this.columns = columns;
+            this.rows = rows;
+            numRowsToInclude = rows.intSize("hierarchical table snapshot");
+            this.destinations = destinations;
+            // noinspection unchecked
+            destinationSlices = Arrays.stream(destinations)
+                    .map(Chunk::getChunkType)
+                    .map(ChunkType::makeResettableWritableChunk)
+                    .toArray(ResettableWritableChunk[]::new);
+            return this::releaseSnapshotResources;
+        }
+
+        /**
+         * Initialize state fields for the next snapshot attempt.
+         */
+        private void beginSnapshotAttempt(final boolean usePrev) {
+            this.usePrev = usePrev;
+            expandedSize = 0;
+            nextRowPositionToInclude = rows.firstRowKey();
+            remainingNumRowsToInclude = numRowsToInclude;
             snapshotClock++;
         }
 
-        private void endSnapshot() {
+        /**
+         * Do post-snapshot maintenance upon successful snapshot, and set destinations sizes.
+         *
+         * @return The total number of expanded rows traversed
+         */
+        private long finalizeSuccessfulSnapshot() {
             final Iterator<NodeTableState> cachedNodesIterator = nodeTableStates.iterator();
             while (cachedNodesIterator.hasNext()) {
                 final NodeTableState nodeTableState = cachedNodesIterator.next();
@@ -127,6 +183,22 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     cachedNodesIterator.remove();
                 }
             }
+            final int filledSize = numRowsToInclude - remainingNumRowsToInclude;
+            Arrays.stream(destinations).forEach(dc -> dc.setSize(filledSize));
+            return expandedSize;
+        }
+
+        private void releaseSnapshotResources() {
+            usePrev = false;
+            expandedSize = NULL_LONG;
+            nextRowPositionToInclude = NULL_LONG;
+            remainingNumRowsToInclude = NULL_INT;
+            columns = null;
+            rows = null;
+            numRowsToInclude = NULL_INT;
+            destinations = null;
+            Arrays.stream(destinationSlices).forEach(SafeCloseable::close);
+            destinationSlices = null;
         }
 
         NodeTableState getNodeTableState(final long nodeId) {
@@ -201,9 +273,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private RowRedirection sortRedirection;
 
         /**
-         * Column sources to be used for retrieving data from {@link #sorted sorted}.
+         * Chunk sources to be used for retrieving data from {@link #sorted sorted}.
          */
-        private ColumnSource<?>[] reinterpretedSources;
+        private ChunkSource.WithPrev<? extends Values>[] dataSources;
 
         /**
          * The last {@link SnapshotStateImpl#snapshotClock snapshot clock} value this node was visited on.
@@ -217,81 +289,107 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             // we'll need to add liveness retention for base here.
         }
 
-        private void ensurePreparedForSize() {
-            if (filtered == null) {
-                filtered = applyNodeFormatsAndFilters(id, base);
-                if (filtered != base && filtered.isRefreshing()) {
-                    filtered.retainReference();
-                }
+        private void ensureFilteredCreated() {
+            if (filtered != null) {
+                return;
+            }
+            filtered = applyNodeFormatsAndFilters(id, base);
+            if (filtered != base && filtered.isRefreshing()) {
+                filtered.retainReference();
             }
         }
 
-        private void ensurePreparedForData() {
-            if (sorted == null) {
-                ensurePreparedForSize();
-                sorted = applyNodeSorts(id, filtered);
-                if (sorted != filtered) {
-                    // NB: We can safely assume that sorted != base if sorted != filtered
-                    if (sorted.isRefreshing()) {
-                        sorted.retainReference();
-                    }
-                    // NB: We could drop our reference to filtered here, but there's no real reason to do it now rather
-                    // than in release
-                    sortRedirection = SortOperation.getRowRedirection(sorted);
-                }
-                reinterpretedSources = sorted.getColumnSources().stream()
-                        .map(ReinterpretUtils::maybeConvertToPrimitive)
-                        .toArray(ColumnSource[]::new);
+        private void ensureSortedCreated() {
+            ensureFilteredCreated();
+            if (sorted != null) {
+                return;
             }
+            sorted = applyNodeSorts(id, filtered);
+            if (sorted != filtered) {
+                // NB: We can safely assume that sorted != base if sorted != filtered
+                if (sorted.isRefreshing()) {
+                    sorted.retainReference();
+                }
+                // NB: We could drop our reference to filtered here, but there's no real reason to do it now rather
+                // than in release
+                sortRedirection = SortOperation.getRowRedirection(sorted);
+            }
+        }
+
+        /**
+         * Ensure that we've prepared the node table with any structural modifications (e.g. formatting and filtering),
+         * and that the result is safe to access during this snapshot attempt. Initializes the data structures necessary
+         * for {@link #getTraversalTable()}.
+         *
+         * @param snapshotClock The {@link SnapshotStateImpl#snapshotClock snapshot clock} value to record
+         */
+        private void ensurePreparedForTraversal(final int snapshotClock) {
+            ensureFilteredCreated();
+            maybeWaitForSatisfaction(filtered);
+            visitedSnapshotClock = snapshotClock;
+        }
+
+        /**
+         * Ensure that we've prepared the node table with any structural modifications (e.g. formatting and filtering),
+         * or ordering modifications (e.g. sorting), and that the result is safe to access during this snapshot attempt.
+         * Initializes the data structures necessary for {@link #getTraversalTable()}, {@link #getDataRetrievalTable()},
+         * {@link #getDataRedirection()}, {@link #getDataSources()}.
+         *
+         * @param snapshotClock The {@link SnapshotStateImpl#snapshotClock snapshot clock} value to record
+         * @param columns The columns included in this snapshot
+         */
+        private void ensurePreparedForDataRetrieval(final int snapshotClock, @Nullable final BitSet columns) {
+            ensureSortedCreated();
+            dataSources = makeOrFillChunkSourceArray(id, sorted, columns, dataSources);
+            maybeWaitForSatisfaction(sorted);
+            visitedSnapshotClock = snapshotClock;
         }
 
         /**
          * @return The internal identifier for this node
          */
-        long getId() {
+        private long getId() {
             return id;
         }
 
         /**
-         * @param snapshotClock The {@link SnapshotStateImpl#snapshotClock snapshot clock} value
          * @return The node Table after any structural modifications (e.g. formatting and filtering) have been applied
+         * @apiNote {@link #ensurePreparedForTraversal(int)} or {@link #ensurePreparedForDataRetrieval(int, BitSet)}
+         *          must have been called previously during this snapshot attempt
          */
-        Table getTableForSize(final int snapshotClock) {
-            ensurePreparedForSize();
-            maybeWaitForSatisfaction(filtered);
-            visitedSnapshotClock = snapshotClock;
+        private Table getTraversalTable() {
             return filtered;
         }
 
         /**
-         * @param snapshotClock The {@link SnapshotStateImpl#snapshotClock snapshot clock} value
          * @return The node Table after any structural (e.g. formatting and filtering) or ordering modifications (e.g.
          *         sorting) have been applied
+         * @apiNote {@link #ensurePreparedForDataRetrieval(int, BitSet)} must have been called previously during this
+         *          snapshot attempt
          */
-        Table getTableForData(final int snapshotClock) {
-            ensurePreparedForData();
-            maybeWaitForSatisfaction(sorted);
-            visitedSnapshotClock = snapshotClock;
+        private Table getDataRetrievalTable() {
             return sorted;
         }
 
         /**
          * @return Redirections that need to be applied when determining child order in the result of
-         *         {@link #getTableForData(int)}, which must have been called before this method for the current
-         *         snapshot
+         *         {@link #getDataRetrievalTable()}
+         * @apiNote {@link #ensurePreparedForDataRetrieval(int, BitSet)} must have been called previously during this
+         *          snapshot attempt
          */
         @Nullable
-        RowRedirection getRedirectionForData() {
+        RowRedirection getDataRedirection() {
             return sortRedirection;
         }
 
         /**
-         * @return The sources that should be used when retrieving actual data from the result of
-         *         {@link #getTableForData(int)}, which must have been called before this method for the current
-         *         snapshot
+         * @return The chunk sources that should be used when retrieving actual data from the result of
+         *         {@link #getDataRetrievalTable()}
+         * @apiNote {@link #ensurePreparedForDataRetrieval(int, BitSet)} must have been called previously during this
+         *          snapshot attempt
          */
-        ColumnSource<?>[] getReinterpretedSourcesForData() {
-            return reinterpretedSources;
+        ChunkSource.WithPrev<? extends Values>[] getDataSources() {
+            return dataSources;
         }
 
         /**
@@ -587,48 +685,51 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             @Nullable final BitSet columns,
             @NotNull final RowSequence rows,
             @NotNull final WritableChunk<? extends Values>[] destinations) {
-
-        final long expandedSize;
-        // noinspection SynchronizationOnLocalVariabeOrMethodParameter
         synchronized (snapshotState) {
-            if (source.isRefreshing()) {
-                final MutableLong expandedSizeHolder = new MutableLong();
-                // NB: This snapshot control must be notification-aware, because if our sources tick we cannot guarantee
-                // that we won't observe some newly-created components on their instantiation step.
-                final SnapshotControl sourceSnapshotControl = makeSnapshotControl(true, true, getSourceDependencies());
-                callDataSnapshotFunction(getClass().getSimpleName() + "-source", sourceSnapshotControl,
-                        (final boolean usePrev, final long beforeClockValue) -> {
-                            maybeWaitForStructuralSatisfaction();
-                            expandedSizeHolder.setValue(traverseExpansionsAndFillSnapshotChunks(
-                                    snapshotState, rawKeyTableNodeDirectives, columns, rows, destinations, usePrev));
-                            return true;
-                        });
-                expandedSize = expandedSizeHolder.longValue();
-            } else {
-                expandedSize = traverseExpansionsAndFillSnapshotChunks(
-                        snapshotState, rawKeyTableNodeDirectives, columns, rows, destinations, false);
+            try (final SafeCloseable ignored = snapshotState.initializeSnapshot(columns, rows, destinations)) {
+                if (source.isRefreshing()) {
+                    // NB: This snapshot control must be notification-aware, because if our sources tick we cannot
+                    // guarantee that we won't observe some newly-created components on their instantiation step.
+                    final SnapshotControl sourceSnapshotControl =
+                            makeSnapshotControl(true, true, getSourceDependencies());
+                    callDataSnapshotFunction(getClass().getSimpleName() + "-source", sourceSnapshotControl,
+                            (final boolean usePrev, final long beforeClockValue) -> {
+                                maybeWaitForStructuralSatisfaction();
+                                traverseExpansionsAndFillSnapshotChunks(
+                                        snapshotState, rawKeyTableNodeDirectives, usePrev);
+                                return true;
+                            });
+                } else {
+                    traverseExpansionsAndFillSnapshotChunks(snapshotState, rawKeyTableNodeDirectives, false);
+                }
+                return snapshotState.finalizeSuccessfulSnapshot();
             }
-            // NB: This is only done after a successful snapshot; we don't want to clean up if we were inconsistent.
-            snapshotState.endSnapshot();
         }
-        return expandedSize;
     }
 
-    private long traverseExpansionsAndFillSnapshotChunks(
+    private void traverseExpansionsAndFillSnapshotChunks(
             @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final Collection<NodeDirective> rawKeyTableNodeDirectives,
-            @Nullable final BitSet columns,
-            @NotNull final RowSequence rows,
-            @NotNull final WritableChunk<? extends Values>[] destinations,
             final boolean usePrev) {
-        long expandedSize = 0;
-        snapshotState.beginSnapshotAttempt();
-        final LinkedNodeDirective rootNodeDirective =
-                linkKeyTableNodeDirectives(rawKeyTableNodeDirectives, usePrev);
+        snapshotState.beginSnapshotAttempt(usePrev);
+
+        // Link the node directives together into a tree
+        final LinkedNodeDirective rootNodeDirective = linkKeyTableNodeDirectives(rawKeyTableNodeDirectives, usePrev);
+        final KeyTableNodeAction rootNodeAction;
+        if (rootNodeDirective == null ||
+                ((rootNodeAction = rootNodeDirective.getAction()) != Expand && rootNodeAction != ExpandAll)) {
+            // We *could* auto-expand the root, instead, but for now let's treat this as empty.
+            return;
+        }
 
         // Depth-first traversal of expanded nodes
+        visitExpandedNode(snapshotState, rootNodeDirective);
+    }
 
-        return expandedSize;
+    private void visitExpandedNode(
+            @NotNull final SnapshotStateImpl snapshotState,
+            @NotNull final LinkedNodeDirective expanded) {
+
     }
 
     /**
@@ -689,6 +790,26 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      */
     abstract Table applyNodeSorts(long nodeId, @NotNull Table nodeFilteredTable);
 
+    /**
+     * Get or fill an array with (possibly-reinterpreted) chunk sources for use with a node.
+     *
+     * @param nodeId The internal identifier for this node
+     * @param nodeSortedTable The formatted, filtered, and sorted table at this node
+     * @param columns The columns of interest, or {@code null} if all are included
+     * @param existingChunkSources Existing chunk sources for this node, or {@code null} if a new array is needed
+     * @return {@code existingChunkSources} or a new array of chunk sources, with elements filled in for all columns
+     *         specified by {@code columns}
+     */
+    @NotNull
+    abstract ChunkSource.WithPrev<? extends Values>[] makeOrFillChunkSourceArray(
+            long nodeId,
+            @NotNull Table nodeSortedTable,
+            @Nullable BitSet columns,
+            @Nullable ChunkSource.WithPrev<? extends Values>[] existingChunkSources);
+
+    /**
+     * @return The dependencies that should be used to ensure consistency for a snapshot of this HierarchicalTable
+     */
     abstract NotificationStepSource[] getSourceDependencies();
 
     /**
