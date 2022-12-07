@@ -25,40 +25,7 @@ import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
-import com.github.javaparser.ast.expr.ArrayAccessExpr;
-import com.github.javaparser.ast.expr.ArrayCreationExpr;
-import com.github.javaparser.ast.expr.ArrayInitializerExpr;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.BinaryExpr;
-import com.github.javaparser.ast.expr.BooleanLiteralExpr;
-import com.github.javaparser.ast.expr.CastExpr;
-import com.github.javaparser.ast.expr.CharLiteralExpr;
-import com.github.javaparser.ast.expr.ClassExpr;
-import com.github.javaparser.ast.expr.ConditionalExpr;
-import com.github.javaparser.ast.expr.DoubleLiteralExpr;
-import com.github.javaparser.ast.expr.EnclosedExpr;
-import com.github.javaparser.ast.expr.Expression;
-import com.github.javaparser.ast.expr.FieldAccessExpr;
-import com.github.javaparser.ast.expr.InstanceOfExpr;
-import com.github.javaparser.ast.expr.IntegerLiteralExpr;
-import com.github.javaparser.ast.expr.LambdaExpr;
-import com.github.javaparser.ast.expr.LiteralExpr;
-import com.github.javaparser.ast.expr.LongLiteralExpr;
-import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
-import com.github.javaparser.ast.expr.MemberValuePair;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.MethodReferenceExpr;
-import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.expr.NormalAnnotationExpr;
-import com.github.javaparser.ast.expr.NullLiteralExpr;
-import com.github.javaparser.ast.expr.ObjectCreationExpr;
-import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
-import com.github.javaparser.ast.expr.StringLiteralExpr;
-import com.github.javaparser.ast.expr.SuperExpr;
-import com.github.javaparser.ast.expr.ThisExpr;
-import com.github.javaparser.ast.expr.TypeExpr;
-import com.github.javaparser.ast.expr.UnaryExpr;
-import com.github.javaparser.ast.expr.VariableDeclarationExpr;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.AssertStmt;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.BreakStmt;
@@ -138,12 +105,18 @@ import java.util.stream.Stream;
 
 
 public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, QueryLanguageParser.VisitArgs> {
+    /**
+     * Verify that the source code obtained from printing the AST is the same as the source code produced by the
+     * original technique of writing code to a StringBuilder while visting nodes.
+     */
     private static final boolean VERIFY_AST_CHANGES = true;
 
     private static final Logger log = LoggerFactory.getLogger(QueryLanguageParser.class);
     private final Collection<Package> packageImports;
     private final Collection<Class<?>> classImports;
     private final Collection<Class<?>> staticImports;
+    private final Map<String, Class<?>> testOverrideClassLookups;
+
     private final Map<String, Class<?>> variables;
     private final Map<String, Class<?>[]> variableParameterizedTypes;
 
@@ -209,12 +182,44 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Map<String, Class<?>> variables,
             Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
             throws QueryLanguageParseException {
+        this(
+                expression,
+                packageImports,
+                classImports,
+                staticImports,
+                null,
+                variables,
+                variableParameterizedTypes,
+                unboxArguments,
+                false);
+    }
+
+    QueryLanguageParser(String expression,
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> testOverrideClassLookups,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
+        this(expression, packageImports, classImports, staticImports, testOverrideClassLookups, variables,
+                variableParameterizedTypes, true, false);
+    }
+
+    QueryLanguageParser(String expression,
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> testOverrideClassLookups,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments, final boolean verifyIdempotence)
+            throws QueryLanguageParseException {
         this.packageImports = packageImports == null ? Collections.emptySet()
                 : Require.notContainsNull(packageImports, "packageImports");
         this.classImports =
                 classImports == null ? Collections.emptySet() : Require.notContainsNull(classImports, "classImports");
         this.staticImports = staticImports == null ? Collections.emptySet()
                 : Require.notContainsNull(staticImports, "staticImports");
+        this.testOverrideClassLookups = testOverrideClassLookups;
         this.variables = variables == null ? Collections.emptyMap() : variables;
         this.variableParameterizedTypes =
                 variableParameterizedTypes == null ? Collections.emptyMap() : variableParameterizedTypes;
@@ -254,6 +259,22 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
 
+            if (verifyIdempotence) {
+                try {
+                    // make sure the parser has no problem reparsing its own output and makes no changes to it.
+                    final QueryLanguageParser validationQueryLanguageParser = new QueryLanguageParser(printedSource,
+                            packageImports, classImports, staticImports, testOverrideClassLookups, variables,
+                            variableParameterizedTypes, false, false);
+
+                    final String reparsedSource = validationQueryLanguageParser.result.source;
+                    Assert.equals(
+                            printedSource, "printedSource",
+                            reparsedSource, "reparsedSource");
+                } catch (Exception ex) {
+                    throw new RuntimeException("Expression result failed reparse check", ex);
+                }
+            }
+
             result = new Result(type, printer.builder.toString(), variablesUsed);
         } catch (Throwable e) {
             // need to catch it and make a new one because it contains unserializable variables...
@@ -266,7 +287,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     .append(printer.builder)
                     .append('\n');
 
-            final boolean VERBOSE_EXCEPTION_MESSAGES = Configuration
+            final boolean VERBOSE_EXCEPTION_MESSAGES = verifyIdempotence || Configuration
                     .getInstance()
                     .getBooleanWithDefault("QueryLanguageParser.verboseExceptionMessages", false);
 
@@ -451,6 +472,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @return The class, if it exists; otherwise, {@code null}.
      */
     private Class<?> findClass(String name) {
+        if (testOverrideClassLookups != null) {
+            final Class<?> testOverrideResult = testOverrideClassLookups.get(name);
+            if (testOverrideResult != null)
+                return testOverrideResult;
+        }
+
         if (name.contains(".")) { // Fully-qualified class name
             try {
                 return Class.forName(name);
@@ -511,15 +538,18 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
         } else {
-            if (scope == org.jpy.PyObject.class) {
-                // This is a Python method call, assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
+            // Add the actual methods for the object (including PyObject's methods)
+            for (final Method method : scope.getMethods()) {
+                // TODO: this could use more explicit testing, e.g. for getIntValue(), getLongValue()...
+                possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
+            }
+
+            if (acceptableMethods.isEmpty() && scope.equals(org.jpy.PyObject.class)) {
+                // This is a Python method call; just assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
                 for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
                     possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
                 }
             } else {
-                for (final Method method : scope.getMethods()) {
-                    possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
-                }
                 // If 'scope' is an interface, we must explicitly consider the methods in Object
                 if (scope.isInterface()) {
                     for (final Method method : Object.class.getMethods()) {
@@ -934,6 +964,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      */
     private static void replaceChildExpression(Node parentNode, Expression origExpr, Expression newExpr) {
         if (parentNode.replace(origExpr, newExpr)) {
+            final Node newExprParent = newExpr.getParentNode().orElse(null);
+            Assert.eq(newExprParent, "newExprParent", parentNode, "parentNode");
             return;
         }
         throw new RuntimeException(
@@ -1994,11 +2026,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     @Override
     public Class<?> visit(MethodCallExpr n, VisitArgs printer) {
 
-        final VisitArgs innerPrinter = VisitArgs.create();
+        final VisitArgs scopePrinter = VisitArgs.create();
 
         Class<?> scope = n.getScope().map(sc -> {
-            Class<?> result = sc.accept(this, innerPrinter);
-            innerPrinter.append('.');
+            Class<?> result = sc.accept(this, scopePrinter);
+            scopePrinter.append('.');
             return result;
         }).orElse(null);
 
@@ -2009,7 +2041,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         Class<?>[][] parameterizedTypes = getParameterizedTypes(expressions);
 
-        Method method = getMethod(scope, n.getNameAsString(), expressionTypes, parameterizedTypes);
+        final String methodName = n.getNameAsString();
+        Method method = getMethod(scope, methodName, expressionTypes, parameterizedTypes);
 
 
         // TODO: we can swap out method calls for better ones here, e.g. python functions to Java ones, or
@@ -2026,8 +2059,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
         n.setArguments(NodeList.nodeList(expressions));
 
-
-        // TODO: the parameter-replacement here has not been updated to modify the AST yet.
         if (isPotentialImplicitCall(method.getDeclaringClass())) {
             if (scope == null) { // python func call or Groovy closure call
                 /*
@@ -2037,9 +2068,17 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                  * 2. the func will be called via CallableWrapper.call() method
                  * @formatter:on
                  */
-                printer.append(innerPrinter);
-                printer.append(n.getNameAsString());
-                printer.append(".call");
+                Assert.eqZero(scopePrinter.builder.length(), "scopePrinter.builder.length()");
+
+                final MethodCallExpr callMethodCall =
+                        new MethodCallExpr(n.getNameAsExpression(), "call", n.getArguments());
+
+                replaceChildExpression(
+                        n.getParentNode().orElseThrow(),
+                        n,
+                        callMethodCall);
+
+                return callMethodCall.accept(this, printer);
             } else {
                 /*
                  * @formatter:off
@@ -2047,28 +2086,57 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                  * 1. need to reference the method with PyObject.getAttribute();
                  * 2. wrap the method reference in CallableWrapper()
                  * 3. the method will be called via CallableWrapper.call()
+                 *
+                 * So we are going from:
+                 * 'myPyObj.myPyMethod(a, b, c)'
+                 * to:
+                 * '(new io.deephaven.engine.util.PyCallableWrapper(myPyObj.getAttribute("myPyMethod"))).call(a, b, c)'
+                 *
                  * @formatter:on
                  */
-                if (!n.getNameAsString().equals("call")) {
-                    // to be backwards compatible with the syntax func.call(...)
-                    innerPrinter.append("getAttribute(\"" + n.getName() + "\")");
-                    printer.append("(new io.deephaven.engine.util.PyCallableWrapper(");
-                    printer.append(innerPrinter);
-                    printer.append(")).");
+
+
+                final boolean isExplicitCall = methodName.equals("call")
+                        || PyObject.class.isAssignableFrom(scope) && methodName.equals("getAttribute");
+                if (isExplicitCall) {
+                    printer.append(scopePrinter);
+                    printer.append(methodName);
                 } else {
-                    printer.append(innerPrinter);
+                    final MethodCallExpr getAttributeCall = new MethodCallExpr(
+                            n.getScope().orElseThrow(),
+                            "getAttribute",
+                            NodeList.nodeList(new StringLiteralExpr(methodName)));
+
+
+                    final ObjectCreationExpr newPyCallableExpr = new ObjectCreationExpr(
+                            null,
+                            new ClassOrInterfaceType("io.deephaven.engine.util.PyCallableWrapper"),
+                            NodeList.nodeList(getAttributeCall));
+
+                    final MethodCallExpr callMethodCall = new MethodCallExpr(
+                            new EnclosedExpr(newPyCallableExpr),
+                            "call",
+                            n.getArguments());
+
+                    // Replace the original method call we were visit()ing with the new one
+                    replaceChildExpression(
+                            n.getParentNode().orElseThrow(),
+                            n,
+                            callMethodCall);
+
+                    // Determine return type by visiting the new method call
+                    return callMethodCall.accept(this, printer);
                 }
-                printer.append("call");
             }
         } else { // Groovy or Java method call
-            printer.append(innerPrinter);
-            printer.append(n.getNameAsString());
+            printer.append(scopePrinter);
+            printer.append(methodName);
         }
 
         Class<?>[] argTypes = printArguments(expressions, printer);
 
         // Python function call vectorization
-        Class<?> methodClass = variables.get(n.getNameAsString());
+        Class<?> methodClass = variables.get(methodName);
         if (methodClass == PyCallableWrapper.class) {
             vectorizePythonCallable(n, expressions, argTypes);
         }

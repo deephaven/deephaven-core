@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.time.DateTime;
 import io.deephaven.vector.*;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
@@ -35,6 +36,9 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     private HashSet<Package> packageImports;
     private HashSet<Class<?>> classImports;
     private HashSet<Class<?>> staticImports;
+
+    private HashMap<String, Class<?>> testOverrideCLassLookups;
+
     private HashMap<String, Class<?>> variables;
     private HashMap<String, Class<?>[]> variableParameterizedTypes;
 
@@ -115,6 +119,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myDummyInnerClass", LanguageParserDummyClass.InnerClass.class);
         variables.put("myDummyStaticNestedClass", LanguageParserDummyClass.StaticNestedClass.class);
         variables.put("myClosure", Closure.class);
+        variables.put("myPyCallable", PyCallableWrapper.class);
         variables.put("myDateTime", DateTime.class);
 
         variables.put("myTable", Table.class);
@@ -132,6 +137,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variableParameterizedTypes.put("myParameterizedArrayList", new Class[] {Long.class});
         variableParameterizedTypes.put("myParameterizedHashMap", new Class[] {Integer.class, Double.class});
         variableParameterizedTypes.put("myVector", new Class[] {Double.class});
+
+        testOverrideCLassLookups = new HashMap<>();
+        // This is here becasue in tests, QueryLanguageParser.findClass() fails trying to (re?)initialize this class
+        testOverrideCLassLookups.put("io.deephaven.engine.util.PyCallableWrapper", PyCallableWrapper.class);
     }
 
     public void testSimpleCalculations() throws Exception {
@@ -1202,18 +1211,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "myDummyClass.overloadedMethod(`test1`, `test2`)";
         resultExpression = "myDummyClass.overloadedMethod(\"test1\", \"test2\")";
         check(expression, resultExpression, int.class, new String[] {"myDummyClass"});
-
-        expression = "myClosure.call()";
-        resultExpression = "myClosure.call()";
-        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
-
-        expression = "myClosure.call(1)";
-        resultExpression = "myClosure.call(1)";
-        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
-
-        expression = "myClosure.call(1, 2, 3)";
-        resultExpression = "myClosure.call(1, 2, 3)";
-        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
     }
 
     /**
@@ -1308,6 +1305,75 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
     }
 
+    public void testExplicitClosureCall() throws Exception {
+        String expression = "myClosure.call()";
+        String resultExpression = "myClosure.call()";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+
+        expression = "myClosure.call(1)";
+        resultExpression = "myClosure.call(1)";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+
+        expression = "myClosure.call(1, 2, 3)";
+        resultExpression = "myClosure.call(1, 2, 3)";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+    }
+
+    public void testImplicitClosureCall() throws Exception {
+        String expression = "myClosure()";
+        String resultExpression = "myClosure.call()";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+
+        expression = "myClosure(1)";
+        resultExpression = "myClosure.call(1)";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+
+        expression = "myClosure(1, 2, 3)";
+        resultExpression = "myClosure.call(1, 2, 3)";
+        check(expression, resultExpression, Object.class, new String[] {"myClosure"});
+    }
+
+    public void testPyObject() throws Exception {
+        String expression = "myPyObject";
+        String resultExpression = "myPyObject";
+        check(expression, resultExpression, PyObject.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getAttribute(`my attribute`)";
+        resultExpression = "myPyObject.getAttribute(\"my attribute\")";
+        check(expression, resultExpression, PyObject.class, new String[] {"myPyObject"});
+    }
+
+    /**
+     * Test converting implicit python calls into explicit ones.
+     */
+    public void testImplicitPythonCall() throws Exception {
+        String expression = "myPyCallable()";
+        String resultExpression = "myPyCallable.call()";
+        check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
+
+        expression = "myPyCallable(1)";
+        resultExpression = "myPyCallable.call(1)";
+        check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
+
+        expression = "myPyCallable(1, 2, 3)";
+        resultExpression = "myPyCallable.call(1, 2, 3)";
+        check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
+
+        expression = "myPyObject.myPyMethod()";
+        resultExpression =
+                "(new io.deephaven.engine.util.PyCallableWrapper(myPyObject.getAttribute(\"myPyMethod\"))).call()";
+        check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.myPyMethod(1)";
+        resultExpression =
+                "(new io.deephaven.engine.util.PyCallableWrapper(myPyObject.getAttribute(\"myPyMethod\"))).call(1)";
+        check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.myPyMethod(1, 2, 3)";
+        resultExpression =
+                "(new io.deephaven.engine.util.PyCallableWrapper(myPyObject.getAttribute(\"myPyMethod\"))).call(1, 2, 3)";
+        check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
+    }
 
     /**
      * Test calling the default methods from {@link Object}. (In the past, these were not recognized on interfaces.)
@@ -1914,17 +1980,20 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     public void testVectorUnboxing() throws Exception {
         String expression = "genericArrayToSingle(myVector)";
         String resultExpression = "genericArrayToSingle(VectorConversions.nullSafeVectorToArray(myVector))";
-        check(expression, resultExpression, Double.class, new String[] {"myVector"});
+        // TODO: when reparsing result, VectorConversions.nullSafeVectorToArray(myVector) is seen as a java.lang.Double
+        check(expression, resultExpression, Double.class, new String[] {"myVector"}, false);
 
         expression = "genericArraysToSingle(myVector, myIntegerObjArray)";
         resultExpression =
                 "genericArraysToSingle(VectorConversions.nullSafeVectorToArray(myVector), myIntegerObjArray)";
-        check(expression, resultExpression, Integer.class, new String[] {"myVector", "myIntegerObjArray"});
+        // TODO: when reparsing result, VectorConversions.nullSafeVectorToArray(myVector) is seen as a java.lang.Double
+        check(expression, resultExpression, Integer.class, new String[] {"myVector", "myIntegerObjArray"}, false);
 
         expression = "genericArraysToSingle(myIntegerObjArray, myVector)";
         resultExpression =
                 "genericArraysToSingle(myIntegerObjArray, VectorConversions.nullSafeVectorToArray(myVector))";
-        check(expression, resultExpression, Double.class, new String[] {"myVector", "myIntegerObjArray"});
+        // TODO: when reparsing result, VectorConversions.nullSafeVectorToArray(myVector) is seen as a java.lang.Double
+        check(expression, resultExpression, Double.class, new String[] {"myVector", "myIntegerObjArray"}, false);
 
         expression = "genericVector(myVector)";
         resultExpression = "genericVector(myVector)";
@@ -2510,9 +2579,18 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
     private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed)
             throws Exception {
+        check(expression, resultExpression, resultType, resultVarsUsed, true);
+    }
+
+    private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed,
+            boolean verifyIdempotence)
+            throws Exception {
         QueryLanguageParser.Result result =
                 new QueryLanguageParser(expression, packageImports, classImports, staticImports,
-                        variables, variableParameterizedTypes).getResult();
+                        testOverrideCLassLookups,
+                        variables, variableParameterizedTypes,
+                        true,
+                        verifyIdempotence).getResult();
 
         assertEquals(resultType, result.getType());
         assertEquals(resultExpression, result.getConvertedExpression());
