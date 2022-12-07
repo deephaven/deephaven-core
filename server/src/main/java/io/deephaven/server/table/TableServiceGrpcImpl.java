@@ -347,21 +347,19 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         errorInfo += " cause: " + cause.getMessage();
                         firstFailure.compareAndSet(null, (StatusRuntimeException) cause);
                     }
-                    final String finalErrorInfo = errorInfo;
-                    safelyExecuteLocked(responseObserver,
-                            () -> responseObserver.onNext(ExportedTableCreationResponse.newBuilder()
-                                    .setResultId(resultId)
-                                    .setSuccess(false)
-                                    .setErrorInfo(finalErrorInfo)
-                                    .build()));
+                    final ExportedTableCreationResponse response = ExportedTableCreationResponse.newBuilder()
+                            .setResultId(resultId)
+                            .setSuccess(false)
+                            .setErrorInfo(errorInfo)
+                            .build();
+                    safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
                     onOneResolved.run();
                 }).submit(() -> {
                     final Table table = exportBuilder.doExport();
-
-                    safelyExecuteLocked(responseObserver,
-                            () -> responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, table)));
+                    final ExportedTableCreationResponse response =
+                            ExportUtil.buildTableCreationResponse(resultId, table);
+                    safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
                     onOneResolved.run();
-
                     return table;
                 });
             }
@@ -405,8 +403,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         }
                         authWiring.checkPermissionGetExportedTableCreationResponse(
                                 session.getAuthContext(), request, Collections.singletonList((Table) obj));
-                        responseObserver.onNext(ExportUtil.buildTableCreationResponse(request, (Table) obj));
-                        responseObserver.onCompleted();
+                        final ExportedTableCreationResponse response =
+                                ExportUtil.buildTableCreationResponse(request, (Table) obj);
+                        safelyExecute(() -> {
+                            responseObserver.onNext(response);
+                            responseObserver.onCompleted();
+                        });
                     });
         });
     }
@@ -443,8 +445,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .submit(() -> {
                         operation.checkPermission(request, dependencies);
                         final Table result = operation.create(request, dependencies);
+                        final ExportedTableCreationResponse response =
+                                ExportUtil.buildTableCreationResponse(resultId, result);
                         safelyExecute(() -> {
-                            responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, result));
+                            responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
                         return result;
