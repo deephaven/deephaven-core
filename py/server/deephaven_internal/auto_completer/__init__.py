@@ -16,10 +16,10 @@ strong mode: looks in your globals() for answers to autocomplete and analyzes yo
 later, we may add slow mode, which uses both static and interpreted completion modes.
 """
 
-from ._completer import Completer, Mode
+
+from ._completer import Completer, Mode, jedi_settings
 from jedi import preload_module, Interpreter
 
-jedi_settings = Completer()
 # warm jedi up a little. We could probably off-thread this.
 preload_module("deephaven")
 Interpreter("", []).complete(1, 0)
