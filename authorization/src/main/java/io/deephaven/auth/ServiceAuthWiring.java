@@ -57,8 +57,7 @@ public interface ServiceAuthWiring<ServiceImplBase> {
         private final MessageReceivedCallback<ReqT> messageReceivedCallback;
 
         private final boolean mustHaveRequest;
-        private final String serviceName;
-        private final String methodName;
+        private final String fullMethodName;
 
         public AuthorizingServerCallHandler(
                 final ServerCallHandler<ReqT, RespT> delegate,
@@ -69,9 +68,7 @@ public interface ServiceAuthWiring<ServiceImplBase> {
             this.callStartedCallback = callStartedCallback;
             this.messageReceivedCallback = messageReceivedCallback;
             mustHaveRequest = method.getMethodDescriptor().getType().clientSendsOneMessage();
-            serviceName = method.getMethodDescriptor().getServiceName();
-            methodName = method.getMethodDescriptor().getFullMethodName();
-
+            fullMethodName = method.getMethodDescriptor().getFullMethodName();
             // validate that we have handlers for the methods we will try to invoke
             if (!mustHaveRequest) {
                 Assert.neqNull(callStartedCallback, "callStartedCallback");
@@ -116,20 +113,16 @@ public interface ServiceAuthWiring<ServiceImplBase> {
                     Status.Code status = sre.getStatus().getCode();
                     switch (status) {
                         case UNAUTHENTICATED:
-                            log.info().append(serviceName).append(".").append(methodName)
-                                    .append(": request unauthenticated").endl();
+                            log.info().append(fullMethodName).append(": request unauthenticated").endl();
                             break;
                         case PERMISSION_DENIED:
-                            log.info().append(serviceName).append(".").append(methodName)
-                                    .append(": request unauthorized").endl();
+                            log.info().append(fullMethodName).append(": request unauthorized").endl();
                             break;
                         case RESOURCE_EXHAUSTED:
-                            log.info().append(serviceName).append(".").append(methodName)
-                                    .append(": request throttled").endl();
+                            log.info().append(fullMethodName).append(": request throttled").endl();
                             break;
                         default:
-                            log.error().append(serviceName).append(".").append(methodName)
-                                    .append(": authorization failed: ").append(err).endl();
+                            log.error().append(fullMethodName).append(": authorization failed: ").append(err).endl();
                     }
 
                     quietlyCloseCall(call, sre.getStatus(), sre.getTrailers());
