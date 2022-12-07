@@ -50,7 +50,7 @@ dependencies {
     jdom 'org.jdom:jdom2:2.0.6.1'
     httpClient 'org.apache.httpcomponents:httpclient:4.5.6'
     commonsLang3 'org.apache.commons:commons-lang3:3.9'
-    commonsText 'org.apache.commons:commons-text:1.9'
+    commonsText 'org.apache.commons:commons-text:1.10.0'
     commonsIo 'commons-io:commons-io:2.11.0'
     math3 'org.apache.commons:commons-math3:3.6.1'
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
