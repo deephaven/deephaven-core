@@ -1338,9 +1338,49 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         String resultExpression = "myPyObject";
         check(expression, resultExpression, PyObject.class, new String[] {"myPyObject"});
 
-        expression = "myPyObject.getAttribute(`my attribute`)";
-        resultExpression = "myPyObject.getAttribute(\"my attribute\")";
+        expression = "myPyObject.myField";
+        resultExpression = "myPyObject.getAttribute(\"myField\")";
         check(expression, resultExpression, PyObject.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getAttribute(`myField`)";
+        resultExpression = "myPyObject.getAttribute(\"myField\")";
+        check(expression, resultExpression, PyObject.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getIntValue()";
+        resultExpression = "myPyObject.getIntValue()";
+        check(expression, resultExpression, int.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getLongValue()";
+        resultExpression = "myPyObject.getLongValue()";
+        check(expression, resultExpression, long.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getBooleanValue()";
+        resultExpression = "myPyObject.getBooleanValue()";
+        check(expression, resultExpression, boolean.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getDoubleValue()";
+        resultExpression = "myPyObject.getDoubleValue()";
+        check(expression, resultExpression, double.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getStringValue()";
+        resultExpression = "myPyObject.getStringValue()";
+        check(expression, resultExpression, String.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getObjectValue()";
+        resultExpression = "myPyObject.getObjectValue()";
+        check(expression, resultExpression, Object.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.getType()";
+        resultExpression = "myPyObject.getType()";
+        check(expression, resultExpression, PyObject.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.isDict()";
+        resultExpression = "myPyObject.isDict()";
+        check(expression, resultExpression, boolean.class, new String[] {"myPyObject"});
+
+        expression = "myPyObject.isList()";
+        resultExpression = "myPyObject.isList()";
+        check(expression, resultExpression, boolean.class, new String[] {"myPyObject"});
     }
 
     /**

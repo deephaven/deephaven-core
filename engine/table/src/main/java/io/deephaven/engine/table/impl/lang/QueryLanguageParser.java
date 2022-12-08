@@ -540,7 +540,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         } else {
             // Add the actual methods for the object (including PyObject's methods)
             for (final Method method : scope.getMethods()) {
-                // TODO: this could use more explicit testing, e.g. for getIntValue(), getLongValue()...
                 possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
             }
 
@@ -1909,14 +1908,32 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // This is a direct field access on a Python object which is wrapped in PyObject.class
             // and must be accessed through PyObject.getAttribute() method
             printer.append('.').append("getAttribute(\"" + n.getNameAsString() + "\"");
+
+            final NodeList<Expression> getAttributeArgs = new NodeList<>();
+            getAttributeArgs.add(new StringLiteralExpr(n.getNameAsString()));
+
             if (printer.pythonCastContext != null) {
                 // The to-be-cast expr is a Python object field accessor
                 final String clsName = printer.pythonCastContext.getSimpleName();
                 printer.append(", " + clsName + ".class");
+
+                final ClassExpr targetType =
+                        new ClassExpr(new ClassOrInterfaceType(null, printer.pythonCastContext.getSimpleName()));
+                getAttributeArgs.add(targetType);
+
                 // Let's advertise to the caller the cast context type
                 ret = printer.pythonCastContext;
             }
             printer.append(')');
+
+            // replace the field access with the getAttribute() call
+            // we do not need to visit() (since we already visited the scope)
+            final MethodCallExpr pyGetAttributeMethodCall =
+                    new MethodCallExpr(n.getScope(), "getAttribute", getAttributeArgs);
+            replaceChildExpression(
+                    n.getParentNode().orElseThrow(),
+                    n,
+                    pyGetAttributeMethodCall);
         } else {
             printer.append('.').append(n.getNameAsString());
         }
