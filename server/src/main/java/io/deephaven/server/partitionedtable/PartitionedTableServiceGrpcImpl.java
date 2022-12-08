@@ -94,8 +94,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         } else {
                             merged = partitionedTable.get().merge();
                         }
+                        final ExportedTableCreationResponse response =
+                                buildTableCreationResponse(request.getResultId(), merged);
                         safelyExecute(() -> {
-                            responseObserver.onNext(buildTableCreationResponse(request.getResultId(), merged));
+                            responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
                         return merged;
@@ -159,8 +161,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                                         .get(requestedRow.getRowSet().firstRowKey());
                             });
                         }
+                        final ExportedTableCreationResponse response =
+                                buildTableCreationResponse(request.getResultId(), table);
                         safelyExecute(() -> {
-                            responseObserver.onNext(buildTableCreationResponse(request.getResultId(), table));
+                            responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
                         return table;
