@@ -167,8 +167,6 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
     @Override
     public void onCompleted() {
         // just hang up too, browser will reconnect if interested
-        synchronized (responseObserver) {
-            responseObserver.onCompleted();
-        }
+        safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
     }
 }
