@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Predicate;
 
 /**
- * {@link ChunkSource} that produces {@code byte} values for {@link Boolean Booleans} that correspond to whether a tree
+ * {@link ChunkSource} that produces {@code byte} values for {@code booleans that correspond to whether a tree
  * table row is expandable.
  */
 final class TreeRowExpandableSource implements DefaultChunkSource.WithPrev<Values> {

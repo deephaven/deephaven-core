@@ -189,10 +189,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             return currentDepth;
         }
 
-        int getSnapshotClock() {
-            return snapshotClock;
-        }
-
         /**
          * Do post-snapshot maintenance upon successful snapshot, and set destinations sizes.
          *
@@ -310,8 +306,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 this.id = nodeId;
                 this.base = nodeIdToNodeBaseTable(nodeId);
                 // NB: No current implementation requires NodeTableState to ensure liveness for its base. If that
-                // changes,
-                // we'll need to add liveness retention for base here.
+                // changes, we'll need to add liveness retention for base here.
             }
 
             private void ensureFilteredCreated() {

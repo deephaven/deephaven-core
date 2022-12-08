@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.api.ColumnName.names;
@@ -41,6 +43,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     public static final ColumnName KEY_WIDTH_COLUMN = ColumnName.of("__KEY_WIDTH__");
     private static final int KEY_WIDTH_COLUMN_INDEX = 0;
+    private static final int FIRST_AGGREGATED_COLUMN_INDEX = 1;
     public static final ColumnName ROLLUP_COLUMN = ColumnName.of(ROLLUP_COLUMN_SUFFIX);
 
     private final Collection<? extends Aggregation> aggregations;
@@ -407,6 +410,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         if (nodeKeyWidth >= numLevels) {
             return nullNodeId();
         }
+        if (nodeKeyWidth == baseLevelIndex && !includesConstituents) {
+            return nullNodeId();
+        }
 
         final AggregationRowLookup rowLookup = levelRowLookups[nodeKeyWidth];
         final int nodeSlot = rowLookup.get(nodeKey);
@@ -460,7 +466,56 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             final long nodeId,
             @NotNull final Table nodeSortedTable,
             @Nullable final ChunkSource.WithPrev<? extends Values>[] existingChunkSources) {
-        // TODO-RWC: Key width (depth) + aggregated node sources + constituent node sources
+        // @formatter:off
+        // For nodes above the base level, we expand to: 
+        //   - "key width" -> int, how wide (in columns) is the group-by key for this row in the rollup?
+        //   - All columns from the aggregated table definition, which includes formatting columns but not the column of
+        //       tables or any absolute views for sorting
+        //   - Null-value sources for all constituent columns
+        // For base level nodes (only expandable when constituents are included), we expand to:
+        //   - Null-value sources for "key width" and all aggregated columns
+        //   - All columns from the constituent table definition, which includes formatting columns but not any absolute
+        //       views for sorting
+        // @formatter:on
+        final int firstConstituentColumnIndex = FIRST_AGGREGATED_COLUMN_INDEX + aggregatedNodeDefinition.numColumns();
+        final int numColumns = firstConstituentColumnIndex
+                + (includesConstituents ? constituentNodeDefinition.numColumns() : 0);
+        final ChunkSource.WithPrev<? extends Values>[] result;
+        if (existingChunkSources != null) {
+            Assert.eq(existingChunkSources.length, "existingChunkSources.length", numColumns, "numColumns");
+            result = existingChunkSources;
+        } else {
+            // noinspection unchecked
+            result = new ChunkSource.WithPrev[numColumns];
+        }
+
+        final int levelIndex = nodeKeyWidth(nodeId);
+        Assert.eq(levelIndex, "levelIndex", snapshotState.getCurrentDepth(), "current snapshot traversal depth");
+        final boolean isBaseLevel = levelIndex == baseLevelIndex;
+        Assert.eq(isBaseLevel, "isBaseLevel", includesConstituents, "includesConstituents");
+
+        (snapshotState.getColumns() == null ? IntStream.range(0, numColumns) : snapshotState.getColumns().stream())
+                .filter(ci -> result[ci] == null)
+                .forEach(ci -> {
+                    if (ci == KEY_WIDTH_COLUMN_INDEX) {
+                        result[ci] = isBaseLevel
+                                ? NullValueColumnSource.getInstance(int.class, null)
+                                : getDepthSource(levelIndex);
+                    } else if (ci < firstConstituentColumnIndex) {
+                        final ColumnDefinition<?> cd =
+                                aggregatedNodeDefinition.getColumns().get(ci - FIRST_AGGREGATED_COLUMN_INDEX);
+                        result[ci] = isBaseLevel
+                                ? NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType())
+                                : nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
+                    } else {
+                        final ColumnDefinition<?> cd =
+                                constituentNodeDefinition.getColumns().get(ci - firstConstituentColumnIndex);
+                        result[ci] = isBaseLevel
+                                ? nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType())
+                                : NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
+                    }
+                });
+        return result;
     }
 
     @Override

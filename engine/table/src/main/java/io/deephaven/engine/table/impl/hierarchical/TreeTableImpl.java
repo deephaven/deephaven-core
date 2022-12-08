@@ -325,8 +325,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                     } else if (ci == DEPTH_COLUMN_INDEX) {
                         result[ci] = getDepthSource(snapshotState.getCurrentDepth());
                     } else {
-                        result[ci] = nodeSortedTable
-                                .getColumnSource(getNodeDefinition().getColumns().get(ci - 2).getName());
+                        final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - 2);
+                        result[ci] = nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
                     }
                 });
         return result;
@@ -339,7 +339,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         }
         final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
         final Table nodeTableToCheck;
-        if (nodeOperations.getRecordedFilters().isEmpty()) {
+        if (nodeOperations == null || nodeOperations.getRecordedFilters().isEmpty()) {
             nodeTableToCheck = nodeTableState.getBaseTable();
         } else {
             nodeTableState.ensurePreparedForTraversal();
