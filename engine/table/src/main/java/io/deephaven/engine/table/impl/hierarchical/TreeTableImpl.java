@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
@@ -36,12 +37,15 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     private static final ColumnName TREE_COLUMN = ColumnName.of("__TREE__");
     private static final ColumnName EXPANDABLE_COLUMN = ColumnName.of("__EXPANDABLE__");
+    private static final int EXPANDABLE_COLUMN_INDEX = 0;
     private static final ColumnName DEPTH_COLUMN = ColumnName.of("__DEPTH__");
+    private static final int DEPTH_COLUMN_INDEX = 1;
     public static final ColumnName REVERSE_LOOKUP_ROW_KEY_COLUMN = ColumnName.of("__ROW_KEY__");
 
     private final ColumnSource<?> sourceParentIdSource;
     private final QueryTable tree;
     private final AggregationRowLookup treeRowLookup;
+
     private final ColumnSource<Table> treeNodeTableSource;
     private final TreeReverseLookup reverseLookup;
     private final boolean filtered;
@@ -269,6 +273,10 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         return treeRowLookup.get(nodeKey);
     }
 
+    ColumnSource<Table> getTreeNodeTableSource() {
+        return treeNodeTableSource;
+    }
+
     @Override
     @Nullable
     Table nodeIdToNodeBaseTable(final long nodeId) {
@@ -284,6 +292,38 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     Table applyNodeSorts(final long nodeId, @NotNull final Table nodeFilteredTable) {
         return BaseNodeOperationsRecorder.applySorts(nodeOperations, nodeFilteredTable);
+    }
+
+    @NotNull
+    @Override
+    ChunkSource.WithPrev<? extends Values>[] makeOrFillChunkSourceArray(
+            @NotNull final SnapshotStateImpl snapshotState,
+            final long nodeId,
+            @NotNull final Table nodeSortedTable,
+            @Nullable final ChunkSource.WithPrev<? extends Values>[] existingChunkSources) {
+        // We have 2 extra columns per row:
+        // 1. "expandable" -> boolean, is it possible to expand this row?
+        // 2. "depth" -> int, how deep is this row in the tree?
+        // These are at index 0 and 1, respectively, followed by the node columns.
+        final int numColumns = getNodeDefinition().numColumns() + 2;
+        final ChunkSource.WithPrev<? extends Values>[] result;
+        if (existingChunkSources != null) {
+            Assert.eq(existingChunkSources.length, "existingChunkSources.length", numColumns, "numColumns");
+            result = existingChunkSources;
+        } else {
+            //noinspection unchecked
+            result = new ChunkSource.WithPrev[numColumns];
+        }
+        // TODO-RWC: Continue here
+        (snapshotState.getColumns(). == null ? IntStream.range(0, numColumns) : snapshotState.getColumns().stream())
+                .forEach(ci -> {
+            switch (ci) {
+                case EXPANDABLE_COLUMN_INDEX:
+                case DEPTH_COLUMN_INDEX:
+                default:
+            }
+        });
+        return result;
     }
 
     @Override

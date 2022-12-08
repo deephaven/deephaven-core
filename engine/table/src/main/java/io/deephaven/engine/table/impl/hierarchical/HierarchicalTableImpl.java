@@ -22,7 +22,7 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.iterators.ByteColumnIterator;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.*;
 import io.deephaven.util.SafeCloseable;
@@ -101,7 +101,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     /**
      * Re-usable {@link SnapshotState} implementation, used for keeping track of clock information and node caching.
      */
-    private final class SnapshotStateImpl extends LivenessArtifact implements SnapshotState {
+    final class SnapshotStateImpl extends LivenessArtifact implements SnapshotState {
 
         private final KeyedLongObjectHashMap<NodeTableState> nodeTableStates =
                 new KeyedLongObjectHashMap<>(new NodeTableStateIdKey());
@@ -118,6 +118,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         // region Per-attempt parameters and state
         private boolean usePrev;
+        private int currentDepth = NULL_INT;
         private long expandedSize = NULL_LONG;
         private long nextRowPositionToInclude = NULL_LONG;
         private int remainingNumRowsToInclude = NULL_INT;
@@ -158,15 +159,28 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             return this::releaseSnapshotResources;
         }
 
+        BitSet getColumns() {
+            return columns;
+        }
+
         /**
          * Initialize state fields for the next snapshot attempt.
          */
         private void beginSnapshotAttempt(final boolean usePrev) {
             this.usePrev = usePrev;
+            currentDepth = 0;
             expandedSize = 0;
             nextRowPositionToInclude = rows.firstRowKey();
             remainingNumRowsToInclude = numRowsToInclude;
             snapshotClock++;
+        }
+
+        boolean usePrev() {
+            return usePrev;
+        }
+
+        int getCurrentDepth() {
+            return currentDepth;
         }
 
         /**
@@ -190,6 +204,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         private void releaseSnapshotResources() {
             usePrev = false;
+            currentDepth = NULL_INT;
             expandedSize = NULL_LONG;
             nextRowPositionToInclude = NULL_LONG;
             remainingNumRowsToInclude = NULL_INT;
@@ -201,7 +216,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             destinationSlices = null;
         }
 
-        private NodeTableState getNodeTableState(final long nodeId) {
+        NodeTableState getNodeTableState(final long nodeId) {
             return nodeTableStates.putIfAbsent(nodeId, nodeTableStateFactory);
         }
 
@@ -239,7 +254,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     /**
      * State tracking for node tables in this HierarchicalTableImpl.
      */
-    private final class NodeTableState {
+    final class NodeTableState {
 
         /**
          * Node identifier, a type-specific identifier that uniquely maps to a single table node in the
@@ -323,7 +338,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          *
          * @param snapshotClock The {@link SnapshotStateImpl#snapshotClock snapshot clock} value to record
          */
-        private void ensurePreparedForTraversal(final int snapshotClock) {
+        void ensurePreparedForTraversal(final int snapshotClock) {
             ensureFilteredCreated();
             maybeWaitForSatisfaction(filtered);
             visitedSnapshotClock = snapshotClock;
@@ -335,14 +350,13 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          * Initializes the data structures necessary for {@link #getTraversalTable()}, {@link #getDataRetrievalTable()},
          * {@link #getDataRedirection()}, {@link #getDataSources()}.
          *
-         * @param snapshotClock The {@link SnapshotStateImpl#snapshotClock snapshot clock} value to record
-         * @param columns The columns included in this snapshot
+         * @param snapshotState The snapshot state for the current attempt
          */
-        private void ensurePreparedForDataRetrieval(final int snapshotClock, @Nullable final BitSet columns) {
+        private void ensurePreparedForDataRetrieval(@NotNull final SnapshotStateImpl snapshotState) {
             ensureSortedCreated();
-            dataSources = makeOrFillChunkSourceArray(id, sorted, columns, dataSources);
+            dataSources = makeOrFillChunkSourceArray(snapshotState, id, sorted, dataSources);
             maybeWaitForSatisfaction(sorted);
-            visitedSnapshotClock = snapshotClock;
+            visitedSnapshotClock = snapshotState.snapshotClock;
         }
 
         /**
@@ -357,7 +371,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          * @apiNote {@link #ensurePreparedForTraversal(int)} or {@link #ensurePreparedForDataRetrieval(int, BitSet)}
          *          must have been called previously during this snapshot attempt
          */
-        private Table getTraversalTable() {
+        Table getTraversalTable() {
             return filtered;
         }
 
@@ -614,15 +628,13 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 new KeyedObjectHashSet<>(NodeDirectiveKey.getInstance());
         try (final RowSet prevRowSet = usePrev ? keyTable.getRowSet().copyPrev() : null) {
             final RowSequence rowsToExtract = usePrev ? prevRowSet : keyTable.getRowSet();
-            final ObjectColumnIterator<Object> nodeKeyIterator =
-                    new ObjectColumnIterator<>(nodeKeySource, rowsToExtract);
+            final ColumnIterator<?, ?> nodeKeyIterator = ColumnIterator.make(nodeKeySource, rowsToExtract);
             final ByteColumnIterator actionIterator =
                     actionSource == null ? null : new ByteColumnIterator(actionSource, rowsToExtract);
-            while (nodeKeyIterator.hasNext()) {
-                final Object nodeKey = nodeKeyIterator.next();
+            nodeKeyIterator.forEachRemaining((final Object nodeKey) -> {
                 final KeyTableNodeAction action = actionIterator == null ? Expand : lookup(actionIterator.nextByte());
                 directives.putIfAbsent(nodeKey, NodeDirective::new).setAction(action);
-            }
+            });
         }
         return directives;
     }
@@ -718,7 +730,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         final KeyTableNodeAction rootNodeAction;
         if (rootNodeDirective == null ||
                 ((rootNodeAction = rootNodeDirective.getAction()) != Expand && rootNodeAction != ExpandAll)) {
-            // We *could* auto-expand the root, instead, but for now let's treat this as empty.
+            // We *could* auto-expand the root, instead, but for now let's treat this as empty for consistency
             return;
         }
 
@@ -729,7 +741,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     private void visitExpandedNode(
             @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final LinkedNodeDirective expanded) {
-
+        // TODO-RWC: Do work here
     }
 
     /**
@@ -793,18 +805,18 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     /**
      * Get or fill an array with (possibly-reinterpreted) chunk sources for use with a node.
      *
+     * @param snapshotState The snapshot state for this attempt
      * @param nodeId The internal identifier for this node
      * @param nodeSortedTable The formatted, filtered, and sorted table at this node
-     * @param columns The columns of interest, or {@code null} if all are included
      * @param existingChunkSources Existing chunk sources for this node, or {@code null} if a new array is needed
      * @return {@code existingChunkSources} or a new array of chunk sources, with elements filled in for all columns
      *         specified by {@code columns}
      */
     @NotNull
     abstract ChunkSource.WithPrev<? extends Values>[] makeOrFillChunkSourceArray(
+            @NotNull SnapshotStateImpl snapshotState,
             long nodeId,
             @NotNull Table nodeSortedTable,
-            @Nullable BitSet columns,
             @Nullable ChunkSource.WithPrev<? extends Values>[] existingChunkSources);
 
     /**
