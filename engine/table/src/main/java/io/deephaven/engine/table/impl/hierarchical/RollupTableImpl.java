@@ -9,6 +9,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
@@ -39,6 +40,7 @@ import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SU
 public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTableImpl> implements RollupTable {
 
     public static final ColumnName KEY_WIDTH_COLUMN = ColumnName.of("__KEY_WIDTH__");
+    private static final int KEY_WIDTH_COLUMN_INDEX = 0;
     public static final ColumnName ROLLUP_COLUMN = ColumnName.of(ROLLUP_COLUMN_SUFFIX);
 
     private final Collection<? extends Aggregation> aggregations;
@@ -402,8 +404,22 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     long nodeKeyToNodeId(@Nullable final Object nodeKey) {
         final int nodeKeyWidth = nodeKeyWidth(nodeKey);
-        final int nodeSlot = levelRowLookups[nodeKeyWidth].get(nodeKey);
+        if (nodeKeyWidth >= numLevels) {
+            return nullNodeId();
+        }
+
+        final AggregationRowLookup rowLookup = levelRowLookups[nodeKeyWidth];
+        final int nodeSlot = rowLookup.get(nodeKey);
+        if (nodeSlot == rowLookup.noEntryValue()) {
+            return nullNodeId();
+        }
+
         return makeNodeId(nodeKeyWidth, nodeSlot);
+    }
+
+    @Override
+    long nullNodeId() {
+        return RowSequence.NULL_ROW_KEY;
     }
 
     @Override
@@ -435,6 +451,16 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     Table applyNodeSorts(final long nodeId, @NotNull final Table nodeFilteredTable) {
         return BaseNodeOperationsRecorder.applySorts(nodeOperations(nodeId), nodeFilteredTable);
+    }
+
+    @Override
+    @NotNull
+    ChunkSource.WithPrev<? extends Values>[] makeOrFillChunkSourceArray(
+            @NotNull final SnapshotState snapshotState,
+            final long nodeId,
+            @NotNull final Table nodeSortedTable,
+            @Nullable final ChunkSource.WithPrev<? extends Values>[] existingChunkSources) {
+        // TODO-RWC: Key width (depth) + aggregated node sources + constituent node sources
     }
 
     @Override

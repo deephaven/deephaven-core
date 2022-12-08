@@ -273,8 +273,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         return treeRowLookup.get(nodeKey);
     }
 
-    ColumnSource<Table> getTreeNodeTableSource() {
-        return treeNodeTableSource;
+    @Override
+    long nullNodeId() {
+        return treeRowLookup.noEntryValue();
     }
 
     @Override
@@ -294,10 +295,10 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         return BaseNodeOperationsRecorder.applySorts(nodeOperations, nodeFilteredTable);
     }
 
-    @NotNull
     @Override
+    @NotNull
     ChunkSource.WithPrev<? extends Values>[] makeOrFillChunkSourceArray(
-            @NotNull final SnapshotStateImpl snapshotState,
+            @NotNull final SnapshotState snapshotState,
             final long nodeId,
             @NotNull final Table nodeSortedTable,
             @Nullable final ChunkSource.WithPrev<? extends Values>[] existingChunkSources) {
@@ -311,19 +312,40 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             Assert.eq(existingChunkSources.length, "existingChunkSources.length", numColumns, "numColumns");
             result = existingChunkSources;
         } else {
-            //noinspection unchecked
+            // noinspection unchecked
             result = new ChunkSource.WithPrev[numColumns];
         }
-        // TODO-RWC: Continue here
-        (snapshotState.getColumns(). == null ? IntStream.range(0, numColumns) : snapshotState.getColumns().stream())
+        (snapshotState.getColumns() == null ? IntStream.range(0, numColumns) : snapshotState.getColumns().stream())
+                .filter(ci -> result[ci] == null || ci == DEPTH_COLUMN_INDEX) // Tree nodes can change depth
                 .forEach(ci -> {
-            switch (ci) {
-                case EXPANDABLE_COLUMN_INDEX:
-                case DEPTH_COLUMN_INDEX:
-                default:
-            }
-        });
+                    if (ci == EXPANDABLE_COLUMN_INDEX) {
+                        result[ci] = new TreeRowExpandableSource(
+                                nodeSortedTable.getColumnSource(identifierColumn.name()),
+                                (final Object nodeKey) -> nodeKeyExpandable(snapshotState, nodeKey));
+                    } else if (ci == DEPTH_COLUMN_INDEX) {
+                        result[ci] = getDepthSource(snapshotState.getCurrentDepth());
+                    } else {
+                        result[ci] = nodeSortedTable
+                                .getColumnSource(getNodeDefinition().getColumns().get(ci - 2).getName());
+                    }
+                });
         return result;
+    }
+
+    private boolean nodeKeyExpandable(@NotNull final SnapshotState snapshotState, @Nullable final Object nodeKey) {
+        final long nodeId = nodeKeyToNodeId(nodeKey);
+        if (nodeId == nullNodeId()) {
+            return false;
+        }
+        final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
+        final Table nodeTableToCheck;
+        if (nodeOperations.getRecordedFilters().isEmpty()) {
+            nodeTableToCheck = nodeTableState.getBaseTable();
+        } else {
+            nodeTableState.ensurePreparedForTraversal();
+            nodeTableToCheck = nodeTableState.getTraversalTable();
+        }
+        return (snapshotState.usePrev() ? nodeTableToCheck.getRowSet().sizePrev() : nodeTableToCheck.size()) > 0;
     }
 
     @Override
@@ -372,7 +394,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         public long get(final Object nodeKey) {
             final int idAggregationRow = rowLookup.get(nodeKey);
             if (idAggregationRow == rowLookup.noEntryValue()) {
-                return this.noEntryValue();
+                return noEntryValue();
             }
             return sourceRowKeyColumnSource.get(idAggregationRow);
         }
@@ -381,7 +403,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         public long getPrev(final Object nodeKey) {
             final int idAggregationRow = rowLookup.get(nodeKey);
             if (idAggregationRow == rowLookup.noEntryValue()) {
-                return this.noEntryValue();
+                return noEntryValue();
             }
             return sourceRowKeyColumnSource.getPrev(idAggregationRow);
         }
