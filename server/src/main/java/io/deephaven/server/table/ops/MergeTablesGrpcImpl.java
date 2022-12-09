@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -25,9 +26,11 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
     private final UpdateGraphProcessor updateGraphProcessor;
 
     @Inject
-    public MergeTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
-        super(BatchTableRequest.Operation::getMerge, MergeTablesRequest::getResultId,
-                MergeTablesRequest::getSourceIdsList);
+    public MergeTablesGrpcImpl(
+            final TableServiceContextualAuthWiring authWiring,
+            final UpdateGraphProcessor updateGraphProcessor) {
+        super(authWiring::checkPermissionMergeTables, BatchTableRequest.Operation::getMerge,
+                MergeTablesRequest::getResultId, MergeTablesRequest::getSourceIdsList);
         this.updateGraphProcessor = updateGraphProcessor;
     }
 
@@ -39,7 +42,8 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
     }
 
     @Override
-    public Table create(final MergeTablesRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final MergeTablesRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.gt(sourceTables.size(), "sourceTables.size()", 0);
 
         final String keyColumn = request.getKeyColumn();
@@ -48,7 +52,7 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
                 .collect(Collectors.toList());
 
         Table result;
-        if (tables.stream().noneMatch(table -> table.isRefreshing())) {
+        if (tables.stream().noneMatch(Table::isRefreshing)) {
             result = keyColumn.isEmpty() ? TableTools.merge(tables) : TableTools.mergeSorted(keyColumn, tables);
         } else {
             result = updateGraphProcessor.sharedLock().computeLocked(() -> TableTools.merge(tables));

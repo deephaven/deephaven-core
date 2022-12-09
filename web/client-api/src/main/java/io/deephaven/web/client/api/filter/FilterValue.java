@@ -178,6 +178,7 @@ public class FilterValue {
 
     private FilterCondition makeContains(FilterValue term, double casesensitivity) {
         ContainsCondition contains = new ContainsCondition();
+        contains.setReference(this.descriptor.getReference());
         contains.setSearchString(term.descriptor.getLiteral().getStringValue());
         contains.setCaseSensitivity(casesensitivity);
 

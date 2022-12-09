@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TimeTable;
@@ -27,8 +28,12 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
     private final UpdateGraphProcessor updateGraphProcessor;
 
     @Inject()
-    public TimeTableGrpcImpl(final Scheduler scheduler, final UpdateGraphProcessor updateGraphProcessor) {
-        super(BatchTableRequest.Operation::getTimeTable, TimeTableRequest::getResultId);
+    public TimeTableGrpcImpl(
+            final TableServiceContextualAuthWiring authWiring,
+            final Scheduler scheduler,
+            final UpdateGraphProcessor updateGraphProcessor) {
+        super(authWiring::checkPermissionTimeTable, BatchTableRequest.Operation::getTimeTable,
+                TimeTableRequest::getResultId);
         this.scheduler = scheduler;
         this.updateGraphProcessor = updateGraphProcessor;
     }
@@ -43,7 +48,8 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
     }
 
     @Override
-    public Table create(final TimeTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final TimeTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
         final long startTime = request.getStartTimeNanos();
         final long periodValue = request.getPeriodNanos();

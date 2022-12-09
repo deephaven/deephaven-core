@@ -1,7 +1,12 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.ops;
 
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
+import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -13,6 +18,14 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> {
+
+    private SafeCloseable executionContext;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        executionContext = TestExecutionContext.createForUnitTests().open();
+    }
 
     @Override
     public ExportedTableCreationResponse send(WhereInRequest request) {

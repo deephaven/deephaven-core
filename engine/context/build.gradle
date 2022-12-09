@@ -10,6 +10,8 @@ configurations {
 }
 
 dependencies {
+    api project(':authentication')
+
     implementation project(':Configuration')
     implementation project(':DataStructures')
     implementation project(':log-factory')

@@ -1,0 +1,17 @@
+plugins {
+    id 'io.deephaven.project.register'
+    id 'java-library'
+}
+
+dependencies {
+
+    implementation project(':Base')
+    implementation depTrove3
+    compileOnlyApi depAnnotations
+    implementation depCommonsLang3
+
+    api 'io.deephaven:hash:0.1.0'
+
+    Classpaths.inheritJUnitClassic(project, 'implementation')
+    Classpaths.inheritJMock(project, 'implementation')
+}

@@ -1,6 +1,6 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.engine.context.TestExecutionContext
 import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.util.VariableProvider
@@ -37,7 +37,7 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
     private SafeCloseable executionContext;
 
     void setup() {
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     void cleanup() {
@@ -160,8 +160,8 @@ b = 2
 c = 3
 """
         String src2 = "t = "
-        p.update(uri, "0", [ makeChange(0, 0, src1) ])
-        p.update(uri, "1", [ makeChange(3, 0, src2) ])
+        p.update(uri, 0, [ makeChange(0, 0, src1) ])
+        p.update(uri, 1, [ makeChange(3, 0, src2) ])
         doc = p.finish(uri)
 
         VariableProvider variables = Mock(VariableProvider) {

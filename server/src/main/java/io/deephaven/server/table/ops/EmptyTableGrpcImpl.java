@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
@@ -21,8 +22,9 @@ import java.util.List;
 public class EmptyTableGrpcImpl extends GrpcTableOperation<EmptyTableRequest> {
 
     @Inject()
-    public EmptyTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getEmptyTable, EmptyTableRequest::getResultId);
+    public EmptyTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionEmptyTable, BatchTableRequest.Operation::getEmptyTable,
+                EmptyTableRequest::getResultId);
     }
 
     @Override
@@ -33,9 +35,9 @@ public class EmptyTableGrpcImpl extends GrpcTableOperation<EmptyTableRequest> {
     }
 
     @Override
-    public Table create(final EmptyTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final EmptyTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
-
         return TableTools.emptyTable(request.getSize());
     }
 }

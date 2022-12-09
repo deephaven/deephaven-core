@@ -5,8 +5,8 @@ package io.deephaven.client;
 
 import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
-import io.deephaven.test.junit4.EngineCleanup;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;

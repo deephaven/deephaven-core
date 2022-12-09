@@ -12,6 +12,7 @@ dependencies {
     api project(':engine-time')
     implementation project(':engine-function')
 
+    testImplementation project(':base-test-utils')
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
 }

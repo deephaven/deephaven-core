@@ -7,6 +7,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
@@ -60,22 +66,22 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
     public void testGrouping(final boolean immutableColumns, final Random random, final MutableInt numSteps) {
         int size = 100;
 
-        TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[3];
+        ColumnInfo[] columnInfo = new ColumnInfo[3];
         if (immutableColumns) {
             // noinspection unchecked
-            columnInfo[0] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-                    TstUtils.ColumnInfo.ColAttributes.Immutable);
+            columnInfo[0] = new ColumnInfo(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
+                    ColumnInfo.ColAttributes.Immutable);
             // noinspection unchecked
-            columnInfo[1] = new TstUtils.ColumnInfo(new TstUtils.IntGenerator(10, 100), "intCol",
-                    TstUtils.ColumnInfo.ColAttributes.Immutable);
+            columnInfo[1] = new ColumnInfo(new IntGenerator(10, 100), "intCol",
+                    ColumnInfo.ColAttributes.Immutable);
         } else {
             // noinspection unchecked
-            columnInfo[0] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym");
+            columnInfo[0] = new ColumnInfo(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym");
             // noinspection unchecked
-            columnInfo[1] = new TstUtils.ColumnInfo(new TstUtils.IntGenerator(10, 100), "intCol");
+            columnInfo[1] = new ColumnInfo(new IntGenerator(10, 100), "intCol");
         }
         // noinspection unchecked
-        columnInfo[2] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        columnInfo[2] = new ColumnInfo(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable queryTable = TstUtils.getTable(size, random, columnInfo);
         addGroupingValidator(queryTable, "queryTable");
@@ -180,18 +186,18 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         Random random = new Random(0);
         int size = 100;
 
-        TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[4];
+        ColumnInfo[] columnInfo = new ColumnInfo[4];
         // noinspection unchecked
-        columnInfo[0] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
+        columnInfo[0] = new ColumnInfo(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
         // noinspection unchecked
-        columnInfo[1] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("q", "r", "s", "t"), "Sym2",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
+        columnInfo[1] = new ColumnInfo(new SetGenerator<>("q", "r", "s", "t"), "Sym2",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
         // noinspection unchecked
-        columnInfo[2] = new TstUtils.ColumnInfo(new TstUtils.IntGenerator(10, 100), "intCol",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
+        columnInfo[2] = new ColumnInfo(new IntGenerator(10, 100), "intCol",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
         // noinspection unchecked
-        columnInfo[3] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        columnInfo[3] = new ColumnInfo(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable nonCountingTable = TstUtils.getTable(size, random, columnInfo);
 
@@ -279,18 +285,18 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         Random random = new Random(0);
         int size = 100;
 
-        TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[4];
+        ColumnInfo[] columnInfo = new ColumnInfo[4];
         // noinspection unchecked
-        columnInfo[0] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
+        columnInfo[0] = new ColumnInfo(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
         // noinspection unchecked
-        columnInfo[1] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("q", "r", "s", "t", "u", "v"), "Sym2",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
+        columnInfo[1] = new ColumnInfo(new SetGenerator<>("q", "r", "s", "t", "u", "v"), "Sym2",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
         // noinspection unchecked
-        columnInfo[2] = new TstUtils.ColumnInfo(new TstUtils.IntGenerator(10, 100), "intCol",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
+        columnInfo[2] = new ColumnInfo(new IntGenerator(10, 100), "intCol",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
         // noinspection unchecked
-        columnInfo[3] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        columnInfo[3] = new ColumnInfo(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable nonCountingTable = TstUtils.getTable(size, random, columnInfo);
 

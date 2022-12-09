@@ -4,19 +4,18 @@
 package io.deephaven.plot.datasets.errorbar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesInternal;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
 

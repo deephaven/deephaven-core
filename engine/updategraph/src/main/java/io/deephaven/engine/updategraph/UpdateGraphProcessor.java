@@ -575,16 +575,16 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     private void assertLockAvailable(@NotNull final String action) {
-        if (!UpdateGraphProcessor.DEFAULT.exclusiveLock().tryLock()) {
+        final AwareFunctionalLock exclusiveLock = UpdateGraphProcessor.DEFAULT.exclusiveLock();
+        if (!exclusiveLock.tryLock()) {
             log.error().append("Lock is held when ").append(action).append(", with previous holder: ")
                     .append(unitTestModeHolder).endl();
             ThreadDump.threadDump(System.err);
-            UpdateGraphLock.DebugAwareFunctionalLock lock =
-                    (UpdateGraphLock.DebugAwareFunctionalLock) UpdateGraphProcessor.DEFAULT.exclusiveLock();
+            UpdateGraphLock.DebugAwareFunctionalLock lock = (UpdateGraphLock.DebugAwareFunctionalLock) exclusiveLock;
             throw new IllegalStateException(
                     "Lock is held when " + action + ", with previous holder: " + lock.getDebugMessage());
         }
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().unlock();
+        exclusiveLock.unlock();
     }
 
     /**

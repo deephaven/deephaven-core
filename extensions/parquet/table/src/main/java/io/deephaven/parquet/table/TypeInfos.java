@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.Externalizable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -34,7 +35,6 @@ import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
  * and the data translation.
  */
 class TypeInfos {
-
     private static final TypeInfo[] TYPE_INFOS = new TypeInfo[] {
             IntType.INSTANCE,
             LongType.INSTANCE,
@@ -45,15 +45,16 @@ class TypeInfos {
             CharType.INSTANCE,
             ByteType.INSTANCE,
             StringType.INSTANCE,
-            DateTimeType.INSTANCE
+            DateTimeType.INSTANCE,
+            BigIntegerType.INSTANCE
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
 
     static {
         final Map<Class<?>, TypeInfo> fa = new HashMap<>();
-        for (TypeInfo typeInfo : TYPE_INFOS) {
-            for (Class<?> type : typeInfo.getTypes()) {
+        for (final TypeInfo typeInfo : TYPE_INFOS) {
+            for (final Class<?> type : typeInfo.getTypes()) {
                 fa.put(type, typeInfo);
             }
         }
@@ -95,6 +96,7 @@ class TypeInfos {
         if (!CodecLookup.codecRequired(columnDefinition)) {
             return null;
         }
+
         // Impute an appropriate codec for the data type
         final Class<?> dataType = columnDefinition.getDataType();
         if (Externalizable.class.isAssignableFrom(dataType)) {
@@ -362,6 +364,28 @@ class TypeInfos {
             }
             return type(PrimitiveTypeName.INT64, required, repeating)
                     .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
+        }
+    }
+
+    /**
+     * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
+     * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
+     * wrote this as a decimal, so we can properly decode it back to BigInteger.
+     */
+    private enum BigIntegerType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(BigInteger.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            return type(PrimitiveTypeName.BINARY, required, repeating)
+                    .as(LogicalTypeAnnotation.decimalType(0, 1));
         }
     }
 

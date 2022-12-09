@@ -13,33 +13,33 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.locations.GroupingProvider;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.vector.*;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.select.WhereFilterFactory;
-import io.deephaven.time.DateTime;
-import io.deephaven.parquet.table.ParquetTools;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
@@ -62,8 +62,8 @@ import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -78,7 +78,7 @@ import static org.junit.Assert.assertArrayEquals;
 @Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
     public void testStupidCast() {
-        QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking());
+        QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking());
         // noinspection UnusedAssignment
         table = (QueryTable) table.select("x =1.2", "x=(int)x");
     }
@@ -361,7 +361,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(Arrays.asList(2, 4, 6), Arrays.asList(table.getColumn("x").get(0, table.size())));
         assertEquals(Arrays.asList(-1, 1, 3), Arrays.asList(table.getColumn("t").get(0, table.size())));
 
-        final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+        final QueryTable table1 = testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table2 = (QueryTable) table1.updateView("z = x", "x = z + 1", "t = x - 3");
         final ShiftObliviousListener table2Listener = newListenerWithGlobals(table2);
@@ -392,7 +392,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(removed, i());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.removeRows(table1, i(2, 6, 7));
+            removeRows(table1, i(2, 6, 7));
             table1.notifyListeners(i(), i(2, 6, 7), i());
         });
 
@@ -405,7 +405,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(modified, i());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.removeRows(table1, i(9));
+            removeRows(table1, i(9));
             addToTable(table1, i(2, 4, 6), c("x", 1, 22, 3), c("y", 'a', 'x', 'c'));
             table1.notifyListeners(i(2, 6), i(9), i(4));
         });
@@ -418,7 +418,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(removed, i(9));
         assertEquals(modified, i(4));
 
-        final QueryTable table3 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+        final QueryTable table3 = testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table4 = (QueryTable) table3.view("z = x", "x = z + 1", "t = x - 3");
         final ShiftObliviousListener table4Listener = newListenerWithGlobals(table4);
@@ -452,7 +452,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(removed, i());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.removeRows(table3, i(2, 6, 7));
+            removeRows(table3, i(2, 6, 7));
             table3.notifyListeners(i(), i(2, 6, 7), i());
         });
 
@@ -466,7 +466,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.removeRows(table3, i(9));
+            removeRows(table3, i(9));
             addToTable(table3, i(2, 4, 6), c("x", 1, 22, 3), c("y", 'a', 'x', 'c'));
             table3.notifyListeners(i(2, 6), i(9), i(4));
         });
@@ -729,12 +729,12 @@ public class QueryTableTest extends QueryTableTestBase {
         final Random random = new Random(0);
 
         final int size = 100;
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.renameColumns(List.of())),
@@ -1009,7 +1009,7 @@ public class QueryTableTest extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ColumnHolder[] columnAdditions =
                     new ColumnHolder[] {c("Ticker", "SPY", "VXX"), c("Timestamp", 60L, 70L)};
-            TstUtils.addToTable(table, i(2048, 2049), columnAdditions);
+            addToTable(table, i(2048, 2049), columnAdditions);
             table.notifyListeners(i(2048, 2049), i(), i());
         });
 
@@ -1078,7 +1078,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ColumnHolder[] columnAdditions = new ColumnHolder[] {c("Timestamp", 2048L, 2049L)};
-            TstUtils.addToTable(table, i(2048, 2049), columnAdditions);
+            addToTable(table, i(2048, 2049), columnAdditions);
             table.notifyListeners(i(2048, 2049), i(), i());
         });
 
@@ -1087,7 +1087,7 @@ public class QueryTableTest extends QueryTableTestBase {
         checkReverse(table, reversed, "Timestamp");
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.removeRows(table, i(1, 2048, 2049));
+            removeRows(table, i(1, 2048, 2049));
             table.notifyListeners(i(), i(1, 2048, 2049), i());
         });
 
@@ -1095,7 +1095,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ColumnHolder[] columnAdditions = new ColumnHolder[] {c("Timestamp", 8192L)};
-            TstUtils.addToTable(table, i(8192L), columnAdditions);
+            addToTable(table, i(8192L), columnAdditions);
             table.notifyListeners(i(8192L), i(), i());
         });
 
@@ -1160,8 +1160,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
             try (final WritableRowSet rowSetCopy = table.getRowSet().copy()) {
                 downstream.shifted().apply(rowSetCopy);
-                TstUtils.removeRows(table, table.getRowSet());
-                TstUtils.addToTable(table, rowSetCopy, c("Sentinel", 1));
+                removeRows(table, table.getRowSet());
+                addToTable(table, rowSetCopy, c("Sentinel", 1));
             }
 
             table.notifyListeners(downstream);
@@ -1813,17 +1813,16 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testWhereInScope() {
-        final Table toBeFiltered = TstUtils.testRefreshingTable(
+        final Table toBeFiltered = testRefreshingTable(
                 TableTools.col("Key", "A", "B", "C", "D", "E"),
                 TableTools.intCol("Value", 1, 2, 3, 4, 5));
 
         // The setScope will own the set table. rc == 1
         final SafeCloseable setScope = LivenessScopeStack.open();
-        final QueryTable setTable = TstUtils.testRefreshingTable(TableTools.stringCol("Key"));
+        final QueryTable setTable = testRefreshingTable(TableTools.stringCol("Key"));
 
         // Owned by setScope, rc == 1
-        // It will also manage setTable whose rc == 3 after (1 ShiftObliviousSwapListener, one
-        // ShiftObliviousListenerImpl from groupBy)
+        // It will also manage setTable whose rc == 3 after (1 SwapListener, 1 SwapListener from groupBy)
         final Table whereIn = toBeFiltered.whereIn(setTable, "Key");
 
         // Manage it rcs == (2,3)
@@ -1835,7 +1834,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(0, whereIn.size());
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        TstUtils.addToTable(setTable, i(0), c("Key", "B"));
+        addToTable(setTable, i(0), c("Key", "B"));
         setTable.notifyListeners(i(0), i(), i());
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
@@ -1849,7 +1848,7 @@ public class QueryTableTest extends QueryTableTestBase {
         setTable.dropReference();
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        TstUtils.addToTable(setTable, i(1), c("Key", "D"));
+        addToTable(setTable, i(1), c("Key", "D"));
         setTable.notifyListeners(i(1), i(), i());
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
@@ -2106,7 +2105,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         for (int ii = 0; ii < columnAdditions.length; ii++) {
                             columnAdditions[ii] = stampInfo[ii].populateMapAndC(stampsToAdd, random);
                         }
-                        TstUtils.addToTable(stampTable, stampsToAdd, columnAdditions);
+                        addToTable(stampTable, stampsToAdd, columnAdditions);
                         stampTable.notifyListeners(stampsToAdd, RowSetFactory.empty(),
                                 RowSetFactory.empty());
                     }
@@ -2191,7 +2190,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     static void testLegacyFlattenModifications(io.deephaven.base.Function.Unary<QueryTable, QueryTable> function) {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable queryTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.call(queryTable);
@@ -2204,7 +2203,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
-            TstUtils.removeRows(queryTable, i(2));
+            removeRows(queryTable, i(2));
             final TableUpdateImpl update = newUpdate.get();
             update.added = i(3);
             update.removed = i(2);
@@ -2281,7 +2280,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     static void testShiftingModifications(io.deephaven.base.Function.Unary<QueryTable, QueryTable> function) {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+        final QueryTable queryTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.call(queryTable);
@@ -2294,7 +2293,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
-            TstUtils.removeRows(queryTable, i(2));
+            removeRows(queryTable, i(2));
             final TableUpdateImpl update = newUpdate.get();
             update.added = i(3);
             update.removed = i(2);
@@ -2371,7 +2370,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testDateTimeColumns() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(
+        final QueryTable queryTable = testRefreshingTable(
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("Timestamp", DateTimeUtils.currentTime(),
                         DateTimeUtils.currentTime(),
@@ -2724,9 +2723,9 @@ public class QueryTableTest extends QueryTableTestBase {
     @SuppressWarnings("RedundantCast")
     public void testUngroupJoined_IDS6311() throws IOException, ClassNotFoundException {
         final QueryTable left =
-                TstUtils.testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'), intCol("Value", 0, 1, 2, 3));
+                testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'), intCol("Value", 0, 1, 2, 3));
 
-        final QueryTable right = TstUtils.testRefreshingTable(c("Letter", '0', 'b'),
+        final QueryTable right = testRefreshingTable(c("Letter", '0', 'b'),
                 byteCol("BValue", (byte) 0, (byte) 1),
                 shortCol("SValue", (short) 0, (short) 1),
                 intCol("EulavI", 0, 1),
@@ -2743,7 +2742,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table joined = leftBy.naturalJoin(rightBy, "Letter")
                 .updateView("BValue = ((i%2) == 0) ? null : BValue");
 
-        QueryTable expected = TstUtils.testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'),
+        QueryTable expected = testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'),
                 c("Value", (IntVector) new IntVectorDirect(0), (IntVector) new IntVectorDirect(1),
                         (IntVector) new IntVectorDirect(2), (IntVector) new IntVectorDirect(3)),
                 c("BValue", null, (ByteVector) new ByteVectorDirect((byte) 1), null, null),
@@ -2761,7 +2760,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final Table ungrouped = joined.ungroup(true);
 
-        expected = TstUtils.testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'),
+        expected = testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'),
                 c("Value", 0, 1, 2, 3),
                 byteCol("BValue", io.deephaven.util.QueryConstants.NULL_BYTE, (byte) 1,
                         io.deephaven.util.QueryConstants.NULL_BYTE, io.deephaven.util.QueryConstants.NULL_BYTE),
@@ -3134,7 +3133,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // assertion error when notifying from an uncoalesced table.
 
         final TrackingWritableRowSet parentRowSet = RowSetFactory.empty().toTracking();
-        final Supplier<QueryTable> supplier = () -> TstUtils.testRefreshingTable(parentRowSet);
+        final Supplier<QueryTable> supplier = () -> testRefreshingTable(parentRowSet);
 
         final UncoalescedTable table = new UncoalescedTable(
                 supplier.get().getDefinition(),
@@ -3165,7 +3164,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateEmptyUpdate() {
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
+        final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
         final TableUpdateImpl update = new TableUpdateImpl();
         update.added = i();
         update.removed = i();
@@ -3178,14 +3177,14 @@ public class QueryTableTest extends QueryTableTestBase {
         src.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added());
+            addToTable(src, update.added());
             src.notifyListeners(update);
         });
         Assert.assertNull(update.added());
     }
 
     public void testNotifyListenersReleasesUpdateNoListeners() {
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
+        final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
         final TableUpdateImpl update = new TableUpdateImpl();
         update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
         update.removed = i();
@@ -3194,14 +3193,14 @@ public class QueryTableTest extends QueryTableTestBase {
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added());
+            addToTable(src, update.added());
             src.notifyListeners(update);
         });
         Assert.assertNull(update.added());
     }
 
     public void testNotifyListenersReleasesUpdateChildListener() {
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
+        final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
         final TableUpdateImpl update = new TableUpdateImpl();
         update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
         update.removed = i();
@@ -3214,14 +3213,14 @@ public class QueryTableTest extends QueryTableTestBase {
         src.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added());
+            addToTable(src, update.added());
             src.notifyListeners(update);
         });
         Assert.assertNull(update.added());
     }
 
     public void testNotifyListenersReleasesUpdateShiftAwareChildListener() {
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
+        final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
         final TableUpdateImpl update = new TableUpdateImpl();
         update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
         update.removed = i();
@@ -3235,7 +3234,7 @@ public class QueryTableTest extends QueryTableTestBase {
         src.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added());
+            addToTable(src, update.added());
             src.notifyListeners(update);
         });
         listener.close(); // we typically grab and ref-count this for testing
@@ -3254,7 +3253,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // row set
         //
         final Table t0 = newTable(byteCol("Q", (byte) 0));
-        final QueryTable t1 = TstUtils.testRefreshingTable(i().toTracking(), intCol("T"));
+        final QueryTable t1 = testRefreshingTable(i().toTracking(), intCol("T"));
         final Table t2 = t1.view("Q=(byte)(i%2)");
         final Table result = merge(t0, t2).tail(1).view("Q=Q*i").sumBy();
         int i = 1;

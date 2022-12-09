@@ -6,9 +6,12 @@ package io.deephaven.server.table;
 import dagger.Binds;
 import dagger.MapKey;
 import dagger.Module;
+import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.table.ops.AggregateAllGrpcImpl;
 import io.deephaven.server.table.ops.AggregateGrpcImpl;
 import io.deephaven.server.table.ops.ApplyPreviewColumnsGrpcImpl;
@@ -45,6 +48,11 @@ import io.grpc.BindableService;
 
 @Module
 public interface TableModule {
+    @Provides
+    static TableServiceContextualAuthWiring provideAuthWiring(AuthorizationProvider authProvider) {
+        return authProvider.getTableServiceContextualAuthWiring();
+    }
+
     @Binds
     @IntoSet
     BindableService bindTableServiceGrpcImpl(TableServiceGrpcImpl tableService);

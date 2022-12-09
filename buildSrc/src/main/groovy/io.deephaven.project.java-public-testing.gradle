@@ -1,0 +1,15 @@
+import io.deephaven.project.util.JavaDependencies
+
+plugins {
+    id 'io.deephaven.common-conventions'
+    id 'io.deephaven.java-common-conventions'
+    id 'io.deephaven.java-test-conventions'
+    id 'io.deephaven.java-coding-conventions'
+    id 'io.deephaven.java-publishing-conventions'
+    id 'io.deephaven.default-description'
+}
+
+def quickTask = project.tasks.getByName('quick')
+
+// We need to make sure that all JAVA_PUBLIC_TESTING dependencies are public
+quickTask.dependsOn JavaDependencies.verifyRuntimeClasspathIsPublicTask(project)

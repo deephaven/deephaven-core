@@ -62,6 +62,9 @@ setup(
         # TODO(deephaven-core#3082): Remove numba dependency workarounds
         'numba; python_version < "3.11"',
     ],
+    extras_require={
+        "autocomplete": ["jedi==0.18.2"],
+    },
     entry_points={
         'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']
     }

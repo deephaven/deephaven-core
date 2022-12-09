@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import io.deephaven.api.JoinMatch;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -29,8 +30,11 @@ public class WhereInGrpcImpl extends GrpcTableOperation<WhereInRequest> {
     private final UpdateGraphProcessor updateGraphProcessor;
 
     @Inject
-    public WhereInGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
-        super(BatchTableRequest.Operation::getWhereIn, WhereInRequest::getResultId, WhereInGrpcImpl::refs);
+    public WhereInGrpcImpl(
+            final TableServiceContextualAuthWiring authWiring,
+            final UpdateGraphProcessor updateGraphProcessor) {
+        super(authWiring::checkPermissionWhereIn, BatchTableRequest.Operation::getWhereIn,
+                WhereInRequest::getResultId, WhereInGrpcImpl::refs);
         this.updateGraphProcessor = Objects.requireNonNull(updateGraphProcessor);
     }
 

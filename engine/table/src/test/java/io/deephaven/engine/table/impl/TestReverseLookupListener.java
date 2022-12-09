@@ -4,6 +4,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.UniqueIntGenerator;
+import io.deephaven.engine.testutil.generator.UniqueStringGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
@@ -17,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class TestReverseLookupListener extends RefreshingTableTestCase {
     public void testSimple() {
@@ -146,11 +152,11 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
         for (int i = 0; i < 10; i++) {
             final Random random = new Random(i == 0 ? 0 : System.currentTimeMillis());
 
-            final TstUtils.ColumnInfo[] columnInfo;
+            final ColumnInfo[] columnInfo;
             final int size = 100;
             final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"C1", "C2"},
-                    new TstUtils.UniqueStringGenerator(),
-                    new TstUtils.UniqueIntGenerator(1, 1000)));
+                    new UniqueStringGenerator(),
+                    new UniqueIntGenerator(1, 1000)));
 
             final EvalNuggetInterface en[] = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> new EvalNuggetInterface[] {
