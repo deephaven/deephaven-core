@@ -6,12 +6,12 @@ package io.deephaven.server.table.ops;
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.context.TestExecutionContext;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.Status.Code;
 import org.junit.Test;
 

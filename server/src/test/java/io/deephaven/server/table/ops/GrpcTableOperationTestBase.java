@@ -1,7 +1,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.protobuf.Message;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
@@ -29,7 +29,7 @@ public abstract class GrpcTableOperationTestBase<Request extends Message>
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
         exports = new ArrayList<>();
     }
 
