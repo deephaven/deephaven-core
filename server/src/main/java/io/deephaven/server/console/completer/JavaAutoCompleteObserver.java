@@ -20,7 +20,9 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -34,11 +36,12 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
         implements StreamObserver<AutoCompleteRequest> {
 
     private static final Logger log = LoggerFactory.getLogger(JavaAutoCompleteObserver.class);
+    /** Track parsers by their session state, to ensure each session has its own, singleton, parser */
+    private static final Map<SessionState, CompletionParser> parsers = Collections.synchronizedMap(new WeakHashMap<>());
+
     private final CompletionParser parser;
 
-    private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
-
-    private CompletionParser ensureParserForSession(SessionState session) {
+    private static CompletionParser ensureParserForSession(SessionState session) {
         return parsers.computeIfAbsent(session, s -> {
             CompletionParser parser = new CompletionParser();
             s.addOnCloseCallback(() -> {
@@ -166,7 +169,7 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
 
     @Override
     public void onCompleted() {
-        // just hang up too, browser will reconnect if interested
+        // just hang up too, browser will reconnect if interested, and we'll maintain state if the session isn't gc'd
         safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
     }
 }
