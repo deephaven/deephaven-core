@@ -10,6 +10,8 @@ package io.deephaven.auth.codegen.impl;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.engine.table.Table;
+import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
+import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
@@ -365,6 +367,28 @@ public interface TableServiceContextualAuthWiring {
             List<Table> sourceTables);
 
     /**
+     * Authorize a request to AggregateAll.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke AggregateAll
+     */
+    void checkPermissionAggregateAll(AuthContext authContext, AggregateAllRequest request,
+            List<Table> sourceTables);
+
+    /**
+     * Authorize a request to Aggregate.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke Aggregate
+     */
+    void checkPermissionAggregate(AuthContext authContext, AggregateRequest request,
+            List<Table> sourceTables);
+
+    /**
      * Authorize a request to Snapshot.
      *
      * @param authContext the authentication context of the request
@@ -517,6 +541,12 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionComboAggregate(AuthContext authContext,
                 ComboAggregateRequest request, List<Table> sourceTables) {}
+
+        public void checkPermissionAggregateAll(AuthContext authContext, AggregateAllRequest request,
+                List<Table> sourceTables) {}
+
+        public void checkPermissionAggregate(AuthContext authContext, AggregateRequest request,
+                List<Table> sourceTables) {}
 
         public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
                 List<Table> sourceTables) {}
@@ -680,6 +710,16 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionComboAggregate(AuthContext authContext,
                 ComboAggregateRequest request, List<Table> sourceTables) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
+        public void checkPermissionAggregateAll(AuthContext authContext, AggregateAllRequest request,
+                List<Table> sourceTables) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
+        public void checkPermissionAggregate(AuthContext authContext, AggregateRequest request,
+                List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
@@ -917,6 +957,20 @@ public interface TableServiceContextualAuthWiring {
                 ComboAggregateRequest request, List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionComboAggregate(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionAggregateAll(AuthContext authContext, AggregateAllRequest request,
+                List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionAggregateAll(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionAggregate(AuthContext authContext, AggregateRequest request,
+                List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionAggregate(authContext, request, sourceTables);
             }
         }
 

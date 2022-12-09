@@ -1,6 +1,7 @@
 package io.deephaven.server.table.ops;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
@@ -23,8 +24,12 @@ public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest
     }
 
     @Inject
-    public AggregateGrpcImpl() {
-        super(BatchTableRequest.Operation::getAggregate, AggregateRequest::getResultId, AggregateGrpcImpl::refs);
+    public AggregateGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(
+                authWiring::checkPermissionAggregate,
+                BatchTableRequest.Operation::getAggregate,
+                AggregateRequest::getResultId,
+                AggregateGrpcImpl::refs);
     }
 
     @Override

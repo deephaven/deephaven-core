@@ -1,6 +1,7 @@
 package io.deephaven.server.table.ops;
 
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
@@ -17,8 +18,11 @@ import java.util.List;
 public final class AggregateAllGrpcImpl extends GrpcTableOperation<AggregateAllRequest> {
 
     @Inject
-    public AggregateAllGrpcImpl() {
-        super(BatchTableRequest.Operation::getAggregateAll, AggregateAllRequest::getResultId,
+    public AggregateAllGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(
+                authWiring::checkPermissionAggregateAll,
+                BatchTableRequest.Operation::getAggregateAll,
+                AggregateAllRequest::getResultId,
                 AggregateAllRequest::getSourceId);
     }
 
