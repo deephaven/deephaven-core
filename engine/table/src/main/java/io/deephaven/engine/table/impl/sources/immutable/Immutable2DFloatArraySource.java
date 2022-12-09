@@ -38,7 +38,7 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  *
  * If your size is smaller than the maximum array size, prefer {@link ImmutableFloatArraySource}.
  */
-public class Immutable2DFloatArraySource extends AbstractDeferredGroupingColumnSource<Float> implements ImmutableColumnSourceGetDefaults.ForFloat, WritableColumnSource<Float>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class Immutable2DFloatArraySource extends AbstractDeferredGroupingColumnSource<Float> implements ImmutableColumnSourceGetDefaults.ForFloat, WritableColumnSource<Float>, FillUnordered<Values>, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;
     private final long segmentShift;
     private final int segmentMask;

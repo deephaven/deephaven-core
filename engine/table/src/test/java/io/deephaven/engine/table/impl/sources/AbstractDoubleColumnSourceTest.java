@@ -216,7 +216,8 @@ public abstract class AbstractDoubleColumnSourceTest {
 
     private void checkRandomFillUnordered(WritableColumnSource<Double> source, ColumnSource.FillContext fillContext,
                                           WritableDoubleChunk dest, double[] expectations, LongChunk<RowKeys> keys, boolean usePrev) {
-        final FillUnordered fillUnordered = (FillUnordered)source;
+        //noinspection unchecked
+        final FillUnordered<Values> fillUnordered = (FillUnordered<Values>)source;
         if (usePrev) {
             fillUnordered.fillChunkUnordered(fillContext, dest, keys);
         } else {

@@ -430,7 +430,8 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
         if (ascendingMapping) {
             effectiveContext.doOrderedFillAscending(innerSource, usePrev, destination);
         } else if (innerSource instanceof FillUnordered) {
-            effectiveContext.doUnorderedFill((FillUnordered) innerSource, usePrev, destination);
+            //noinspection unchecked
+            effectiveContext.doUnorderedFill((FillUnordered<Values>) innerSource, usePrev, destination);
         } else {
             effectiveContext.doOrderedFillAndPermute(innerSource, usePrev, destination);
         }
@@ -658,7 +659,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
             }
         }
 
-        private void doUnorderedFill(@NotNull final FillUnordered innerSource, final boolean usePrev,
+        private void doUnorderedFill(@NotNull final FillUnordered<Values> innerSource, final boolean usePrev,
                 @NotNull final WritableChunk<? super Values> destination) {
             if (usePrev) {
                 innerSource.fillPrevChunkUnordered(innerFillContext, destination, shareable.mappedKeys);

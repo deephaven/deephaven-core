@@ -1843,7 +1843,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     for (long[] addedMapping : info.addedMappings) {
                         final WritableChunk<Values> chunk = adds.chunkType.makeWritableChunk(addedMapping.length);
                         try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(addedMapping.length)) {
-                            ((FillUnordered) deltaColumn).fillChunkUnordered(fc, chunk,
+                            //noinspection unchecked
+                            ((FillUnordered<Values>) deltaColumn).fillChunkUnordered(fc, chunk,
                                     LongChunk.chunkWrap(addedMapping));
                         }
                         adds.data.add(chunk);
@@ -1869,7 +1870,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     for (long[] modifiedMapping : info.modifiedMappings) {
                         final WritableChunk<Values> chunk = mods.chunkType.makeWritableChunk(modifiedMapping.length);
                         try (final ChunkSource.FillContext fc = sourceColumn.makeFillContext(modifiedMapping.length)) {
-                            ((FillUnordered) sourceColumn).fillChunkUnordered(fc, chunk,
+                            //noinspection unchecked
+                            ((FillUnordered<Values>) sourceColumn).fillChunkUnordered(fc, chunk,
                                     LongChunk.chunkWrap(modifiedMapping));
                         }
                         mods.data.add(chunk);

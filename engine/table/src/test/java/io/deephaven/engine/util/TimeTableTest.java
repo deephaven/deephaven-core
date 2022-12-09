@@ -266,9 +266,11 @@ public class TimeTableTest extends RefreshingTableTestCase {
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
 
-        final FillUnordered fillDtColumn = (FillUnordered) dtColumn;
+        //noinspection unchecked
+        final FillUnordered<Values> fillDtColumn = (FillUnordered<Values>) dtColumn;
         Assert.assertTrue(fillDtColumn.providesFillUnordered());
-        final FillUnordered fillLongColumn = (FillUnordered) column;
+        //noinspection unchecked
+        final FillUnordered<Values> fillLongColumn = (FillUnordered<Values>) column;
         Assert.assertTrue(fillLongColumn.providesFillUnordered());
 
         try (final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(10)) {

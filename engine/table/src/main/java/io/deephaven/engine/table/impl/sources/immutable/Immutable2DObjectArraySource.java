@@ -37,7 +37,7 @@ import java.util.Arrays;
  *
  * If your size is smaller than the maximum array size, prefer {@link ImmutableObjectArraySource}.
  */
-public class Immutable2DObjectArraySource<T> extends AbstractDeferredGroupingColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class Immutable2DObjectArraySource<T> extends AbstractDeferredGroupingColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered<Values>, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;
     private final long segmentShift;
     private final int segmentMask;

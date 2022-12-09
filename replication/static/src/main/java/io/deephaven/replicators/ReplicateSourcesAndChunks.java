@@ -737,7 +737,7 @@ public class ReplicateSourcesAndChunks {
                 "        return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);",
                 "    }",
                 "",
-                "    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {",
+                "    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered<Values>, WritableColumnSource<Byte> {",
                 "        private final BooleanSparseArraySource wrapped;",
                 "",
                 "        private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {",

@@ -42,7 +42,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  *
  * If your size is smaller than the maximum array size, prefer {@link ImmutableLongArraySource}.
  */
-public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, WritableColumnSource<Long>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, WritableColumnSource<Long>, FillUnordered<Values>, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;
     private final long segmentShift;
     private final int segmentMask;
