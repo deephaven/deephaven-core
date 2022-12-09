@@ -3,10 +3,9 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,16 +55,15 @@ public class WritableSingleValueRowRedirection extends SingleValueRowRedirection
         return "SingleValueRowRedirectionImpl{" + value + "}";
     }
 
-
     @Override
     public void fillPrevChunk(
-            @NotNull ChunkSource.FillContext fillContext,
-            @NotNull WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull FillContext fillContext,
+            @NotNull WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull RowSequence outerRowKeys) {
         final long fillValue =
                 (updatedClockTick > 0 && updatedClockTick == LogicalClock.DEFAULT.currentStep()) ? prevValue : value;
         final int sz = outerRowKeys.intSize();
         innerRowKeys.setSize(sz);
-        innerRowKeys.fillWithValue(0, sz, fillValue);
+        innerRowKeys.asWritableLongChunk().fillWithValue(0, sz, fillValue);
     }
 }

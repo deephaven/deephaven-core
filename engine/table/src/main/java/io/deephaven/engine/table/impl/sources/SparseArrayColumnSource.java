@@ -429,11 +429,9 @@ public abstract class SparseArrayColumnSource<T>
     abstract void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keyIndices);
 
-    private static final FillFromContext FILL_FROM_CONTEXT_INSTANCE = new FillFromContext() {};
-
     @Override
     public FillFromContext makeFillFromContext(int chunkCapacity) {
-        return FILL_FROM_CONTEXT_INSTANCE;
+        return DEFAULT_FILL_FROM_INSTANCE;
     }
 
     @Override

@@ -3,9 +3,10 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.ResettableWritableLongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSet;
@@ -15,13 +16,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 /**
- * The GroupedWritableRowRedirection is intended for situations where you have several Indices that represent contiguous
- * rows of your output table and a flat output RowSet.
- *
+ * The GroupedWritableRowRedirection is intended for situations where you have several row sets that represent
+ * contiguous rows of your output table and a flat output RowSet.
+ * <p>
  * When sorting a table by its grouping column, instead of using a large contiguous WritableRowRedirection, we simply
  * store the row sets for each group and the accumulated cardinality. We then binary search in the accumulated
  * cardinality for a given key; and fetch the corresponding offset from that group's row set.
- *
+ * <p>
  * This WritableRowRedirection does not support mutation.
  */
 public class GroupedWritableRowRedirection implements WritableRowRedirection {
@@ -104,12 +105,15 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
     }
 
     @Override
-    public void fillChunk(@NotNull ChunkSource.FillContext fillContext,
-            @NotNull WritableLongChunk<? extends RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
+    public void fillChunk(
+            @NotNull FillContext fillContext,
+            @NotNull WritableChunk<? super RowKeys> innerRowKeys,
+            @NotNull RowSequence outerRowKeys) {
         final MutableInt outputPosition = new MutableInt(0);
         final MutableInt lastSlot = new MutableInt(0);
-        innerRowKeys.setSize(outerRowKeys.intSize());
-        try (final ResettableWritableLongChunk<RowKeys> resettableKeys =
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        innerRowKeysTyped.setSize(outerRowKeys.intSize());
+        try (final ResettableWritableLongChunk<Any> resettableKeys =
                 ResettableWritableLongChunk.makeResettableChunk()) {
             outerRowKeys.forAllRowKeyRanges((begin, end) -> {
                 while (begin <= end) {
@@ -130,8 +134,10 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
                     final long size = end - begin + 1;
                     final int groupSize;
 
-                    final WritableLongChunk<? extends RowKeys> chunkToFill = resettableKeys.resetFromTypedChunk(
-                            innerRowKeys, outputPosition.intValue(), innerRowKeys.size() - outputPosition.intValue());
+                    final WritableLongChunk<? super RowKeys> chunkToFill = resettableKeys.resetFromTypedChunk(
+                            innerRowKeysTyped,
+                            outputPosition.intValue(),
+                            innerRowKeysTyped.size() - outputPosition.intValue());
                     if (beginKeyWithOffset > 0 || (beginKeyWithOffset + size < groups[slot].size())) {
                         try (RowSequence rowSequenceByPosition =
                                 groups[slot].getRowSequenceByPosition(beginKeyWithOffset, size)) {
@@ -151,8 +157,8 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
     }
 
     @Override
-    public void fillPrevChunk(@NotNull ChunkSource.FillContext fillContext,
-            @NotNull WritableLongChunk<? extends RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
+    public void fillPrevChunk(@NotNull FillContext fillContext,
+                              @NotNull WritableChunk<? super RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
         fillChunk(fillContext, innerRowKeys, outerRowKeys);
     }
 
