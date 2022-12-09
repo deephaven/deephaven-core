@@ -73,10 +73,24 @@ public class SortedColumnsAttribute {
      * @param columnName the column to update
      * @param order the order that the column is sorted in
      */
-    public static void setOrderForColumn(Table table, String columnName, SortingOrder order) {
+    public static void setOrderForColumn(BaseTable table, String columnName, SortingOrder order) {
         final String oldAttribute = (String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE);
         final String newAttribute = setOrderForColumn(oldAttribute, columnName, order);
         table.setAttribute(Table.SORTED_COLUMNS_ATTRIBUTE, newAttribute);
+    }
+
+    /**
+     * Ensure that the result table is marked as sorted by the given column.
+     *
+     * @param table the table to update
+     * @param columnName the column to update
+     * @param order the order that the column is sorted in
+     * @return {@code table}, or a copy of it with the necessary attribute set
+     */
+    public static Table withOrderForColumn(Table table, String columnName, SortingOrder order) {
+        final String oldAttribute = (String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE);
+        final String newAttribute = setOrderForColumn(oldAttribute, columnName, order);
+        return table.withAttributes(Map.of(Table.SORTED_COLUMNS_ATTRIBUTE, newAttribute));
     }
 
     private static Map<String, SortingOrder> stringToMap(String attribute, boolean writable) {
