@@ -32,6 +32,19 @@ public abstract class AggSpecUnique extends AggSpecBase {
     }
 
     /**
+     * Equivalent to {@code of(includeNulls, AnnotatedObject.from(nonUniqueSentinel))}.
+     *
+     * @param includeNulls Whether {@code null} is treated as a value for determining if the values in a group are
+     *        unique
+     * @param nonUniqueSentinel Sentinel value to use if a group contains more than a single unique value
+     * @return The "unique" aggregation specification
+     * @see AnnotatedObject#from(Object)
+     */
+    public static AggSpecUnique of(boolean includeNulls, Object nonUniqueSentinel) {
+        return of(includeNulls, AnnotatedObject.from(nonUniqueSentinel));
+    }
+
+    /**
      * Specify a "unique" aggregation that optionally treats {@code null} as a value for purposes of determining if the
      * values in a group are unique. If a group is non-empty but contains only {@code null} values, its result will be
      * {@code null}. If a group contains more than a single unique value, its result will be {@code nonUniqueSentinel}.
@@ -41,7 +54,7 @@ public abstract class AggSpecUnique extends AggSpecBase {
      * @param nonUniqueSentinel Sentinel value to use if a group contains more than a single unique value
      * @return The "unique" aggregation specification
      */
-    public static AggSpecUnique of(boolean includeNulls, Object nonUniqueSentinel) {
+    public static AggSpecUnique of(boolean includeNulls, AnnotatedObject nonUniqueSentinel) {
         ImmutableAggSpecUnique.Builder builder = ImmutableAggSpecUnique.builder().includeNulls(includeNulls);
         if (nonUniqueSentinel != null) {
             builder.nonUniqueSentinel(nonUniqueSentinel);

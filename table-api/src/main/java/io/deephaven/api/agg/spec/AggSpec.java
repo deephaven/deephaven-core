@@ -8,6 +8,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.agg.Pair;
+import io.deephaven.api.object.AnnotatedObject;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -230,6 +231,13 @@ public interface AggSpec {
      * @return {@link AggSpecUnique#of(boolean, Object)} for {@code includeNulls} and {@code nonUniqueSentinel}
      */
     static AggSpecUnique unique(boolean includeNulls, Object nonUniqueSentinel) {
+        return AggSpecUnique.of(includeNulls, nonUniqueSentinel);
+    }
+
+    /**
+     * @return {@link AggSpecUnique#of(boolean, AnnotatedObject)} for {@code includeNulls} and {@code nonUniqueSentinel}
+     */
+    static AggSpecUnique unique(boolean includeNulls, AnnotatedObject nonUniqueSentinel) {
         return AggSpecUnique.of(includeNulls, nonUniqueSentinel);
     }
 

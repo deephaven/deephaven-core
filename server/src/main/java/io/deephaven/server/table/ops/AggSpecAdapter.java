@@ -23,6 +23,7 @@ import io.deephaven.api.agg.spec.AggSpecSum;
 import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
+import io.deephaven.api.object.AnnotatedObject;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
@@ -37,7 +38,6 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecTDigest;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
-import io.deephaven.proto.backplane.grpc.TableReference;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -74,6 +74,52 @@ class AggSpecAdapter {
         GrpcErrorHelper.checkHasOneOf(spec, "type");
         GrpcErrorHelper.checkHasNoUnknownFields(spec);
         Singleton.INSTANCE.adapters.validate(spec);
+    }
+
+    public static void validate(AggSpecUnique aggSpecUnique) {
+        GrpcErrorHelper.checkHasNoUnknownFields(aggSpecUnique);
+        if (aggSpecUnique.hasNonUniqueSentinel()) {
+            validate(aggSpecUnique.getNonUniqueSentinel());
+        }
+    }
+
+    public static void validate(AggSpecNonUniqueSentinel nonUniqueSentinel) {
+        GrpcErrorHelper.checkHasOneOf(nonUniqueSentinel, "type");
+        GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(nonUniqueSentinel);
+        final AggSpecNonUniqueSentinel.TypeCase type = nonUniqueSentinel.getTypeCase();
+        switch (type) {
+            case STRING_VALUE:
+            case INT_VALUE:
+            case LONG_VALUE:
+            case FLOAT_VALUE:
+            case DOUBLE_VALUE:
+            case BOOL_VALUE:
+                // All native proto types valid
+                return;
+            case BYTE_VALUE:
+                if (nonUniqueSentinel.getByteValue() != (byte) nonUniqueSentinel.getByteValue()) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "AggSpecNonUniqueSentinel byte_value out of range");
+                }
+                return;
+            case SHORT_VALUE:
+                if (nonUniqueSentinel.getShortValue() != (short) nonUniqueSentinel.getShortValue()) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "AggSpecNonUniqueSentinel short_value out of range");
+                }
+                return;
+            case CHAR_VALUE:
+                if (nonUniqueSentinel.getCharValue() != (char) nonUniqueSentinel.getCharValue()) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "AggSpecNonUniqueSentinel char_value out of range");
+                }
+                return;
+            case TYPE_NOT_SET:
+                // Should be caught by checkHasOneOf, fall-through to internal error if not.
+            default:
+                throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
+                        String.format("Server missing AggSpecNonUniqueSentinel type %s", type));
+        }
     }
 
     public static AggSpec adapt(io.deephaven.proto.backplane.grpc.AggSpec spec) {
@@ -132,26 +178,30 @@ class AggSpecAdapter {
     }
 
     private static io.deephaven.api.agg.spec.AggSpecUnique adapt(AggSpecUnique unique) {
-        Object nonUniqueSentinel = unique.hasNonUniqueSentinel() ? adapt(unique.getNonUniqueSentinel()) : null;
+        AnnotatedObject nonUniqueSentinel = unique.hasNonUniqueSentinel() ? adapt(unique.getNonUniqueSentinel()) : null;
         return io.deephaven.api.agg.spec.AggSpecUnique.of(unique.getIncludeNulls(), nonUniqueSentinel);
     }
 
-    private static Object adapt(AggSpecNonUniqueSentinel nonUniqueSentinel) {
+    private static AnnotatedObject adapt(AggSpecNonUniqueSentinel nonUniqueSentinel) {
         switch (nonUniqueSentinel.getTypeCase()) {
             case STRING_VALUE:
-                return nonUniqueSentinel.getStringValue();
+                return AnnotatedObject.of(nonUniqueSentinel.getStringValue());
             case INT_VALUE:
-                return nonUniqueSentinel.getIntValue();
+                return AnnotatedObject.of(nonUniqueSentinel.getIntValue());
             case LONG_VALUE:
-                return nonUniqueSentinel.getLongValue();
+                return AnnotatedObject.of(nonUniqueSentinel.getLongValue());
             case FLOAT_VALUE:
-                return nonUniqueSentinel.getFloatValue();
+                return AnnotatedObject.of(nonUniqueSentinel.getFloatValue());
             case DOUBLE_VALUE:
-                return nonUniqueSentinel.getDoubleValue();
+                return AnnotatedObject.of(nonUniqueSentinel.getDoubleValue());
             case BOOL_VALUE:
-                return nonUniqueSentinel.getBoolValue();
-            case CELL_VALUE:
-                throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED, "AggSpecNonUniqueSentinel cell_value not implemented, see <todo>");
+                return AnnotatedObject.of(nonUniqueSentinel.getBoolValue());
+            case BYTE_VALUE:
+                return AnnotatedObject.of((byte) nonUniqueSentinel.getByteValue());
+            case SHORT_VALUE:
+                return AnnotatedObject.of((short) nonUniqueSentinel.getShortValue());
+            case CHAR_VALUE:
+                return AnnotatedObject.of((char) nonUniqueSentinel.getCharValue());
             case TYPE_NOT_SET:
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "AggSpecNonUniqueSentinel type not set");
             default:
@@ -415,7 +465,7 @@ class AggSpecAdapter {
                     TypeCase.UNIQUE,
                     AggSpecUnique.class,
                     io.deephaven.api.agg.spec.AggSpecUnique.class,
-                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::validate,
                     AggSpecAdapter::adapt);
         }
 

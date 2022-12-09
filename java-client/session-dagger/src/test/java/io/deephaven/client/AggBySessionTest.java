@@ -10,6 +10,7 @@ import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.FirstRowKey;
 import io.deephaven.api.agg.LastRowKey;
 import io.deephaven.api.agg.Partition;
+import io.deephaven.api.object.AnnotatedObject;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
 import org.junit.runner.RunWith;
@@ -136,6 +137,15 @@ public class AggBySessionTest extends TableSpecTestBase {
             out.add(Aggregations.builder()
                     .addAggregations(Count.of("MyCount"))
                     .addAggregations(Aggregation.AggSum("B", "S", "I", "L", "F", "D"))
+                    .build());
+            out.add(Aggregations.builder()
+                    .addAggregations(
+                            Aggregation.AggUnique(true, AnnotatedObject.of((byte) -1), "B"),
+                            Aggregation.AggUnique(true, AnnotatedObject.of((short) -1), "S"),
+                            Aggregation.AggUnique(true, AnnotatedObject.of((int) -1), "I"),
+                            Aggregation.AggUnique(true, AnnotatedObject.of((long) -1), "L"),
+                            Aggregation.AggUnique(true, AnnotatedObject.of((float) -1), "F"),
+                            Aggregation.AggUnique(true, AnnotatedObject.of((double) -1), "D"))
                     .build());
         }
 

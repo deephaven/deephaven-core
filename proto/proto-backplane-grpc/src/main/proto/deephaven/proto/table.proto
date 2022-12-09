@@ -660,12 +660,15 @@ message AggSpec {
   }
 
   message AggSpecUnique {
-    // Whether to include null values as a distinct value for determining if there is only one unique value to output.
+    // Whether to include null values as a distinct value for determining if there is only one unique value to output
     bool include_nulls = 1;
+
+    // The output value to use for groups that don't have a single unique input value
     AggSpecNonUniqueSentinel non_unique_sentinel = 2;
   }
 
   message AggSpecNonUniqueSentinel {
+    reserved 10, 11;
     oneof type {
       string string_value = 1;
       sint32 int_value = 2;
@@ -673,9 +676,32 @@ message AggSpec {
       float float_value = 4;
       double double_value = 5;
       bool bool_value = 6;
-      TableReference cell_value = 7;
+      // Expected to be in range [Byte.MIN_VALUE, Byte.MAX_VALUE]
+      sint32 byte_value = 7;
+      // Expected to be in range [Short.MIN_VALUE, Short.MAX_VALUE]
+      sint32 short_value = 8;
+      // Expected to be in range [0x0000, 0xFFFF]
+      sint32 char_value = 9;
+      // TODO(deephaven-core#xyz): ... create ticket for cell_value / codec_value feature
+      // TableCell cell_value = 10;
+      // CodecValue codec_value = 11;
     }
   }
+
+  // message TableCell {
+  //  TableReference table = 1;
+  //  int32 column = 2;
+  //  int32 row = 3;
+  // }
+
+  // message Codec {
+  //
+  // }
+
+  // message CodecValue {
+  //  Codec codec = 1;
+  //  bytes value = 2;
+  // }
 
   message AggSpecWeighted {
     // Column name for the source of input weights.
