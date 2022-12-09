@@ -155,10 +155,10 @@ public class DeephavenApiServerModule {
 
         @Override
         public Thread newThread(final @NotNull Runnable r) {
-            return super.newThread(() -> {
+            return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                 MultiChunkPool.enableDedicatedPoolForThisThread();
-                ThreadInitializationFactory.wrapRunnable(r).run();
-            });
+                r.run();
+            }));
         }
     }
 }
