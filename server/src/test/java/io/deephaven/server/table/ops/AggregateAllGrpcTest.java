@@ -1,10 +1,10 @@
 package io.deephaven.server.table.ops;
 
-import com.google.protobuf.Empty;
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSum;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -27,7 +27,7 @@ public class AggregateAllGrpcTest extends GrpcTableOperationTestBase<AggregateAl
         final AggregateAllRequest request = AggregateAllRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(ref)
-                .setSpec(AggSpec.newBuilder().setSum(Empty.getDefaultInstance()).build())
+                .setSpec(AggSpec.newBuilder().setSum(AggSpecSum.getDefaultInstance()).build())
                 .build();
         final ExportedTableCreationResponse response = channel().tableBlocking().aggregateAll(request);
         assertThat(response.getSuccess()).isTrue();
@@ -41,7 +41,7 @@ public class AggregateAllGrpcTest extends GrpcTableOperationTestBase<AggregateAl
         final AggregateAllRequest request = AggregateAllRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(ref)
-                .setSpec(AggSpec.newBuilder().setSum(Empty.getDefaultInstance()).build())
+                .setSpec(AggSpec.newBuilder().setSum(AggSpecSum.getDefaultInstance()).build())
                 .addGroupByColumns("Key")
                 .build();
         final ExportedTableCreationResponse response = channel().tableBlocking().aggregateAll(request);
@@ -55,7 +55,7 @@ public class AggregateAllGrpcTest extends GrpcTableOperationTestBase<AggregateAl
         final TableReference ref = ref(TableTools.emptyTable(100).view("Key=ii % 2", "I=ii"));
         final AggregateAllRequest request = AggregateAllRequest.newBuilder()
                 .setSourceId(ref)
-                .setSpec(AggSpec.newBuilder().setSum(Empty.getDefaultInstance()).build())
+                .setSpec(AggSpec.newBuilder().setSum(AggSpecSum.getDefaultInstance()).build())
                 .build();
         assertError(request, Code.FAILED_PRECONDITION, "No result ticket supplied");
     }
@@ -64,7 +64,7 @@ public class AggregateAllGrpcTest extends GrpcTableOperationTestBase<AggregateAl
     public void missingSourceId() {
         final AggregateAllRequest request = AggregateAllRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
-                .setSpec(AggSpec.newBuilder().setSum(Empty.getDefaultInstance()).build())
+                .setSpec(AggSpec.newBuilder().setSum(AggSpecSum.getDefaultInstance()).build())
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "io.deephaven.proto.backplane.grpc.AggregateAllRequest must have field source_id (2)");
@@ -98,7 +98,7 @@ public class AggregateAllGrpcTest extends GrpcTableOperationTestBase<AggregateAl
         final AggregateAllRequest request = AggregateAllRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(TableReference.newBuilder().build())
-                .setSpec(AggSpec.newBuilder().setSum(Empty.getDefaultInstance()).build())
+                .setSpec(AggSpec.newBuilder().setSum(AggSpecSum.getDefaultInstance()).build())
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "io.deephaven.proto.backplane.grpc.TableReference must have oneof ref. Note: this may also indicate that the server is older than the client and doesn't know about this new oneof option.");
@@ -110,7 +110,7 @@ public class AggregateAllGrpcTest extends GrpcTableOperationTestBase<AggregateAl
         final AggregateAllRequest request = AggregateAllRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(ref)
-                .setSpec(AggSpec.newBuilder().setSum(Empty.getDefaultInstance()).build())
+                .setSpec(AggSpec.newBuilder().setSum(AggSpecSum.getDefaultInstance()).build())
                 .setUnknownFields(UnknownFieldSet.newBuilder()
                         .addField(9999, Field.newBuilder().addFixed32(32).build())
                         .build())

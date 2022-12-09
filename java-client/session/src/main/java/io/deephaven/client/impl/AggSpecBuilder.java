@@ -1,22 +1,32 @@
 package io.deephaven.client.impl;
 
-import com.google.protobuf.Empty;
 import com.google.protobuf.MessageOrBuilder;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.object.AnnotatedObject;
 import io.deephaven.api.object.AnnotatedObject.Visitor;
 import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAvg;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecDistinct;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFirst;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFreeze;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecGroup;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecLast;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecMax;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecMedian;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecMin;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecPercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSorted;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSortedColumn;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecStd;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecTDigest;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecVar;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.Builder;
 
@@ -37,17 +47,13 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
         return Objects.requireNonNull(out);
     }
 
-    private static AggSpec emptySpec(BiFunction<Builder, Empty, Builder> setter) {
-        return setter.apply(newBuilder(), Empty.getDefaultInstance()).build();
-    }
-
     private static <T extends MessageOrBuilder> AggSpec spec(BiFunction<Builder, T, Builder> setter, T obj) {
         return setter.apply(newBuilder(), obj).build();
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecAbsSum absSum) {
-        out = emptySpec(Builder::setAbsSum);
+        out = spec(Builder::setAbsSum, AggSpecAbsSum.newBuilder());
     }
 
     @Override
@@ -60,7 +66,7 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecAvg avg) {
-        out = emptySpec(Builder::setAvg);
+        out = spec(Builder::setAvg, AggSpecAvg.newBuilder());
     }
 
     @Override
@@ -77,7 +83,7 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecFirst first) {
-        out = emptySpec(Builder::setFirst);
+        out = spec(Builder::setFirst, AggSpecFirst.newBuilder());
     }
 
     @Override
@@ -89,22 +95,22 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecFreeze freeze) {
-        out = emptySpec(Builder::setFreeze);
+        out = spec(Builder::setFreeze, AggSpecFreeze.newBuilder());
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecGroup group) {
-        out = emptySpec(Builder::setGroup);
+        out = spec(Builder::setGroup, AggSpecGroup.newBuilder());
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecLast last) {
-        out = emptySpec(Builder::setLast);
+        out = spec(Builder::setLast, AggSpecLast.newBuilder());
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecMax max) {
-        out = emptySpec(Builder::setMax);
+        out = spec(Builder::setMax, AggSpecMax.newBuilder());
     }
 
     @Override
@@ -115,7 +121,7 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecMin min) {
-        out = emptySpec(Builder::setMin);
+        out = spec(Builder::setMin, AggSpecMin.newBuilder());
     }
 
     @Override
@@ -151,12 +157,12 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecStd std) {
-        out = emptySpec(Builder::setStd);
+        out = spec(Builder::setStd, AggSpecStd.newBuilder());
     }
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecSum sum) {
-        out = emptySpec(Builder::setSum);
+        out = spec(Builder::setSum, AggSpecSum.newBuilder());
     }
 
     @Override
@@ -191,7 +197,7 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecVar var) {
-        out = emptySpec(Builder::setVar);
+        out = spec(Builder::setVar, AggSpecVar.newBuilder());
     }
 
     public enum AggSpecNonUniqueSentinelAdapter implements Visitor<AggSpecNonUniqueSentinel> {

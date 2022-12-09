@@ -10,7 +10,6 @@ option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/table";
 
 import "deephaven/proto/ticket.proto";
-import "google/protobuf/empty.proto";
 
 service TableService {
   /*
@@ -708,30 +707,74 @@ message AggSpec {
     string weight_column = 1;
   }
 
+  message AggSpecAbsSum {
+
+  }
+
+  message AggSpecAvg {
+
+  }
+
+  message AggSpecFirst {
+
+  }
+
+  message AggSpecFreeze {
+
+  }
+
+  message AggSpecGroup {
+
+  }
+
+  message AggSpecLast {
+
+  }
+
+  message AggSpecMax {
+
+  }
+
+  message AggSpecMin {
+
+  }
+
+  message AggSpecStd {
+
+  }
+
+  message AggSpecSum {
+
+  }
+
+  message AggSpecVar {
+
+  }
+
   oneof type {
-    google.protobuf.Empty abs_sum = 1;
+    AggSpecAbsSum abs_sum = 1;
     AggSpecApproximatePercentile approximate_percentile = 2;
-    google.protobuf.Empty avg = 3;
+    AggSpecAvg avg = 3;
     AggSpecCountDistinct count_distinct = 4;
     AggSpecDistinct distinct = 5;
-    google.protobuf.Empty first = 6;
+    AggSpecFirst first = 6;
     AggSpecFormula formula = 7;
-    google.protobuf.Empty freeze = 8;
-    google.protobuf.Empty group = 9;
-    google.protobuf.Empty last = 10;
-    google.protobuf.Empty max = 11;
+    AggSpecFreeze freeze = 8;
+    AggSpecGroup group = 9;
+    AggSpecLast last = 10;
+    AggSpecMax max = 11;
     AggSpecMedian median = 12;
-    google.protobuf.Empty min = 13;
+    AggSpecMin min = 13;
     AggSpecPercentile percentile = 14;
     AggSpecSorted sorted_first = 15;
     AggSpecSorted sorted_last = 16;
-    google.protobuf.Empty std = 17;
-    google.protobuf.Empty sum = 18;
+    AggSpecStd std = 17;
+    AggSpecSum sum = 18;
     AggSpecTDigest t_digest = 19;
     AggSpecUnique unique = 20;
     AggSpecWeighted weighted_avg = 21;
     AggSpecWeighted weighted_sum = 22;
-    google.protobuf.Empty var = 23;
+    AggSpecVar var = 23;
   }
 }
 

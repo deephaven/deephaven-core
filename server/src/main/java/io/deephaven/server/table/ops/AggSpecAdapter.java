@@ -1,41 +1,40 @@
 package io.deephaven.server.table.ops;
 
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Empty;
 import com.google.protobuf.Message;
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpec.Visitor;
-import io.deephaven.api.agg.spec.AggSpecAbsSum;
-import io.deephaven.api.agg.spec.AggSpecAvg;
-import io.deephaven.api.agg.spec.AggSpecFirst;
-import io.deephaven.api.agg.spec.AggSpecFreeze;
-import io.deephaven.api.agg.spec.AggSpecGroup;
-import io.deephaven.api.agg.spec.AggSpecLast;
-import io.deephaven.api.agg.spec.AggSpecMax;
-import io.deephaven.api.agg.spec.AggSpecMin;
 import io.deephaven.api.agg.spec.AggSpecSortedFirst;
 import io.deephaven.api.agg.spec.AggSpecSortedLast;
-import io.deephaven.api.agg.spec.AggSpecStd;
-import io.deephaven.api.agg.spec.AggSpecSum;
-import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.object.AnnotatedObject;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAvg;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecDistinct;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFirst;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFreeze;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecGroup;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecLast;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecMax;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecMedian;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecMin;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecPercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSorted;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSortedColumn;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecStd;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecTDigest;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecVar;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
 
@@ -270,11 +269,11 @@ class AggSpecAdapter {
         }
 
         @Override
-        public void visit(AggSpecAbsSum absSum) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecAbsSum absSum) {
             add(
                     TypeCase.ABS_SUM,
-                    Empty.class,
                     AggSpecAbsSum.class,
+                    io.deephaven.api.agg.spec.AggSpecAbsSum.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::absSum);
         }
@@ -290,11 +289,11 @@ class AggSpecAdapter {
         }
 
         @Override
-        public void visit(AggSpecAvg avg) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecAvg avg) {
             add(
                     TypeCase.AVG,
-                    Empty.class,
                     AggSpecAvg.class,
+                    io.deephaven.api.agg.spec.AggSpecAvg.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::avg);
         }
@@ -320,11 +319,11 @@ class AggSpecAdapter {
         }
 
         @Override
-        public void visit(AggSpecFirst first) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecFirst first) {
             add(
                     TypeCase.FIRST,
-                    Empty.class,
                     AggSpecFirst.class,
+                    io.deephaven.api.agg.spec.AggSpecFirst.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::first);
         }
@@ -340,41 +339,41 @@ class AggSpecAdapter {
         }
 
         @Override
-        public void visit(AggSpecFreeze freeze) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecFreeze freeze) {
             add(
                     TypeCase.FREEZE,
-                    Empty.class,
                     AggSpecFreeze.class,
+                    io.deephaven.api.agg.spec.AggSpecFreeze.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::freeze);
         }
 
         @Override
-        public void visit(AggSpecGroup group) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecGroup group) {
             add(
                     TypeCase.GROUP,
-                    Empty.class,
                     AggSpecGroup.class,
+                    io.deephaven.api.agg.spec.AggSpecGroup.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::group);
         }
 
         @Override
-        public void visit(AggSpecLast last) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecLast last) {
             add(
                     TypeCase.LAST,
-                    Empty.class,
                     AggSpecLast.class,
+                    io.deephaven.api.agg.spec.AggSpecLast.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::last);
         }
 
         @Override
-        public void visit(AggSpecMax max) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecMax max) {
             add(
                     TypeCase.MAX,
-                    Empty.class,
                     AggSpecMax.class,
+                    io.deephaven.api.agg.spec.AggSpecMax.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::max);
         }
@@ -390,11 +389,11 @@ class AggSpecAdapter {
         }
 
         @Override
-        public void visit(AggSpecMin min) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecMin min) {
             add(
                     TypeCase.MIN,
-                    Empty.class,
                     AggSpecMin.class,
+                    io.deephaven.api.agg.spec.AggSpecMin.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::min);
         }
@@ -430,21 +429,21 @@ class AggSpecAdapter {
         }
 
         @Override
-        public void visit(AggSpecStd std) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecStd std) {
             add(
                     TypeCase.STD,
-                    Empty.class,
                     AggSpecStd.class,
+                    io.deephaven.api.agg.spec.AggSpecStd.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::std);
         }
 
         @Override
-        public void visit(AggSpecSum sum) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecSum sum) {
             add(
                     TypeCase.SUM,
-                    Empty.class,
                     AggSpecSum.class,
+                    io.deephaven.api.agg.spec.AggSpecSum.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::sum);
         }
@@ -490,11 +489,11 @@ class AggSpecAdapter {
         }
 
         @Override
-        public void visit(AggSpecVar var) {
+        public void visit(io.deephaven.api.agg.spec.AggSpecVar var) {
             add(
                     TypeCase.VAR,
-                    Empty.class,
                     AggSpecVar.class,
+                    io.deephaven.api.agg.spec.AggSpecVar.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::var);
 

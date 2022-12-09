@@ -1,11 +1,11 @@
 package io.deephaven.server.table.ops;
 
-import com.google.protobuf.Empty;
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.AggSpec;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSum;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
@@ -121,7 +121,7 @@ public class AggregateGrpcTest extends GrpcTableOperationTestBase<AggregateReque
                 .addAggregations(Aggregation.newBuilder()
                         .setColumns(AggregationColumns.newBuilder()
                                 .setSpec(AggSpec.newBuilder()
-                                        .setSum(Empty.getDefaultInstance())
+                                        .setSum(AggSpecSum.getDefaultInstance())
                                         .build())
                                 .addMatchPairs("SumI=I")
                                 .addMatchPairs("SumJ=J")
@@ -218,7 +218,7 @@ public class AggregateGrpcTest extends GrpcTableOperationTestBase<AggregateReque
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .addAggregations(Aggregation.newBuilder()
                         .setColumns(AggregationColumns.newBuilder()
-                                .setSpec(AggSpec.newBuilder().setSum(Empty.getDefaultInstance()).build())
+                                .setSpec(AggSpec.newBuilder().setSum(AggSpecSum.getDefaultInstance()).build())
                                 .build())
                         .build())
                 .setSourceId(ref)
