@@ -12,9 +12,9 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
@@ -32,8 +32,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.KeyTableNodeAction.*;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.callDataSnapshotFunction;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.makeSnapshotControl;
@@ -117,7 +119,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         // region Per-snapshot parameters and state
         private BitSet columns;
         private RowSequence rows;
-        private int numRowsToInclude = NULL_INT;
+        private int targetIncludedSize = NULL_INT;
         private WritableChunk<? extends Values>[] destinations;
         private ResettableWritableChunk<? extends Values>[] destinationSlices;
         // endregion Per-snapshot parameters and state
@@ -125,9 +127,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         // region Per-attempt parameters and state
         private boolean usePrev;
         private int currentDepth = NULL_INT;
+        private boolean expandingAll;
         private long expandedSize = NULL_LONG;
         private long nextRowPositionToInclude = NULL_LONG;
-        private int remainingNumRowsToInclude = NULL_INT;
+        private int includedSize = NULL_INT;
+        private SharedContext sharedContext;
         // endregion Per-attempt parameters and state
 
         /**
@@ -155,7 +159,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 @NotNull final WritableChunk<? extends Values>[] destinations) {
             this.columns = columns;
             this.rows = rows;
-            numRowsToInclude = rows.intSize("hierarchical table snapshot");
+            targetIncludedSize = rows.intSize("hierarchical table snapshot");
             this.destinations = destinations;
             // noinspection unchecked
             destinationSlices = Arrays.stream(destinations)
@@ -174,10 +178,12 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          */
         private void beginSnapshotAttempt(final boolean usePrev) {
             this.usePrev = usePrev;
-            currentDepth = 0;
+            currentDepth = -1;
+            expandingAll = false;
             expandedSize = 0;
             nextRowPositionToInclude = rows.firstRowKey();
-            remainingNumRowsToInclude = numRowsToInclude;
+            includedSize = 0;
+            sharedContext = SharedContext.makeSharedContext();
             snapshotClock++;
         }
 
@@ -203,20 +209,22 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     cachedNodesIterator.remove();
                 }
             }
-            final int filledSize = numRowsToInclude - remainingNumRowsToInclude;
-            Arrays.stream(destinations).forEach(dc -> dc.setSize(filledSize));
+            Arrays.stream(destinations).forEach(dc -> dc.setSize(includedSize));
             return expandedSize;
         }
 
         private void releaseSnapshotResources() {
             usePrev = false;
             currentDepth = NULL_INT;
+            expandingAll = false;
             expandedSize = NULL_LONG;
             nextRowPositionToInclude = NULL_LONG;
-            remainingNumRowsToInclude = NULL_INT;
+            includedSize = NULL_INT;
+            sharedContext.close();
+            sharedContext = null;
             columns = null;
             rows = null;
-            numRowsToInclude = NULL_INT;
+            targetIncludedSize = NULL_INT;
             destinations = null;
             Arrays.stream(destinationSlices).forEach(SafeCloseable::close);
             destinationSlices = null;
@@ -342,8 +350,12 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              * structures necessary for {@link #getTraversalTable()}.
              */
             void ensurePreparedForTraversal() {
-                ensureFilteredCreated();
-                maybeWaitForSatisfaction(filtered);
+                if (hasNodeFiltersToApply(id)) {
+                    ensureFilteredCreated();
+                    if (filtered != base) {
+                        maybeWaitForSatisfaction(filtered);
+                    }
+                }
                 visitedSnapshotClock = snapshotClock;
             }
 
@@ -356,7 +368,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             private void ensurePreparedForDataRetrieval() {
                 ensureSortedCreated();
                 dataSources = makeOrFillChunkSourceArray(SnapshotState.this, id, sorted, dataSources);
-                maybeWaitForSatisfaction(sorted);
+                if (sorted != base) {
+                    maybeWaitForSatisfaction(sorted);
+                }
                 visitedSnapshotClock = snapshotClock;
             }
 
@@ -368,20 +382,13 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             }
 
             /**
-             * @return The node base Table, before any modifications
-             */
-            Table getBaseTable() {
-                return base;
-            }
-
-            /**
              * @return The node Table after any structural modifications (e.g. formatting and filtering) have been
              *         applied
-             * @apiNote {@link #ensurePreparedForTraversal()} or{@link #ensurePreparedForDataRetrieval()} must have been
-             *          called previously during this snapshot attempt
+             * @apiNote {@link #ensurePreparedForTraversal()} or {@link #ensurePreparedForDataRetrieval()} must have
+             *          been called previously during this snapshot attempt
              */
             Table getTraversalTable() {
-                return filtered;
+                return filtered != null ? filtered : base;
             }
 
             /**
@@ -510,8 +517,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         /**
          * The action that should be taken for this node. Will be {@link KeyTableNodeAction#Undefined undefined} on
-         * construction. Will be {@link KeyTableNodeAction#Linkage} if created in order to provide connectivity to
-         * another node; this will be overwritten with the key table's action if found.
+         * construction; this is used to determine whether a node was newly-created by a "compute if absent". Will be
+         * set to {@link KeyTableNodeAction#Linkage} if created in order to provide connectivity to another node; this
+         * will be overwritten with the key table's action if found.
          */
         private KeyTableNodeAction action;
 
@@ -520,7 +528,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             action = Undefined;
         }
 
-        private Object getNodeKey() {
+        Object getNodeKey() {
             return nodeKey;
         }
 
@@ -544,7 +552,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     /**
      * Information about a node that's referenced directly or indirectly from the key table for a snapshot, with
-     * appropriate linkage to its children..
+     * appropriate linkage to its children.
      */
     private static final class LinkedNodeDirective extends NodeDirective {
 
@@ -553,6 +561,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          * are found in order to provide ancestors for such nodes.
          */
         private List<LinkedNodeDirective> children;
+
+        /**
+         * Row key in the parent node. This may be unsorted or sorted, depending on how we're handling the parent.
+         */
+        private long rowKeyInParent;
 
         private LinkedNodeDirective(@Nullable final Object nodeKey) {
             super(nodeKey);
@@ -565,6 +578,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         private List<LinkedNodeDirective> getChildren() {
             return children;
+        }
+
+        private void setRowKeyInParent(final long rowKeyInParent) {
+            this.rowKeyInParent = rowKeyInParent;
+        }
+
+        private long getRowKeyInParent() {
+            return rowKeyInParent;
         }
     }
 
@@ -745,13 +766,70 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
 
         // Depth-first traversal of expanded nodes
-        visitExpandedNode(snapshotState, rootNodeDirective);
+        visitExpandedNode(snapshotState, getRootNodeKey(), rootNodeAction, rootNodeDirective.getChildren());
     }
 
     private void visitExpandedNode(
             @NotNull final SnapshotState snapshotState,
-            @NotNull final LinkedNodeDirective expanded) {
-        // TODO-RWC: Do work here
+            @Nullable final Object nodeKey,
+            @NotNull final KeyTableNodeAction action,
+            @Nullable final List<LinkedNodeDirective> childDirectives) {
+        final boolean oldExpandingAll = snapshotState.expandingAll;
+        if (action == ExpandAll) {
+            snapshotState.expandingAll = true;
+        }
+        ++snapshotState.currentDepth;
+        try {
+             // If we're still trying to fill our destination chunks, we need to consider this node and possibly its
+             // descendants after applying any node sorts. If we're just traversing for our expanded size calculation,
+             // we proceed in arbitrary order.
+            final boolean filling = snapshotState.includedSize < snapshotState.targetIncludedSize;
+            final long nodeId = nodeKeyToNodeId(nodeKey);
+            final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
+            if (filling) {
+                nodeTableState.ensurePreparedForDataRetrieval();
+            } else {
+                nodeTableState.ensurePreparedForTraversal();
+            }
+            final Table forTraversal = nodeTableState.getTraversalTable();
+            if (forTraversal.isEmpty()) {
+                // We arrived at an empty node. This is not really an error.
+                return;
+            }
+            final RowRedirection dataRedirection = filling ? nodeTableState.getDataRedirection() : null;
+            if (childDirectives != null) {
+                childDirectives.stream().map((final LinkedNodeDirective childDirective) -> {
+                    long rowKeyInParent = nodeKeyToRowKeyInParentUnsorted(
+                            childDirective.getNodeKey(), snapshotState.usePrev);
+                    if (rowKeyInParent != NULL_ROW_KEY && dataRedirection != null) {
+                        // TODO-RWC: ^$&#*@, I need reverse sort mapping after all!
+                        rowKeyInParent = snapshotState.usePrev
+                                ? dataRedirection.getPrev(rowKeyInParent)
+                                : dataRedirection.get(rowKeyInParent);
+                    }
+                    childDirective.setRowKeyInParent(rowKeyInParent);
+                });
+            }
+
+            final boolean findingContractions = snapshotState.expandingAll;
+            final RowSetBuilderRandom childDirectiveRowKeysBuilder = RowSetFactory.builderRandom();
+            childDirectives.stream().filter((final LinkedNodeDirective childDirective) -> {
+                findingContractions ? childDirective.getAction() == Contract
+            });
+
+        } finally {
+            --snapshotState.currentDepth;
+            snapshotState.expandingAll = oldExpandingAll;
+        }
+    }
+
+    private WritableRowSet filterDirectivesList(
+            @Nullable final List<LinkedNodeDirective> directives,
+            @NotNull final Predicate<KeyTableNodeAction> include) {
+        if (directives == null || directives.isEmpty()) {
+            return RowSetFactory.empty();
+        }
+        final RowSetBuilderRandom directiveRowKeysBuilder
     }
 
     /**
@@ -798,10 +876,24 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     abstract long nullNodeId();
 
     /**
+     * @param childNodeKey The child node key to map
+     * @param usePrev Whether to use previous row sets and values for determining the row key
+     * @return The corresponding row key in the node's parent's address space (before sorting), or
+     *         {@link RowSequence#NULL_ROW_KEY null} if not found
+     */
+    abstract long nodeKeyToRowKeyInParentUnsorted(@Nullable Object childNodeKey, final boolean usePrev);
+
+    /**
      * @param nodeId The internal identifier to map
      * @return The base table at the node identified by {@code nodeId}, or {@code null} if the node is not expandable
      */
     abstract Table nodeIdToNodeBaseTable(long nodeId);
+
+    /**
+     * @param nodeId The internal identifier for this node
+     * @return Whether there are filters that should be applied at this node before traversal
+     */
+    abstract boolean hasNodeFiltersToApply(long nodeId);
 
     /**
      * @param nodeId The internal identifier for this node

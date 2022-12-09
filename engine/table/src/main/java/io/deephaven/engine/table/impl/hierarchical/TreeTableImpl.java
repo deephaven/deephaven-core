@@ -6,7 +6,6 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
@@ -26,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
@@ -237,19 +237,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         if (isRootNodeKey(childNodeKey)) {
             return null;
         }
-        final long sourceRowKey = usePrev
-                ? reverseLookup.getPrev(childNodeKey)
-                : reverseLookup.get(childNodeKey);
-        if (sourceRowKey == reverseLookup.noEntryValue()) {
+        final long sourceRowKey = nodeKeyToRowKeyInParentUnsorted(childNodeKey, usePrev);
+        if (sourceRowKey == NULL_ROW_KEY) {
             return false;
-        }
-        if (filtered) {
-            final long sourceRowPosition = usePrev
-                    ? getSource().getRowSet().findPrev(sourceRowKey)
-                    : getSource().getRowSet().find(sourceRowKey);
-            if (sourceRowPosition == RowSequence.NULL_ROW_KEY) {
-                return false;
-            }
         }
         final Object parentNodeKey = usePrev
                 ? sourceParentIdSource.getPrev(sourceRowKey)
@@ -279,9 +269,33 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
+    long nodeKeyToRowKeyInParentUnsorted(@Nullable final Object childNodeKey, final boolean usePrev) {
+        final long sourceRowKey = usePrev
+                ? reverseLookup.getPrev(childNodeKey)
+                : reverseLookup.get(childNodeKey);
+        if (sourceRowKey == reverseLookup.noEntryValue()) {
+            return NULL_ROW_KEY;
+        }
+        if (filtered) {
+            final long sourceRowPosition = usePrev
+                    ? getSource().getRowSet().findPrev(sourceRowKey)
+                    : getSource().getRowSet().find(sourceRowKey);
+            if (sourceRowPosition == NULL_ROW_KEY) {
+                return NULL_ROW_KEY;
+            }
+        }
+        return sourceRowKey;
+    }
+
+    @Override
     @Nullable
     Table nodeIdToNodeBaseTable(final long nodeId) {
         return treeNodeTableSource.get(nodeId);
+    }
+
+    @Override
+    boolean hasNodeFiltersToApply(long nodeId) {
+        return nodeOperations != null && !nodeOperations.getRecordedFilters().isEmpty();
     }
 
     @Override
@@ -338,14 +352,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             return false;
         }
         final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
-        final Table nodeTableToCheck;
-        if (nodeOperations == null || nodeOperations.getRecordedFilters().isEmpty()) {
-            nodeTableToCheck = nodeTableState.getBaseTable();
-        } else {
-            nodeTableState.ensurePreparedForTraversal();
-            nodeTableToCheck = nodeTableState.getTraversalTable();
-        }
-        return (snapshotState.usePrev() ? nodeTableToCheck.getRowSet().sizePrev() : nodeTableToCheck.size()) > 0;
+        nodeTableState.ensurePreparedForTraversal();
+        final Table traversalTable = nodeTableState.getTraversalTable();
+        return (snapshotState.usePrev() ? traversalTable.getRowSet().sizePrev() : traversalTable.size()) > 0;
     }
 
     @Override

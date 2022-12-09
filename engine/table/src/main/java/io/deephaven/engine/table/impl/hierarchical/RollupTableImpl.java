@@ -9,7 +9,6 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
@@ -31,6 +30,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.api.ColumnName.names;
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
@@ -425,7 +425,13 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     long nullNodeId() {
-        return RowSequence.NULL_ROW_KEY;
+        return NULL_ROW_KEY;
+    }
+
+    @Override
+    long nodeKeyToRowKeyInParentUnsorted(@Nullable final Object childNodeKey, final boolean usePrev) {
+        final long nodeId = nodeKeyToNodeId(childNodeKey);
+        return nodeId == nullNodeId() ? NULL_ROW_KEY : nodeSlot(nodeId);
     }
 
     @Override
@@ -446,6 +452,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             return constituentNodeOperations;
         }
         return aggregatedNodeOperations;
+    }
+
+    @Override
+    boolean hasNodeFiltersToApply(long nodeId) {
+        return false;
     }
 
     @Override
