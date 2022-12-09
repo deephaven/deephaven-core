@@ -14,6 +14,7 @@ public interface ThreadInitializationFactory {
     /* private */ String[] CONFIGURED_INITIALIZATION_TYPES =
             Configuration.getInstance().getStringArrayFromProperty("thread.initialization");
     /* private */ List<ThreadInitializationFactory> INITIALIZERS = Arrays.stream(CONFIGURED_INITIALIZATION_TYPES)
+            .filter(str -> !str.isBlank())
             .map(type -> {
                 try {
                     // noinspection unchecked
