@@ -188,6 +188,12 @@ public class Aggregation {
                         }
 
                         @JsProperty
+                        double getByteValue();
+
+                        @JsProperty
+                        double getCharValue();
+
+                        @JsProperty
                         double getDoubleValue();
 
                         @JsProperty
@@ -200,6 +206,9 @@ public class Aggregation {
                         String getLongValue();
 
                         @JsProperty
+                        double getShortValue();
+
+                        @JsProperty
                         String getStringValue();
 
                         @JsProperty
@@ -207,6 +216,12 @@ public class Aggregation {
 
                         @JsProperty
                         void setBoolValue(boolean boolValue);
+
+                        @JsProperty
+                        void setByteValue(double byteValue);
+
+                        @JsProperty
+                        void setCharValue(double charValue);
 
                         @JsProperty
                         void setDoubleValue(double doubleValue);
@@ -219,6 +234,9 @@ public class Aggregation {
 
                         @JsProperty
                         void setLongValue(String longValue);
+
+                        @JsProperty
+                        void setShortValue(double shortValue);
 
                         @JsProperty
                         void setStringValue(String stringValue);
@@ -687,6 +705,12 @@ public class Aggregation {
                         }
 
                         @JsProperty
+                        double getByteValue();
+
+                        @JsProperty
+                        double getCharValue();
+
+                        @JsProperty
                         double getDoubleValue();
 
                         @JsProperty
@@ -699,6 +723,9 @@ public class Aggregation {
                         String getLongValue();
 
                         @JsProperty
+                        double getShortValue();
+
+                        @JsProperty
                         String getStringValue();
 
                         @JsProperty
@@ -706,6 +733,12 @@ public class Aggregation {
 
                         @JsProperty
                         void setBoolValue(boolean boolValue);
+
+                        @JsProperty
+                        void setByteValue(double byteValue);
+
+                        @JsProperty
+                        void setCharValue(double charValue);
 
                         @JsProperty
                         void setDoubleValue(double doubleValue);
@@ -718,6 +751,9 @@ public class Aggregation {
 
                         @JsProperty
                         void setLongValue(String longValue);
+
+                        @JsProperty
+                        void setShortValue(double shortValue);
 
                         @JsProperty
                         void setStringValue(String stringValue);

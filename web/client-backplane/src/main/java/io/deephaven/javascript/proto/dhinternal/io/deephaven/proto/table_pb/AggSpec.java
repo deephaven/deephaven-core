@@ -2,16 +2,26 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecAbsSum;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecApproximatePercentile;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecBlank;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecAvg;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecCountDistinct;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecDistinct;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecFirst;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecFormula;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecFreeze;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecGroup;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecLast;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMax;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMedian;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMin;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecPercentile;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecSorted;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecStd;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecSum;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecTDigest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecUnique;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecVar;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecWeighted;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.TypeCase;
 import jsinterop.annotations.JsOverlay;
@@ -191,6 +201,12 @@ public class AggSpec {
                 }
 
                 @JsProperty
+                double getByteValue();
+
+                @JsProperty
+                double getCharValue();
+
+                @JsProperty
                 double getDoubleValue();
 
                 @JsProperty
@@ -203,6 +219,9 @@ public class AggSpec {
                 String getLongValue();
 
                 @JsProperty
+                double getShortValue();
+
+                @JsProperty
                 String getStringValue();
 
                 @JsProperty
@@ -210,6 +229,12 @@ public class AggSpec {
 
                 @JsProperty
                 void setBoolValue(boolean boolValue);
+
+                @JsProperty
+                void setByteValue(double byteValue);
+
+                @JsProperty
+                void setCharValue(double charValue);
 
                 @JsProperty
                 void setDoubleValue(double doubleValue);
@@ -222,6 +247,9 @@ public class AggSpec {
 
                 @JsProperty
                 void setLongValue(String longValue);
+
+                @JsProperty
+                void setShortValue(double shortValue);
 
                 @JsProperty
                 void setStringValue(String stringValue);
@@ -570,6 +598,12 @@ public class AggSpec {
                 }
 
                 @JsProperty
+                double getByteValue();
+
+                @JsProperty
+                double getCharValue();
+
+                @JsProperty
                 double getDoubleValue();
 
                 @JsProperty
@@ -582,6 +616,9 @@ public class AggSpec {
                 String getLongValue();
 
                 @JsProperty
+                double getShortValue();
+
+                @JsProperty
                 String getStringValue();
 
                 @JsProperty
@@ -589,6 +626,12 @@ public class AggSpec {
 
                 @JsProperty
                 void setBoolValue(boolean boolValue);
+
+                @JsProperty
+                void setByteValue(double byteValue);
+
+                @JsProperty
+                void setCharValue(double charValue);
 
                 @JsProperty
                 void setDoubleValue(double doubleValue);
@@ -601,6 +644,9 @@ public class AggSpec {
 
                 @JsProperty
                 void setLongValue(String longValue);
+
+                @JsProperty
+                void setShortValue(double shortValue);
 
                 @JsProperty
                 void setStringValue(String stringValue);
@@ -838,31 +884,31 @@ public class AggSpec {
 
     public native void clearWeightedSum();
 
-    public native AggSpecBlank getAbsSum();
+    public native AggSpecAbsSum getAbsSum();
 
     public native AggSpecApproximatePercentile getApproximatePercentile();
 
-    public native AggSpecBlank getAvg();
+    public native AggSpecAvg getAvg();
 
     public native AggSpecCountDistinct getCountDistinct();
 
     public native AggSpecDistinct getDistinct();
 
-    public native AggSpecBlank getFirst();
+    public native AggSpecFirst getFirst();
 
     public native AggSpecFormula getFormula();
 
-    public native AggSpecBlank getFreeze();
+    public native AggSpecFreeze getFreeze();
 
-    public native AggSpecBlank getGroup();
+    public native AggSpecGroup getGroup();
 
-    public native AggSpecBlank getLast();
+    public native AggSpecLast getLast();
 
-    public native AggSpecBlank getMax();
+    public native AggSpecMax getMax();
 
     public native AggSpecMedian getMedian();
 
-    public native AggSpecBlank getMin();
+    public native AggSpecMin getMin();
 
     public native AggSpecPercentile getPercentile();
 
@@ -870,9 +916,9 @@ public class AggSpec {
 
     public native AggSpecSorted getSortedLast();
 
-    public native AggSpecBlank getStd();
+    public native AggSpecStd getStd();
 
-    public native AggSpecBlank getSum();
+    public native AggSpecSum getSum();
 
     public native AggSpecTDigest getTDigest();
 
@@ -880,7 +926,7 @@ public class AggSpec {
 
     public native AggSpecUnique getUnique();
 
-    public native AggSpecBlank getVar();
+    public native AggSpecVar getVar();
 
     public native AggSpecWeighted getWeightedAvg();
 
@@ -936,7 +982,7 @@ public class AggSpec {
 
     public native void setAbsSum();
 
-    public native void setAbsSum(AggSpecBlank value);
+    public native void setAbsSum(AggSpecAbsSum value);
 
     public native void setApproximatePercentile();
 
@@ -944,7 +990,7 @@ public class AggSpec {
 
     public native void setAvg();
 
-    public native void setAvg(AggSpecBlank value);
+    public native void setAvg(AggSpecAvg value);
 
     public native void setCountDistinct();
 
@@ -956,7 +1002,7 @@ public class AggSpec {
 
     public native void setFirst();
 
-    public native void setFirst(AggSpecBlank value);
+    public native void setFirst(AggSpecFirst value);
 
     public native void setFormula();
 
@@ -964,19 +1010,19 @@ public class AggSpec {
 
     public native void setFreeze();
 
-    public native void setFreeze(AggSpecBlank value);
+    public native void setFreeze(AggSpecFreeze value);
 
     public native void setGroup();
 
-    public native void setGroup(AggSpecBlank value);
+    public native void setGroup(AggSpecGroup value);
 
     public native void setLast();
 
-    public native void setLast(AggSpecBlank value);
+    public native void setLast(AggSpecLast value);
 
     public native void setMax();
 
-    public native void setMax(AggSpecBlank value);
+    public native void setMax(AggSpecMax value);
 
     public native void setMedian();
 
@@ -984,7 +1030,7 @@ public class AggSpec {
 
     public native void setMin();
 
-    public native void setMin(AggSpecBlank value);
+    public native void setMin(AggSpecMin value);
 
     public native void setPercentile();
 
@@ -1000,11 +1046,11 @@ public class AggSpec {
 
     public native void setStd();
 
-    public native void setStd(AggSpecBlank value);
+    public native void setStd(AggSpecStd value);
 
     public native void setSum();
 
-    public native void setSum(AggSpecBlank value);
+    public native void setSum(AggSpecSum value);
 
     public native void setTDigest();
 
@@ -1016,7 +1062,7 @@ public class AggSpec {
 
     public native void setVar();
 
-    public native void setVar(AggSpecBlank value);
+    public native void setVar(AggSpecVar value);
 
     public native void setWeightedAvg();
 

@@ -12,9 +12,9 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.table_pb.AggAllByRequest",
+        name = "dhinternal.io.deephaven.proto.table_pb.AggregateAllRequest",
         namespace = JsPackage.GLOBAL)
-public class AggAllByRequest {
+public class AggregateAllRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -22,7 +22,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
+                static AggregateAllRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
                         Object o) {
                     return Js.cast(o);
                 }
@@ -49,28 +49,28 @@ public class AggAllByRequest {
             }
 
             @JsOverlay
-            static AggAllByRequest.ToObjectReturnType.ResultIdFieldType create() {
+            static AggregateAllRequest.ToObjectReturnType.ResultIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
+            AggregateAllRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
             void setTicket(
-                    AggAllByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    AggregateAllRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                        Js.<AggAllByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        Js.<AggregateAllRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                        Js.<AggAllByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        Js.<AggregateAllRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
         }
@@ -78,7 +78,7 @@ public class AggAllByRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsOverlay
-            static AggAllByRequest.ToObjectReturnType.SourceIdFieldType create() {
+            static AggregateAllRequest.ToObjectReturnType.SourceIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -100,7 +100,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface ApproximatePercentileFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.ApproximatePercentileFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.ApproximatePercentileFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -120,7 +120,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface CountDistinctFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.CountDistinctFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.CountDistinctFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -134,7 +134,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface DistinctFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.DistinctFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.DistinctFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -148,7 +148,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface FormulaFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.FormulaFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.FormulaFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -168,7 +168,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface MedianFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.MedianFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.MedianFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -182,7 +182,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface PercentileFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.PercentileFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.PercentileFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -204,7 +204,7 @@ public class AggAllByRequest {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface ColumnsListFieldType {
                     @JsOverlay
-                    static AggAllByRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
+                    static AggregateAllRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
@@ -216,30 +216,30 @@ public class AggAllByRequest {
                 }
 
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                JsArray<AggAllByRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
+                JsArray<AggregateAllRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
 
                 @JsOverlay
                 default void setColumnsList(
-                        AggAllByRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
+                        AggregateAllRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
                     setColumnsList(
-                            Js.<JsArray<AggAllByRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
+                            Js.<JsArray<AggregateAllRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
                                     columnsList));
                 }
 
                 @JsProperty
                 void setColumnsList(
-                        JsArray<AggAllByRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
+                        JsArray<AggregateAllRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TDigestFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.TDigestFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.TDigestFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -255,9 +255,15 @@ public class AggAllByRequest {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface NonUniqueSentinelFieldType {
                     @JsOverlay
-                    static AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                    static AggregateAllRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
+
+                    @JsProperty
+                    double getByteValue();
+
+                    @JsProperty
+                    double getCharValue();
 
                     @JsProperty
                     double getDoubleValue();
@@ -272,6 +278,9 @@ public class AggAllByRequest {
                     String getLongValue();
 
                     @JsProperty
+                    double getShortValue();
+
+                    @JsProperty
                     String getStringValue();
 
                     @JsProperty
@@ -279,6 +288,12 @@ public class AggAllByRequest {
 
                     @JsProperty
                     void setBoolValue(boolean boolValue);
+
+                    @JsProperty
+                    void setByteValue(double byteValue);
+
+                    @JsProperty
+                    void setCharValue(double charValue);
 
                     @JsProperty
                     void setDoubleValue(double doubleValue);
@@ -293,16 +308,19 @@ public class AggAllByRequest {
                     void setLongValue(String longValue);
 
                     @JsProperty
+                    void setShortValue(double shortValue);
+
+                    @JsProperty
                     void setStringValue(String stringValue);
                 }
 
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+                AggregateAllRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
 
                 @JsProperty
                 boolean isIncludeNulls();
@@ -312,13 +330,13 @@ public class AggAllByRequest {
 
                 @JsProperty
                 void setNonUniqueSentinel(
-                        AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
+                        AggregateAllRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface WeightedAvgFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType.SpecFieldType.WeightedAvgFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType.SpecFieldType.WeightedAvgFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -330,7 +348,7 @@ public class AggAllByRequest {
             }
 
             @JsOverlay
-            static AggAllByRequest.ToObjectReturnType.SpecFieldType create() {
+            static AggregateAllRequest.ToObjectReturnType.SpecFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -338,22 +356,22 @@ public class AggAllByRequest {
             Object getAbsSum();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
 
             @JsProperty
             Object getAvg();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.CountDistinctFieldType getCountDistinct();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.CountDistinctFieldType getCountDistinct();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.DistinctFieldType getDistinct();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.DistinctFieldType getDistinct();
 
             @JsProperty
             Object getFirst();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.FormulaFieldType getFormula();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.FormulaFieldType getFormula();
 
             @JsProperty
             Object getFreeze();
@@ -368,7 +386,7 @@ public class AggAllByRequest {
             Object getMax();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.MedianFieldType getMedian();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.MedianFieldType getMedian();
 
             @JsProperty
             Object getMin();
@@ -377,10 +395,10 @@ public class AggAllByRequest {
             Object getPb_var();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.PercentileFieldType getPercentile();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.PercentileFieldType getPercentile();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType getSortedFirst();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType getSortedFirst();
 
             @JsProperty
             Object getSortedLast();
@@ -392,13 +410,13 @@ public class AggAllByRequest {
             Object getSum();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.TDigestFieldType getTDigest();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.TDigestFieldType getTDigest();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType getUnique();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType getUnique();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
+            AggregateAllRequest.ToObjectReturnType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
 
             @JsProperty
             Object getWeightedSum();
@@ -408,23 +426,25 @@ public class AggAllByRequest {
 
             @JsProperty
             void setApproximatePercentile(
-                    AggAllByRequest.ToObjectReturnType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
+                    AggregateAllRequest.ToObjectReturnType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
 
             @JsProperty
             void setAvg(Object avg);
 
             @JsProperty
             void setCountDistinct(
-                    AggAllByRequest.ToObjectReturnType.SpecFieldType.CountDistinctFieldType countDistinct);
+                    AggregateAllRequest.ToObjectReturnType.SpecFieldType.CountDistinctFieldType countDistinct);
 
             @JsProperty
-            void setDistinct(AggAllByRequest.ToObjectReturnType.SpecFieldType.DistinctFieldType distinct);
+            void setDistinct(
+                    AggregateAllRequest.ToObjectReturnType.SpecFieldType.DistinctFieldType distinct);
 
             @JsProperty
             void setFirst(Object first);
 
             @JsProperty
-            void setFormula(AggAllByRequest.ToObjectReturnType.SpecFieldType.FormulaFieldType formula);
+            void setFormula(
+                    AggregateAllRequest.ToObjectReturnType.SpecFieldType.FormulaFieldType formula);
 
             @JsProperty
             void setFreeze(Object freeze);
@@ -439,7 +459,7 @@ public class AggAllByRequest {
             void setMax(Object max);
 
             @JsProperty
-            void setMedian(AggAllByRequest.ToObjectReturnType.SpecFieldType.MedianFieldType median);
+            void setMedian(AggregateAllRequest.ToObjectReturnType.SpecFieldType.MedianFieldType median);
 
             @JsProperty
             void setMin(Object min);
@@ -449,11 +469,11 @@ public class AggAllByRequest {
 
             @JsProperty
             void setPercentile(
-                    AggAllByRequest.ToObjectReturnType.SpecFieldType.PercentileFieldType percentile);
+                    AggregateAllRequest.ToObjectReturnType.SpecFieldType.PercentileFieldType percentile);
 
             @JsProperty
             void setSortedFirst(
-                    AggAllByRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType sortedFirst);
+                    AggregateAllRequest.ToObjectReturnType.SpecFieldType.SortedFirstFieldType sortedFirst);
 
             @JsProperty
             void setSortedLast(Object sortedLast);
@@ -465,21 +485,22 @@ public class AggAllByRequest {
             void setSum(Object sum);
 
             @JsProperty
-            void setTDigest(AggAllByRequest.ToObjectReturnType.SpecFieldType.TDigestFieldType tDigest);
+            void setTDigest(
+                    AggregateAllRequest.ToObjectReturnType.SpecFieldType.TDigestFieldType tDigest);
 
             @JsProperty
-            void setUnique(AggAllByRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType unique);
+            void setUnique(AggregateAllRequest.ToObjectReturnType.SpecFieldType.UniqueFieldType unique);
 
             @JsProperty
             void setWeightedAvg(
-                    AggAllByRequest.ToObjectReturnType.SpecFieldType.WeightedAvgFieldType weightedAvg);
+                    AggregateAllRequest.ToObjectReturnType.SpecFieldType.WeightedAvgFieldType weightedAvg);
 
             @JsProperty
             void setWeightedSum(Object weightedSum);
         }
 
         @JsOverlay
-        static AggAllByRequest.ToObjectReturnType create() {
+        static AggregateAllRequest.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -487,13 +508,13 @@ public class AggAllByRequest {
         JsArray<String> getGroupByColumnsList();
 
         @JsProperty
-        AggAllByRequest.ToObjectReturnType.ResultIdFieldType getResultId();
+        AggregateAllRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
         @JsProperty
-        AggAllByRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
+        AggregateAllRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
         @JsProperty
-        AggAllByRequest.ToObjectReturnType.SpecFieldType getSpec();
+        AggregateAllRequest.ToObjectReturnType.SpecFieldType getSpec();
 
         @JsProperty
         void setGroupByColumnsList(JsArray<String> groupByColumnsList);
@@ -504,13 +525,13 @@ public class AggAllByRequest {
         }
 
         @JsProperty
-        void setResultId(AggAllByRequest.ToObjectReturnType.ResultIdFieldType resultId);
+        void setResultId(AggregateAllRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
         @JsProperty
-        void setSourceId(AggAllByRequest.ToObjectReturnType.SourceIdFieldType sourceId);
+        void setSourceId(AggregateAllRequest.ToObjectReturnType.SourceIdFieldType sourceId);
 
         @JsProperty
-        void setSpec(AggAllByRequest.ToObjectReturnType.SpecFieldType spec);
+        void setSpec(AggregateAllRequest.ToObjectReturnType.SpecFieldType spec);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -520,7 +541,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
+                static AggregateAllRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
                         Object o) {
                     return Js.cast(o);
                 }
@@ -547,28 +568,28 @@ public class AggAllByRequest {
             }
 
             @JsOverlay
-            static AggAllByRequest.ToObjectReturnType0.ResultIdFieldType create() {
+            static AggregateAllRequest.ToObjectReturnType0.ResultIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
+            AggregateAllRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
             void setTicket(
-                    AggAllByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    AggregateAllRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                        Js.<AggAllByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        Js.<AggregateAllRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                        Js.<AggAllByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        Js.<AggregateAllRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
         }
@@ -576,7 +597,7 @@ public class AggAllByRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsOverlay
-            static AggAllByRequest.ToObjectReturnType0.SourceIdFieldType create() {
+            static AggregateAllRequest.ToObjectReturnType0.SourceIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -598,7 +619,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface ApproximatePercentileFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.ApproximatePercentileFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.ApproximatePercentileFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -618,7 +639,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface CountDistinctFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.CountDistinctFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.CountDistinctFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -632,7 +653,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface DistinctFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.DistinctFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.DistinctFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -646,7 +667,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface FormulaFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.FormulaFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.FormulaFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -666,7 +687,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface MedianFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.MedianFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.MedianFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -680,7 +701,7 @@ public class AggAllByRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface PercentileFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.PercentileFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.PercentileFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -702,7 +723,7 @@ public class AggAllByRequest {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface ColumnsListFieldType {
                     @JsOverlay
-                    static AggAllByRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
+                    static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
@@ -714,30 +735,30 @@ public class AggAllByRequest {
                 }
 
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                JsArray<AggAllByRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
+                JsArray<AggregateAllRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
 
                 @JsOverlay
                 default void setColumnsList(
-                        AggAllByRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
+                        AggregateAllRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
                     setColumnsList(
-                            Js.<JsArray<AggAllByRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
+                            Js.<JsArray<AggregateAllRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
                                     columnsList));
                 }
 
                 @JsProperty
                 void setColumnsList(
-                        JsArray<AggAllByRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
+                        JsArray<AggregateAllRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TDigestFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.TDigestFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.TDigestFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -753,9 +774,15 @@ public class AggAllByRequest {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface NonUniqueSentinelFieldType {
                     @JsOverlay
-                    static AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                    static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
+
+                    @JsProperty
+                    double getByteValue();
+
+                    @JsProperty
+                    double getCharValue();
 
                     @JsProperty
                     double getDoubleValue();
@@ -770,6 +797,9 @@ public class AggAllByRequest {
                     String getLongValue();
 
                     @JsProperty
+                    double getShortValue();
+
+                    @JsProperty
                     String getStringValue();
 
                     @JsProperty
@@ -777,6 +807,12 @@ public class AggAllByRequest {
 
                     @JsProperty
                     void setBoolValue(boolean boolValue);
+
+                    @JsProperty
+                    void setByteValue(double byteValue);
+
+                    @JsProperty
+                    void setCharValue(double charValue);
 
                     @JsProperty
                     void setDoubleValue(double doubleValue);
@@ -791,16 +827,19 @@ public class AggAllByRequest {
                     void setLongValue(String longValue);
 
                     @JsProperty
+                    void setShortValue(double shortValue);
+
+                    @JsProperty
                     void setStringValue(String stringValue);
                 }
 
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+                AggregateAllRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
 
                 @JsProperty
                 boolean isIncludeNulls();
@@ -810,13 +849,13 @@ public class AggAllByRequest {
 
                 @JsProperty
                 void setNonUniqueSentinel(
-                        AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
+                        AggregateAllRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface WeightedAvgFieldType {
                 @JsOverlay
-                static AggAllByRequest.ToObjectReturnType0.SpecFieldType.WeightedAvgFieldType create() {
+                static AggregateAllRequest.ToObjectReturnType0.SpecFieldType.WeightedAvgFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -828,7 +867,7 @@ public class AggAllByRequest {
             }
 
             @JsOverlay
-            static AggAllByRequest.ToObjectReturnType0.SpecFieldType create() {
+            static AggregateAllRequest.ToObjectReturnType0.SpecFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -836,22 +875,22 @@ public class AggAllByRequest {
             Object getAbsSum();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
 
             @JsProperty
             Object getAvg();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.CountDistinctFieldType getCountDistinct();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.CountDistinctFieldType getCountDistinct();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.DistinctFieldType getDistinct();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.DistinctFieldType getDistinct();
 
             @JsProperty
             Object getFirst();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.FormulaFieldType getFormula();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.FormulaFieldType getFormula();
 
             @JsProperty
             Object getFreeze();
@@ -866,7 +905,7 @@ public class AggAllByRequest {
             Object getMax();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.MedianFieldType getMedian();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.MedianFieldType getMedian();
 
             @JsProperty
             Object getMin();
@@ -875,10 +914,10 @@ public class AggAllByRequest {
             Object getPb_var();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.PercentileFieldType getPercentile();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.PercentileFieldType getPercentile();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType getSortedFirst();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType getSortedFirst();
 
             @JsProperty
             Object getSortedLast();
@@ -890,13 +929,13 @@ public class AggAllByRequest {
             Object getSum();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.TDigestFieldType getTDigest();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.TDigestFieldType getTDigest();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType getUnique();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType getUnique();
 
             @JsProperty
-            AggAllByRequest.ToObjectReturnType0.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
+            AggregateAllRequest.ToObjectReturnType0.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
 
             @JsProperty
             Object getWeightedSum();
@@ -906,24 +945,25 @@ public class AggAllByRequest {
 
             @JsProperty
             void setApproximatePercentile(
-                    AggAllByRequest.ToObjectReturnType0.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
+                    AggregateAllRequest.ToObjectReturnType0.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
 
             @JsProperty
             void setAvg(Object avg);
 
             @JsProperty
             void setCountDistinct(
-                    AggAllByRequest.ToObjectReturnType0.SpecFieldType.CountDistinctFieldType countDistinct);
+                    AggregateAllRequest.ToObjectReturnType0.SpecFieldType.CountDistinctFieldType countDistinct);
 
             @JsProperty
             void setDistinct(
-                    AggAllByRequest.ToObjectReturnType0.SpecFieldType.DistinctFieldType distinct);
+                    AggregateAllRequest.ToObjectReturnType0.SpecFieldType.DistinctFieldType distinct);
 
             @JsProperty
             void setFirst(Object first);
 
             @JsProperty
-            void setFormula(AggAllByRequest.ToObjectReturnType0.SpecFieldType.FormulaFieldType formula);
+            void setFormula(
+                    AggregateAllRequest.ToObjectReturnType0.SpecFieldType.FormulaFieldType formula);
 
             @JsProperty
             void setFreeze(Object freeze);
@@ -938,7 +978,7 @@ public class AggAllByRequest {
             void setMax(Object max);
 
             @JsProperty
-            void setMedian(AggAllByRequest.ToObjectReturnType0.SpecFieldType.MedianFieldType median);
+            void setMedian(AggregateAllRequest.ToObjectReturnType0.SpecFieldType.MedianFieldType median);
 
             @JsProperty
             void setMin(Object min);
@@ -948,11 +988,11 @@ public class AggAllByRequest {
 
             @JsProperty
             void setPercentile(
-                    AggAllByRequest.ToObjectReturnType0.SpecFieldType.PercentileFieldType percentile);
+                    AggregateAllRequest.ToObjectReturnType0.SpecFieldType.PercentileFieldType percentile);
 
             @JsProperty
             void setSortedFirst(
-                    AggAllByRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType sortedFirst);
+                    AggregateAllRequest.ToObjectReturnType0.SpecFieldType.SortedFirstFieldType sortedFirst);
 
             @JsProperty
             void setSortedLast(Object sortedLast);
@@ -964,21 +1004,22 @@ public class AggAllByRequest {
             void setSum(Object sum);
 
             @JsProperty
-            void setTDigest(AggAllByRequest.ToObjectReturnType0.SpecFieldType.TDigestFieldType tDigest);
+            void setTDigest(
+                    AggregateAllRequest.ToObjectReturnType0.SpecFieldType.TDigestFieldType tDigest);
 
             @JsProperty
-            void setUnique(AggAllByRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType unique);
+            void setUnique(AggregateAllRequest.ToObjectReturnType0.SpecFieldType.UniqueFieldType unique);
 
             @JsProperty
             void setWeightedAvg(
-                    AggAllByRequest.ToObjectReturnType0.SpecFieldType.WeightedAvgFieldType weightedAvg);
+                    AggregateAllRequest.ToObjectReturnType0.SpecFieldType.WeightedAvgFieldType weightedAvg);
 
             @JsProperty
             void setWeightedSum(Object weightedSum);
         }
 
         @JsOverlay
-        static AggAllByRequest.ToObjectReturnType0 create() {
+        static AggregateAllRequest.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -986,13 +1027,13 @@ public class AggAllByRequest {
         JsArray<String> getGroupByColumnsList();
 
         @JsProperty
-        AggAllByRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
+        AggregateAllRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
         @JsProperty
-        AggAllByRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
+        AggregateAllRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
         @JsProperty
-        AggAllByRequest.ToObjectReturnType0.SpecFieldType getSpec();
+        AggregateAllRequest.ToObjectReturnType0.SpecFieldType getSpec();
 
         @JsProperty
         void setGroupByColumnsList(JsArray<String> groupByColumnsList);
@@ -1003,24 +1044,24 @@ public class AggAllByRequest {
         }
 
         @JsProperty
-        void setResultId(AggAllByRequest.ToObjectReturnType0.ResultIdFieldType resultId);
+        void setResultId(AggregateAllRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
         @JsProperty
-        void setSourceId(AggAllByRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
+        void setSourceId(AggregateAllRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
 
         @JsProperty
-        void setSpec(AggAllByRequest.ToObjectReturnType0.SpecFieldType spec);
+        void setSpec(AggregateAllRequest.ToObjectReturnType0.SpecFieldType spec);
     }
 
-    public static native AggAllByRequest deserializeBinary(Uint8Array bytes);
+    public static native AggregateAllRequest deserializeBinary(Uint8Array bytes);
 
-    public static native AggAllByRequest deserializeBinaryFromReader(
-            AggAllByRequest message, Object reader);
+    public static native AggregateAllRequest deserializeBinaryFromReader(
+            AggregateAllRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(AggAllByRequest message, Object writer);
+    public static native void serializeBinaryToWriter(AggregateAllRequest message, Object writer);
 
-    public static native AggAllByRequest.ToObjectReturnType toObject(
-            boolean includeInstance, AggAllByRequest msg);
+    public static native AggregateAllRequest.ToObjectReturnType toObject(
+            boolean includeInstance, AggregateAllRequest msg);
 
     public native String addGroupByColumns(String value, double index);
 
@@ -1069,7 +1110,7 @@ public class AggAllByRequest {
 
     public native void setSpec(AggSpec value);
 
-    public native AggAllByRequest.ToObjectReturnType0 toObject();
+    public native AggregateAllRequest.ToObjectReturnType0 toObject();
 
-    public native AggAllByRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native AggregateAllRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

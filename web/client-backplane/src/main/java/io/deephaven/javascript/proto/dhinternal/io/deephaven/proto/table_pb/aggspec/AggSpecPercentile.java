@@ -63,13 +63,9 @@ public class AggSpecPercentile {
     public static native AggSpecPercentile.ToObjectReturnType toObject(
             boolean includeInstance, AggSpecPercentile msg);
 
-    public native void clearAverageEvenlyDivided();
-
     public native boolean getAverageEvenlyDivided();
 
     public native double getPercentile();
-
-    public native boolean hasAverageEvenlyDivided();
 
     public native Uint8Array serializeBinary();
 

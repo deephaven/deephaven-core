@@ -63,13 +63,9 @@ public class AggregationPartition {
     public static native AggregationPartition.ToObjectReturnType toObject(
             boolean includeInstance, AggregationPartition msg);
 
-    public native void clearIncludeGroupByColumns();
-
     public native String getColumnName();
 
     public native boolean getIncludeGroupByColumns();
-
-    public native boolean hasIncludeGroupByColumns();
 
     public native Uint8Array serializeBinary();
 

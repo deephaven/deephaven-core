@@ -23,6 +23,12 @@ public class AggSpecUnique {
             }
 
             @JsProperty
+            double getByteValue();
+
+            @JsProperty
+            double getCharValue();
+
+            @JsProperty
             double getDoubleValue();
 
             @JsProperty
@@ -35,6 +41,9 @@ public class AggSpecUnique {
             String getLongValue();
 
             @JsProperty
+            double getShortValue();
+
+            @JsProperty
             String getStringValue();
 
             @JsProperty
@@ -42,6 +51,12 @@ public class AggSpecUnique {
 
             @JsProperty
             void setBoolValue(boolean boolValue);
+
+            @JsProperty
+            void setByteValue(double byteValue);
+
+            @JsProperty
+            void setCharValue(double charValue);
 
             @JsProperty
             void setDoubleValue(double doubleValue);
@@ -54,6 +69,9 @@ public class AggSpecUnique {
 
             @JsProperty
             void setLongValue(String longValue);
+
+            @JsProperty
+            void setShortValue(double shortValue);
 
             @JsProperty
             void setStringValue(String stringValue);
@@ -88,6 +106,12 @@ public class AggSpecUnique {
             }
 
             @JsProperty
+            double getByteValue();
+
+            @JsProperty
+            double getCharValue();
+
+            @JsProperty
             double getDoubleValue();
 
             @JsProperty
@@ -100,6 +124,9 @@ public class AggSpecUnique {
             String getLongValue();
 
             @JsProperty
+            double getShortValue();
+
+            @JsProperty
             String getStringValue();
 
             @JsProperty
@@ -107,6 +134,12 @@ public class AggSpecUnique {
 
             @JsProperty
             void setBoolValue(boolean boolValue);
+
+            @JsProperty
+            void setByteValue(double byteValue);
+
+            @JsProperty
+            void setCharValue(double charValue);
 
             @JsProperty
             void setDoubleValue(double doubleValue);
@@ -119,6 +152,9 @@ public class AggSpecUnique {
 
             @JsProperty
             void setLongValue(String longValue);
+
+            @JsProperty
+            void setShortValue(double shortValue);
 
             @JsProperty
             void setStringValue(String stringValue);
@@ -153,15 +189,11 @@ public class AggSpecUnique {
     public static native AggSpecUnique.ToObjectReturnType toObject(
             boolean includeInstance, AggSpecUnique msg);
 
-    public native void clearIncludeNulls();
-
     public native void clearNonUniqueSentinel();
 
     public native boolean getIncludeNulls();
 
     public native AggSpecNonUniqueSentinel getNonUniqueSentinel();
-
-    public native boolean hasIncludeNulls();
 
     public native boolean hasNonUniqueSentinel();
 

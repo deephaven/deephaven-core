@@ -23,13 +23,13 @@ public class BatchTableRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface OpsListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface AggAllByFieldType {
+            public interface AggregateAllFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface SpecFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface ApproximatePercentileFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -49,7 +49,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface CountDistinctFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.CountDistinctFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -63,7 +63,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface DistinctFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.DistinctFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.DistinctFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -77,7 +77,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface FormulaFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.FormulaFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.FormulaFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -97,7 +97,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface MedianFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.MedianFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.MedianFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -111,7 +111,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface PercentileFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.PercentileFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.PercentileFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -133,7 +133,7 @@ public class BatchTableRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface ColumnsListFieldType {
                             @JsOverlay
-                            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
+                            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
                                 return Js.uncheckedCast(JsPropertyMap.of());
                             }
 
@@ -145,30 +145,30 @@ public class BatchTableRequest {
                         }
 
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
+                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
 
                         @JsOverlay
                         default void setColumnsList(
-                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
                             setColumnsList(
-                                    Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
+                                    Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
                                             columnsList));
                         }
 
                         @JsProperty
                         void setColumnsList(
-                                JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
+                                JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface TDigestFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.TDigestFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.TDigestFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -184,9 +184,15 @@ public class BatchTableRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface NonUniqueSentinelFieldType {
                             @JsOverlay
-                            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
                                 return Js.uncheckedCast(JsPropertyMap.of());
                             }
+
+                            @JsProperty
+                            double getByteValue();
+
+                            @JsProperty
+                            double getCharValue();
 
                             @JsProperty
                             double getDoubleValue();
@@ -201,6 +207,9 @@ public class BatchTableRequest {
                             String getLongValue();
 
                             @JsProperty
+                            double getShortValue();
+
+                            @JsProperty
                             String getStringValue();
 
                             @JsProperty
@@ -208,6 +217,12 @@ public class BatchTableRequest {
 
                             @JsProperty
                             void setBoolValue(boolean boolValue);
+
+                            @JsProperty
+                            void setByteValue(double byteValue);
+
+                            @JsProperty
+                            void setCharValue(double charValue);
 
                             @JsProperty
                             void setDoubleValue(double doubleValue);
@@ -222,16 +237,19 @@ public class BatchTableRequest {
                             void setLongValue(String longValue);
 
                             @JsProperty
+                            void setShortValue(double shortValue);
+
+                            @JsProperty
                             void setStringValue(String stringValue);
                         }
 
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
 
                         @JsProperty
                         boolean isIncludeNulls();
@@ -241,13 +259,13 @@ public class BatchTableRequest {
 
                         @JsProperty
                         void setNonUniqueSentinel(
-                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface WeightedAvgFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.WeightedAvgFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -259,7 +277,7 @@ public class BatchTableRequest {
                     }
 
                     @JsOverlay
-                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType create() {
+                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
@@ -267,22 +285,22 @@ public class BatchTableRequest {
                     Object getAbsSum();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
 
                     @JsProperty
                     Object getAvg();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.DistinctFieldType getDistinct();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.DistinctFieldType getDistinct();
 
                     @JsProperty
                     Object getFirst();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.FormulaFieldType getFormula();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.FormulaFieldType getFormula();
 
                     @JsProperty
                     Object getFreeze();
@@ -297,7 +315,7 @@ public class BatchTableRequest {
                     Object getMax();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.MedianFieldType getMedian();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.MedianFieldType getMedian();
 
                     @JsProperty
                     Object getMin();
@@ -306,10 +324,10 @@ public class BatchTableRequest {
                     Object getPb_var();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.PercentileFieldType getPercentile();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.PercentileFieldType getPercentile();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
 
                     @JsProperty
                     Object getSortedLast();
@@ -321,13 +339,13 @@ public class BatchTableRequest {
                     Object getSum();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.TDigestFieldType getTDigest();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.TDigestFieldType getTDigest();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType getUnique();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType getUnique();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
 
                     @JsProperty
                     Object getWeightedSum();
@@ -337,25 +355,25 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setApproximatePercentile(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
 
                     @JsProperty
                     void setAvg(Object avg);
 
                     @JsProperty
                     void setCountDistinct(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
 
                     @JsProperty
                     void setDistinct(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.DistinctFieldType distinct);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.DistinctFieldType distinct);
 
                     @JsProperty
                     void setFirst(Object first);
 
                     @JsProperty
                     void setFormula(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.FormulaFieldType formula);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.FormulaFieldType formula);
 
                     @JsProperty
                     void setFreeze(Object freeze);
@@ -371,7 +389,7 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setMedian(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.MedianFieldType median);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.MedianFieldType median);
 
                     @JsProperty
                     void setMin(Object min);
@@ -381,11 +399,11 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setPercentile(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.PercentileFieldType percentile);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.PercentileFieldType percentile);
 
                     @JsProperty
                     void setSortedFirst(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
 
                     @JsProperty
                     void setSortedLast(Object sortedLast);
@@ -398,22 +416,22 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setTDigest(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.TDigestFieldType tDigest);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.TDigestFieldType tDigest);
 
                     @JsProperty
                     void setUnique(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType unique);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType unique);
 
                     @JsProperty
                     void setWeightedAvg(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
 
                     @JsProperty
                     void setWeightedSum(Object weightedSum);
                 }
 
                 @JsOverlay
-                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType create() {
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -427,7 +445,7 @@ public class BatchTableRequest {
                 Object getSourceId();
 
                 @JsProperty
-                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType getSpec();
+                BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType getSpec();
 
                 @JsProperty
                 void setGroupByColumnsList(JsArray<String> groupByColumnsList);
@@ -445,17 +463,17 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setSpec(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType.SpecFieldType spec);
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType.SpecFieldType spec);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface AggregationFieldType {
+            public interface AggregateFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface AggregationsListFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface ColumnsFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.ColumnsFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -480,7 +498,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface CountFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.CountFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.CountFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -494,7 +512,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface FirstRowKeyFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.FirstRowKeyFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -508,7 +526,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface PartitionFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.PartitionFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -526,52 +544,52 @@ public class BatchTableRequest {
                     }
 
                     @JsOverlay
-                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType create() {
+                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType getColumns();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.ColumnsFieldType getColumns();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.CountFieldType getCount();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.CountFieldType getCount();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
 
                     @JsProperty
                     Object getLastRowKey();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType getPartition();
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.PartitionFieldType getPartition();
 
                     @JsProperty
                     void setColumns(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType columns);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.ColumnsFieldType columns);
 
                     @JsProperty
                     void setCount(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.CountFieldType count);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.CountFieldType count);
 
                     @JsProperty
                     void setFirstRowKey(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
 
                     @JsProperty
                     void setLastRowKey(Object lastRowKey);
 
                     @JsProperty
                     void setPartition(
-                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType partition);
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.PartitionFieldType partition);
                 }
 
                 @JsOverlay
-                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType create() {
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType> getAggregationsList();
+                JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType> getAggregationsList();
 
                 @JsProperty
                 JsArray<String> getGroupByColumnsList();
@@ -590,15 +608,15 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setAggregationsList(
-                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType[] aggregationsList) {
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType[] aggregationsList) {
                     setAggregationsList(
-                            Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType>>uncheckedCast(
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType>>uncheckedCast(
                                     aggregationsList));
                 }
 
                 @JsProperty
                 void setAggregationsList(
-                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType.AggregationsListFieldType> aggregationsList);
+                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType.AggregationsListFieldType> aggregationsList);
 
                 @JsProperty
                 void setGroupByColumnsList(JsArray<String> groupByColumnsList);
@@ -2212,10 +2230,10 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType getAggAllBy();
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType getAggregate();
 
             @JsProperty
-            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType getAggregation();
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType getAggregateAll();
 
             @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.ApplyPreviewColumnsFieldType getApplyPreviewColumns();
@@ -2314,12 +2332,12 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.WhereInFieldType getWhereIn();
 
             @JsProperty
-            void setAggAllBy(
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggAllByFieldType aggAllBy);
+            void setAggregate(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateFieldType aggregate);
 
             @JsProperty
-            void setAggregation(
-                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregationFieldType aggregation);
+            void setAggregateAll(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.AggregateAllFieldType aggregateAll);
 
             @JsProperty
             void setApplyPreviewColumns(
@@ -2462,13 +2480,13 @@ public class BatchTableRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface OpsListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface AggAllByFieldType {
+            public interface AggregateAllFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface SpecFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface ApproximatePercentileFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2488,7 +2506,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface CountDistinctFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.CountDistinctFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2502,7 +2520,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface DistinctFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.DistinctFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.DistinctFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2516,7 +2534,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface FormulaFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.FormulaFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.FormulaFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2536,7 +2554,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface MedianFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.MedianFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.MedianFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2550,7 +2568,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface PercentileFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.PercentileFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.PercentileFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2572,7 +2590,7 @@ public class BatchTableRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface ColumnsListFieldType {
                             @JsOverlay
-                            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
+                            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
                                 return Js.uncheckedCast(JsPropertyMap.of());
                             }
 
@@ -2584,30 +2602,30 @@ public class BatchTableRequest {
                         }
 
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
+                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
 
                         @JsOverlay
                         default void setColumnsList(
-                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
                             setColumnsList(
-                                    Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
+                                    Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
                                             columnsList));
                         }
 
                         @JsProperty
                         void setColumnsList(
-                                JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
+                                JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface TDigestFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.TDigestFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.TDigestFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2623,9 +2641,15 @@ public class BatchTableRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface NonUniqueSentinelFieldType {
                             @JsOverlay
-                            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
                                 return Js.uncheckedCast(JsPropertyMap.of());
                             }
+
+                            @JsProperty
+                            double getByteValue();
+
+                            @JsProperty
+                            double getCharValue();
 
                             @JsProperty
                             double getDoubleValue();
@@ -2640,6 +2664,9 @@ public class BatchTableRequest {
                             String getLongValue();
 
                             @JsProperty
+                            double getShortValue();
+
+                            @JsProperty
                             String getStringValue();
 
                             @JsProperty
@@ -2647,6 +2674,12 @@ public class BatchTableRequest {
 
                             @JsProperty
                             void setBoolValue(boolean boolValue);
+
+                            @JsProperty
+                            void setByteValue(double byteValue);
+
+                            @JsProperty
+                            void setCharValue(double charValue);
 
                             @JsProperty
                             void setDoubleValue(double doubleValue);
@@ -2661,16 +2694,19 @@ public class BatchTableRequest {
                             void setLongValue(String longValue);
 
                             @JsProperty
+                            void setShortValue(double shortValue);
+
+                            @JsProperty
                             void setStringValue(String stringValue);
                         }
 
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
 
                         @JsProperty
                         boolean isIncludeNulls();
@@ -2680,13 +2716,13 @@ public class BatchTableRequest {
 
                         @JsProperty
                         void setNonUniqueSentinel(
-                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface WeightedAvgFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.WeightedAvgFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2698,7 +2734,7 @@ public class BatchTableRequest {
                     }
 
                     @JsOverlay
-                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType create() {
+                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
@@ -2706,22 +2742,22 @@ public class BatchTableRequest {
                     Object getAbsSum();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
 
                     @JsProperty
                     Object getAvg();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.DistinctFieldType getDistinct();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.DistinctFieldType getDistinct();
 
                     @JsProperty
                     Object getFirst();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.FormulaFieldType getFormula();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.FormulaFieldType getFormula();
 
                     @JsProperty
                     Object getFreeze();
@@ -2736,7 +2772,7 @@ public class BatchTableRequest {
                     Object getMax();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.MedianFieldType getMedian();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.MedianFieldType getMedian();
 
                     @JsProperty
                     Object getMin();
@@ -2745,10 +2781,10 @@ public class BatchTableRequest {
                     Object getPb_var();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.PercentileFieldType getPercentile();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.PercentileFieldType getPercentile();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
 
                     @JsProperty
                     Object getSortedLast();
@@ -2760,13 +2796,13 @@ public class BatchTableRequest {
                     Object getSum();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.TDigestFieldType getTDigest();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.TDigestFieldType getTDigest();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType getUnique();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType getUnique();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
 
                     @JsProperty
                     Object getWeightedSum();
@@ -2776,25 +2812,25 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setApproximatePercentile(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
 
                     @JsProperty
                     void setAvg(Object avg);
 
                     @JsProperty
                     void setCountDistinct(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
 
                     @JsProperty
                     void setDistinct(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.DistinctFieldType distinct);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.DistinctFieldType distinct);
 
                     @JsProperty
                     void setFirst(Object first);
 
                     @JsProperty
                     void setFormula(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.FormulaFieldType formula);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.FormulaFieldType formula);
 
                     @JsProperty
                     void setFreeze(Object freeze);
@@ -2810,7 +2846,7 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setMedian(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.MedianFieldType median);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.MedianFieldType median);
 
                     @JsProperty
                     void setMin(Object min);
@@ -2820,11 +2856,11 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setPercentile(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.PercentileFieldType percentile);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.PercentileFieldType percentile);
 
                     @JsProperty
                     void setSortedFirst(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
 
                     @JsProperty
                     void setSortedLast(Object sortedLast);
@@ -2837,22 +2873,22 @@ public class BatchTableRequest {
 
                     @JsProperty
                     void setTDigest(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.TDigestFieldType tDigest);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.TDigestFieldType tDigest);
 
                     @JsProperty
                     void setUnique(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.UniqueFieldType unique);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.UniqueFieldType unique);
 
                     @JsProperty
                     void setWeightedAvg(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
 
                     @JsProperty
                     void setWeightedSum(Object weightedSum);
                 }
 
                 @JsOverlay
-                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType create() {
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -2866,7 +2902,7 @@ public class BatchTableRequest {
                 Object getSourceId();
 
                 @JsProperty
-                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType getSpec();
+                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType getSpec();
 
                 @JsProperty
                 void setGroupByColumnsList(JsArray<String> groupByColumnsList);
@@ -2884,17 +2920,17 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setSpec(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType.SpecFieldType spec);
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType.SpecFieldType spec);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface AggregationFieldType {
+            public interface AggregateFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface AggregationsListFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface ColumnsFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.ColumnsFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2919,7 +2955,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface CountFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.CountFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.CountFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2933,7 +2969,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface FirstRowKeyFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.FirstRowKeyFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2947,7 +2983,7 @@ public class BatchTableRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface PartitionFieldType {
                         @JsOverlay
-                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType create() {
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.PartitionFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -2965,52 +3001,52 @@ public class BatchTableRequest {
                     }
 
                     @JsOverlay
-                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType create() {
+                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType getColumns();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.ColumnsFieldType getColumns();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.CountFieldType getCount();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.CountFieldType getCount();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
 
                     @JsProperty
                     Object getLastRowKey();
 
                     @JsProperty
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType getPartition();
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.PartitionFieldType getPartition();
 
                     @JsProperty
                     void setColumns(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.ColumnsFieldType columns);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.ColumnsFieldType columns);
 
                     @JsProperty
                     void setCount(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.CountFieldType count);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.CountFieldType count);
 
                     @JsProperty
                     void setFirstRowKey(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
 
                     @JsProperty
                     void setLastRowKey(Object lastRowKey);
 
                     @JsProperty
                     void setPartition(
-                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType.PartitionFieldType partition);
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType.PartitionFieldType partition);
                 }
 
                 @JsOverlay
-                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType create() {
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType> getAggregationsList();
+                JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType> getAggregationsList();
 
                 @JsProperty
                 JsArray<String> getGroupByColumnsList();
@@ -3029,15 +3065,15 @@ public class BatchTableRequest {
 
                 @JsOverlay
                 default void setAggregationsList(
-                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType[] aggregationsList) {
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType[] aggregationsList) {
                     setAggregationsList(
-                            Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType>>uncheckedCast(
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType>>uncheckedCast(
                                     aggregationsList));
                 }
 
                 @JsProperty
                 void setAggregationsList(
-                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType.AggregationsListFieldType> aggregationsList);
+                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType.AggregationsListFieldType> aggregationsList);
 
                 @JsProperty
                 void setGroupByColumnsList(JsArray<String> groupByColumnsList);
@@ -4651,10 +4687,10 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType getAggAllBy();
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType getAggregate();
 
             @JsProperty
-            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType getAggregation();
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType getAggregateAll();
 
             @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ApplyPreviewColumnsFieldType getApplyPreviewColumns();
@@ -4753,12 +4789,12 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.WhereInFieldType getWhereIn();
 
             @JsProperty
-            void setAggAllBy(
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggAllByFieldType aggAllBy);
+            void setAggregate(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateFieldType aggregate);
 
             @JsProperty
-            void setAggregation(
-                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregationFieldType aggregation);
+            void setAggregateAll(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AggregateAllFieldType aggregateAll);
 
             @JsProperty
             void setApplyPreviewColumns(

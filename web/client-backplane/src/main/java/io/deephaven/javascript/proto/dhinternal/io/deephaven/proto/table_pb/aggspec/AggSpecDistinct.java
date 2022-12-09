@@ -51,11 +51,7 @@ public class AggSpecDistinct {
     public static native AggSpecDistinct.ToObjectReturnType toObject(
             boolean includeInstance, AggSpecDistinct msg);
 
-    public native void clearIncludeNulls();
-
     public native boolean getIncludeNulls();
-
-    public native boolean hasIncludeNulls();
 
     public native Uint8Array serializeBinary();
 

@@ -182,6 +182,12 @@ public class AggregationColumns {
                     }
 
                     @JsProperty
+                    double getByteValue();
+
+                    @JsProperty
+                    double getCharValue();
+
+                    @JsProperty
                     double getDoubleValue();
 
                     @JsProperty
@@ -194,6 +200,9 @@ public class AggregationColumns {
                     String getLongValue();
 
                     @JsProperty
+                    double getShortValue();
+
+                    @JsProperty
                     String getStringValue();
 
                     @JsProperty
@@ -201,6 +210,12 @@ public class AggregationColumns {
 
                     @JsProperty
                     void setBoolValue(boolean boolValue);
+
+                    @JsProperty
+                    void setByteValue(double byteValue);
+
+                    @JsProperty
+                    void setCharValue(double charValue);
 
                     @JsProperty
                     void setDoubleValue(double doubleValue);
@@ -213,6 +228,9 @@ public class AggregationColumns {
 
                     @JsProperty
                     void setLongValue(String longValue);
+
+                    @JsProperty
+                    void setShortValue(double shortValue);
 
                     @JsProperty
                     void setStringValue(String stringValue);
@@ -591,6 +609,12 @@ public class AggregationColumns {
                     }
 
                     @JsProperty
+                    double getByteValue();
+
+                    @JsProperty
+                    double getCharValue();
+
+                    @JsProperty
                     double getDoubleValue();
 
                     @JsProperty
@@ -603,6 +627,9 @@ public class AggregationColumns {
                     String getLongValue();
 
                     @JsProperty
+                    double getShortValue();
+
+                    @JsProperty
                     String getStringValue();
 
                     @JsProperty
@@ -610,6 +637,12 @@ public class AggregationColumns {
 
                     @JsProperty
                     void setBoolValue(boolean boolValue);
+
+                    @JsProperty
+                    void setByteValue(double byteValue);
+
+                    @JsProperty
+                    void setCharValue(double charValue);
 
                     @JsProperty
                     void setDoubleValue(double doubleValue);
@@ -622,6 +655,9 @@ public class AggregationColumns {
 
                     @JsProperty
                     void setLongValue(String longValue);
+
+                    @JsProperty
+                    void setShortValue(double shortValue);
 
                     @JsProperty
                     void setStringValue(String stringValue);

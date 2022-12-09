@@ -16,9 +16,9 @@ import jsinterop.base.JsPropertyMap;
         namespace = JsPackage.GLOBAL)
 public class TableService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface AggAllByType {
+    public interface AggregateAllType {
         @JsOverlay
-        static TableService.AggAllByType create() {
+        static TableService.AggregateAllType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -1643,8 +1643,8 @@ public class TableService {
         void setService(Object service);
     }
 
-    public static TableService.AggAllByType AggAllBy;
     public static TableService.AggregateType Aggregate;
+    public static TableService.AggregateAllType AggregateAll;
     public static TableService.ApplyPreviewColumnsType ApplyPreviewColumns;
     public static TableService.AsOfJoinTablesType AsOfJoinTables;
     public static TableService.BatchType Batch;

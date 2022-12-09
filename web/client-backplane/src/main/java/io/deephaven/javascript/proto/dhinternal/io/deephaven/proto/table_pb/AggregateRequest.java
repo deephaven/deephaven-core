@@ -12,9 +12,9 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.table_pb.AggregationRequest",
+        name = "dhinternal.io.deephaven.proto.table_pb.AggregateRequest",
         namespace = JsPackage.GLOBAL)
-public class AggregationRequest {
+public class AggregateRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -26,7 +26,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface ApproximatePercentileFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -46,7 +46,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface CountDistinctFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -60,7 +60,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface DistinctFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -74,7 +74,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface FormulaFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -94,7 +94,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface MedianFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -108,7 +108,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface PercentileFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -130,7 +130,7 @@ public class AggregationRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface ColumnsListFieldType {
                             @JsOverlay
-                            static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
+                            static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
                                 return Js.uncheckedCast(JsPropertyMap.of());
                             }
 
@@ -142,30 +142,30 @@ public class AggregationRequest {
                         }
 
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        JsArray<AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
+                        JsArray<AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
 
                         @JsOverlay
                         default void setColumnsList(
-                                AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
+                                AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
                             setColumnsList(
-                                    Js.<JsArray<AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
+                                    Js.<JsArray<AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
                                             columnsList));
                         }
 
                         @JsProperty
                         void setColumnsList(
-                                JsArray<AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
+                                JsArray<AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface TDigestFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -181,9 +181,15 @@ public class AggregationRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface NonUniqueSentinelFieldType {
                             @JsOverlay
-                            static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                            static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
                                 return Js.uncheckedCast(JsPropertyMap.of());
                             }
+
+                            @JsProperty
+                            double getByteValue();
+
+                            @JsProperty
+                            double getCharValue();
 
                             @JsProperty
                             double getDoubleValue();
@@ -198,6 +204,9 @@ public class AggregationRequest {
                             String getLongValue();
 
                             @JsProperty
+                            double getShortValue();
+
+                            @JsProperty
                             String getStringValue();
 
                             @JsProperty
@@ -205,6 +214,12 @@ public class AggregationRequest {
 
                             @JsProperty
                             void setBoolValue(boolean boolValue);
+
+                            @JsProperty
+                            void setByteValue(double byteValue);
+
+                            @JsProperty
+                            void setCharValue(double charValue);
 
                             @JsProperty
                             void setDoubleValue(double doubleValue);
@@ -219,16 +234,19 @@ public class AggregationRequest {
                             void setLongValue(String longValue);
 
                             @JsProperty
+                            void setShortValue(double shortValue);
+
+                            @JsProperty
                             void setStringValue(String stringValue);
                         }
 
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+                        AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
 
                         @JsProperty
                         boolean isIncludeNulls();
@@ -238,13 +256,13 @@ public class AggregationRequest {
 
                         @JsProperty
                         void setNonUniqueSentinel(
-                                AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
+                                AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface WeightedAvgFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType create() {
+                        static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -256,7 +274,7 @@ public class AggregationRequest {
                     }
 
                     @JsOverlay
-                    static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType create() {
+                    static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
@@ -264,22 +282,22 @@ public class AggregationRequest {
                     Object getAbsSum();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
 
                     @JsProperty
                     Object getAvg();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType getDistinct();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType getDistinct();
 
                     @JsProperty
                     Object getFirst();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType getFormula();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType getFormula();
 
                     @JsProperty
                     Object getFreeze();
@@ -294,7 +312,7 @@ public class AggregationRequest {
                     Object getMax();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType getMedian();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType getMedian();
 
                     @JsProperty
                     Object getMin();
@@ -303,10 +321,10 @@ public class AggregationRequest {
                     Object getPb_var();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType getPercentile();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType getPercentile();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
 
                     @JsProperty
                     Object getSortedLast();
@@ -318,13 +336,13 @@ public class AggregationRequest {
                     Object getSum();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType getTDigest();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType getTDigest();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType getUnique();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType getUnique();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
 
                     @JsProperty
                     Object getWeightedSum();
@@ -334,25 +352,25 @@ public class AggregationRequest {
 
                     @JsProperty
                     void setApproximatePercentile(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
 
                     @JsProperty
                     void setAvg(Object avg);
 
                     @JsProperty
                     void setCountDistinct(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
 
                     @JsProperty
                     void setDistinct(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType distinct);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType distinct);
 
                     @JsProperty
                     void setFirst(Object first);
 
                     @JsProperty
                     void setFormula(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType formula);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType formula);
 
                     @JsProperty
                     void setFreeze(Object freeze);
@@ -368,7 +386,7 @@ public class AggregationRequest {
 
                     @JsProperty
                     void setMedian(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType median);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType median);
 
                     @JsProperty
                     void setMin(Object min);
@@ -378,11 +396,11 @@ public class AggregationRequest {
 
                     @JsProperty
                     void setPercentile(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType percentile);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType percentile);
 
                     @JsProperty
                     void setSortedFirst(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
 
                     @JsProperty
                     void setSortedLast(Object sortedLast);
@@ -395,22 +413,22 @@ public class AggregationRequest {
 
                     @JsProperty
                     void setTDigest(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType tDigest);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType tDigest);
 
                     @JsProperty
                     void setUnique(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType unique);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType unique);
 
                     @JsProperty
                     void setWeightedAvg(
-                            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
+                            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
 
                     @JsProperty
                     void setWeightedSum(Object weightedSum);
                 }
 
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType create() {
+                static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -418,7 +436,7 @@ public class AggregationRequest {
                 JsArray<String> getMatchPairsList();
 
                 @JsProperty
-                AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType getSpec();
+                AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType getSpec();
 
                 @JsProperty
                 void setMatchPairsList(JsArray<String> matchPairsList);
@@ -430,13 +448,13 @@ public class AggregationRequest {
 
                 @JsProperty
                 void setSpec(
-                        AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType spec);
+                        AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType.SpecFieldType spec);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface CountFieldType {
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.CountFieldType create() {
+                static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.CountFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -450,7 +468,7 @@ public class AggregationRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface FirstRowKeyFieldType {
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.FirstRowKeyFieldType create() {
+                static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.FirstRowKeyFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -464,7 +482,7 @@ public class AggregationRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface PartitionFieldType {
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType.AggregationsListFieldType.PartitionFieldType create() {
+                static AggregateRequest.ToObjectReturnType.AggregationsListFieldType.PartitionFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -482,43 +500,43 @@ public class AggregationRequest {
             }
 
             @JsOverlay
-            static AggregationRequest.ToObjectReturnType.AggregationsListFieldType create() {
+            static AggregateRequest.ToObjectReturnType.AggregationsListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType getColumns();
+            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType getColumns();
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.CountFieldType getCount();
+            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.CountFieldType getCount();
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
+            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
 
             @JsProperty
             Object getLastRowKey();
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType.AggregationsListFieldType.PartitionFieldType getPartition();
+            AggregateRequest.ToObjectReturnType.AggregationsListFieldType.PartitionFieldType getPartition();
 
             @JsProperty
             void setColumns(
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType columns);
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.ColumnsFieldType columns);
 
             @JsProperty
             void setCount(
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.CountFieldType count);
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.CountFieldType count);
 
             @JsProperty
             void setFirstRowKey(
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
 
             @JsProperty
             void setLastRowKey(Object lastRowKey);
 
             @JsProperty
             void setPartition(
-                    AggregationRequest.ToObjectReturnType.AggregationsListFieldType.PartitionFieldType partition);
+                    AggregateRequest.ToObjectReturnType.AggregationsListFieldType.PartitionFieldType partition);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -526,7 +544,7 @@ public class AggregationRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
+                static AggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
                         Object o) {
                     return Js.cast(o);
                 }
@@ -553,28 +571,28 @@ public class AggregationRequest {
             }
 
             @JsOverlay
-            static AggregationRequest.ToObjectReturnType.ResultIdFieldType create() {
+            static AggregateRequest.ToObjectReturnType.ResultIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
+            AggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
             void setTicket(
-                    AggregationRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    AggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                        Js.<AggregationRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        Js.<AggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                        Js.<AggregationRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        Js.<AggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
         }
@@ -582,7 +600,7 @@ public class AggregationRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsOverlay
-            static AggregationRequest.ToObjectReturnType.SourceIdFieldType create() {
+            static AggregateRequest.ToObjectReturnType.SourceIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -600,12 +618,12 @@ public class AggregationRequest {
         }
 
         @JsOverlay
-        static AggregationRequest.ToObjectReturnType create() {
+        static AggregateRequest.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<AggregationRequest.ToObjectReturnType.AggregationsListFieldType> getAggregationsList();
+        JsArray<AggregateRequest.ToObjectReturnType.AggregationsListFieldType> getAggregationsList();
 
         @JsProperty
         JsArray<String> getGroupByColumnsList();
@@ -614,25 +632,25 @@ public class AggregationRequest {
         Object getInitialGroupsId();
 
         @JsProperty
-        AggregationRequest.ToObjectReturnType.ResultIdFieldType getResultId();
+        AggregateRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
         @JsProperty
-        AggregationRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
+        AggregateRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
         @JsProperty
         boolean isPreserveEmpty();
 
         @JsOverlay
         default void setAggregationsList(
-                AggregationRequest.ToObjectReturnType.AggregationsListFieldType[] aggregationsList) {
+                AggregateRequest.ToObjectReturnType.AggregationsListFieldType[] aggregationsList) {
             setAggregationsList(
-                    Js.<JsArray<AggregationRequest.ToObjectReturnType.AggregationsListFieldType>>uncheckedCast(
+                    Js.<JsArray<AggregateRequest.ToObjectReturnType.AggregationsListFieldType>>uncheckedCast(
                             aggregationsList));
         }
 
         @JsProperty
         void setAggregationsList(
-                JsArray<AggregationRequest.ToObjectReturnType.AggregationsListFieldType> aggregationsList);
+                JsArray<AggregateRequest.ToObjectReturnType.AggregationsListFieldType> aggregationsList);
 
         @JsProperty
         void setGroupByColumnsList(JsArray<String> groupByColumnsList);
@@ -649,10 +667,10 @@ public class AggregationRequest {
         void setPreserveEmpty(boolean preserveEmpty);
 
         @JsProperty
-        void setResultId(AggregationRequest.ToObjectReturnType.ResultIdFieldType resultId);
+        void setResultId(AggregateRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
         @JsProperty
-        void setSourceId(AggregationRequest.ToObjectReturnType.SourceIdFieldType sourceId);
+        void setSourceId(AggregateRequest.ToObjectReturnType.SourceIdFieldType sourceId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -666,7 +684,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface ApproximatePercentileFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -686,7 +704,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface CountDistinctFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -700,7 +718,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface DistinctFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -714,7 +732,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface FormulaFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -734,7 +752,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface MedianFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -748,7 +766,7 @@ public class AggregationRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface PercentileFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -770,7 +788,7 @@ public class AggregationRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface ColumnsListFieldType {
                             @JsOverlay
-                            static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
+                            static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType create() {
                                 return Js.uncheckedCast(JsPropertyMap.of());
                             }
 
@@ -782,30 +800,30 @@ public class AggregationRequest {
                         }
 
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        JsArray<AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
+                        JsArray<AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> getColumnsList();
 
                         @JsOverlay
                         default void setColumnsList(
-                                AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
+                                AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType[] columnsList) {
                             setColumnsList(
-                                    Js.<JsArray<AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
+                                    Js.<JsArray<AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType>>uncheckedCast(
                                             columnsList));
                         }
 
                         @JsProperty
                         void setColumnsList(
-                                JsArray<AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
+                                JsArray<AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType.ColumnsListFieldType> columnsList);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface TDigestFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -821,9 +839,15 @@ public class AggregationRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface NonUniqueSentinelFieldType {
                             @JsOverlay
-                            static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
+                            static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType create() {
                                 return Js.uncheckedCast(JsPropertyMap.of());
                             }
+
+                            @JsProperty
+                            double getByteValue();
+
+                            @JsProperty
+                            double getCharValue();
 
                             @JsProperty
                             double getDoubleValue();
@@ -838,6 +862,9 @@ public class AggregationRequest {
                             String getLongValue();
 
                             @JsProperty
+                            double getShortValue();
+
+                            @JsProperty
                             String getStringValue();
 
                             @JsProperty
@@ -845,6 +872,12 @@ public class AggregationRequest {
 
                             @JsProperty
                             void setBoolValue(boolean boolValue);
+
+                            @JsProperty
+                            void setByteValue(double byteValue);
+
+                            @JsProperty
+                            void setCharValue(double charValue);
 
                             @JsProperty
                             void setDoubleValue(double doubleValue);
@@ -859,16 +892,19 @@ public class AggregationRequest {
                             void setLongValue(String longValue);
 
                             @JsProperty
+                            void setShortValue(double shortValue);
+
+                            @JsProperty
                             void setStringValue(String stringValue);
                         }
 
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
                         @JsProperty
-                        AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
+                        AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType getNonUniqueSentinel();
 
                         @JsProperty
                         boolean isIncludeNulls();
@@ -878,13 +914,13 @@ public class AggregationRequest {
 
                         @JsProperty
                         void setNonUniqueSentinel(
-                                AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
+                                AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType.NonUniqueSentinelFieldType nonUniqueSentinel);
                     }
 
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface WeightedAvgFieldType {
                         @JsOverlay
-                        static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType create() {
+                        static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType create() {
                             return Js.uncheckedCast(JsPropertyMap.of());
                         }
 
@@ -896,7 +932,7 @@ public class AggregationRequest {
                     }
 
                     @JsOverlay
-                    static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType create() {
+                    static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
@@ -904,22 +940,22 @@ public class AggregationRequest {
                     Object getAbsSum();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType getApproximatePercentile();
 
                     @JsProperty
                     Object getAvg();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType getCountDistinct();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType getDistinct();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType getDistinct();
 
                     @JsProperty
                     Object getFirst();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType getFormula();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType getFormula();
 
                     @JsProperty
                     Object getFreeze();
@@ -934,7 +970,7 @@ public class AggregationRequest {
                     Object getMax();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType getMedian();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType getMedian();
 
                     @JsProperty
                     Object getMin();
@@ -943,10 +979,10 @@ public class AggregationRequest {
                     Object getPb_var();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType getPercentile();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType getPercentile();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType getSortedFirst();
 
                     @JsProperty
                     Object getSortedLast();
@@ -958,13 +994,13 @@ public class AggregationRequest {
                     Object getSum();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType getTDigest();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType getTDigest();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType getUnique();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType getUnique();
 
                     @JsProperty
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType getWeightedAvg();
 
                     @JsProperty
                     Object getWeightedSum();
@@ -974,25 +1010,25 @@ public class AggregationRequest {
 
                     @JsProperty
                     void setApproximatePercentile(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.ApproximatePercentileFieldType approximatePercentile);
 
                     @JsProperty
                     void setAvg(Object avg);
 
                     @JsProperty
                     void setCountDistinct(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.CountDistinctFieldType countDistinct);
 
                     @JsProperty
                     void setDistinct(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType distinct);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.DistinctFieldType distinct);
 
                     @JsProperty
                     void setFirst(Object first);
 
                     @JsProperty
                     void setFormula(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType formula);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.FormulaFieldType formula);
 
                     @JsProperty
                     void setFreeze(Object freeze);
@@ -1008,7 +1044,7 @@ public class AggregationRequest {
 
                     @JsProperty
                     void setMedian(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType median);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.MedianFieldType median);
 
                     @JsProperty
                     void setMin(Object min);
@@ -1018,11 +1054,11 @@ public class AggregationRequest {
 
                     @JsProperty
                     void setPercentile(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType percentile);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.PercentileFieldType percentile);
 
                     @JsProperty
                     void setSortedFirst(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.SortedFirstFieldType sortedFirst);
 
                     @JsProperty
                     void setSortedLast(Object sortedLast);
@@ -1035,22 +1071,22 @@ public class AggregationRequest {
 
                     @JsProperty
                     void setTDigest(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType tDigest);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.TDigestFieldType tDigest);
 
                     @JsProperty
                     void setUnique(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType unique);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.UniqueFieldType unique);
 
                     @JsProperty
                     void setWeightedAvg(
-                            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
+                            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType.WeightedAvgFieldType weightedAvg);
 
                     @JsProperty
                     void setWeightedSum(Object weightedSum);
                 }
 
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType create() {
+                static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -1058,7 +1094,7 @@ public class AggregationRequest {
                 JsArray<String> getMatchPairsList();
 
                 @JsProperty
-                AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType getSpec();
+                AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType getSpec();
 
                 @JsProperty
                 void setMatchPairsList(JsArray<String> matchPairsList);
@@ -1070,13 +1106,13 @@ public class AggregationRequest {
 
                 @JsProperty
                 void setSpec(
-                        AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType spec);
+                        AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType.SpecFieldType spec);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface CountFieldType {
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.CountFieldType create() {
+                static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.CountFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -1090,7 +1126,7 @@ public class AggregationRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface FirstRowKeyFieldType {
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.FirstRowKeyFieldType create() {
+                static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.FirstRowKeyFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -1104,7 +1140,7 @@ public class AggregationRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface PartitionFieldType {
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.PartitionFieldType create() {
+                static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.PartitionFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -1122,43 +1158,43 @@ public class AggregationRequest {
             }
 
             @JsOverlay
-            static AggregationRequest.ToObjectReturnType0.AggregationsListFieldType create() {
+            static AggregateRequest.ToObjectReturnType0.AggregationsListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType getColumns();
+            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType getColumns();
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.CountFieldType getCount();
+            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.CountFieldType getCount();
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
+            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.FirstRowKeyFieldType getFirstRowKey();
 
             @JsProperty
             Object getLastRowKey();
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.PartitionFieldType getPartition();
+            AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.PartitionFieldType getPartition();
 
             @JsProperty
             void setColumns(
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType columns);
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.ColumnsFieldType columns);
 
             @JsProperty
             void setCount(
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.CountFieldType count);
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.CountFieldType count);
 
             @JsProperty
             void setFirstRowKey(
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.FirstRowKeyFieldType firstRowKey);
 
             @JsProperty
             void setLastRowKey(Object lastRowKey);
 
             @JsProperty
             void setPartition(
-                    AggregationRequest.ToObjectReturnType0.AggregationsListFieldType.PartitionFieldType partition);
+                    AggregateRequest.ToObjectReturnType0.AggregationsListFieldType.PartitionFieldType partition);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1166,7 +1202,7 @@ public class AggregationRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static AggregationRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
+                static AggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
                         Object o) {
                     return Js.cast(o);
                 }
@@ -1193,28 +1229,28 @@ public class AggregationRequest {
             }
 
             @JsOverlay
-            static AggregationRequest.ToObjectReturnType0.ResultIdFieldType create() {
+            static AggregateRequest.ToObjectReturnType0.ResultIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            AggregationRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
+            AggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
             void setTicket(
-                    AggregationRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    AggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                        Js.<AggregationRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        Js.<AggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                        Js.<AggregationRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        Js.<AggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
         }
@@ -1222,7 +1258,7 @@ public class AggregationRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsOverlay
-            static AggregationRequest.ToObjectReturnType0.SourceIdFieldType create() {
+            static AggregateRequest.ToObjectReturnType0.SourceIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -1240,12 +1276,12 @@ public class AggregationRequest {
         }
 
         @JsOverlay
-        static AggregationRequest.ToObjectReturnType0 create() {
+        static AggregateRequest.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<AggregationRequest.ToObjectReturnType0.AggregationsListFieldType> getAggregationsList();
+        JsArray<AggregateRequest.ToObjectReturnType0.AggregationsListFieldType> getAggregationsList();
 
         @JsProperty
         JsArray<String> getGroupByColumnsList();
@@ -1254,25 +1290,25 @@ public class AggregationRequest {
         Object getInitialGroupsId();
 
         @JsProperty
-        AggregationRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
+        AggregateRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
         @JsProperty
-        AggregationRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
+        AggregateRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
         @JsProperty
         boolean isPreserveEmpty();
 
         @JsOverlay
         default void setAggregationsList(
-                AggregationRequest.ToObjectReturnType0.AggregationsListFieldType[] aggregationsList) {
+                AggregateRequest.ToObjectReturnType0.AggregationsListFieldType[] aggregationsList) {
             setAggregationsList(
-                    Js.<JsArray<AggregationRequest.ToObjectReturnType0.AggregationsListFieldType>>uncheckedCast(
+                    Js.<JsArray<AggregateRequest.ToObjectReturnType0.AggregationsListFieldType>>uncheckedCast(
                             aggregationsList));
         }
 
         @JsProperty
         void setAggregationsList(
-                JsArray<AggregationRequest.ToObjectReturnType0.AggregationsListFieldType> aggregationsList);
+                JsArray<AggregateRequest.ToObjectReturnType0.AggregationsListFieldType> aggregationsList);
 
         @JsProperty
         void setGroupByColumnsList(JsArray<String> groupByColumnsList);
@@ -1289,21 +1325,21 @@ public class AggregationRequest {
         void setPreserveEmpty(boolean preserveEmpty);
 
         @JsProperty
-        void setResultId(AggregationRequest.ToObjectReturnType0.ResultIdFieldType resultId);
+        void setResultId(AggregateRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
         @JsProperty
-        void setSourceId(AggregationRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
+        void setSourceId(AggregateRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
     }
 
-    public static native AggregationRequest deserializeBinary(Uint8Array bytes);
+    public static native AggregateRequest deserializeBinary(Uint8Array bytes);
 
-    public static native AggregationRequest deserializeBinaryFromReader(
-            AggregationRequest message, Object reader);
+    public static native AggregateRequest deserializeBinaryFromReader(
+            AggregateRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(AggregationRequest message, Object writer);
+    public static native void serializeBinaryToWriter(AggregateRequest message, Object writer);
 
-    public static native AggregationRequest.ToObjectReturnType toObject(
-            boolean includeInstance, AggregationRequest msg);
+    public static native AggregateRequest.ToObjectReturnType toObject(
+            boolean includeInstance, AggregateRequest msg);
 
     public native Aggregation addAggregations();
 
@@ -1320,8 +1356,6 @@ public class AggregationRequest {
     public native void clearGroupByColumnsList();
 
     public native void clearInitialGroupsId();
-
-    public native void clearPreserveEmpty();
 
     public native void clearResultId();
 
@@ -1340,8 +1374,6 @@ public class AggregationRequest {
     public native TableReference getSourceId();
 
     public native boolean hasInitialGroupsId();
-
-    public native boolean hasPreserveEmpty();
 
     public native boolean hasResultId();
 
@@ -1377,7 +1409,7 @@ public class AggregationRequest {
 
     public native void setSourceId(TableReference value);
 
-    public native AggregationRequest.ToObjectReturnType0 toObject();
+    public native AggregateRequest.ToObjectReturnType0 toObject();
 
-    public native AggregationRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native AggregateRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

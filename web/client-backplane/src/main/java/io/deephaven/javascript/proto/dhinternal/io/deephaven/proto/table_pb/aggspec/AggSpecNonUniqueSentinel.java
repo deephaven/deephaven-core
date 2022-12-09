@@ -22,6 +22,12 @@ public class AggSpecNonUniqueSentinel {
         }
 
         @JsProperty
+        double getByteValue();
+
+        @JsProperty
+        double getCharValue();
+
+        @JsProperty
         double getDoubleValue();
 
         @JsProperty
@@ -34,6 +40,9 @@ public class AggSpecNonUniqueSentinel {
         String getLongValue();
 
         @JsProperty
+        double getShortValue();
+
+        @JsProperty
         String getStringValue();
 
         @JsProperty
@@ -41,6 +50,12 @@ public class AggSpecNonUniqueSentinel {
 
         @JsProperty
         void setBoolValue(boolean boolValue);
+
+        @JsProperty
+        void setByteValue(double byteValue);
+
+        @JsProperty
+        void setCharValue(double charValue);
 
         @JsProperty
         void setDoubleValue(double doubleValue);
@@ -53,6 +68,9 @@ public class AggSpecNonUniqueSentinel {
 
         @JsProperty
         void setLongValue(String longValue);
+
+        @JsProperty
+        void setShortValue(double shortValue);
 
         @JsProperty
         void setStringValue(String stringValue);
@@ -66,6 +84,12 @@ public class AggSpecNonUniqueSentinel {
         }
 
         @JsProperty
+        double getByteValue();
+
+        @JsProperty
+        double getCharValue();
+
+        @JsProperty
         double getDoubleValue();
 
         @JsProperty
@@ -78,6 +102,9 @@ public class AggSpecNonUniqueSentinel {
         String getLongValue();
 
         @JsProperty
+        double getShortValue();
+
+        @JsProperty
         String getStringValue();
 
         @JsProperty
@@ -85,6 +112,12 @@ public class AggSpecNonUniqueSentinel {
 
         @JsProperty
         void setBoolValue(boolean boolValue);
+
+        @JsProperty
+        void setByteValue(double byteValue);
+
+        @JsProperty
+        void setCharValue(double charValue);
 
         @JsProperty
         void setDoubleValue(double doubleValue);
@@ -97,6 +130,9 @@ public class AggSpecNonUniqueSentinel {
 
         @JsProperty
         void setLongValue(String longValue);
+
+        @JsProperty
+        void setShortValue(double shortValue);
 
         @JsProperty
         void setStringValue(String stringValue);
@@ -115,6 +151,10 @@ public class AggSpecNonUniqueSentinel {
 
     public native void clearBoolValue();
 
+    public native void clearByteValue();
+
+    public native void clearCharValue();
+
     public native void clearDoubleValue();
 
     public native void clearFloatValue();
@@ -123,9 +163,15 @@ public class AggSpecNonUniqueSentinel {
 
     public native void clearLongValue();
 
+    public native void clearShortValue();
+
     public native void clearStringValue();
 
     public native boolean getBoolValue();
+
+    public native double getByteValue();
+
+    public native double getCharValue();
 
     public native double getDoubleValue();
 
@@ -135,11 +181,17 @@ public class AggSpecNonUniqueSentinel {
 
     public native String getLongValue();
 
+    public native double getShortValue();
+
     public native String getStringValue();
 
     public native TypeCase getTypeCase();
 
     public native boolean hasBoolValue();
+
+    public native boolean hasByteValue();
+
+    public native boolean hasCharValue();
 
     public native boolean hasDoubleValue();
 
@@ -149,11 +201,17 @@ public class AggSpecNonUniqueSentinel {
 
     public native boolean hasLongValue();
 
+    public native boolean hasShortValue();
+
     public native boolean hasStringValue();
 
     public native Uint8Array serializeBinary();
 
     public native void setBoolValue(boolean value);
+
+    public native void setByteValue(double value);
+
+    public native void setCharValue(double value);
 
     public native void setDoubleValue(double value);
 
@@ -162,6 +220,8 @@ public class AggSpecNonUniqueSentinel {
     public native void setIntValue(double value);
 
     public native void setLongValue(String value);
+
+    public native void setShortValue(double value);
 
     public native void setStringValue(String value);
 

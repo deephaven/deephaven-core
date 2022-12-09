@@ -4,8 +4,8 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service;
 
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggAllByRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateAllRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
@@ -51,11 +51,11 @@ import jsinterop.base.JsPropertyMap;
         namespace = JsPackage.GLOBAL)
 public class TableServiceClient {
     @JsFunction
-    public interface AggAllByCallbackFn {
+    public interface AggregateAllCallbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static TableServiceClient.AggAllByCallbackFn.P0Type create() {
+            static TableServiceClient.AggregateAllCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -79,15 +79,15 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-                TableServiceClient.AggAllByCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                TableServiceClient.AggregateAllCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
-    public interface AggAllByMetadata_or_callbackFn {
+    public interface AggregateAllMetadata_or_callbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static TableServiceClient.AggAllByMetadata_or_callbackFn.P0Type create() {
+            static TableServiceClient.AggregateAllMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -111,19 +111,19 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-                TableServiceClient.AggAllByMetadata_or_callbackFn.P0Type p0,
+                TableServiceClient.AggregateAllMetadata_or_callbackFn.P0Type p0,
                 ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface AggAllByMetadata_or_callbackUnionType {
+    public interface AggregateAllMetadata_or_callbackUnionType {
         @JsOverlay
-        static TableServiceClient.AggAllByMetadata_or_callbackUnionType of(Object o) {
+        static TableServiceClient.AggregateAllMetadata_or_callbackUnionType of(Object o) {
             return Js.cast(o);
         }
 
         @JsOverlay
-        default TableServiceClient.AggAllByMetadata_or_callbackFn asAggAllByMetadata_or_callbackFn() {
+        default TableServiceClient.AggregateAllMetadata_or_callbackFn asAggregateAllMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -133,8 +133,8 @@ public class TableServiceClient {
         }
 
         @JsOverlay
-        default boolean isAggAllByMetadata_or_callbackFn() {
-            return (Object) this instanceof TableServiceClient.AggAllByMetadata_or_callbackFn;
+        default boolean isAggregateAllMetadata_or_callbackFn() {
+            return (Object) this instanceof TableServiceClient.AggregateAllMetadata_or_callbackFn;
         }
 
         @JsOverlay
@@ -3301,60 +3301,8 @@ public class TableServiceClient {
     public TableServiceClient(String serviceHost) {}
 
     @JsOverlay
-    public final UnaryResponse aggAllBy(
-            AggAllByRequest requestMessage,
-            TableServiceClient.AggAllByMetadata_or_callbackFn metadata_or_callback,
-            TableServiceClient.AggAllByCallbackFn callback) {
-        return aggAllBy(
-                requestMessage,
-                Js.<TableServiceClient.AggAllByMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback),
-                callback);
-    }
-
-    @JsOverlay
-    public final UnaryResponse aggAllBy(
-            AggAllByRequest requestMessage,
-            TableServiceClient.AggAllByMetadata_or_callbackFn metadata_or_callback) {
-        return aggAllBy(
-                requestMessage,
-                Js.<TableServiceClient.AggAllByMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback));
-    }
-
-    public native UnaryResponse aggAllBy(
-            AggAllByRequest requestMessage,
-            TableServiceClient.AggAllByMetadata_or_callbackUnionType metadata_or_callback,
-            TableServiceClient.AggAllByCallbackFn callback);
-
-    public native UnaryResponse aggAllBy(
-            AggAllByRequest requestMessage,
-            TableServiceClient.AggAllByMetadata_or_callbackUnionType metadata_or_callback);
-
-    @JsOverlay
-    public final UnaryResponse aggAllBy(
-            AggAllByRequest requestMessage,
-            BrowserHeaders metadata_or_callback,
-            TableServiceClient.AggAllByCallbackFn callback) {
-        return aggAllBy(
-                requestMessage,
-                Js.<TableServiceClient.AggAllByMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback),
-                callback);
-    }
-
-    @JsOverlay
-    public final UnaryResponse aggAllBy(
-            AggAllByRequest requestMessage, BrowserHeaders metadata_or_callback) {
-        return aggAllBy(
-                requestMessage,
-                Js.<TableServiceClient.AggAllByMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback));
-    }
-
-    @JsOverlay
     public final UnaryResponse aggregate(
-            AggregationRequest requestMessage,
+            AggregateRequest requestMessage,
             TableServiceClient.AggregateMetadata_or_callbackFn metadata_or_callback,
             TableServiceClient.AggregateCallbackFn callback) {
         return aggregate(
@@ -3366,7 +3314,7 @@ public class TableServiceClient {
 
     @JsOverlay
     public final UnaryResponse aggregate(
-            AggregationRequest requestMessage,
+            AggregateRequest requestMessage,
             TableServiceClient.AggregateMetadata_or_callbackFn metadata_or_callback) {
         return aggregate(
                 requestMessage,
@@ -3375,17 +3323,17 @@ public class TableServiceClient {
     }
 
     public native UnaryResponse aggregate(
-            AggregationRequest requestMessage,
+            AggregateRequest requestMessage,
             TableServiceClient.AggregateMetadata_or_callbackUnionType metadata_or_callback,
             TableServiceClient.AggregateCallbackFn callback);
 
     public native UnaryResponse aggregate(
-            AggregationRequest requestMessage,
+            AggregateRequest requestMessage,
             TableServiceClient.AggregateMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse aggregate(
-            AggregationRequest requestMessage,
+            AggregateRequest requestMessage,
             BrowserHeaders metadata_or_callback,
             TableServiceClient.AggregateCallbackFn callback) {
         return aggregate(
@@ -3397,10 +3345,62 @@ public class TableServiceClient {
 
     @JsOverlay
     public final UnaryResponse aggregate(
-            AggregationRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            AggregateRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return aggregate(
                 requestMessage,
                 Js.<TableServiceClient.AggregateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse aggregateAll(
+            AggregateAllRequest requestMessage,
+            TableServiceClient.AggregateAllMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.AggregateAllCallbackFn callback) {
+        return aggregateAll(
+                requestMessage,
+                Js.<TableServiceClient.AggregateAllMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse aggregateAll(
+            AggregateAllRequest requestMessage,
+            TableServiceClient.AggregateAllMetadata_or_callbackFn metadata_or_callback) {
+        return aggregateAll(
+                requestMessage,
+                Js.<TableServiceClient.AggregateAllMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse aggregateAll(
+            AggregateAllRequest requestMessage,
+            TableServiceClient.AggregateAllMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.AggregateAllCallbackFn callback);
+
+    public native UnaryResponse aggregateAll(
+            AggregateAllRequest requestMessage,
+            TableServiceClient.AggregateAllMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse aggregateAll(
+            AggregateAllRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.AggregateAllCallbackFn callback) {
+        return aggregateAll(
+                requestMessage,
+                Js.<TableServiceClient.AggregateAllMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse aggregateAll(
+            AggregateAllRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return aggregateAll(
+                requestMessage,
+                Js.<TableServiceClient.AggregateAllMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 

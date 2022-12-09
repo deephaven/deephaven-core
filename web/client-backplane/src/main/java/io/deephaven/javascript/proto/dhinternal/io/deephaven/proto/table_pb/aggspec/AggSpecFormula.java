@@ -63,13 +63,9 @@ public class AggSpecFormula {
     public static native AggSpecFormula.ToObjectReturnType toObject(
             boolean includeInstance, AggSpecFormula msg);
 
-    public native void clearParamToken();
-
     public native String getFormula();
 
     public native String getParamToken();
-
-    public native boolean hasParamToken();
 
     public native Uint8Array serializeBinary();
 

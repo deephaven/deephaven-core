@@ -51,11 +51,7 @@ public class AggSpecMedian {
     public static native AggSpecMedian.ToObjectReturnType toObject(
             boolean includeInstance, AggSpecMedian msg);
 
-    public native void clearAverageEvenlyDivided();
-
     public native boolean getAverageEvenlyDivided();
-
-    public native boolean hasAverageEvenlyDivided();
 
     public native Uint8Array serializeBinary();
 

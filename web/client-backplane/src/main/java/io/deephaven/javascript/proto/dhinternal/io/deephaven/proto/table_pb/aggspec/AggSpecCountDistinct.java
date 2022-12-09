@@ -51,11 +51,7 @@ public class AggSpecCountDistinct {
     public static native AggSpecCountDistinct.ToObjectReturnType toObject(
             boolean includeInstance, AggSpecCountDistinct msg);
 
-    public native void clearCountNulls();
-
     public native boolean getCountNulls();
-
-    public native boolean hasCountNulls();
 
     public native Uint8Array serializeBinary();
 
