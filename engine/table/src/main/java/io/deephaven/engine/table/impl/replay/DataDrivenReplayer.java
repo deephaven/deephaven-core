@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.replay;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.ColumnSource;
@@ -17,11 +18,6 @@ public class DataDrivenReplayer extends Replayer {
     public DataDrivenReplayer(DateTime startTime, DateTime endTime) {
         super(startTime, endTime);
         currentTime = startTime;
-    }
-
-    @Override
-    public DateTime currentTime() {
-        return currentTime;
     }
 
     TLongArrayList allTimestamp = new TLongArrayList();
@@ -79,5 +75,17 @@ public class DataDrivenReplayer extends Replayer {
     @Override
     public void setTime(long updatedTime) {
         currentTime = DateTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
+    }
+
+    @Override
+    public Clock clock() {
+        return new ClockImpl();
+    }
+
+    private class ClockImpl extends DateTimeClock {
+        @Override
+        public DateTime currentDateTime() {
+            return currentTime;
+        }
     }
 }

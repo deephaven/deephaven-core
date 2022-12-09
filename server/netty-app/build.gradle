@@ -24,9 +24,6 @@ distributions {
 
 def extraJvmArgs = [
         '-server',
-        '-XX:+UseG1GC',
-        '-XX:MaxGCPauseMillis=100',
-        '-XX:+UseStringDeduplication',
         '-XshowSettings:vm',
 ]
 
@@ -38,7 +35,14 @@ if (!hasProperty('excludeHotspotImpl')) {
     dependencies {
         runtimeOnly project(':hotspot-impl')
     }
-    extraJvmArgs += ['--add-opens', 'java.management/sun.management=ALL-UNNAMED']
+    extraJvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
+}
+
+if (!hasProperty('excludeClockImpl')) {
+    dependencies {
+        runtimeOnly project(':clock-impl')
+    }
+    extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
 }
 
 if (hasProperty('devCerts') || hasProperty('devMTLS')) {
@@ -63,6 +67,10 @@ if (hasProperty('debug')) {
 
 if (hasProperty('gcApplication')) {
     extraJvmArgs += ['-Dio.deephaven.app.GcApplication.enabled=true']
+}
+
+if (hasProperty('quiet')) {
+    extraJvmArgs += ['-Ddeephaven.quiet=true']
 }
 
 tasks.withType(JavaExec).configureEach {

@@ -3,9 +3,9 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.EvalNugget;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
@@ -17,8 +17,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
-import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
@@ -199,17 +199,17 @@ public class TestCumMinMax extends BaseUpdateByTest {
 
     final void assertWithCumMin(final @NotNull Object expected, final @NotNull Object actual) {
         if (expected instanceof byte[]) {
-            assertArrayEquals(Numeric.cumMin((byte[]) expected), (byte[]) actual);
+            assertArrayEquals(Numeric.cummin((byte[]) expected), (byte[]) actual);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(Numeric.cumMin((short[]) expected), (short[]) actual);
+            assertArrayEquals(Numeric.cummin((short[]) expected), (short[]) actual);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(Numeric.cumMin((int[]) expected), (int[]) actual);
+            assertArrayEquals(Numeric.cummin((int[]) expected), (int[]) actual);
         } else if (expected instanceof long[]) {
-            assertArrayEquals(Numeric.cumMin((long[]) expected), (long[]) actual);
+            assertArrayEquals(Numeric.cummin((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumMin((float[]) expected), (float[]) actual, .001f);
+            assertArrayEquals(Numeric.cummin((float[]) expected), (float[]) actual, .001f);
         } else if (expected instanceof double[]) {
-            assertArrayEquals(Numeric.cumMin((double[]) expected), (double[]) actual, .001d);
+            assertArrayEquals(Numeric.cummin((double[]) expected), (double[]) actual, .001d);
         } else {
             assertArrayEquals(cumMin((Object[]) expected), (Object[]) actual);
         }
@@ -217,17 +217,17 @@ public class TestCumMinMax extends BaseUpdateByTest {
 
     final void assertWithCumMax(final @NotNull Object expected, final @NotNull Object actual) {
         if (expected instanceof byte[]) {
-            assertArrayEquals(Numeric.cumMax((byte[]) expected), (byte[]) actual);
+            assertArrayEquals(Numeric.cummax((byte[]) expected), (byte[]) actual);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(Numeric.cumMax((short[]) expected), (short[]) actual);
+            assertArrayEquals(Numeric.cummax((short[]) expected), (short[]) actual);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(Numeric.cumMax((int[]) expected), (int[]) actual);
+            assertArrayEquals(Numeric.cummax((int[]) expected), (int[]) actual);
         } else if (expected instanceof long[]) {
-            assertArrayEquals(Numeric.cumMax((long[]) expected), (long[]) actual);
+            assertArrayEquals(Numeric.cummax((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumMax((float[]) expected), (float[]) actual, .001f);
+            assertArrayEquals(Numeric.cummax((float[]) expected), (float[]) actual, .001f);
         } else if (expected instanceof double[]) {
-            assertArrayEquals(Numeric.cumMax((double[]) expected), (double[]) actual, .001d);
+            assertArrayEquals(Numeric.cummax((double[]) expected), (double[]) actual, .001d);
         } else {
             assertArrayEquals(cumMax((Object[]) expected), (Object[]) actual);
         }

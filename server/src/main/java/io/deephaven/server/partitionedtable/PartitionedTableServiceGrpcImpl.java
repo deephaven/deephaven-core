@@ -1,10 +1,10 @@
 package io.deephaven.server.partitionedtable;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -21,7 +21,8 @@ import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 
-import java.util.function.Supplier;
+import java.util.Collections;
+import java.util.List;
 
 import static io.deephaven.extensions.barrage.util.ExportUtil.buildTableCreationResponse;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
@@ -32,13 +33,18 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final UpdateGraphProcessor updateGraphProcessor;
+    private final PartitionedTableServiceContextualAuthWiring authWiring;
 
     @Inject
-    public PartitionedTableServiceGrpcImpl(TicketRouter ticketRouter, SessionService sessionService,
-            UpdateGraphProcessor updateGraphProcessor) {
+    public PartitionedTableServiceGrpcImpl(
+            TicketRouter ticketRouter,
+            SessionService sessionService,
+            UpdateGraphProcessor updateGraphProcessor,
+            PartitionedTableServiceContextualAuthWiring authWiring) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.updateGraphProcessor = updateGraphProcessor;
+        this.authWiring = authWiring;
     }
 
     @Override
@@ -53,6 +59,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .require(targetTable)
                     .onError(responseObserver)
                     .submit(() -> {
+                        authWiring.checkPermissionPartitionBy(session.getAuthContext(), request,
+                                Collections.singletonList(targetTable.get()));
                         PartitionedTable partitionedTable = targetTable.get().partitionBy(request.getDropKeys(),
                                 request.getKeyColumnNamesList().toArray(String[]::new));
                         safelyExecute(() -> {
@@ -77,6 +85,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .require(partitionedTable)
                     .onError(responseObserver)
                     .submit(() -> {
+                        authWiring.checkPermissionMerge(session.getAuthContext(), request,
+                                Collections.singletonList((Table) partitionedTable.get()));
                         final Table merged;
                         if (partitionedTable.get().table().isRefreshing()) {
                             merged = updateGraphProcessor.sharedLock()
@@ -84,8 +94,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         } else {
                             merged = partitionedTable.get().merge();
                         }
+                        final ExportedTableCreationResponse response =
+                                buildTableCreationResponse(request.getResultId(), merged);
                         safelyExecute(() -> {
-                            responseObserver.onNext(buildTableCreationResponse(request.getResultId(), merged));
+                            responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
                         return merged;
@@ -108,6 +120,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .require(partitionedTable, keys)
                     .onError(responseObserver)
                     .submit(() -> {
+                        authWiring.checkPermissionGetTable(session.getAuthContext(), request,
+                                List.of((Table) partitionedTable.get(), keys.get()));
                         final Table table;
                         Table keyTable = keys.get();
                         if (!keyTable.isRefreshing()) {
@@ -147,8 +161,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                                         .get(requestedRow.getRowSet().firstRowKey());
                             });
                         }
+                        final ExportedTableCreationResponse response =
+                                buildTableCreationResponse(request.getResultId(), table);
                         safelyExecute(() -> {
-                            responseObserver.onNext(buildTableCreationResponse(request.getResultId(), table));
+                            responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
                         return table;

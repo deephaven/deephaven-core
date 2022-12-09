@@ -5,6 +5,7 @@ package io.deephaven.server.netty;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.SessionToExecutionStateModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
@@ -27,6 +28,7 @@ import javax.inject.Singleton;
         HealthCheckModule.class,
         PythonPluginsRegistration.Module.class,
         NettyServerModule.class,
+        HealthCheckModule.class,
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         SessionToExecutionStateModule.class,
@@ -36,6 +38,9 @@ public interface NettyServerComponent extends DeephavenApiServerComponent {
     interface Builder extends DeephavenApiServerComponent.Builder<Builder> {
         @BindsInstance
         Builder withNettyConfig(NettyConfig config);
+
+        @BindsInstance
+        Builder withAuthorizationProvider(AuthorizationProvider authorizationProvider);
 
         NettyServerComponent build();
     }

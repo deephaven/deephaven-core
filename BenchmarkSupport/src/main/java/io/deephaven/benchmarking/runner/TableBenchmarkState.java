@@ -16,7 +16,6 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 
 public class TableBenchmarkState {
@@ -43,7 +42,7 @@ public class TableBenchmarkState {
     }
 
     public void logOutput() throws IOException {
-        final Path outputPath = Paths.get(BenchmarkTools.getLogPath())
+        final Path outputPath = BenchmarkTools.dataDir()
                 .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName) + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
         final Table output = outputBuilder.build();

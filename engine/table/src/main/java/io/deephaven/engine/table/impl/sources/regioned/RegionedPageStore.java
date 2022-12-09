@@ -92,7 +92,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
 
     @Override
     default FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new RegionContextHolder();
+        return new RegionContextHolder(chunkCapacity, sharedContext);
     }
 
     /**

@@ -6,9 +6,12 @@ package io.deephaven.server.table;
 import dagger.Binds;
 import dagger.MapKey;
 import dagger.Module;
+import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.table.ops.ApplyPreviewColumnsGrpcImpl;
 import io.deephaven.server.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.server.table.ops.CreateInputTableGrpcImpl;
@@ -31,6 +34,7 @@ import io.deephaven.server.table.ops.UngroupGrpcImpl;
 import io.deephaven.server.table.ops.UnstructuredFilterTableGrpcImpl;
 import io.deephaven.server.table.ops.UpdateByGrpcImpl;
 import io.deephaven.server.table.ops.UpdateOrSelectGrpcImpl;
+import io.deephaven.server.table.ops.WhereInGrpcImpl;
 import io.grpc.BindableService;
 
 @MapKey
@@ -41,6 +45,11 @@ import io.grpc.BindableService;
 
 @Module
 public interface TableModule {
+    @Provides
+    static TableServiceContextualAuthWiring provideAuthWiring(AuthorizationProvider authProvider) {
+        return authProvider.getTableServiceContextualAuthWiring();
+    }
+
     @Binds
     @IntoSet
     BindableService bindTableServiceGrpcImpl(TableServiceGrpcImpl tableService);
@@ -199,4 +208,9 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.UPDATE_BY)
     GrpcTableOperation<?> bindUpdateBy(UpdateByGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.WHERE_IN)
+    GrpcTableOperation<?> bindWhereIn(WhereInGrpcImpl op);
 }

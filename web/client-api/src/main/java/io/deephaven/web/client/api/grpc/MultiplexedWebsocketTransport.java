@@ -10,6 +10,7 @@ import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CloseEvent;
 import elemental2.dom.Event;
+import elemental2.dom.EventListener;
 import elemental2.dom.MessageEvent;
 import elemental2.dom.URL;
 import elemental2.dom.WebSocket;
@@ -120,9 +121,77 @@ public class MultiplexedWebsocketTransport implements Transport {
     }
 
     private static int nextStreamId = 0;
-    private static final Map<String, WebSocket> activeSockets = new HashMap<>();
 
-    private final WebSocket webSocket;
+    static class ActiveTransport {
+        private static final Map<String, ActiveTransport> activeSockets = new HashMap<>();
+        private final WebSocket webSocket;
+        private boolean closing;
+        private int activeCount = 0;
+
+        /**
+         * Gets a websocket transport for the grpc url.
+         *
+         * @param grpcUrl The URL to access - the full path will be used (with ws/s instead of http/s) to connect to the
+         *        service, but only the protocol+host+port will be used to share the instance.
+         * @return a websocket instance to use to connect, newly created if necessary
+         */
+        public static ActiveTransport get(String grpcUrl) {
+            URL urlWrapper = new URL(grpcUrl);
+            if (urlWrapper.protocol.equals("http:")) {
+                urlWrapper.protocol = "ws:";
+            } else {
+                urlWrapper.protocol = "wss:";
+            }
+            String actualUrl = urlWrapper.toString();
+            urlWrapper.pathname = "/";
+            String key = urlWrapper.toString();
+            return activeSockets.computeIfAbsent(key, url -> new ActiveTransport(key, actualUrl));
+        }
+
+        /**
+         * @param key URL to use as the key entry to reuse the transport
+         * @param actualUrl the url to connect to
+         */
+        private ActiveTransport(String key, String actualUrl) {
+            this.webSocket = new WebSocket(actualUrl, new String[] {MULTIPLEX_PROTOCOL, SOCKET_PER_STREAM_PROTOCOL});
+
+            webSocket.binaryType = "arraybuffer";
+
+            webSocket.addEventListener("message", event -> {
+                MessageEvent<ArrayBuffer> messageEvent = Js.uncheckedCast(event);
+                // read the message, check if it was a GO_AWAY
+                int streamId = new DataView(messageEvent.data, 0, 4).getInt32(0);
+                if (streamId == Integer.MAX_VALUE) {
+                    // Server sent equiv of H2 GO_AWAY, time to wrap up.
+                    // ACK the message
+                    new WebsocketFinishSignal().send(webSocket, Integer.MAX_VALUE);
+
+                    // We can attempt to create new transport instances, but cannot use this one any longer for new
+                    // streams (and any new one is likely to fail unless some new server is ready for us)
+                    activeSockets.remove(key);
+
+                    // Mark that this transport should be closed when existing streams finish
+                    this.closing = true;
+                    if (activeCount == 0) {
+                        webSocket.close();
+                    }
+                }
+            });
+        }
+
+        private void retain() {
+            activeCount++;
+        }
+
+        private void release() {
+            activeCount--;
+            if (activeCount == 0 && closing) {
+                webSocket.close();
+            }
+        }
+    }
+
+    private final ActiveTransport transport;
     private final int streamId = nextStreamId++;
     private final List<QueuedEntry> sendQueue = new ArrayList<>();
     private final TransportOptions options;
@@ -130,28 +199,18 @@ public class MultiplexedWebsocketTransport implements Transport {
 
     private final JsLazy<Transport> alternativeTransport;
 
+    private JsRunnable cleanup = JsRunnable.doNothing();
+
     public MultiplexedWebsocketTransport(TransportOptions options, JsRunnable avoidMultiplexCallback) {
         this.options = options;
         String url = options.getUrl();
         URL urlWrapper = new URL(url);
-        if (urlWrapper.protocol.equals("http:")) {
-            urlWrapper.protocol = "ws:";
-        } else {
-            urlWrapper.protocol = "wss:";
-        }
         // preserve the path to send as metadata, but still talk to the server with that path
         path = urlWrapper.pathname.substring(1);
-        String actualUrl = urlWrapper.toString();
-        urlWrapper.pathname = "/";
-        String key = urlWrapper.toString();
 
         // note that we connect to the actual url so the server can inform us via subprotocols that it isn't supported,
         // but the global map removes the path as the key for each websocket
-        webSocket = activeSockets.computeIfAbsent(key, ignore -> {
-            WebSocket ws = new WebSocket(actualUrl, new String[] {MULTIPLEX_PROTOCOL, SOCKET_PER_STREAM_PROTOCOL});
-            ws.binaryType = "arraybuffer";
-            return ws;
-        });
+        transport = ActiveTransport.get(url);
 
         // prepare a fallback
         alternativeTransport = new JsLazy<>(() -> {
@@ -166,28 +225,34 @@ public class MultiplexedWebsocketTransport implements Transport {
             alternativeTransport.get().start(metadata);
             return;
         }
+        this.transport.retain();
 
-        if (webSocket.readyState == WebSocket.CONNECTING) {
+        if (transport.webSocket.readyState == WebSocket.CONNECTING) {
             // if the socket isn't open already, wait until the socket is
             // open, then flush the queue, otherwise everything will be
             // fine to send right away on the already open socket.
-            webSocket.addEventListener("open", this::onOpen);
+            addWebsocketEventListener("open", this::onOpen);
         }
         sendOrEnqueue(new HeaderFrame(path, metadata));
 
-        webSocket.addEventListener("close", this::onClose);
-        webSocket.addEventListener("error", this::onError);
-        webSocket.addEventListener("message", this::onMessage);
+        addWebsocketEventListener("close", this::onClose);
+        addWebsocketEventListener("error", this::onError);
+        addWebsocketEventListener("message", this::onMessage);
+    }
+
+    private void addWebsocketEventListener(String eventName, EventListener listener) {
+        transport.webSocket.addEventListener(eventName, listener);
+        cleanup = cleanup.andThen(() -> transport.webSocket.removeEventListener(eventName, listener));
     }
 
     private void onOpen(Event event) {
-        Object protocol = Js.asPropertyMap(webSocket).get("protocol");
+        Object protocol = Js.asPropertyMap(transport.webSocket).get("protocol");
         if (protocol.equals(SOCKET_PER_STREAM_PROTOCOL)) {
             // delegate to plain websocket impl, try to dissuade future users of this server
             Transport transport = alternativeTransport.get();
 
             // close our own websocket
-            webSocket.close();
+            this.transport.webSocket.close();
 
             // flush the queued items, which are now the new transport's problems - we'll forward all future work there
             // as well automatically
@@ -202,7 +267,7 @@ public class MultiplexedWebsocketTransport implements Transport {
             return;
         }
         for (int i = 0; i < sendQueue.size(); i++) {
-            sendQueue.get(i).send(webSocket, streamId);
+            sendQueue.get(i).send(transport.webSocket, streamId);
         }
         sendQueue.clear();
     }
@@ -233,7 +298,14 @@ public class MultiplexedWebsocketTransport implements Transport {
             alternativeTransport.get().cancel();
             return;
         }
-        // TODO remove handlers, and close if we're the last one out
+        removeHandlers();
+    }
+
+    private void removeHandlers() {
+        cleanup.run();
+        cleanup = JsRunnable.doNothing();
+
+        transport.release();
     }
 
     private void onClose(Event event) {
@@ -242,7 +314,8 @@ public class MultiplexedWebsocketTransport implements Transport {
             return;
         }
         // each grpc transport will handle this as an error
-        options.getOnEnd().onInvoke(new JsError("Unexpectedly closed " + ((CloseEvent) event).reason));
+        options.getOnEnd().onInvoke(new JsError("Unexpectedly closed " + Js.<CloseEvent>uncheckedCast(event).reason));
+        removeHandlers();
     }
 
     private void onError(Event event) {
@@ -250,7 +323,7 @@ public class MultiplexedWebsocketTransport implements Transport {
     }
 
     private void onMessage(Event event) {
-        MessageEvent<ArrayBuffer> messageEvent = (MessageEvent<ArrayBuffer>) event;
+        MessageEvent<ArrayBuffer> messageEvent = Js.uncheckedCast(event);
         // read the message, make sure it is for us, if so strip the stream id and fwd it
         int streamId = new DataView(messageEvent.data, 0, 4).getInt32(0);
         boolean closed;
@@ -264,15 +337,16 @@ public class MultiplexedWebsocketTransport implements Transport {
             options.getOnChunk().onInvoke(new Uint8Array(messageEvent.data, 4), false);
             if (closed) {
                 options.getOnEnd().onInvoke(null);
+                removeHandlers();
             }
         }
     }
 
     private void sendOrEnqueue(QueuedEntry e) {
-        if (webSocket.readyState == WebSocket.CONNECTING) {
+        if (transport.webSocket.readyState == WebSocket.CONNECTING) {
             sendQueue.add(e);
         } else {
-            e.send(webSocket, streamId);
+            e.send(transport.webSocket, streamId);
         }
     }
 }

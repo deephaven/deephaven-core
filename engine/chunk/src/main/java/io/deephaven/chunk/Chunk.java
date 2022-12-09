@@ -51,8 +51,8 @@ public interface Chunk<ATTR extends Any> {
      * Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a subrange
      * of that view. The view is defined as [0..size) (in the coordinate space of this Chunk).
      * 
-     * @param offset Offset of the new Chunk, relative to this Chunk. 0 ≤ offset ≤ this.size
-     * @param capacity Capacity and initial size of the new Chunk. 0 ≤ capacity ≤ this.size - {@code offset}.
+     * @param offset Offset of the new Chunk, relative to this Chunk. 0 &leq; offset &leq; this.size
+     * @param capacity Capacity and initial size of the new Chunk. 0 &leq; capacity &leq; this.size - {@code offset}.
      * @return The new Chunk. A new Chunk will always be returned, even if the Chunks represent the same view.
      */
     Chunk<ATTR> slice(int offset, int capacity);

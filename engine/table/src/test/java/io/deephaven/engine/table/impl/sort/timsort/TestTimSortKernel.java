@@ -3,16 +3,17 @@
  */
 package io.deephaven.engine.table.impl.sort.timsort;
 
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-
-import io.deephaven.engine.rowset.impl.PerfStats;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.rowset.PerfStats;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;

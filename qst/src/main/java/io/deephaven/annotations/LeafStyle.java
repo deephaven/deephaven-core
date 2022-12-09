@@ -17,6 +17,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.CLASS)
 @Value.Style(visibility = ImplementationVisibility.PACKAGE,
-        defaults = @Value.Immutable(copy = false), strictBuilder = true, weakInterning = true)
+        defaults = @Value.Immutable(copy = false),
+        strictBuilder = true,
+        weakInterning = true,
+        includeHashCode = "getClass().hashCode()")
 public @interface LeafStyle {
 }

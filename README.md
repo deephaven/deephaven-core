@@ -38,8 +38,6 @@ Developers interested in tinkering with and modifying source code should build f
 
 If you are not sure which of the two is right for you, use the pre-built images.
 
-> :warning: **On M1 Macs, you must [build and launch from source code](https://deephaven.io/core/docs/how-to-guides/launch-build).  A Docker-emulation bug leads to failures when running pre-built images.**
-
 ### Required Dependencies
 
 Running Deephaven requires a few software packages.

@@ -12,8 +12,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.Status;
@@ -172,7 +170,7 @@ public class SessionService {
     private TokenExpiration refreshToken(final SessionState session, boolean initialToken) {
         UUID newUUID;
         TokenExpiration expiration;
-        final DateTime now = scheduler.currentTime();
+        final long nowMillis = scheduler.currentTimeMillis();
 
         synchronized (session) {
             expiration = session.getExpiration();
@@ -182,7 +180,7 @@ public class SessionService {
                     return null;
                 }
 
-                if (expiration.deadline.getMillis() - tokenExpireMs + tokenRotateMs > now.getMillis()) {
+                if (expiration.deadlineMillis - tokenExpireMs + tokenRotateMs > nowMillis) {
                     // current token is not old enough to rotate
                     return expiration;
                 }
@@ -190,8 +188,7 @@ public class SessionService {
 
             do {
                 newUUID = UuidCreator.getRandomBased();
-                final long tokenExpireNanos = TimeUnit.MILLISECONDS.toNanos(tokenExpireMs);
-                expiration = new TokenExpiration(newUUID, DateTimeUtils.plus(now, tokenExpireNanos), session);
+                expiration = new TokenExpiration(newUUID, nowMillis + tokenExpireMs, session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
             if (initialToken) {
@@ -205,7 +202,7 @@ public class SessionService {
         synchronized (this) {
             if (!cleanupJobInstalled) {
                 cleanupJobInstalled = true;
-                scheduler.runAtTime(expiration.deadline, sessionCleanupJob);
+                scheduler.runAtTime(expiration.deadlineMillis, sessionCleanupJob);
             }
         }
 
@@ -259,7 +256,7 @@ public class SessionService {
     public SessionState getSessionForToken(final UUID token) {
         final TokenExpiration expiration = tokenToSession.get(token);
         if (expiration == null || expiration.session.isExpired()
-                || expiration.deadline.compareTo(scheduler.currentTime()) <= 0) {
+                || expiration.deadlineMillis <= scheduler.currentTimeMillis()) {
             return null;
         }
         return expiration.session;
@@ -317,12 +314,12 @@ public class SessionService {
 
     public static final class TokenExpiration {
         public final UUID token;
-        public final DateTime deadline;
+        public final long deadlineMillis;
         public final SessionState session;
 
-        public TokenExpiration(final UUID cookie, final DateTime deadline, final SessionState session) {
+        public TokenExpiration(final UUID cookie, final long deadlineMillis, final SessionState session) {
             this.token = cookie;
-            this.deadline = deadline;
+            this.deadlineMillis = deadlineMillis;
             this.session = session;
         }
 
@@ -341,11 +338,11 @@ public class SessionService {
     private final class SessionCleanupJob implements Runnable {
         @Override
         public void run() {
-            final DateTime now = scheduler.currentTime();
+            final long nowMillis = scheduler.currentTimeMillis();
 
             do {
                 final TokenExpiration next = outstandingCookies.peek();
-                if (next == null || next.deadline.getMillis() > now.getMillis()) {
+                if (next == null || next.deadlineMillis > nowMillis) {
                     break;
                 }
 
@@ -357,7 +354,7 @@ public class SessionService {
 
                 synchronized (next.session) {
                     final TokenExpiration tokenExpiration = next.session.getExpiration();
-                    if (tokenExpiration != null && tokenExpiration.deadline.getMillis() <= now.getMillis()) {
+                    if (tokenExpiration != null && tokenExpiration.deadlineMillis <= nowMillis) {
                         next.session.onExpired();
                     }
                 }
@@ -368,7 +365,7 @@ public class SessionService {
                 if (next == null) {
                     cleanupJobInstalled = false;
                 } else {
-                    scheduler.runAtTime(next.deadline, this);
+                    scheduler.runAtTime(next.deadlineMillis, this);
                 }
             }
         }

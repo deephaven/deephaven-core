@@ -1,0 +1,19 @@
+import io.deephaven.project.util.JavaDependencies
+
+// Note: JAVA_APPLICATION is similar to JAVA_LOCAL in that we aren't publishing .JARs, but we are packaging up
+// the full classpath as an application, so we should check its dependencies like we are doing for JAVA_PUBLIC
+
+plugins {
+    id 'io.deephaven.common-conventions'
+    id 'io.deephaven.java-common-conventions'
+    id 'io.deephaven.java-test-conventions'
+    id 'io.deephaven.java-coding-conventions'
+}
+
+def quickTask = project.tasks.getByName('quick')
+
+// We need to make sure that all JAVA_APPLICATION dependencies are public
+quickTask.dependsOn JavaDependencies.verifyRuntimeClasspathIsPublicTask(project)
+
+// We also need to sure that no JAVA_APPLICATION dependencies are JAVA_PUBLIC_TESTING
+quickTask.dependsOn JavaDependencies.verifyRuntimeClasspathHasNoPublicTestingDependenciesTask(project)

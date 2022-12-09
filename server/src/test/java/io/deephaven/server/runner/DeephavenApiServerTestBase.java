@@ -11,6 +11,8 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
@@ -59,6 +61,9 @@ public abstract class DeephavenApiServerTestBase {
             @BindsInstance
             Builder withErr(@Named("err") PrintStream err);
 
+            @BindsInstance
+            Builder withAuthorizationProvider(AuthorizationProvider authorizationProvider);
+
             TestComponent build();
         }
     }
@@ -87,6 +92,7 @@ public abstract class DeephavenApiServerTestBase {
 
         serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
                 .withServerConfig(config)
+                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)
                 .withErr(System.err)
                 .build();

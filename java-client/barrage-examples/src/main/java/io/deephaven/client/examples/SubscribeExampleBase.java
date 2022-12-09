@@ -83,6 +83,12 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                 }
 
                 @Override
+                protected void destroy() {
+                    super.destroy();
+                    tableRef.removeUpdateListener(this);
+                }
+
+                @Override
                 protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     System.out.println("exiting due to onFailureInternal:");
                     originalException.printStackTrace();

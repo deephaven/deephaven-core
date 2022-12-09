@@ -24,17 +24,17 @@ be sure to first set `PYTHON_CONFIGURE_OPTS="--enabled-shared"`.
     ```shell
     $ python -m pip install --upgrade pip # First upgrade pip
     $ pip install wheel
-    $ export DEEPHAVEN_VERSION=0.18.0 # this should match the current version of your git repo
+    $ export DEEPHAVEN_VERSION=0.20.0 # this should match the current version of your git repo
 
     $ cd py/jpy
     $ export JAVA_HOME=/path/to/your/java/home # Customize this to fit your computer
     $ python setup.py bdist_wheel
-    $ pip install dist/deephaven_jpy-0.18.0-cp39-cp39-linux_x86_64.whl # This will vary by version/platform
+    $ pip install dist/deephaven_jpy-0.20.0-cp39-cp39-linux_x86_64.whl # This will vary by version/platform
     $ cd -
 
     $ cd Integrations/python
     $ python setup.py bdist_wheel
-    $ pip install dist/deephaven-0.18.0-py2.py3-none-any.whl
+    $ pip install dist/deephaven-0.20.0-py2.py3-none-any.whl
     $ cd -
     ```
 
@@ -55,7 +55,7 @@ produces
 The above artifacts can be uncompressed and their `bin/start` script can be executed:
 
 ```shell
- JAVA_OPTS="-Ddeephaven.console.type=groovy" bin/start
+START_OPTS="-Ddeephaven.console.type=groovy" bin/start
 ```
 
 Alternatively, the uncompressed installation can be built directly by gradle:
@@ -67,7 +67,7 @@ Alternatively, the uncompressed installation can be built directly by gradle:
 And then run via:
 
 ```shell
-JAVA_OPTS="-Ddeephaven.console.type=groovy" ./server/jetty-app/build/install/server-jetty/bin/start
+START_OPTS="-Ddeephaven.console.type=groovy" ./server/jetty-app/build/install/server-jetty/bin/start
 ```
 
 Finally, Gradle can be used to update the build and run the application in a single step:
@@ -79,8 +79,10 @@ Finally, Gradle can be used to update the build and run the application in a sin
 ### Internals
 
 `server-jetty-app` is configured by default to include code that depends on JVM internals via
-`--add-opens java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `includeHotspotImpl`
-to `false`.
+`--add-exports java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `-PexcludeHotspotImpl`.
+
+`server-jetty-app` is configured by default to include code that depends on JVM internals via
+`--add-exports java.base/jdk.internal.misc=ALL-UNNAMED`. To disable this, set the gradle property `-PexcludeClockImpl`.
 
 ### Configuration / SSL
 

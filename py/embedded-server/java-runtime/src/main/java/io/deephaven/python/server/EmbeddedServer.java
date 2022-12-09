@@ -8,9 +8,12 @@ import dagger.Component;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PyLogOutputStream;
+import io.deephaven.internal.log.Bootstrap;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
+import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.console.SessionToExecutionStateModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
@@ -47,6 +50,7 @@ public class EmbeddedServer {
             HealthCheckModule.class,
             PythonPluginsRegistration.Module.class,
             JettyServerModule.class,
+            HealthCheckModule.class,
             PythonConsoleSessionModule.class,
             GroovyConsoleSessionModule.class,
             SessionToExecutionStateModule.class,
@@ -56,6 +60,9 @@ public class EmbeddedServer {
         interface Builder extends DeephavenApiServerComponent.Builder<PythonServerComponent.Builder> {
             @BindsInstance
             Builder withJettyConfig(JettyConfig config);
+
+            @BindsInstance
+            Builder withAuthorizationProvider(AuthorizationProvider authorizationProvider);
 
             PythonServerComponent build();
         }
@@ -94,6 +101,7 @@ public class EmbeddedServer {
         DaggerEmbeddedServer_PythonServerComponent
                 .builder()
                 .withJettyConfig(builder.build())
+                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(null)
                 .withErr(null)
                 .build()
@@ -105,7 +113,7 @@ public class EmbeddedServer {
 
         final ScriptSession scriptSession = this.scriptSession.get();
         checkGlobals(scriptSession, null);
-        System.out.println("Server started on port " + server.server().getPort());
+        Bootstrap.printf("Server started on port %d%n", server.server().getPort());
 
         // We need to open the systemic execution context to permanently install the contexts for this thread.
         scriptSession.getExecutionContext().open();

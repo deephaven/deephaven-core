@@ -1,6 +1,5 @@
 package io.deephaven.app;
 
-import com.google.auto.service.AutoService;
 import com.sun.management.GarbageCollectionNotificationInfo;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.ApplicationState.Listener;
@@ -37,7 +36,6 @@ import static com.sun.management.GarbageCollectionNotificationInfo.GARBAGE_COLLE
  * @see #notificationInfoRingSize()
  * @see #poolStatsEnabled()
  */
-@AutoService(ApplicationState.Factory.class)
 public final class GcApplication implements ApplicationState.Factory, NotificationListener {
 
     private static final String APP_ID = "io.deephaven.app.GcApplication";

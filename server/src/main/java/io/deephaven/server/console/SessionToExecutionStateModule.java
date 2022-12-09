@@ -4,11 +4,12 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.server.auth.AuthorizationProvider;
 
 @Module
-public class SessionToExecutionStateModule {
+public interface SessionToExecutionStateModule {
     @Provides
-    ExecutionContext bindExecutionContext(ScriptSession session) {
-        return session.getExecutionContext();
+    static ExecutionContext bindExecutionContext(ScriptSession session, AuthorizationProvider authProvider) {
+        return session.getExecutionContext().withAuthContext(authProvider.getInstanceAuthContext());
     }
 }

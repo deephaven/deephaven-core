@@ -63,11 +63,6 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(WhereNotInTable whereNotInTable) {
-        accept(whereNotInTable);
-    }
-
-    @Override
     public void visit(NaturalJoinTable naturalJoinTable) {
         accept(naturalJoinTable);
     }

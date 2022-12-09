@@ -9,12 +9,20 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.auth.AuthenticationRequestHandler;
+import io.deephaven.auth.ServiceAuthWiring;
+import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
+import io.deephaven.client.impl.Export;
+import io.deephaven.client.impl.FlightSession;
+import io.deephaven.client.impl.FlightSessionFactory;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
@@ -25,19 +33,27 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.io.logger.LogBuffer;
+import io.deephaven.io.logger.LogBufferGlobal;
+import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
+import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
-import io.deephaven.server.arrow.FlightServiceGrpcBinding;
+import io.deephaven.qst.table.TicketTable;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
+import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import org.apache.arrow.flight.*;
@@ -67,6 +83,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -84,6 +101,7 @@ import static org.junit.Assert.*;
  */
 public abstract class FlightMessageRoundTripTest {
     private static final String ANONYMOUS = "Anonymous";
+    private static final String DISABLED_FOR_TEST = "Disabled For Test";
 
     @Module
     public static class FlightTestModule {
@@ -106,8 +124,10 @@ public abstract class FlightMessageRoundTripTest {
 
         @Provides
         Scheduler provideScheduler() {
-            return new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(),
-                    Executors.newScheduledThreadPool(1));
+            return new Scheduler.DelegatingImpl(
+                    Executors.newSingleThreadExecutor(),
+                    Executors.newScheduledThreadPool(1),
+                    Clock.system());
         }
 
         @Provides
@@ -133,12 +153,27 @@ public abstract class FlightMessageRoundTripTest {
         ScheduledExecutorService provideExecutorService() {
             return null;
         }
+
+        @Provides
+        AuthorizationProvider provideAuthorizationProvider(TestAuthorizationProvider provider) {
+            return provider;
+        }
+
+        @Provides
+        @Singleton
+        TestAuthorizationProvider provideTestAuthorizationProvider() {
+            return new TestAuthorizationProvider();
+        }
+
+        @Provides
+        @Singleton
+        static UpdateGraphProcessor provideUpdateGraphProcessor() {
+            return UpdateGraphProcessor.DEFAULT;
+        }
     }
 
     public interface TestComponent {
         Set<ServerInterceptor> interceptors();
-
-        FlightServiceGrpcBinding flightService();
 
         SessionServiceGrpcImpl sessionGrpcService();
 
@@ -148,16 +183,19 @@ public abstract class FlightMessageRoundTripTest {
 
         GrpcServer server();
 
-        AuthTestModule.BasicAuthTestImpl basicAuthHandler();
+        TestAuthModule.BasicAuthTestImpl basicAuthHandler();
 
         Map<String, AuthenticationRequestHandler> authRequestHandlers();
 
         ExecutionContext executionContext();
+
+        TestAuthorizationProvider authorizationProvider();
     }
 
+    private LogBuffer logBuffer;
     private GrpcServer server;
 
-    private FlightClient client;
+    private FlightClient flightClient;
 
     protected SessionService sessionService;
 
@@ -167,8 +205,15 @@ public abstract class FlightMessageRoundTripTest {
     private Location serverLocation;
     private TestComponent component;
 
+    private ManagedChannel clientChannel;
+    private ScheduledExecutorService clientScheduler;
+    private FlightSession clientSession;
+
     @Before
     public void setup() throws IOException {
+        logBuffer = new LogBuffer(128);
+        LogBufferGlobal.setInstance(logBuffer);
+
         component = component();
 
         server = component.server();
@@ -181,7 +226,7 @@ public abstract class FlightMessageRoundTripTest {
 
         serverLocation = Location.forGrpcInsecure("localhost", actualPort);
         currentSession = sessionService.newSession(new AuthContext.SuperUser());
-        client = FlightClient.builder().location(serverLocation)
+        flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
                     @Override
                     public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
@@ -195,12 +240,29 @@ public abstract class FlightMessageRoundTripTest {
                     @Override
                     public void onCallCompleted(CallStatus status) {}
                 }).build();
+
+        clientChannel = ManagedChannelBuilder.forTarget("localhost:" + actualPort)
+                .usePlaintext()
+                .build();
+        clientScheduler = Executors.newSingleThreadScheduledExecutor();
+        FlightSessionFactory flightSessionFactory =
+                DaggerDeephavenFlightRoot.create().factoryBuilder()
+                        .managedChannel(clientChannel)
+                        .scheduler(clientScheduler)
+                        .allocator(new RootAllocator())
+                        .build();
+
+        clientSession = flightSessionFactory.newFlightSession();
     }
 
     protected abstract TestComponent component();
 
     @After
-    public void teardown() {
+    public void teardown() throws InterruptedException {
+        clientSession.close();
+        clientScheduler.shutdownNow();
+        clientChannel.shutdownNow();
+
         sessionService.closeAllSessions();
         scriptSession.release();
         executionContext.close();
@@ -216,11 +278,13 @@ public abstract class FlightMessageRoundTripTest {
         } finally {
             server = null;
         }
+
+        LogBufferGlobal.clear(logBuffer);
     }
 
     private void closeClient() {
         try {
-            client.close();
+            flightClient.close();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
@@ -246,7 +310,7 @@ public abstract class FlightMessageRoundTripTest {
     };
 
     private void fullyReadStream(Ticket ticket, boolean expectError) {
-        try (final FlightStream stream = client.getStream(ticket)) {
+        try (final FlightStream stream = flightClient.getStream(ticket)) {
             // noinspection StatementWithEmptyBody
             while (stream.next());
             if (expectError) {
@@ -259,7 +323,7 @@ public abstract class FlightMessageRoundTripTest {
     @Test
     public void testLoginHandshakeBasicAuth() {
         closeClient();
-        client = FlightClient.builder().location(serverLocation)
+        flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator())
                 .build();
 
@@ -271,7 +335,7 @@ public abstract class FlightMessageRoundTripTest {
 
         // now login
         component.basicAuthHandler().validLogins.put("HANDSHAKE", "BASIC_AUTH");
-        client.authenticateBasic("HANDSHAKE", "BASIC_AUTH");
+        flightClient.authenticateBasic("HANDSHAKE", "BASIC_AUTH");
 
         // now we should see the scope variable
         fullyReadStream(ticket, false);
@@ -280,7 +344,7 @@ public abstract class FlightMessageRoundTripTest {
     @Test
     public void testLoginHeaderBasicAuth() {
         closeClient();
-        client = FlightClient.builder().location(serverLocation)
+        flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator())
                 .build();
 
@@ -292,7 +356,7 @@ public abstract class FlightMessageRoundTripTest {
 
         // now login
         component.basicAuthHandler().validLogins.put("HANDSHAKE", "BASIC_AUTH");
-        final Optional<CredentialCallOption> authOpt = client.authenticateBasicToken("HANDSHAKE", "BASIC_AUTH");
+        final Optional<CredentialCallOption> authOpt = flightClient.authenticateBasicToken("HANDSHAKE", "BASIC_AUTH");
 
         final CredentialCallOption auth = authOpt.orElseGet(() -> {
             throw Status.UNAUTHENTICATED.asRuntimeException();
@@ -336,7 +400,7 @@ public abstract class FlightMessageRoundTripTest {
         });
 
         final MutableBoolean tokenChanged = new MutableBoolean();
-        client = FlightClient.builder().location(serverLocation)
+        flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator())
                 .intercept(info -> new FlightClientMiddleware() {
                     String currToken = Auth2Constants.BEARER_PREFIX + bearerToken;
@@ -368,7 +432,7 @@ public abstract class FlightMessageRoundTripTest {
     @Test
     public void testLoginHandshakeAnonymous() {
         closeClient();
-        client = FlightClient.builder().location(serverLocation)
+        flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator())
                 .build();
 
@@ -381,7 +445,7 @@ public abstract class FlightMessageRoundTripTest {
         // install the auth handler
         component.authRequestHandlers().put(ANONYMOUS, new AnonymousRequestHandler());
 
-        client.authenticate(new ClientAuthHandler() {
+        flightClient.authenticate(new ClientAuthHandler() {
             byte[] callToken = new byte[0];
 
             @Override
@@ -416,7 +480,7 @@ public abstract class FlightMessageRoundTripTest {
         component.authRequestHandlers().put(ANONYMOUS, new AnonymousRequestHandler());
 
         final MutableBoolean tokenChanged = new MutableBoolean();
-        client = FlightClient.builder().location(serverLocation)
+        flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator())
                 .intercept(info -> new FlightClientMiddleware() {
                     String currToken = ANONYMOUS;
@@ -452,7 +516,7 @@ public abstract class FlightMessageRoundTripTest {
                 .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
         long totalRowCount = 0;
-        try (FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()))) {
+        try (FlightStream stream = flightClient.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()))) {
             while (stream.next()) {
                 VectorSchemaRoot root = stream.getRoot();
                 totalRowCount += root.getRowCount();
@@ -564,12 +628,12 @@ public abstract class FlightMessageRoundTripTest {
         scriptSession.setVariable(tickingTableName, tickingTable);
 
         // test fetch info from scoped ticket
-        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(staticTableName)), table);
-        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(tickingTableName)), tickingTable);
+        assertInfoMatchesTable(flightClient.getInfo(arrowFlightDescriptorForName(staticTableName)), table);
+        assertInfoMatchesTable(flightClient.getInfo(arrowFlightDescriptorForName(tickingTableName)), tickingTable);
 
         // test list flights which runs through scoped tickets
         final MutableInt seenTables = new MutableInt();
-        client.listFlights(Criteria.ALL).forEach(fi -> {
+        flightClient.listFlights(Criteria.ALL).forEach(fi -> {
             seenTables.increment();
             if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
                 assertInfoMatchesTable(fi, table);
@@ -596,14 +660,14 @@ public abstract class FlightMessageRoundTripTest {
             scriptSession.setVariable(tickingTableName, tickingTable);
 
             // test fetch info from scoped ticket
-            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
+            assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
                     table);
-            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
+            assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
                     tickingTable);
 
             // test list flights which runs through scoped tickets
             final MutableInt seenTables = new MutableInt();
-            client.listFlights(Criteria.ALL).forEach(fi -> {
+            flightClient.listFlights(Criteria.ALL).forEach(fi -> {
                 seenTables.increment();
                 if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
                     assertInfoMatchesTable(fi, table);
@@ -630,7 +694,7 @@ public abstract class FlightMessageRoundTripTest {
 
             FlightDescriptor fd = FlightDescriptor.command(magic);
 
-            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd);
+            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
                     final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
                 final FlatBufferBuilder metadata = new FlatBufferBuilder();
@@ -705,7 +769,7 @@ public abstract class FlightMessageRoundTripTest {
 
             FlightDescriptor fd = FlightDescriptor.command(empty);
 
-            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd)) {
+            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd)) {
 
                 Exception exception = assertThrows(FlightRuntimeException.class, () -> {
                     erw.getReader().next();
@@ -719,7 +783,7 @@ public abstract class FlightMessageRoundTripTest {
 
             byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
             fd = FlightDescriptor.command(magic);
-            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd);
+            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
                     final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
                 byte[] msg = new byte[0];
@@ -742,6 +806,106 @@ public abstract class FlightMessageRoundTripTest {
         }
     }
 
+    @Test
+    public void testAuthTicketTransformer() throws Exception {
+        // stuff table into the scope
+        final String tableName = "flightAuthTicketTransformTest";
+        final String resultTableName = tableName + "Result";
+        final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
+        final MutableInt numTransforms = new MutableInt();
+        component.authorizationProvider().delegateTicketTransformation = new TicketResolverBase.AuthTransformation() {
+            @Override
+            public <T> T transform(T source) {
+                numTransforms.increment();
+                if (source instanceof Table) {
+                    // noinspection unchecked
+                    return (T) ((Table) source).dropColumns("J");
+                }
+                return source;
+            }
+        };
+
+        scriptSession.setVariable(tableName, table);
+
+        // export from query scope to our session; this transforms the table
+        assertEquals(0, numTransforms.intValue());
+        final Export export = clientSession.session().export(TicketTable.fromQueryScopeField(tableName));
+        // place the transformed table into the scope; wait on the future to ensure the server-side operation completes
+        clientSession.session().publish(resultTableName, export).get();
+        assertEquals(1, numTransforms.intValue());
+
+        // check that the table was transformed
+        Object result = scriptSession.getVariable(resultTableName);
+        assertTrue(result instanceof Table);
+        assertEquals(1, ((Table) result).getColumnSources().size());
+        assertEquals(2, table.getColumnSources().size());
+    }
+
+    @Test
+    public void testSimpleServiceAuthWiring() throws Exception {
+        // stuff table into the scope
+        final String tableName = "testSimpleServiceAuthWiringTest";
+        final String resultTableName = tableName + "Result";
+        final Table table = TableTools.emptyTable(10).update("I = -i", "J = -i");
+        scriptSession.setVariable(tableName, table);
+
+        // export from query scope to our session; this transforms the table
+        final Export export = clientSession.session().export(TicketTable.fromQueryScopeField(tableName));
+
+        // verify that we can sort the table prior to the restriction
+        clientSession.session().publish(resultTableName, export).get();
+        // verify that we can publish as many times as we please
+        clientSession.session().publish(resultTableName, export).get();
+
+        component.authorizationProvider().getConsoleServiceAuthWiring().delegate =
+                new ConsoleServiceAuthWiring.AllowAll() {
+                    @Override
+                    public void onMessageReceivedBindTableToVariable(AuthContext authContext,
+                            BindTableToVariableRequest request) {
+                        ServiceAuthWiring.operationNotAllowed(DISABLED_FOR_TEST);
+                    }
+                };
+
+        try {
+            clientSession.session().publish(resultTableName, export).get();
+            fail("expected the publish to fail");
+        } catch (final Exception e) {
+            // expect the authorization error details to propagate
+            assertTrue(e.getMessage().contains(DISABLED_FOR_TEST));
+        }
+    }
+
+    @Test
+    public void testSimpleContextualAuthWiring() throws Exception {
+        // stuff table into the scope
+        final String tableName = "testSimpleContextualAuthWiringTest";
+        final Table table = TableTools.emptyTable(10).update("I = -i", "J = -i");
+        scriptSession.setVariable(tableName, table);
+
+        // export from query scope to our session; this transforms the table
+        final Export export = clientSession.session().export(TicketTable.fromQueryScopeField(tableName));
+
+        // verify that we can sort the table prior to the restriction
+        clientSession.session().execute(export.table().sort("I"));
+
+        component.authorizationProvider().getTableServiceContextualAuthWiring().delegate =
+                new TableServiceContextualAuthWiring.AllowAll() {
+                    @Override
+                    public void checkPermissionSort(AuthContext authContext, SortTableRequest request,
+                            List<Table> sourceTables) {
+                        ServiceAuthWiring.operationNotAllowed(DISABLED_FOR_TEST);
+                    }
+                };
+
+        try {
+            clientSession.session().execute(export.table().sort("J"));
+            fail("expected the sort to fail");
+        } catch (final Exception e) {
+            // expect the authorization error details to propagate
+            assertTrue(e.getMessage().contains(DISABLED_FOR_TEST));
+        }
+    }
+
     private static FlightDescriptor arrowFlightDescriptorForName(String name) {
         return FlightDescriptor.path(ScopeTicketHelper.nameToPath(name));
     }
@@ -756,11 +920,11 @@ public abstract class FlightMessageRoundTripTest {
         currentSession.newExport(ticket, "test").submit(() -> table);
 
         // test fetch info from export ticket
-        final FlightInfo info = client.getInfo(FlightDescriptor.path("export", "1"));
+        final FlightInfo info = flightClient.getInfo(FlightDescriptor.path("export", "1"));
         assertInfoMatchesTable(info, table);
 
         // test list flights which runs through scoped tickets
-        client.listFlights(Criteria.ALL).forEach(fi -> {
+        flightClient.listFlights(Criteria.ALL).forEach(fi -> {
             throw new IllegalStateException("should not be included in list flights");
         });
     }
@@ -795,13 +959,13 @@ public abstract class FlightMessageRoundTripTest {
         // fetch with DoGet
         int flightDescriptorTicketValue;
         FlightClient.ClientStreamListener putStream;
-        try (FlightStream stream = client.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()))) {
+        try (FlightStream stream = flightClient.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()))) {
             VectorSchemaRoot root = stream.getRoot();
 
             // start the DoPut and send the schema
             flightDescriptorTicketValue = nextTicket++;
             FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
-            putStream = client.startPut(descriptor, root, new AsyncPutListener());
+            putStream = flightClient.startPut(descriptor, root, new AsyncPutListener());
 
             // send the body of the table
             while (stream.next()) {

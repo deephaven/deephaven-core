@@ -24,7 +24,7 @@ import java.util.stream.IntStream;
 /**
  * {@link TableLocationKey} implementation for use with data stored in the parquet format.
  */
-public final class ParquetTableLocationKey extends FileTableLocationKey {
+public class ParquetTableLocationKey extends FileTableLocationKey {
 
     private static final String IMPLEMENTATION_NAME = ParquetTableLocationKey.class.getSimpleName();
 

@@ -67,11 +67,11 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // set up the container, env vars - things that aren't likely to change
             from 'deephaven/server-netty:local-build'
             runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4;\\
-                      mkdir -p /out/report;\\
-                      mkdir -p /workspace/cache/classes'''
+                      pip3 install pyarrow unittest-xml-reporting==3.0.4;\\
+                      mkdir -p /out/report'''
+            volume '/data'
+            volume '/cache'
             environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath:/opt/deephaven/server/lib/*:/opt/deephaven/server/lib/'
-            environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
             environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
             environmentVariable 'DEEPHAVEN_VERSION', project.version
 

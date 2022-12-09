@@ -13,7 +13,6 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.io.log.LogEntry;
@@ -61,8 +60,7 @@ public class ConstructSnapshot {
         }
     }
 
-    private static final io.deephaven.io.logger.Logger log =
-            LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
+    private static final io.deephaven.io.logger.Logger log = LoggerFactory.getLogger(ConstructSnapshot.class);
 
     /**
      * The maximum number of allowed attempts to construct a snapshot concurrently with {@link UpdateGraphProcessor} run

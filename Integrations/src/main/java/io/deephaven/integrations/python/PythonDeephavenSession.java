@@ -154,7 +154,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         return scope
                 .getValue(name)
-                .orElseThrow(() -> new QueryScope.MissingVariableException("No global variable for: " + name));
+                .orElseThrow(() -> new QueryScope.MissingVariableException("No variable for: " + name));
     }
 
     @Override

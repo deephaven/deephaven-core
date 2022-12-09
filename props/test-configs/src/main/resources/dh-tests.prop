@@ -40,8 +40,6 @@ Calendar.importPath=/default_calendar_imports.txt
 
 columnsFile=DeephavenColumns.xml
 
-NIO.wireLagClock.native=false
-
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
 
 # Python configuration
@@ -98,3 +96,7 @@ BarrageStreamGenerator.batchSize=4
 
 #BarrageTable.debug=true
 #BarrageMessageProducer.debug=true
+
+AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
+authentication.client.configuration.list=
+client.version.list=

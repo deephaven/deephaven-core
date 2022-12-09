@@ -20,6 +20,8 @@ dependencies {
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
+    testImplementation project(':base-test-utils')
+    testImplementation project(':engine-rowset-test-utils')
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')

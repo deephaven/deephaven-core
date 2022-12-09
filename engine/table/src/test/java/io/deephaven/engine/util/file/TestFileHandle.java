@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.util.file;
 
-import io.deephaven.configuration.Configuration;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -27,7 +26,7 @@ public class TestFileHandle {
 
     @Before
     public void setup() throws IOException {
-        file = File.createTempFile("TestFileHandle-", ".dat", new File(Configuration.getInstance().getWorkspacePath()));
+        file = File.createTempFile("TestFileHandle-", ".dat");
         FHUT = new FileHandle(FileChannel.open(file.toPath(),
                 StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.CREATE),

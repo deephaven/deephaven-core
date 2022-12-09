@@ -8,7 +8,7 @@ import org.gradle.api.Project
 class CombinedJavadoc {
 
     static boolean includeProject(Project p) {
-        def exclusions = [ 'hotspot-impl' ].toSet()
+        def exclusions = [ 'hotspot-impl', 'clock-impl' ].toSet()
         ProjectType type = ProjectType.getType(p)
         if (!type.isPublic) {
             return false
@@ -18,6 +18,7 @@ class CombinedJavadoc {
         }
         switch (type) {
             case ProjectType.BOM_PUBLIC:
+            case ProjectType.JAVA_PUBLIC_TESTING:
                 return false
             case ProjectType.JAVA_EXTERNAL:
             case ProjectType.JAVA_PUBLIC:

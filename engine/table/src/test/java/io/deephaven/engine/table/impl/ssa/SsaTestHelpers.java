@@ -4,15 +4,17 @@
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.generator.SortedDoubleGenerator;
+import io.deephaven.engine.testutil.generator.SortedIntGenerator;
+import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class SsaTestHelpers {
     @NotNull
-    public static TstUtils.SortedIntGenerator getGeneratorForChar() {
-        return new TstUtils.SortedIntGenerator((int) Character.MIN_VALUE, (int) Character.MAX_VALUE - 1);
+    public static SortedIntGenerator getGeneratorForChar() {
+        return new SortedIntGenerator((int) Character.MIN_VALUE, (int) Character.MAX_VALUE - 1);
     }
 
     public static Table prepareTestTableForChar(QueryTable table) {
@@ -20,8 +22,8 @@ public class SsaTestHelpers {
     }
 
     @NotNull
-    public static TstUtils.SortedIntGenerator getGeneratorForByte() {
-        return new TstUtils.SortedIntGenerator(Byte.MIN_VALUE + 1, Byte.MAX_VALUE - 1);
+    public static SortedIntGenerator getGeneratorForByte() {
+        return new SortedIntGenerator(Byte.MIN_VALUE + 1, Byte.MAX_VALUE - 1);
     }
 
     public static Table prepareTestTableForByte(QueryTable table) {
@@ -29,8 +31,8 @@ public class SsaTestHelpers {
     }
 
     @NotNull
-    public static TstUtils.SortedIntGenerator getGeneratorForShort() {
-        return new TstUtils.SortedIntGenerator(Short.MIN_VALUE + 1, (int) Short.MAX_VALUE);
+    public static SortedIntGenerator getGeneratorForShort() {
+        return new SortedIntGenerator(Short.MIN_VALUE + 1, (int) Short.MAX_VALUE);
     }
 
     public static Table prepareTestTableForShort(QueryTable table) {
@@ -38,8 +40,8 @@ public class SsaTestHelpers {
     }
 
     @NotNull
-    public static TstUtils.SortedIntGenerator getGeneratorForInt() {
-        return new TstUtils.SortedIntGenerator(-100000, 100000);
+    public static SortedIntGenerator getGeneratorForInt() {
+        return new SortedIntGenerator(-100000, 100000);
     }
 
     public static Table prepareTestTableForInt(QueryTable table) {
@@ -47,8 +49,8 @@ public class SsaTestHelpers {
     }
 
     @NotNull
-    public static TstUtils.SortedLongGenerator getGeneratorForLong() {
-        return new TstUtils.SortedLongGenerator(2L * Integer.MIN_VALUE, 2L * Integer.MAX_VALUE);
+    public static SortedLongGenerator getGeneratorForLong() {
+        return new SortedLongGenerator(2L * Integer.MIN_VALUE, 2L * Integer.MAX_VALUE);
     }
 
     public static Table prepareTestTableForLong(QueryTable table) {
@@ -56,8 +58,8 @@ public class SsaTestHelpers {
     }
 
     @NotNull
-    public static TstUtils.SortedDoubleGenerator getGeneratorForFloat() {
-        return new TstUtils.SortedDoubleGenerator(-10000.0, 10000.0);
+    public static SortedDoubleGenerator getGeneratorForFloat() {
+        return new SortedDoubleGenerator(-10000.0, 10000.0);
     }
 
     public static Table prepareTestTableForFloat(QueryTable table) {
@@ -65,8 +67,8 @@ public class SsaTestHelpers {
     }
 
     @NotNull
-    public static TstUtils.SortedDoubleGenerator getGeneratorForDouble() {
-        return new TstUtils.SortedDoubleGenerator(-10000.0, 10000.0);
+    public static SortedDoubleGenerator getGeneratorForDouble() {
+        return new SortedDoubleGenerator(-10000.0, 10000.0);
     }
 
     public static Table prepareTestTableForDouble(QueryTable table) {
@@ -74,8 +76,8 @@ public class SsaTestHelpers {
     }
 
     @NotNull
-    public static TstUtils.SortedIntGenerator getGeneratorForObject() {
-        return new TstUtils.SortedIntGenerator(0, 100000);
+    public static SortedIntGenerator getGeneratorForObject() {
+        return new SortedIntGenerator(0, 100000);
     }
 
     public static Table prepareTestTableForObject(QueryTable table) {

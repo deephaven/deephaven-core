@@ -4,21 +4,33 @@
 package io.deephaven.server.runner;
 
 import io.deephaven.base.system.PrintStreamGlobals;
+import io.deephaven.configuration.CacheDir;
+import io.deephaven.configuration.ConfigDir;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.configuration.DataDir;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.internal.log.Bootstrap;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.io.logger.LogBufferInterceptor;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.ssl.config.*;
+import io.deephaven.ssl.config.Identity;
+import io.deephaven.ssl.config.IdentityPrivateKey;
+import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.SSLConfig.Builder;
 import io.deephaven.ssl.config.SSLConfig.ClientAuth;
+import io.deephaven.ssl.config.Trust;
+import io.deephaven.ssl.config.TrustCertificates;
+import io.deephaven.util.HeapDump;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 
 public class Main {
@@ -31,41 +43,65 @@ public class Main {
     public static final String SSL_CLIENT_AUTH = "ssl.clientAuthentication";
     public static final String PRIVATEKEY = "privatekey";
     public static final String CERTS = "certs";
+    public static final String DEEPHAVEN_APPLICATION_PROPERTY = "deephaven.application";
+    public static final String DEEPHAVEN_APPLICATION_ENV = "DEEPHAVEN_APPLICATION";
 
     private static void bootstrapSystemProperties(String[] args) throws IOException {
         if (args.length > 1) {
             throw new IllegalArgumentException("Expected 0 or 1 argument");
         }
-        if (args.length == 0) {
-            try (final InputStream in = Main.class.getResourceAsStream("/bootstrap.properties")) {
-                if (in != null) {
-                    System.out.println("# Bootstrapping from resource '/bootstrap.properties'");
-                    System.getProperties().load(in);
-                } else {
-                    System.out.println("# No resource '/bootstrap.properties' found, skipping bootstrapping");
-                }
-            }
-        } else {
-            System.out.printf("# Bootstrapping from file '%s'%n", args[0]);
-            try (final FileReader reader = new FileReader(args[0])) {
-                System.getProperties().load(reader);
-            }
+        if (args.length == 1) {
+            bootstrapFromFile(Path.of(args[0]));
+            return;
         }
+    }
+
+    private static void bootstrapFromFile(Path configFile) throws IOException {
+        Bootstrap.printf("# Bootstrapping from file '%s'%n", configFile);
+        try (final Reader reader = Files.newBufferedReader(configFile, Charset.defaultCharset())) {
+            System.getProperties().load(reader);
+        }
+    }
+
+    private static void bootstrapProjectDirectories() throws IOException {
+        final String applicationName =
+                applicationProperty().or(Main::applicationEnvironmentVariable).orElse("deephaven");
+
+        // Default directories based on the underlying OS conventions
+        final dev.dirs.ProjectDirectories defaultDirectories =
+                dev.dirs.ProjectDirectories.from("io", "Deephaven Data Labs", applicationName);
+
+        final Path cacheDir = CacheDir.getOrSet(defaultDirectories.cacheDir);
+        final Path configDir = ConfigDir.getOrSet(defaultDirectories.configDir);
+        final Path dataDir = DataDir.getOrSet(defaultDirectories.dataDir);
+
+        Files.createDirectories(cacheDir);
+        Files.createDirectories(dataDir);
+
+        Bootstrap.printf("%s=%s%n%s=%s%n%s=%s%n",
+                CacheDir.PROPERTY,
+                cacheDir,
+                ConfigDir.PROPERTY,
+                configDir,
+                DataDir.PROPERTY,
+                dataDir);
     }
 
     /**
      * Common init method to share between main() implementations.
-     * 
-     * @param mainClass
+     *
+     * @param args the args
+     * @param mainClass the main class
      * @return the current configuration instance to be used when configuring the rest of the server
-     * @throws IOException
+     * @throws IOException if an I/O exception occurs
      */
     @NotNull
     public static Configuration init(String[] args, Class<?> mainClass) throws IOException {
-        System.out.printf("# Starting %s%n", mainClass.getName());
+        Bootstrap.printf("# Starting %s%n", mainClass.getName());
 
         // No classes should be loaded before we bootstrap additional system properties
         bootstrapSystemProperties(args);
+        bootstrapProjectDirectories();
 
         // Capture the original System.out and System.err early
         PrintStreamGlobals.init();
@@ -78,6 +114,7 @@ public class Main {
 
         log.info().append("Starting up ").append(mainClass.getName()).append("...").endl();
 
+        // Don't load up configuration until after logging has been initialized
         final Configuration config = Configuration.getInstance();
 
         // After logging and config are working, redirect any future JUL logging to SLF4J
@@ -89,6 +126,8 @@ public class Main {
         final ProcessEnvironment processEnvironment =
                 ProcessEnvironment.basicInteractiveProcessInitialization(config, mainClass.getName(), log);
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
+        HeapDump.setupHeapDumpWithDefaults(config,
+                (final RuntimeException unused) -> ConstructSnapshot.concurrentAttemptInconsistent(), log);
         return config;
     }
 
@@ -171,5 +210,13 @@ public class Main {
 
     private static String prefix(String prefix, String key) {
         return prefix != null ? prefix + key : key;
+    }
+
+    private static Optional<String> applicationProperty() {
+        return Optional.ofNullable(System.getProperty(DEEPHAVEN_APPLICATION_PROPERTY));
+    }
+
+    private static Optional<String> applicationEnvironmentVariable() {
+        return Optional.ofNullable(System.getenv(DEEPHAVEN_APPLICATION_ENV));
     }
 }

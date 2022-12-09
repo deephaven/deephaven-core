@@ -277,8 +277,6 @@ public class TypedHasherFactory {
                     true, TypedAsOfJoinFactory::staticProbeDecorateRightFound, null));
 
         } else if (baseClass.equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
-            final ParameterSpec hashSlots = ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "hashSlots")
-                    .build();
             final ParameterSpec sequentialBuilders =
                     ParameterSpec.builder(ObjectArraySource.class, "sequentialBuilders").build();
 
@@ -290,7 +288,6 @@ public class TypedHasherFactory {
                     .emptyStateName("ENTRY_EMPTY_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
-                    .addExtraPartialRehashParameter(hashSlots)
                     .moveMainFull(TypedAsOfJoinFactory::rightIncrementalMoveMainFull)
                     .moveMainAlternate(TypedAsOfJoinFactory::rightIncrementalMoveMainAlternate)
                     .alwaysMoveMain(true)
@@ -298,14 +295,14 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rowState",
                     true, true, TypedAsOfJoinFactory::rightIncrementalBuildLeftFound,
-                    TypedAsOfJoinFactory::rightIncrementalBuildLeftInsert, hashSlots, sequentialBuilders));
+                    TypedAsOfJoinFactory::rightIncrementalBuildLeftInsert, sequentialBuilders));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rowState", true,
                     true, TypedAsOfJoinFactory::rightIncrementalRightFound,
-                    TypedAsOfJoinFactory::rightIncrementalRightInsert, hashSlots, sequentialBuilders));
+                    TypedAsOfJoinFactory::rightIncrementalRightInsert, sequentialBuilders));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probeRightSide", "rowState",
-                    true, TypedAsOfJoinFactory::rightIncrementalProbeDecorateRightFound, null, hashSlots,
+                    true, TypedAsOfJoinFactory::rightIncrementalProbeDecorateRightFound, null,
                     sequentialBuilders));
         } else if (baseClass.equals(UpdateByStateManagerTypedBase.class)) {
             final ClassName rowKeyType = ClassName.get(RowKeys.class);

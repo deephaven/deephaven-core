@@ -53,6 +53,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -687,6 +688,10 @@ public class ParquetTableWriter {
                 }
             }
 
+            if (keyCount == 0 && hasNulls) {
+                return false;
+            }
+
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
             final Iterator<IntBuffer> arraySizeIt = arraySizeBuffers == null ? null : arraySizeBuffers.iterator();
             for (final IntBuffer pageBuffer : pageBuffers) {
@@ -775,14 +780,23 @@ public class ParquetTableWriter {
             return new ByteTransfer(columnSource, maxValuesPerPage);
         } else if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, maxValuesPerPage);
-        } else if (BigDecimal.class.equals(columnType)) {
-            // noinspection unchecked
-            final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
-            final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
-                    computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
-            final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
-                    precisionAndScale.precision, precisionAndScale.scale, -1);
-            return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage);
+        }
+
+        // If there's an explicit codec, we should disregard the defaults for these CodecLookup#lookup() will properly
+        // select the codec assigned by the instructions so we only need to check and redirect once.
+        if (!CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))) {
+            if (BigDecimal.class.equals(columnType)) {
+                // noinspection unchecked
+                final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
+                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+                        computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
+                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
+                        precisionAndScale.precision, precisionAndScale.scale, -1);
+                return new CodecTransfer<>(bigDecimalColumnSource, codec, maxValuesPerPage);
+            } else if (BigInteger.class.equals(columnType)) {
+                return new CodecTransfer<>((ColumnSource<BigInteger>) columnSource, new BigIntegerParquetBytesCodec(-1),
+                        maxValuesPerPage);
+            }
         }
 
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);

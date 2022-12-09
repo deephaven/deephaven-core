@@ -15,6 +15,11 @@ import io.grpc.servlet.jakarta.ServletServerBuilder;
 
 import javax.inject.Named;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+
+import static io.grpc.internal.GrpcUtil.getThreadFactory;
 
 @Module
 public interface JettyServerModule {
@@ -33,6 +38,22 @@ public interface JettyServerModule {
         final ServletServerBuilder serverBuilder = new ServletServerBuilder();
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
+
+        // create a custom executor service, just like grpc would use, so that grpc doesn't shut it down ahead
+        // of when we are ready
+        // We don't use newSingleThreadScheduledExecutor because it doesn't return a
+        // ScheduledThreadPoolExecutor.
+        ScheduledThreadPoolExecutor service = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(
+                1, getThreadFactory("grpc-timer-%d", true));
+
+        // If there are long timeouts that are cancelled, they will not actually be removed from
+        // the executors queue. This forces immediate removal upon cancellation to avoid a
+        // memory leak.
+        service.setRemoveOnCancelPolicy(true);
+
+        ScheduledExecutorService executorService = Executors.unconfigurableScheduledExecutorService(service);
+
+        serverBuilder.scheduledExecutorService(executorService);
 
         serverBuilder.maxInboundMessageSize(maxMessageSize);
 

@@ -21,9 +21,8 @@ import java.util.Map;
 @Module
 public class AuthContextModule {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
-    private static final String[] AUTH_HANDLERS = Configuration.getInstance()
-            .getStringArrayFromPropertyWithDefault("AuthHandlers",
-                    new String[] {AnonymousAuthenticationHandler.class.getCanonicalName()});
+    private static final String[] AUTH_HANDLERS =
+            Configuration.getInstance().getStringArrayFromProperty("AuthHandlers");
 
     private static Map<String, AuthenticationRequestHandler> authHandlerMap;
 

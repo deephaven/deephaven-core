@@ -190,7 +190,8 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             }
             failed = true;
             try {
-                AsyncErrorLogger.log(DateTimeUtils.currentTime(), entry, sourceEntry, originalException);
+                AsyncErrorLogger.log(DateTimeUtils.currentTimeMillis(), entry, sourceEntry,
+                        originalException);
             } catch (IOException e) {
                 log.error().append("Error logging failure from ").append(entry).append(": ").append(e).endl();
             }

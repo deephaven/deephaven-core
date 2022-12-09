@@ -23,13 +23,16 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
     // this is a python function whose arguments can accept arrays
     private final PyObject function;
 
-    FilterKernelPythonChunkedFunction(PyObject function) {
+    private final ArgumentsChunked argumentsChunked;
+
+    FilterKernelPythonChunkedFunction(PyObject function, ArgumentsChunked argumentsChunked) {
         this.function = Objects.requireNonNull(function, "function");
+        this.argumentsChunked = argumentsChunked;
     }
 
     @Override
     public Context getContext(int maxChunkSize) {
-        return new Context(maxChunkSize);
+        return new Context(maxChunkSize, argumentsChunked.makeFillContextPython(maxChunkSize));
     }
 
     @Override
@@ -38,11 +41,13 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
             LongChunk<OrderedRowKeys> indices,
             Chunk... inputChunks) {
         final int size = indices.size();
-        final io.deephaven.engine.table.impl.select.python.ArgumentsChunked arguments =
-                io.deephaven.engine.table.impl.select.python.ArgumentsChunked.buildArguments(inputChunks);
+        FillContextPython fillContextPython = context.getKernelContext();
+        fillContextPython.resolveColumnChunks(inputChunks, size);
+
         final boolean[] results = function
-                .call(boolean[].class, CALL_METHOD, arguments.getParamTypes(), arguments.getParams());
-        if (size != results.length) {
+                .call(boolean[].class, CALL_METHOD, fillContextPython.getChunkedArgTypes(),
+                        fillContextPython.getChunkedArgs());
+        if (size > results.length) {
             throw new IllegalStateException(
                     "FilterKernelPythonChunkedFunction returned results are not the proper size");
         }

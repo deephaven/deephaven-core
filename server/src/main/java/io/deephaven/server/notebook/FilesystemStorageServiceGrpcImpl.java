@@ -6,6 +6,7 @@ import com.google.common.io.ByteSource;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.configuration.DataDir;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -32,7 +33,6 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -61,9 +61,8 @@ import static com.google.common.io.Files.asByteSource;
 public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.StorageServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(FilesystemStorageServiceGrpcImpl.class);
 
-    private static final String STORAGE_PATH =
-            Configuration.getInstance().getStringWithDefault("storage.path", "<workspace>/storage")
-                    .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
+    private static final String STORAGE_PATH = Configuration.getInstance().getStringWithDefault("storage.path",
+            DataDir.get().resolve("storage").toString());
 
     private static final String WEB_LAYOUT_DIRECTORY =
             Configuration.getInstance().getStringWithDefault("web.storage.layout.directory", "/layouts");
@@ -207,12 +206,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             Path path = resolveOrThrow(request.getPath());
             requireNotRoot(path, "Can't overwrite the root directory");
             StandardOpenOption option =
-                    request.getAllowOverwrite() ? StandardOpenOption.CREATE : StandardOpenOption.CREATE_NEW;
+                    request.getAllowOverwrite() ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
 
             byte[] bytes = request.getContents().toByteArray();
             String etag = ByteSource.wrap(bytes).hash(HASH_FUNCTION).toString();
             try {
-                Files.write(path, bytes, option);
+                Files.write(path, bytes, StandardOpenOption.CREATE, option);
             } catch (FileAlreadyExistsException alreadyExistsException) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File already exists");
             } catch (NoSuchFileException noSuchFileException) {

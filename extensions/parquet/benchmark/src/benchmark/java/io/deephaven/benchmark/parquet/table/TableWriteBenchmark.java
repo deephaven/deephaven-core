@@ -1,7 +1,6 @@
 package io.deephaven.benchmark.parquet.table;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryLibrary;
@@ -21,7 +20,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -45,8 +43,7 @@ public class TableWriteBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv() throws IOException {
-        rootPath = Files.createTempDirectory(Paths.get(Configuration.getInstance().getWorkspacePath()),
-                "TableWriteBenchmark");
+        rootPath = Files.createTempDirectory("TableWriteBenchmark");
         final ExecutionContext context = ExecutionContext.newBuilder()
                 .newQueryLibrary()
                 .newQueryScope()
@@ -56,7 +53,7 @@ public class TableWriteBenchmark {
         exContextCloseable = context.open();
 
         final QueryScope queryScope = context.getQueryScope();
-        queryScope.putParam("nowNanos", DateTimeUtils.currentTime().getNanos());
+        queryScope.putParam("nowNanos", DateTimeUtils.currentClock().currentTimeNanos());
         queryScope.putParam("letters", LETTERS);
 
         QueryLibrary library = context.getQueryLibrary();

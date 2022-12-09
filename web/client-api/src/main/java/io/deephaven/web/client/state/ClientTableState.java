@@ -357,7 +357,7 @@ public final class ClientTableState extends TableConfig {
         JsConsumer<JsTable> doSetSize = table -> {
             long localSize = size;
             final ActiveTableBinding binding = getActiveBinding(table);
-            if (binding != null && table.isStreamTable()) {
+            if (binding != null && table.isStreamTable() && binding.getRows() != null) {
                 localSize = Math.min(size, binding.getRows().size());
             }
             table.setSize(localSize);

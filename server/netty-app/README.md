@@ -16,7 +16,7 @@ produces
 The above artifacts can be uncompressed and their `bin/start` script can be executed:
 
 ```shell
- JAVA_OPTS="-Ddeephaven.console.type=groovy" bin/start
+START_OPTS="-Ddeephaven.console.type=groovy" bin/start
 ```
 
 Alternatively, the uncompressed installation can be built directly by gradle:
@@ -28,7 +28,7 @@ Alternatively, the uncompressed installation can be built directly by gradle:
 And then run via:
 
 ```shell
-JAVA_OPTS="-Ddeephaven.console.type=groovy" ./server/netty-app/build/install/server/bin/start
+START_OPTS="-Ddeephaven.console.type=groovy" ./server/netty-app/build/install/server/bin/start
 ```
 
 Finally, Gradle can be used to update the build and run the application in a single step:
@@ -40,8 +40,10 @@ Finally, Gradle can be used to update the build and run the application in a sin
 ### Internals
 
 `server-netty-app` is configured by default to include code that depends on JVM internals via
-`--add-opens java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `includeHotspotImpl`
-to `false`.
+`--add-exports java.management/sun.management=ALL-UNNAMED`. To disable this, set the gradle property `-PexcludeHotspotImpl`.
+
+`server-netty-app` is configured by default to include code that depends on JVM internals via
+`--add-exports java.base/jdk.internal.misc=ALL-UNNAMED`. To disable this, set the gradle property `-PexcludeClockImpl`.
 
 ### Configuration / SSL
 

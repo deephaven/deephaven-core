@@ -3,44 +3,54 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.impl.RowSetTstUtils;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
-import io.deephaven.engine.liveness.LivenessScope;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.DoubleGenerator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SortedIntGenerator;
+import io.deephaven.engine.testutil.generator.StringGenerator;
+import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-
-import org.junit.experimental.categories.Category;
 
 /**
  * Unit tests for {@link TableTools}.
@@ -74,7 +84,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
 
         scope = new LivenessScope();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
         LivenessScopeStack.push(scope);
 
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
@@ -117,21 +127,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         tableRangesAreEqual(table1, result, 0, table1.size() * 2, table1.size());
     }
 
-    private static void assertThrows(final Runnable runnable) {
-        boolean threwException = false;
-        try {
-            runnable.run();
-        } catch (final Exception ignored) {
-            threwException = true;
-        }
-        TestCase.assertTrue(threwException);
-    }
-
     @Test
     public void testMergeWithNullTables() {
-        TestTableTools.assertThrows(TableTools::merge);
-        TestTableTools.assertThrows(() -> TableTools.merge(null, null));
-        TestTableTools.assertThrows(() -> TableTools.merge(null, null, null));
+        assertThrows(TableTools::merge);
+        assertThrows(() -> TableTools.merge(null, null));
+        assertThrows(() -> TableTools.merge(null, null, null));
 
         Table result = TableTools.merge(null, table1, null, null, null);
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
@@ -496,7 +496,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         LogicalClock clock = LogicalClock.DEFAULT;
         Random random = new Random(0);
 
-        TstUtils.ColumnInfo[] info1;
+        ColumnInfo[] info1;
         final QueryTable table1 = getTable(random.nextInt(20), random,
                 info1 = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new StringGenerator(),
@@ -831,12 +831,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         table1.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
-    }
-
-    public static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {
-        Assert.assertEquals("",
-                TableTools.diff(table1.tail(table1.size() - from1).head(size),
-                        table2.tail(table2.size() - from2).head(size), 10));
     }
 
     @Test

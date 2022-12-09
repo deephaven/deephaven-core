@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -34,9 +35,9 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
                     : Collections.emptyList();
 
     @Inject
-    public CreateInputTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getCreateInputTable, CreateInputTableRequest::getResultId,
-                optionalSourceTable);
+    public CreateInputTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionCreateInputTable, BatchTableRequest.Operation::getCreateInputTable,
+                CreateInputTableRequest::getResultId, optionalSourceTable);
     }
 
     @Override
@@ -55,7 +56,8 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
     }
 
     @Override
-    public Table create(CreateInputTableRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final CreateInputTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         TableDefinition tableDefinitionFromSchema;
 
         if (request.hasSchema()) {
@@ -67,6 +69,7 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
         } else {
             throw new IllegalStateException("missing schema and source_table_id");
         }
+
         switch (request.getKind().getKindCase()) {
             case IN_MEMORY_APPEND_ONLY:
                 return AppendOnlyArrayBackedMutableTable.make(tableDefinitionFromSchema);

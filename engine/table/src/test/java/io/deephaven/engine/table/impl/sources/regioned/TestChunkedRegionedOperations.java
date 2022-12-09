@@ -10,7 +10,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.parquet.table.ParquetTools;
@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -132,7 +132,7 @@ public class TestChunkedRegionedOperations {
     @Before
     public void setUp() throws Exception {
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        queryScope.putParam("nowNanos", DateTimeUtils.currentTime().getNanos());
+        queryScope.putParam("nowNanos", DateTimeUtils.currentClock().currentTimeNanos());
         queryScope.putParam("letters",
                 IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
         queryScope.putParam("emptySymbolSet", new ArrayStringSet());

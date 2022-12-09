@@ -5,6 +5,7 @@ package io.deephaven.server.netty;
 
 import io.deephaven.base.system.PrintStreamGlobals;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.runner.Main;
 
 import java.io.IOException;
@@ -13,11 +14,12 @@ import java.util.concurrent.TimeoutException;
 public class NettyMain extends Main {
     public static void main(String[] args)
             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
-        final Configuration config = init(args, Main.class);
+        final Configuration config = init(args, NettyMain.class);
         final NettyConfig nettyConfig = NettyConfig.buildFromConfig(config).build();
         DaggerNettyServerComponent
                 .builder()
                 .withNettyConfig(nettyConfig)
+                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(PrintStreamGlobals.getOut())
                 .withErr(PrintStreamGlobals.getErr())
                 .build()

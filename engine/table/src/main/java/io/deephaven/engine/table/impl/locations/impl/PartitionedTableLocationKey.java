@@ -109,7 +109,7 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
      * {@link #compare(Map, Map)} will throw an {@link UnknownPartitionKeyException} if one of the maps is missing keys
      * found in the other.
      */
-    protected static final class PartitionsComparator implements Comparator<Map<String, Comparable<?>>> {
+    public static final class PartitionsComparator implements Comparator<Map<String, Comparable<?>>> {
 
         public static final Comparator<Map<String, Comparable<?>>> INSTANCE = new PartitionsComparator();
 

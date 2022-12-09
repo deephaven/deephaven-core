@@ -9,8 +9,6 @@ ADD serverApplicationDist/server-${DEEPHAVEN_VERSION}.tar /opt/deephaven
 RUN set -eux; \
     ln -s /opt/deephaven/server-${DEEPHAVEN_VERSION} /opt/deephaven/server
 
-COPY image-bootstrap.properties image-bootstrap.properties
-
 FROM deephaven/slim-base:local-build
 
 COPY --from=install / /
@@ -30,7 +28,12 @@ VOLUME /cache
 # occur within about 9s, as the port will connect correctly, but respond that it isn't
 # available.
 HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8080 -connect-timeout=10s || exit 1
-ENTRYPOINT [ "/opt/deephaven/server/bin/start", "image-bootstrap.properties" ]
+ENV \
+    DEEPHAVEN_CACHE_DIR="/cache" \
+    DEEPHAVEN_CONFIG_DIR="/opt/deephaven/config" \
+    DEEPHAVEN_DATA_DIR="/data" \
+    START_OPTS="-Ddeephaven.console.type=groovy"
+ENTRYPOINT [ "/opt/deephaven/server/bin/start" ]
 
 ARG DEEPHAVEN_VERSION
 LABEL \
