@@ -505,27 +505,29 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final boolean isBaseLevel = levelIndex == baseLevelIndex;
         Assert.eq(isBaseLevel, "isBaseLevel", includesConstituents, "includesConstituents");
 
-        (snapshotState.getColumns() == null ? IntStream.range(0, numColumns) : snapshotState.getColumns().stream())
-                .filter(ci -> result[ci] == null)
-                .forEach(ci -> {
-                    if (ci == KEY_WIDTH_COLUMN_INDEX) {
-                        result[ci] = isBaseLevel
-                                ? NullValueColumnSource.getInstance(int.class, null)
-                                : getDepthSource(levelIndex);
-                    } else if (ci < firstConstituentColumnIndex) {
-                        final ColumnDefinition<?> cd =
-                                aggregatedNodeDefinition.getColumns().get(ci - FIRST_AGGREGATED_COLUMN_INDEX);
-                        result[ci] = isBaseLevel
-                                ? NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType())
-                                : nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
-                    } else {
-                        final ColumnDefinition<?> cd =
-                                constituentNodeDefinition.getColumns().get(ci - firstConstituentColumnIndex);
-                        result[ci] = isBaseLevel
-                                ? nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType())
-                                : NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
-                    }
-                });
+        final BitSet columns = snapshotState.getColumns();
+        for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci)) {
+            if (result[ci] != null) {
+                continue;
+            }
+            if (ci == KEY_WIDTH_COLUMN_INDEX) {
+                result[ci] = isBaseLevel
+                        ? NullValueColumnSource.getInstance(int.class, null)
+                        : getDepthSource(levelIndex);
+            } else if (ci < firstConstituentColumnIndex) {
+                final ColumnDefinition<?> cd =
+                        aggregatedNodeDefinition.getColumns().get(ci - FIRST_AGGREGATED_COLUMN_INDEX);
+                result[ci] = isBaseLevel
+                        ? NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType())
+                        : nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
+            } else {
+                final ColumnDefinition<?> cd =
+                        constituentNodeDefinition.getColumns().get(ci - firstConstituentColumnIndex);
+                result[ci] = isBaseLevel
+                        ? nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType())
+                        : NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
+            }
+        }
         return result;
     }
 

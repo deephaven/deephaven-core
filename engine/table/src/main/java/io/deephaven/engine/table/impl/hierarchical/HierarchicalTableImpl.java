@@ -49,6 +49,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         extends BaseGridAttributes<IFACE_TYPE, IMPL_TYPE>
         implements HierarchicalTable<IFACE_TYPE> {
 
+    private static final int CHUNK_SIZE = 128;
+
     @SuppressWarnings("unchecked")
     private static volatile ChunkSource.WithPrev<? extends Values>[] cachedDepthSources =
             ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
@@ -116,6 +118,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private final KeyedLongObjectHash.ValueFactory<NodeTableState> nodeTableStateFactory =
                 new NodeTableStateIdFactory();
 
+        private final List<ChunkSource.FillContext[]> perLevelFillContextArrays = new ArrayList<>();
+        private final List<SharedContext> perLevelSharedContexts = new ArrayList<>();
+
         // region Per-snapshot parameters and state
         private BitSet columns;
         private RowSequence rows;
@@ -131,7 +136,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private long expandedSize = NULL_LONG;
         private long nextRowPositionToInclude = NULL_LONG;
         private int includedSize = NULL_INT;
-        private SharedContext sharedContext;
         // endregion Per-attempt parameters and state
 
         /**
@@ -143,6 +147,28 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             if (HierarchicalTableImpl.this.getSource().isRefreshing()) {
                 manage(HierarchicalTableImpl.this);
             }
+        }
+
+        NodeTableState getNodeTableState(final long nodeId) {
+            return nodeTableStates.putIfAbsent(nodeId, nodeTableStateFactory);
+        }
+
+        @NotNull
+        private ChunkSource.FillContext[] getFillContextArrayForLevel() {
+            ChunkSource.FillContext[] result = perLevelFillContextArrays.get(currentDepth);
+            if (result == null) {
+                perLevelFillContextArrays.set(currentDepth, result = new ChunkSource.FillContext[destinations.length]);
+            }
+            return result;
+        }
+
+        @NotNull
+        private SharedContext getSharedContextForLevel() {
+            SharedContext result = perLevelSharedContexts.get(currentDepth);
+            if (result == null) {
+                perLevelSharedContexts.set(currentDepth, result = SharedContext.makeSharedContext());
+            }
+            return result;
         }
 
         /**
@@ -157,7 +183,13 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 @Nullable final BitSet columns,
                 @NotNull final RowSequence rows,
                 @NotNull final WritableChunk<? extends Values>[] destinations) {
-            this.columns = columns;
+            this.columns = Objects.requireNonNullElseGet(columns, () -> {
+                // This is a bit of a hack; we're assuming that destinations map to all possible columns. This would
+                // also work correctly for a prefix of the columns, but that doesn't seem like a terrible side effect.
+                final BitSet result = new BitSet(destinations.length);
+                result.set(0, destinations.length);
+                return result;
+            });
             this.rows = rows;
             targetIncludedSize = rows.intSize("hierarchical table snapshot");
             this.destinations = destinations;
@@ -220,18 +252,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             expandedSize = NULL_LONG;
             nextRowPositionToInclude = NULL_LONG;
             includedSize = NULL_INT;
-            sharedContext.close();
-            sharedContext = null;
             columns = null;
             rows = null;
             targetIncludedSize = NULL_INT;
             destinations = null;
             Arrays.stream(destinationSlices).forEach(SafeCloseable::close);
             destinationSlices = null;
-        }
-
-        NodeTableState getNodeTableState(final long nodeId) {
-            return nodeTableStates.putIfAbsent(nodeId, nodeTableStateFactory);
+            perLevelFillContextArrays.clear();
+            perLevelSharedContexts.clear();
         }
 
         @Override
@@ -363,22 +391,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              * Ensure that we've prepared the node table with any structural modifications (e.g. formatting and
              * filtering), or ordering modifications (e.g. sorting), and that the result is safe to access during this
              * snapshot attempt. Initializes the data structures necessary for {@link #getTraversalTable()},
-             * {@link #getDataRetrievalTable()}, {@link #getDataSortReverseLookup()}, {@link #getDataSources()}.
+             * {@link #getDataRetrievalTable()}, {@link #getDataSortReverseLookup()}, and {@link #getDataSources()}.
              */
             private void ensurePreparedForDataRetrieval() {
                 ensureSortedCreated();
-                dataSources = makeOrFillChunkSourceArray(SnapshotState.this, id, sorted, dataSources);
                 if (sorted != base) {
                     maybeWaitForSatisfaction(sorted);
                 }
                 visitedSnapshotClock = snapshotClock;
-            }
-
-            /**
-             * @return The internal identifier for this node
-             */
-            private long getId() {
-                return id;
             }
 
             /**
@@ -414,12 +434,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
             /**
              * @return The chunk sources that should be used when retrieving actual data from the result of
-             *         {@link #getDataRetrievalTable()}
-             * @apiNote {@link #ensurePreparedForDataRetrieval()} must have been called previously during this snapshot
-             *          attempt
+             *         {@link #getDataRetrievalTable()}, at their respective column indices; other column indices may
+             *         contain {@code null}, or values cached from previous snapshots
+             * @apiNote The {@link SnapshotState#currentDepth current depth} must be up to date and
+             *          {@link #ensurePreparedForDataRetrieval()} must have been called previously during this snapshot
+             *          attempt. This call should only be made once per node per snapshot attempt.
              */
             private ChunkSource.WithPrev<? extends Values>[] getDataSources() {
-                return dataSources;
+                return dataSources = makeOrFillChunkSourceArray(SnapshotState.this, id, sorted, dataSources);
             }
 
             /**
@@ -452,7 +474,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         Linkage,
         /** A node that should be contracted, if reachable as the descendant of an "expand-all". */
         Contract,
-        /** A newly-created, undefined node. */
+        /** A newly-created, undefined node. Used where {@code null} might suffice. */
         Undefined;
         // @formatter:on
 
@@ -774,7 +796,116 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             @Nullable final Object nodeKey,
             @NotNull final KeyTableNodeAction action,
             @Nullable final List<LinkedNodeDirective> childDirectives) {
+
+        // Find our node, and avoid updating any state if we won't do any work.
+        final long nodeId = nodeKeyToNodeId(nodeKey);
+        if (nodeId == nullNodeId()) {
+            // This can happen if a directive specified a non-existent node (e.g. from a saved key table) or
+            // expand-all reached a tree leaf.
+            return;
+        }
+
+        // If we're still trying to fill our destination chunks, we need to consider this node and possibly its
+        // descendants after applying any node sorts. If we're just traversing for our expanded size calculation,
+        // we proceed in arbitrary order.
+        final boolean filling = snapshotState.includedSize < snapshotState.targetIncludedSize;
+        final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
+        final Table forExpansion;
+        if (filling) {
+            nodeTableState.ensurePreparedForDataRetrieval();
+            forExpansion = nodeTableState.getDataRetrievalTable();
+        } else {
+            nodeTableState.ensurePreparedForTraversal();
+            forExpansion = nodeTableState.getTraversalTable();
+        }
+        if (forExpansion.isEmpty()) {
+            // We arrived at an empty node. This is not really an error.
+            return;
+        }
+
+        // Establish whether we are expanding or expanding-all, and update our depth.
         final boolean oldExpandingAll = snapshotState.expandingAll;
+        updateExpansionTypeAndValidateAction(snapshotState, action);
+        ++snapshotState.currentDepth;
+        try {
+            // If we have child directives, we need to know where they fit in this node's row set, and we want to be
+            // able to examine them in traversal order.
+            if (childDirectives != null) {
+                final LongUnaryOperator dataSortReverseLookup =
+                        filling ? nodeTableState.getDataSortReverseLookup() : null;
+                childDirectives.forEach((final LinkedNodeDirective lnd) -> {
+                    long rowKeyInParent = nodeKeyToRowKeyInParentUnsorted(lnd.getNodeKey(), snapshotState.usePrev);
+                    if (rowKeyInParent != NULL_ROW_KEY && dataSortReverseLookup != null) {
+                        rowKeyInParent = dataSortReverseLookup.applyAsLong(rowKeyInParent);
+                    }
+                    lnd.setRowKeyInParent(rowKeyInParent);
+                });
+                childDirectives.sort(Comparator.comparingLong(LinkedNodeDirective::getRowKeyInParent));
+            }
+
+            // Prepare our support for filling, but don't do per-node work to get our chunk sources or fill contexts
+            // until we have to.
+            ChunkSource.WithPrev<? extends Values>[] columnDataSources = null;
+            final ChunkSource.FillContext[] fillContexts; // Indexed by destination, not column
+            final SharedContext sharedContext;
+            if (filling) {
+                fillContexts = snapshotState.getFillContextArrayForLevel();
+                sharedContext = snapshotState.getSharedContextForLevel();
+            } else {
+                fillContexts = null;
+                sharedContext = null;
+            }
+
+            // @formatter:off
+            // Traversal rules:
+            //  - We should always ignore directives for children that don't occur in this node (the parent); they
+            //    will have rowKeyInParent == NULL_ROW_KEY.
+            //  - We never expect to encounter any directives with action Undefined, that would imply a bug in
+            //    linkKeyTableNodeDirectives(...).
+            //  - If we're not expanding all, we can ignore directives with action Linkage and Contract;
+            //    we just want to visit the nodes for directives with action Expand or ExpandAll.
+            //  - If we're expanding all, we want to visit the nodes for all rows that don't have a directive
+            //    with action Contract. If we're visiting a node with no directive, we visit with action Linkage.
+            // @formatter:on
+            try (final RowSet prevRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
+                    final RowSequence.Iterator rowsIterator =
+                            (prevRows != null ? prevRows : forExpansion.getRowSet()).getRowSequenceIterator();
+                    final SafeCloseable ignored1 = fillContexts == null ? null : new SafeCloseableArray<>(fillContexts);
+                    final SafeCloseable ignored2 = sharedContext) {
+                final Iterator<LinkedNodeDirective> childDirectivesIterator =
+                        childDirectives == null ? Collections.emptyIterator() : childDirectives.iterator();
+                LinkedNodeDirective nextChildDirective =
+                        childDirectivesIterator.hasNext() ? childDirectivesIterator.next() : null;
+                while (rowsIterator.hasMore()) {
+                    if (childDirectiveIndex < numChildDirectives) {
+
+                    }
+                    // TODO-RWC: We need to iterate expansion rows and child directives together, looking for places to
+                    // expand (or not expand).
+                    if (snapshotState.expandingAll) {
+
+                    } else {
+
+                    }
+                    // Prepare (or not) for filling data in case we hit the beginning of the rows we're including.
+                    if (filling && columnDataSources == null) {
+                        columnDataSources = nodeTableState.getDataSources();
+                        final BitSet columns = snapshotState.getColumns();
+                        for (int dsi = 0, ci = columns.nextSetBit(0); ci >= 0; ++dsi, ci = columns.nextSetBit(ci)) {
+                            fillContexts[dsi] = columnDataSources[ci].makeFillContext(CHUNK_SIZE, sharedContext);
+                        }
+                    }
+                }
+            }
+        } finally {
+            --snapshotState.currentDepth;
+            snapshotState.expandingAll = oldExpandingAll;
+        }
+    }
+
+    private static void updateExpansionTypeAndValidateAction(
+            @NotNull final HierarchicalTableImpl<?, ?>.SnapshotState snapshotState,
+            @NotNull final KeyTableNodeAction action) {
         switch (action) {
             case Expand:
                 // There are two reasonable ways to handle "expand" directives when currently expanding-all:
@@ -788,86 +919,21 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 snapshotState.expandingAll = true;
                 break;
             case Linkage:
-                Assert.assertion(oldExpandingAll, "expanding all", "visiting linkage nodes when not expanding all");
+                Assert.assertion(snapshotState.expandingAll, "expanding all",
+                        "visited a linkage node when not expanding all");
                 break;
             case Contract:
-                //noinspection ThrowableNotThrown
+                // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("visit contraction node");
                 break;
             case Undefined:
-                //noinspection ThrowableNotThrown
+                // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("visit undefined node");
                 break;
         }
-        ++snapshotState.currentDepth;
-        try {
-            // If we're still trying to fill our destination chunks, we need to consider this node and possibly its
-            // descendants after applying any node sorts. If we're just traversing for our expanded size calculation,
-            // we proceed in arbitrary order.
-            final boolean filling = snapshotState.includedSize < snapshotState.targetIncludedSize;
-            final long nodeId = nodeKeyToNodeId(nodeKey);
-            final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
-            if (filling) {
-                nodeTableState.ensurePreparedForDataRetrieval();
-            } else {
-                nodeTableState.ensurePreparedForTraversal();
-            }
-            final Table forTraversal = nodeTableState.getTraversalTable();
-            if (forTraversal.isEmpty()) {
-                // We arrived at an empty node. This is not really an error.
-                return;
-            }
-
-            final Table forExpansion;
-            final LongUnaryOperator dataSortReverseLookup;
-            final ChunkSource.WithPrev<? extends Values>[] dataSources;
-            final ChunkSource.FillContext[] dataSourceContexts;
-            if (filling) {
-                forExpansion = nodeTableState.getDataRetrievalTable();
-                dataSortReverseLookup = nodeTableState.getDataSortReverseLookup();
-                dataSources = nodeTableState.getDataSources();
-                dataSourceContexts = new ChunkSource.FillContext[dataSources.length];
-            } else {
-                forExpansion = forTraversal;
-                dataSortReverseLookup = null;
-                dataSources = null;
-                dataSourceContexts = null;
-            }
-
-            if (childDirectives != null) {
-                childDirectives.forEach((final LinkedNodeDirective lnd) -> {
-                    long rowKeyInParent = nodeKeyToRowKeyInParentUnsorted(
-                            lnd.getNodeKey(), snapshotState.usePrev);
-                    if (rowKeyInParent != NULL_ROW_KEY && dataSortReverseLookup != null) {
-                        rowKeyInParent = dataSortReverseLookup.applyAsLong(rowKeyInParent);
-                    }
-                    lnd.setRowKeyInParent(rowKeyInParent);
-                });
-                childDirectives.sort(Comparator.comparingLong(LinkedNodeDirective::getRowKeyInParent));
-            }
-
-            try (final RowSet prevExpansionRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
-                 final RowSet expansionRows = snapshotState.usePrev ? prevExpansionRows : forExpansion.getRowSet();
-                 final RowSequence.Iterator expansionRowsIterator = expansionRows.getRowSequenceIterator();
-                 final SafeCloseable ignored = new SafeCloseableArray<>(dataSourceContexts)) {
-                // TODO-RWC: Make data source contexts on first demand. Maybe cache arrays by depth?
-                int childDirectiveIndex = 0;
-                final int numChildDirectives = childDirectives == null ? 0 : childDirectives.size();
-                while (expansionRowsIterator.hasMore() && childDirectiveIndex < numChildDirectives) {
-                    // TODO-RWC: We need to iterate expansion rows and child directives together, looking for
-                    // places to expand (or not expand).
-                    if (snapshotState.expandingAll) {
-
-                    } else {
-
-                    }
-                }
-            }
-        } finally {
-            --snapshotState.currentDepth;
-            snapshotState.expandingAll = oldExpandingAll;
-        }
     }
+
+    // TODO-RWC? private void consumeUnwantedChildren(@Nullable
 
     /**
      * @param nodeKeyTable The table of node key values to create a node key source from

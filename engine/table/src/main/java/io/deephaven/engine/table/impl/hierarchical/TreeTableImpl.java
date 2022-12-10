@@ -329,20 +329,25 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             // noinspection unchecked
             result = new ChunkSource.WithPrev[numColumns];
         }
-        (snapshotState.getColumns() == null ? IntStream.range(0, numColumns) : snapshotState.getColumns().stream())
-                .filter(ci -> result[ci] == null || ci == DEPTH_COLUMN_INDEX) // Tree nodes can change depth
-                .forEach(ci -> {
-                    if (ci == EXPANDABLE_COLUMN_INDEX) {
-                        result[ci] = new TreeRowExpandableSource(
-                                nodeSortedTable.getColumnSource(identifierColumn.name()),
-                                (final Object nodeKey) -> nodeKeyExpandable(snapshotState, nodeKey));
-                    } else if (ci == DEPTH_COLUMN_INDEX) {
-                        result[ci] = getDepthSource(snapshotState.getCurrentDepth());
-                    } else {
-                        final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - 2);
-                        result[ci] = nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
-                    }
-                });
+
+        final BitSet columns = snapshotState.getColumns();
+        for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci)) {
+            if (ci == DEPTH_COLUMN_INDEX) { // Tree nodes can change depth
+                result[ci] = getDepthSource(snapshotState.getCurrentDepth());
+                continue;
+            }
+            if (result[ci] != null) {
+                continue;
+            }
+            if (ci == EXPANDABLE_COLUMN_INDEX) {
+                result[ci] = new TreeRowExpandableSource(
+                        nodeSortedTable.getColumnSource(identifierColumn.name()),
+                        (final Object nodeKey) -> nodeKeyExpandable(snapshotState, nodeKey));
+            } else {
+                final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - 2);
+                result[ci] = nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
+            }
+        }
         return result;
     }
 
