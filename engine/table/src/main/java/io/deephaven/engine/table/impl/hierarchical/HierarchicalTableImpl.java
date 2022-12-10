@@ -21,18 +21,18 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableConstantIntSource;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.iterators.ByteColumnIterator;
 import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.*;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Predicate;
+import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -295,10 +295,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             private Table sorted;
 
             /**
-             * The sort {@link RowRedirection} that maps the appropriate unsorted row key space to {@link #sorted
+             * The sort {@link LongUnaryOperator} that maps the appropriate unsorted row key space to {@link #sorted
              * sorted's} outer row space.
              */
-            private RowRedirection sortRedirection;
+            private LongUnaryOperator sortReverseLookup;
 
             /**
              * Chunk sources to be used for retrieving data from {@link #sorted sorted}.
@@ -340,7 +340,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     }
                     // NB: We could drop our reference to filtered here, but there's no real reason to do it now rather
                     // than in release
-                    sortRedirection = SortOperation.getRowRedirection(sorted);
+                    sortReverseLookup = SortOperation.getReverseLookup(sorted);
                 }
             }
 
@@ -363,7 +363,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              * Ensure that we've prepared the node table with any structural modifications (e.g. formatting and
              * filtering), or ordering modifications (e.g. sorting), and that the result is safe to access during this
              * snapshot attempt. Initializes the data structures necessary for {@link #getTraversalTable()},
-             * {@link #getDataRetrievalTable()}, {@link #getDataRedirection()}, {@link #getDataSources()}.
+             * {@link #getDataRetrievalTable()}, {@link #getDataSortReverseLookup()}, {@link #getDataSources()}.
              */
             private void ensurePreparedForDataRetrieval() {
                 ensureSortedCreated();
@@ -408,8 +408,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              *          attempt
              */
             @Nullable
-            private RowRedirection getDataRedirection() {
-                return sortRedirection;
+            private LongUnaryOperator getDataSortReverseLookup() {
+                return sortReverseLookup;
             }
 
             /**
@@ -443,17 +443,17 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     enum KeyTableNodeAction {
         // @formatter:off
-        /** A newly-created, undefined node. */
-        Undefined,
+        /** A simple expanded node.*/
+        Expand,
+        /** A node whose descendants should all be expanded unless contracted or a simple expand is encountered. */
+        ExpandAll,
         /** A node created indirectly, in order to parent another node. If this node is reachable post-extraction it
          * exists under an "expand-all" in order to provide a path to a contraction. */
         Linkage,
-        /** A simple expanded node.*/
-        Expand,
-        /** A node whose descendants should all be expanded unless contracted. */
-        ExpandAll,
         /** A node that should be contracted, if reachable as the descendant of an "expand-all". */
-        Contract;
+        Contract,
+        /** A newly-created, undefined node. */
+        Undefined;
         // @formatter:on
 
         static KeyTableNodeAction lookup(final byte wireValue) {
@@ -775,14 +775,35 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             @NotNull final KeyTableNodeAction action,
             @Nullable final List<LinkedNodeDirective> childDirectives) {
         final boolean oldExpandingAll = snapshotState.expandingAll;
-        if (action == ExpandAll) {
-            snapshotState.expandingAll = true;
+        switch (action) {
+            case Expand:
+                // There are two reasonable ways to handle "expand" directives when currently expanding-all:
+                // (1) treat them like "linkage" directives, or
+                // (2) have them turn off expand-all for the subtree rooted at their node.
+                // We've opted for option 2, as it creates a mechanism for coarse-grained control of expansions that is
+                // richer than only supporting fine-grained contraction when under expand-all.
+                snapshotState.expandingAll = false;
+                break;
+            case ExpandAll:
+                snapshotState.expandingAll = true;
+                break;
+            case Linkage:
+                Assert.assertion(oldExpandingAll, "expanding all", "visiting linkage nodes when not expanding all");
+                break;
+            case Contract:
+                //noinspection ThrowableNotThrown
+                Assert.statementNeverExecuted("visit contraction node");
+                break;
+            case Undefined:
+                //noinspection ThrowableNotThrown
+                Assert.statementNeverExecuted("visit undefined node");
+                break;
         }
         ++snapshotState.currentDepth;
         try {
-             // If we're still trying to fill our destination chunks, we need to consider this node and possibly its
-             // descendants after applying any node sorts. If we're just traversing for our expanded size calculation,
-             // we proceed in arbitrary order.
+            // If we're still trying to fill our destination chunks, we need to consider this node and possibly its
+            // descendants after applying any node sorts. If we're just traversing for our expanded size calculation,
+            // we proceed in arbitrary order.
             final boolean filling = snapshotState.includedSize < snapshotState.targetIncludedSize;
             final long nodeId = nodeKeyToNodeId(nodeKey);
             final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
@@ -796,40 +817,56 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 // We arrived at an empty node. This is not really an error.
                 return;
             }
-            final RowRedirection dataRedirection = filling ? nodeTableState.getDataRedirection() : null;
-            if (childDirectives != null) {
-                childDirectives.stream().map((final LinkedNodeDirective childDirective) -> {
-                    long rowKeyInParent = nodeKeyToRowKeyInParentUnsorted(
-                            childDirective.getNodeKey(), snapshotState.usePrev);
-                    if (rowKeyInParent != NULL_ROW_KEY && dataRedirection != null) {
-                        // TODO-RWC: ^$&#*@, I need reverse sort mapping after all!
-                        rowKeyInParent = snapshotState.usePrev
-                                ? dataRedirection.getPrev(rowKeyInParent)
-                                : dataRedirection.get(rowKeyInParent);
-                    }
-                    childDirective.setRowKeyInParent(rowKeyInParent);
-                });
+
+            final Table forExpansion;
+            final LongUnaryOperator dataSortReverseLookup;
+            final ChunkSource.WithPrev<? extends Values>[] dataSources;
+            final ChunkSource.FillContext[] dataSourceContexts;
+            if (filling) {
+                forExpansion = nodeTableState.getDataRetrievalTable();
+                dataSortReverseLookup = nodeTableState.getDataSortReverseLookup();
+                dataSources = nodeTableState.getDataSources();
+                dataSourceContexts = new ChunkSource.FillContext[dataSources.length];
+            } else {
+                forExpansion = forTraversal;
+                dataSortReverseLookup = null;
+                dataSources = null;
+                dataSourceContexts = null;
             }
 
-            final boolean findingContractions = snapshotState.expandingAll;
-            final RowSetBuilderRandom childDirectiveRowKeysBuilder = RowSetFactory.builderRandom();
-            childDirectives.stream().filter((final LinkedNodeDirective childDirective) -> {
-                findingContractions ? childDirective.getAction() == Contract
-            });
+            if (childDirectives != null) {
+                childDirectives.forEach((final LinkedNodeDirective lnd) -> {
+                    long rowKeyInParent = nodeKeyToRowKeyInParentUnsorted(
+                            lnd.getNodeKey(), snapshotState.usePrev);
+                    if (rowKeyInParent != NULL_ROW_KEY && dataSortReverseLookup != null) {
+                        rowKeyInParent = dataSortReverseLookup.applyAsLong(rowKeyInParent);
+                    }
+                    lnd.setRowKeyInParent(rowKeyInParent);
+                });
+                childDirectives.sort(Comparator.comparingLong(LinkedNodeDirective::getRowKeyInParent));
+            }
 
+            try (final RowSet prevExpansionRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
+                 final RowSet expansionRows = snapshotState.usePrev ? prevExpansionRows : forExpansion.getRowSet();
+                 final RowSequence.Iterator expansionRowsIterator = expansionRows.getRowSequenceIterator();
+                 final SafeCloseable ignored = new SafeCloseableArray<>(dataSourceContexts)) {
+                // TODO-RWC: Make data source contexts on first demand. Maybe cache arrays by depth?
+                int childDirectiveIndex = 0;
+                final int numChildDirectives = childDirectives == null ? 0 : childDirectives.size();
+                while (expansionRowsIterator.hasMore() && childDirectiveIndex < numChildDirectives) {
+                    // TODO-RWC: We need to iterate expansion rows and child directives together, looking for
+                    // places to expand (or not expand).
+                    if (snapshotState.expandingAll) {
+
+                    } else {
+
+                    }
+                }
+            }
         } finally {
             --snapshotState.currentDepth;
             snapshotState.expandingAll = oldExpandingAll;
         }
-    }
-
-    private WritableRowSet filterDirectivesList(
-            @Nullable final List<LinkedNodeDirective> directives,
-            @NotNull final Predicate<KeyTableNodeAction> include) {
-        if (directives == null || directives.isEmpty()) {
-            return RowSetFactory.empty();
-        }
-        final RowSetBuilderRandom directiveRowKeysBuilder
     }
 
     /**
