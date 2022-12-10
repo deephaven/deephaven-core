@@ -576,6 +576,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public boolean allowCrossColumnParallelization() {
-        return inner.allowCrossColumnParallelization();
+        return selectColumn.isStateless() && inner.allowCrossColumnParallelization();
     }
 }
