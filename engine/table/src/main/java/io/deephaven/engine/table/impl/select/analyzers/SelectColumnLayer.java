@@ -88,7 +88,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
         canParallelizeThisColumn = !isRedirected
-                && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(ws) && sc.isStateless();
+                && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(writableSource)
+                && sc.isStateless();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
         // applied systemically.
@@ -576,6 +577,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public boolean allowCrossColumnParallelization() {
-        return inner.allowCrossColumnParallelization();
+        return selectColumn.isStateless() && inner.allowCrossColumnParallelization();
     }
 }
