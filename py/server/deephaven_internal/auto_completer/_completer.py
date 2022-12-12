@@ -79,11 +79,15 @@ class Completer(object):
 
         # run jedi
         txt = self.get_doc(uri)
-        # The Script completer is static analysis only, so we should actually be feeding it a whole document at once.
 
-        completer = Script if self.__mode == Mode.SAFE else Interpreter
+        completer = (
+            # The Script completer is static analysis only, so we should actually be feeding it a whole document at once.
+            Script(txt)
+            if self.__mode == Mode.SAFE
+            else Interpreter(txt, [self.__scope])
+        )
+        completions = completer.complete(line, col)
 
-        completions = completer(txt, [self.__scope]).complete(line, col)
         # for now, a simple sorting based on number of preceding _
         # we may want to apply additional sorting to each list before combining
         results: list = []
