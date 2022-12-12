@@ -124,19 +124,19 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         // region Per-snapshot parameters and state
         private BitSet columns;
         private RowSequence rows;
+        private long firstRowPositionToInclude = NULL_LONG;
         private int targetIncludedSize = NULL_INT;
         private WritableChunk<? extends Values>[] destinations;
         private ResettableWritableChunk<? extends Values>[] destinationSlices;
         // endregion Per-snapshot parameters and state
 
-        // region Per-attempt parameters and state
+        // region Per-attempt and intra-attempt parameters and state
         private boolean usePrev;
         private int currentDepth = NULL_INT;
         private boolean expandingAll;
         private long expandedSize = NULL_LONG;
-        private long nextRowPositionToInclude = NULL_LONG;
         private int includedSize = NULL_INT;
-        // endregion Per-attempt parameters and state
+        // endregion Per-attempt and intra-attempt parameters and state
 
         /**
          * Logical clock, incremented per-attempt, used to decide which node table states can be released upon success.
@@ -191,6 +191,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 return result;
             });
             this.rows = rows;
+            firstRowPositionToInclude = rows.firstRowKey();
             targetIncludedSize = rows.intSize("hierarchical table snapshot");
             this.destinations = destinations;
             // noinspection unchecked
@@ -213,9 +214,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             currentDepth = -1;
             expandingAll = false;
             expandedSize = 0;
-            nextRowPositionToInclude = rows.firstRowKey();
             includedSize = 0;
-            sharedContext = SharedContext.makeSharedContext();
             snapshotClock++;
         }
 
@@ -225,6 +224,71 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         int getCurrentDepth() {
             return currentDepth;
+        }
+
+        private boolean filling() {
+            return includedSize < targetIncludedSize;
+        }
+
+        private void updateExpansionTypeAndValidateAction(@NotNull final KeyTableNodeAction action) {
+            switch (action) {
+                case Expand:
+                    // There are two reasonable ways to handle "expand" directives when currently expanding-all:
+                    // (1) treat them like "linkage" directives, or
+                    // (2) have them turn off expand-all for the subtree rooted at their node.
+                    // We've opted for option 2, as it creates a mechanism for coarse-grained control of expansions
+                    // that is richer than only supporting fine-grained contraction when under expand-all.
+                    expandingAll = false;
+                    break;
+                case ExpandAll:
+                    expandingAll = true;
+                    break;
+                case Linkage:
+                    Assert.assertion(expandingAll, "expanding all",
+                            "visited a linkage node when not expanding all");
+                    break;
+                case Contract:
+                    // noinspection ThrowableNotThrown
+                    Assert.statementNeverExecuted("visit contraction node");
+                    break;
+                case Undefined:
+                    // noinspection ThrowableNotThrown
+                    Assert.statementNeverExecuted("visit undefined node");
+                    break;
+            }
+        }
+
+        /**
+         * Child-directive rules for traversal:
+         * <ul>
+         * <li>We should always ignore directives for children that don't occur in this node (the parent); they will
+         * have rowKeyInParent == NULL_ROW_KEY./li>
+         * <li>We never expect to encounter any directives with action Undefined, that would imply a bug in
+         * linkKeyTableNodeDirectives(...).</li>
+         * <li>If we're expanding all, we need to process all present and defined directives. We want to visit the nodes
+         * for all rows that don't have a directive with action Contract. If we're visiting a node with no directive, we
+         * visit with action Linkage.</li>
+         * <li>If we're not expanding all, we can ignore directives with action Linkage and Contract; we just want to
+         * visit the nodes for directives with action Expand or ExpandAll.</li>
+         * </ul>
+         * 
+         * @param childDirective The {@link LinkedNodeDirective} to evaluate
+         * @return Whether to skip {@code childDirective}
+         */
+        private boolean shouldProcessChildDirective(@NotNull final LinkedNodeDirective childDirective) {
+            if (childDirective.getRowKeyInParent() == NULL_ROW_KEY) {
+                return false;
+            }
+            final KeyTableNodeAction action = childDirective.getAction();
+            if (action == Undefined) {
+                // noinspection ThrowableNotThrown
+                Assert.statementNeverExecuted("encounter undefined child directive during visit");
+                return false;
+            }
+            if (expandingAll) {
+                return true;
+            }
+            return action != Linkage && action != Contract;
         }
 
         /**
@@ -250,10 +314,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             currentDepth = NULL_INT;
             expandingAll = false;
             expandedSize = NULL_LONG;
-            nextRowPositionToInclude = NULL_LONG;
             includedSize = NULL_INT;
             columns = null;
             rows = null;
+            firstRowPositionToInclude = NULL_LONG;
             targetIncludedSize = NULL_INT;
             destinations = null;
             Arrays.stream(destinationSlices).forEach(SafeCloseable::close);
@@ -419,6 +483,44 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              */
             private Table getDataRetrievalTable() {
                 return sorted;
+            }
+
+            /**
+             * If we're still trying to fill our destination chunks, we need to consider this node and possibly its
+             * descendants after applying any node sorts. If we're just traversing for our expanded size calculation, we
+             * proceed in arbitrary order.
+             *
+             * @return The table to expand, which will be the (prepared) traversal table or data retrieval table
+             */
+            private Table prepareAndGetTableForExpansion() {
+                if (filling()) {
+                    ensurePreparedForDataRetrieval();
+                    return getDataRetrievalTable();
+                } else {
+                    ensurePreparedForTraversal();
+                    return getTraversalTable();
+                }
+            }
+
+            /**
+             * Stamp {@code childDirectives} with their {@link LinkedNodeDirective#rowKeyInParent row key} and sort them
+             * into expansion order.
+             *
+             * @param childDirectives The {@link LinkedNodeDirective child directives} to key and sort
+             */
+            private void keyAndSortChildDirectives(@Nullable final List<LinkedNodeDirective> childDirectives) {
+                if (childDirectives == null) {
+                    return;
+                }
+                final LongUnaryOperator dataSortReverseLookup = filling() ? getDataSortReverseLookup() : null;
+                childDirectives.forEach((final LinkedNodeDirective lnd) -> {
+                    long rowKeyInParent = nodeKeyToRowKeyInParentUnsorted(lnd.getNodeKey(), usePrev);
+                    if (rowKeyInParent != NULL_ROW_KEY && dataSortReverseLookup != null) {
+                        rowKeyInParent = dataSortReverseLookup.applyAsLong(rowKeyInParent);
+                    }
+                    lnd.setRowKeyInParent(rowKeyInParent);
+                });
+                childDirectives.sort(Comparator.comparingLong(LinkedNodeDirective::getRowKeyInParent));
             }
 
             /**
@@ -805,19 +907,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             return;
         }
 
-        // If we're still trying to fill our destination chunks, we need to consider this node and possibly its
-        // descendants after applying any node sorts. If we're just traversing for our expanded size calculation,
-        // we proceed in arbitrary order.
-        final boolean filling = snapshotState.includedSize < snapshotState.targetIncludedSize;
+        // Get our node-table state, and the correct table instance to expand.
         final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
-        final Table forExpansion;
-        if (filling) {
-            nodeTableState.ensurePreparedForDataRetrieval();
-            forExpansion = nodeTableState.getDataRetrievalTable();
-        } else {
-            nodeTableState.ensurePreparedForTraversal();
-            forExpansion = nodeTableState.getTraversalTable();
-        }
+        final Table forExpansion = nodeTableState.prepareAndGetTableForExpansion();
         if (forExpansion.isEmpty()) {
             // We arrived at an empty node. This is not really an error.
             return;
@@ -825,30 +917,19 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         // Establish whether we are expanding or expanding-all, and update our depth.
         final boolean oldExpandingAll = snapshotState.expandingAll;
-        updateExpansionTypeAndValidateAction(snapshotState, action);
+        snapshotState.updateExpansionTypeAndValidateAction(action);
         ++snapshotState.currentDepth;
         try {
             // If we have child directives, we need to know where they fit in this node's row set, and we want to be
-            // able to examine them in traversal order.
-            if (childDirectives != null) {
-                final LongUnaryOperator dataSortReverseLookup =
-                        filling ? nodeTableState.getDataSortReverseLookup() : null;
-                childDirectives.forEach((final LinkedNodeDirective lnd) -> {
-                    long rowKeyInParent = nodeKeyToRowKeyInParentUnsorted(lnd.getNodeKey(), snapshotState.usePrev);
-                    if (rowKeyInParent != NULL_ROW_KEY && dataSortReverseLookup != null) {
-                        rowKeyInParent = dataSortReverseLookup.applyAsLong(rowKeyInParent);
-                    }
-                    lnd.setRowKeyInParent(rowKeyInParent);
-                });
-                childDirectives.sort(Comparator.comparingLong(LinkedNodeDirective::getRowKeyInParent));
-            }
+            // able to examine them in the order they may be expanded.
+            nodeTableState.keyAndSortChildDirectives(childDirectives);
 
             // Prepare our support for filling, but don't do per-node work to get our chunk sources or fill contexts
             // until we have to.
             ChunkSource.WithPrev<? extends Values>[] columnDataSources = null;
             final ChunkSource.FillContext[] fillContexts; // Indexed by destination, not column
             final SharedContext sharedContext;
-            if (filling) {
+            if (snapshotState.filling()) {
                 fillContexts = snapshotState.getFillContextArrayForLevel();
                 sharedContext = snapshotState.getSharedContextForLevel();
             } else {
@@ -872,23 +953,30 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                             (prevRows != null ? prevRows : forExpansion.getRowSet()).getRowSequenceIterator();
                     final SafeCloseable ignored1 = fillContexts == null ? null : new SafeCloseableArray<>(fillContexts);
                     final SafeCloseable ignored2 = sharedContext) {
-                final Iterator<LinkedNodeDirective> childDirectivesIterator =
-                        childDirectives == null ? Collections.emptyIterator() : childDirectives.iterator();
-                LinkedNodeDirective nextChildDirective =
+                final Iterator<LinkedNodeDirective> childDirectivesIterator = childDirectives == null
+                        ? Collections.emptyIterator()
+                        : childDirectives.stream().filter(snapshotState::shouldProcessChildDirective).iterator();
+                LinkedNodeDirective childDirective =
                         childDirectivesIterator.hasNext() ? childDirectivesIterator.next() : null;
-                while (rowsIterator.hasMore()) {
-                    if (childDirectiveIndex < numChildDirectives) {
+                while (rowsIterator.hasMore() && (snapshotState.expandingAll || childDirective != null)) {
+                    final long nextRowKey = rowsIterator.peekNextKey();
+                    try {
+                        if (childDirective != null) {
+                            if (childDirective.getAction() == Contract) {
+                                // We must be expanding all
+                            }
+                        } else {
 
+                        }
+                    } finally {
+                        if (childDirective != null) {
+                            childDirective = childDirectivesIterator.hasNext() ? childDirectivesIterator.next() : null;
+                        }
                     }
-                    // TODO-RWC: We need to iterate expansion rows and child directives together, looking for places to
-                    // expand (or not expand).
-                    if (snapshotState.expandingAll) {
 
-                    } else {
 
-                    }
                     // Prepare (or not) for filling data in case we hit the beginning of the rows we're including.
-                    if (filling && columnDataSources == null) {
+                    if (snapshotState.filling() && columnDataSources == null) {
                         columnDataSources = nodeTableState.getDataSources();
                         final BitSet columns = snapshotState.getColumns();
                         for (int dsi = 0, ci = columns.nextSetBit(0); ci >= 0; ++dsi, ci = columns.nextSetBit(ci)) {
@@ -902,38 +990,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             snapshotState.expandingAll = oldExpandingAll;
         }
     }
-
-    private static void updateExpansionTypeAndValidateAction(
-            @NotNull final HierarchicalTableImpl<?, ?>.SnapshotState snapshotState,
-            @NotNull final KeyTableNodeAction action) {
-        switch (action) {
-            case Expand:
-                // There are two reasonable ways to handle "expand" directives when currently expanding-all:
-                // (1) treat them like "linkage" directives, or
-                // (2) have them turn off expand-all for the subtree rooted at their node.
-                // We've opted for option 2, as it creates a mechanism for coarse-grained control of expansions that is
-                // richer than only supporting fine-grained contraction when under expand-all.
-                snapshotState.expandingAll = false;
-                break;
-            case ExpandAll:
-                snapshotState.expandingAll = true;
-                break;
-            case Linkage:
-                Assert.assertion(snapshotState.expandingAll, "expanding all",
-                        "visited a linkage node when not expanding all");
-                break;
-            case Contract:
-                // noinspection ThrowableNotThrown
-                Assert.statementNeverExecuted("visit contraction node");
-                break;
-            case Undefined:
-                // noinspection ThrowableNotThrown
-                Assert.statementNeverExecuted("visit undefined node");
-                break;
-        }
-    }
-
-    // TODO-RWC? private void consumeUnwantedChildren(@Nullable
 
     /**
      * @param nodeKeyTable The table of node key values to create a node key source from
