@@ -74,10 +74,6 @@ public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> 
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setLeftId(emptyTable)
                 .setRightId(emptyTable)
-                .addColumnsToMatch("Id")
-                .setUnknownFields(UnknownFieldSet.newBuilder()
-                        .addField(9999, Field.newBuilder().addFixed32(32).build())
-                        .build())
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "io.deephaven.proto.backplane.grpc.WhereInRequest must have at least one columns_to_match (5)");
@@ -90,6 +86,10 @@ public class WhereInGrpcTest extends GrpcTableOperationTestBase<WhereInRequest> 
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setLeftId(emptyTable)
                 .setRightId(emptyTable)
+                .addColumnsToMatch("Id")
+                .setUnknownFields(UnknownFieldSet.newBuilder()
+                        .addField(9999, Field.newBuilder().addFixed32(32).build())
+                        .build())
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "io.deephaven.proto.backplane.grpc.WhereInRequest has unknown field(s)");
