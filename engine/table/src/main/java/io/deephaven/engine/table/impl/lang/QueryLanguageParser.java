@@ -1861,6 +1861,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (pyCallableWrapper.isVectorized()) {
                 throw ex;
             }
+            pyCallableWrapper.setVectorizable(false);
             if (log.isDebugEnabled()) {
                 log.debug().append("Python function call ").append(n.toString()).append(" is not auto-vectorizable:")
                         .append(ex.getMessage()).endl();
