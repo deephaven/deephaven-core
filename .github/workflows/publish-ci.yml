@@ -66,7 +66,7 @@ jobs:
         uses: anchore/sbom-action@v0
         with:
           # todo: don't merge this until this can be made more generic
-          file: server/jetty-app/build/distributions/server-jetty-0.20.0.tar
+          file: ./server/jetty-app/build/distributions/server-jetty-0.20.0.tar
           upload-release-assets: false
 
       - name: Upload Applications
