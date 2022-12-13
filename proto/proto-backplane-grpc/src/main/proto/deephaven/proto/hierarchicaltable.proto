@@ -131,7 +131,7 @@ message HierarchicalTableViewRequest {
   // Ticket for the existing view to inherit the base hierarchical table and not-present optional fields from
   Ticket existing_view_id = 2;
   // Key table to use, if it should be different than the one associated with the existing view
-  optional HierarchicalTableViewKeyTableDescriptor keyTableDescriptor = 3;
+  optional HierarchicalTableViewKeyTableDescriptor key_table_descriptor = 3;
   // Operations to apply, if they should be different from those associated with the existing view
   optional HierarchicalTableViewOperations operations = 4;
 }
