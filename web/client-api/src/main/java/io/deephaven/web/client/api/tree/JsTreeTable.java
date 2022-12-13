@@ -8,6 +8,7 @@ import elemental2.core.JsObject;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -328,6 +329,10 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         expandedMap.put(Key.root(), new TreeNodeState(Key.root(), 0));
 
         sourceTable = workerConnection.newState((callback, newState, metadata) -> {
+            Callbacks.grpcUnaryPromise(c -> {
+                workerConnection.hierarchicalTableServiceClient().exportSource(new HierarchicalTableSourceExportRequest(), workerConnection.metadata(), c::apply);
+            }).then();
+
             if (baseTable.hasRetainer(this)) {
                 // workerConnection.getServer().fetchTableAttributeAsTable(
                 // baseTable.getHandle(),
@@ -1033,6 +1038,6 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
                                                                 // mechanism?
         }, "reexport for tree.copy()")
                 .refetch(this, connection.metadata())
-                .then(state -> Promise.resolve(new JsTreeTable(state, connection)));
+                .then(state -> Promise.resolve(new JsTreeTable(connection, )));
     }
 }
