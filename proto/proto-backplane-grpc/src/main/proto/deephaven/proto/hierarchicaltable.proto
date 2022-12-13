@@ -28,7 +28,7 @@ service HierarchicalTableService {
   /*
    * Exports the source table for a hierarchical table view.
    */
-  rpc ExportSource(HierarchicalTableSourceExportRequest) returns (HierarchicalTableSourceExportResponse);
+  rpc ExportSource(HierarchicalTableSourceExportRequest) returns (ExportedTableCreationResponse);
   /*
    * Derives a new hierarchical table view from an existing hierarchical table view.
    */
@@ -72,10 +72,6 @@ message HierarchicalTableSourceExportRequest {
   Ticket result_id = 1;
   // Ticket for the (existing) hierarchical table view
   Ticket view_id = 2;
-}
-
-message HierarchicalTableSourceExportResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to access the result_id ticket.
 }
 
 enum RollupNodeType {
