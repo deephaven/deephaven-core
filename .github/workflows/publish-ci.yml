@@ -62,6 +62,13 @@ jobs:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.CI_AT_DEEPHAVEN_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.CI_AT_DEEPHAVEN_PASSWORD }}
 
+      - name: Create SBOMs
+        uses: anchore/sbom-action@v0
+        with:
+          # todo: don't merge this until this can be made more generic
+          file: server/jetty-app/build/distributions/server-jetty-0.20.0.tar
+          upload-release-assets: false
+
       - name: Upload Applications
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: actions/upload-artifact@v3
