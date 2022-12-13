@@ -9,6 +9,7 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewDescriptor;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -286,8 +287,10 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         }
     }
 
-    private final ClientTableState baseTable;
-    private WorkerConnection connection;
+    private final WorkerConnection connection;
+    private final JsWidget widget;
+    private final HierarchicalTableViewDescriptor treeDescriptor;
+
 
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
@@ -325,29 +328,13 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
 
     public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
+        this.widget = widget;
+        this.treeDescriptor = HierarchicalTableViewDescriptor.deserializeBinary(widget.getDataAsU8());
 
         expandedMap.put(Key.root(), new TreeNodeState(Key.root(), 0));
 
         sourceTable = workerConnection.newState((callback, newState, metadata) -> {
-            Callbacks.grpcUnaryPromise(c -> {
-                workerConnection.hierarchicalTableServiceClient().exportSource(new HierarchicalTableSourceExportRequest(), workerConnection.metadata(), c::apply);
-            }).then();
-
-            if (baseTable.hasRetainer(this)) {
-                // workerConnection.getServer().fetchTableAttributeAsTable(
-                // baseTable.getHandle(),
-                // newState.getHandle(),
-                // HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE,
-                // callback
-                // );
-                throw new UnsupportedOperationException("fetchTableAttributeAsTable");
-
-            } else {
-                final String failure = "Attempting to connect to a source table on a close()d tree table";
-                JsLog.debug(failure, this, LazyString.of(baseTable::toStringMinimal));
-                callback.apply(failure, null);
-                newState.setResolution(ClientTableState.ResolutionState.FAILED, failure);
-            }
+            workerConnection.hierarchicalTableServiceClient().exportSource(new HierarchicalTableSourceExportRequest(), workerConnection.metadata(), callback::apply);
         }, "treetable source attr")
                 .refetch(this, workerConnection.metadata())
                 .then(sourceState -> {
@@ -362,10 +349,6 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
                     });
 
                     return Promise.resolve(table);
-                }, fail -> {
-                    // noinspection unchecked
-                    return (Promise<JsTable>) (Promise) Promise
-                            .reject("Failed to fetch tree's source table - is this table actually a tree? " + fail);
                 });
     }
 
