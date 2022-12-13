@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -25,6 +26,8 @@ import io.deephaven.engine.table.iterators.ByteColumnIterator;
 import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.*;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -32,11 +35,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.KeyTableNodeAction.*;
+import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.VisitAction.*;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.callDataSnapshotFunction;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.makeSnapshotControl;
 import static io.deephaven.util.QueryConstants.*;
@@ -48,6 +52,8 @@ import static io.deephaven.util.QueryConstants.*;
 abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends HierarchicalTableImpl<IFACE_TYPE, IMPL_TYPE>>
         extends BaseGridAttributes<IFACE_TYPE, IMPL_TYPE>
         implements HierarchicalTable<IFACE_TYPE> {
+
+    private static final Logger log = LoggerFactory.getLogger(HierarchicalTableImpl.class);
 
     private static final int CHUNK_SIZE = 128;
 
@@ -230,7 +236,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             return includedSize < targetIncludedSize;
         }
 
-        private void updateExpansionTypeAndValidateAction(@NotNull final KeyTableNodeAction action) {
+        private void updateExpansionTypeAndValidateAction(@NotNull final VisitAction action) {
             switch (action) {
                 case Expand:
                     // There are two reasonable ways to handle "expand" directives when currently expanding-all:
@@ -262,7 +268,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          * Child-directive rules for traversal:
          * <ul>
          * <li>We should always ignore directives for children that don't occur in this node (the parent); they will
-         * have rowKeyInParent == NULL_ROW_KEY./li>
+         * have rowKeyInParentUnsorted == NULL_ROW_KEY. We should never see such a directive here.</li>
          * <li>We never expect to encounter any directives with action Undefined, that would imply a bug in
          * linkKeyTableNodeDirectives(...).</li>
          * <li>If we're expanding all, we need to process all present and defined directives. We want to visit the nodes
@@ -272,14 +278,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          * visit the nodes for directives with action Expand or ExpandAll.</li>
          * </ul>
          * 
-         * @param childDirective The {@link LinkedNodeDirective} to evaluate
+         * @param childDirective The {@link LinkedDirective} to evaluate
          * @return Whether to skip {@code childDirective}
          */
-        private boolean shouldProcessChildDirective(@NotNull final LinkedNodeDirective childDirective) {
-            if (childDirective.getRowKeyInParent() == NULL_ROW_KEY) {
-                return false;
-            }
-            final KeyTableNodeAction action = childDirective.getAction();
+        private boolean shouldProcessChildDirective(@NotNull final LinkedDirective childDirective) {
+            final VisitAction action = childDirective.getAction();
             if (action == Undefined) {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("encounter undefined child directive during visit");
@@ -503,24 +506,24 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             }
 
             /**
-             * Stamp {@code childDirectives} with their {@link LinkedNodeDirective#rowKeyInParent row key} and sort them
-             * into expansion order.
+             * Stamp {@code childDirectives} with their {@link LinkedDirective#rowKeyInParentSorted row key} if we're
+             * sorting, and sort them into expansion order by the appropriate row key in parent..
              *
-             * @param childDirectives The {@link LinkedNodeDirective child directives} to key and sort
+             * @param childDirectives The {@link LinkedDirective child directives} to key and sort
              */
-            private void keyAndSortChildDirectives(@Nullable final List<LinkedNodeDirective> childDirectives) {
+            private void keyAndSortChildDirectives(@Nullable final List<LinkedDirective> childDirectives) {
                 if (childDirectives == null) {
                     return;
                 }
                 final LongUnaryOperator dataSortReverseLookup = filling() ? getDataSortReverseLookup() : null;
-                childDirectives.forEach((final LinkedNodeDirective lnd) -> {
-                    long rowKeyInParent = nodeKeyToRowKeyInParentUnsorted(lnd.getNodeKey(), usePrev);
-                    if (rowKeyInParent != NULL_ROW_KEY && dataSortReverseLookup != null) {
-                        rowKeyInParent = dataSortReverseLookup.applyAsLong(rowKeyInParent);
-                    }
-                    lnd.setRowKeyInParent(rowKeyInParent);
-                });
-                childDirectives.sort(Comparator.comparingLong(LinkedNodeDirective::getRowKeyInParent));
+                if (dataSortReverseLookup == null) {
+                    childDirectives.sort(Comparator.comparingLong(LinkedDirective::getRowKeyInParentUnsorted));
+                    return;
+                }
+                for (final LinkedDirective ld : childDirectives) {
+                    ld.setRowKeyInParentSorted(dataSortReverseLookup);
+                }
+                childDirectives.sort(Comparator.comparingLong(LinkedDirective::getRowKeyInParentSorted));
             }
 
             /**
@@ -565,51 +568,80 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
     }
 
-    enum KeyTableNodeAction {
-        // @formatter:off
-        /** A simple expanded node.*/
+    enum VisitAction {
+        /**
+         * Expand a node. Only expand descendants if they have their own directives with action {@code Expand} or
+         * {@code ExpandAll}.
+         */
         Expand,
-        /** A node whose descendants should all be expanded unless contracted or a simple expand is encountered. */
+        /**
+         * Expand a node. Expand its descendants unless they have a directive with action {@code Contract}, or their
+         * direct parent has a directive with action {@code Expand} .
+         */
         ExpandAll,
-        /** A node created indirectly, in order to parent another node. If this node is reachable post-extraction it
-         * exists under an "expand-all" in order to provide a path to a contraction. */
+        /**
+         * Take no action. Allows descendant {@code Expand} or {@code Contract} directives to be linked to an ancestor
+         * with action {@code ExpandAll}.
+         */
         Linkage,
-        /** A node that should be contracted, if reachable as the descendant of an "expand-all". */
+        /**
+         * Don't expand a node or its descendants. Only meaningful for descendants of a node whose directive has action
+         * {@code ExpandAll}.
+         */
         Contract,
-        /** A newly-created, undefined node. Used where {@code null} might suffice. */
+        /**
+         * Placeholder action for a newly-created, as-yet-undefined directive. Used where {@code null} might suffice.
+         */
         Undefined;
-        // @formatter:on
 
-        static KeyTableNodeAction lookup(final byte wireValue) {
+        static VisitAction lookup(final byte wireValue) {
             switch (wireValue) {
-                case ACTION_EXPAND:
+                case KEY_TABLE_ACTION_EXPAND:
                     return Expand;
-                case ACTION_EXPAND_ALL:
+                case KEY_TABLE_ACTION_EXPAND_ALL:
                     return ExpandAll;
-                case ACTION_CONTRACT:
+                case KEY_TABLE_ACTION_CONTRACT:
                     return Contract;
                 default:
-                    throw new IllegalArgumentException("Unrecognized key action " + wireValue);
+                    throw new IllegalArgumentException("Unrecognized key table action " + wireValue);
             }
         }
     }
 
-    private static final class NodeDirectiveKey<TYPE extends NodeDirective>
-            implements KeyedObjectKey<Object, TYPE> {
+    private static final LogOutput.ObjFormatter<Object> NODE_KEY_FORMATTER =
+            (@NotNull final LogOutput logOutput, @Nullable final Object nodeKey) -> {
+                if (nodeKey instanceof Object[]) {
+                    final Object[] asArray = (Object[]) nodeKey;
+                    final int asArrayLength = asArray.length;
+                    if (asArrayLength == 0) {
+                        logOutput.append("[]");
+                        return;
+                    }
+                    logOutput.append('[').append(Objects.toString(asArray[0]));
+                    for (int ii = 1; ii < asArrayLength; ++ii) {
+                        logOutput.append(',').append(Objects.toString(asArray[ii]));
+                    }
+                    logOutput.append(']');
+                    return;
+                }
+                logOutput.append(Objects.toString(nodeKey));
+            };
 
-        private static final KeyedObjectKey<Object, ? extends NodeDirective> INSTANCE =
-                new NodeDirectiveKey<>();
+    /**
+     * Key definition for {@link KeyTableDirective} or {@link LinkedDirective} keyed by node key.
+     */
+    private static final class NodeKeyHashAdapter<DIRECTIVE_TYPE> implements KeyedObjectKey<Object, DIRECTIVE_TYPE> {
 
-        private static <TYPE extends NodeDirective> KeyedObjectKey<Object, TYPE> getInstance() {
-            // noinspection unchecked
-            return (KeyedObjectKey<Object, TYPE>) INSTANCE;
+        @NotNull
+        private final Function<DIRECTIVE_TYPE, Object> nodeKeyLookup;
+
+        private NodeKeyHashAdapter(@NotNull final Function<DIRECTIVE_TYPE, Object> nodeKeyLookup) {
+            this.nodeKeyLookup = nodeKeyLookup;
         }
 
-        private NodeDirectiveKey() {}
-
         @Override
-        public Object getKey(@NotNull final NodeDirective directive) {
-            return directive.getAction();
+        public Object getKey(@NotNull final DIRECTIVE_TYPE directive) {
+            return nodeKeyLookup.apply(directive);
         }
 
         @Override
@@ -621,55 +653,43 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
 
         @Override
-        public boolean equalKey(@Nullable final Object nodeKey, @NotNull final NodeDirective directive) {
-            if (nodeKey instanceof Object[] && directive.getNodeKey() instanceof Object[]) {
-                return Arrays.equals((Object[]) nodeKey, (Object[]) directive.getNodeKey());
+        public boolean equalKey(@Nullable final Object nodeKey, @NotNull final DIRECTIVE_TYPE directive) {
+            final Object directiveNodeKey = nodeKeyLookup.apply(directive);
+            if (nodeKey instanceof Object[] && directiveNodeKey instanceof Object[]) {
+                return Arrays.equals((Object[]) nodeKey, (Object[]) directiveNodeKey);
             }
-            return Objects.equals(nodeKey, directive.getNodeKey());
+            return Objects.equals(nodeKey, directiveNodeKey);
         }
     }
 
     /**
      * Information about a node that's referenced directly from the key table for a snapshot.
      */
-    private static class NodeDirective {
+    private static class KeyTableDirective {
+
+        private static final NodeKeyHashAdapter<KeyTableDirective> HASH_ADAPTER =
+                new NodeKeyHashAdapter<>(KeyTableDirective::getNodeKey);
 
         /**
-         * The node key for this node.
+         * The node key for the target of this directive.
          */
         private final Object nodeKey;
 
         /**
-         * The action that should be taken for this node. Will be {@link KeyTableNodeAction#Undefined undefined} on
-         * construction; this is used to determine whether a node was newly-created by a "compute if absent". Will be
-         * set to {@link KeyTableNodeAction#Linkage} if created in order to provide connectivity to another node; this
-         * will be overwritten with the key table's action if found.
+         * The action to take for this directive.
          */
-        private KeyTableNodeAction action;
+        private final VisitAction action;
 
-        private NodeDirective(@Nullable final Object nodeKey) {
+        private KeyTableDirective(@Nullable final Object nodeKey, @NotNull final VisitAction action) {
             this.nodeKey = nodeKey;
-            action = Undefined;
+            this.action = action;
         }
 
         Object getNodeKey() {
             return nodeKey;
         }
 
-        void setAction(@NotNull final KeyTableNodeAction action) {
-            Assert.neq(action, "action", Undefined, "Undefined");
-            if (actionDefined()) {
-                Assert.neq(action, "action", Linkage, "Linkage");
-            }
-            // Allow repeats, accept last
-            this.action = action;
-        }
-
-        boolean actionDefined() {
-            return action != Undefined;
-        }
-
-        KeyTableNodeAction getAction() {
+        VisitAction getAction() {
             return action;
         }
     }
@@ -678,39 +698,131 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * Information about a node that's referenced directly or indirectly from the key table for a snapshot, with
      * appropriate linkage to its children.
      */
-    private static final class LinkedNodeDirective extends NodeDirective {
+    private static final class LinkedDirective {
+
+        private static final NodeKeyHashAdapter<LinkedDirective> HASH_ADAPTER =
+                new NodeKeyHashAdapter<>(LinkedDirective::getNodeKey);
+
+        /**
+         * The node key for the target of this directive.
+         */
+        private final Object nodeKey;
+
+        /**
+         * The node id for the target of this directive.
+         */
+        private final long nodeId;
+
+        /**
+         * The row key where the target can be found in its parent (before any node-level sorting is applied).
+         */
+        private final long rowKeyInParentUnsorted;
+
+        /**
+         * The action to take for this directive. Will be {@link VisitAction#Undefined undefined} on construction; this
+         * is used to determine whether a directive was newly-created by a "compute if absent". Set to
+         * {@link VisitAction#Linkage} if this directive is created in order to provide connectivity to another, and
+         * overwritten with the key table's action if found.
+         */
+        private VisitAction action;
 
         /**
          * This is not a complete list of children, just those that occur in the key table for the current snapshot, or
-         * are found in order to provide ancestors for such nodes.
+         * are found in order to provide ancestors for such directives.
          */
-        private List<LinkedNodeDirective> children;
+        private List<LinkedDirective> children;
 
         /**
-         * Row key in the parent node. This may be unsorted or sorted, depending on how we're handling the parent.
+         * The row key where the target can be found in its parent (after any node-level sorting is applied).
          */
-        private long rowKeyInParent;
+        private long rowKeyInParentSorted = NULL_ROW_KEY;
 
-        private LinkedNodeDirective(@Nullable final Object nodeKey) {
-            super(nodeKey);
+        private LinkedDirective(@Nullable final Object nodeKey, final long nodeId, final long rowKeyInParentUnsorted) {
+            this.nodeId = nodeId;
+            this.nodeKey = nodeKey;
+            this.rowKeyInParentUnsorted = rowKeyInParentUnsorted;
         }
 
-        private LinkedNodeDirective addChild(@NotNull final LinkedNodeDirective childInfo) {
-            (children == null ? children = new ArrayList<>() : children).add(childInfo);
+        private Object getNodeKey() {
+            return nodeKey;
+        }
+
+        private long getNodeId() {
+            return nodeId;
+        }
+
+        private long getRowKeyInParentUnsorted() {
+            return rowKeyInParentUnsorted;
+        }
+
+        private void setAction(@NotNull final VisitAction action) {
+            Assert.neq(action, "action", Undefined, "Undefined");
+            if (actionDefined()) {
+                Assert.neq(action, "action", Linkage, "Linkage");
+            }
+            // Allow repeats, accept last
+            this.action = action;
+        }
+
+        private boolean actionDefined() {
+            return action != Undefined;
+        }
+
+        private VisitAction getAction() {
+            return action;
+        }
+
+        private LinkedDirective addChild(@NotNull final LinkedDirective childDirective) {
+            (children == null ? children = new ArrayList<>() : children).add(childDirective);
             return this;
         }
 
-        private List<LinkedNodeDirective> getChildren() {
+        private List<LinkedDirective> getChildren() {
             return children;
         }
 
-        private void setRowKeyInParent(final long rowKeyInParent) {
-            this.rowKeyInParent = rowKeyInParent;
+        private void setRowKeyInParentSorted(@NotNull final LongUnaryOperator dataSortReverseLookup) {
+            Assert.neq(rowKeyInParentUnsorted, "rowKeyInParentUnsorted", NULL_ROW_KEY, "null");
+            rowKeyInParentSorted = dataSortReverseLookup.applyAsLong(rowKeyInParentUnsorted);
+            if (rowKeyInParentSorted == NULL_ROW_KEY) {
+                ConstructSnapshot.failIfConcurrentAttemptInconsistent();
+                log.error().append("Could not find sorted row key in parent for node key=")
+                        .append(NODE_KEY_FORMATTER, nodeKey)
+                        .append(", unsorted=").append(rowKeyInParentUnsorted).endl();
+                // noinspection ThrowableNotThrown
+                Assert.statementNeverExecuted("Failed to perform sort reverse lookup");
+            }
         }
 
-        private long getRowKeyInParent() {
-            return rowKeyInParent;
+        private long getRowKeyInParentSorted() {
+            return rowKeyInParentSorted;
         }
+    }
+
+    private class LinkedDirectiveFactory implements KeyedObjectHash.ValueFactory<Object, LinkedDirective> {
+
+        private final boolean usePrev;
+
+        private LinkedDirectiveFactory(final boolean usePrev) {
+            this.usePrev = usePrev;
+        }
+
+        @Override
+        public LinkedDirective newValue(@Nullable final Object nodeKey) {
+            final long nodeId = nodeKeyToNodeId(nodeKey);
+            final long rowKeyInParentUnsorted = nodeId == rootNodeId() || nodeId == nullNodeId()
+                    ? NULL_ROW_KEY
+                    : findRowKeyInParentUnsorted(nodeId, nodeKey, usePrev);
+            // NB: Even if nodeId and nodeKey are valid and in the HierarchicalTable, we don't know for sure their
+            // corresponding node is non-empty. That means the "row key in parent unsorted" might be null, and that's
+            // OK; we'll ignore it when we visit the parent node.
+            return new LinkedDirective(nodeKey, nodeId, rowKeyInParentUnsorted);
+        }
+    }
+
+    private boolean linkedDirectiveInvalid(@NotNull final LinkedDirective directive) {
+        return directive.getNodeId() == nullNodeId()
+                || (directive.getRowKeyInParentUnsorted() == NULL_ROW_KEY && directive.getNodeId() != rootNodeId());
     }
 
     @Override
@@ -736,17 +848,17 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         final SnapshotState typedSnapshotState = ((SnapshotState) snapshotState);
         typedSnapshotState.verifyOwner(this);
 
-        final Collection<NodeDirective> rawKeyTableNodeDirectives =
+        final Collection<KeyTableDirective> keyTableDirectives =
                 snapshotKeyTableNodeDirectives(keyTable, keyTableActionColumn);
 
-        return snapshotData(typedSnapshotState, rawKeyTableNodeDirectives, columns, rows, destinations);
+        return snapshotData(typedSnapshotState, keyTableDirectives, columns, rows, destinations);
     }
 
-    private Collection<NodeDirective> snapshotKeyTableNodeDirectives(
+    private Collection<KeyTableDirective> snapshotKeyTableNodeDirectives(
             @NotNull final Table keyTable,
             @Nullable final ColumnName keyTableActionColumn) {
         if (keyTable.isRefreshing()) {
-            final MutableObject<Collection<NodeDirective>> rootNodeInfoHolder = new MutableObject<>();
+            final MutableObject<Collection<KeyTableDirective>> rootNodeInfoHolder = new MutableObject<>();
             // NB: This snapshot need not be notification-aware. If the key table ticks so be it, as long as we
             // extracted a consistent view of its contents.
             final SnapshotControl keyTableSnapshotControl =
@@ -772,23 +884,25 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * @param usePrev Whether to use the previous state of {@code keyTable}
      * @return A collection of node directives described by the key table
      */
-    private Collection<NodeDirective> extractKeyTableNodeDirectives(
+    private Collection<KeyTableDirective> extractKeyTableNodeDirectives(
             @NotNull final Table keyTable,
             @Nullable final ColumnName keyTableActionColumn,
             final boolean usePrev) {
         final ChunkSource<? extends Values> nodeKeySource = maybePrevSource(makeNodeKeySource(keyTable), usePrev);
         final ChunkSource<? extends Values> actionSource = keyTableActionColumn == null ? null
                 : maybePrevSource(keyTable.getColumnSource(keyTableActionColumn.name(), byte.class), usePrev);
-        final KeyedObjectHashSet<Object, NodeDirective> directives =
-                new KeyedObjectHashSet<>(NodeDirectiveKey.getInstance());
+        final KeyedObjectHashSet<Object, KeyTableDirective> directives =
+                new KeyedObjectHashSet<>(KeyTableDirective.HASH_ADAPTER);
         try (final RowSet prevRowSet = usePrev ? keyTable.getRowSet().copyPrev() : null) {
             final RowSequence rowsToExtract = usePrev ? prevRowSet : keyTable.getRowSet();
             final ColumnIterator<?, ?> nodeKeyIterator = ColumnIterator.make(nodeKeySource, rowsToExtract);
             final ByteColumnIterator actionIterator =
                     actionSource == null ? null : new ByteColumnIterator(actionSource, rowsToExtract);
             nodeKeyIterator.forEachRemaining((final Object nodeKey) -> {
-                final KeyTableNodeAction action = actionIterator == null ? Expand : lookup(actionIterator.nextByte());
-                directives.putIfAbsent(nodeKey, NodeDirective::new).setAction(action);
+                final VisitAction action = actionIterator == null ? Expand : lookup(actionIterator.nextByte());
+                // We don't really expect duplicate node keys, but let the last one win if there are any.
+                // Note that KeyedObjectHashSet.add overwrites, instead of following the documentation for Set.add.
+                directives.add(new KeyTableDirective(nodeKey, action));
             });
         }
         return directives;
@@ -803,38 +917,55 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     /**
      * Convert the "raw" key table node directives into a tree structure that will allow hierarchical traversal.
      *
-     * @param rawNodeDirectives The "raw" key table node directives
+     * @param keyTableDirectives The "raw" key table node directives
      * @param usePrev Whether to use the previous state of {@code this}
      * @return The root node directive of the resulting tree structure, or {@code null} if the root was not found
      */
-    private LinkedNodeDirective linkKeyTableNodeDirectives(
-            @NotNull final Collection<NodeDirective> rawNodeDirectives,
+    private LinkedDirective linkKeyTableNodeDirectives(
+            @NotNull final Collection<KeyTableDirective> keyTableDirectives,
             final boolean usePrev) {
-        LinkedNodeDirective rootNodeDirective = null;
-        final KeyedObjectHashMap<Object, LinkedNodeDirective> processedNodeInfos =
-                new KeyedObjectHashMap<>(NodeDirectiveKey.getInstance());
+        LinkedDirective rootNodeDirective = null;
+        final KeyedObjectHashSet<Object, LinkedDirective> linkedDirectives =
+                new KeyedObjectHashSet<>(LinkedDirective.HASH_ADAPTER);
+        final LinkedDirectiveFactory linkedDirectiveFactory = new LinkedDirectiveFactory(usePrev);
         final MutableObject<Object> parentNodeKeyHolder = new MutableObject<>();
-        for (final NodeDirective raw : rawNodeDirectives) {
-            Object nodeKey = raw.getNodeKey();
-            LinkedNodeDirective linked = processedNodeInfos.putIfAbsent(nodeKey, LinkedNodeDirective::new);
+        for (final KeyTableDirective fromKeyTable : keyTableDirectives) {
+            Object nodeKey = fromKeyTable.getNodeKey();
+            LinkedDirective linked = linkedDirectives.putIfAbsent(nodeKey, linkedDirectiveFactory);
+            if (linkedDirectiveInvalid(linked)) {
+                // This node isn't in our hierarchy. May be left over in the key table from a previous instance
+                // with different filtering or different input data (e.g. in the case of a saved key table).
+                continue;
+            }
             boolean needToFindAncestors = !linked.actionDefined();
-            linked.setAction(raw.getAction()); // Overwrite "Undefined" or "Linkage" with the key table's action
+            linked.setAction(fromKeyTable.getAction()); // Overwrite Undefined or Linkage with the key table's action
             // Find ancestors iteratively until we hit the root or a node directive that already exists
             while (needToFindAncestors) {
-                final Boolean parentNodeKeyFound = nodeKeyToParentNodeKey(nodeKey, usePrev, parentNodeKeyHolder);
+                final Boolean parentNodeKeyFound =
+                        findParentNodeKey(nodeKey, linked.getRowKeyInParentUnsorted(), usePrev, parentNodeKeyHolder);
                 if (parentNodeKeyFound == null) {
                     rootNodeDirective = linked;
                     // We're at the root, nothing else to look for.
                     needToFindAncestors = false;
                 } else if (parentNodeKeyFound) {
                     nodeKey = parentNodeKeyHolder.getValue();
-                    linked = processedNodeInfos.putIfAbsent(nodeKey, LinkedNodeDirective::new).addChild(linked);
+                    linked = linkedDirectives.putIfAbsent(nodeKey, linkedDirectiveFactory).addChild(linked);
+                    if (linkedDirectiveInvalid(linked)) {
+                        ConstructSnapshot.failIfConcurrentAttemptInconsistent();
+                        log.error().append("Could not find node for parent key=").append(NODE_KEY_FORMATTER, nodeKey)
+                                .append(", usePrev=").append(usePrev).endl();
+                        // noinspection ThrowableNotThrown
+                        Assert.statementNeverExecuted("Failed to find ancestor for existing key table directive");
+                        needToFindAncestors = false; // We won't really get here.
+                        continue;
+                    }
                     if (linked.actionDefined()) {
                         // We already knew about this node, so we've already found its ancestors.
                         needToFindAncestors = false;
                     } else {
                         // Newly-created parent node directive, assume it's only here to provide linkage unless it's
-                        // found in the raw node directives later. We need to find its ancestors to connect to the root.
+                        // found in the fromKeyTable node directives later. We need to find its ancestors to connect to
+                        // the root.
                         linked.setAction(Linkage);
                     }
                 } else {
@@ -848,7 +979,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     private long snapshotData(
             @NotNull final SnapshotState snapshotState,
-            @NotNull final Collection<NodeDirective> rawKeyTableNodeDirectives,
+            @NotNull final Collection<KeyTableDirective> keyTableDirectives,
             @Nullable final BitSet columns,
             @NotNull final RowSequence rows,
             @NotNull final WritableChunk<? extends Values>[] destinations) {
@@ -863,11 +994,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                             (final boolean usePrev, final long beforeClockValue) -> {
                                 maybeWaitForStructuralSatisfaction();
                                 traverseExpansionsAndFillSnapshotChunks(
-                                        snapshotState, rawKeyTableNodeDirectives, usePrev);
+                                        snapshotState, keyTableDirectives, usePrev);
                                 return true;
                             });
                 } else {
-                    traverseExpansionsAndFillSnapshotChunks(snapshotState, rawKeyTableNodeDirectives, false);
+                    traverseExpansionsAndFillSnapshotChunks(snapshotState, keyTableDirectives, false);
                 }
                 return snapshotState.finalizeSuccessfulSnapshot();
             }
@@ -876,13 +1007,13 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     private void traverseExpansionsAndFillSnapshotChunks(
             @NotNull final SnapshotState snapshotState,
-            @NotNull final Collection<NodeDirective> rawKeyTableNodeDirectives,
+            @NotNull final Collection<KeyTableDirective> keyTableDirectives,
             final boolean usePrev) {
         snapshotState.beginSnapshotAttempt(usePrev);
 
         // Link the node directives together into a tree
-        final LinkedNodeDirective rootNodeDirective = linkKeyTableNodeDirectives(rawKeyTableNodeDirectives, usePrev);
-        final KeyTableNodeAction rootNodeAction;
+        final LinkedDirective rootNodeDirective = linkKeyTableNodeDirectives(keyTableDirectives, usePrev);
+        final VisitAction rootNodeAction;
         if (rootNodeDirective == null ||
                 ((rootNodeAction = rootNodeDirective.getAction()) != Expand && rootNodeAction != ExpandAll)) {
             // We *could* auto-expand the root, instead, but for now let's treat this as empty for consistency
@@ -896,8 +1027,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     private void visitExpandedNode(
             @NotNull final SnapshotState snapshotState,
             @Nullable final Object nodeKey,
-            @NotNull final KeyTableNodeAction action,
-            @Nullable final List<LinkedNodeDirective> childDirectives) {
+            @NotNull final VisitAction action,
+            @Nullable final List<LinkedDirective> childDirectives) {
 
         // Find our node, and avoid updating any state if we won't do any work.
         final long nodeId = nodeKeyToNodeId(nodeKey);
@@ -953,10 +1084,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                             (prevRows != null ? prevRows : forExpansion.getRowSet()).getRowSequenceIterator();
                     final SafeCloseable ignored1 = fillContexts == null ? null : new SafeCloseableArray<>(fillContexts);
                     final SafeCloseable ignored2 = sharedContext) {
-                final Iterator<LinkedNodeDirective> childDirectivesIterator = childDirectives == null
+                final Iterator<LinkedDirective> childDirectivesIterator = childDirectives == null
                         ? Collections.emptyIterator()
                         : childDirectives.stream().filter(snapshotState::shouldProcessChildDirective).iterator();
-                LinkedNodeDirective childDirective =
+                LinkedDirective childDirective =
                         childDirectivesIterator.hasNext() ? childDirectivesIterator.next() : null;
                 while (rowsIterator.hasMore() && (snapshotState.expandingAll || childDirective != null)) {
                     final long nextRowKey = rowsIterator.peekNextKey();
@@ -998,21 +1129,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     abstract ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull Table nodeKeyTable);
 
     /**
-     * @param childNodeKey The child node key to map to its parent node key; should not be the
-     *        {@link #isRootNodeKey(Object) root node key}.
-     * @param usePrev Whether to use previous row sets and values for determining the parent node key
-     * @param parentNodeKeyHolder Holder for the result, which is the parent node key for {@code childNodeKey}; only
-     *        valid if this method returns {@code true}.
-     * @return {@code true} if the parent node key was found, {@code false} if it was not, {@code null} if this "child"
-     *         was the root
-     */
-    @Nullable
-    abstract Boolean nodeKeyToParentNodeKey(
-            @Nullable Object childNodeKey,
-            boolean usePrev,
-            @NotNull MutableObject<Object> parentNodeKeyHolder);
-
-    /**
      * @param nodeKey The node key to test
      * @return Whether {@code nodeKey} maps to the root node for this HierarchicalTableImpl
      */
@@ -1035,12 +1151,37 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     abstract long nullNodeId();
 
     /**
-     * @param childNodeKey The child node key to map
+     * @return The "root" node id that maps to the root node
+     */
+    abstract long rootNodeId();
+
+    /**
+     * @param childNodeId Node ID of the child
+     * @param childNodeKey Node key of the child
      * @param usePrev Whether to use previous row sets and values for determining the row key
      * @return The corresponding row key in the node's parent's address space (before sorting), or
      *         {@link RowSequence#NULL_ROW_KEY null} if not found
      */
-    abstract long nodeKeyToRowKeyInParentUnsorted(@Nullable Object childNodeKey, final boolean usePrev);
+    abstract long findRowKeyInParentUnsorted(
+            final long childNodeId,
+            @Nullable Object childNodeKey,
+            final boolean usePrev);
+
+    /**
+     * @param childNodeKey Node key of the child
+     * @param childRowKeyInParentUnsorted The child node's row key in its parent node, in unsorted row key space
+     * @param usePrev Whether to use previous row sets and values for determining the parent node key
+     * @param parentNodeKeyHolder Holder for the result, which is the parent node key for {@code childNodeKey}; only
+     *        valid if this method returns {@code true}.
+     * @return {@code true} if the parent node key was found, {@code false} if it was not, {@code null} if this "child"
+     *         was the root
+     */
+    @Nullable
+    abstract Boolean findParentNodeKey(
+            @Nullable Object childNodeKey,
+            long childRowKeyInParentUnsorted,
+            boolean usePrev,
+            @NotNull MutableObject<Object> parentNodeKeyHolder);
 
     /**
      * @param nodeId The internal identifier to map

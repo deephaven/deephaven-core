@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.api.ColumnName.names;
@@ -371,30 +370,6 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    @Nullable
-    Boolean nodeKeyToParentNodeKey(
-            @Nullable final Object childNodeKey,
-            final boolean usePrev,
-            @NotNull final MutableObject<Object> parentNodeKeyHolder) {
-        final int nodeKeyWidth = nodeKeyWidth(childNodeKey);
-        switch (nodeKeyWidth) {
-            case 0:
-                return null;
-            case 1:
-                parentNodeKeyHolder.setValue(AggregationRowLookup.EMPTY_KEY);
-                return true;
-            default:
-                if (nodeKeyWidth > groupByColumns.size()) {
-                    throw new IllegalArgumentException("Invalid node key " + Arrays.toString((Object[]) childNodeKey)
-                            + ": wider than maximum " + groupByColumns.size());
-                }
-                // noinspection ConstantConditions (null falls under "case 1")
-                parentNodeKeyHolder.setValue(Arrays.copyOf(((Object[]) childNodeKey), nodeKeyWidth - 1));
-                return true;
-        }
-    }
-
-    @Override
     boolean isRootNodeKey(@Nullable final Object nodeKey) {
         return nodeKeyWidth(nodeKey) == 0;
     }
@@ -429,9 +404,38 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    long nodeKeyToRowKeyInParentUnsorted(@Nullable final Object childNodeKey, final boolean usePrev) {
-        final long nodeId = nodeKeyToNodeId(childNodeKey);
-        return nodeId == nullNodeId() ? NULL_ROW_KEY : nodeSlot(nodeId);
+    long rootNodeId() {
+        return 0;
+    }
+
+    @Override
+    long findRowKeyInParentUnsorted(final long childNodeId, @Nullable final Object childNodeKey, final boolean usePrev) {
+        return childNodeId == nullNodeId() ? NULL_ROW_KEY : nodeSlot(childNodeId);
+    }
+
+    @Override
+    @Nullable
+    Boolean findParentNodeKey(
+            @Nullable final Object childNodeKey,
+            final long childRowKeyInParentUnsorted,
+            final boolean usePrev,
+            @NotNull final MutableObject<Object> parentNodeKeyHolder) {
+        final int nodeKeyWidth = nodeKeyWidth(childNodeKey);
+        switch (nodeKeyWidth) {
+            case 0:
+                return null;
+            case 1:
+                parentNodeKeyHolder.setValue(AggregationRowLookup.EMPTY_KEY);
+                return true;
+            default:
+                if (nodeKeyWidth > groupByColumns.size()) {
+                    throw new IllegalArgumentException("Invalid node key " + Arrays.toString((Object[]) childNodeKey)
+                            + ": wider than maximum " + groupByColumns.size());
+                }
+                // noinspection ConstantConditions (null falls under "case 1")
+                parentNodeKeyHolder.setValue(Arrays.copyOf(((Object[]) childNodeKey), nodeKeyWidth - 1));
+                return true;
+        }
     }
 
     @Override

@@ -22,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -229,26 +228,6 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    @Nullable
-    Boolean nodeKeyToParentNodeKey(
-            @Nullable final Object childNodeKey,
-            final boolean usePrev,
-            @NotNull final MutableObject<Object> parentNodeKeyHolder) {
-        if (isRootNodeKey(childNodeKey)) {
-            return null;
-        }
-        final long sourceRowKey = nodeKeyToRowKeyInParentUnsorted(childNodeKey, usePrev);
-        if (sourceRowKey == NULL_ROW_KEY) {
-            return false;
-        }
-        final Object parentNodeKey = usePrev
-                ? sourceParentIdSource.getPrev(sourceRowKey)
-                : sourceParentIdSource.get(sourceRowKey);
-        parentNodeKeyHolder.setValue(parentNodeKey);
-        return true;
-    }
-
-    @Override
     boolean isRootNodeKey(@Nullable final Object nodeKey) {
         return nodeKey == null;
     }
@@ -269,7 +248,12 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    long nodeKeyToRowKeyInParentUnsorted(@Nullable final Object childNodeKey, final boolean usePrev) {
+    long rootNodeId() {
+        return 0;
+    }
+
+    @Override
+    long findRowKeyInParentUnsorted(final long childNodeId, @Nullable final Object childNodeKey, final boolean usePrev) {
         final long sourceRowKey = usePrev
                 ? reverseLookup.getPrev(childNodeKey)
                 : reverseLookup.get(childNodeKey);
@@ -285,6 +269,27 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             }
         }
         return sourceRowKey;
+    }
+
+    @Override
+    @Nullable
+    Boolean findParentNodeKey(
+            @Nullable final Object childNodeKey,
+            final long childRowKeyInParentUnsorted,
+            final boolean usePrev,
+            @NotNull final MutableObject<Object> parentNodeKeyHolder) {
+        if (isRootNodeKey(childNodeKey)) {
+            return null;
+        }
+        // childRowKeyInParentUnsorted is also the row key in our source table
+        if (childRowKeyInParentUnsorted == NULL_ROW_KEY) {
+            return false;
+        }
+        final Object parentNodeKey = usePrev
+                ? sourceParentIdSource.getPrev(childRowKeyInParentUnsorted)
+                : sourceParentIdSource.get(childRowKeyInParentUnsorted);
+        parentNodeKeyHolder.setValue(parentNodeKey);
+        return true;
     }
 
     @Override

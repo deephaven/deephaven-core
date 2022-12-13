@@ -55,17 +55,18 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
      * Key table action value specifying that a node should be expanded. This is the default action if no action column
      * is specified.
      */
-    byte ACTION_EXPAND = 0b001;
+    byte KEY_TABLE_ACTION_EXPAND = 0b001;
     /**
      * Key table action value specifying that a node should be expanded, and that its descendants should all be expanded
-     * unless they are included in the key table with a {@link #ACTION_CONTRACT contraction}.
+     * unless they are included in the key table with a {@link #KEY_TABLE_ACTION_CONTRACT contraction} or their parent
+     * is included with a {@link #KEY_TABLE_ACTION_EXPAND simple expansion}.
      */
-    byte ACTION_EXPAND_ALL = 0b011;
+    byte KEY_TABLE_ACTION_EXPAND_ALL = 0b011;
     /**
      * Key table action value specifying that a node should be contracted. The node must descend from a node that was
-     * {@link #ACTION_EXPAND_ALL expanded with its descendants}.
+     * {@link #KEY_TABLE_ACTION_EXPAND_ALL expanded with its descendants}, or this key table row will have no effect.
      */
-    byte ACTION_CONTRACT = 0b100;
+    byte KEY_TABLE_ACTION_CONTRACT = 0b100;
 
     /**
      * Take a snapshot of the data in the grid defined by {@code columns}, {@code rows}, and the directives in
@@ -75,8 +76,9 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
      *        HierarchicalTable with {@link #makeSnapshotState()}.
      * @param keyTable Type-specific "key" table specifying expanded and contracted nodes
      * @param keyTableActionColumn The name of a column of {@code byte} on {@code keyTable} that specifies whether nodes
-     *        should be {@link #ACTION_EXPAND expanded}, {@link #ACTION_EXPAND_ALL expanded with their descendants}, or
-     *        {@link #ACTION_CONTRACT contracted}. If {@code null}, all rows are treated as simple expansions.
+     *        should be {@link #KEY_TABLE_ACTION_EXPAND expanded}, {@link #KEY_TABLE_ACTION_EXPAND_ALL expanded with
+     *        their descendants}, or {@link #KEY_TABLE_ACTION_CONTRACT contracted}. If {@code null}, all rows are
+     *        treated as {@link #KEY_TABLE_ACTION_EXPAND simple expansions}.
      * @param columns Optional bit-set of columns to include, {@code null} to include all columns
      * @param rows Position-space rows to include from the expanded data specified by {@code keyTable}
      * @param destinations The destination {@link WritableChunk chunks}
