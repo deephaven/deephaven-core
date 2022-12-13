@@ -380,7 +380,7 @@ public class SessionService {
         }
 
         @Override
-        public void onClose() {
+        protected void onClose() {
             GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
                 responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Session has ended"));
             });

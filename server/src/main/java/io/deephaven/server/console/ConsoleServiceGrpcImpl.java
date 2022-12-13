@@ -323,7 +323,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         }
 
         @Override
-        public void onClose() {
+        protected void onClose() {
             logBuffer.unsubscribe(this);
         }
 
