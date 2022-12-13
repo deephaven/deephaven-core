@@ -5,13 +5,32 @@ package io.deephaven.web.client.api.tree;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
+import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
+import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Hierarchicaltable_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupDescriptorDetails;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.hierarchicaltableviewdescriptor.DetailsCase;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.ViewportData;
@@ -38,6 +57,8 @@ import jsinterop.base.Js;
 
 import java.util.*;
 
+import static io.deephaven.web.client.api.barrage.BarrageUtils.makeUint8ArrayFromBitset;
+import static io.deephaven.web.client.api.barrage.BarrageUtils.serializeRanges;
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
@@ -320,8 +341,8 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
 
     private NextSnapshotState nextSnapshotState;
 
-    private Promise<JsTable> sourceTable;
-    private Map<String, Column> sourceColumns = new HashMap<>();
+    private final Promise<JsTable> sourceTable;
+    private final Map<String, Column> sourceColumns = new HashMap<>();
     private JsArray<Column> groupedColumns = null;
 
     private boolean closed = false;
@@ -357,39 +378,40 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
      * required to work out constituent column types for rollup columns.
      */
     public Promise<JsTreeTable> finishFetch() {
-        RollupDefinition rollupDefinition = baseTable.getTableDef().getAttributes().getRollupDefinition();
-        if (rollupDefinition == null) {
-            return Promise.resolve(this);
-        }
+        if (treeDescriptor.getDetailsCase() == DetailsCase.ROLLUP) {
+            RollupDescriptorDetails rollupDef = treeDescriptor.getRollup();
 
-        return sourceTable.then(sourceTable -> {
-            // reconcile our table definition against the source table and assign constituent types to our columns
-            final Set<String> presentNames = new HashSet<>();
-            for (int i = 0; i < rollupDefinition.getRollupColumnNames().length; i++) {
-                String rollupColName = rollupDefinition.getRollupColumnNames()[i];
-                presentNames.add(rollupColName);
-                if (rollupDefinition.getLeafType() == RollupDefinition.LeafType.Constituent) {
-                    String sourceColName = rollupDefinition.getSourceColumnNames()[i];
-                    if (!isTableAggregationColumn(sourceColName)) {
+            return sourceTable.then(sourceTable -> {
+                final Set<String> presentNames = new HashSet<>();
+                rollupDef.getOutputInputColumnPairsList().forEach((pair, index, arr) -> {
+                    String[] split = pair.split("=");
+                    String rollupColName = split[0];
+                    presentNames.add(rollupColName);
+                    String sourceColName = split[1];
+                    if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT() && !isTableAggregationColumn(sourceColName)) {
                         Column sourceColumn = sourceTable.findColumn(sourceColName);
                         String sourceType = sourceColumn.getType();
                         findColumn(rollupColName).setConstituentType(sourceType);
-                        sourceColumns.put(rollupColName, sourceColumn);
+                        this.sourceColumns.put(rollupColName, sourceColumn);
                     }
-                }
-            }
 
-            // for each column _not_ in this list of names, explicitly assign a null constituent type
-            groupedColumns = JsObject
-                    .freeze(getColumns().filter((column, index, array) -> !presentNames.contains(column.getName())));
-            if (rollupDefinition.getLeafType() == RollupDefinition.LeafType.Constituent) {
-                groupedColumns.forEach((column, index, array) -> {
-                    column.setConstituentType(null);
                     return null;
                 });
-            }
-            return Promise.resolve(this);
-        });
+                groupedColumns = JsObject
+                        .freeze(getColumns().filter((column, index, array) -> !presentNames.contains(column.getName())));
+                if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()) {
+                    groupedColumns.forEach((column, index, array) -> {
+                        column.setConstituentType(null);
+                        return null;
+                    });
+                }
+                return Promise.resolve(this);
+            });
+        } else if (treeDescriptor.getDetailsCase() == DetailsCase.TREE) {
+//            treeDescriptor.getTree()//TODO
+        }
+
+        return Promise.resolve(this);
     }
 
     /**
@@ -458,8 +480,69 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
             boolean alwaysFireEvent = this.alwaysFireNextEvent;
             this.alwaysFireNextEvent = false;
 
-            JsLog.debug("Sending tree table request", this, LazyString.of(baseTable::getHandle), query,
+            JsLog.debug("Sending tree table request", this, LazyString.of(() -> widget.getTicket().getTicket_asB64()), query,
                     alwaysFireEvent);
+            BiDiStream<FlightData, FlightData> doExchange = connection.<FlightData, FlightData>streamFactory().create(
+                    headers -> connection.flightServiceClient().doExchange(headers),
+                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
+                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers, c::apply),
+                    new FlightData());
+
+            FlightData snapshotRequestWrapper = new FlightData();
+            Builder doGetRequest = new Builder(1024);
+            double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
+                    makeUint8ArrayFromBitset(query.getColumns()));
+            double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest, serializeRanges(
+                    Collections.singleton(RangeSet.ofRange(query.getViewportStart(), query.getViewportEnd()))));
+            double serializationOptionsOffset = BarrageSnapshotOptions
+                    .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0, 0);
+            double tableTicketOffset =
+                    BarrageSubscriptionRequest.createTicketVector(doGetRequest, widget.getDataAsU8());
+            BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);
+            BarrageSnapshotRequest.addTicket(doGetRequest, tableTicketOffset);
+            BarrageSnapshotRequest.addColumns(doGetRequest, columnsOffset);
+            BarrageSnapshotRequest.addSnapshotOptions(doGetRequest, serializationOptionsOffset);
+            BarrageSnapshotRequest.addViewport(doGetRequest, viewportOffset);
+            doGetRequest.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(doGetRequest));
+
+            snapshotRequestWrapper.setAppMetadata(
+                    BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
+            doExchange.send(snapshotRequestWrapper);
+            doExchange.end();
+
+            doExchange.onData(flightData -> {
+                Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
+                if (message.headerType() == MessageHeader.Schema) {
+                    // ignore for now, we'll handle this later
+                    return;
+                }
+                assert message.headerType() == MessageHeader.RecordBatch;
+                RecordBatch header = message.header(new RecordBatch());
+                Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
+                BarrageUpdateMetadata update = null;
+                if (appMetadataBytes.length != 0) {
+                    BarrageMessageWrapper barrageMessageWrapper =
+                            BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
+                                    new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
+                                            appMetadataBytes));
+
+                    update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
+                            new ByteBuffer(
+                                    new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
+                }
+                TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
+                        BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
+                        true,
+                        columnTypes);
+                callback.onSuccess(snapshot);
+
+                TreeTableResult success = new TreeTableResult();
+                success.setSnapshotData(snapshot.getDataColumns());
+                success.set
+                handleUpdate(queryColumns, nextSort, nextFilters, success, alwaysFireEvent);
+            });
+
+
             // connection.getServer().treeSnapshotQuery(baseTable.getHandle(), query, Callbacks.of((success, failure) ->
             // {
             // try {
@@ -506,6 +589,7 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         final RangeSet includedRows;
         if (result.getSnapshotEnd() < result.getSnapshotStart()) {
             // this is TSQ for "no items"
+            //TODO remove this?
             includedRows = RangeSet.empty();
         } else {
             includedRows = RangeSet.ofRange(result.getSnapshotStart(), result.getSnapshotEnd());
@@ -519,8 +603,7 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
                 result.getChildPresence(),
                 result.getSnapshotStart(),
                 columns,
-                baseTable.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
-                        : baseTable.getRowFormatColumn().getIndex(),
+                NO_ROW_FORMAT_COLUMN, //TODO read this from the schema in the widget
                 result.getConstituentColumnNames(),
                 result.getConstituentColumnData());
 
