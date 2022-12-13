@@ -49,7 +49,7 @@ dependencies {
     implementation project(':FishUtil')
 
     implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
-    implementation 'com.tdunning:t-digest:3.2'
+    implementation 'com.tdunning:t-digest:3.3'
     implementation 'com.squareup:javapoet:1.13.0'
 
     implementation project(':plugin')
