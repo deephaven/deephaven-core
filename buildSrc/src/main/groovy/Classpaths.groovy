@@ -50,7 +50,7 @@ class Classpaths {
     static final String ARROW_VERSION = '7.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
-    static final String SLF4J_VERSION = '2.0.3'
+    static final String SLF4J_VERSION = '2.0.6'
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
@@ -89,7 +89,7 @@ class Classpaths {
 
     static final String LOGBACK_GROUP = 'ch.qos.logback'
     static final String LOGBACK_NAME = 'logback-classic'
-    static final String LOGBACK_VERSION = '1.4.3'
+    static final String LOGBACK_VERSION = '1.4.5'
 
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
     static final String GROOVY_VERSION = '3.0.12'
