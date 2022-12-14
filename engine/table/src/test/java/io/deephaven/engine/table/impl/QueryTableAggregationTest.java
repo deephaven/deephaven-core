@@ -2573,7 +2573,7 @@ public class QueryTableAggregationTest {
     @Test
     public void testTDigestMulti() {
         // Note: when updating t-digest version number or implementation details, we can compare larger sample by
-        // commenting out code in checkTDigestError, and upping the number of trails here.
+        // commenting out code in checkTDigestError, and upping the number of trials here.
         //
         // With 1000 trials, the current implementation (as of the commit where this line has changed) with
         // t-digest 3.2, achieves RMSE = 9.035463339150259E-4
