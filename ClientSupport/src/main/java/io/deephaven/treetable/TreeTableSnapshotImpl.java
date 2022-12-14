@@ -5,7 +5,6 @@ package io.deephaven.treetable;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.impl.hierarchical.ReverseLookup;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.*;
@@ -19,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static io.deephaven.treetable.TreeConstants.RE_TREE_KEY;
-import static io.deephaven.treetable.TreeConstants.ROOT_TABLE_KEY;
+import static io.deephaven.engine.table.impl.by.TreeConstants.RE_TREE_KEY;
+import static io.deephaven.engine.table.impl.by.TreeConstants.ROOT_TABLE_KEY;
 
 class TreeTableSnapshotImpl extends AbstractTreeSnapshotImpl<TreeTableInfo> {
 

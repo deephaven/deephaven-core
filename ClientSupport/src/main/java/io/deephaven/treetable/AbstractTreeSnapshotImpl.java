@@ -13,7 +13,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
-import io.deephaven.engine.table.impl.hierarchical.ReverseLookup;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.Table;
@@ -32,8 +31,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-import static io.deephaven.treetable.TreeConstants.RE_TREE_KEY;
-import static io.deephaven.treetable.TreeConstants.ROOT_TABLE_KEY;
+import static io.deephaven.engine.table.impl.by.TreeConstants.RE_TREE_KEY;
+import static io.deephaven.engine.table.impl.by.TreeConstants.ROOT_TABLE_KEY;
 
 /**
  * The basic implementation used to produce a viewport-ready snapshot of a tree table, taking into account the set of

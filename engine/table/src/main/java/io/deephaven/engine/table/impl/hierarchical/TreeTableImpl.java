@@ -5,7 +5,6 @@ import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
@@ -26,7 +25,6 @@ import java.util.stream.Stream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
-import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
@@ -35,18 +33,13 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
 public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImpl> implements TreeTable {
 
     private static final ColumnName TREE_COLUMN = ColumnName.of("__TREE__");
-    private static final ColumnName EXPANDABLE_COLUMN = ColumnName.of("__EXPANDABLE__");
-    private static final int EXPANDABLE_COLUMN_INDEX = 0;
-    private static final ColumnName DEPTH_COLUMN = ColumnName.of("__DEPTH__");
-    private static final int DEPTH_COLUMN_INDEX = 1;
-    public static final ColumnName REVERSE_LOOKUP_ROW_KEY_COLUMN = ColumnName.of("__ROW_KEY__");
 
     private final ColumnSource<?> sourceParentIdSource;
     private final QueryTable tree;
     private final AggregationRowLookup treeRowLookup;
 
     private final ColumnSource<Table> treeNodeTableSource;
-    private final TreeReverseLookup reverseLookup;
+    private final TreeSourceRowLookup sourceRowLookup;
     private final boolean filtered;
     private final ColumnName identifierColumn;
     private final ColumnName parentIdentifierColumn;
@@ -57,7 +50,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final Map<String, Object> initialAttributes,
             @NotNull final QueryTable source,
             @NotNull final QueryTable tree,
-            @NotNull final TreeReverseLookup reverseLookup,
+            @NotNull final TreeSourceRowLookup sourceRowLookup,
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn,
             @NotNull final Set<ColumnName> nodeFilterColumns,
@@ -65,14 +58,14 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         super(initialAttributes, source, getTreeRoot(tree));
         if (source.isRefreshing()) {
             manage(tree);
-            manage(reverseLookup);
+            manage(sourceRowLookup);
         }
         sourceParentIdSource = source.getColumnSource(parentIdentifierColumn.name());
         this.tree = tree;
         treeRowLookup = AggregationProcessor.getRowLookup(tree);
         treeNodeTableSource = tree.getColumnSource(TREE_COLUMN.name(), Table.class);
-        this.reverseLookup = reverseLookup;
-        filtered = !reverseLookup.sameSource(source);
+        this.sourceRowLookup = sourceRowLookup;
+        filtered = !sourceRowLookup.sameSource(source);
         this.identifierColumn = identifierColumn;
         this.parentIdentifierColumn = parentIdentifierColumn;
         this.nodeFilterColumns = nodeFilterColumns;
@@ -83,7 +76,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             // The tree aggregation result depends on the source and all the node tables.
             manage(tree);
             // The reverse lookup just depends on the (original, unfiltered) source, which may not be our direct source.
-            manage(reverseLookup);
+            manage(sourceRowLookup);
         }
     }
 
@@ -98,16 +91,6 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    public ColumnName getExpandableColumn() {
-        return EXPANDABLE_COLUMN;
-    }
-
-    @Override
-    public ColumnName getDepthColumn() {
-        return DEPTH_COLUMN;
-    }
-
-    @Override
     public TableDefinition getNodeDefinition() {
         return nodeOperations == null ? source.getDefinition() : nodeOperations.getResultDefinition();
     }
@@ -116,7 +99,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     public TreeTable withNodeFilterColumns(@NotNull final Collection<? extends ColumnName> columns) {
         final Set<ColumnName> resultNodeFilterColumns = new HashSet<>(nodeFilterColumns);
         resultNodeFilterColumns.addAll(columns);
-        return new TreeTableImpl(getAttributes(), source, tree, reverseLookup, identifierColumn, parentIdentifierColumn,
+        return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
+                parentIdentifierColumn,
                 Collections.unmodifiableSet(resultNodeFilterColumns), nodeOperations);
     }
 
@@ -147,15 +131,15 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         final QueryTable filteredSource = (QueryTable) source.apply(
                 new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
         final QueryTable filteredTree = computeTree(filteredSource, parentIdentifierColumn);
-        return new TreeTableImpl(getAttributes(), filteredSource, filteredTree, reverseLookup, identifierColumn,
+        return new TreeTableImpl(getAttributes(), filteredSource, filteredTree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder));
     }
 
     /**
-     * @return The TreeReverseLookup for this TreeTableImpl
+     * @return The TreeSourceRowLookup for this TreeTableImpl
      */
-    TreeReverseLookup getReverseLookup() {
-        return reverseLookup;
+    TreeSourceRowLookup getSourceRowLookup() {
+        return sourceRowLookup;
     }
 
     @Override
@@ -165,7 +149,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     public TreeTable withNodeOperations(@NotNull final NodeOperationsRecorder nodeOperations) {
-        return new TreeTableImpl(getAttributes(), source, tree, reverseLookup, identifierColumn, parentIdentifierColumn,
+        return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
+                parentIdentifierColumn,
                 nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations));
     }
 
@@ -181,7 +166,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     protected TreeTableImpl copy() {
-        return new TreeTableImpl(getAttributes(), source, tree, reverseLookup, identifierColumn, parentIdentifierColumn,
+        return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
+                parentIdentifierColumn,
                 nodeFilterColumns, nodeOperations);
     }
 
@@ -190,8 +176,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn) {
         final QueryTable tree = computeTree(source, parentIdentifierColumn);
-        final QueryTable reverseLookupTable = computeReverseLookupTable(source, identifierColumn);
-        final TreeReverseLookup reverseLookup = new TreeReverseLookup(source, reverseLookupTable);
+        final QueryTable reverseLookupTable = computeSourceRowLookupTable(source, identifierColumn);
+        final TreeSourceRowLookup reverseLookup = new TreeSourceRowLookup(source, reverseLookupTable);
         final TreeTableImpl result = new TreeTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)),
                 source, tree, reverseLookup, identifierColumn, parentIdentifierColumn, Set.of(), null);
@@ -216,10 +202,10 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         return (QueryTable) tree.getColumnSource(CONSTITUENT.name()).get(0);
     }
 
-    private static QueryTable computeReverseLookupTable(
+    private static QueryTable computeSourceRowLookupTable(
             @NotNull final QueryTable source,
             @NotNull final ColumnName idColumn) {
-        return source.aggNoMemo(AggregationProcessor.forTreeReverseLookup(), false, null, List.of(idColumn));
+        return source.aggNoMemo(AggregationProcessor.forTreeSourceRowLookup(), false, null, List.of(idColumn));
     }
 
     @Override
@@ -230,11 +216,6 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     boolean isRootNodeKey(@Nullable final Object nodeKey) {
         return nodeKey == null;
-    }
-
-    @Override
-    Object getRootNodeKey() {
-        return null;
     }
 
     @Override
@@ -253,11 +234,12 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    long findRowKeyInParentUnsorted(final long childNodeId, @Nullable final Object childNodeKey, final boolean usePrev) {
+    long findRowKeyInParentUnsorted(final long childNodeId, @Nullable final Object childNodeKey,
+            final boolean usePrev) {
         final long sourceRowKey = usePrev
-                ? reverseLookup.getPrev(childNodeKey)
-                : reverseLookup.get(childNodeKey);
-        if (sourceRowKey == reverseLookup.noEntryValue()) {
+                ? sourceRowLookup.getPrev(childNodeKey)
+                : sourceRowLookup.get(childNodeKey);
+        if (sourceRowKey == sourceRowLookup.noEntryValue()) {
             return NULL_ROW_KEY;
         }
         if (filtered) {
@@ -322,40 +304,27 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final Table nodeSortedTable,
             @Nullable final ChunkSource.WithPrev<? extends Values>[] existingChunkSources) {
         // We have 2 extra columns per row:
-        // 1. "expandable" -> boolean, is it possible to expand this row?
-        // 2. "depth" -> int, how deep is this row in the tree?
+        // 1. "depth" -> int, how deep is this row in the tree?
+        // 2. "row expanded" -> Boolean, always handled by the parent class, ignored here
         // These are at index 0 and 1, respectively, followed by the node columns.
-        final int numColumns = getNodeDefinition().numColumns() + 2;
-        final ChunkSource.WithPrev<? extends Values>[] result;
-        if (existingChunkSources != null) {
-            Assert.eq(existingChunkSources.length, "existingChunkSources.length", numColumns, "numColumns");
-            result = existingChunkSources;
-        } else {
-            // noinspection unchecked
-            result = new ChunkSource.WithPrev[numColumns];
-        }
+        final int numColumns = getNodeDefinition().numColumns() + EXTRA_COLUMN_COUNT;
+        final ChunkSource.WithPrev<? extends Values>[] result =
+                maybeAllocateResultChunkSourceArray(existingChunkSources, numColumns);
 
         final BitSet columns = snapshotState.getColumns();
         for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci)) {
-            if (ci == DEPTH_COLUMN_INDEX) { // Tree nodes can change depth
-                result[ci] = getDepthSource(snapshotState.getCurrentDepth());
-                continue;
-            }
-            if (result[ci] != null) {
-                continue;
-            }
-            if (ci == EXPANDABLE_COLUMN_INDEX) {
-                result[ci] = new TreeRowExpandableSource(
-                        nodeSortedTable.getColumnSource(identifierColumn.name()),
-                        (final Object nodeKey) -> nodeKeyExpandable(snapshotState, nodeKey));
-            } else {
-                final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - 2);
+            if (ci == ROW_DEPTH_COLUMN_INDEX) {
+                // Tree nodes can change depth, so update regardless of existing result
+                result[ci] = getDepthSource(snapshotState.getCurrentDepth() + 1);
+            } else if (result[ci] == null && ci != ROW_EXPANDED_COLUMN_INDEX) {
+                final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - EXTRA_COLUMN_COUNT);
                 result[ci] = nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
             }
         }
         return result;
     }
 
+    // TODO-RWC: Use this
     private boolean nodeKeyExpandable(@NotNull final SnapshotState snapshotState, @Nullable final Object nodeKey) {
         final long nodeId = nodeKeyToNodeId(nodeKey);
         if (nodeId == nullNodeId()) {
@@ -372,7 +341,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         // NB: The reverse lookup may be derived from an unfiltered parent of our source, hence we need to treat it as a
         // separate dependency if we're filtered.
         return filtered
-                ? new NotificationStepSource[] {source, reverseLookup}
+                ? new NotificationStepSource[] {source, sourceRowLookup}
                 : new NotificationStepSource[] {source};
     }
 
@@ -383,58 +352,4 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         maybeWaitForSatisfaction(tree);
     }
 
-    static final class TreeReverseLookup
-            extends LivenessArtifact
-            implements ReverseLookup, NotificationStepSource {
-
-        private final Object source;
-        private final NotificationStepSource parent;
-        private final AggregationRowLookup rowLookup;
-        private final ColumnSource<Long> sourceRowKeyColumnSource;
-
-        private TreeReverseLookup(@NotNull final Object source, @NotNull final QueryTable reverseLookupTable) {
-            this.source = source;
-            if (reverseLookupTable.isRefreshing()) {
-                parent = reverseLookupTable;
-                manage(reverseLookupTable);
-            } else {
-                parent = null;
-            }
-            rowLookup = getRowLookup(reverseLookupTable);
-            sourceRowKeyColumnSource =
-                    reverseLookupTable.getColumnSource(REVERSE_LOOKUP_ROW_KEY_COLUMN.name(), long.class);
-        }
-
-        private boolean sameSource(@NotNull final Object source) {
-            return this.source == source;
-        }
-
-        @Override
-        public long get(final Object nodeKey) {
-            final int idAggregationRow = rowLookup.get(nodeKey);
-            if (idAggregationRow == rowLookup.noEntryValue()) {
-                return noEntryValue();
-            }
-            return sourceRowKeyColumnSource.get(idAggregationRow);
-        }
-
-        @Override
-        public long getPrev(final Object nodeKey) {
-            final int idAggregationRow = rowLookup.get(nodeKey);
-            if (idAggregationRow == rowLookup.noEntryValue()) {
-                return noEntryValue();
-            }
-            return sourceRowKeyColumnSource.getPrev(idAggregationRow);
-        }
-
-        @Override
-        public long getLastNotificationStep() {
-            return parent.getLastNotificationStep();
-        }
-
-        @Override
-        public boolean satisfied(final long step) {
-            return parent.satisfied(step);
-        }
-    }
 }

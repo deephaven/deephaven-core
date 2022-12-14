@@ -5,11 +5,11 @@ package io.deephaven.treetable;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.by.TreeConstants;
 import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.table.impl.hierarchical.ReverseLookup;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.deephaven.treetable.TreeConstants.RE_TREE_KEY;
+import static io.deephaven.engine.table.impl.by.TreeConstants.RE_TREE_KEY;
 
 class RollupSnapshotImpl extends AbstractTreeSnapshotImpl<RollupInfo> {
     private boolean rootTableChanged = false;

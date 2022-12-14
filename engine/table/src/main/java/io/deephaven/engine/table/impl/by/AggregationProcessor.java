@@ -104,11 +104,7 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
-import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
-import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
-import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableConstantIntSource;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
@@ -148,8 +144,6 @@ import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_PI_COUNT_
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_RUNNING_SUM2_COLUMN_ID;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_RUNNING_SUM_COLUMN_ID;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROW_REDIRECTION_PREFIX;
-import static io.deephaven.engine.table.impl.hierarchical.RollupTableImpl.KEY_WIDTH_COLUMN;
-import static io.deephaven.engine.table.impl.hierarchical.RollupTableImpl.ROLLUP_COLUMN;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
 import static io.deephaven.util.type.TypeUtils.isNumeric;
@@ -166,7 +160,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         NORMAL(false),
         ROLLUP_BASE(true),
         ROLLUP_REAGGREGATED(true),
-        TREE_REVERSE_LOOKUP(false),
+        TREE_SOURCE_ROW_LOOKUP(false),
         SELECT_DISTINCT(false);
         // @formatter:on
 
@@ -203,15 +197,16 @@ public class AggregationProcessor implements AggregationContextFactory {
      */
     public static AggregationContextFactory forRollupBase(
             @NotNull final Collection<? extends Aggregation> aggregations,
-            final boolean includeConstituents) {
+            final boolean includeConstituents,
+            @NotNull final ColumnName rollupColumn) {
         if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
             rollupUnsupported("Partition");
         }
         final Collection<Aggregation> baseAggregations = new ArrayList<>(aggregations.size() + 1);
         baseAggregations.addAll(aggregations);
         baseAggregations.add(includeConstituents
-                ? Partition.of(ROLLUP_COLUMN)
-                : NullColumns.of(ROLLUP_COLUMN.name(), Object.class));
+                ? Partition.of(rollupColumn)
+                : RollupAggregation.nullColumns(rollupColumn.name(), Object.class));
         return new AggregationProcessor(baseAggregations, Type.ROLLUP_BASE);
     }
 
@@ -226,25 +221,26 @@ public class AggregationProcessor implements AggregationContextFactory {
      */
     public static AggregationContextFactory forRollupReaggregated(
             @NotNull final Collection<? extends Aggregation> aggregations,
-            @NotNull final Map<String, Class<?>> nullColumns) {
+            @NotNull final Map<String, Class<?>> nullColumns,
+            @NotNull final ColumnName rollupColumn) {
         if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
             rollupUnsupported("Partition");
         }
         final Collection<Aggregation> reaggregations = new ArrayList<>(aggregations.size() + 2);
-        reaggregations.add(NullColumns.from(nullColumns));
+        reaggregations.add(RollupAggregation.nullColumns(nullColumns));
         reaggregations.addAll(aggregations);
-        reaggregations.add(Partition.of(ROLLUP_COLUMN));
+        reaggregations.add(Partition.of(rollupColumn));
         return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
     }
 
     /**
-     * Create a trivial {@link AggregationContextFactory} to implement reverse lookup functionality for
+     * Create a trivial {@link AggregationContextFactory} to implement source-row lookup functionality for
      * {@link Table#tree(String, String) tree}.
      *
      * @return The {@link AggregationContextFactory}
      */
-    public static AggregationContextFactory forTreeReverseLookup() {
-        return new AggregationProcessor(Collections.emptyList(), Type.TREE_REVERSE_LOOKUP);
+    public static AggregationContextFactory forTreeSourceRowLookup() {
+        return new AggregationProcessor(Collections.emptyList(), Type.TREE_SOURCE_ROW_LOOKUP);
     }
 
     /**
@@ -295,8 +291,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 return new RollupBaseConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_REAGGREGATED:
                 return new RollupReaggregatedConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
-            case TREE_REVERSE_LOOKUP:
-                return makeTreeReverseLookupAggregationContext();
+            case TREE_SOURCE_ROW_LOOKUP:
+                return makeSourceRowLookupAggregationContext();
             case SELECT_DISTINCT:
                 return makeEmptyAggregationContext(requireStateChangeRecorder);
             default:
@@ -936,9 +932,6 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         AggregationContext build() {
             walkAllAggregations();
-            transformers.add(new StaticColumnSourceTransformer(
-                    RollupTableImpl.KEY_WIDTH_COLUMN.name(),
-                    new ImmutableConstantIntSource(groupByColumnNames.length)));
             transformers.add(new RowLookupAttributeSetter());
             return makeAggregationContext();
         }
@@ -964,12 +957,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (!partition.includeGroupByColumns()) {
                 throw new UnsupportedOperationException("Rollups never drop group-by columns when partitioning");
             }
-
-            final QueryTable adjustedTable = (QueryTable) table.updateView(
-                    new NullSelectColumn<>(Table.class, null, ROLLUP_COLUMN.name()),
-                    new NullSelectColumn<>(int.class, null, KEY_WIDTH_COLUMN.name()));
             final PartitionByChunkedOperator partitionOperator = new PartitionByChunkedOperator(table,
-                    adjustedTable, partition.column().name(), PARTITION_ATTRIBUTE_COPIER, groupByColumnNames);
+                    table, partition.column().name(), PARTITION_ATTRIBUTE_COPIER, groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
         }
@@ -1078,9 +1067,6 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         AggregationContext build() {
             walkAllAggregations();
-            transformers.add(new StaticColumnSourceTransformer(
-                    RollupTableImpl.KEY_WIDTH_COLUMN.name(),
-                    new ImmutableConstantIntSource(groupByColumnNames.length)));
             transformers.add(new RowLookupAttributeSetter());
             return makeAggregationContext();
         }
@@ -1372,14 +1358,14 @@ public class AggregationProcessor implements AggregationContextFactory {
     // Basic Helpers
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static AggregationContext makeTreeReverseLookupAggregationContext() {
+    private static AggregationContext makeSourceRowLookupAggregationContext() {
         // NB: UniqueRowKeyChunkedOperator is a StateChangeRecorder
         Assert.assertion(StateChangeRecorder.class.isAssignableFrom(UniqueRowKeyChunkedOperator.class),
                 "StateChangeRecorder.class.isAssignableFrom(UniqueRowKeyChunkedOperator.class)");
         // noinspection unchecked
         return new AggregationContext(
                 new IterativeChunkedAggregationOperator[] {
-                        new UniqueRowKeyChunkedOperator(TreeTableImpl.REVERSE_LOOKUP_ROW_KEY_COLUMN.name())},
+                        new UniqueRowKeyChunkedOperator(TreeConstants.SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name())},
                 new String[][] {ZERO_LENGTH_STRING_ARRAY},
                 new ChunkSource.WithPrev[] {null},
                 new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
@@ -1937,19 +1923,19 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private static class RowLookupAttributeSetter implements AggregationContextTransformer {
 
-        private AggregationRowLookup reverseLookup;
+        private AggregationRowLookup rowLookup;
 
         private RowLookupAttributeSetter() {}
 
         @Override
         public QueryTable transformResult(@NotNull final QueryTable table) {
-            table.setAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE, reverseLookup);
+            table.setAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE, rowLookup);
             return table;
         }
 
         @Override
         public void supplyRowLookup(@NotNull final Supplier<AggregationRowLookup> rowLookupFactory) {
-            this.reverseLookup = rowLookupFactory.get();
+            this.rowLookup = rowLookupFactory.get();
         }
     }
 

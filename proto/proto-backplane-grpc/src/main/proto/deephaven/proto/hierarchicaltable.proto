@@ -95,18 +95,18 @@ message HierarchicalTableViewDescriptor {
   // In trees, this is the (singular) identifier column.
   repeated string expand_by_columns = 1;
 
-  // The name of a nullable column of booleans that specifies whether a row is expandable or expanded. Will be null
-  // for not expandable, true for expanded, false for not expanded (but expandable).
-  // Leaf rows have no children to expand.
-  // Should not be (directly) user-visible.
-  string row_expansion_info_column = 2;
-
   // The name of a column that specifies the depth of a row. Note that for rollups, this also represents the number of
   // group-by columns that are "defined" for a row for all expandable rows.
   // Should not be (directly) user-visible.
   // Must be included along with expand-by columns in a rollup view request's key table. Need not be sent in a tree
   // view request's key table.
-  string row_depth_column = 3;
+  string row_depth_column = 2;
+
+  // The name of a nullable column of booleans that specifies whether a row is expandable or expanded. Will be null
+  // for not expandable, true for expanded, false for not expanded (but expandable).
+  // Leaf rows have no children to expand.
+  // Should not be (directly) user-visible.
+  string row_expanded_column = 3;
 
   oneof details {
     RollupDescriptorDetails rollup = 4;

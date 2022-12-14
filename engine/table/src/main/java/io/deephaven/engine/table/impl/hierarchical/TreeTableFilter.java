@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
-import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl.TreeReverseLookup;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -88,9 +87,9 @@ class TreeTableFilter {
     private final ColumnName parentIdColumnName;
 
     /**
-     * The input {@link TreeTableImpl tree's} {@link TreeReverseLookup reverse lookup}.
+     * The input {@link TreeTableImpl tree's} {@link TreeSourceRowLookup source row lookup}.
      */
-    private final TreeReverseLookup reverseLookup;
+    private final TreeSourceRowLookup sourceRowLookup;
 
     /**
      * The (initialized) filters to apply to {@link #source} in order to produce {@link #matchedSourceRows}.
@@ -150,14 +149,14 @@ class TreeTableFilter {
         source = (QueryTable) tree.getSource();
         idColumnName = tree.getIdentifierColumn();
         parentIdColumnName = tree.getParentIdentifierColumn();
-        reverseLookup = tree.getReverseLookup();
+        sourceRowLookup = tree.getSourceRowLookup();
         this.filters = filters;
 
         idSource = source.getColumnSource(tree.getIdentifierColumn().name());
         parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());
 
         if (source.isRefreshing()) {
-            swapListener = new SwapListenerEx(source, reverseLookup);
+            swapListener = new SwapListenerEx(source, sourceRowLookup);
             source.addUpdateListener(swapListener);
             ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
                     swapListener.makeSnapshotControl(),
@@ -244,14 +243,14 @@ class TreeTableFilter {
                                 expectedParents.computeIfAbsent(parentId, pid -> RowSetFactory.builderRandom())
                                         .addKey(childRow);
                                 final long parentRow =
-                                        usePrev ? reverseLookup.getPrev(parentId) : reverseLookup.get(parentId);
-                                if (parentRow == reverseLookup.noEntryValue()) {
+                                        usePrev ? sourceRowLookup.getPrev(parentId) : sourceRowLookup.get(parentId);
+                                if (parentRow == sourceRowLookup.noEntryValue()) {
                                     return;
                                 }
                                 if (sourceRows.find(parentRow) < 0) {
-                                    throw new IllegalStateException("Reverse lookup points at row " + parentRow
-                                            + " for " + parentId + ", but the row is not in the source rows="
-                                            + sourceRows);
+                                    throw new IllegalStateException("Source row lookup lookup points at row "
+                                            + parentRow + " for " + parentId
+                                            + ", but the row is not in the source rows=" + sourceRows);
                                 }
                                 newParentKeys.addKey(parentRow);
                             });
@@ -273,8 +272,8 @@ class TreeTableFilter {
                                 + ", actual=" + actualRows);
                     }
 
-                    final long parentRow = usePrev ? reverseLookup.getPrev(parentId) : reverseLookup.get(parentId);
-                    if (parentRow != reverseLookup.noEntryValue()) {
+                    final long parentRow = usePrev ? sourceRowLookup.getPrev(parentId) : sourceRowLookup.get(parentId);
+                    if (parentRow != sourceRowLookup.noEntryValue()) {
                         expectedAncestorRowsBuilder.addKey(parentRow);
                         final long parentRowPosition = ancestorSourceRows.find(parentRow);
                         if (parentRowPosition < 0) {
@@ -327,8 +326,8 @@ class TreeTableFilter {
                     return;
                 }
                 parentIdToChildRows.remove(parentId).close();
-                final long parentRow = reverseLookup.getPrev(parentId);
-                if (parentRow == reverseLookup.noEntryValue()) {
+                final long parentRow = sourceRowLookup.getPrev(parentId);
+                if (parentRow == sourceRowLookup.noEntryValue()) {
                     return;
                 }
                 levelRemovedAncestorsBuilder.addKey(parentRow);
@@ -387,8 +386,8 @@ class TreeTableFilter {
         while (!bucketed.isEmpty()) {
             final RowSetBuilderRandom levelIncludedParentRowsBuilder = RowSetFactory.builderRandom();
             bucketed.forEach((final Object parentId, final RowSetBuilderSequential levelChildRowsForParent) -> {
-                final long parentRow = usePrev ? reverseLookup.getPrev(parentId) : reverseLookup.get(parentId);
-                if (parentRow != reverseLookup.noEntryValue()) {
+                final long parentRow = usePrev ? sourceRowLookup.getPrev(parentId) : sourceRowLookup.get(parentId);
+                if (parentRow != sourceRowLookup.noEntryValue()) {
                     levelIncludedParentRowsBuilder.addKey(parentRow);
                 }
                 parentIdToChildRows.merge(parentId, levelChildRowsForParent.build(),
@@ -470,7 +469,7 @@ class TreeTableFilter {
 
         private Listener() {
             super("tree filter", source, result);
-            manage(reverseLookup);
+            manage(sourceRowLookup);
             inputColumns = source.newModifiedColumnSet(idColumnName.name(), parentIdColumnName.name());
             Stream.of(filters).flatMap(filter -> Stream.concat(
                     filter.getColumns().stream(),
@@ -482,8 +481,8 @@ class TreeTableFilter {
         public void onUpdate(@NotNull final TableUpdate upstream) {
             final TableUpdateImpl downstream = new TableUpdateImpl();
 
-            // Our swap listener guarantees that we are on the same step for the reverse lookup and source.
-            Assert.eq(reverseLookup.getLastNotificationStep(), "reverseLookup.getLastNotificationStep()",
+            // Our swap listener guarantees that we are on the same step for the source row lookup and source.
+            Assert.eq(sourceRowLookup.getLastNotificationStep(), "sourceRowLookup.getLastNotificationStep()",
                     source.getLastNotificationStep(), "source.getLastNotificationStep()");
 
             // We can ignore modified while updating if columns we care about were not touched.
@@ -548,7 +547,7 @@ class TreeTableFilter {
 
         @Override
         public boolean canExecute(final long step) {
-            return super.canExecute(step) && reverseLookup.satisfied(step);
+            return super.canExecute(step) && sourceRowLookup.satisfied(step);
         }
     }
 

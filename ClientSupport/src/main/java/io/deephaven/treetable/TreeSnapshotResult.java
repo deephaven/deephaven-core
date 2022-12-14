@@ -10,6 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.by.TreeConstants;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;

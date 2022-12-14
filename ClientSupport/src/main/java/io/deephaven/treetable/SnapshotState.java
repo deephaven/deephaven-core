@@ -11,6 +11,7 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.by.TreeConstants;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;

@@ -66,18 +66,10 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     Collection<? extends ColumnName> getGroupByColumns();
 
     /**
-     * Get the name for a column of integers that supplies the valid width for key rows in a snapshot result. This
-     * column allows snapshot consumers to differentiate between {@code null} values in group-by columns that do or do
-     * not contribute to a row's keys.
-     * 
-     * @return The key width column name
-     */
-    ColumnName getKeyWidthColumn();
-
-    /**
      * Get the {@link TableDefinition} that should be exposed to node table consumers, e.g. UI-driven snapshots. This
-     * excludes "internal" columns used to organize the rollup or support operations, but includes formatting columns
-     * (and the {@link #getKeyWidthColumn() key-width column} for {@link NodeType#Aggregated aggregated} nodes).
+     * excludes "internal" columns used to organize the rollup or support operations, as well as the
+     * {@link #getRowDepthColumn() row-depth column} and {@link #getRowExpandedColumn() row-expanded column}, but
+     * includes formatting columns.
      *
      * @param nodeType The {@link NodeType node type} to get the {@link TableDefinition} for
      * @return The externally-visible node {@link TableDefinition} for the requested {@code nodeType}

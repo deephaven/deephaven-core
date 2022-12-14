@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +33,33 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
      * @return The root table
      */
     Table getRoot();
+
+    /**
+     * Get the name of a column of {@link java.lang.Boolean Booleans} that denotes whether a row is expanded (or
+     * expandable). It takes on the value {@code null} for rows that are not expandable, {@code false} for expandable
+     * but unexpanded rows, and {@code true} for expanded rows. This column is "synthetic"; that is, it's not part of
+     * the data, but rather calculated as part of snapshotting.
+     *
+     * @return The name of a column that denotes whether a row is expanded or expandable
+     */
+    ColumnName getRowExpandedColumn();
+
+    /**
+     * Get the name of a column that denotes row depth. This column is "synthetic"; that is, it's not part of the data,
+     * but rather calculated as part of snapshotting.
+     *
+     * @return The name of a column that denotes row depth
+     */
+    ColumnName getRowDepthColumn();
+
+    /**
+     * Get the {@link TableDefinition} of "extra" columns that should be exposed to snapshot consumers. This includes
+     * the {@link #getRowDepthColumn() row-depth column} and {@link #getRowExpandedColumn() row-expanded column}.
+     * This does not include type-specific node-level columns.
+     *
+     * @return The externally-visible {@link TableDefinition} of "extra" columns for snapshots
+     */
+    TableDefinition getSnapshotDefinition();
 
     /**
      * Opaque interface for objects used to cache snapshot state across multiple invocations of

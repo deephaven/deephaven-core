@@ -14,10 +14,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl;
@@ -55,6 +53,18 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     private static final Logger log = LoggerFactory.getLogger(HierarchicalTableImpl.class);
 
+    static final int EXTRA_COLUMN_COUNT = 2;
+    static final ColumnName ROW_DEPTH_COLUMN = ColumnName.of("__DEPTH__");
+    static final int ROW_DEPTH_COLUMN_INDEX = 0;
+    private static final ColumnDefinition<Integer> ROW_DEPTH_COLUMN_DEFINITION =
+            ColumnDefinition.ofInt(ROW_DEPTH_COLUMN.name());
+    static final ColumnName ROW_EXPANDED_COLUMN = ColumnName.of("__EXPANDED__");
+    static final int ROW_EXPANDED_COLUMN_INDEX = 1;
+    private static final ColumnDefinition<Boolean> ROW_EXPANDED_COLUMN_DEFINITION =
+            ColumnDefinition.ofBoolean(ROW_EXPANDED_COLUMN.name());
+    private static final TableDefinition snapshotDefinition = TableDefinition.of(
+            ROW_DEPTH_COLUMN_DEFINITION, ROW_EXPANDED_COLUMN_DEFINITION);
+
     private static final int CHUNK_SIZE = 128;
 
     @SuppressWarnings("unchecked")
@@ -88,6 +98,21 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     @Override
     public Table getRoot() {
         return root;
+    }
+
+    @Override
+    public ColumnName getRowExpandedColumn() {
+        return ROW_EXPANDED_COLUMN;
+    }
+
+    @Override
+    public ColumnName getRowDepthColumn() {
+        return ROW_DEPTH_COLUMN;
+    }
+
+    @Override
+    public TableDefinition getSnapshotDefinition() {
+        return snapshotDefinition;
     }
 
     @Override
@@ -517,13 +542,13 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 }
                 final LongUnaryOperator dataSortReverseLookup = filling() ? getDataSortReverseLookup() : null;
                 if (dataSortReverseLookup == null) {
-                    childDirectives.sort(Comparator.comparingLong(LinkedDirective::getRowKeyInParentUnsorted));
+                    childDirectives.sort(LinkedDirective.UNSORTED_ROW_KEY_COMPARATOR);
                     return;
                 }
                 for (final LinkedDirective ld : childDirectives) {
                     ld.setRowKeyInParentSorted(dataSortReverseLookup);
                 }
-                childDirectives.sort(Comparator.comparingLong(LinkedDirective::getRowKeyInParentSorted));
+                childDirectives.sort(LinkedDirective.SORTED_ROW_KEY_COMPARATOR);
             }
 
             /**
@@ -702,6 +727,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         private static final NodeKeyHashAdapter<LinkedDirective> HASH_ADAPTER =
                 new NodeKeyHashAdapter<>(LinkedDirective::getNodeKey);
+        private static final Comparator<? super LinkedDirective> UNSORTED_ROW_KEY_COMPARATOR =
+                Comparator.comparingLong(LinkedDirective::getRowKeyInParentUnsorted);
+        private static final Comparator<? super LinkedDirective> SORTED_ROW_KEY_COMPARATOR =
+                Comparator.comparingLong(LinkedDirective::getRowKeyInParentSorted);
 
         /**
          * The node key for the target of this directive.
@@ -957,9 +986,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                         // noinspection ThrowableNotThrown
                         Assert.statementNeverExecuted("Failed to find ancestor for existing key table directive");
                         needToFindAncestors = false; // We won't really get here.
-                        continue;
-                    }
-                    if (linked.actionDefined()) {
+                    } else if (linked.actionDefined()) {
                         // We already knew about this node, so we've already found its ancestors.
                         needToFindAncestors = false;
                     } else {
@@ -1021,22 +1048,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
 
         // Depth-first traversal of expanded nodes
-        visitExpandedNode(snapshotState, getRootNodeKey(), rootNodeAction, rootNodeDirective.getChildren());
+        visitExpandedNode(snapshotState, rootNodeId(), rootNodeAction, rootNodeDirective.getChildren());
     }
 
     private void visitExpandedNode(
             @NotNull final SnapshotState snapshotState,
-            @Nullable final Object nodeKey,
+            final long nodeId,
             @NotNull final VisitAction action,
             @Nullable final List<LinkedDirective> childDirectives) {
-
-        // Find our node, and avoid updating any state if we won't do any work.
-        final long nodeId = nodeKeyToNodeId(nodeKey);
-        if (nodeId == nullNodeId()) {
-            // This can happen if a directive specified a non-existent node (e.g. from a saved key table) or
-            // expand-all reached a tree leaf.
-            return;
-        }
 
         // Get our node-table state, and the correct table instance to expand.
         final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
@@ -1068,17 +1087,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 sharedContext = null;
             }
 
-            // @formatter:off
-            // Traversal rules:
-            //  - We should always ignore directives for children that don't occur in this node (the parent); they
-            //    will have rowKeyInParent == NULL_ROW_KEY.
-            //  - We never expect to encounter any directives with action Undefined, that would imply a bug in
-            //    linkKeyTableNodeDirectives(...).
-            //  - If we're not expanding all, we can ignore directives with action Linkage and Contract;
-            //    we just want to visit the nodes for directives with action Expand or ExpandAll.
-            //  - If we're expanding all, we want to visit the nodes for all rows that don't have a directive
-            //    with action Contract. If we're visiting a node with no directive, we visit with action Linkage.
-            // @formatter:on
             try (final RowSet prevRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
                     final RowSequence.Iterator rowsIterator =
                             (prevRows != null ? prevRows : forExpansion.getRowSet()).getRowSequenceIterator();
@@ -1133,11 +1141,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * @return Whether {@code nodeKey} maps to the root node for this HierarchicalTableImpl
      */
     abstract boolean isRootNodeKey(@Nullable Object nodeKey);
-
-    /**
-     * @return The root node key to use for this type
-     */
-    abstract Object getRootNodeKey();
 
     /**
      * @param nodeKey The node key to map
@@ -1225,6 +1228,28 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             long nodeId,
             @NotNull Table nodeSortedTable,
             @Nullable ChunkSource.WithPrev<? extends Values>[] existingChunkSources);
+
+    @NotNull
+    static ChunkSource.WithPrev<? extends Values>[] maybeAllocateResultChunkSourceArray(
+            @Nullable ChunkSource.WithPrev<? extends Values> @Nullable [] existingChunkSources,
+            final int numColumns) {
+        final ChunkSource.WithPrev<? extends Values>[] result;
+        if (existingChunkSources != null) {
+            Assert.eq(existingChunkSources.length, "existingChunkSources.length", numColumns, "numColumns");
+            result = existingChunkSources;
+        } else {
+            // noinspection unchecked
+            result = new ChunkSource.WithPrev[numColumns];
+        }
+        return result;
+    }
+
+    /**
+     * @param nodeTableToExpand The (traversal or data retrieval) table being expanded
+     * @return A source for {@code long} child node IDs
+     */
+    @NotNull
+    abstract LongUnaryOperator makeChildNodeIdSource(@NotNull final Table nodeTableToExpand);
 
     /**
      * @param depth The current snapshot traversal depth
