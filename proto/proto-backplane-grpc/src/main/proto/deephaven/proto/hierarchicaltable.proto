@@ -13,37 +13,36 @@ option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/hiera
 import "deephaven/proto/table.proto";
 import "deephaven/proto/ticket.proto";
 
-/*
- * This service provides tools to create and view hierarchical tables (rollups and trees).
- */
+// This service provides tools to create and view hierarchical tables (rollups and trees).
 service HierarchicalTableService {
-  /*
-   * Performs a rollup operation on a table and exports a default hierarchical table view of the result.
-   */
+
+  // Performs a rollup operation on a table and exports a default hierarchical table view of the result.
   rpc Rollup(RollupRequest) returns (RollupResponse);
-  /*
-   * Performs a tree operation on a table and exports a default hierarchical table view of the result.
-   */
+
+  // Performs a tree operation on a table and exports a default hierarchical table view of the result.
   rpc Tree(TreeRequest) returns (TreeResponse);
-  /*
-   * Exports the source table for a hierarchical table view.
-   */
+
+  // Exports the source table for a hierarchical table view.
   rpc ExportSource(HierarchicalTableSourceExportRequest) returns (ExportedTableCreationResponse);
-  /*
-   * Derives a new hierarchical table view from an existing hierarchical table view.
-   */
+
+  // Derives a new hierarchical table view from an existing hierarchical table view.
   rpc View(HierarchicalTableViewRequest) returns (HierarchicalTableViewResponse);
 }
 
 message RollupRequest {
+
   // Ticket to use to hold a default view of the results of the rollup operation
   Ticket result_view_id = 1;
+
   // Ticket for the source Table object to rollup
   Ticket source_id = 2;
+
   // The aggregations that should be applied at each level of the rollup
   repeated ComboAggregateRequest.Aggregate aggregations = 3;
+
   // Whether to include the leaf-level constituents in the result
   bool include_constituents = 4;
+
   // The names of the columns to rollup by
   repeated string group_by_columns = 5;
 }
@@ -53,12 +52,16 @@ message RollupResponse {
 }
 
 message TreeRequest {
+
   // Ticket to use to hold a default view of the results of the tree operation
   Ticket result_view_id = 1;
+
   // Ticket for the source Table object to tree
   Ticket source_id = 2;
+
   // The name of the column containing the unique identifier for each row in the source table
   string identifier_column = 3;
+
   // The name of the column containing the parent row's unique identifier for each row in the source table
   string parent_identifier_column = 4;
 }
@@ -68,8 +71,10 @@ message TreeResponse {
 }
 
 message HierarchicalTableSourceExportRequest {
+
   // Ticket to use to hold an export of the hierarchical table view's source table
   Ticket result_id = 1;
+
   // Ticket for the (existing) hierarchical table view
   Ticket view_id = 2;
 }
@@ -81,82 +86,87 @@ enum RollupNodeType {
 }
 
 message HierarchicalTableViewDescriptor {
-  /*
-   * The column names to expand by.
-   * Should be user-visible, and displayed before other columns.
-   * Must be included in view request key tables.
-   * Implementation notes:
-   * In rollups, these are the group-by columns.
-   * In trees, this is the (singular) identifier column.
-   */
+
+  // The column names to expand by.
+  // Should be user-visible, and displayed before other columns.
+  // Must be included in view request key tables.
+  // Implementation notes:
+  // In rollups, these are the group-by columns.
+  // In trees, this is the (singular) identifier column.
   repeated string expand_by_columns = 1;
 
+  // The name of a nullable column of booleans that specifies whether a row is expandable or expanded. Will be null
+  // for not expandable, true for expanded, false for not expanded (but expandable).
+  // Leaf rows have no children to expand.
+  // Should not be (directly) user-visible.
+  string row_expansion_info_column = 2;
+
+  // The name of a column that specifies the depth of a row. Note that for rollups, this also represents the number of
+  // group-by columns that are "defined" for a row for all expandable rows.
+  // Should not be (directly) user-visible.
+  // Must be included along with expand-by columns in a rollup view request's key table. Need not be sent in a tree
+  // view request's key table.
+  string row_depth_column = 3;
+
   oneof details {
-    RollupDescriptorDetails rollup = 2;
-    TreeDescriptorDetails tree = 3;
+    RollupDescriptorDetails rollup = 4;
+    TreeDescriptorDetails tree = 5;
   }
 
   // Schema as described in Arrow Message.fbs::Message.
-  bytes schema_header = 4;
+  bytes schema_header = 6;
 }
 
 message RollupDescriptorDetails {
-  /*
-   * The name of a column that signifies the "width" (in defined columns) for a rollup key.
-   * Should not be user-visible.
-   * Must be included along with expand-by columns in a rollup view request's key table.
-   * This is technically also the depth for non-constituent rows, and always null for included constituent rows.
-   * Constituent rows are at depth expand_by_columns.length + 1.
-   */
-  string key_width_column = 1;
+
   // Whether this rollup's leaf nodes are first level aggregations or constituents
-  RollupNodeType leaf_node_type = 2;
-  /*
-   * '='-delimited pairs from output (aggregation) column name to input (constituent) column name, or singular
-   * names for aggregations with identical output and input column names.
-   */
-  repeated string output_input_column_pairs = 3;
+  RollupNodeType leaf_node_type = 1;
+
+  // '='-delimited pairs from output (aggregation) column name to input (constituent) column name, or singular names
+  // for aggregations with identical output and input column names.
+  repeated string output_input_column_pairs = 2;
 }
 
 message TreeDescriptorDetails {
-  // The name of a column that specifies whether a tree row is expandable. Leaf rows have no children to expand.
-  string row_expandable_column = 1;
-  // The name of a column that specifies the depth of a tree row.
-  string row_depth_column = 2;
+  // For future expansion
 }
 
 message HierarchicalTableViewRequest {
+
   // Ticket for the resulting hierarchical table view
   Ticket result_view_id = 1;
+
   // Ticket for the existing view to inherit the base hierarchical table and not-present optional fields from
   Ticket existing_view_id = 2;
+
   // Key table to use, if it should be different than the one associated with the existing view
   optional HierarchicalTableViewKeyTableDescriptor key_table_descriptor = 3;
+
   // Operations to apply, if they should be different from those associated with the existing view
   optional HierarchicalTableViewOperations operations = 4;
 }
 
 message HierarchicalTableViewKeyTableDescriptor {
-  /*
-   * Ticket that represents expanded or contracted keys from a hierarchical (rollup or tree) table.
-   * If empty or not present, the result will have all nodes collapsed.
-   * The format for the key table is dictated by the corresponding HierarchicalTableViewDescriptor. It is expected to
-   * have one column for each "expand-by column", one for the "rollup key width column" for rollups only, and
-    (optionally) an "action" column.
-   */
+
+  // Ticket that represents expanded or contracted keys from a hierarchical (rollup or tree) table.
+  // If empty or not present, the result will have all nodes collapsed.
+  // The format for the key table is dictated by the corresponding HierarchicalTableViewDescriptor. It is expected to
+  // have one column for each "expand-by column", one for the "row depth column" for rollups only, and (optionally) an
+  // "action" column.
   Ticket key_table = 1;
-  /*
-   * The name of a column of bytes found in the key table that specifies the action desired for the node selected by
-   * the other columns for each row. Takes on the value 1 for nodes that should be expanded, 3 for nodes that should be
-   * expanded along with their descendants, and 4 for nodes that should be contracted.
-   * If this column name is not present, all nodes in the key table will be expanded without their descendants.
-   */
+
+  // The name of a column of bytes found in the key table that specifies the action desired for the node selected by
+  // the other columns for each row. Takes on the value 1 for nodes that should be expanded, 3 for nodes that should be
+  // expanded along with their descendants, and 4 for nodes that should be contracted.
+  // If this column name is not present, all nodes in the key table will be expanded without their descendants.
   optional string key_table_action_column = 2;
 }
 
 message HierarchicalTableViewOperations {
+
   // Filters to apply to the hierarchical table or nodes
   repeated Condition filters = 1;
+
   // Sorts to apply to the hierarchical table nodes
   repeated SortDescriptor sorts = 2;
 }
