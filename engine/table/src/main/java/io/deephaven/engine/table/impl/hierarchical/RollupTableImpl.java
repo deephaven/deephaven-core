@@ -158,21 +158,21 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     // TODO-RWC: Use this for schema generation
-//    private static TableDefinition computeSnapshotDefinition(
-//            @NotNull final TableDefinition aggregatedNodeDefinition,
-//            @Nullable final TableDefinition constituentNodeDefinition) {
-//        final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(
-//                EXTRA_COLUMN_COUNT
-//                        + aggregatedNodeDefinition.numColumns()
-//                        + (constituentNodeDefinition == null ? 0 : constituentNodeDefinition.numColumns()));
-//        columnDefinitions.add(ROW_DEPTH_COLUMN_DEFINITION);
-//        columnDefinitions.add(ROW_EXPANDED_COLUMN_DEFINITION);
-//        columnDefinitions.addAll(aggregatedNodeDefinition.getColumns());
-//        if (constituentNodeDefinition != null) {
-//            columnDefinitions.addAll(constituentNodeDefinition.getColumns());
-//        }
-//        return TableDefinition.of(columnDefinitions);
-//    }
+    // private static TableDefinition computeSnapshotDefinition(
+    // @NotNull final TableDefinition aggregatedNodeDefinition,
+    // @Nullable final TableDefinition constituentNodeDefinition) {
+    // final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(
+    // EXTRA_COLUMN_COUNT
+    // + aggregatedNodeDefinition.numColumns()
+    // + (constituentNodeDefinition == null ? 0 : constituentNodeDefinition.numColumns()));
+    // columnDefinitions.add(ROW_DEPTH_COLUMN_DEFINITION);
+    // columnDefinitions.add(ROW_EXPANDED_COLUMN_DEFINITION);
+    // columnDefinitions.addAll(aggregatedNodeDefinition.getColumns());
+    // if (constituentNodeDefinition != null) {
+    // columnDefinitions.addAll(constituentNodeDefinition.getColumns());
+    // }
+    // return TableDefinition.of(columnDefinitions);
+    // }
 
     @Override
     public Collection<? extends Pair> getColumnPairs() {
@@ -355,9 +355,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
         return new RollupRowLookupKeySource(
-                nodeKeyTable.getColumnSource(getRowDepthColumn().name()),
+                nodeKeyTable.getColumnSource(getRowDepthColumn().name(), Integer.class),
                 groupByColumns.stream()
-                        .map(cn -> nodeKeyTable.getColumnSource(cn.name()))
+                        .map(cn -> nodeKeyTable.getColumnSource(cn.name(), root.getColumnSource(cn.name()).getType()))
                         .toArray(ColumnSource[]::new));
     }
 
@@ -416,7 +416,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    long findRowKeyInParentUnsorted(final long childNodeId, @Nullable final Object childNodeKey, final boolean usePrev) {
+    long findRowKeyInParentUnsorted(final long childNodeId, @Nullable final Object childNodeKey,
+            final boolean usePrev) {
         return childNodeId == nullNodeId() ? NULL_ROW_KEY : nodeSlot(childNodeId);
     }
 

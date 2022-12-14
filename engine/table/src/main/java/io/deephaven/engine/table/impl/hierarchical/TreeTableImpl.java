@@ -210,7 +210,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
-        return ReinterpretUtils.maybeConvertToPrimitive(nodeKeyTable.getColumnSource(identifierColumn.name()));
+        return ReinterpretUtils.maybeConvertToPrimitive(
+                nodeKeyTable.getColumnSource(identifierColumn.name(),
+                        root.getColumnSource(identifierColumn.name()).getType()));
     }
 
     @Override
