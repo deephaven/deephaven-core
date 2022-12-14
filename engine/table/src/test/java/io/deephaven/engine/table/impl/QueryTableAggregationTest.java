@@ -68,6 +68,7 @@ import static io.deephaven.api.agg.spec.AggSpec.percentile;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
@@ -2517,6 +2518,34 @@ public class QueryTableAggregationTest {
         }
     }
 
+    private static class RMSE {
+        long count = 0;
+        double squaredError = 0;
+
+        public void add(double error) {
+            ++count;
+            squaredError += error * error;
+        }
+
+        public void add(double... errors) {
+            for (double error : errors) {
+                add(error);
+            }
+        }
+
+        public double rmse() {
+            return Math.sqrt(squaredError / count);
+        }
+    }
+
+    private static void checkTDigestError(double error) {
+        // if we are within 1/2% we'll pass it
+        final double threshold = 0.005;
+        assertThat(error)
+                .withFailMessage("TDigest error too high. %s >= %s", error, threshold)
+                .isLessThan(threshold);
+    }
+
     @Test
     public void testTDigest() {
         final int size = 10000;
@@ -2543,8 +2572,22 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testTDigestMulti() {
+        // Note: when updating t-digest version number or implementation details, we can compare larger sample by
+        // commenting out code in checkTDigestError, and upping the number of trials here.
+        //
+        // With 1000 trials, the current implementation (as of the commit where this line has changed) with
+        // t-digest 3.2, achieves RMSE = 9.035463339150259E-4
+        final int trials = 1;
+        final RMSE rmse = new RMSE();
+        for (int seed = 0; seed < trials; ++seed) {
+            testTDigestMulti(seed, rmse);
+        }
+        System.out.println("RMSE: " + rmse.rmse());
+    }
+
+    private void testTDigestMulti(int seed, RMSE rmse) {
         final int size = 10000;
-        final Random random = new Random(0);
+        final Random random = new Random(seed);
         final QueryTable queryTable = getTable(size, random,
                 initColumnInfos(new String[] {"Sym", "doubleCol", "floatCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
@@ -2561,11 +2604,11 @@ public class QueryTableAggregationTest {
         final Table aggregatedBySym = queryTable.aggBy(aggregations, "Sym");
         TableTools.showWithRowSet(aggregatedBySym);
 
-        checkTableComboPercentiles(queryTable, aggregated);
+        checkTableComboPercentiles(queryTable, aggregated, rmse);
         for (final String sym : new String[] {"a", "b", "c", "d"}) {
             System.out.println("Checking: " + sym);
             checkTableComboPercentiles(queryTable.where("Sym=`" + sym + "`"),
-                    aggregatedBySym.where("Sym=`" + sym + "`"));
+                    aggregatedBySym.where("Sym=`" + sym + "`"), rmse);
         }
     }
 
@@ -2602,8 +2645,8 @@ public class QueryTableAggregationTest {
         if (error > 0.002) {
             System.err.println("Single Value: " + singleValue);
             System.err.println("Accumulated Value: " + accumulatedValue);
-            TestCase.assertTrue(error < 0.005);
         }
+        checkTDigestError(error);
     }
 
     private void checkTableP99(Table queryTable, Table aggregated) {
@@ -2614,7 +2657,7 @@ public class QueryTableAggregationTest {
         final double dtValue = aggregated.getColumn("doubleCol").getDouble(0);
         final double derror = Math.abs((dValue - dtValue) / dValue);
         System.out.println("Double: " + dValue + ", " + dtValue + ", Error: " + derror);
-        TestCase.assertTrue(derror < 0.005); // if we are within 1/2% we'll pass it
+        checkTDigestError(derror);
 
         final float[] fValues = (float[]) queryTable.where("!Float.isNaN(floatCol) && !isNull(floatCol)")
                 .getColumn("floatCol").getDirect();
@@ -2623,7 +2666,7 @@ public class QueryTableAggregationTest {
         final double ftValue = aggregated.getColumn("floatCol").getDouble(0);
         final double ferror = Math.abs((fValue - ftValue) / fValue);
         System.out.println("Float: " + fValue + ", " + ftValue + ", Error: " + ferror);
-        TestCase.assertTrue(ferror < 0.005); // if we are within 1/2% we'll pass it
+        checkTDigestError(ferror);
 
         final int[] iValues = (int[]) queryTable.where("!isNull(intCol)").getColumn("intCol").getDirect();
         Arrays.sort(iValues);
@@ -2631,10 +2674,10 @@ public class QueryTableAggregationTest {
         final double itValue = aggregated.getColumn("intCol").getDouble(0);
         final double ierror = Math.abs((iValue - itValue) / iValue);
         System.out.println("Int: " + iValue + ", " + itValue + ", Error: " + ierror);
-        TestCase.assertTrue(ferror < 0.005); // if we are within 1/2% we'll pass it
+        checkTDigestError(ferror);
     }
 
-    private void checkTableComboPercentiles(Table queryTable, Table aggregated) {
+    private void checkTableComboPercentiles(Table queryTable, Table aggregated, RMSE rmse) {
         final double[] dValues = (double[]) queryTable.where("!Double.isNaN(doubleCol) && !isNull(doubleCol)")
                 .getColumn("doubleCol").getDirect();
         Arrays.sort(dValues);
@@ -2642,19 +2685,19 @@ public class QueryTableAggregationTest {
         final double dtValue75 = aggregated.getColumn("DP75").getDouble(0);
         final double derror75 = Math.abs((dValue75 - dtValue75) / dValue75);
         System.out.println("Double 75: " + dValue75 + ", " + dtValue75 + ", Error: " + derror75);
-        TestCase.assertTrue(derror75 < 0.005); // if we are within 1/2% we'll pass it
+        checkTDigestError(derror75);
 
         final double dValue99 = dValues[(dValues.length * 99) / 100];
         final double dtValue99 = aggregated.getColumn("DP99").getDouble(0);
         final double derror99 = Math.abs((dValue99 - dtValue99) / dValue99);
         System.out.println("Double 99: " + dValue99 + ", " + dtValue99 + ", Error: " + derror99);
-        TestCase.assertTrue(derror99 < 0.005); // if we are within 1/2% we'll pass it
+        checkTDigestError(derror99);
 
         final double dValue999 = dValues[(dValues.length * 999) / 1000];
         final double dtValue999 = aggregated.getColumn("DP999").getDouble(0);
         final double derror999 = Math.abs((dValue999 - dtValue999) / dValue999);
         System.out.println("Double 99.9:  " + dValue999 + ", " + dtValue999 + ", Error: " + derror999);
-        TestCase.assertTrue(derror999 < 0.005); // if we are within 1/2% we'll pass it
+        checkTDigestError(derror999);
 
         final float[] fValues = (float[]) queryTable.where("!Float.isNaN(floatCol) && !isNull(floatCol)")
                 .getColumn("floatCol").getDirect();
@@ -2663,13 +2706,15 @@ public class QueryTableAggregationTest {
         final double ftValue75 = aggregated.getColumn("FP75").getDouble(0);
         final double ferror75 = Math.abs((fValue75 - ftValue75) / fValue75);
         System.out.println("Float 75: " + fValue75 + ", " + ftValue75 + ", Error: " + ferror75);
-        TestCase.assertTrue(ferror75 < 0.005); // if we are within 1/2% we'll pass it
+        checkTDigestError(ferror75);
 
         final float fValue99 = fValues[(fValues.length * 99) / 100];
         final double ftValue99 = aggregated.getColumn("FP99").getDouble(0);
         final double ferror99 = Math.abs((fValue99 - ftValue99) / fValue99);
         System.out.println("Float 99: " + fValue99 + ", " + ftValue99 + ", Error: " + ferror99);
-        TestCase.assertTrue(ferror99 < 0.005); // if we are within 1/2% we'll pass it
+        checkTDigestError(ferror99);
+
+        rmse.add(derror75, derror99, derror999, ferror75, ferror99);
     }
 
     @Test
