@@ -35,7 +35,6 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.ChildLevelExpandable.All;
 import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.ChildLevelExpandable.None;
 import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.VisitAction.*;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.*;
@@ -308,28 +307,28 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          * <li>We should always ignore directives for children that don't occur in this node (the parent); they will
          * have rowKeyInParentUnsorted == NULL_ROW_KEY. We should never see such a directive here.</li>
          * <li>We never expect to encounter any directives with action Undefined, that would imply a bug in
-         * linkKeyTableNodeDirectives(...).</li>
+         * {@link #linkKeyTableNodeDirectives(Collection, boolean)}.</li>
          * <li>If we're expanding all, we need to process all present and defined directives. We want to visit the nodes
          * for all rows that don't have a directive with action Contract. If we're visiting a node with no directive, we
          * visit with action Linkage.</li>
          * <li>If we're not expanding all, we can ignore directives with action Linkage and Contract; we just want to
          * visit the nodes for directives with action Expand or ExpandAll.</li>
          * </ul>
-         * 
+         *
          * @param childDirective The {@link LinkedDirective} to evaluate
          * @return Whether to skip {@code childDirective}
          */
-        private boolean shouldProcessChildDirective(@NotNull final LinkedDirective childDirective) {
+        private boolean shouldSkipChildDirective(@NotNull final LinkedDirective childDirective) {
             final VisitAction action = childDirective.getAction();
             if (action == Undefined) {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("encounter undefined child directive during visit");
-                return false;
-            }
-            if (expandingAll) {
                 return true;
             }
-            return action != Linkage && action != Contract;
+            if (expandingAll) {
+                return false;
+            }
+            return action == Linkage || action == Contract;
         }
 
         private WritableByteChunk<? super Values> getExpandedDestinationToFill() {
@@ -551,21 +550,32 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             }
 
             /**
-             * Stamp {@code childDirectives} with their {@link LinkedDirective#rowKeyInParentSorted row key} if we're
-             * sorting, and sort them into expansion order by the appropriate row key in parent.
+             * Filter irrelevant {@code childDirectives}, then stamp the remaining with their
+             * {@link LinkedDirective#rowKeyInParentSorted sorted row key}, and sort them into expansion order by the
+             * appropriate row key in parent. <em>THIS MUTATES {@code childDirectives}!</em>
              *
-             * @param childDirectives The {@link LinkedDirective child directives} to key and sort
+             * @param childDirectives The {@link LinkedDirective child directives} to filter, key, and sort
              * @param filling Whether the enclosing SnapshotState is still {@link #filling() filling} the snapshot
              *        chunks. Passed in order to ensure consistency for the duration of a "visit".
              */
-            private void keyAndSortChildDirectives(
+            private void filterKeyAndSortChildDirectives(
                     @NotNull final List<LinkedDirective> childDirectives,
                     final boolean filling) {
                 final LongUnaryOperator dataSortReverseLookup = filling
                         ? getDataSortReverseLookup()
                         : LongUnaryOperator.identity();
-                for (final LinkedDirective ld : childDirectives) {
-                    ld.setRowKeyInParentSorted(dataSortReverseLookup);
+                int numChildDirectives = childDirectives.size();
+                for (int cdi = 0; cdi < numChildDirectives;) {
+                    final LinkedDirective childDirective = childDirectives.get(cdi);
+                    if (shouldSkipChildDirective(childDirective)) {
+                        childDirectives.set(cdi, childDirectives.get(numChildDirectives - 1));
+                        childDirectives.remove(--numChildDirectives);
+                    } else {
+                        ++cdi;
+                    }
+                }
+                for (final LinkedDirective childDirective : childDirectives) {
+                    childDirective.setRowKeyInParentSorted(dataSortReverseLookup);
                 }
                 childDirectives.sort(LinkedDirective.SORTED_ROW_KEY_COMPARATOR);
             }
@@ -1104,82 +1114,86 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         snapshotState.updateExpansionTypeAndValidateAction(action, childLevelExpandable != None);
         ++snapshotState.currentDepth;
         try {
-            final Iterator<LinkedDirective> childDirectivesIter;
+            final int numChildDirectives;
             if (childLevelExpandable != None && childDirectives != null) {
-                // If we have child directives that we might need to expand for, we need to know where they fit in this
-                // node's row set, and we want to be able to examine them in the order they may be expanded.
-                nodeTableState.keyAndSortChildDirectives(childDirectives, filling);
-                childDirectivesIter = childDirectives.stream()
-                        .filter(snapshotState::shouldProcessChildDirective)
-                        .iterator();
+                // If we have child directives that we might need to expand for, we need to know where they fit in
+                // this node's row set, and we want to be able to examine them in the order they may be expanded.
+                nodeTableState.filterKeyAndSortChildDirectives(childDirectives, filling);
+                numChildDirectives = childDirectives.size();
             } else {
-                childDirectivesIter = Collections.emptyIterator();
+                numChildDirectives = 0;
             }
 
+            final RowSet prevRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
+            final RowSet rowsToVisit = prevRows != null ? prevRows : forExpansion.getRowSet();
             // @formatter:off
-            try (final RowSet prevRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
-                 final RowSequence.Iterator rowsIter =
-                            (prevRows != null ? prevRows : forExpansion.getRowSet()).getRowSequenceIterator();
-                 final NodeFillContext filler = filling ? new NodeFillContext(snapshotState, nodeTableState) : null) {
+            try (final SafeCloseable ignored = prevRows;
+                 final RowSequence.Iterator rowsToVisitIter = rowsToVisit.getRowSequenceIterator();
+                 final NodeFillContext filler = filling
+                         ? new NodeFillContext(snapshotState, nodeTableState, rowsToVisit.size())
+                         : null;
+                 final RowSet contractedRowKeys = snapshotState.expandingAll && numChildDirectives > 0
+                         ? buildContractedRowKeys(childDirectives)
+                         : null;
+                 final RowSet contractedRowPositions = contractedRowKeys != null && contractedRowKeys.isNonempty()
+                         ? rowsToVisit.invert(contractedRowKeys)
+                         : null;
+                 final RowSet.RangeIterator contractedRowPositionsIter = contractedRowPositions != null
+                         ? contractedRowPositions.rangeIterator()
+                         : null) {
+                // @formatter:on
                 final LongUnaryOperator rowKeyToNodeId = makeChildNodeIdLookup(
                         snapshotState, forExpansion, filling && nodeTableState.getDataSortReverseLookup() != null);
-                // @formatter:on
-                LinkedDirective childDirective = childDirectivesIter.hasNext() ? childDirectivesIter.next() : null;
-                while (rowsIter.hasMore()) {
-                    final boolean stillFilling = filling && snapshotState.filling();
+                final long firstRelativePosition = rowsToVisitIter.getRelativePosition();
+                int cdi = 0;
+                LinkedDirective nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                long nextContractedPosition =
+                        contractedRowPositionsIter != null && contractedRowPositionsIter.hasNext()
+                                ? contractedRowPositionsIter.next()
+                                : NULL_ROW_KEY;
+                while (rowsToVisitIter.hasMore()) {
+                    final long rowKeyToExpand;
+                    final LinkedDirective childDirectiveToExpand;
                     if (snapshotState.expandingAll) {
-                        // TODO-RWC: IMPLEMENT THIS
-                        // Maybe I need to change up the iteration. Need to visit all while consuming directives until I get to a collapse
-                        throw new UnsupportedOperationException("Not yet implemented");
-                    } else {
-                        final long nextRowKeyToExpand =
-                                childDirective == null ? Long.MAX_VALUE : childDirective.getRowKeyInParentSorted();
-                        if (stillFilling) {
-                            final RowSequence candidateRows = rowsIter.getNextRowSequenceThrough(nextRowKeyToExpand);
-                            final long toSkip = snapshotState.remainingToSkip();
-                            final long candidateSize = candidateRows.size();
-                            if (candidateSize <= toSkip) {
-                                snapshotState.visitedSize += candidateSize;
-                            } else {
-                                final int toFill = snapshotState.remainingToFill();
-                                final RowSequence fillRows = toSkip == 0 && toFill >= candidateSize
-                                        ? candidateRows
-                                        : candidateRows.getRowSequenceByPosition(toSkip, toFill);
-                                final int fillSize = fillRows.intSize();
-                                try (final SafeCloseable ignored = candidateRows == fillRows ? null : fillRows) {
-                                    filler.fillDestinations(fillRows);
-                                    final WritableByteChunk<? super Values> expandedDestination =
-                                            snapshotState.getExpandedDestinationToFill();
-                                    if (childLevelExpandable == All) {
-                                        expandedDestination.fillWithValue(0, fillSize - 1, FALSE_BOOLEAN_AS_BYTE);
-                                        expandedDestination.set(fillSize - 1,
-                                                booleanAsByte(fillRows.lastRowKey() == nextRowKeyToExpand));
-                                    } else if (childLevelExpandable == None) {
-                                        Assert.eqNull(childDirective, "childDirective");
-                                        expandedDestination.fillWithValue(0, fillSize, NULL_BOOLEAN_AS_BYTE);
-                                    } else {
-                                        fillRows.forAllRowKeys((final long rowKey) -> {
-                                            final long childNodeId = rowKeyToNodeId.applyAsLong(rowKey);
-                                            if (nodeIdExpandable(snapshotState, childNodeId)) {
-                                                expandedDestination.add(booleanAsByte(rowKey == nextRowKeyToExpand));
-                                            } else {
-                                                expandedDestination.add(NULL_BOOLEAN_AS_BYTE);
-                                            }
-                                        });
-                                    }
-                                }
-                                snapshotState.visitedSize += candidateSize;
-                                snapshotState.includedSize += fillSize;
-                            }
+                        if (nextContractedPosition == rowsToVisitIter.getRelativePosition() - firstRelativePosition) {
+                            assert contractedRowPositionsIter != null;
+                            // We're at the start of a contracted range
+                            final long lastContractedPositionInRange = contractedRowPositionsIter.currentRangeEnd();
+                            final long rangeSize = lastContractedPositionInRange - nextContractedPosition + 1;
+                            cdi += rangeSize;
+                            nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                            rowKeyToExpand = rowsToVisit.size() > lastContractedPositionInRange + 1
+                                    ? rowsToVisit.get(lastContractedPositionInRange + 1)
+                                    : rowsToVisit.lastRowKey() + 1; // Advance past end
+                            nextContractedPosition = contractedRowPositionsIter.hasNext()
+                                    ? contractedRowPositionsIter.next()
+                                    : NULL_ROW_KEY;
                         } else {
-                            snapshotState.visitedSize += rowsIter.advanceAndGetPositionDistance(nextRowKeyToExpand);
+                            rowKeyToExpand = rowsToVisitIter.peekNextKey();
                         }
-                        if (childDirective != null) {
-                            visitExpandedNode(snapshotState, childDirective);
+                        if (nextChildDirective != null
+                                && nextChildDirective.getRowKeyInParentSorted() == rowKeyToExpand) {
+                            childDirectiveToExpand = nextChildDirective;
+                            nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                        } else {
+                            childDirectiveToExpand = null;
+                        }
+                    } else {
+                        if (nextChildDirective != null) {
+                            childDirectiveToExpand = nextChildDirective;
+                            rowKeyToExpand = childDirectiveToExpand.getRowKeyInParentSorted();
+                            nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                        } else {
+                            childDirectiveToExpand = null;
+                            rowKeyToExpand = rowsToVisit.lastRowKey() + 1; // Advance past end
                         }
                     }
-                    if (childDirective != null) {
-                        childDirective = childDirectivesIter.hasNext() ? childDirectivesIter.next() : null;
+                    consumeRowsUntilNextExpansion(snapshotState, childLevelExpandable, rowsToVisitIter, filler,
+                            rowKeyToNodeId, rowKeyToExpand);
+                    if (childDirectiveToExpand != null) {
+                        visitExpandedNode(snapshotState, childDirectiveToExpand);
+                    } else if (rowKeyToExpand <= rowsToVisit.lastRowKey()) {
+                        visitExpandedNode(snapshotState, rowKeyToNodeId.applyAsLong(rowKeyToExpand), Linkage, null);
                     }
                 }
             }
@@ -1189,10 +1203,75 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
     }
 
+    private RowSet buildContractedRowKeys(@NotNull final List<LinkedDirective> childDirectives) {
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        childDirectives.stream()
+                .filter(cd -> cd.getAction() == Contract)
+                .mapToLong(LinkedDirective::getRowKeyInParentSorted)
+                .forEach(builder::appendKey);
+        return builder.build();
+    }
+
+    private void consumeRowsUntilNextExpansion(
+            @NotNull final SnapshotState snapshotState,
+            @NotNull final ChildLevelExpandable childLevelExpandable,
+            @NotNull final RowSequence.Iterator nodeRowsIter,
+            @Nullable final NodeFillContext filler,
+            @NotNull final LongUnaryOperator rowKeyToNodeId,
+            final long lastRowKeyToConsume) {
+        if (filler == null || !snapshotState.filling()) {
+            // Done filling
+            snapshotState.visitedSize += nodeRowsIter.advanceAndGetPositionDistance(lastRowKeyToConsume);
+            return;
+        }
+        final RowSequence candidateRows = nodeRowsIter.getNextRowSequenceThrough(lastRowKeyToConsume);
+        final long remainingToSkip = snapshotState.remainingToSkip();
+        final long candidateSize = candidateRows.size();
+        if (candidateSize <= remainingToSkip) {
+            // Skipping all the candidate rows
+            snapshotState.visitedSize += candidateSize;
+            return;
+        }
+        final int remainingToFill = snapshotState.remainingToFill();
+        final RowSequence fillRows = remainingToSkip == 0 && remainingToFill >= candidateSize
+                ? candidateRows
+                : candidateRows.getRowSequenceByPosition(remainingToSkip, remainingToFill);
+        final int fillSize = fillRows.intSize();
+        try (final SafeCloseable ignored = candidateRows == fillRows ? null : fillRows) {
+            // Fill all the "normal" destinations that use a chunk source
+            filler.fillNormalDestinations(fillRows);
+
+            // Fill the "row expanded" destination
+            final WritableByteChunk<? super Values> expandedDestination = snapshotState.getExpandedDestinationToFill();
+            switch (childLevelExpandable) {
+                case All:
+                    expandedDestination.fillWithValue(0, fillSize - 1, FALSE_BOOLEAN_AS_BYTE);
+                    expandedDestination.set(fillSize - 1, booleanAsByte(fillRows.lastRowKey() == lastRowKeyToConsume));
+                    break;
+                case None:
+                    expandedDestination.fillWithValue(0, fillSize, NULL_BOOLEAN_AS_BYTE);
+                    break;
+                case Undetermined:
+                    fillRows.forAllRowKeys((final long rowKey) -> {
+                        final long childNodeId = rowKeyToNodeId.applyAsLong(rowKey);
+                        if (nodeIdExpandable(snapshotState, childNodeId)) {
+                            expandedDestination.add(booleanAsByte(rowKey == lastRowKeyToConsume));
+                        } else {
+                            expandedDestination.add(NULL_BOOLEAN_AS_BYTE);
+                        }
+                    });
+                    break;
+            }
+        }
+        snapshotState.visitedSize += candidateSize;
+        snapshotState.includedSize += fillSize;
+    }
+
     final class NodeFillContext implements Context {
 
         private final SnapshotState snapshotState;
         private final SnapshotState.NodeTableState nodeTableState;
+        private final int chunkSize;
 
         ChunkSource.WithPrev<? extends Values>[] dataSources; // Indexed by column, not destination
         SharedContext sharedContext;
@@ -1200,17 +1279,19 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         private NodeFillContext(
                 @NotNull final SnapshotState snapshotState,
-                @NotNull final SnapshotState.NodeTableState nodeTableState) {
+                @NotNull final SnapshotState.NodeTableState nodeTableState,
+                final long rowsToVisitSize) {
             this.snapshotState = snapshotState;
             this.nodeTableState = nodeTableState;
+            this.chunkSize = rowsToVisitSize >= CHUNK_SIZE ? CHUNK_SIZE : (int) rowsToVisitSize;
         }
 
         /**
-         * Fill all destinations except the "row expanded" column's destination for the supplied {@code rows}.
+         * Fill all destinations except the one for the "row expanded" column for the supplied {@code rows}.
          *
          * @param rows The row keys to fill from
          */
-        private void fillDestinations(@NotNull final RowSequence rows) {
+        private void fillNormalDestinations(@NotNull final RowSequence rows) {
             if (rows.isEmpty()) {
                 return;
             }
@@ -1225,9 +1306,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             int capacity = snapshotState.remainingToFill();
 
             try (final RowSequence.Iterator rowsIter =
-                    rows.size() > CHUNK_SIZE ? rows.getRowSequenceIterator() : null) {
+                    rows.size() >= chunkSize ? rows.getRowSequenceIterator() : null) {
                 final RowSequence chunkRows =
-                        rowsIter == null ? rows : rowsIter.getNextRowSequenceWithLength(CHUNK_SIZE);
+                        rowsIter == null ? rows : rowsIter.getNextRowSequenceWithLength(chunkSize);
                 final int chunkRowsSize = chunkRows.intSize();
                 do {
                     for (int di = 0, ci = columns.nextSetBit(0); ci >= 0; ++di, ci = columns.nextSetBit(ci)) {
@@ -1258,7 +1339,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     if (ci == ROW_EXPANDED_COLUMN_INDEX) {
                         continue;
                     }
-                    fillContexts[di] = dataSources[ci].makeFillContext(CHUNK_SIZE, sharedContext);
+                    fillContexts[di] = dataSources[ci].makeFillContext(chunkSize, sharedContext);
                 }
             }
         }
@@ -1412,11 +1493,17 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     enum ChildLevelExpandable {
-        /** All Nodes are expandable at the child level. */
+        /**
+         * All Nodes are expandable at the child level.
+         */
         All,
-        /** No nodes are expandable at the child level. */
+        /**
+         * No nodes are expandable at the child level.
+         */
         None,
-        /** Each node at the child level must be checked for expandability. */
+        /**
+         * Each node at the child level must be checked for expandability.
+         */
         Undetermined
     }
 
