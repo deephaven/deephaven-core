@@ -4,52 +4,17 @@
 package io.deephaven.engine.table.impl.lang;
 
 import com.github.javaparser.TokenRange;
-import com.github.javaparser.ast.ArrayCreationLevel;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.ImportDeclaration;
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.PackageDeclaration;
-import com.github.javaparser.ast.body.AnnotationDeclaration;
-import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.ConstructorDeclaration;
-import com.github.javaparser.ast.body.EnumConstantDeclaration;
-import com.github.javaparser.ast.body.EnumDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.InitializerDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.Parameter;
-import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
 import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.stmt.AssertStmt;
-import com.github.javaparser.ast.stmt.BlockStmt;
-import com.github.javaparser.ast.stmt.BreakStmt;
-import com.github.javaparser.ast.stmt.CatchClause;
-import com.github.javaparser.ast.stmt.ContinueStmt;
-import com.github.javaparser.ast.stmt.DoStmt;
-import com.github.javaparser.ast.stmt.EmptyStmt;
-import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt;
-import com.github.javaparser.ast.stmt.ExpressionStmt;
-import com.github.javaparser.ast.stmt.ForStmt;
-import com.github.javaparser.ast.stmt.IfStmt;
-import com.github.javaparser.ast.stmt.LabeledStmt;
-import com.github.javaparser.ast.stmt.ReturnStmt;
-import com.github.javaparser.ast.stmt.SwitchStmt;
-import com.github.javaparser.ast.stmt.SynchronizedStmt;
-import com.github.javaparser.ast.stmt.ThrowStmt;
-import com.github.javaparser.ast.stmt.TryStmt;
-import com.github.javaparser.ast.stmt.WhileStmt;
-import com.github.javaparser.ast.type.ArrayType;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.ast.type.PrimitiveType;
-import com.github.javaparser.ast.type.TypeParameter;
-import com.github.javaparser.ast.type.VoidType;
+import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.WildcardType;
+import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.ast.visitor.VoidVisitor;
@@ -60,45 +25,22 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
-import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
-import io.deephaven.vector.BooleanVector;
-import io.deephaven.vector.ByteVector;
-import io.deephaven.vector.CharVector;
-import io.deephaven.vector.DoubleVector;
-import io.deephaven.vector.FloatVector;
-import io.deephaven.vector.IntVector;
-import io.deephaven.vector.LongVector;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.Vector;
+import io.deephaven.vector.*;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Executable;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.*;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -253,7 +195,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 // Compare the output from the LexicalPreservingPrinter (after modifying the AST) with the
                 // output from the printer to ensure behavior is the same:
                 if (!parserExpressionDumped.equals(printedSource)) {
-                    throw new RuntimeException("Expression changed!\n" +
+                    throw new QueryLanguageParserVerificationFailure("Expression changed!\n" +
                             "    Orig result               : " + printedSource + ".\n" +
                             "    Printed parsed expression : " + parserExpressionDumped);
                 }
@@ -271,7 +213,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             printedSource, "printedSource",
                             reparsedSource, "reparsedSource");
                 } catch (Exception ex) {
-                    throw new RuntimeException("Expression result failed reparse check", ex);
+                    throw new QueryLanguageParserVerificationFailure("Expression result failed reparse check", ex);
                 }
             }
 
@@ -879,6 +821,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     /**
      * This checks whether {@code classA} is assignable from {@code classB} <b>for operations in the query engine</b>.
+     * <p>
      * In particular, it is distinct from {@link Class#isAssignableFrom} in its handling of numeric types — if
      * {@code classA} is a primitive or boxed type (except boolean/Boolean), the result is true if {@code classA} is the
      * {@link #binaryNumericPromotionType binary numeric promotion type} of {@code classB}. For example,
@@ -2871,6 +2814,17 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         @Override
         public <A> void accept(VoidVisitor<A> v, A arg) {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class QueryLanguageParserVerificationFailure extends RuntimeException {
+
+        public QueryLanguageParserVerificationFailure(String message) {
+            super(message);
+        }
+
+        public QueryLanguageParserVerificationFailure(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }
