@@ -595,7 +595,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              * @return The chunk sources that should be used when retrieving actual data from the result of
              *         {@link #getDataRetrievalTable()}, at their respective column indices; other column indices may
              *         contain {@code null}, or values cached from previous snapshots
-             * @apiNote The {@link SnapshotState#currentDepth current depth} must be up to date and
+             * @apiNote The {@link SnapshotState#currentDepth current depth} must be up-to-date and
              *          {@link #ensurePreparedForDataRetrieval()} must have been called previously during this snapshot
              *          attempt. This call should only be made once per node per snapshot attempt.
              */
