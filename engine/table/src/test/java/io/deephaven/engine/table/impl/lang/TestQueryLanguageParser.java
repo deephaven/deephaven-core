@@ -992,6 +992,154 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Boolean.class, new String[0]);
     }
 
+    public void testEqualsNull() throws Exception {
+        String expression = "myString == null ? myString : null";
+        String resultExpression = "isNull(myString) ? myString : null";
+        check(expression, resultExpression, String.class, new String[] {"myString"});
+
+        expression = "myString == null ? myString : \"hello\"";
+        resultExpression = "isNull(myString) ? myString : \"hello\"";
+        check(expression, resultExpression, String.class, new String[] {"myString"});
+
+        expression = "myBoolean == null ? myBoolean : null";
+        resultExpression = "isNull(myBoolean) ? (Boolean) myBoolean : NULL_BOOLEAN";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBoolean"});
+
+        expression = "myBoolean == null ? myBoolean : false";
+        resultExpression = "isNull(myBoolean) ? myBoolean : false";
+        check(expression, resultExpression, boolean.class, new String[] {"myBoolean"});
+
+        expression = "myBooleanObj == null ? myBooleanObj : null";
+        resultExpression = "isNull(myBooleanObj) ? myBooleanObj : NULL_BOOLEAN";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanObj"});
+
+        expression = "myBooleanObj == null ? myBooleanObj : false";
+        resultExpression = "isNull(myBooleanObj) ? myBooleanObj : (Boolean) false";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanObj"});
+
+        expression = "myByte == null ? myByte : null";
+        resultExpression = "isNull(myByte) ? myByte : NULL_BYTE";
+        check(expression, resultExpression, byte.class, new String[] {"myByte"});
+
+        expression = "myByte == null ? myByte : (byte) 1";
+        resultExpression = "isNull(myByte) ? myByte : byteCast(1)";
+        check(expression, resultExpression, byte.class, new String[] {"myByte"});
+
+        expression = "myShort == null ? myShort : null";
+        resultExpression = "isNull(myShort) ? myShort : NULL_SHORT";
+        check(expression, resultExpression, short.class, new String[] {"myShort"});
+
+        expression = "myShort == null ? myShort : (short) 12345";
+        resultExpression = "isNull(myShort) ? myShort : shortCast(12345)";
+        check(expression, resultExpression, short.class, new String[] {"myShort"});
+
+        expression = "myInt == null ? myInt : null";
+        resultExpression = "isNull(myInt) ? myInt : NULL_INT";
+        check(expression, resultExpression, int.class, new String[] {"myInt"});
+
+        expression = "myInt == null ? myInt : 12345";
+        resultExpression = "isNull(myInt) ? myInt : 12345";
+        check(expression, resultExpression, int.class, new String[] {"myInt"});
+
+        expression = "myFloat == null ? myFloat : null";
+        resultExpression = "isNull(myFloat) ? myFloat : NULL_FLOAT";
+        check(expression, resultExpression, float.class, new String[] {"myFloat"});
+
+        expression = "myFloat == null ? myFloat : 123.45f";
+        resultExpression = "isNull(myFloat) ? myFloat : 123.45f";
+        check(expression, resultExpression, float.class, new String[] {"myFloat"});
+
+        expression = "myLong == null ? myLong : null";
+        resultExpression = "isNull(myLong) ? myLong : NULL_LONG";
+        check(expression, resultExpression, long.class, new String[] {"myLong"});
+
+        expression = "myLong == null ? myLong : 12345L";
+        resultExpression = "isNull(myLong) ? myLong : 12345L";
+        check(expression, resultExpression, long.class, new String[] {"myLong"});
+
+        expression = "myDouble == null ? myDouble : null";
+        resultExpression = "isNull(myDouble) ? myDouble : NULL_DOUBLE";
+        check(expression, resultExpression, double.class, new String[] {"myDouble"});
+
+        expression = "myDouble == null ? myDouble : 123.45d";
+        resultExpression = "isNull(myDouble) ? myDouble : 123.45d";
+        check(expression, resultExpression, double.class, new String[] {"myDouble"});
+    }
+
+    public void testNotEqualsNull() throws Exception {
+        String expression = "myString != null ? myString : null";
+        String resultExpression = "!isNull(myString) ? myString : null";
+        check(expression, resultExpression, String.class, new String[] {"myString"});
+
+        expression = "myString != null ? myString : \"hello\"";
+        resultExpression = "!isNull(myString) ? myString : \"hello\"";
+        check(expression, resultExpression, String.class, new String[] {"myString"});
+
+        expression = "myBoolean != null ? myBoolean : null";
+        resultExpression = "!isNull(myBoolean) ? (Boolean) myBoolean : NULL_BOOLEAN";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBoolean"});
+
+        expression = "myBoolean != null ? myBoolean : false";
+        resultExpression = "!isNull(myBoolean) ? myBoolean : false";
+        check(expression, resultExpression, boolean.class, new String[] {"myBoolean"});
+
+        expression = "myBooleanObj != null ? myBooleanObj : null";
+        resultExpression = "!isNull(myBooleanObj) ? myBooleanObj : NULL_BOOLEAN";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanObj"});
+
+        expression = "myBooleanObj != null ? myBooleanObj : false";
+        resultExpression = "!isNull(myBooleanObj) ? myBooleanObj : (Boolean) false";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanObj"});
+
+        expression = "myByte != null ? myByte : null";
+        resultExpression = "!isNull(myByte) ? myByte : NULL_BYTE";
+        check(expression, resultExpression, byte.class, new String[] {"myByte"});
+
+        expression = "myByte != null ? myByte : (byte) 1";
+        resultExpression = "!isNull(myByte) ? myByte : byteCast(1)";
+        check(expression, resultExpression, byte.class, new String[] {"myByte"});
+
+        expression = "myShort != null ? myShort : null";
+        resultExpression = "!isNull(myShort) ? myShort : NULL_SHORT";
+        check(expression, resultExpression, short.class, new String[] {"myShort"});
+
+        expression = "myShort != null ? myShort : (short) 12345";
+        resultExpression = "!isNull(myShort) ? myShort : shortCast(12345)";
+        check(expression, resultExpression, short.class, new String[] {"myShort"});
+
+        expression = "myInt != null ? myInt : null";
+        resultExpression = "!isNull(myInt) ? myInt : NULL_INT";
+        check(expression, resultExpression, int.class, new String[] {"myInt"});
+
+        expression = "myInt != null ? myInt : 12345";
+        resultExpression = "!isNull(myInt) ? myInt : 12345";
+        check(expression, resultExpression, int.class, new String[] {"myInt"});
+
+        expression = "myFloat != null ? myFloat : null";
+        resultExpression = "!isNull(myFloat) ? myFloat : NULL_FLOAT";
+        check(expression, resultExpression, float.class, new String[] {"myFloat"});
+
+        expression = "myFloat != null ? myFloat : 123.45f";
+        resultExpression = "!isNull(myFloat) ? myFloat : 123.45f";
+        check(expression, resultExpression, float.class, new String[] {"myFloat"});
+
+        expression = "myLong != null ? myLong : null";
+        resultExpression = "!isNull(myLong) ? myLong : NULL_LONG";
+        check(expression, resultExpression, long.class, new String[] {"myLong"});
+
+        expression = "myLong != null ? myLong : 12345L";
+        resultExpression = "!isNull(myLong) ? myLong : 12345L";
+        check(expression, resultExpression, long.class, new String[] {"myLong"});
+
+        expression = "myDouble != null ? myDouble : null";
+        resultExpression = "!isNull(myDouble) ? myDouble : NULL_DOUBLE";
+        check(expression, resultExpression, double.class, new String[] {"myDouble"});
+
+        expression = "myDouble != null ? myDouble : 123.45d";
+        resultExpression = "!isNull(myDouble) ? myDouble : 123.45d";
+        check(expression, resultExpression, double.class, new String[] {"myDouble"});
+    }
+
     public void testOperatorOverloading() throws Exception {
         String expression = "myTestClass+1";
         String resultExpression = "plus(myTestClass, 1)";
