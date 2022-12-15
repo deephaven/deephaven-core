@@ -1286,8 +1286,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         String methodName = getOperatorName(op) + (isArray ? "Array" : "");
 
         if (printer.hasStringBuilder()) {
-            final MethodCallExpr binaryOpOverloadMethod =
-                    new MethodCallExpr(null, methodName, NodeList.nodeList(n.getLeft(), n.getRight()));
+            final MethodCallExpr binaryOpOverloadMethod = new MethodCallExpr(methodName, n.getLeft(), n.getRight());
             replaceChildExpression(origParent, n, binaryOpOverloadMethod); // Replace the BinaryExpr with a method call,
                                                                            // e.g. "x==y" --> "eq(x, y)"
 
@@ -1378,9 +1377,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
             return ret;
         } else {
-            Node origParent = n.getParentNode().orElseThrow();
-            MethodCallExpr unaryOpOverloadMethod =
-                    new MethodCallExpr(null, opName, NodeList.nodeList(n.getExpression()));
+            final Node origParent = n.getParentNode().orElseThrow();
+            final MethodCallExpr unaryOpOverloadMethod = new MethodCallExpr(opName, n.getExpression());
             replaceChildExpression(origParent, n, unaryOpOverloadMethod);
 
             nothingPrintedAssertion.run();
@@ -1491,8 +1489,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 Assert.neqNull(unboxedExprType, "unboxedExprType");
 
                 final String unboxingMethodName = unboxedExprType.getSimpleName() + "Cast";
-                final MethodCallExpr unboxingCastExpr =
-                        new MethodCallExpr(null, unboxingMethodName, NodeList.nodeList(origExprToCast));
+                final MethodCallExpr unboxingCastExpr = new MethodCallExpr(unboxingMethodName, origExprToCast);
                 unboxingCastExpr.setComment(QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG);
                 // Set the unboxing MethodCallExpr as the target of the original CastExpr 'n'.
                 // Next, the CastExpr is replaced with another MethodCallExpr.
@@ -1524,8 +1521,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
 
             final Node origParent = n.getParentNode().orElseThrow();
-            final MethodCallExpr primitiveCastExpr =
-                    new MethodCallExpr(null, castMethodName, NodeList.nodeList(finalExprToCast));
+            final MethodCallExpr primitiveCastExpr = new MethodCallExpr(castMethodName, finalExprToCast);
             if (ret.equals(unboxedExprType)) {
                 // tell parser not to rewrite this method call (only needed when unboxing)
                 primitiveCastExpr.setComment(QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG);
