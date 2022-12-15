@@ -220,7 +220,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            final int requiredRehash = Math.min(nextChunkSize, rehashPointer);
             if (requiredRehash <= 0) {
                 return false;
             }
