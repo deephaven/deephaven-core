@@ -11,6 +11,7 @@ import io.deephaven.chunk.util.ObjectChunkIterator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -291,13 +292,16 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final boolean isBackingChunkExposed =
                 ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(writableSource);
 
-        try (final ChunkSink.FillFromContext destContext =
-                needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
-                final ChunkSource.GetContext chunkSourceContext =
-                        needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null;
-                final ChunkSource.FillContext chunkSourceFillContext =
-                        needGetContext && isBackingChunkExposed ? chunkSource.makeFillContext(chunkSourceContextSize)
-                                : null) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final ChunkSink.FillFromContext destContext = needDestContext
+                        ? writableSource.makeFillFromContext(destContextSize)
+                        : null;
+                final ChunkSource.GetContext chunkSourceContext = needGetContext
+                        ? chunkSource.makeGetContext(chunkSourceContextSize)
+                        : null;
+                final ChunkSource.FillContext chunkSourceFillContext = needGetContext && isBackingChunkExposed
+                        ? chunkSource.makeFillContext(chunkSourceContextSize)
+                        : null) {
 
             // apply shifts!
             if (!isRedirected && preMoveKeys.isNonempty()) {
