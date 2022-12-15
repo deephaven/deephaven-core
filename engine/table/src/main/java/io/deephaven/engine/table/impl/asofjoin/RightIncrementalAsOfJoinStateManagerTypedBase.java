@@ -277,6 +277,9 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
 
+                // reset the rehash credits for this chunk
+                bc.rehashCredits.setValue(0);
+
                 while (doRehash(initialBuild, bc.rehashCredits, chunkOk.intSize())) {
                     migrateFront();
                 }

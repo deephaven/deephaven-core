@@ -172,6 +172,10 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
+
+                // reset the rehash credits for this chunk
+                bc.rehashCredits.setValue(0);
+
                 while (doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker)) {
                     migrateFront(modifiedSlotTracker);
                 }
@@ -220,7 +224,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (rehashPointer > 0) {
-            final int requiredRehash = Math.min(nextChunkSize, rehashPointer);
+            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
             if (requiredRehash <= 0) {
                 return false;
             }
