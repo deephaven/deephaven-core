@@ -9,18 +9,8 @@ configurations {
 dependencies {
     implementation project(':engine-table')
     implementation project(':engine-function')
-    implementation project(':log-factory')
     implementation project(':Configuration')
     implementation depCommonsLang3
-
-    testImplementation TestTools.projectDependency(project, 'Base')
-    testImplementation TestTools.projectDependency(project, 'engine-table')
-    testImplementation project(':extensions-csv')
-
-    testRuntimeOnly project(':log-to-slf4j')
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
 spotless {
