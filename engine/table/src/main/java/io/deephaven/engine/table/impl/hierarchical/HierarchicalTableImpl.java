@@ -1129,6 +1129,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     final boolean stillFilling = filling && snapshotState.filling();
                     if (snapshotState.expandingAll) {
                         // TODO-RWC: IMPLEMENT THIS
+                        // Maybe I need to change up the iteration. Need to visit all while consuming directives until I get to a collapse
                         throw new UnsupportedOperationException("Not yet implemented");
                     } else {
                         final long nextRowKeyToExpand =
@@ -1141,7 +1142,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                                 snapshotState.visitedSize += candidateSize;
                             } else {
                                 final int toFill = snapshotState.remainingToFill();
-                                final RowSequence fillRows = toSkip == 0 && toFill > candidateSize
+                                final RowSequence fillRows = toSkip == 0 && toFill >= candidateSize
                                         ? candidateRows
                                         : candidateRows.getRowSequenceByPosition(toSkip, toFill);
                                 final int fillSize = fillRows.intSize();
@@ -1151,9 +1152,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                                             snapshotState.getExpandedDestinationToFill();
                                     if (childLevelExpandable == All) {
                                         expandedDestination.fillWithValue(0, fillSize - 1, FALSE_BOOLEAN_AS_BYTE);
-                                        expandedDestination.set(fillSize - 1, fillRows.lastRowKey() == nextRowKeyToExpand
-                                                        ? TRUE_BOOLEAN_AS_BYTE
-                                                        : FALSE_BOOLEAN_AS_BYTE);
+                                        expandedDestination.set(fillSize - 1,
+                                                booleanAsByte(fillRows.lastRowKey() == nextRowKeyToExpand));
                                     } else if (childLevelExpandable == None) {
                                         Assert.eqNull(childDirective, "childDirective");
                                         expandedDestination.fillWithValue(0, fillSize, NULL_BOOLEAN_AS_BYTE);
@@ -1161,8 +1161,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                                         fillRows.forAllRowKeys((final long rowKey) -> {
                                             final long childNodeId = rowKeyToNodeId.applyAsLong(rowKey);
                                             if (nodeIdExpandable(snapshotState, childNodeId)) {
-                                                expandedDestination.add(rowKey == nextRowKeyToExpand ?
-                                                        TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE);
+                                                expandedDestination.add(booleanAsByte(rowKey == nextRowKeyToExpand));
                                             } else {
                                                 expandedDestination.add(NULL_BOOLEAN_AS_BYTE);
                                             }
@@ -1172,9 +1171,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                                 snapshotState.visitedSize += candidateSize;
                                 snapshotState.includedSize += fillSize;
                             }
-                            if (childDirective != null) {
-                                visitExpandedNode(snapshotState, childDirective);
-                            }
+                        } else {
+                            snapshotState.visitedSize += rowsIter.advanceAndGetPositionDistance(nextRowKeyToExpand);
+                        }
+                        if (childDirective != null) {
+                            visitExpandedNode(snapshotState, childDirective);
                         }
                     }
                     if (childDirective != null) {
