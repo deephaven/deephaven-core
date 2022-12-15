@@ -20,11 +20,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
+import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.ChildLevelExpandable.Undetermined;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
@@ -326,9 +328,26 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         return result;
     }
 
-    // TODO-RWC: Use this
-    private boolean nodeKeyExpandable(@NotNull final SnapshotState snapshotState, @Nullable final Object nodeKey) {
-        final long nodeId = nodeKeyToNodeId(nodeKey);
+    @Override
+    ChildLevelExpandable childLevelExpandable(@NotNull final SnapshotState snapshotState) {
+        // We don't have sufficient information to know if any of this level's children are expandable.
+        return Undetermined;
+    }
+
+    @Override
+    @NotNull
+    LongUnaryOperator makeChildNodeIdLookup(
+            @NotNull final SnapshotState snapshotState,
+            @NotNull final Table nodeTableToExpand,
+            final boolean sorted) {
+        final ColumnSource<?> childIdentifierSource = nodeTableToExpand.getColumnSource(identifierColumn.name());
+        return snapshotState.usePrev()
+                ? (final long rowKey) -> nodeKeyToNodeId(childIdentifierSource.getPrev(rowKey))
+                : (final long rowKey) -> nodeKeyToNodeId(childIdentifierSource.get(rowKey));
+    }
+
+    @Override
+    boolean nodeIdExpandable(@NotNull final SnapshotState snapshotState, final long nodeId) {
         if (nodeId == nullNodeId()) {
             return false;
         }

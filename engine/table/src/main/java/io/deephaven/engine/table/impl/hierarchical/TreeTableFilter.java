@@ -230,11 +230,11 @@ class TreeTableFilter {
                     final RowSetBuilderRandom newParentKeys = RowSetFactory.builderRandom();
                     try (final SafeCloseable ignored =
                             childRowsToProcess == expectedMatches ? null : childRowsToProcess;
-                            final RowSequence.Iterator childRowsToProcessIterator =
+                            final RowSequence.Iterator childRowsToProcessIter =
                                     childRowsToProcess.getRowSequenceIterator()) {
-                        while (childRowsToProcessIterator.hasMore()) {
+                        while (childRowsToProcessIter.hasMore()) {
                             final RowSequence chunkChildRows =
-                                    childRowsToProcessIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+                                    childRowsToProcessIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                             final ObjectChunk<?, ? extends Values> parentIds =
                                     getIds(usePrev, parentIdSource, parentIdGetContext, boxer, chunkChildRows);
                             chunkOffset.setValue(0);
@@ -360,10 +360,10 @@ class TreeTableFilter {
 
         try (final ChunkSource.GetContext idGetContext = idSource.makeGetContext(CHUNK_SIZE);
                 final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(idSource.getChunkType(), CHUNK_SIZE);
-                final RowSequence.Iterator rowsToCheckIterator = rowsToCheck.getRowSequenceIterator()) {
+                final RowSequence.Iterator rowsToCheckIter = rowsToCheck.getRowSequenceIterator()) {
             final MutableInt chunkOffset = new MutableInt();
-            while (rowsToCheckIterator.hasMore()) {
-                final RowSequence chunkRowsToCheck = rowsToCheckIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+            while (rowsToCheckIter.hasMore()) {
+                final RowSequence chunkRowsToCheck = rowsToCheckIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ObjectChunk<?, ? extends Values> ids =
                         getIds(false, idSource, idGetContext, boxer, chunkRowsToCheck);
                 chunkOffset.setValue(0);
@@ -421,10 +421,10 @@ class TreeTableFilter {
                 new LinkedHashMap<>(rowsToParent.intSize());
         try (final ChunkSource.GetContext parentIdGetContext = parentIdSource.makeGetContext(CHUNK_SIZE);
                 final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(parentIdSource.getChunkType(), CHUNK_SIZE);
-                final RowSequence.Iterator childRowsIterator = rowsToParent.getRowSequenceIterator()) {
+                final RowSequence.Iterator childRowsIter = rowsToParent.getRowSequenceIterator()) {
             final MutableInt chunkOffset = new MutableInt();
-            while (childRowsIterator.hasMore()) {
-                final RowSequence chunkChildRows = childRowsIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+            while (childRowsIter.hasMore()) {
+                final RowSequence chunkChildRows = childRowsIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ObjectChunk<?, ? extends Values> parentIds =
                         getIds(usePrev, parentIdSource, parentIdGetContext, boxer, chunkChildRows);
                 chunkOffset.setValue(0);
@@ -447,10 +447,10 @@ class TreeTableFilter {
             final Set<Object> affectedParents = new HashSet<>();
             upstreamShifts.apply((final long beginRange, final long endRange, final long shiftDelta) -> {
                 try (final RowSequence affectedRows = resultRows.subSetByKeyRange(beginRange, endRange);
-                        final RowSequence.Iterator affectedRowsIterator = affectedRows.getRowSequenceIterator()) {
-                    while (affectedRowsIterator.hasMore()) {
+                        final RowSequence.Iterator affectedRowsIter = affectedRows.getRowSequenceIterator()) {
+                    while (affectedRowsIter.hasMore()) {
                         final RowSequence chunkAffectedRows =
-                                affectedRowsIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+                                affectedRowsIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                         final ObjectChunk<?, ? extends Values> parentIds =
                                 getIds(true, parentIdSource, parentIdGetContext, boxer, chunkAffectedRows);
                         new ObjectChunkIterator<>(parentIds).forEachRemaining(affectedParents::add);

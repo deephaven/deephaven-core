@@ -118,5 +118,5 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
             @Nullable ColumnName keyTableActionColumn,
             @Nullable BitSet columns,
             @NotNull RowSequence rows,
-            @NotNull WritableChunk<? extends Values>[] destinations);
+            @NotNull WritableChunk<? super Values>[] destinations);
 }
