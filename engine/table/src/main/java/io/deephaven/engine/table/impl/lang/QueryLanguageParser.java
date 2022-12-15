@@ -1206,8 +1206,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             printer.append(']');
 
             return type.getComponentType();
-        } else { // An array access on something that's not an array should be replaced with a MethodCallExpr calling
-                 // get()
+        } else {
+            // An array access on something that's not an array should be replaced with a MethodCallExpr calling get()
             final Node origParent = n.getParentNode().orElseThrow();
             final MethodCallExpr newExpr = new MethodCallExpr(n.getName(), "get", NodeList.nodeList(n.getIndex()));
             replaceChildExpression(origParent, n, newExpr);
@@ -1364,8 +1364,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
             if (isNonequalOpOverload && printer.hasStringBuilder()) {
                 // sanity checks -- the inner expression *must* be a BinaryExpr (for ==), and it must be replaced in
-                // this
-                // UnaryExpr with a MethodCallExpr (for "eq()" or possibly "isNull()").
+                // this UnaryExpr with a MethodCallExpr (for "eq()" or possibly "isNull()").
                 Assert.instanceOf(n.getExpression(), "n.getExpression()", MethodCallExpr.class);
                 final MethodCallExpr methodCall = (MethodCallExpr) n.getExpression();
                 final String methodName = methodCall.getNameAsString();
@@ -1393,9 +1392,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         final Class<?> ret = n.getType().accept(this, VisitArgs.WITHOUT_STRING_BUILDER); // the target type
         final Expression origExprToCast = n.getExpression();
 
-        final Class<?> exprType = origExprToCast.accept(this, VisitArgs.WITHOUT_STRING_BUILDER); // ignore the
-                                                                                                 // StringBuilder; just
-                                                                                                 // need the type.
+        // retrieve the expression's type. (ignore the StringBuilder; just need the type.)
+        final Class<?> exprType = origExprToCast.accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
 
         final boolean fromPrimitive = exprType.isPrimitive();
         final boolean fromBoxedType = TypeUtils.isBoxedType(exprType);
@@ -1501,8 +1499,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         "unboxedExprType"); // verify type is as expected
             }
 
-            final Expression finalExprToCast = n.getExpression(); // Note that the handling of unboxing/widening may
-                                                                  // have changed the expression-to-cast.
+            // Note that the handling of unboxing/widening may have changed the expression-to-cast.
+            final Expression finalExprToCast = n.getExpression();
 
 
             final String castMethodName;
@@ -1529,10 +1527,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             replaceChildExpression(origParent, n, primitiveCastExpr);
             nothingPrintedAssertion.run();
             Class<?> primitiveCastMethodCallReturnType = primitiveCastExpr.accept(this, printer);
-            Assert.equals(primitiveCastMethodCallReturnType, "primitiveCastMethodCallReturnType", ret, "ret"); // verify
-                                                                                                               // type
-                                                                                                               // is as
-                                                                                                               // expected
+            // verify type is as expected:
+            Assert.equals(primitiveCastMethodCallReturnType, "primitiveCastMethodCallReturnType", ret, "ret");
             return primitiveCastMethodCallReturnType;
         } else {
             // Casting to a reference type or a boolean, or a redundant primitive cast.
@@ -1544,10 +1540,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
              */
 
             if (!isAssociativitySafeExpression(origExprToCast)) {
-                EnclosedExpr newExpr = new EnclosedExpr(origExprToCast); // TODO: unclear whether this matters with AST
-                                                                         // modifications/pretty printing, but it's
-                                                                         // required for compatibility w/ original
-                                                                         // 'printer' method
+                // TODO: unclear whether this matters with AST modifications/pretty printing,
+                // but it's required for compatibility w/ original 'printer' method.
+                EnclosedExpr newExpr = new EnclosedExpr(origExprToCast);
                 nothingPrintedAssertion.run();
                 n.setExpression(newExpr);
                 origExprToCast.setParentNode(newExpr);
