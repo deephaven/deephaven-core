@@ -1194,6 +1194,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                         visitExpandedNode(snapshotState, childDirectiveToExpand);
                     } else if (rowKeyToExpand <= rowsToVisit.lastRowKey()) {
                         visitExpandedNode(snapshotState, rowKeyToNodeId.applyAsLong(rowKeyToExpand), Linkage, null);
+                    } else {
+                        Assert.eqFalse(rowsToVisitIter.hasMore(), "rowsToVisitIter.hasMore()");
                     }
                 }
             }
@@ -1221,7 +1223,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             final long lastRowKeyToConsume) {
         if (filler == null || !snapshotState.filling()) {
             // Done filling
-            snapshotState.visitedSize += nodeRowsIter.advanceAndGetPositionDistance(lastRowKeyToConsume);
+            snapshotState.visitedSize += nodeRowsIter.advanceAndGetPositionDistance(lastRowKeyToConsume + 1);
             return;
         }
         final RowSequence candidateRows = nodeRowsIter.getNextRowSequenceThrough(lastRowKeyToConsume);
