@@ -19,7 +19,6 @@ import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
-import io.deephaven.DeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -195,7 +194,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 // Compare the output from the LexicalPreservingPrinter (after modifying the AST) with the
                 // output from the printer to ensure behavior is the same:
                 if (!parserExpressionDumped.equals(printedSource)) {
-                    throw new QueryLanguageParserVerificationFailure("Expression changed!\n" +
+                    throw new ParserVerificationFailure("Expression changed!\n" +
                             "    Orig result               : " + printedSource + ".\n" +
                             "    Printed parsed expression : " + parserExpressionDumped);
                 }
@@ -218,7 +217,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             validationQueryLanguageParser.result.type,
                             "validationQueryLanguageParser.result.type");
                 } catch (Exception ex) {
-                    throw new QueryLanguageParserVerificationFailure("Expression result failed reparse check", ex);
+                    throw new ParserVerificationFailure("Expression result failed reparse check", ex);
                 }
             }
 
@@ -261,7 +260,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
-    public static final class QueryLanguageParseException extends DeephavenException {
+    public static final class QueryLanguageParseException extends Exception {
         private QueryLanguageParseException(String message) {
             super(message);
         }
@@ -509,8 +508,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         if (acceptableMethods.size() == 0) {
-            throw new RuntimeException("Cannot find method " + methodName + '(' + paramsTypesToString(paramTypes) + ')'
-                    + (scope != null ? " in " + scope : ""));
+            throw new ParserResolutionFailure("Cannot find method " + methodName + '(' + paramsTypesToString(paramTypes)
+                    + ')' + (scope != null ? " in " + scope : ""));
         }
 
         Method bestMethod = null;
@@ -658,7 +657,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         if (acceptableConstructors.size() == 0) {
-            throw new RuntimeException("Cannot find constructor for " + scope.getName() + '('
+            throw new ParserResolutionFailure("Cannot find constructor for " + scope.getName() + '('
                     + paramsTypesToString(paramTypes) + ')' + (scope != null ? " in " + scope : ""));
         }
 
@@ -900,7 +899,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (FloatVector.class.isAssignableFrom(type)) {
             return float[].class;
         }
-        throw new RuntimeException("Unknown Vector type : " + type);
+        throw new IllegalStateException("Unknown Vector type : " + type);
     }
 
 
@@ -918,7 +917,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Assert.eq(newExprParent, "newExprParent", parentNode, "parentNode");
             return;
         }
-        throw new RuntimeException(
+        throw new IllegalStateException(
                 "Could not replace expression within parent of type " + parentNode.getClass().getSimpleName());
     }
 
@@ -1140,7 +1139,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return ret;
         }
 
-        throw new RuntimeException("Cannot find variable or class " + n.getName());
+        throw new ParserResolutionFailure("Cannot find variable or class " + n.getName());
     }
 
     @Override
@@ -1172,7 +1171,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 return short.class;
         }
 
-        throw new RuntimeException("Unknown primitive type : " + n.getType());
+        throw new IllegalStateException("Unknown primitive type : " + n.getType());
     }
 
     @Override
@@ -1194,7 +1193,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
          */
 
         if (n.getName() instanceof LiteralExpr) { // a sanity check
-            throw new RuntimeException("Invalid expression: indexing into literal value");
+            throw new IllegalStateException("Invalid expression: indexing into literal value");
         }
 
         Class<?> type = n.getName().accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
@@ -1344,7 +1343,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         } else if (n.getOperator() == UnaryExpr.Operator.MINUS) {
             opName = "negate";
         } else {
-            throw new RuntimeException("Unary operation (" + n.getOperator().name() + ") not supported");
+            throw new UnsupportedOperationException("Unary operation (" + n.getOperator().name() + ") not supported");
         }
 
         final Class<?> ret = getTypeWithCaching(n.getExpression());
@@ -1415,8 +1414,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
              * The JLS also places restrictions on conversions from boxed types to primitives (again, see table 5.5-A).
              */
             if (fromPrimitive && (ret.equals(boolean.class) ^ exprType.equals(boolean.class))) {
-                throw new RuntimeException("Incompatible types; " + exprType.getName() +
-                        " cannot be converted to " + ret.getName());
+                throw new IncompatibleTypesException(
+                        "Incompatible types; " + exprType.getName() + " cannot be converted to " + ret.getName());
             }
 
             // Now check validity if we're converting from a boxed type:
@@ -1433,8 +1432,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                                 || char.class.equals(ret) && !Character.class.equals(exprType)
                                 // Other than that, only widening conversions are allowed:
                                 || !isUnboxingAndWidening)) {
-                    throw new RuntimeException("Incompatible types; " + exprType.getName() +
-                            " cannot be converted to " + ret.getName());
+                    throw new IncompatibleTypesException(
+                            "Incompatible types; " + exprType.getName() + " cannot be converted to " + ret.getName());
                 }
             } else {
                 isUnboxingAndWidening = false;
@@ -1447,8 +1446,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         else {
             if (io.deephaven.util.type.TypeUtils.isBoxedType(ret) && (fromPrimitive || fromBoxedType)
                     && !(ret.equals(io.deephaven.util.type.TypeUtils.getBoxedType(exprType)))) {
-                throw new RuntimeException("Incompatible types; " + exprType.getName() +
-                        " cannot be converted to " + ret.getName());
+                throw new IncompatibleTypesException(
+                        "Incompatible types; " + exprType.getName() + " cannot be converted to " + ret.getName());
             }
             isUnboxingAndWidening = false;
         }
@@ -1698,7 +1697,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         }
 
-        throw new RuntimeException("Cannot find class : " + className);
+        throw new ParserResolutionFailure("Cannot find class : " + className);
     }
 
     @Override
@@ -1768,7 +1767,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return classB;
         }
 
-        throw new RuntimeException(
+        throw new IncompatibleTypesException(
                 "Incompatible types in condition operation not supported : " + classA + ' ' + classB);
     }
 
@@ -1816,7 +1815,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 // a non-casting context. So we provide that here.
                 scopeType = scopeExpr.accept(this, printer.cloneWithCastingContext(null));
             } catch (RuntimeException e) {
-                throw new RuntimeException("Cannot resolve scope." +
+                throw new ParserResolutionFailure("Cannot resolve scope." +
                         "\n    Expression : " + exprString +
                         "\n    Scope      : " + scopeExpr +
                         "\n    Field Name : " + fieldName, e);
@@ -1846,7 +1845,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     }
                 } catch (NoSuchFieldException e) {
                     // And if we still can't find the field, we have a problem.
-                    throw new RuntimeException("Cannot resolve field name." +
+                    throw new ParserResolutionFailure("Cannot resolve field name." +
                             "\n    Expression : " + exprString +
                             "\n    Scope      : " + scopeExpr +
                             "\n    Scope Type : " + scopeType.getCanonicalName() +
@@ -2168,20 +2167,20 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // functions must be used alone as the entire expression.
         n.getParentNode().ifPresent(parent -> {
             if (parent.getClass() == CastExpr.class) {
-                throw new RuntimeException(
+                throw new PythonCallVectorizationFailure(
                         "The return values of Python vectorized function can't be cast: " + parent);
             }
             if (!WrapperNode.class.equals(parent.getClass())) {
-                throw new RuntimeException("Python vectorized function can't be used in another expression: " + parent);
+                throw new PythonCallVectorizationFailure(
+                        "Python vectorized function can't be used in another expression: " + parent);
             }
         });
 
         for (int i = 0; i < expressions.length; i++) {
             if (!(expressions[i] instanceof NameExpr) && !(expressions[i] instanceof LiteralExpr)) {
-                throw new RuntimeException(
-                        "Invalid argument at index " + i
-                                + ": Python vectorized function arguments can only be columns, variables, and constants: "
-                                + expressions[i]);
+                throw new PythonCallVectorizationFailure("Invalid argument at index " + i
+                        + ": Python vectorized function arguments can only be columns, variables, and constants: "
+                        + expressions[i]);
             }
         }
     }
@@ -2191,8 +2190,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             PyCallableWrapper pyCallableWrapper) {
         List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
         if (paramTypes.size() != expressions.length) {
-            throw new RuntimeException("Python function argument count mismatch: " + n + " " + paramTypes.size()
-                    + " vs. " + expressions.length);
+            throw new PythonCallVectorizationFailure("Python function argument count mismatch: " + n + " "
+                    + paramTypes.size() + " vs. " + expressions.length);
         }
 
         pyCallableWrapper.initializeChunkArguments();
@@ -2213,7 +2212,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
 
             if (!isSafelyCoerceable(argTypes[i], paramTypes.get(i))) {
-                throw new RuntimeException("Python vectorized function argument type mismatch: " + n + " "
+                throw new PythonCallVectorizationFailure("Python vectorized function argument type mismatch: " + n + " "
                         + argTypes[i].getSimpleName() + " -> " + paramTypes.get(i).getSimpleName());
             }
         }
@@ -2835,14 +2834,35 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
-    private static class QueryLanguageParserVerificationFailure extends RuntimeException {
-
-        public QueryLanguageParserVerificationFailure(String message) {
+    private static class ParserVerificationFailure extends RuntimeException {
+        public ParserVerificationFailure(String message) {
             super(message);
         }
 
-        public QueryLanguageParserVerificationFailure(String message, Throwable cause) {
+        public ParserVerificationFailure(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    private static class ParserResolutionFailure extends RuntimeException {
+        public ParserResolutionFailure(String message) {
+            super(message);
+        }
+
+        public ParserResolutionFailure(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    private static class IncompatibleTypesException extends RuntimeException {
+        public IncompatibleTypesException(String message) {
+            super(message);
+        }
+    }
+
+    private static class PythonCallVectorizationFailure extends RuntimeException {
+        public PythonCallVectorizationFailure(String message) {
+            super(message);
         }
     }
 }
