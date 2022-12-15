@@ -1375,14 +1375,14 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
 
             return ret;
-        } else {
-            final Node origParent = n.getParentNode().orElseThrow();
-            final MethodCallExpr unaryOpOverloadMethod = new MethodCallExpr(opName, n.getExpression());
-            replaceChildExpression(origParent, n, unaryOpOverloadMethod);
-
-            nothingPrintedAssertion.run();
-            return unaryOpOverloadMethod.accept(this, printer);
         }
+
+        final Node origParent = n.getParentNode().orElseThrow();
+        final MethodCallExpr unaryOpOverloadMethod = new MethodCallExpr(opName, n.getExpression());
+        replaceChildExpression(origParent, n, unaryOpOverloadMethod);
+
+        nothingPrintedAssertion.run();
+        return unaryOpOverloadMethod.accept(this, printer);
     }
 
     @Override
@@ -1418,8 +1418,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 throw new RuntimeException("Incompatible types; " + exprType.getName() +
                         " cannot be converted to " + ret.getName());
             }
-            // Now check whether we're converting from a boxed type
-            else if (fromBoxedType) {
+
+            // Now check validity if we're converting from a boxed type:
+            if (fromBoxedType) {
                 isUnboxingAndWidening = isWideningPrimitiveConversion(unboxedExprType, ret);
                 // Unboxing and Identity conversions are always OK
                 if (!ret.equals(unboxedExprType) &&
@@ -1530,40 +1531,48 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // verify type is as expected:
             Assert.equals(primitiveCastMethodCallReturnType, "primitiveCastMethodCallReturnType", ret, "ret");
             return primitiveCastMethodCallReturnType;
-        } else {
-            // Casting to a reference type or a boolean, or a redundant primitive cast.
-            // Use a straight cast (e.g. '(int) blah') not a function (e.g. 'intCast(blah)')
-
-            /*
-             * If the expression is anything more complex than a simple name or literal, then enclose it in parentheses
-             * to ensure the order of operations is not altered.
-             */
-
-            if (!isAssociativitySafeExpression(origExprToCast)) {
-                // TODO: unclear whether this matters with AST modifications/pretty printing,
-                // but it's required for compatibility w/ original 'printer' method.
-                EnclosedExpr newExpr = new EnclosedExpr(origExprToCast);
-                nothingPrintedAssertion.run();
-                n.setExpression(newExpr);
-                origExprToCast.setParentNode(newExpr);
-            }
-
-            if (printer.hasStringBuilder()) {
-                /* Print the cast normally - "(targetType) (expression)" */
-                printer.append('(');
-                if (ret.getPackage() != null && simpleNameWhiteList.contains(ret.getPackage().getName())) {
-                    printer.append(ret.getSimpleName());
-                } else {
-                    printer.append(ret.getCanonicalName());
-                }
-                printer.append(')');
-                printer.append(' ');
-
-                n.getExpression().accept(this, printer);
-            }
-
-            return ret;
         }
+
+        /*
+         * @formatter:off
+         *
+         * If we're not using an internal cast function, then the cast is either:
+         *
+         * - to a reference type
+         * - to a primitive boolean
+         * - a redundant primitive cast
+         *
+         * So, we will use a straight cast (e.g. '(int) blah') not a function (e.g. 'intCast(blah)')
+         *
+         * @formatter:on
+         */
+
+        // If the expression is anything more complex than a simple name or literal, then enclose it in parentheses to
+        // ensure the order of operations is not altered.
+        if (!isAssociativitySafeExpression(origExprToCast)) {
+            // TODO: unclear whether this matters with AST modifications/pretty printing,
+            // but it's required for compatibility w/ original 'printer' method.
+            EnclosedExpr newExpr = new EnclosedExpr(origExprToCast);
+            nothingPrintedAssertion.run();
+            n.setExpression(newExpr);
+            origExprToCast.setParentNode(newExpr);
+        }
+
+        if (printer.hasStringBuilder()) {
+            /* Print the cast normally - "(targetType) (expression)" */
+            printer.append('(');
+            if (ret.getPackage() != null && simpleNameWhiteList.contains(ret.getPackage().getName())) {
+                printer.append(ret.getSimpleName());
+            } else {
+                printer.append(ret.getCanonicalName());
+            }
+            printer.append(')');
+            printer.append(' ');
+
+            n.getExpression().accept(this, printer);
+        }
+
+        return ret;
     }
 
     /**
