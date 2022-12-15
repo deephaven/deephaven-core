@@ -1152,50 +1152,70 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                                 ? contractedRowPositionsIter.next()
                                 : NULL_ROW_KEY;
                 while (rowsToVisitIter.hasMore()) {
-                    final long rowKeyToExpand;
+                    final boolean expandLastRowToConsume;
+                    final long lastRowKeyToConsume;
                     final LinkedDirective childDirectiveToExpand;
                     if (snapshotState.expandingAll) {
                         if (nextContractedPosition == rowsToVisitIter.getRelativePosition() - firstRelativePosition) {
                             assert contractedRowPositionsIter != null;
-                            // We're at the start of a contracted range
+                            // We're at the start of a contracted range; we need to consume the contracted range
+                            // and expand the first row after if there is one.
                             final long lastContractedPositionInRange = contractedRowPositionsIter.currentRangeEnd();
                             final long rangeSize = lastContractedPositionInRange - nextContractedPosition + 1;
                             cdi += rangeSize;
                             nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
-                            rowKeyToExpand = rowsToVisit.size() > lastContractedPositionInRange + 1
-                                    ? rowsToVisit.get(lastContractedPositionInRange + 1)
-                                    : rowsToVisit.lastRowKey() + 1; // Advance past end
+                            if (rowsToVisit.size() > lastContractedPositionInRange + 1) {
+                                // Consume the contracted range and one extra row that we will expand.
+                                expandLastRowToConsume = true;
+                                lastRowKeyToConsume = rowsToVisit.get(lastContractedPositionInRange + 1);
+                            } else {
+                                // We're out of rows, consume the rest.
+                                expandLastRowToConsume = false;
+                                lastRowKeyToConsume = clampedRowKeyAfterLast(rowsToVisit.lastRowKey());
+                            }
                             nextContractedPosition = contractedRowPositionsIter.hasNext()
                                     ? contractedRowPositionsIter.next()
                                     : NULL_ROW_KEY;
                         } else {
-                            rowKeyToExpand = rowsToVisitIter.peekNextKey();
+                            // We're just expanding the next row.
+                            expandLastRowToConsume = true;
+                            lastRowKeyToConsume = rowsToVisitIter.peekNextKey();
                         }
                         if (nextChildDirective != null
-                                && nextChildDirective.getRowKeyInParentSorted() == rowKeyToExpand) {
+                                && nextChildDirective.getRowKeyInParentSorted() == lastRowKeyToConsume) {
+                            // We can use a directive when we visit.
+                            Assert.assertion(expandLastRowToConsume, "expandingLastRowToConsume");
                             childDirectiveToExpand = nextChildDirective;
                             nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
                         } else {
+                            // We're expanding-all; just visit with no child information.
                             childDirectiveToExpand = null;
                         }
                     } else {
                         if (nextChildDirective != null) {
+                            // We have an expansion directive. Consume the unexpanded prefix and the row to expand.
+                            expandLastRowToConsume = true;
                             childDirectiveToExpand = nextChildDirective;
-                            rowKeyToExpand = childDirectiveToExpand.getRowKeyInParentSorted();
+                            lastRowKeyToConsume = childDirectiveToExpand.getRowKeyInParentSorted();
                             nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
                         } else {
+                            // We're out of expansions. Consume the rest.
+                            expandLastRowToConsume = false;
                             childDirectiveToExpand = null;
-                            rowKeyToExpand = rowsToVisit.lastRowKey() + 1; // Advance past end
+                            lastRowKeyToConsume = clampedRowKeyAfterLast(rowsToVisit.lastRowKey());
                         }
                     }
                     consumeRowsUntilNextExpansion(snapshotState, childLevelExpandable, rowsToVisitIter, filler,
-                            rowKeyToNodeId, rowKeyToExpand);
+                            rowKeyToNodeId, lastRowKeyToConsume, expandLastRowToConsume);
+                    if (!expandLastRowToConsume) {
+                        consumeRemainder(snapshotState, rowsToVisitIter);
+                        break;
+                    }
                     if (childDirectiveToExpand != null) {
                         visitExpandedNode(snapshotState, childDirectiveToExpand);
-                    } else if (rowKeyToExpand <= rowsToVisit.lastRowKey()) {
-                        visitExpandedNode(snapshotState, rowKeyToNodeId.applyAsLong(rowKeyToExpand), Linkage, null);
                     } else {
-                        Assert.eqFalse(rowsToVisitIter.hasMore(), "rowsToVisitIter.hasMore()");
+                        visitExpandedNode(snapshotState,
+                                rowKeyToNodeId.applyAsLong(lastRowKeyToConsume), Linkage, null);
                     }
                 }
             }
@@ -1214,16 +1234,22 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         return builder.build();
     }
 
+    private static long clampedRowKeyAfterLast(final long lastRowKey) {
+        return lastRowKey == MAX_LONG ? lastRowKey : lastRowKey + 1;
+    }
+
     private void consumeRowsUntilNextExpansion(
             @NotNull final SnapshotState snapshotState,
             @NotNull final ChildLevelExpandable childLevelExpandable,
             @NotNull final RowSequence.Iterator nodeRowsIter,
             @Nullable final NodeFillContext filler,
             @NotNull final LongUnaryOperator rowKeyToNodeId,
-            final long lastRowKeyToConsume) {
+            final long lastRowKeyToConsume,
+            final boolean lastRowIsExpanded) {
         if (filler == null || !snapshotState.filling()) {
             // Done filling
-            snapshotState.visitedSize += nodeRowsIter.advanceAndGetPositionDistance(lastRowKeyToConsume + 1);
+            snapshotState.visitedSize += nodeRowsIter.advanceAndGetPositionDistance(
+                    clampedRowKeyAfterLast(lastRowKeyToConsume));
             return;
         }
         final RowSequence candidateRows = nodeRowsIter.getNextRowSequenceThrough(lastRowKeyToConsume);
@@ -1248,7 +1274,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             switch (childLevelExpandable) {
                 case All:
                     expandedDestination.fillWithValue(0, fillSize - 1, FALSE_BOOLEAN_AS_BYTE);
-                    expandedDestination.set(fillSize - 1, booleanAsByte(fillRows.lastRowKey() == lastRowKeyToConsume));
+                    expandedDestination.set(fillSize - 1,
+                            booleanAsByte(lastRowIsExpanded && fillRows.lastRowKey() == lastRowKeyToConsume));
                     break;
                 case None:
                     expandedDestination.fillWithValue(0, fillSize, NULL_BOOLEAN_AS_BYTE);
@@ -1257,7 +1284,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     fillRows.forAllRowKeys((final long rowKey) -> {
                         final long childNodeId = rowKeyToNodeId.applyAsLong(rowKey);
                         if (nodeIdExpandable(snapshotState, childNodeId)) {
-                            expandedDestination.add(booleanAsByte(rowKey == lastRowKeyToConsume));
+                            expandedDestination.add(
+                                    booleanAsByte(lastRowIsExpanded && rowKey == lastRowKeyToConsume));
                         } else {
                             expandedDestination.add(NULL_BOOLEAN_AS_BYTE);
                         }
@@ -1267,6 +1295,21 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
         snapshotState.visitedSize += candidateSize;
         snapshotState.includedSize += fillSize;
+    }
+
+    private void consumeRemainder(
+            @NotNull final SnapshotState snapshotState,
+            final RowSequence.Iterator rowsToVisitIter) {
+        // This is pure paranoia about Long.MAX_VALUE as a row key and the API for
+        // RowSequence.Iterator#advanceAndGetPositionDistance(long), but as Joseph Heller and Kurt Cobain famously
+        // said...
+        if (rowsToVisitIter.hasMore()) {
+            Assert.eqFalse(snapshotState.filling(), "snapshotState.filling()");
+            final RowSequence remainder = rowsToVisitIter.getNextRowSequenceWithLength(Long.MAX_VALUE);
+            Assert.eq(remainder.size(), "remainder.size()", 1);
+            ++snapshotState.visitedSize;
+            Assert.eqFalse(rowsToVisitIter.hasMore(), "rowsToVisitIter.hasMore()");
+        }
     }
 
     final class NodeFillContext implements Context {
