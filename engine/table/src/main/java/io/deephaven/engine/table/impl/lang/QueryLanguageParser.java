@@ -212,6 +212,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     Assert.equals(
                             printedSource, "printedSource",
                             reparsedSource, "reparsedSource");
+                    Assert.equals(
+                            type,
+                            "type",
+                            validationQueryLanguageParser.result.type,
+                            "validationQueryLanguageParser.result.type");
                 } catch (Exception ex) {
                     throw new QueryLanguageParserVerificationFailure("Expression result failed reparse check", ex);
                 }
@@ -469,6 +474,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // for Python function/Groovy closure call syntax without the explicit 'call' keyword, check if it is
             // defined in Query scope
             if (acceptableMethods.size() == 0) {
+                // if the method name corresponds to an object in the query scope, and the type of that object
+                // is something that could be potentially implicitly call()ed (e.g. PyCallableWrapepr/Closure),
+                // then try to add its call() method to the acceptableMethods list.
                 final Class<?> methodClass = variables.get(methodName);
                 if (methodClass != null && isPotentialImplicitCall(methodClass)) {
                     for (Method method : methodClass.getMethods()) {
@@ -2088,7 +2096,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     return callMethodCall.accept(this, printer);
                 }
             }
-        } else { // Groovy or Java method call
+        } else { // Groovy or Java method call (or explicit python call)
             printer.append(scopePrinter);
             printer.append(methodName);
         }
@@ -2096,30 +2104,37 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         Class<?>[] argTypes = printArguments(expressions, printer);
 
         // Python function call vectorization
-        Class<?> methodClass = variables.get(methodName);
-        if (methodClass == PyCallableWrapper.class) {
-            vectorizePythonCallable(n, expressions, argTypes);
+        if (PyCallableWrapper.class.equals(scope)) {
+            vectorizePythonCallable(n, scope, expressions, argTypes);
         }
 
         return calculateMethodReturnTypeUsingGenerics(scope, n.getScope().orElse(null), method, expressionTypes,
                 parameterizedTypes);
     }
 
-    private void vectorizePythonCallable(MethodCallExpr n, Expression[] expressions, Class<?>[] argTypes) {
-        final String methodName = n.getNameAsString();
+    private void vectorizePythonCallable(MethodCallExpr n, Class<?> scopeType, Expression[] argExpressions,
+            Class<?>[] argTypes) {
+        final String invokedMethodName = n.getNameAsString();
+
+        // assertions related to when the parser should even attempt vectorization:
+        Assert.equals(scopeType, "scopeType", PyCallableWrapper.class, "PyCallableWrapper.class");
+        Assert.equals(invokedMethodName, "invokedMethodName", "call");
+
+        final String pyMethodName = n.getScope().orElseThrow().toString();
+
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        final Object paramValueRaw = queryScope.readParamValue(methodName, null);
+        final Object paramValueRaw = queryScope.readParamValue(pyMethodName, null);
         if (paramValueRaw == null) {
-            throw new IllegalStateException("Resolved Python function name " + methodName + " not found");
+            throw new IllegalStateException("Resolved Python function name " + pyMethodName + " not found");
         }
         if (!(paramValueRaw instanceof PyCallableWrapper)) {
-            throw new IllegalStateException("Resolved Python function name " + methodName + " not callable");
+            throw new IllegalStateException("Resolved Python function name " + pyMethodName + " not callable");
         }
         final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) paramValueRaw;
 
-        prepareVectorization(n, expressions, pyCallableWrapper);
+        prepareVectorization(n, argExpressions, pyCallableWrapper);
         if (pyCallableWrapper.isVectorizable()) {
-            prepareVectorizationArgs(n, queryScope, expressions, argTypes, pyCallableWrapper);
+            prepareVectorizationArgs(n, queryScope, argExpressions, argTypes, pyCallableWrapper);
         }
     }
 
@@ -2156,13 +2171,16 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 throw new RuntimeException(
                         "The return values of Python vectorized function can't be cast: " + parent);
             }
-            throw new RuntimeException("Python vectorized function can't be used in another expression: " + parent);
+            if (!WrapperNode.class.equals(parent.getClass())) {
+                throw new RuntimeException("Python vectorized function can't be used in another expression: " + parent);
+            }
         });
 
         for (int i = 0; i < expressions.length; i++) {
             if (!(expressions[i] instanceof NameExpr) && !(expressions[i] instanceof LiteralExpr)) {
                 throw new RuntimeException(
-                        "Python vectorized function arguments can only be columns, variables, and constants: "
+                        "Invalid argument at index " + i
+                                + ": Python vectorized function arguments can only be columns, variables, and constants: "
                                 + expressions[i]);
             }
         }

@@ -7,9 +7,11 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.time.DateTime;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.*;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.vector.Vector;
@@ -1537,7 +1539,17 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     public void testImplicitPythonCall() throws Exception {
         String expression = "myPyCallable()";
         String resultExpression = "myPyCallable.call()";
-        check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
+
+        // TODO: need to figure out how to mock PyCallableWrapper (or some new parent interface?)
+        // PyCallableWrapper's static init tries to load python modules, which fails in normal tests.
+        final PyCallableWrapper mockPyCallable = mock(PyCallableWrapper.class);
+        final ExecutionContext executionContext = ExecutionContext.createForUnitTests();
+        executionContext.getQueryScope().putParam(
+                "myPyCallable",
+                mockPyCallable);
+        try (SafeCloseable ignored = executionContext.open()) {
+            check(expression, resultExpression, Object.class, new String[] {"myPyCallable"});
+        }
 
         expression = "myPyCallable(1)";
         resultExpression = "myPyCallable.call(1)";
