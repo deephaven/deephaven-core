@@ -2430,237 +2430,237 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     @Override
     public Class<?> visit(AnnotationDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("AnnotationDeclaration Operation not supported");
+        throw new UnsupportedOperationException("AnnotationDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(AnnotationMemberDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("AnnotationMemberDeclaration Operation not supported");
+        throw new UnsupportedOperationException("AnnotationMemberDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(AssertStmt n, VisitArgs printer) {
-        throw new RuntimeException("AssertStmt Operation not supported");
+        throw new UnsupportedOperationException("AssertStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(AssignExpr n, VisitArgs printer) {
-        throw new RuntimeException("AssignExpr Operation not supported");
+        throw new UnsupportedOperationException("AssignExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(BlockComment n, VisitArgs printer) {
-        throw new RuntimeException("BlockComment Operation not supported");
+        throw new UnsupportedOperationException("BlockComment Operation not supported!");
     }
 
     @Override
     public Class<?> visit(BlockStmt n, VisitArgs printer) {
-        throw new RuntimeException("BlockStmt Operation not supported");
+        throw new UnsupportedOperationException("BlockStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(BreakStmt n, VisitArgs printer) {
-        throw new RuntimeException("BreakStmt Operation not supported");
+        throw new UnsupportedOperationException("BreakStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(CatchClause n, VisitArgs printer) {
-        throw new RuntimeException("CatchClause Operation not supported");
+        throw new UnsupportedOperationException("CatchClause Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ClassOrInterfaceDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("ClassOrInterfaceDeclaration Operation not supported");
+        throw new UnsupportedOperationException("ClassOrInterfaceDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(CompilationUnit n, VisitArgs printer) {
-        throw new RuntimeException("CompilationUnit Operation not supported");
+        throw new UnsupportedOperationException("CompilationUnit Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ConstructorDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("ConstructorDeclaration Operation not supported");
+        throw new UnsupportedOperationException("ConstructorDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ContinueStmt n, VisitArgs printer) {
-        throw new RuntimeException("ContinueStmt Operation not supported");
+        throw new UnsupportedOperationException("ContinueStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(DoStmt n, VisitArgs printer) {
-        throw new RuntimeException("DoStmt Operation not supported");
+        throw new UnsupportedOperationException("DoStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(EmptyStmt n, VisitArgs printer) {
-        throw new RuntimeException("EmptyStmt Operation not supported");
+        throw new UnsupportedOperationException("EmptyStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(EnumConstantDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("EnumConstantDeclaration Operation not supported");
+        throw new UnsupportedOperationException("EnumConstantDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(EnumDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("EnumDeclaration Operation not supported");
+        throw new UnsupportedOperationException("EnumDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ExplicitConstructorInvocationStmt n, VisitArgs printer) {
-        throw new RuntimeException("ExplicitConstructorInvocationStmt Operation not supported");
+        throw new UnsupportedOperationException("ExplicitConstructorInvocationStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(FieldDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("FieldDeclaration Operation not supported");
+        throw new UnsupportedOperationException("FieldDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ForStmt n, VisitArgs printer) {
-        throw new RuntimeException("ForStmt Operation not supported");
+        throw new UnsupportedOperationException("ForStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(IfStmt n, VisitArgs printer) {
-        throw new RuntimeException("IfStmt Operation not supported");
+        throw new UnsupportedOperationException("IfStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ImportDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("ImportDeclaration Operation not supported");
+        throw new UnsupportedOperationException("ImportDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(InitializerDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("InitializerDeclaration Operation not supported");
+        throw new UnsupportedOperationException("InitializerDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(InstanceOfExpr n, VisitArgs printer) {
-        throw new RuntimeException("InstanceOfExpr Operation not supported");
+        throw new UnsupportedOperationException("InstanceOfExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(JavadocComment n, VisitArgs printer) {
-        throw new RuntimeException("JavadocComment Operation not supported");
+        throw new UnsupportedOperationException("JavadocComment Operation not supported!");
     }
 
     @Override
     public Class<?> visit(LabeledStmt n, VisitArgs printer) {
-        throw new RuntimeException("LabeledStmt Operation not supported");
+        throw new UnsupportedOperationException("LabeledStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(LambdaExpr n, VisitArgs printer) {
-        throw new RuntimeException("LambdaExpr Operation not supported!");
+        throw new UnsupportedOperationException("LambdaExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(LineComment n, VisitArgs printer) {
-        throw new RuntimeException("LineComment Operation not supported");
+        throw new UnsupportedOperationException("LineComment Operation not supported!");
     }
 
     @Override
     public Class<?> visit(MarkerAnnotationExpr n, VisitArgs printer) {
-        throw new RuntimeException("MarkerAnnotationExpr Operation not supported");
+        throw new UnsupportedOperationException("MarkerAnnotationExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(MemberValuePair n, VisitArgs printer) {
-        throw new RuntimeException("MemberValuePair Operation not supported");
+        throw new UnsupportedOperationException("MemberValuePair Operation not supported!");
     }
 
     @Override
     public Class<?> visit(MethodDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("MethodDeclaration Operation not supported");
+        throw new UnsupportedOperationException("MethodDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(NormalAnnotationExpr n, VisitArgs printer) {
-        throw new RuntimeException("NormalAnnotationExpr Operation not supported");
+        throw new UnsupportedOperationException("NormalAnnotationExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(PackageDeclaration n, VisitArgs printer) {
-        throw new RuntimeException("PackageDeclaration Operation not supported");
+        throw new UnsupportedOperationException("PackageDeclaration Operation not supported!");
     }
 
     @Override
     public Class<?> visit(Parameter n, VisitArgs printer) {
-        throw new RuntimeException("Parameter Operation not supported");
+        throw new UnsupportedOperationException("Parameter Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ReturnStmt n, VisitArgs printer) {
-        throw new RuntimeException("ReturnStmt Operation not supported");
+        throw new UnsupportedOperationException("ReturnStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(SingleMemberAnnotationExpr n, VisitArgs printer) {
-        throw new RuntimeException("SingleMemberAnnotationExpr Operation not supported");
+        throw new UnsupportedOperationException("SingleMemberAnnotationExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(SuperExpr n, VisitArgs printer) {
-        throw new RuntimeException("SuperExpr Operation not supported");
+        throw new UnsupportedOperationException("SuperExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(SwitchStmt n, VisitArgs printer) {
-        throw new RuntimeException("SwitchStmt Operation not supported");
+        throw new UnsupportedOperationException("SwitchStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(SynchronizedStmt n, VisitArgs printer) {
-        throw new RuntimeException("SynchronizedStmt Operation not supported");
+        throw new UnsupportedOperationException("SynchronizedStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ThisExpr n, VisitArgs printer) {
-        throw new RuntimeException("ThisExpr Operation not supported");
+        throw new UnsupportedOperationException("ThisExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(ThrowStmt n, VisitArgs printer) {
-        throw new RuntimeException("ThrowStmt Operation not supported");
+        throw new UnsupportedOperationException("ThrowStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(TryStmt n, VisitArgs printer) {
-        throw new RuntimeException("TryStmt Operation not supported");
+        throw new UnsupportedOperationException("TryStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(TypeParameter n, VisitArgs printer) {
-        throw new RuntimeException("TypeParameter Operation not supported");
+        throw new UnsupportedOperationException("TypeParameter Operation not supported!");
     }
 
     @Override
     public Class<?> visit(VariableDeclarationExpr n, VisitArgs printer) {
-        throw new RuntimeException("VariableDeclarationExpr Operation not supported");
+        throw new UnsupportedOperationException("VariableDeclarationExpr Operation not supported!");
     }
 
     @Override
     public Class<?> visit(VariableDeclarator n, VisitArgs printer) {
-        throw new RuntimeException("VariableDeclarator Operation not supported");
+        throw new UnsupportedOperationException("VariableDeclarator Operation not supported!");
     }
 
     @Override
     public Class<?> visit(VoidType n, VisitArgs printer) {
-        throw new RuntimeException("VoidType Operation not supported");
+        throw new UnsupportedOperationException("VoidType Operation not supported!");
     }
 
     @Override
     public Class<?> visit(WhileStmt n, VisitArgs printer) {
-        throw new RuntimeException("WhileStmt Operation not supported");
+        throw new UnsupportedOperationException("WhileStmt Operation not supported!");
     }
 
     @Override
     public Class<?> visit(WildcardType n, VisitArgs printer) {
-        throw new RuntimeException("WildcardType Operation not supported");
+        throw new UnsupportedOperationException("WildcardType Operation not supported!");
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
