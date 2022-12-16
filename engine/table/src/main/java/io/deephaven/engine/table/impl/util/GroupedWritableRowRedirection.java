@@ -158,7 +158,7 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
 
     @Override
     public void fillPrevChunk(@NotNull FillContext fillContext,
-                              @NotNull WritableChunk<? super RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
+            @NotNull WritableChunk<? super RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
         fillChunk(fillContext, innerRowKeys, outerRowKeys);
     }
 

@@ -42,8 +42,8 @@ class NaturalJoinHelper {
         return result;
     }
 
-    private static QueryTable naturalJoinInternal(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
-            MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+    private static QueryTable naturalJoinInternal(QueryTable leftTable, QueryTable rightTable,
+            MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
         try (final BucketingContext bucketingContext =
                 new BucketingContext("naturalJoin", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
 

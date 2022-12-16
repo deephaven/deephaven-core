@@ -516,7 +516,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public RollupTable rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
-                              final Collection<? extends ColumnName> groupByColumns) {
+            final Collection<? extends ColumnName> groupByColumns) {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
         }

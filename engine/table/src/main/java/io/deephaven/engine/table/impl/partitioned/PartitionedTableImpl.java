@@ -336,14 +336,14 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             filters.add(new MatchFilter(keyColumnNames[kci], keyColumnValues[kci]));
         }
         return LivenessScopeStack.computeEnclosed(() -> {
-                    final Table[] matchingConstituents = filter(filters).snapshotConstituents();
-                    final int matchingCount = matchingConstituents.length;
-                    if (matchingCount > 1) {
-                        throw new UnsupportedOperationException(
-                                "Result size mismatch: expected 0 or 1 results, instead found " + matchingCount);
-                    }
-                    return matchingCount == 1 ? matchingConstituents[0] : null;
-                },
+            final Table[] matchingConstituents = filter(filters).snapshotConstituents();
+            final int matchingCount = matchingConstituents.length;
+            if (matchingCount > 1) {
+                throw new UnsupportedOperationException(
+                        "Result size mismatch: expected 0 or 1 results, instead found " + matchingCount);
+            }
+            return matchingCount == 1 ? matchingConstituents[0] : null;
+        },
                 table::isRefreshing,
                 constituent -> constituent != null && constituent.isRefreshing());
     }

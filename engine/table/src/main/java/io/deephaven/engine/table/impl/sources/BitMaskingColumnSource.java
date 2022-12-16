@@ -459,7 +459,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
         final WritableLongChunk<RowKeys> maskedKeys = effectiveContext.shareable.maskedKeys;
 
         if (FillUnordered.providesFillUnordered(innerSource)) {
-            //noinspection unchecked
+            // noinspection unchecked
             final FillUnordered<Values> cs = (FillUnordered<Values>) innerSource;
             if (usePrev) {
                 cs.fillPrevChunkUnordered(effectiveContext.innerFillContext, destination, maskedKeys);

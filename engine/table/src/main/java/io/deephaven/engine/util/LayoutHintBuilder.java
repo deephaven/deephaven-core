@@ -584,8 +584,8 @@ public class LayoutHintBuilder {
 
         if (autoFilterCols != null && !autoFilterCols.isEmpty()) {
             sb.append("autofilter=").append(
-                            autoFilterCols.values().stream().map(AutoFilterData::serialize)
-                                    .collect(Collectors.joining(",")))
+                    autoFilterCols.values().stream().map(AutoFilterData::serialize)
+                            .collect(Collectors.joining(",")))
                     .append(';');
         }
 

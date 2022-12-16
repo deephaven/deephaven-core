@@ -165,13 +165,12 @@ public interface Table extends
     String TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE = "TreeTableFilterReverseLookup";
     String HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo";
     /**
-     * Attribute on aggregation results used for hierarchical table construction.
-     * Specification is left to the implementation.
+     * Attribute on aggregation results used for hierarchical table construction. Specification is left to the
+     * implementation.
      */
     String AGGREGATION_ROW_LOOKUP_ATTRIBUTE = "AggregationRowLookup";
     /**
-     * Attribute on sort results used for hierarchical table construction.
-     * Specification is left to the implementation.
+     * Attribute on sort results used for hierarchical table construction. Specification is left to the implementation.
      */
     String SORT_REVERSE_LOOKUP_ATTRIBUTE = "SortReverseLookup";
     String PREPARED_RLL_ATTRIBUTE = "PreparedRll";
@@ -958,14 +957,14 @@ public interface Table extends
      * identifier for a given row, and the parent column indicates which row is the parent for a given row. Rows that
      * have a {@code null} parent are part of the "root" table.
      * <p>
-     * It is possible for rows to be "orphaned" if their parent is non-{@code null} and does not exist in the table.
-     * See {@link TreeTable#promoteOrphans(Table, String, String)}.
+     * It is possible for rows to be "orphaned" if their parent is non-{@code null} and does not exist in the table. See
+     * {@link TreeTable#promoteOrphans(Table, String, String)}.
      *
      * @param idColumn The name of a column containing a unique identifier for a particular row in the table
-     * @param parentColumn The name of a column containing the parent's identifier, {@code null} for rows that are
-     *        part of the root table
+     * @param parentColumn The name of a column containing the parent's identifier, {@code null} for rows that are part
+     *        of the root table
      * @return A {@link TreeTable} organized according to the parent-child relationships expressed by {@code idColumn}
-     * and {@code parentColumn}
+     *         and {@code parentColumn}
      */
     @ConcurrentMethod
     TreeTable tree(String idColumn, String parentColumn);

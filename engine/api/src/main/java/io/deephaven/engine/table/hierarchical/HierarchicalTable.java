@@ -54,8 +54,8 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
 
     /**
      * Get the {@link TableDefinition} of "extra" columns that should be exposed to snapshot consumers. This includes
-     * the {@link #getRowDepthColumn() row-depth column} and {@link #getRowExpandedColumn() row-expanded column}.
-     * This does not include type-specific node-level columns.
+     * the {@link #getRowDepthColumn() row-depth column} and {@link #getRowExpandedColumn() row-expanded column}. This
+     * does not include type-specific node-level columns.
      *
      * @return The externally-visible {@link TableDefinition} of "extra" columns for snapshots
      */

@@ -1124,7 +1124,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     private static <T extends Table> T setAddOnly(@NotNull final T table) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (T) table.withAttributes(Map.of(Table.ADD_ONLY_TABLE_ATTRIBUTE, true));
     }
 

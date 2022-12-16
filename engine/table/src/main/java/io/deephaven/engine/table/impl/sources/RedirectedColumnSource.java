@@ -430,7 +430,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
         if (ascendingMapping) {
             effectiveContext.doOrderedFillAscending(innerSource, usePrev, destination);
         } else if (innerSource instanceof FillUnordered) {
-            //noinspection unchecked
+            // noinspection unchecked
             effectiveContext.doUnorderedFill((FillUnordered<Values>) innerSource, usePrev, destination);
         } else {
             effectiveContext.doOrderedFillAndPermute(innerSource, usePrev, destination);

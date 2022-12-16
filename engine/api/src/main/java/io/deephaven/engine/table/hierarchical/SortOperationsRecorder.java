@@ -6,8 +6,8 @@ import io.deephaven.engine.table.Table;
 import java.util.Collection;
 
 /**
- * Records sort operations to be applied to individual nodes of a hierarchical table for presentation. Supports a
- * subset of the {@link Table} API.
+ * Records sort operations to be applied to individual nodes of a hierarchical table for presentation. Supports a subset
+ * of the {@link Table} API.
  */
 public interface SortOperationsRecorder<IFACE_TYPE extends SortOperationsRecorder<IFACE_TYPE>> {
 

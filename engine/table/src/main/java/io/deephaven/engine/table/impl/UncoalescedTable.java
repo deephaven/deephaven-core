@@ -383,7 +383,7 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     @Override
     @ConcurrentMethod
     public RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-                              Collection<? extends ColumnName> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return coalesce().rollup(aggregations, includeConstituents, groupByColumns);
     }
 

@@ -251,7 +251,7 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-                               Collection<? extends ColumnName> groupByColumns) {
+            Collection<? extends ColumnName> groupByColumns) {
         return throwUnsupported();
     }
 

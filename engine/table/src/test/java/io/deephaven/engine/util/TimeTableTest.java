@@ -266,10 +266,10 @@ public class TimeTableTest extends RefreshingTableTestCase {
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
 
-        //noinspection unchecked
+        // noinspection unchecked
         final FillUnordered<Values> fillDtColumn = (FillUnordered<Values>) dtColumn;
         Assert.assertTrue(fillDtColumn.providesFillUnordered());
-        //noinspection unchecked
+        // noinspection unchecked
         final FillUnordered<Values> fillLongColumn = (FillUnordered<Values>) column;
         Assert.assertTrue(fillLongColumn.providesFillUnordered());
 
