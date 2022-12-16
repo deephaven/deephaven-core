@@ -1,10 +1,13 @@
 package io.deephaven.server.table.ops;
 
+import com.google.protobuf.NullValue;
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSum;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -117,5 +120,23 @@ public class AggregateAllGrpcTest extends GrpcTableOperationTestBase<AggregateAl
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "io.deephaven.proto.backplane.grpc.AggregateAllRequest has unknown field(s)");
+    }
+
+    @Test
+    public void name() {
+        final TableReference ref = ref(TableTools.emptyTable(100).view("Key=ii % 2", "I=ii"));
+        final AggregateAllRequest request = AggregateAllRequest.newBuilder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setSourceId(ref)
+                .setSpec(AggSpec.newBuilder().setUnique(AggSpecUnique.newBuilder()
+                        .setIncludeNulls(false)
+                        .setNonUniqueSentinel(
+                                AggSpecNonUniqueSentinel.newBuilder().setNullValue(NullValue.NULL_VALUE).build())
+                        .build()).build())
+                .build();
+        final ExportedTableCreationResponse response = channel().tableBlocking().aggregateAll(request);
+        assertThat(response.getSuccess()).isTrue();
+        assertThat(response.getIsStatic()).isTrue();
+        assertThat(response.getSize()).isEqualTo(1);
     }
 }
