@@ -131,7 +131,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 return;
             }
             SessionState session = sessionService.getCurrentSession();
-            logBuffer.subscribe(new LogBufferStreamAdapter(session, request, responseObserver));
+            logBuffer.subscribe(new LogBufferStreamAdapter(session, request, responseObserver, logBuffer));
         });
     }
 
@@ -310,13 +310,21 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private static class LogBufferStreamAdapter extends SessionCloseableObserver<LogSubscriptionData>
             implements LogBufferRecordListener {
         private final LogSubscriptionRequest request;
+        private final LogBuffer logBuffer;
 
         public LogBufferStreamAdapter(
                 final SessionState session,
                 final LogSubscriptionRequest request,
-                final StreamObserver<LogSubscriptionData> responseObserver) {
+                final StreamObserver<LogSubscriptionData> responseObserver,
+                final LogBuffer logBuffer) {
             super(session, responseObserver);
             this.request = request;
+            this.logBuffer = logBuffer;
+        }
+
+        @Override
+        protected void onClose() {
+            logBuffer.unsubscribe(this);
         }
 
         @Override
