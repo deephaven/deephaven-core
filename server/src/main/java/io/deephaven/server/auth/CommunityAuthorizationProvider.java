@@ -4,16 +4,7 @@
 package io.deephaven.server.auth;
 
 import io.deephaven.auth.AuthContext;
-import io.deephaven.auth.codegen.impl.ApplicationServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.ConfigServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.HealthAuthWiring;
-import io.deephaven.auth.codegen.impl.InputTableServiceContextualAuthWiring;
-import io.deephaven.auth.codegen.impl.ObjectServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
-import io.deephaven.auth.codegen.impl.SessionServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.StorageServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
+import io.deephaven.auth.codegen.impl.*;
 import io.deephaven.server.session.TicketResolverBase;
 
 public class CommunityAuthorizationProvider implements AuthorizationProvider {
@@ -65,6 +56,11 @@ public class CommunityAuthorizationProvider implements AuthorizationProvider {
     @Override
     public PartitionedTableServiceContextualAuthWiring getPartitionedTableServiceContextualAuthWiring() {
         return new PartitionedTableServiceContextualAuthWiring.AllowAll();
+    }
+
+    @Override
+    public HierarchicalTableServiceContextualAuthWiring getHierarchicalTableServiceContextualAuthWiring() {
+        return new HierarchicalTableServiceContextualAuthWiring.AllowAll();
     }
 
     @Override
