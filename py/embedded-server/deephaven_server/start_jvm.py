@@ -17,6 +17,9 @@ def _jars_path():
 def _compiler_directives():
     return _jars_path() / 'dh-compiler-directives.txt'
 
+def _default_vmoptions():
+    return _jars_path() / 'dh-default.vmoptions'
+
 def _jars():
     return _jars_path().glob('*.jar')
 
@@ -42,6 +45,7 @@ DEFAULT_JVM_ARGS = [
     f"-XX:CompilerDirectivesFile={_compiler_directives()}",
     # (deephaven-core#2500): Remove DisableIntrinsic for currentThread
     '-XX:DisableIntrinsic=_currentThread',
+    f"-XX:VMOptionsFile={_default_vmoptions()}",
 ]
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered

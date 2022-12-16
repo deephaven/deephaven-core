@@ -145,7 +145,7 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * Set the ShiftObliviousListener that should be notified if results based on this filter must be recomputed.
+     * Set the RecomputeListener that should be notified if results based on this filter must be recomputed.
      *
      * @param result the listener to notify.
      */

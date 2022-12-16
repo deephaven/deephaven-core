@@ -278,7 +278,6 @@ public abstract class SourceTable extends RedefinableTable {
                             }
                         };
                 swapListener.setListenerAndResult(listener, resultTable);
-                resultTable.addParentReference(swapListener);
             }
 
             result.setValue(resultTable);

@@ -4,13 +4,14 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import org.jetbrains.annotations.Nullable;
 
 public class RegionContextHolder implements ChunkSource.FillContext {
     private final int chunkCapacity;
     private final SharedContext sharedContext;
-    private Object innerContext;
+    private Context innerContext;
 
     public RegionContextHolder(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
 
@@ -28,7 +29,7 @@ public class RegionContextHolder implements ChunkSource.FillContext {
      * 
      * @param contextObject The context object
      */
-    public void setInnerContext(@Nullable final Object contextObject) {
+    public void setInnerContext(@Nullable final Context contextObject) {
         this.innerContext = contextObject;
     }
 
@@ -51,13 +52,21 @@ public class RegionContextHolder implements ChunkSource.FillContext {
     }
 
     /**
-     * Get the inner context value set by {@link #setInnerContext(Object)} and cast it to the templated type.
+     * Get the inner context value set by {@link #setInnerContext(Context)} and cast it to the templated type.
      * 
      * @return The inner context value.
      * @param <T> The desired result type
      */
-    public <T> T getInnerContext() {
+    public <T extends Context> T getInnerContext() {
         // noinspection unchecked
         return (T) innerContext;
+    }
+
+    @Override
+    public void close() {
+        if (innerContext != null) {
+            innerContext.close();
+            innerContext = null;
+        }
     }
 }

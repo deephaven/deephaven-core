@@ -5,7 +5,7 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
@@ -34,7 +34,7 @@ public class TestModelFarm extends TestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @After

@@ -700,6 +700,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 }
             }
         }
+
+        @Override
+        public void destroy() {
+            super.destroy();
+            parent.removeUpdateListener(this);
+        }
     }
 
     private static class FillDeltaContext implements SafeCloseable {

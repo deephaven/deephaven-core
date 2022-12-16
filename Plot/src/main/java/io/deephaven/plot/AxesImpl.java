@@ -249,7 +249,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     private void configureOHLCPlot() {
         this.setDimension(2);
-        chart.setChartType(ChartType.OHLC);
+        chart.setChartType(ChartType.XY);
         xAxis().setType(AxisImpl.Type.NUMBER);
         yAxis().setType(AxisImpl.Type.NUMBER);
         initialize();
@@ -1393,6 +1393,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
             final IndexableNumericData open, final IndexableNumericData high, final IndexableNumericData low,
             final IndexableNumericData close) {
         configureOHLCPlot();
+        plotStyle(PlotStyle.OHLC);
         final OHLCDataSeriesArray ds =
                 new OHLCDataSeriesArray(this, dataSeries.nextId(), seriesName, time, open, high, low, close);
 
@@ -1405,6 +1406,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public OHLCDataSeriesTableArray ohlcPlot(final Comparable seriesName, final Table t, final String time,
                                              final String open, final String high, final String low, final String close) {
         configureOHLCPlot();
+        plotStyle(PlotStyle.OHLC);
         final TableHandle h = new TableHandle(t, time, open, high, low, close);
 
         final OHLCDataSeriesTableArray ds = new OHLCDataSeriesTableArray(this, dataSeries.nextId(), seriesName, h,
@@ -1421,6 +1423,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final SelectableDataSet sds, final String time,
                                         final String open, final String high, final String low, final String close) {
         configureOHLCPlot();
+        plotStyle(PlotStyle.OHLC);
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, time, open, high, low, close);
 
         final OHLCDataSeriesSwappableTableArray ds = new OHLCDataSeriesSwappableTableArray(this, dataSeries.nextId(),
@@ -1445,6 +1448,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNull(close, "closeCol", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureOHLCPlot();
+        plotStyle(PlotStyle.OHLC);
 
         final TableBackedPartitionedTableHandle h = new TableBackedPartitionedTableHandle(t,
                 Arrays.asList(time, open, high, low, close), byColumns, new PlotInfo(this, seriesName));
@@ -1480,6 +1484,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, columns);
         configureOHLCPlot();
+        plotStyle(PlotStyle.OHLC);
+
         final MultiOHLCSeriesSwappable series = new MultiOHLCSeriesSwappable(this, dataSeries.nextId(), seriesName, t,
                 time, open, high, low, close, byColumns);
 

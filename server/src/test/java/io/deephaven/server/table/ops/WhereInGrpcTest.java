@@ -1,6 +1,9 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.table.ops;
 
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -26,7 +29,7 @@ public class WhereInGrpcTest extends DeephavenApiServerSingleAuthenticatedBase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @Override

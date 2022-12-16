@@ -1626,6 +1626,38 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update-by operation failed.") from e
 
+    def slice(self, start: int, stop: int) -> Table:
+        """Extracts a subset of a table by row positions into a new Table.
+
+          If both the start and the stop are positive, then both are counted from the beginning of the table.
+          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head(N)`
+          The start must be less than or equal to the stop.
+
+          If the start is positive and the stop is negative, then the start is counted from the beginning of the
+          table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+          rows but the first and last. If the stop is before the start, the result is an empty table.
+
+          If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail(N)`.
+
+          If the start is negative and the stop is negative, they are both counted from the end of the
+          table. For example, slice(-2, -1) returns the second to last row of the table.
+
+        Args:
+            start (int): the first row position to include in the result
+            stop (int): the last row position to include in the result
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.slice(start, stop))
+        except Exception as e:
+            raise DHError(e, "table slice operation failed.") from e
+
 
 class PartitionedTable(JObjectWrapper):
     """A partitioned table is a table containing tables, known as constituent tables.

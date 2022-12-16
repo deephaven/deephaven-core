@@ -677,11 +677,15 @@ public abstract class BaseTable extends LivenessArtifact
     private SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> ensureChildListenerReferences() {
         // noinspection unchecked
         return ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES,
-                () -> new SimpleReferenceManager<>((
-                        final TableUpdateListener tableUpdateListener) -> tableUpdateListener instanceof LegacyListenerAdapter
-                                ? (LegacyListenerAdapter) tableUpdateListener
-                                : new WeakSimpleReference<>(tableUpdateListener),
-                        true));
+                () -> new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) -> {
+                    if (tableUpdateListener instanceof LegacyListenerAdapter) {
+                        return (LegacyListenerAdapter) tableUpdateListener;
+                    } else if (tableUpdateListener instanceof SwapListener) {
+                        return ((SwapListener) tableUpdateListener).getReferenceForSource();
+                    } else {
+                        return new WeakSimpleReference<>(tableUpdateListener);
+                    }
+                }, true));
     }
 
     @Override
@@ -739,6 +743,11 @@ public abstract class BaseTable extends LivenessArtifact
      *        callers should pass a {@code copy} for updates they intend to further use.
      */
     public final void notifyListeners(final TableUpdate update) {
+        Assert.eqFalse(isFailed, "isFailed");
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        // tables may only be updated once per cycle
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
+
         Assert.eqTrue(update.valid(), "update.valid()");
         if (update.empty()) {
             update.release();
@@ -749,8 +758,6 @@ public abstract class BaseTable extends LivenessArtifact
 
         final boolean hasNoListeners = !hasListeners();
         if (hasNoListeners) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
-            Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
             lastNotificationStep = currentStep;
             update.release();
             return;
@@ -783,10 +790,6 @@ public abstract class BaseTable extends LivenessArtifact
         if (VALIDATE_UPDATE_OVERLAPS) {
             validateUpdateOverlaps(update);
         }
-
-        // tables may only be updated once per cycle
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
-        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
 
         lastNotificationStep = currentStep;
 
@@ -892,11 +895,14 @@ public abstract class BaseTable extends LivenessArtifact
      * @param e error
      * @param sourceEntry performance tracking
      */
-    public final void notifyListenersOnError(final Throwable e,
-            @Nullable final TableListener.Entry sourceEntry) {
+    public final void notifyListenersOnError(final Throwable e, @Nullable final TableListener.Entry sourceEntry) {
+        Assert.eqFalse(isFailed, "isFailed");
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
+
         isFailed = true;
         maybeSignal();
-        lastNotificationStep = LogicalClock.DEFAULT.currentStep();
+        lastNotificationStep = currentStep;
 
         final NotificationQueue notificationQueue = getNotificationQueue();
         childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
@@ -1390,7 +1396,6 @@ public abstract class BaseTable extends LivenessArtifact
                 if (swapListener != null) {
                     final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                     swapListener.setListenerAndResult(listener, resultTable);
-                    resultTable.addParentReference(swapListener);
                 }
 
                 result.setValue(resultTable);
@@ -1422,8 +1427,8 @@ public abstract class BaseTable extends LivenessArtifact
         return result;
     }
 
-    public static <SL extends SwapListenerBase<?>> void initializeWithSnapshot(
-            String logPrefix, SL swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
+    public static void initializeWithSnapshot(
+            String logPrefix, SwapListener swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
             snapshotFunction.call(false, LogicalClock.DEFAULT.currentValue());
             return;
@@ -1431,7 +1436,7 @@ public abstract class BaseTable extends LivenessArtifact
         ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);
     }
 
-    public interface SwapListenerFactory<T extends SwapListenerBase<?>> {
+    public interface SwapListenerFactory<T extends SwapListener> {
         T newListener(BaseTable sourceTable);
     }
 
@@ -1443,7 +1448,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @return a swap listener for this table (or null)
      */
     @Nullable
-    public <T extends SwapListenerBase<?>> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
+    public <T extends SwapListener> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
         if (!isRefreshing()) {
             return null;
         }

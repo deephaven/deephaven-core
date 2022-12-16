@@ -1,6 +1,6 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.engine.context.TestExecutionContext
 import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.util.VariableProvider
@@ -22,7 +22,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
     private SafeCloseable executionContext;
 
     void setup() {
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     void cleanup() {

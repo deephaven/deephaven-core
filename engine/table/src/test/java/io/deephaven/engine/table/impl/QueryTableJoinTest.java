@@ -5,13 +5,18 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.DateGenerator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.generator.SortedIntGenerator;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
@@ -25,9 +30,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.table.impl.RefreshingTableTestCase.printTableUpdates;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 
@@ -59,18 +64,18 @@ public class QueryTableJoinTest {
             @SuppressWarnings("SameParameterValue") long maxSteps) {
         final Random random = new Random(seed);
 
-        final TstUtils.ColumnInfo[] leftColumnInfo;
+        final ColumnInfo[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
-                        new TstUtils.SortedIntGenerator(1, 10000),
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 30)));
-        final TstUtils.ColumnInfo[] rightColumnInfo;
+                        new SortedIntGenerator(1, 10000),
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 30)));
+        final ColumnInfo[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
-                        new TstUtils.SortedIntGenerator(1, 10000),
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(20, 40)));
+                        new SortedIntGenerator(1, 10000),
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(20, 40)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
@@ -169,18 +174,18 @@ public class QueryTableJoinTest {
             long seed,
             @SuppressWarnings("SameParameterValue") long maxSteps) {
         final Random random = new Random(seed);
-        final TstUtils.ColumnInfo[] leftColumnInfo;
+        final ColumnInfo[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
-                        new TstUtils.SortedIntGenerator(1, 1000),
-                        new TstUtils.SetGenerator<>("a", "b"),
-                        new TstUtils.SetGenerator<>(10, 20, 30)));
-        final TstUtils.ColumnInfo[] rightColumnInfo;
+                        new SortedIntGenerator(1, 1000),
+                        new SetGenerator<>("a", "b"),
+                        new SetGenerator<>(10, 20, 30)));
+        final ColumnInfo[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
-                        new TstUtils.IntGenerator(1, 1000),
-                        new TstUtils.SetGenerator<>("a", "b", "c"),
-                        new TstUtils.SetGenerator<>(20, 30, 40)));
+                        new IntGenerator(1, 1000),
+                        new SetGenerator<>("a", "b", "c"),
+                        new SetGenerator<>(20, 30, 40)));
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
@@ -232,18 +237,18 @@ public class QueryTableJoinTest {
         final Random random = new Random(seed);
         QueryScope.addParam("f", new SimpleDateFormat("dd HH:mm:ss"));
 
-        final TstUtils.ColumnInfo[] leftColumnInfo;
+        final ColumnInfo[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new TstUtils.DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
-                        new TstUtils.SetGenerator<>("a", "b"),
-                        new TstUtils.SetGenerator<>(10, 20, 30)));
-        final TstUtils.ColumnInfo[] rightColumnInfo;
+                        new DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
+                        new SetGenerator<>("a", "b"),
+                        new SetGenerator<>(10, 20, 30)));
+        final ColumnInfo[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new TstUtils.DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
-                        new TstUtils.SetGenerator<>("a", "b", "c"),
-                        new TstUtils.SetGenerator<>(20, 30, 40)));
+                        new DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
+                        new SetGenerator<>("a", "b", "c"),
+                        new SetGenerator<>(20, 30, 40)));
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {

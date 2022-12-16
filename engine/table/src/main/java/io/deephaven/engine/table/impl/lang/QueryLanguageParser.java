@@ -1805,7 +1805,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 if (!n.getNameAsString().equals("call")) {
                     // to be backwards compatible with the syntax func.call(...)
                     innerPrinter.append("getAttribute(\"" + n.getName() + "\")");
-                    printer.append("(new io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper(");
+                    printer.append("(new io.deephaven.engine.util.PyCallableWrapper(");
                     printer.append(innerPrinter);
                     printer.append(")).");
                 } else {
@@ -1861,6 +1861,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (pyCallableWrapper.isVectorized()) {
                 throw ex;
             }
+            pyCallableWrapper.setVectorizable(false);
             if (log.isDebugEnabled()) {
                 log.debug().append("Python function call ").append(n.toString()).append(" is not auto-vectorizable:")
                         .append(ex.getMessage()).endl();

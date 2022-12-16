@@ -354,7 +354,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
 
-    private String sortable(int i) {
+    public static String sortable(int i) {
         StringBuilder res = new StringBuilder(Integer.toString(i, 36));
         while (res.length() < 5) {
             res.insert(0, "0");

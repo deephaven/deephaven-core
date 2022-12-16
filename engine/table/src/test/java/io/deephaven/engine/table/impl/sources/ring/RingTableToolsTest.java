@@ -8,21 +8,21 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.StreamTableTools;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTime;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.math.BigInteger;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertEqualsByElements;
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
-import static io.deephaven.engine.table.impl.TstUtils.prevTableColumnSources;
-import static io.deephaven.engine.table.impl.TstUtils.subset;
+import static io.deephaven.engine.testutil.TstUtils.assertEqualsByElements;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.prevTableColumnSources;
+import static io.deephaven.engine.testutil.TstUtils.subset;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.byteCol;
 import static io.deephaven.engine.util.TableTools.charCol;

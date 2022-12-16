@@ -7,14 +7,14 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.sources.DateTimeTreeMapSource;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.table.impl.sources.DateTimeTreeMapSource;
+import io.deephaven.engine.testutil.TstUtils;
 
 public class TestTailInitializationFilter extends RefreshingTableTestCase {
     public void testSimple() {

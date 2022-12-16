@@ -6,6 +6,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.CharGenerator;
+import io.deephaven.engine.testutil.generator.Generator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Basic;
@@ -18,12 +23,12 @@ import org.junit.experimental.categories.Category;
 import java.util.Arrays;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
-import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.test.junit4.EngineCleanup.printTableUpdates;
+import static io.deephaven.engine.testutil.junit4.EngineCleanup.printTableUpdates;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +40,7 @@ public class TestForwardFill extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, true, false, false, 0x507A70,
-                new String[] {"charCol"}, new TstUtils.Generator[] {new TstUtils.CharGenerator('A', 'Z', .1)}).t;
+                new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)}).t;
 
         final Table filled = t.updateBy(UpdateByOperation.Fill());
         for (String col : t.getDefinition().getColumnNamesArray()) {

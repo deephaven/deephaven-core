@@ -5,10 +5,11 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.EvalNugget;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
-import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.testutil.generator.Generator;
+import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.ParallelTest;
 import org.junit.Test;
@@ -17,9 +18,9 @@ import org.junit.experimental.categories.Category;
 import java.time.Duration;
 import java.util.*;
 
-import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
-import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.table.impl.TstUtils.validate;
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.testutil.TstUtils.validate;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
@@ -65,7 +66,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     private void doTestTicking(boolean redirected, boolean bucketed, boolean appendOnly, int steps, int size,
             int seed) {
         final CreateResult result = createTestTable(size, bucketed, false, true, seed,
-                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
 

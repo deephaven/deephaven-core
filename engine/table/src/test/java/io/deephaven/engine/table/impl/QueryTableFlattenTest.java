@@ -8,6 +8,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import junit.framework.TestCase;
 import org.junit.Assert;
@@ -18,18 +21,18 @@ import java.util.Random;
 
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class QueryTableFlattenTest extends QueryTableTestBase {
 
     private void testFlatten(int size) {
         final Random random = new Random(0);
-        final TstUtils.ColumnInfo columnInfo[];
+        final ColumnInfo columnInfo[];
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 100, 0.1),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100, 0.1),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
         if (printTableUpdates) {
             showWithRowSet(queryTable);
         }

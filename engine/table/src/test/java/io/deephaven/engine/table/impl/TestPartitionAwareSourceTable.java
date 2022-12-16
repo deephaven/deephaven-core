@@ -11,6 +11,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.testutil.TestErrorNotification;
+import io.deephaven.engine.testutil.TestNotification;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
@@ -33,7 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertIndexEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertIndexEquals;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -76,8 +79,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private Table coalesced;
     private TableUpdateListener listener;
-    private final TstUtils.TstNotification notification = new TstUtils.TstNotification();
-    private final TstUtils.TstErrorNotification errorNotification = new TstUtils.TstErrorNotification();
+    private final TestNotification notification = new TestNotification();
+    private final TestErrorNotification errorNotification = new TestErrorNotification();
 
     private WritableRowSet expectedRowSet;
 

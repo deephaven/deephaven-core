@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
@@ -12,8 +14,8 @@ import junit.framework.TestCase;
 
 import java.util.List;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
-import static io.deephaven.engine.table.impl.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.i;
 
 public class TestListenerFailure extends RefreshingTableTestCase {
     public void testListenerFailure() {
@@ -78,7 +80,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
         final QueryTable viewed = (QueryTable) source.updateView("UC=Str.toUpperCase()");
-        final Table filtered = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filtered = viewed.where("UC=`A`");
 
         TableTools.showWithRowSet(filtered);
 
@@ -89,8 +91,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         assertFalse(filtered.isFailed());
 
-        final Table filteredAgain =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredAgain = viewed.where("UC=`A`");
         assertSame(filtered, filteredAgain);
 
         allowingError(() -> {
@@ -109,8 +110,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
             source.notifyListeners(i(), i(5), i());
         });
 
-        final Table filteredYetAgain =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredYetAgain = viewed.where("UC=`A`");
         assertNotSame(filtered, filteredYetAgain);
         assertFalse(filteredYetAgain.isFailed());
         assertTableEquals(TableTools.newTable(TableTools.col("Str", "A"), TableTools.col("UC", "A")), filteredYetAgain);

@@ -65,6 +65,10 @@ if (hasProperty('debug')) {
     extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
 }
 
+if (hasProperty('debugAutocomplete')) {
+    extraJvmArgs += ['-Ddeephaven.console.autocomplete.quiet=false']
+}
+
 if (hasProperty('gcApplication')) {
     extraJvmArgs += ['-Dio.deephaven.app.GcApplication.enabled=true']
 }
@@ -76,10 +80,6 @@ if (hasProperty('quiet')) {
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect
     jvmArgs extraJvmArgs
-
-    jvmArgs '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication'
 }
 
 tasks.withType(CreateStartScripts).configureEach {
