@@ -110,7 +110,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
     }
 
     @Override
-    public Table create(final ComboAggregateRequest request,
+    public Table create(final ComboAggregateRequest  request,
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         final Table parent = sourceTables.get(0).get();
@@ -191,7 +191,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         return agg.getMatchPairsList().toArray(String[]::new);
     }
 
-    private static Aggregation makeAggregation(
+    public static Aggregation makeAggregation(
             @NotNull final ComboAggregateRequest.Aggregate agg,
             @NotNull final Function<ComboAggregateRequest.Aggregate, String[]> getPairs) {
         switch (agg.getType()) {
