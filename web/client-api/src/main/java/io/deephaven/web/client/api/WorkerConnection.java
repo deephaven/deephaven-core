@@ -235,7 +235,8 @@ public class WorkerConnection {
                 new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         storageServiceClient = new StorageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         configServiceClient = new ConfigServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        hierarchicalTableServiceClient = new HierarchicalTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        hierarchicalTableServiceClient =
+                new HierarchicalTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -945,6 +946,7 @@ public class WorkerConnection {
     public ConfigServiceClient configServiceClient() {
         return configServiceClient;
     }
+
     public HierarchicalTableServiceClient hierarchicalTableServiceClient() {
         return hierarchicalTableServiceClient;
     }
