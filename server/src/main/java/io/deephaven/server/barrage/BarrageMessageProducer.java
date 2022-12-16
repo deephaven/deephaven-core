@@ -197,7 +197,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final Scheduler scheduler;
     private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
 
-    private final BaseTable parent;
+    private final BaseTable<?> parent;
     private final long updateIntervalMs;
     private volatile long lastUpdateTime = 0;
     private volatile long lastScheduledUpdateTime = 0;

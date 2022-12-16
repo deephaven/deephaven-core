@@ -287,9 +287,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
     protected static class QueryTableReference extends DeferredViewTable.TableReference {
 
-        protected final SourceTable table;
+        protected final SourceTable<?> table;
 
-        QueryTableReference(SourceTable table) {
+        QueryTableReference(SourceTable<?> table) {
             super(table);
             this.table = table;
         }

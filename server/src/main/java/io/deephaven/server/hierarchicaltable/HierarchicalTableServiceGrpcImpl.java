@@ -48,7 +48,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     @Override
     public void exportSource(
             @NotNull final HierarchicalTableSourceExportRequest request,
-            @NotNull final StreamObserver<HierarchicalTableSourceExportResponse> responseObserver) {
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         // TODO-RWC: IMPLEMENT ME
         super.exportSource(request, responseObserver);
     }

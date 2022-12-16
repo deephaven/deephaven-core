@@ -306,7 +306,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final PartitionedTable partitionedTable = queryTable.partitionBy("Sym");
 
         for (Table table : partitionedTable.constituents()) {
-            table.setAttribute("quux", "baz");
+            ((QueryTable) table).setAttribute("quux", "baz");
         }
 
         final PartitionedTable.Proxy proxy = partitionedTable.proxy(true, true);
@@ -325,7 +325,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         int tableCounter = 1;
         for (Table table : partitionedTable.constituents()) {
-            table.setAttribute("differing", tableCounter++);
+            ((QueryTable) table).setAttribute("differing", tableCounter++);
         }
 
         // the merged table just takes the set that is consistent

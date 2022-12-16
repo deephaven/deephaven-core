@@ -174,27 +174,27 @@ public class BarrageUtil {
 
         // copy rollup details
         // TODO-RWC: Delete me
-        if (attributes.containsKey(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)) {
-            unsentAttributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-            final HierarchicalTableInfo hierarchicalTableInfo =
-                    (HierarchicalTableInfo) attributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-            final String hierarchicalSourceKeyPrefix =
-                    ATTR_ATTR_TAG + "." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
-            putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "hierarchicalColumnName",
-                    hierarchicalTableInfo.getHierarchicalColumnName());
-            if (hierarchicalTableInfo instanceof RollupInfo) {
-                final RollupInfo rollupInfo = (RollupInfo) hierarchicalTableInfo;
-                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "byColumns",
-                        String.join(",", rollupInfo.byColumnNames));
-                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "leafType", rollupInfo.getLeafType().name());
-
-                // mark columns to indicate their sources
-                for (final MatchPair matchPair : rollupInfo.getMatchPairs()) {
-                    putMetadata(getExtraMetadata.apply(matchPair.leftColumn()), "rollup.sourceColumn",
-                            matchPair.rightColumn());
-                }
-            }
-        }
+//        if (attributes.containsKey(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)) {
+//            unsentAttributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
+//            final HierarchicalTableInfo hierarchicalTableInfo =
+//                    (HierarchicalTableInfo) attributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
+//            final String hierarchicalSourceKeyPrefix =
+//                    ATTR_ATTR_TAG + "." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
+//            putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "hierarchicalColumnName",
+//                    hierarchicalTableInfo.getHierarchicalColumnName());
+//            if (hierarchicalTableInfo instanceof RollupInfo) {
+//                final RollupInfo rollupInfo = (RollupInfo) hierarchicalTableInfo;
+//                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "byColumns",
+//                        String.join(",", rollupInfo.byColumnNames));
+//                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "leafType", rollupInfo.getLeafType().name());
+//
+//                // mark columns to indicate their sources
+//                for (final MatchPair matchPair : rollupInfo.getMatchPairs()) {
+//                    putMetadata(getExtraMetadata.apply(matchPair.leftColumn()), "rollup.sourceColumn",
+//                            matchPair.rightColumn());
+//                }
+//            }
+//        }
 
         // note which attributes have a value we couldn't send
         for (String unsentAttribute : unsentAttributes) {
@@ -524,7 +524,7 @@ public class BarrageUtil {
                 name.equals(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
         putMetadata(metadata, "isDateFormat", name.endsWith(ColumnFormattingValues.TABLE_DATE_FORMAT_NAME) + "");
         putMetadata(metadata, "isNumberFormat", name.endsWith(ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME) + "");
-        putMetadata(metadata, "isRollupColumn", name.equals(RollupInfo.ROLLUP_COLUMN) + "");
+//        putMetadata(metadata, "isRollupColumn", name.equals(RollupInfo.ROLLUP_COLUMN) + "");
 
         if (description != null) {
             putMetadata(metadata, "description", description);

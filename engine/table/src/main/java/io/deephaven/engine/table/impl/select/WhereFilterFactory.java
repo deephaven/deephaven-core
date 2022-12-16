@@ -229,7 +229,6 @@ public class WhereFilterFactory {
 
             return t.getColumnSourceMap().entrySet().stream()
                     .filter(entry -> !ColumnFormattingValues.isFormattingColumn(entry.getKey()) &&
-                            !RollupInfo.ROLLUP_COLUMN.equals(entry.getKey()) &&
                             (columnNames.isEmpty() || columnNames.contains(entry.getKey())))
                     .map(entry -> {
                         final Class<?> colClass = entry.getValue().getType();
@@ -276,8 +275,7 @@ public class WhereFilterFactory {
 
         for (String part : parts) {
             final WhereFilter[] filterArray = t.getColumnSourceMap().entrySet().stream()
-                    .filter(entry -> !ColumnFormattingValues.isFormattingColumn(entry.getKey())
-                            && !RollupInfo.ROLLUP_COLUMN.equals(entry.getKey()))
+                    .filter(entry -> !ColumnFormattingValues.isFormattingColumn(entry.getKey()))
                     .map(entry -> {
                         final Class<?> colClass = entry.getValue().getType();
                         final String colName = entry.getKey();

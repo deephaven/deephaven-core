@@ -4,27 +4,30 @@
 package io.deephaven.hierarchicaltable;
 
 import com.google.auto.service.AutoService;
-import io.deephaven.engine.table.impl.hierarchical.BaseHierarchicalTable;
+import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
+import io.deephaven.proto.backplane.grpc.HierarchicalTableViewDescriptor;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * An object type named {@value NAME} of java class type {@link BaseHierarchicalTable}.
+ * An object type named {@value NAME} of java class type {@link HierarchicalTable}.
  */
 @AutoService(ObjectType.class)
-public class HierarchicalTableViewTypePlugin extends ObjectTypeClassBase<BaseHierarchicalTable> {
+public class HierarchicalTableViewTypePlugin extends ObjectTypeClassBase<HierarchicalTable> {
 
     public static final String NAME = "HierarchicalTableView";
 
     public HierarchicalTableViewTypePlugin() {
-        super(NAME, BaseHierarchicalTable.class);
+        super(NAME, HierarchicalTable.class);
     }
 
     @Override
-    public void writeToImpl(Exporter exporter, BaseHierarchicalTable object, OutputStream out) throws IOException {
+    public void writeToImpl(Exporter exporter, HierarchicalTable object, OutputStream out) throws IOException {
+        HierarchicalTableViewDescriptor.newBuilder();
+
         // TODO-RWC: IMPLEMENT ME
         // PartitionedTable partitionedTable = (PartitionedTable) object;
         // exporter.reference(partitionedTable.table(), false, true);

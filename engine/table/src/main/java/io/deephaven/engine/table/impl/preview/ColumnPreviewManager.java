@@ -71,7 +71,7 @@ public class ColumnPreviewManager {
      * @return the table containing the preview columns
      */
     public static Table applyPreview(final Table table) {
-        Table result = table;
+        BaseTable<?> result = (BaseTable<?>) table;
         final List<SelectColumn> selectColumns = new ArrayList<>();
         final Map<String, ? extends ColumnSource<?>> columns = table.getColumnSourceMap();
         final Map<String, String> originalTypes = new HashMap<>();
@@ -107,9 +107,8 @@ public class ColumnPreviewManager {
         }
 
         if (!selectColumns.isEmpty()) {
-            result = table.updateView(selectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
-            ((BaseTable) table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
-
+            result = (BaseTable<?>) table.updateView(selectColumns);
+            ((BaseTable<?>) table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
             result.setAttribute(Table.PREVIEW_PARENT_TABLE, table);
 
             // Add original types to the column descriptions

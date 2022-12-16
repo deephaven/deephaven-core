@@ -11,10 +11,10 @@ import java.util.Objects;
 
 class AggAllByCopyAttributes implements AggSpec.Visitor {
 
-    private final BaseTable parent;
-    private final Table result;
+    private final BaseTable<?> parent;
+    private final BaseTable<?> result;
 
-    public AggAllByCopyAttributes(BaseTable parent, Table result) {
+    public AggAllByCopyAttributes(BaseTable<?> parent, BaseTable<?> result) {
         this.parent = Objects.requireNonNull(parent);
         this.result = Objects.requireNonNull(result);
     }

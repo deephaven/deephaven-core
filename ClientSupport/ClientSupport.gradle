@@ -9,6 +9,7 @@ configurations {
 dependencies {
     implementation project(':engine-table')
     implementation project(':engine-function')
+    implementation project(':log-factory')
     implementation project(':Configuration')
     implementation depCommonsLang3
 }
