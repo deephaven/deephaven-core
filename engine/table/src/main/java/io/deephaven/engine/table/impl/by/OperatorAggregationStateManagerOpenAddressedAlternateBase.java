@@ -106,7 +106,6 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
                 onNextChunk(nextChunkSize);
-
                 while (doRehash(bc.rehashCredits, nextChunkSize)) {
                     migrateFront();
                 }

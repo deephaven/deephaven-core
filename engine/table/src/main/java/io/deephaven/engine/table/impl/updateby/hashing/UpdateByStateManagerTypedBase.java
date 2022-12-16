@@ -214,10 +214,6 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
-
-                // reset the rehash credits for this chunk
-                bc.rehashCredits.setValue(0);
-
                 while (doRehash(initialBuild, bc.rehashCredits, chunkOk.intSize(), outputPositions)) {
                     migrateFront(outputPositions);
                 }
