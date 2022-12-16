@@ -18,7 +18,7 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class AggSpecPercentile extends AggSpecBase {
 
-    public static final boolean AVERAGE_EVENLY_DIVIDED = SemanticDefaults.PERCENTILE_AVERAGE_EVENLY_DIVIDED_DEFAULT;
+    public static final boolean AVERAGE_EVENLY_DIVIDED = false;
 
     /**
      * Create a new AggSpecPercentile with {@code averageEvenlyDivided} of {@value AVERAGE_EVENLY_DIVIDED}.
@@ -27,7 +27,6 @@ public abstract class AggSpecPercentile extends AggSpecBase {
      * @return the agg spec
      */
     public static AggSpecPercentile of(double percentile) {
-        // noinspection ConstantConditions
         return of(percentile, AVERAGE_EVENLY_DIVIDED);
     }
 

@@ -15,17 +15,15 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class AggSpecMedian extends AggSpecBase {
 
-    public static final boolean AVERAGE_EVENTLY_DIVIDED_DEFAULT =
-            SemanticDefaults.MEDIAN_AVERAGE_EVENLY_DIVIDED_DEFAULT;
+    public static final boolean AVERAGE_EVENLY_DIVIDED_DEFAULT = true;
 
     /**
-     * Create a new AggSpecMedian with {@code averageEvenlyDivided} of {@value AVERAGE_EVENTLY_DIVIDED_DEFAULT}.
+     * Create a new AggSpecMedian with {@code averageEvenlyDivided} of {@value AVERAGE_EVENLY_DIVIDED_DEFAULT}.
      *
      * @return the agg spec
      */
     public static AggSpecMedian of() {
-        // noinspection ConstantConditions
-        return of(AVERAGE_EVENTLY_DIVIDED_DEFAULT);
+        return of(AVERAGE_EVENLY_DIVIDED_DEFAULT);
     }
 
     /**

@@ -14,7 +14,7 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class AggSpecCountDistinct extends AggSpecBase {
 
-    public static final boolean COUNT_NULLS_DEFAULT = SemanticDefaults.COUNT_NULLS_DEFAULT;
+    public static final boolean COUNT_NULLS_DEFAULT = false;
 
     /**
      * Create a new AggSpecCountDistinct with {@code countNulls} of {@value COUNT_NULLS_DEFAULT}.
@@ -22,7 +22,6 @@ public abstract class AggSpecCountDistinct extends AggSpecBase {
      * @return the agg spec
      */
     public static AggSpecCountDistinct of() {
-        // noinspection ConstantConditions
         return of(COUNT_NULLS_DEFAULT);
     }
 

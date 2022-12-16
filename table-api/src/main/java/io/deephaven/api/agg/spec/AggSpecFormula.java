@@ -17,7 +17,7 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class AggSpecFormula extends AggSpecBase {
 
-    public static final String PARAM_TOKEN_DEFAULT = SemanticDefaults.PARAM_TOKEN_DEFAULT;
+    public static final String PARAM_TOKEN_DEFAULT = "each";
 
     /**
      * Creates a new AggSpecFormula with {@code paramToken} of {@value PARAM_TOKEN_DEFAULT}.

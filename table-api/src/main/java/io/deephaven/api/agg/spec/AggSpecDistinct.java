@@ -15,7 +15,7 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class AggSpecDistinct extends AggSpecBase {
 
-    public static final boolean INCLUDE_NULLS_DEFAULT = SemanticDefaults.INCLUDE_NULLS_DEFAULT;
+    public static final boolean INCLUDE_NULLS_DEFAULT = false;
 
     /**
      * Create a new AggSpecDistinct with {@code includeNulls} of {@value INCLUDE_NULLS_DEFAULT}.
@@ -23,7 +23,6 @@ public abstract class AggSpecDistinct extends AggSpecBase {
      * @return the agg spec
      */
     public static AggSpecDistinct of() {
-        // noinspection ConstantConditions
         return of(INCLUDE_NULLS_DEFAULT);
     }
 
