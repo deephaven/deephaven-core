@@ -7,11 +7,9 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.time.DateTime;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.*;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.vector.Vector;
@@ -88,14 +86,17 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myCharSequence", CharSequence.class);
         variables.put("myObject", Object.class);
         variables.put("myTestClass", TestClass.class);
-        variables.put("myIntArray", new int[0].getClass());
-        variables.put("myDoubleArray", new double[0].getClass());
-        variables.put("myLongArray", new long[0].getClass());
+
         variables.put("myCharArray", new char[0].getClass());
+        variables.put("myByteArray", new byte[0].getClass());
+        variables.put("myIntArray", new int[0].getClass());
+        variables.put("myLongArray", new long[0].getClass());
+        variables.put("myDoubleArray", new double[0].getClass());
+
         variables.put("myTestClassArray", new TestClass[0].getClass());
         variables.put("myDoubleObjArray", new Double[0].getClass());
         variables.put("myIntegerObjArray", new Integer[0].getClass());
-        variables.put("myByteArray", new byte[0].getClass());
+
         variables.put("myByteObj", Byte.class);
         variables.put("myShortObj", Short.class);
         variables.put("myCharObj", Character.class);
@@ -104,25 +105,31 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myFloatObj", Float.class);
         variables.put("myDoubleObj", Double.class);
         variables.put("myBooleanObj", Boolean.class);
+
         variables.put("myArrayList", ArrayList.class);
         variables.put("myParameterizedArrayList", ArrayList.class);
         variables.put("myHashMap", HashMap.class);
         variables.put("myParameterizedHashMap", HashMap.class);
+
         variables.put("myVector", ObjectVector.class);
-        variables.put("myLongVector", LongVector.class);
-        variables.put("myEnumValue", LanguageParserDummyEnum.class);
-        variables.put("myObjectVector", ObjectVector.class);
-        variables.put("myIntVector", IntVector.class);
+        variables.put("myCharVector", CharVector.class);
         variables.put("myByteVector", ByteVector.class);
+        variables.put("myShortVector", ShortVector.class);
+        variables.put("myIntVector", IntVector.class);
+        variables.put("myFloatVector", FloatVector.class);
+        variables.put("myLongVector", LongVector.class);
         variables.put("myDoubleVector", DoubleVector.class);
+        variables.put("myObjectVector", ObjectVector.class);
         // noinspection deprecation
         variables.put("myBooleanVector", BooleanVector.class);
+
         variables.put("myDummyClass", LanguageParserDummyClass.class);
         variables.put("myDummyInnerClass", LanguageParserDummyClass.InnerClass.class);
         variables.put("myDummyStaticNestedClass", LanguageParserDummyClass.StaticNestedClass.class);
         variables.put("myClosure", Closure.class);
         variables.put("myPyCallable", PyCallableWrapper.class);
         variables.put("myDateTime", DateTime.class);
+        variables.put("myEnumValue", LanguageParserDummyEnum.class);
 
         variables.put("myTable", Table.class);
         variables.put("myPyObject", PyObject.class);
@@ -158,6 +165,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "divide(1, 1L)";
         check(expression, resultExpression, double.class, new String[] {});
 
+        expression = "1%1L";
+        resultExpression = "remainder(1, 1L)";
+        check(expression, resultExpression, long.class, new String[] {});
+
         expression = "1.0+2L+3*4";
         resultExpression = "plus(plus(1.0, 2L), multiply(3, 4))";
         check(expression, resultExpression, double.class, new String[] {});
@@ -170,17 +181,45 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "eq('g', 'g')";
         check(expression, resultExpression, boolean.class, new String[] {});
 
+        expression = "false ^ true";
+        resultExpression = "false ^ true";
+        check(expression, resultExpression, boolean.class, new String[] {});
+
+        expression = "false ^ null";
+        resultExpression = "xor(false, null)";
+        check(expression, resultExpression, Boolean.class, new String[] {});
+
         expression = "false | true";
-        resultExpression = "binaryOr(false, true)";
+        resultExpression = "false | true";
+        check(expression, resultExpression, boolean.class, new String[] {});
+
+        expression = "false | null";
+        resultExpression = "binaryOr(false, null)";
+        check(expression, resultExpression, Boolean.class, new String[] {});
+
+        expression = "false & true";
+        resultExpression = "false & true";
+        check(expression, resultExpression, boolean.class, new String[] {});
+
+        expression = "false & null";
+        resultExpression = "binaryAnd(false, null)";
         check(expression, resultExpression, Boolean.class, new String[] {});
 
         expression = "1>1+2*3/4 || true";
         resultExpression = "greater(1, plus(1, divide(multiply(2, 3), 4))) || true";
         check(expression, resultExpression, boolean.class, new String[] {});
 
+        expression = "1>1+2*3/4 && true";
+        resultExpression = "greater(1, plus(1, divide(multiply(2, 3), 4))) && true";
+        check(expression, resultExpression, boolean.class, new String[] {});
+
         expression = "(1>1+2*3/4) | true";
-        resultExpression = "binaryOr((greater(1, plus(1, divide(multiply(2, 3), 4)))), true)";
-        check(expression, resultExpression, Boolean.class, new String[] {});
+        resultExpression = "(greater(1, plus(1, divide(multiply(2, 3), 4)))) | true";
+        check(expression, resultExpression, boolean.class, new String[] {});
+
+        expression = "(1>1+2*3/4) & true";
+        resultExpression = "(greater(1, plus(1, divide(multiply(2, 3), 4)))) & true";
+        check(expression, resultExpression, boolean.class, new String[] {});
 
         expression = "1+\"test\"";
         resultExpression = "1 + \"test\"";
@@ -932,8 +971,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myBoolean", "myInt"});
 
         expression = "myInt>1+2*myInt/4 | myBoolean";
-        resultExpression = "binaryOr(greater(myInt, plus(1, divide(multiply(2, myInt), 4))), myBoolean)";
-        check(expression, resultExpression, Boolean.class, new String[] {"myBoolean", "myInt"});
+        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myInt), 4))) | myBoolean";
+        check(expression, resultExpression, boolean.class, new String[] {"myBoolean", "myInt"});
 
         expression = "myInt+myString";
         resultExpression = "myInt + myString";
@@ -997,6 +1036,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     public void testEqualsNull() throws Exception {
         String expression = "myString == null ? myString : null";
         String resultExpression = "isNull(myString) ? myString : null";
+        check(expression, resultExpression, String.class, new String[] {"myString"});
+
+        expression = "null == myString ? myString : null";
+        resultExpression = "isNull(myString) ? myString : null";
         check(expression, resultExpression, String.class, new String[] {"myString"});
 
         expression = "myString == null ? myString : \"hello\"";
@@ -1071,6 +1114,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     public void testNotEqualsNull() throws Exception {
         String expression = "myString != null ? myString : null";
         String resultExpression = "!isNull(myString) ? myString : null";
+        check(expression, resultExpression, String.class, new String[] {"myString"});
+
+        expression = "null != myString ? myString : null";
+        resultExpression = "!isNull(myString) ? myString : null";
         check(expression, resultExpression, String.class, new String[] {"myString"});
 
         expression = "myString != null ? myString : \"hello\"";
@@ -1154,6 +1201,14 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "myTestClass-'c'";
         resultExpression = "minus(myTestClass, 'c')";
         check(expression, resultExpression, String.class, new String[] {"myTestClass"});
+
+        expression = "true==true";
+        resultExpression = "true == true";
+        check(expression, resultExpression, boolean.class, new String[] {});
+
+        expression = "true!=true";
+        resultExpression = "true != true";
+        check(expression, resultExpression, boolean.class, new String[] {});
     }
 
     public void testNegation() throws Exception {
@@ -1367,9 +1422,9 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      * Test implicit argument type conversions (e.g. primitive casts and converting Vectors to Java arrays)
      */
     public void testImplicitConversion() throws Exception {
-        String expression = "testImplicitConversion1(myInt, myDouble, myLong, myInt, myDouble, myLong)";
+        String expression = "testImplicitConversion_double(myInt, myDouble, myLong, myInt, myDouble, myLong)";
         String resultExpression =
-                "testImplicitConversion1(new double[] { doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
+                "testImplicitConversion_double(new double[] { doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt", "myLong"});
 
         expression = "testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
@@ -1392,6 +1447,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "testVarArgs(myInt, 'a', myDoubleArray)";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
+        expression = "testVarArgs(myInt, 'a', myDoubleVector)";
+        resultExpression = "testVarArgs(myInt, 'a', VectorConversions.nullSafeVectorToArray(myDoubleVector))";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleVector", "myInt"});
+
         expression = "testVarArgsVector(myIntVector)";
         resultExpression = "testVarArgsVector(myIntVector)";
         check(expression, resultExpression, new IntVector[0].getClass(), new String[] {"myIntVector"});
@@ -1399,34 +1458,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "testVarArgsVector(myIntVector, myIntVector)";
         resultExpression = "testVarArgsVector(myIntVector, myIntVector)";
         check(expression, resultExpression, new IntVector[0].getClass(), new String[] {"myIntVector"});
-
-        expression = "testImplicitConversion1(myDoubleVector)";
-        resultExpression = "testImplicitConversion1(VectorConversions.nullSafeVectorToArray(myDoubleVector))";
-        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleVector"});
-
-        expression = "testImplicitConversion2(myInt, myInt)";
-        resultExpression = "testImplicitConversion2(new int[] { myInt, myInt })";
-        check(expression, resultExpression, new int[0].getClass(), new String[] {"myInt"});
-
-        expression = "testImplicitConversion3(myLongArray)";
-        resultExpression = "testImplicitConversion3(myLongArray)";
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myLongArray"});
-
-        expression = "testImplicitConversion3(myVector)";
-        resultExpression = "testImplicitConversion3(VectorConversions.nullSafeVectorToArray(myVector))";
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
-
-        expression = "testImplicitConversion3(myDoubleArray)";
-        resultExpression = "testImplicitConversion3(myDoubleArray)";
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
-
-        expression = "testImplicitConversion3((Object) myDoubleArray)";
-        resultExpression = "testImplicitConversion3((Object) myDoubleArray)"; // test a workaround for the above
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
-
-        expression = "testImplicitConversion3(myDoubleArray, myInt)";
-        resultExpression = "testImplicitConversion3(myDoubleArray, myInt)";
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
         expression = "testImplicitConversion4(myInt, myVector)";
         resultExpression =
@@ -1441,8 +1472,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "testImplicitConversion4(doubleCast(myInt), myDouble, myVector)";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector", "myDouble", "myInt"});
 
-        // expression="testImplicitConversion5(myVector)"; // TODO: This test fails (declared arg type is
-        // "Vector...")
+        // TODO: This test fails (declared arg type is "Vector...")
+        // expression="testImplicitConversion5(myVector)";
         // resultExpression="testImplicitConversion5(myVector)"; // vararg of Vector -- don't convert!
         // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myVector"});
 
@@ -1453,6 +1484,110 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "testImplicitConversion5(myVector, myVector)";
         resultExpression = "testImplicitConversion5(myVector, myVector)"; // vararg of Vector -- don't convert!
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
+    }
+
+    public void testImplicitConversionByType_varargs() throws Exception {
+        String expression = "testImplicitConversion_char(myChar, myChar)";
+        String resultExpression = "testImplicitConversion_char(new char[] { myChar, myChar })";
+        check(expression, resultExpression, new char[0].getClass(), new String[] {"myChar"});
+
+        expression = "testImplicitConversion_byte(myByte, myByte)";
+        resultExpression = "testImplicitConversion_byte(new byte[] { myByte, myByte })";
+        check(expression, resultExpression, new byte[0].getClass(), new String[] {"myByte"});
+
+        expression = "testImplicitConversion_short(myShort, myShort)";
+        resultExpression = "testImplicitConversion_short(new short[] { myShort, myShort })";
+        check(expression, resultExpression, new short[0].getClass(), new String[] {"myShort"});
+
+        expression = "testImplicitConversion_int(myInt, myInt)";
+        resultExpression = "testImplicitConversion_int(new int[] { myInt, myInt })";
+        check(expression, resultExpression, new int[0].getClass(), new String[] {"myInt"});
+
+        expression = "testImplicitConversion_float(myFloat, myFloat)";
+        resultExpression = "testImplicitConversion_float(new float[] { myFloat, myFloat })";
+        check(expression, resultExpression, new float[0].getClass(), new String[] {"myFloat"});
+
+        expression = "testImplicitConversion_long(myLong, myLong)";
+        resultExpression = "testImplicitConversion_long(new long[] { myLong, myLong })";
+        check(expression, resultExpression, new long[0].getClass(), new String[] {"myLong"});
+
+        expression = "testImplicitConversion_double(myDouble, myDouble)";
+        resultExpression = "testImplicitConversion_double(new double[] { myDouble, myDouble })";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble"});
+
+        expression = "testImplicitConversion_boolean(true, false, myBoolean)";
+        resultExpression = "testImplicitConversion_boolean(new boolean[] { true, false, myBoolean })";
+        check(expression, resultExpression, new boolean[0].getClass(), new String[] {"myBoolean"});
+    }
+
+    /**
+     * Ensure that vectors are converted to Java arrays when they are provided as the sole varargs argument.
+     * 
+     * @throws Exception
+     */
+    public void testImplicitConversionByType_vector() throws Exception {
+        String expression = "testImplicitConversion_char(myCharVector)";
+        String resultExpression = "testImplicitConversion_char(VectorConversions.nullSafeVectorToArray(myCharVector))";
+        check(expression, resultExpression, new char[0].getClass(), new String[] {"myCharVector"});
+
+        expression = "testImplicitConversion_byte(myByteVector)";
+        resultExpression = "testImplicitConversion_byte(VectorConversions.nullSafeVectorToArray(myByteVector))";
+        check(expression, resultExpression, new byte[0].getClass(), new String[] {"myByteVector"});
+
+        expression = "testImplicitConversion_short(myShortVector)";
+        resultExpression = "testImplicitConversion_short(VectorConversions.nullSafeVectorToArray(myShortVector))";
+        check(expression, resultExpression, new short[0].getClass(), new String[] {"myShortVector"});
+
+        expression = "testImplicitConversion_int(myIntVector)";
+        resultExpression = "testImplicitConversion_int(VectorConversions.nullSafeVectorToArray(myIntVector))";
+        check(expression, resultExpression, new int[0].getClass(), new String[] {"myIntVector"});
+
+        expression = "testImplicitConversion_float(myFloatVector)";
+        resultExpression = "testImplicitConversion_float(VectorConversions.nullSafeVectorToArray(myFloatVector))";
+        check(expression, resultExpression, new float[0].getClass(), new String[] {"myFloatVector"});
+
+        expression = "testImplicitConversion_long(myLongVector)";
+        resultExpression = "testImplicitConversion_long(VectorConversions.nullSafeVectorToArray(myLongVector))";
+        check(expression, resultExpression, new long[0].getClass(), new String[] {"myLongVector"});
+
+        expression = "testImplicitConversion_double(myDoubleVector)";
+        resultExpression = "testImplicitConversion_double(VectorConversions.nullSafeVectorToArray(myDoubleVector))";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleVector"});
+
+        expression = "testImplicitConversion_Object(myVector)";
+        resultExpression = "testImplicitConversion_Object(VectorConversions.nullSafeVectorToArray(myVector))";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
+
+        expression = "testImplicitConversion_Object(myVector)";
+        resultExpression = "testImplicitConversion_Object(VectorConversions.nullSafeVectorToArray(myVector))";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
+    }
+
+    public void testImplicitConversion_Object() throws Exception {
+        String expression = "testImplicitConversion_Object(myVector, myVector)";
+        String resultExpression = "testImplicitConversion_Object(myVector, myVector)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
+
+        expression = "testImplicitConversion_Object(myLongArray)";
+        resultExpression = "testImplicitConversion_Object(myLongArray)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myLongArray"});
+
+        expression = "testImplicitConversion_Object(myDoubleArray)";
+        resultExpression = "testImplicitConversion_Object(myDoubleArray)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
+
+        // TODO: this behavior is questionable; what is the rationale/value of converting to a primitive array?
+        expression = "testImplicitConversion_Object(myDoubleVector)";
+        resultExpression = "testImplicitConversion_Object(VectorConversions.nullSafeVectorToArray(myDoubleVector))";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleVector"});
+
+        expression = "testImplicitConversion_Object((Object) myDoubleArray)";
+        resultExpression = "testImplicitConversion_Object((Object) myDoubleArray)"; // test a workaround for the above
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
+
+        expression = "testImplicitConversion_Object(myDoubleArray, myInt)";
+        resultExpression = "testImplicitConversion_Object(myDoubleArray, myInt)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray", "myInt"});
     }
 
     public void testExplicitClosureCall() throws Exception {
@@ -1905,14 +2040,14 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myIntObj"});
 
         // check vararg widen
-        expression = "testImplicitConversion1(myFloat, myFloat)";
-        resultExpression = "testImplicitConversion1(new double[] { doubleCast(myFloat), doubleCast(myFloat) })";
+        expression = "testImplicitConversion_double(myFloat, myFloat)";
+        resultExpression = "testImplicitConversion_double(new double[] { doubleCast(myFloat), doubleCast(myFloat) })";
         check(expression, resultExpression, double[].class, new String[] {"myFloat"});
 
         // check vararg unbox and widen
-        expression = "testImplicitConversion1(myFloatObj, myFloatObj)";
+        expression = "testImplicitConversion_double(myFloatObj, myFloatObj)";
         resultExpression =
-                "testImplicitConversion1(new double[] { myFloatObj.doubleValue(), myFloatObj.doubleValue() })";
+                "testImplicitConversion_double(new double[] { myFloatObj.doubleValue(), myFloatObj.doubleValue() })";
         check(expression, resultExpression, double[].class, new String[] {"myFloatObj"});
 
         // check object array super casting
@@ -1926,7 +2061,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         // See (deephaven-core#1201): do not widen primitive array elements
         try {
-            expression = resultExpression = "testImplicitConversion1(new float[]{ myFloat })";
+            expression = resultExpression = "testImplicitConversion_double(new float[]{ myFloat })";
             check(expression, resultExpression, double[].class, new String[] {"myFloat"});
             fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
         } catch (QueryLanguageParser.QueryLanguageParseException err) {
@@ -1936,7 +2071,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         // See (deephaven-core#1201): do not unbox array elements
         try {
-            expression = resultExpression = "testImplicitConversion1(new Double[]{ myDoubleObj })";
+            expression = resultExpression = "testImplicitConversion_double(new Double[]{ myDoubleObj })";
             check(expression, resultExpression, double[].class, new String[] {"myDoubleObj"});
             fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
         } catch (QueryLanguageParser.QueryLanguageParseException err) {
@@ -1946,7 +2081,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         // See (deephaven-core#1201): do not unbox and widen array elements
         try {
-            expression = resultExpression = "testImplicitConversion1(new Float[]{ myFloatObj })";
+            expression = resultExpression = "testImplicitConversion_double(new Float[]{ myFloatObj })";
             check(expression, resultExpression, double[].class, new String[] {"myFloatObj"});
             fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
         } catch (QueryLanguageParser.QueryLanguageParseException err) {
@@ -2123,6 +2258,14 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "new LanguageParserDummyClass(myInt)";
         resultExpression = "new LanguageParserDummyClass(myInt)";
         check(expression, resultExpression, LanguageParserDummyClass.class, new String[] {"myInt"});
+
+        expression = "new LanguageParserDummyClass(myLong)";
+        resultExpression = "new LanguageParserDummyClass(myLong)";
+        check(expression, resultExpression, LanguageParserDummyClass.class, new String[] {"myLong"});
+
+        expression = "new LanguageParserDummyClass(myLongObj)";
+        resultExpression = "new LanguageParserDummyClass(myLongObj)";
+        check(expression, resultExpression, LanguageParserDummyClass.class, new String[] {"myLongObj"});
 
         expression = "new LanguageParserDummyClass.StaticNestedClass()";
         resultExpression = "new LanguageParserDummyClass.StaticNestedClass()";
@@ -2384,6 +2527,28 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         try {
             expression = resultExpression = "myInt ^= myInt";
+            check(expression, resultExpression, int.class, new String[] {"myInt"});
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
+        }
+
+        // TODO: these are easy to support; just need to include in QueryLanguageFunctionGenerator
+        try {
+            expression = resultExpression = "myInt << myInt";
+            check(expression, resultExpression, int.class, new String[] {"myInt"});
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
+        }
+
+        try {
+            expression = resultExpression = "myInt >> myInt";
+            check(expression, resultExpression, int.class, new String[] {"myInt"});
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
+        }
+
+        try {
+            expression = resultExpression = "myInt >>> myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
             fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
         } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
@@ -2839,15 +3004,39 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         return true;
     }
 
-    public static double[] testImplicitConversion1(double... d) {
-        return d;
+    public static boolean[] testImplicitConversion_boolean(boolean... booleans) {
+        return booleans;
     }
 
-    public static int[] testImplicitConversion2(int... i) {
+    public static char[] testImplicitConversion_char(char... c) {
+        return c;
+    }
+
+    public static byte[] testImplicitConversion_byte(byte... b) {
+        return b;
+    }
+
+    public static short[] testImplicitConversion_short(short... s) {
+        return s;
+    }
+
+    public static int[] testImplicitConversion_int(int... i) {
         return i;
     }
 
-    public static Object[] testImplicitConversion3(Object... o) {
+    public static float[] testImplicitConversion_float(float... f) {
+        return f;
+    }
+
+    public static long[] testImplicitConversion_long(long... l) {
+        return l;
+    }
+
+    public static double[] testImplicitConversion_double(double... d) {
+        return d;
+    }
+
+    public static Object[] testImplicitConversion_Object(Object... o) {
         return o;
     }
 

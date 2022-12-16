@@ -19,6 +19,10 @@ public class LanguageParserDummyClass {
         this.value = value;
     }
 
+    public LanguageParserDummyClass(Number value) {
+        this.value = value.intValue();
+    }
+
     public static long arrayAndVectorFunction(int[] arr) {
         return arr.length;
     }

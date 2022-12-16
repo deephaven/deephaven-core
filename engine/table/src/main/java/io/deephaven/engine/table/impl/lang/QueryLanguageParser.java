@@ -672,7 +672,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return bestConstructor;
     }
 
-    private String paramsTypesToString(Class<?>[] paramTypes) {
+    private static String paramsTypesToString(Class<?>[] paramTypes) {
         StringBuilder buf = new StringBuilder();
 
         for (int i = 0; i < paramTypes.length; i++) {
@@ -948,7 +948,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             case EQUALS:
                 return "eq";
             case NOT_EQUALS:
-                return "notEquals";
+                throw new IllegalStateException(
+                        "NOT_EQUALS must be converted to '!eq(a, b)'or kept as the operator 'a != b'");
             case LESS:
                 return "less";
             case GREATER:
@@ -958,11 +959,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             case GREATER_EQUALS:
                 return "greaterEquals";
             case LEFT_SHIFT:
-                return "leftShift";
+                throw new UnsupportedOperationException("leftShift (<<) is not supported.");
             case SIGNED_RIGHT_SHIFT:
-                return "signedRightShift";
+                throw new UnsupportedOperationException("signedRightShift (>>) is not supported.");
             case UNSIGNED_RIGHT_SHIFT:
-                return "unsignedRightShift";
+                throw new UnsupportedOperationException("unsignedRightShift (>>>) is not supported.");
             case PLUS:
                 return "plus";
             case MINUS:
@@ -976,18 +977,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             default:
                 throw new IllegalArgumentException("Could not find operator name for op " + op.name());
         }
-    }
-
-    static boolean isNonFPNumber(Class<?> type) {
-        type = io.deephaven.util.type.TypeUtils.getUnboxedType(type);
-
-        // noinspection SimplifiableIfStatement
-        if (type == null) {
-            return false;
-        }
-
-        return type == int.class || type == long.class || type == byte.class || type == short.class
-                || type == char.class;
     }
 
     public static boolean isTypedVector(Class<?> type) {
@@ -1237,7 +1226,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return String.class;
         }
 
-        if (op == BinaryExpr.Operator.OR || op == BinaryExpr.Operator.AND) {
+        // For boolean operations that don't involve Deephaven's ordering guarantees or null handling,
+        // the operation can be printed as-is instead of using QueryLanguageFunctionUtil methods.
+        final boolean isPrimitiveBooleanOperation =
+                boolean.class.equals(lhType) && boolean.class.equals(rhType) && (op == BinaryExpr.Operator.EQUALS
+                        || op == BinaryExpr.Operator.NOT_EQUALS
+                        || op == BinaryExpr.Operator.BINARY_OR
+                        || op == BinaryExpr.Operator.BINARY_AND
+                        || op == BinaryExpr.Operator.XOR);
+        if (op == BinaryExpr.Operator.OR || op == BinaryExpr.Operator.AND || isPrimitiveBooleanOperation) {
 
             leftExpr.accept(this, printer);
             printer.append(' ').append(getOperatorSymbol(op)).append(' ');
