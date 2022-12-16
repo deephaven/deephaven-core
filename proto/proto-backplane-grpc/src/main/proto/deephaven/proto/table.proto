@@ -667,7 +667,6 @@ message AggSpec {
   }
 
   message AggSpecNonUniqueSentinel {
-    reserved 10, 11;
     oneof type {
       string string_value = 1;
       sint32 int_value = 2;
@@ -681,26 +680,9 @@ message AggSpec {
       sint32 short_value = 8;
       // Expected to be in range [0x0000, 0xFFFF]
       sint32 char_value = 9;
-      // TODO(deephaven-core#xyz): ... create ticket for cell_value / codec_value feature
-      // TableCell cell_value = 10;
-      // CodecValue codec_value = 11;
+      // TODO(deephaven-core#3212): Expand AggSpecNonUniqueSentinel types
     }
   }
-
-  // message TableCell {
-  //  TableReference table = 1;
-  //  int32 column = 2;
-  //  int32 row = 3;
-  // }
-
-  // message Codec {
-  //
-  // }
-
-  // message CodecValue {
-  //  Codec codec = 1;
-  //  bytes value = 2;
-  // }
 
   message AggSpecWeighted {
     // Column name for the source of input weights.

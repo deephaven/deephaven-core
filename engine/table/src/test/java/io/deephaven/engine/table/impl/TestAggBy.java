@@ -9,7 +9,7 @@ import gnu.trove.set.hash.TDoubleHashSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.object.AnnotatedObject;
+import io.deephaven.api.object.UnionObject;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -548,12 +548,12 @@ public class TestAggBy extends RefreshingTableTestCase {
                 c("Whee", dt1, dt1, dt1, /**/ dt1, dt2, /**/ dt2, dt2, dt2, dt2, /**/ null));
 
         Table result = dataTable.aggBy(List.of(
-                AggUnique(false, AnnotatedObject.of(-1), "Account", "Qty"),
-                AggUnique(false, AnnotatedObject.of(dtDefault), "Whee")), "USym").sort("USym");
+                AggUnique(false, UnionObject.of(-1), "Account", "Qty"),
+                AggUnique(false, UnionObject.of(dtDefault), "Whee")), "USym").sort("USym");
 
         Table countNulls = dataTable.aggBy(List.of(
-                AggUnique(true, AnnotatedObject.of(-1), "Account", "Qty"),
-                AggUnique(true, AnnotatedObject.of(dtDefault), "Whee")), "USym").sort("USym");
+                AggUnique(true, UnionObject.of(-1), "Account", "Qty"),
+                AggUnique(true, UnionObject.of(dtDefault), "Whee")), "USym").sort("USym");
 
         assertEquals(4, result.size());
         assertArrayEquals(new Object[] {"AAPL", -1L, 100, dt1}, result.getRecord(0));
@@ -651,19 +651,19 @@ public class TestAggBy extends RefreshingTableTestCase {
         expectException(IllegalArgumentException.class,
                 "Attempted to use no key/non unique values of incorrect types for aggregated columns!",
                 () -> dataTable
-                        .aggBy(AggUnique(false, AnnotatedObject.of(2), "StringCol", "BoolCol", "DatTime", "CharCol",
+                        .aggBy(AggUnique(false, UnionObject.of(2), "StringCol", "BoolCol", "DatTime", "CharCol",
                                 "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol", "BigIntCol",
                                 "BigDecCol"), "USym")
                         .sort("USym"));
 
-        dataTable.aggBy(AggUnique(false, AnnotatedObject.of(-2), "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
+        dataTable.aggBy(AggUnique(false, UnionObject.of(-2), "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
                 "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
 
-        dataTable.aggBy(AggUnique(false, AnnotatedObject.of(BigInteger.valueOf(-2)),
+        dataTable.aggBy(AggUnique(false, UnionObject.of(BigInteger.valueOf(-2)),
                 "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
                 "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
 
-        dataTable.aggBy(AggUnique(false, AnnotatedObject.of(BigDecimal.valueOf(-2)),
+        dataTable.aggBy(AggUnique(false, UnionObject.of(BigDecimal.valueOf(-2)),
                 "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
                 "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
 
@@ -689,16 +689,16 @@ public class TestAggBy extends RefreshingTableTestCase {
         // Byte out of range
         expectException(IllegalArgumentException.class,
                 "Attempted to non unique values too small for " + type.getName() + "!",
-                () -> dataTable.aggBy(AggUnique(false, AnnotatedObject.from(invalidLow), aggCols), "USym")
+                () -> dataTable.aggBy(AggUnique(false, UnionObject.from(invalidLow), aggCols), "USym")
                         .sort("USym"));
 
         expectException(IllegalArgumentException.class,
                 "Attempted to use non unique values too large for " + type.getName() + "!",
-                () -> dataTable.aggBy(AggUnique(false, AnnotatedObject.from(invalidHigh), aggCols), "USym")
+                () -> dataTable.aggBy(AggUnique(false, UnionObject.from(invalidHigh), aggCols), "USym")
                         .sort("USym"));
 
-        dataTable.aggBy(AggUnique(false, AnnotatedObject.from(validLow), aggCols), "USym").sort("USym");
-        dataTable.aggBy(AggUnique(false, AnnotatedObject.from(validHigh), aggCols), "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, UnionObject.from(validLow), aggCols), "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, UnionObject.from(validHigh), aggCols), "USym").sort("USym");
     }
 
     private static <T extends Throwable> void expectException(@SuppressWarnings("SameParameterValue") Class<T> excType,

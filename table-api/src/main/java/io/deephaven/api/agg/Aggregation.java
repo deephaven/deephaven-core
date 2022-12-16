@@ -16,7 +16,7 @@ import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.agg.util.PercentileOutput;
-import io.deephaven.api.object.AnnotatedObject;
+import io.deephaven.api.object.UnionObject;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -593,7 +593,7 @@ public interface Aggregation extends Serializable {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static Aggregation AggUnique(boolean includeNulls, AnnotatedObject nonUniqueSentinel, String... pairs) {
+    static Aggregation AggUnique(boolean includeNulls, UnionObject nonUniqueSentinel, String... pairs) {
         return of(AggSpec.unique(includeNulls, nonUniqueSentinel), pairs);
     }
 

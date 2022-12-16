@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-abstract class AnnotatedObjectBase implements AnnotatedObject {
+abstract class UnionObjectBase implements UnionObject {
 
     private static final Set<Class<?>> BOXED_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             Boolean.class,
@@ -18,7 +18,7 @@ abstract class AnnotatedObjectBase implements AnnotatedObject {
             Float.class,
             Double.class)));
 
-    public static boolean isBoxedPrimitive(Class<?> clazz) {
+    static boolean isBoxedPrimitive(Class<?> clazz) {
         return BOXED_TYPES.contains(clazz);
     }
 

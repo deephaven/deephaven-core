@@ -11,7 +11,7 @@ import io.deephaven.api.agg.spec.AggSpecSortedFirst;
 import io.deephaven.api.agg.spec.AggSpecSortedLast;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
-import io.deephaven.api.object.AnnotatedObject;
+import io.deephaven.api.object.UnionObject;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
@@ -177,30 +177,30 @@ class AggSpecAdapter {
     }
 
     private static io.deephaven.api.agg.spec.AggSpecUnique adapt(AggSpecUnique unique) {
-        AnnotatedObject nonUniqueSentinel = unique.hasNonUniqueSentinel() ? adapt(unique.getNonUniqueSentinel()) : null;
+        UnionObject nonUniqueSentinel = unique.hasNonUniqueSentinel() ? adapt(unique.getNonUniqueSentinel()) : null;
         return io.deephaven.api.agg.spec.AggSpecUnique.of(unique.getIncludeNulls(), nonUniqueSentinel);
     }
 
-    private static AnnotatedObject adapt(AggSpecNonUniqueSentinel nonUniqueSentinel) {
+    private static UnionObject adapt(AggSpecNonUniqueSentinel nonUniqueSentinel) {
         switch (nonUniqueSentinel.getTypeCase()) {
             case STRING_VALUE:
-                return AnnotatedObject.of(nonUniqueSentinel.getStringValue());
+                return UnionObject.of(nonUniqueSentinel.getStringValue());
             case INT_VALUE:
-                return AnnotatedObject.of(nonUniqueSentinel.getIntValue());
+                return UnionObject.of(nonUniqueSentinel.getIntValue());
             case LONG_VALUE:
-                return AnnotatedObject.of(nonUniqueSentinel.getLongValue());
+                return UnionObject.of(nonUniqueSentinel.getLongValue());
             case FLOAT_VALUE:
-                return AnnotatedObject.of(nonUniqueSentinel.getFloatValue());
+                return UnionObject.of(nonUniqueSentinel.getFloatValue());
             case DOUBLE_VALUE:
-                return AnnotatedObject.of(nonUniqueSentinel.getDoubleValue());
+                return UnionObject.of(nonUniqueSentinel.getDoubleValue());
             case BOOL_VALUE:
-                return AnnotatedObject.of(nonUniqueSentinel.getBoolValue());
+                return UnionObject.of(nonUniqueSentinel.getBoolValue());
             case BYTE_VALUE:
-                return AnnotatedObject.of((byte) nonUniqueSentinel.getByteValue());
+                return UnionObject.of((byte) nonUniqueSentinel.getByteValue());
             case SHORT_VALUE:
-                return AnnotatedObject.of((short) nonUniqueSentinel.getShortValue());
+                return UnionObject.of((short) nonUniqueSentinel.getShortValue());
             case CHAR_VALUE:
-                return AnnotatedObject.of((char) nonUniqueSentinel.getCharValue());
+                return UnionObject.of((char) nonUniqueSentinel.getCharValue());
             case TYPE_NOT_SET:
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "AggSpecNonUniqueSentinel type not set");
             default:

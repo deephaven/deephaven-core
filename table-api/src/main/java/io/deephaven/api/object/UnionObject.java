@@ -2,10 +2,16 @@ package io.deephaven.api.object;
 
 import java.util.Objects;
 
-public interface AnnotatedObject {
+/**
+ * A union object represents a {@link #of(boolean) boolean}, {@link #of(char) char}, {@link #of(byte) byte},
+ * {@link #of(short) short}, {@link #of(int) int}, {@link #of(long) long}, {@link #of(float) float}, {@link #of(double)
+ * double}, or {@link #of(Object) Object}. It is meant to provide a more strongly typed alternative in cases where
+ * {@link Object Objects} would otherwise be used.
+ */
+public interface UnionObject {
 
-    static AnnotatedObject of(boolean x) {
-        return new AnnotatedObjectBase() {
+    static UnionObject of(boolean x) {
+        return new UnionObjectBase() {
             @Override
             public <T> T visit(Visitor<T> visitor) {
                 return visitor.visit(x);
@@ -13,8 +19,8 @@ public interface AnnotatedObject {
         };
     }
 
-    static AnnotatedObject of(char x) {
-        return new AnnotatedObjectBase() {
+    static UnionObject of(char x) {
+        return new UnionObjectBase() {
             @Override
             public <T> T visit(Visitor<T> visitor) {
                 return visitor.visit(x);
@@ -22,8 +28,8 @@ public interface AnnotatedObject {
         };
     }
 
-    static AnnotatedObject of(byte x) {
-        return new AnnotatedObjectBase() {
+    static UnionObject of(byte x) {
+        return new UnionObjectBase() {
             @Override
             public <T> T visit(Visitor<T> visitor) {
                 return visitor.visit(x);
@@ -31,8 +37,8 @@ public interface AnnotatedObject {
         };
     }
 
-    static AnnotatedObject of(short x) {
-        return new AnnotatedObjectBase() {
+    static UnionObject of(short x) {
+        return new UnionObjectBase() {
             @Override
             public <T> T visit(Visitor<T> visitor) {
                 return visitor.visit(x);
@@ -40,8 +46,8 @@ public interface AnnotatedObject {
         };
     }
 
-    static AnnotatedObject of(int x) {
-        return new AnnotatedObjectBase() {
+    static UnionObject of(int x) {
+        return new UnionObjectBase() {
             @Override
             public <T> T visit(Visitor<T> visitor) {
                 return visitor.visit(x);
@@ -49,8 +55,8 @@ public interface AnnotatedObject {
         };
     }
 
-    static AnnotatedObject of(long x) {
-        return new AnnotatedObjectBase() {
+    static UnionObject of(long x) {
+        return new UnionObjectBase() {
             @Override
             public <T> T visit(Visitor<T> visitor) {
                 return visitor.visit(x);
@@ -58,8 +64,8 @@ public interface AnnotatedObject {
         };
     }
 
-    static AnnotatedObject of(float x) {
-        return new AnnotatedObjectBase() {
+    static UnionObject of(float x) {
+        return new UnionObjectBase() {
             @Override
             public <T> T visit(Visitor<T> visitor) {
                 return visitor.visit(x);
@@ -67,23 +73,8 @@ public interface AnnotatedObject {
         };
     }
 
-    static AnnotatedObject of(double x) {
-        return new AnnotatedObjectBase() {
-            @Override
-            public <T> T visit(Visitor<T> visitor) {
-                return visitor.visit(x);
-            }
-        };
-    }
-
-    static AnnotatedObject of(Object x) {
-        Objects.requireNonNull(x);
-        if (AnnotatedObjectBase.isBoxedPrimitive(x.getClass())) {
-            throw new IllegalArgumentException(String.format(
-                    "Object is boxed type %s, must use AnnotatedObject#from, or more appropriate primitive method #of",
-                    x.getClass()));
-        }
-        return new AnnotatedObjectBase() {
+    static UnionObject of(double x) {
+        return new UnionObjectBase() {
             @Override
             public <T> T visit(Visitor<T> visitor) {
                 return visitor.visit(x);
@@ -92,13 +83,35 @@ public interface AnnotatedObject {
     }
 
     /**
-     * If {@code x} is a boxed primitive, this will create the appropriate object with the unboxed value. Otherwise,
-     * this will create the object via {@link #of(Object)}.
+     * Create a wrapped object, must not be a boxed primitive type. Use {@link #from(Object)} if you need boxed
+     * primitive support.
      *
      * @param x the object
-     * @return the annotated object
+     * @return the union object
      */
-    static AnnotatedObject from(Object x) {
+    static UnionObject of(Object x) {
+        Objects.requireNonNull(x);
+        if (UnionObjectBase.isBoxedPrimitive(x.getClass())) {
+            throw new IllegalArgumentException(String.format(
+                    "Object is boxed type %s, must use UnionObject#from, or more appropriate primitive method #of",
+                    x.getClass()));
+        }
+        return new UnionObjectBase() {
+            @Override
+            public <T> T visit(Visitor<T> visitor) {
+                return visitor.visit(x);
+            }
+        };
+    }
+
+    /**
+     * If {@code x} is a boxed primitive, this will create the union object with the primitive value. Otherwise, this
+     * will create the object via {@link #of(Object)}.
+     *
+     * @param x the object
+     * @return the union object
+     */
+    static UnionObject from(Object x) {
         if (x instanceof Boolean) {
             return of((boolean) x);
         }
@@ -126,14 +139,31 @@ public interface AnnotatedObject {
         return of(x);
     }
 
+    /**
+     * Unwraps the object or boxed primitive.
+     *
+     * @return the object
+     */
     Object unwrap();
+
+    /**
+     * Returns the object as type {@code T} if the unwrapped object is an instance of {@code clazz}.
+     *
+     * @param clazz the class
+     * @return this object as type of clazz
+     * @param <T> the type
+     * @throws IllegalArgumentException if the object is not an instance of {@code clazz}.
+     */
+    <T> T expect(Class<T> clazz) throws IllegalArgumentException;
 
     /**
      * Equivalent to {@code expect(Number.class)}.
      *
      * @return this object as a {@link Number}
+     * @throws IllegalArgumentException if the object is not an instance of {@link Number}.
+     * @see #expect(Class)
      */
-    Number number();
+    Number number() throws IllegalArgumentException;
 
     /**
      * Equivalent to {@code expect(Boolean.class)}.
@@ -198,15 +228,6 @@ public interface AnnotatedObject {
      * @see #number()
      */
     double doubleValue();
-
-    /**
-     * Unwraps the object as type {@code T} if the object is an instance of {@code clazz}.
-     *
-     * @param clazz the class
-     * @return this object as type of clazz
-     * @param <T> the type
-     */
-    <T> T expect(Class<T> clazz);
 
     <T> T visit(Visitor<T> visitor);
 

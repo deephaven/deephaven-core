@@ -72,7 +72,7 @@ public abstract class AggSpecApproximatePercentile extends AggSpecBase {
      * T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
      *
      * <p>
-     * When not specified, the server will choose a compression value.
+     * When not specified, the engine will choose a compression value.
      *
      * @return The T-Digest compression factor if specified
      */

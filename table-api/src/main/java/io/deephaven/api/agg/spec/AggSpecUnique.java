@@ -4,7 +4,7 @@
 package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.api.object.AnnotatedObject;
+import io.deephaven.api.object.UnionObject;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
@@ -32,16 +32,16 @@ public abstract class AggSpecUnique extends AggSpecBase {
     }
 
     /**
-     * Equivalent to {@code of(includeNulls, AnnotatedObject.from(nonUniqueSentinel))}.
+     * Equivalent to {@code of(includeNulls, UnionObject.from(nonUniqueSentinel))}.
      *
      * @param includeNulls Whether {@code null} is treated as a value for determining if the values in a group are
      *        unique
      * @param nonUniqueSentinel Sentinel value to use if a group contains more than a single unique value
      * @return The "unique" aggregation specification
-     * @see AnnotatedObject#from(Object)
+     * @see UnionObject#from(Object)
      */
     public static AggSpecUnique of(boolean includeNulls, Object nonUniqueSentinel) {
-        return of(includeNulls, AnnotatedObject.from(nonUniqueSentinel));
+        return of(includeNulls, UnionObject.from(nonUniqueSentinel));
     }
 
     /**
@@ -54,7 +54,7 @@ public abstract class AggSpecUnique extends AggSpecBase {
      * @param nonUniqueSentinel Sentinel value to use if a group contains more than a single unique value
      * @return The "unique" aggregation specification
      */
-    public static AggSpecUnique of(boolean includeNulls, AnnotatedObject nonUniqueSentinel) {
+    public static AggSpecUnique of(boolean includeNulls, UnionObject nonUniqueSentinel) {
         ImmutableAggSpecUnique.Builder builder = ImmutableAggSpecUnique.builder().includeNulls(includeNulls);
         if (nonUniqueSentinel != null) {
             builder.nonUniqueSentinel(nonUniqueSentinel);
@@ -83,7 +83,7 @@ public abstract class AggSpecUnique extends AggSpecBase {
      *
      * @return The non-unique sentinel value
      */
-    public abstract Optional<AnnotatedObject> nonUniqueSentinel();
+    public abstract Optional<UnionObject> nonUniqueSentinel();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

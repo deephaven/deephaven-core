@@ -39,7 +39,7 @@ import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
-import io.deephaven.api.object.AnnotatedObject;
+import io.deephaven.api.object.UnionObject;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.SmartKey;
@@ -1548,39 +1548,39 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final Class<?> type,
             @NotNull final String resultName,
             final boolean includeNulls,
-            @SuppressWarnings("SameParameterValue") final AnnotatedObject onlyNullsSentinel,
-            final AnnotatedObject nonUniqueSentinel,
+            @SuppressWarnings("SameParameterValue") final UnionObject onlyNullsSentinel,
+            final UnionObject nonUniqueSentinel,
             final boolean exposeInternal,
             final boolean reaggregated) {
         checkType(resultName, "Only Nulls Sentinel", type, onlyNullsSentinel);
         checkType(resultName, "Non Unique Sentinel", type, nonUniqueSentinel);
         if (type == Byte.class || type == byte.class) {
-            final byte onsAsType = byteValue(onlyNullsSentinel);
-            final byte nusAsType = byteValue(nonUniqueSentinel);
+            final byte onsAsType = UnionObjectUtils.byteValue(onlyNullsSentinel);
+            final byte nusAsType = UnionObjectUtils.byteValue(nonUniqueSentinel);
             return reaggregated
                     ? new ByteRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
                     : new ByteChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Character.class || type == char.class) {
-            final char onsAsType = charValue(onlyNullsSentinel);
-            final char nusAsType = charValue(nonUniqueSentinel);
+            final char onsAsType = UnionObjectUtils.charValue(onlyNullsSentinel);
+            final char nusAsType = UnionObjectUtils.charValue(nonUniqueSentinel);
             return reaggregated
                     ? new CharRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
                     : new CharChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Double.class || type == double.class) {
-            final double onsAsType = doubleValue(onlyNullsSentinel);
-            final double nusAsType = doubleValue(nonUniqueSentinel);
+            final double onsAsType = UnionObjectUtils.doubleValue(onlyNullsSentinel);
+            final double nusAsType = UnionObjectUtils.doubleValue(nonUniqueSentinel);
             return reaggregated
                     ? new DoubleRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
                     : new DoubleChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Float.class || type == float.class) {
-            final float onsAsType = floatValue(onlyNullsSentinel);
-            final float nusAsType = floatValue(nonUniqueSentinel);
+            final float onsAsType = UnionObjectUtils.floatValue(onlyNullsSentinel);
+            final float nusAsType = UnionObjectUtils.floatValue(nonUniqueSentinel);
             return reaggregated
                     ? new FloatRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
                     : new FloatChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Integer.class || type == int.class) {
-            final int onsAsType = intValue(onlyNullsSentinel);
-            final int nusAsType = intValue(nonUniqueSentinel);
+            final int onsAsType = UnionObjectUtils.intValue(onlyNullsSentinel);
+            final int nusAsType = UnionObjectUtils.intValue(nonUniqueSentinel);
             return reaggregated
                     ? new IntRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
                     : new IntChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
@@ -1591,16 +1591,16 @@ public class AggregationProcessor implements AggregationContextFactory {
                 onsAsType = dateTimeNanosValue(onlyNullsSentinel);
                 nusAsType = dateTimeNanosValue(nonUniqueSentinel);
             } else {
-                onsAsType = longValue(onlyNullsSentinel);
-                nusAsType = longValue(nonUniqueSentinel);
+                onsAsType = UnionObjectUtils.longValue(onlyNullsSentinel);
+                nusAsType = UnionObjectUtils.longValue(nonUniqueSentinel);
             }
             return reaggregated
                     ? new LongRollupUniqueOperator(type, resultName, includeNulls, onsAsType, nusAsType)
                     : new LongChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType,
                             nusAsType);
         } else if (type == Short.class || type == short.class) {
-            final short onsAsType = shortValue(onlyNullsSentinel);
-            final short nusAsType = shortValue(nonUniqueSentinel);
+            final short onsAsType = UnionObjectUtils.shortValue(onlyNullsSentinel);
+            final short nusAsType = UnionObjectUtils.shortValue(nonUniqueSentinel);
             return reaggregated
                     ? new ShortRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
                     : new ShortChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
@@ -1612,40 +1612,12 @@ public class AggregationProcessor implements AggregationContextFactory {
                 : new ObjectChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
     }
 
-    private static long dateTimeNanosValue(AnnotatedObject obj) {
+    private static long dateTimeNanosValue(UnionObject obj) {
         return obj == null ? NULL_LONG : obj.expect(DateTime.class).getNanos();
     }
 
-    private static char charValue(AnnotatedObject obj) {
-        return obj == null ? NULL_CHAR : obj.charValue();
-    }
-
-    private static byte byteValue(AnnotatedObject obj) {
-        return obj == null ? NULL_BYTE : obj.byteValue();
-    }
-
-    private static short shortValue(AnnotatedObject obj) {
-        return obj == null ? NULL_SHORT : obj.shortValue();
-    }
-
-    private static int intValue(AnnotatedObject obj) {
-        return obj == null ? NULL_INT : obj.intValue();
-    }
-
-    private static long longValue(AnnotatedObject obj) {
-        return obj == null ? NULL_LONG : obj.longValue();
-    }
-
-    private static double doubleValue(AnnotatedObject obj) {
-        return obj == null ? NULL_DOUBLE : obj.doubleValue();
-    }
-
-    private static float floatValue(AnnotatedObject obj) {
-        return obj == null ? NULL_FLOAT : obj.floatValue();
-    }
-
     private static void checkType(@NotNull final String name, @NotNull final String valueIntent,
-            @NotNull Class<?> expected, final AnnotatedObject obj) {
+            @NotNull Class<?> expected, final UnionObject obj) {
         final Object value = obj == null ? null : obj.unwrap();
         expected = getBoxedType(expected);
         if (value != null && !expected.isAssignableFrom(value.getClass())) {
@@ -1663,7 +1635,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
     }
 
-    private static Object maybeConvertType(@NotNull Class<?> expected, final AnnotatedObject obj) {
+    private static Object maybeConvertType(@NotNull Class<?> expected, final UnionObject obj) {
         // We expect that checkType was already called and didn't throw...
         if (obj == null) {
             return null;

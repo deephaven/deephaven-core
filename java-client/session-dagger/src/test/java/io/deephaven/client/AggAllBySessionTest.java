@@ -26,7 +26,7 @@ import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
-import io.deephaven.api.object.AnnotatedObject;
+import io.deephaven.api.object.UnionObject;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
 import org.junit.runner.RunWith;
@@ -221,18 +221,18 @@ public class AggAllBySessionTest extends TableSpecTestBase {
             out.add(AggSpecUnique.of(true, null));
 
             // all columns are numeric, can be casted
-            out.add(AggSpecUnique.of(false, AnnotatedObject.of((byte) -1)));
-            out.add(AggSpecUnique.of(true, AnnotatedObject.of((byte) -1)));
-            out.add(AggSpecUnique.of(false, AnnotatedObject.of((short) -1)));
-            out.add(AggSpecUnique.of(true, AnnotatedObject.of((short) -1)));
-            out.add(AggSpecUnique.of(false, AnnotatedObject.of(-1)));
-            out.add(AggSpecUnique.of(true, AnnotatedObject.of(-1)));
-            out.add(AggSpecUnique.of(false, AnnotatedObject.of((long) -1)));
-            out.add(AggSpecUnique.of(true, AnnotatedObject.of((long) -1)));
-            out.add(AggSpecUnique.of(false, AnnotatedObject.of((float) -1)));
-            out.add(AggSpecUnique.of(true, AnnotatedObject.of((float) -1)));
-            out.add(AggSpecUnique.of(false, AnnotatedObject.of((double) -1)));
-            out.add(AggSpecUnique.of(true, AnnotatedObject.of((double) -1)));
+            out.add(AggSpecUnique.of(false, UnionObject.of((byte) -1)));
+            out.add(AggSpecUnique.of(true, UnionObject.of((byte) -1)));
+            out.add(AggSpecUnique.of(false, UnionObject.of((short) -1)));
+            out.add(AggSpecUnique.of(true, UnionObject.of((short) -1)));
+            out.add(AggSpecUnique.of(false, UnionObject.of(-1)));
+            out.add(AggSpecUnique.of(true, UnionObject.of(-1)));
+            out.add(AggSpecUnique.of(false, UnionObject.of((long) -1)));
+            out.add(AggSpecUnique.of(true, UnionObject.of((long) -1)));
+            out.add(AggSpecUnique.of(false, UnionObject.of((float) -1)));
+            out.add(AggSpecUnique.of(true, UnionObject.of((float) -1)));
+            out.add(AggSpecUnique.of(false, UnionObject.of((double) -1)));
+            out.add(AggSpecUnique.of(true, UnionObject.of((double) -1)));
         }
 
         @Override

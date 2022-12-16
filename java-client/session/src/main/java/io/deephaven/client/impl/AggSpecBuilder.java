@@ -2,8 +2,8 @@ package io.deephaven.client.impl;
 
 import com.google.protobuf.MessageOrBuilder;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.object.AnnotatedObject;
-import io.deephaven.api.object.AnnotatedObject.Visitor;
+import io.deephaven.api.object.UnionObject;
+import io.deephaven.api.object.UnionObject.Visitor;
 import io.deephaven.proto.backplane.grpc.AggSpec;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
@@ -179,7 +179,7 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
         out = spec(Builder::setUnique, builder);
     }
 
-    private static AggSpecNonUniqueSentinel adapt(AnnotatedObject obj) {
+    private static AggSpecNonUniqueSentinel adapt(UnionObject obj) {
         return obj.visit(AggSpecNonUniqueSentinelAdapter.INSTANCE);
     }
 

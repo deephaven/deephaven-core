@@ -9,7 +9,6 @@ dependencies {
     api project(':table-api')
 
     Classpaths.inheritImmutables(project)
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
