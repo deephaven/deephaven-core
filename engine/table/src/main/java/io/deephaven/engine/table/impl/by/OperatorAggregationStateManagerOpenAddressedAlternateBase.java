@@ -107,9 +107,6 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final int nextChunkSize = chunkOk.intSize();
                 onNextChunk(nextChunkSize);
 
-                // reset the rehash credits for this chunk
-                bc.rehashCredits.setValue(0);
-
                 while (doRehash(bc.rehashCredits, nextChunkSize)) {
                     migrateFront();
                 }

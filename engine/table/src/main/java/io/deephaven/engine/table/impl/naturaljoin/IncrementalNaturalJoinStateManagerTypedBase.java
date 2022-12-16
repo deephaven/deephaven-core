@@ -172,17 +172,18 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
-
-                // reset the rehash credits for this chunk
-                bc.rehashCredits.setValue(0);
-
                 while (doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker)) {
                     migrateFront(modifiedSlotTracker);
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
+                final long oldEntries = numEntries;
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                final long entriesAdded = numEntries - oldEntries;
+                // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
+                // don't penalize this build call with additional rehashing
+                bc.rehashCredits.subtract(entriesAdded);
 
                 bc.resetSharedContexts();
             }
