@@ -490,7 +490,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     @NotNull
     ChunkSource.WithPrev<? extends Values>[] makeOrFillChunkSourceArray(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             final long nodeId,
             @NotNull final Table nodeSortedTable,
             @Nullable final ChunkSource.WithPrev<? extends Values>[] existingChunkSources) {
@@ -544,7 +544,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    ChildLevelExpandable childLevelExpandable(@NotNull final SnapshotState snapshotState) {
+    ChildLevelExpandable childLevelExpandable(@NotNull final SnapshotStateImpl snapshotState) {
         final int levelIndex = snapshotState.getCurrentDepth();
 
         Assert.leq(levelIndex, "levelIndex", baseLevelIndex, "baseLevelIndex");
@@ -556,7 +556,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     @NotNull
     LongUnaryOperator makeChildNodeIdLookup(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final Table nodeTableToExpand,
             final boolean sorted) {
         final int levelIndex = snapshotState.getCurrentDepth();
@@ -580,7 +580,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    boolean nodeIdExpandable(@NotNull final SnapshotState snapshotState, final long nodeId) {
+    boolean nodeIdExpandable(@NotNull final SnapshotStateImpl snapshotState, final long nodeId) {
         return nodeId != nullNodeId();
     }
 

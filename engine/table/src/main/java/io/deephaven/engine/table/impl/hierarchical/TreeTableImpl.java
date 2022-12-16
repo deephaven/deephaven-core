@@ -303,7 +303,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     @NotNull
     ChunkSource.WithPrev<? extends Values>[] makeOrFillChunkSourceArray(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             final long nodeId,
             @NotNull final Table nodeSortedTable,
             @Nullable final ChunkSource.WithPrev<? extends Values>[] existingChunkSources) {
@@ -329,7 +329,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    ChildLevelExpandable childLevelExpandable(@NotNull final SnapshotState snapshotState) {
+    ChildLevelExpandable childLevelExpandable(@NotNull final SnapshotStateImpl snapshotState) {
         // We don't have sufficient information to know if any of this level's children are expandable.
         return Undetermined;
     }
@@ -337,7 +337,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     @NotNull
     LongUnaryOperator makeChildNodeIdLookup(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final Table nodeTableToExpand,
             final boolean sorted) {
         final ColumnSource<?> childIdentifierSource = nodeTableToExpand.getColumnSource(identifierColumn.name());
@@ -347,11 +347,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    boolean nodeIdExpandable(@NotNull final SnapshotState snapshotState, final long nodeId) {
+    boolean nodeIdExpandable(@NotNull final SnapshotStateImpl snapshotState, final long nodeId) {
         if (nodeId == nullNodeId()) {
             return false;
         }
-        final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
+        final SnapshotStateImpl.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
         nodeTableState.ensurePreparedForTraversal();
         final Table traversalTable = nodeTableState.getTraversalTable();
         return (snapshotState.usePrev() ? traversalTable.getRowSet().sizePrev() : traversalTable.size()) > 0;

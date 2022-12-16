@@ -115,7 +115,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     @Override
     public HierarchicalTable.SnapshotState makeSnapshotState() {
-        return new SnapshotState();
+        return new SnapshotStateImpl();
     }
 
     IFACE_TYPE noopResult() {
@@ -140,7 +140,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * Re-usable {@link HierarchicalTable.SnapshotState} implementation, used for keeping track of clock information and
      * node caching.
      */
-    final class SnapshotState extends LivenessArtifact implements HierarchicalTable.SnapshotState {
+    final class SnapshotStateImpl extends LivenessArtifact implements HierarchicalTable.SnapshotState {
 
         private final KeyedLongObjectHashMap<NodeTableState> nodeTableStates =
                 new KeyedLongObjectHashMap<>(new NodeTableStateIdKey());
@@ -173,7 +173,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          */
         private int snapshotClock = 0;
 
-        private SnapshotState() {
+        private SnapshotStateImpl() {
             if (HierarchicalTableImpl.this.getSource().isRefreshing()) {
                 manage(HierarchicalTableImpl.this);
             }
@@ -443,7 +443,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             private ChunkSource.WithPrev<? extends Values>[] dataSources;
 
             /**
-             * The last {@link SnapshotState#snapshotClock snapshot clock} value this node was visited on.
+             * The last {@link SnapshotStateImpl#snapshotClock snapshot clock} value this node was visited on.
              */
             private int visitedSnapshotClock;
 
@@ -535,7 +535,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              * descendants after applying any node sorts. If we're just traversing for our expanded size calculation, we
              * proceed in arbitrary order.
              *
-             * @param filling Whether the enclosing SnapshotState is still {@link #filling() filling} the snapshot
+             * @param filling Whether the enclosing SnapshotStateImpl is still {@link #filling() filling} the snapshot
              *        chunks. Passed in order to ensure consistency for the duration of a "visit".
              * @return The table to expand, which will be the (prepared) traversal table or data retrieval table
              */
@@ -555,7 +555,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              * appropriate row key in parent. <em>THIS MUTATES {@code childDirectives}!</em>
              *
              * @param childDirectives The {@link LinkedDirective child directives} to filter, key, and sort
-             * @param filling Whether the enclosing SnapshotState is still {@link #filling() filling} the snapshot
+             * @param filling Whether the enclosing SnapshotStateImpl is still {@link #filling() filling} the snapshot
              *        chunks. Passed in order to ensure consistency for the duration of a "visit".
              */
             private void filterKeyAndSortChildDirectives(
@@ -595,16 +595,16 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              * @return The chunk sources that should be used when retrieving actual data from the result of
              *         {@link #getDataRetrievalTable()}, at their respective column indices; other column indices may
              *         contain {@code null}, or values cached from previous snapshots
-             * @apiNote The {@link SnapshotState#currentDepth current depth} must be up-to-date and
+             * @apiNote The {@link SnapshotStateImpl#currentDepth current depth} must be up-to-date and
              *          {@link #ensurePreparedForDataRetrieval()} must have been called previously during this snapshot
              *          attempt. This call should only be made once per node per snapshot attempt.
              */
             private ChunkSource.WithPrev<? extends Values>[] getDataSources() {
-                return dataSources = makeOrFillChunkSourceArray(SnapshotState.this, id, sorted, dataSources);
+                return dataSources = makeOrFillChunkSourceArray(SnapshotStateImpl.this, id, sorted, dataSources);
             }
 
             /**
-             * @param snapshotClock The {@link SnapshotState#snapshotClock snapshot clock} value
+             * @param snapshotClock The {@link SnapshotStateImpl#snapshotClock snapshot clock} value
              * @return Whether this NodeTableState was last visited in on the supplied snapshot clock value
              */
             private boolean visited(final long snapshotClock) {
@@ -910,7 +910,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
 
         // noinspection unchecked
-        final SnapshotState typedSnapshotState = ((SnapshotState) snapshotState);
+        final SnapshotStateImpl typedSnapshotState = ((SnapshotStateImpl) snapshotState);
         typedSnapshotState.verifyOwner(this);
 
         final Collection<KeyTableDirective> keyTableDirectives =
@@ -1041,7 +1041,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     private long snapshotData(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final Collection<KeyTableDirective> keyTableDirectives,
             @Nullable final BitSet columns,
             @NotNull final RowSequence rows,
@@ -1069,7 +1069,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     private void traverseExpansionsAndFillSnapshotChunks(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final Collection<KeyTableDirective> keyTableDirectives,
             final boolean usePrev) {
         snapshotState.beginSnapshotAttempt(usePrev);
@@ -1088,19 +1088,19 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     private void visitExpandedNode(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final LinkedDirective directive) {
         visitExpandedNode(snapshotState, directive.getNodeId(), directive.getAction(), directive.getChildren());
     }
 
     private void visitExpandedNode(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             final long nodeId,
             @NotNull final VisitAction action,
             @Nullable final List<LinkedDirective> childDirectives) {
 
         // Get our node-table state, and the correct table instance to expand.
-        final SnapshotState.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
+        final SnapshotStateImpl.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
         final boolean filling = snapshotState.filling();
         final Table forExpansion = nodeTableState.prepareAndGetTableForExpansion(filling);
         if (forExpansion.isEmpty()) {
@@ -1239,7 +1239,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     private void consumeRowsUntilNextExpansion(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final ChildLevelExpandable childLevelExpandable,
             @NotNull final RowSequence.Iterator nodeRowsIter,
             @Nullable final NodeFillContext filler,
@@ -1298,7 +1298,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     private void consumeRemainder(
-            @NotNull final SnapshotState snapshotState,
+            @NotNull final SnapshotStateImpl snapshotState,
             final RowSequence.Iterator rowsToVisitIter) {
         // This is pure paranoia about Long.MAX_VALUE as a row key and the API for
         // RowSequence.Iterator#advanceAndGetPositionDistance(long), but as Joseph Heller and Kurt Cobain famously
@@ -1314,8 +1314,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     final class NodeFillContext implements Context {
 
-        private final SnapshotState snapshotState;
-        private final SnapshotState.NodeTableState nodeTableState;
+        private final SnapshotStateImpl snapshotState;
+        private final SnapshotStateImpl.NodeTableState nodeTableState;
         private final int chunkSize;
 
         ChunkSource.WithPrev<? extends Values>[] dataSources; // Indexed by column, not destination
@@ -1323,8 +1323,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         ChunkSource.FillContext[] fillContexts; // Indexed by destination, not column
 
         private NodeFillContext(
-                @NotNull final SnapshotState snapshotState,
-                @NotNull final SnapshotState.NodeTableState nodeTableState,
+                @NotNull final SnapshotStateImpl snapshotState,
+                @NotNull final SnapshotStateImpl.NodeTableState nodeTableState,
                 final long rowsToVisitSize) {
             this.snapshotState = snapshotState;
             this.nodeTableState = nodeTableState;
@@ -1494,14 +1494,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      */
     @NotNull
     abstract ChunkSource.WithPrev<? extends Values>[] makeOrFillChunkSourceArray(
-            @NotNull SnapshotState snapshotState,
+            @NotNull SnapshotStateImpl snapshotState,
             long nodeId,
             @NotNull Table nodeSortedTable,
             @Nullable ChunkSource.WithPrev<? extends Values>[] existingChunkSources);
 
     @NotNull
     static ChunkSource.WithPrev<? extends Values>[] maybeAllocateResultChunkSourceArray(
-            @Nullable ChunkSource.WithPrev<? extends Values> @Nullable [] existingChunkSources,
+            @Nullable ChunkSource.WithPrev<? extends Values>[] existingChunkSources,
             final int numColumns) {
         final ChunkSource.WithPrev<? extends Values>[] result;
         if (existingChunkSources != null) {
@@ -1557,7 +1557,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * @return A {@link ChildLevelExpandable} specifying whether all nodes in the child level are expandable, not
      *         expandable, or must be individually checked.
      */
-    abstract ChildLevelExpandable childLevelExpandable(@NotNull SnapshotState snapshotState);
+    abstract ChildLevelExpandable childLevelExpandable(@NotNull SnapshotStateImpl snapshotState);
 
     /**
      * @param snapshotState The snapshot state for this attempt
@@ -1567,7 +1567,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      */
     @NotNull
     abstract LongUnaryOperator makeChildNodeIdLookup(
-            @NotNull SnapshotState snapshotState,
+            @NotNull SnapshotStateImpl snapshotState,
             @NotNull Table nodeTableToExpand,
             final boolean sorted);
 
@@ -1576,7 +1576,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * @param nodeId The node ID
      * @return Whether {@code nodeId} maps to an expandable node
      */
-    abstract boolean nodeIdExpandable(@NotNull SnapshotState snapshotState, long nodeId);
+    abstract boolean nodeIdExpandable(@NotNull SnapshotStateImpl snapshotState, long nodeId);
 
     /**
      * @return The dependencies that should be used to ensure consistency for a snapshot of this HierarchicalTable
