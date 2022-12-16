@@ -3,11 +3,11 @@
 import grpc
 
 from pydeephaven.proto import hierarchicaltable_pb2 as deephaven_dot_proto_dot_hierarchicaltable__pb2
+from pydeephaven.proto import table_pb2 as deephaven_dot_proto_dot_table__pb2
 
 
 class HierarchicalTableServiceStub(object):
-    """
-    This service provides tools to create and view hierarchical tables (rollups and trees).
+    """This service provides tools to create and view hierarchical tables (rollups and trees).
     """
 
     def __init__(self, channel):
@@ -29,7 +29,7 @@ class HierarchicalTableServiceStub(object):
         self.ExportSource = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.HierarchicalTableService/ExportSource',
                 request_serializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportResponse.FromString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
         self.View = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.HierarchicalTableService/View',
@@ -39,37 +39,32 @@ class HierarchicalTableServiceStub(object):
 
 
 class HierarchicalTableServiceServicer(object):
-    """
-    This service provides tools to create and view hierarchical tables (rollups and trees).
+    """This service provides tools to create and view hierarchical tables (rollups and trees).
     """
 
     def Rollup(self, request, context):
-        """
-        Performs a rollup operation on a table and exports a default hierarchical table view of the result.
+        """Performs a rollup operation on a table and exports a default hierarchical table view of the result.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Tree(self, request, context):
-        """
-        Performs a tree operation on a table and exports a default hierarchical table view of the result.
+        """Performs a tree operation on a table and exports a default hierarchical table view of the result.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ExportSource(self, request, context):
-        """
-        Exports the source table for a hierarchical table view.
+        """Exports the source table for a hierarchical table view.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def View(self, request, context):
-        """
-        Derives a new hierarchical table view from an existing hierarchical table view.
+        """Derives a new hierarchical table view from an existing hierarchical table view.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -91,7 +86,7 @@ def add_HierarchicalTableServiceServicer_to_server(servicer, server):
             'ExportSource': grpc.unary_unary_rpc_method_handler(
                     servicer.ExportSource,
                     request_deserializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportResponse.SerializeToString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'View': grpc.unary_unary_rpc_method_handler(
                     servicer.View,
@@ -106,8 +101,7 @@ def add_HierarchicalTableServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class HierarchicalTableService(object):
-    """
-    This service provides tools to create and view hierarchical tables (rollups and trees).
+    """This service provides tools to create and view hierarchical tables (rollups and trees).
     """
 
     @staticmethod
@@ -157,7 +151,7 @@ class HierarchicalTableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.HierarchicalTableService/ExportSource',
             deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportRequest.SerializeToString,
-            deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportResponse.FromString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
