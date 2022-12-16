@@ -77,9 +77,8 @@ class AggSpecAdapter {
 
     public static void validate(AggSpecUnique aggSpecUnique) {
         GrpcErrorHelper.checkHasNoUnknownFields(aggSpecUnique);
-        if (aggSpecUnique.hasNonUniqueSentinel()) {
-            validate(aggSpecUnique.getNonUniqueSentinel());
-        }
+        GrpcErrorHelper.checkHasField(aggSpecUnique, AggSpecUnique.NON_UNIQUE_SENTINEL_FIELD_NUMBER);
+        validate(aggSpecUnique.getNonUniqueSentinel());
     }
 
     public static void validate(AggSpecNonUniqueSentinel nonUniqueSentinel) {
@@ -87,6 +86,7 @@ class AggSpecAdapter {
         GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(nonUniqueSentinel);
         final AggSpecNonUniqueSentinel.TypeCase type = nonUniqueSentinel.getTypeCase();
         switch (type) {
+            case NULL_VALUE:
             case STRING_VALUE:
             case INT_VALUE:
             case LONG_VALUE:
@@ -177,12 +177,14 @@ class AggSpecAdapter {
     }
 
     private static io.deephaven.api.agg.spec.AggSpecUnique adapt(AggSpecUnique unique) {
-        UnionObject nonUniqueSentinel = unique.hasNonUniqueSentinel() ? adapt(unique.getNonUniqueSentinel()) : null;
+        UnionObject nonUniqueSentinel = adapt(unique.getNonUniqueSentinel());
         return io.deephaven.api.agg.spec.AggSpecUnique.of(unique.getIncludeNulls(), nonUniqueSentinel);
     }
 
     private static UnionObject adapt(AggSpecNonUniqueSentinel nonUniqueSentinel) {
         switch (nonUniqueSentinel.getTypeCase()) {
+            case NULL_VALUE:
+                return null;
             case STRING_VALUE:
                 return UnionObject.of(nonUniqueSentinel.getStringValue());
             case INT_VALUE:

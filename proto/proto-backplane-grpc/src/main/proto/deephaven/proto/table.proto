@@ -9,6 +9,8 @@ option java_multiple_files = true;
 option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/table";
 
+import "google/protobuf/struct.proto";
+
 import "deephaven/proto/ticket.proto";
 
 service TableService {
@@ -668,18 +670,19 @@ message AggSpec {
 
   message AggSpecNonUniqueSentinel {
     oneof type {
-      string string_value = 1;
-      sint32 int_value = 2;
-      sint64 long_value = 3 [jstype=JS_STRING];
-      float float_value = 4;
-      double double_value = 5;
-      bool bool_value = 6;
+      google.protobuf.NullValue null_value = 1;
+      string string_value = 2;
+      sint32 int_value = 3;
+      sint64 long_value = 4 [jstype=JS_STRING];
+      float float_value = 5;
+      double double_value = 6;
+      bool bool_value = 7;
       // Expected to be in range [Byte.MIN_VALUE, Byte.MAX_VALUE]
-      sint32 byte_value = 7;
+      sint32 byte_value = 8;
       // Expected to be in range [Short.MIN_VALUE, Short.MAX_VALUE]
-      sint32 short_value = 8;
+      sint32 short_value = 9;
       // Expected to be in range [0x0000, 0xFFFF]
-      sint32 char_value = 9;
+      sint32 char_value = 10;
       // TODO(deephaven-core#3212): Expand AggSpecNonUniqueSentinel types
     }
   }

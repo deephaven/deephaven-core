@@ -1,6 +1,7 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.MessageOrBuilder;
+import com.google.protobuf.NullValue;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.api.object.UnionObject.Visitor;
@@ -174,13 +175,15 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecUnique unique) {
-        final AggSpecUnique.Builder builder = AggSpecUnique.newBuilder().setIncludeNulls(unique.includeNulls());
-        unique.nonUniqueSentinel().map(AggSpecBuilder::adapt).ifPresent(builder::setNonUniqueSentinel);
+        final AggSpecUnique.Builder builder = AggSpecUnique.newBuilder()
+                .setIncludeNulls(unique.includeNulls())
+                .setNonUniqueSentinel(adapt(unique.nonUniqueSentinel().orElse(null)));
         out = spec(Builder::setUnique, builder);
     }
 
     private static AggSpecNonUniqueSentinel adapt(UnionObject obj) {
-        return obj.visit(AggSpecNonUniqueSentinelAdapter.INSTANCE);
+        return obj == null ? AggSpecNonUniqueSentinel.newBuilder().setNullValue(NullValue.NULL_VALUE).build()
+                : obj.visit(AggSpecNonUniqueSentinelAdapter.INSTANCE);
     }
 
     @Override
