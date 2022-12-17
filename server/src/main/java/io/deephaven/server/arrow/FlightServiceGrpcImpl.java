@@ -16,6 +16,8 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
+import io.deephaven.server.barrage.BarrageMessageProducer;
+import io.deephaven.server.barrage.BarrageStreamGenerator;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
@@ -40,6 +42,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
     private final ScheduledExecutorService executorService;
+    private final BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory;
     private final SessionService sessionService;
     private final TicketRouter ticketRouter;
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
@@ -49,11 +52,13 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     @Inject
     public FlightServiceGrpcImpl(
             @Nullable final ScheduledExecutorService executorService,
+            final BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
             final SessionService sessionService,
             final TicketRouter ticketRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.executorService = executorService;
+        this.streamGeneratorFactory = streamGeneratorFactory;
         this.sessionService = sessionService;
         this.ticketRouter = ticketRouter;
         this.doExchangeFactory = doExchangeFactory;
@@ -234,9 +239,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     }
 
     public void doGetCustom(final Flight.Ticket request, final StreamObserver<InputStream> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver,
-                () -> ArrowFlightUtil.DoGetCustom(executorService, sessionService.getCurrentSession(),
-                        ticketRouter, request, responseObserver));
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> ArrowFlightUtil.DoGetCustom(
+                streamGeneratorFactory, sessionService.getCurrentSession(), ticketRouter, request, responseObserver));
     }
 
     /**
@@ -246,9 +250,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      * @return the observer that grpc can delegate received messages to
      */
     public StreamObserver<InputStream> doPutCustom(final StreamObserver<Flight.PutResult> responseObserver) {
-        return GrpcUtil.rpcWrapper(log, responseObserver,
-                () -> new ArrowFlightUtil.DoPutObserver(executorService, sessionService.getCurrentSession(),
-                        ticketRouter, responseObserver));
+        return GrpcUtil.rpcWrapper(log, responseObserver, () -> new ArrowFlightUtil.DoPutObserver(
+                sessionService.getCurrentSession(), ticketRouter, responseObserver));
     }
 
     /**
