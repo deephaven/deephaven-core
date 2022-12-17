@@ -62,6 +62,9 @@ public class SortedColumnsAttribute {
      */
     public static String setOrderForColumn(String attribute, String columnName, SortingOrder order) {
         Map<String, SortingOrder> map = stringToMap(attribute, true);
+        if (Objects.equals(map.get(columnName), order)) {
+            return attribute;
+        }
         map.put(columnName, order);
         return stringFromMap(map);
     }
@@ -73,10 +76,9 @@ public class SortedColumnsAttribute {
      * @param columnName the column to update
      * @param order the order that the column is sorted in
      */
-    public static void setOrderForColumn(BaseTable table, String columnName, SortingOrder order) {
-        final String oldAttribute = (String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE);
-        final String newAttribute = setOrderForColumn(oldAttribute, columnName, order);
-        table.setAttribute(Table.SORTED_COLUMNS_ATTRIBUTE, newAttribute);
+    public static void setOrderForColumn(BaseTable<?> table, String columnName, SortingOrder order) {
+        table.setAttribute(Table.SORTED_COLUMNS_ATTRIBUTE,
+                (final Object oldAttribute) -> setOrderForColumn((String) oldAttribute, columnName, order));
     }
 
     /**
