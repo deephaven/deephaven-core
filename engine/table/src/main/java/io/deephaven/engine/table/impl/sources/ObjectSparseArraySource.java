@@ -8,6 +8,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -64,7 +65,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     /**
      * If ensure previous has been called, we need not check previous values when filling.
      */
-    private transient long ensurePreviousClockCycle = -1;
+    private transient long prepareForParallelPopulationClockCycle = -1;
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
@@ -281,9 +282,13 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
         // we are clearing out values from block0, block1, block2, block
         // we are accumulating values of block0, block1, block2
-        for (int ii = 0; ii < blocksToFlush.size(); ii++) {
+        final int blocksToFlushCount = blocksToFlush.size();
+        long lastBlockKey = -1;
+        for (int ii = 0; ii < blocksToFlushCount; ii++) {
             // blockKey = block0 | block1 | block2
             final long blockKey = blocksToFlush.getQuick(ii);
+            Assert.gt(blockKey, "blockKey", lastBlockKey, "lastBlockKey");
+            lastBlockKey = blockKey;
             final long key = blockKey << LOG_BLOCK_SIZE;
             final long block2key = key >> BLOCK1_SHIFT;
             if (block2key != lastBlock2Key) {
@@ -370,7 +375,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     */
     final T [] shouldRecordPrevious(final long key) {
         // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
-        if (prevFlusher == null) {
+        if (!shouldTrackPrevious()) {
             return null;
         }
         // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
@@ -398,10 +403,10 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     @Override
     public void prepareForParallelPopulation(RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
-        if (ensurePreviousClockCycle == currentStep) {
-            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        if (prepareForParallelPopulationClockCycle == currentStep) {
+            throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }
-        ensurePreviousClockCycle = currentStep;
+        prepareForParallelPopulationClockCycle = currentStep;
 
         if (changedRows.isEmpty()) {
             return;
@@ -411,6 +416,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
             prevFlusher.maybeActivate();
         }
 
+        Assert.assertion(blocksToFlush.isEmpty(), "blocksToFlush.isEmpty()");
         try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
             do {
                 final long firstKey = it.peekNextKey();
@@ -439,6 +445,13 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
                     inUse[indexWithinInUse] |= maskWithinInUse;
                 });
             } while (it.hasMore());
+        }
+        final int blocksToFlushCount = blocksToFlush.size();
+        long lastBlockKey = blocksToFlushCount > 0 ? blocksToFlush.getQuick(0) : -1;
+        for (int bi = 1; bi < blocksToFlushCount; ++bi) {
+            final long blockKey = blocksToFlush.getQuick(bi);
+            Assert.gt(blockKey, "blockKey", lastBlockKey, "lastBlockKey");
+            lastBlockKey = blockKey;
         }
     }
 
@@ -615,7 +628,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -673,6 +686,11 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
             }
         }
     }
+
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+    }
     // endregion fillFromChunkByRanges
 
     // region fillFromChunkByKeys
@@ -684,7 +702,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -872,7 +890,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         }
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
