@@ -44,8 +44,8 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase {
 
         final HierarchicalTableDescriptor.Builder builder = HierarchicalTableDescriptor.newBuilder();
 
-//        final ByteString schemaWrappedInMessage =
-//                BarrageUtil.schemaBytesFromTable(partitionedTable.constituentDefinition(), Collections.emptyMap());
+        // final ByteString schemaWrappedInMessage =
+        // BarrageUtil.schemaBytesFromTable(partitionedTable.constituentDefinition(), Collections.emptyMap());
 
         if (hierarchicalTable instanceof RollupTable) {
             builder.setRollup(RollupDescriptorDetails.newBuilder()

@@ -47,8 +47,8 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     private volatile Map<String, Object> mutableAttributes;
 
     /**
-     * Attribute storage once immutable, set via {@link #immutableAttributes()} on first read access from the public
-     * API methods.
+     * Attribute storage once immutable, set via {@link #immutableAttributes()} on first read access from the public API
+     * methods.
      */
     @SuppressWarnings("unused")
     private volatile Map<String, Object> immutableAttributes;
@@ -57,7 +57,8 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
      * @param initialAttributes The attributes map to use until mutated, or else {@code null} to allocate a new one
      */
     protected LiveAttributeMap(@Nullable final Map<String, Object> initialAttributes) {
-        this.mutableAttributes = this.initialAttributes = Objects.requireNonNullElse(initialAttributes, EMPTY_ATTRIBUTES);
+        this.mutableAttributes = this.initialAttributes =
+                Objects.requireNonNullElse(initialAttributes, EMPTY_ATTRIBUTES);
     }
 
     /**
