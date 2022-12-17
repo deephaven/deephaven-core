@@ -6,7 +6,6 @@ import io.deephaven.auth.codegen.impl.HierarchicalTableServiceContextualAuthWiri
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -22,9 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
@@ -59,7 +56,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             final SessionState.ExportObject<Table> sourceTableExport =
                     ticketRouter.resolve(session, request.getSourceId(), "rollup sourceId");
 
-            session.newExport(request.getResultViewId(), "rollup resultViewId")
+            session.newExport(request.getResultId(), "rollup resultViewId")
                     .require(sourceTableExport)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -104,7 +101,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             final SessionState.ExportObject<Table> sourceTableExport =
                     ticketRouter.resolve(session, request.getSourceId(), "tree sourceId");
 
-            session.newExport(request.getResultViewId(), "tree resultViewId")
+            session.newExport(request.getResultId(), "tree resultViewId")
                     .require(sourceTableExport)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -121,14 +118,6 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         return treeTable;
                     });
         });
-    }
-
-    @Override
-    public void exportSource(
-            @NotNull final HierarchicalTableSourceExportRequest request,
-            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        // TODO-RWC: IMPLEMENT ME
-        super.exportSource(request, responseObserver);
     }
 
     @Override

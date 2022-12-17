@@ -4,14 +4,12 @@
 package io.deephaven.hierarchicaltable;
 
 import com.google.auto.service.AutoService;
-import com.google.protobuf.ByteString;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
-import io.deephaven.proto.backplane.grpc.HierarchicalTableViewDescriptor;
+import io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor;
 import io.deephaven.proto.backplane.grpc.RollupDescriptorDetails;
 import io.deephaven.proto.backplane.grpc.TreeDescriptorDetails;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +42,7 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase {
         exporter.reference(hierarchicalTable.getSource(), false, true);
         exporter.reference(null /* default view */, true, true);
 
-        final HierarchicalTableViewDescriptor.Builder builder = HierarchicalTableViewDescriptor.newBuilder();
+        final HierarchicalTableDescriptor.Builder builder = HierarchicalTableDescriptor.newBuilder();
 
 //        final ByteString schemaWrappedInMessage =
 //                BarrageUtil.schemaBytesFromTable(partitionedTable.constituentDefinition(), Collections.emptyMap());
@@ -59,7 +57,7 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase {
         }
         builder.build();
 
-        final HierarchicalTableViewDescriptor result = builder.build();
+        final HierarchicalTableDescriptor result = builder.build();
         result.writeTo(out);
 
 

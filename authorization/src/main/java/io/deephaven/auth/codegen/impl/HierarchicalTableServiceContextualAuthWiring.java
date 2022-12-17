@@ -10,7 +10,6 @@ package io.deephaven.auth.codegen.impl;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.engine.table.Table;
-import io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest;
 import io.deephaven.proto.backplane.grpc.RollupRequest;
 import io.deephaven.proto.backplane.grpc.TreeRequest;
@@ -42,17 +41,6 @@ public interface HierarchicalTableServiceContextualAuthWiring {
     void checkPermissionTree(AuthContext authContext, TreeRequest request, List<Table> sourceTables);
 
     /**
-     * Authorize a request to ExportSource.
-     *
-     * @param authContext the authentication context of the request
-     * @param request the request to authorize
-     * @param sourceTables the operation's source tables
-     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke ExportSource
-     */
-    void checkPermissionExportSource(AuthContext authContext,
-            HierarchicalTableSourceExportRequest request, List<Table> sourceTables);
-
-    /**
      * Authorize a request to View.
      *
      * @param authContext the authentication context of the request
@@ -70,9 +58,6 @@ public interface HierarchicalTableServiceContextualAuthWiring {
         public void checkPermissionTree(AuthContext authContext, TreeRequest request,
                 List<Table> sourceTables) {}
 
-        public void checkPermissionExportSource(AuthContext authContext,
-                HierarchicalTableSourceExportRequest request, List<Table> sourceTables) {}
-
         public void checkPermissionView(AuthContext authContext, HierarchicalTableViewRequest request,
                 List<Table> sourceTables) {}
     }
@@ -85,11 +70,6 @@ public interface HierarchicalTableServiceContextualAuthWiring {
 
         public void checkPermissionTree(AuthContext authContext, TreeRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
-        }
-
-        public void checkPermissionExportSource(AuthContext authContext,
-                HierarchicalTableSourceExportRequest request, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
@@ -113,13 +93,6 @@ public interface HierarchicalTableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionTree(authContext, request, sourceTables);
-            }
-        }
-
-        public void checkPermissionExportSource(AuthContext authContext,
-                HierarchicalTableSourceExportRequest request, List<Table> sourceTables) {
-            if (delegate != null) {
-                delegate.checkPermissionExportSource(authContext, request, sourceTables);
             }
         }
 
