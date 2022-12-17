@@ -1,4 +1,4 @@
-package io.deephaven.server.hierarchicaltable;
+package io.deephaven.hierarchicaltable;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
@@ -9,13 +9,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import javax.management.MXBean;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Server-side "view" object representing a client's snapshot target for hierarchical table data. This associates four
@@ -31,7 +27,7 @@ import java.util.Optional;
  * this view's instance</li>
  * </ul>
  */
-class HierarchicalTableView<TYPE extends HierarchicalTable<TYPE>> extends LivenessArtifact {
+public class HierarchicalTableView<TYPE extends HierarchicalTable<TYPE>> extends LivenessArtifact {
 
     private final HierarchicalTableView<TYPE> base;
 

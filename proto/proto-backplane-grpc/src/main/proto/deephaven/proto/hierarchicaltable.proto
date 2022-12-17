@@ -22,17 +22,14 @@ service HierarchicalTableService {
   // Performs a tree operation on a table and exports a default hierarchical table view of the result.
   rpc Tree(TreeRequest) returns (TreeResponse);
 
-  // Exports the source table for a hierarchical table view.
-  rpc ExportSource(HierarchicalTableSourceExportRequest) returns (ExportedTableCreationResponse);
-
   // Derives a new hierarchical table view from an existing hierarchical table view.
   rpc View(HierarchicalTableViewRequest) returns (HierarchicalTableViewResponse);
 }
 
 message RollupRequest {
 
-  // Ticket to use to hold a default view of the results of the rollup operation
-  Ticket result_view_id = 1;
+  // Ticket to use to hold the result of the rollup operation
+  Ticket result_id = 1;
 
   // Ticket for the source Table object to rollup
   Ticket source_id = 2;
@@ -48,13 +45,14 @@ message RollupRequest {
 }
 
 message RollupResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to access the result_view_id ticket.
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_id ticket as a
+  // HierarchicalTableViewDescriptor. See HierarchicalTableViewDescriptor documentation for details.
 }
 
 message TreeRequest {
 
-  // Ticket to use to hold a default view of the results of the tree operation
-  Ticket result_view_id = 1;
+  // Ticket to use to hold the result of the tree operation
+  Ticket result_id = 1;
 
   // Ticket for the source Table object to tree
   Ticket source_id = 2;
@@ -67,25 +65,11 @@ message TreeRequest {
 }
 
 message TreeResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to access the result_view_id ticket.
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_id ticket as a
+  // HierarchicalTableViewDescriptor. See HierarchicalTableViewDescriptor documentation for details.
 }
 
-message HierarchicalTableSourceExportRequest {
-
-  // Ticket to use to hold an export of the hierarchical table view's source table
-  Ticket result_id = 1;
-
-  // Ticket for the (existing) hierarchical table view
-  Ticket view_id = 2;
-}
-
-enum RollupNodeType {
-  UNDEFINED = 0;
-  AGGREGATED = 1;
-  CONSTITUENT = 2;
-}
-
-message HierarchicalTableViewDescriptor {
+message HierarchicalTableDescriptor {
 
   // The column names to expand by.
   // Should be user-visible, and displayed before other columns.
@@ -117,6 +101,12 @@ message HierarchicalTableViewDescriptor {
   bytes schema_header = 6;
 }
 
+enum RollupNodeType {
+  UNDEFINED = 0;
+  AGGREGATED = 1;
+  CONSTITUENT = 2;
+}
+
 message RollupDescriptorDetails {
 
   // Whether this rollup's leaf nodes are first level aggregations or constituents
@@ -136,14 +126,16 @@ message HierarchicalTableViewRequest {
   // Ticket for the resulting hierarchical table view
   Ticket result_view_id = 1;
 
-  // Ticket for the existing view to inherit the base hierarchical table and not-present optional fields from
-  Ticket existing_view_id = 2;
+  // Ticket for the hierarchical table to optionally apply operations to
+  Ticket hierarchical_table_id = 2;
 
-  // Key table to use, if it should be different than the one associated with the existing view
-  optional HierarchicalTableViewKeyTableDescriptor key_table_descriptor = 3;
+  oneof action {
+    // Key table to use, if it should be different than the one associated with the existing view
+    HierarchicalTableViewKeyTableDescriptor key_table_descriptor = 3;
 
-  // Operations to apply, if they should be different from those associated with the existing view
-  optional HierarchicalTableViewOperations operations = 4;
+    // Operations to apply, if they should be different from those associated with the existing view
+    HierarchicalTableViewOperations operations = 4;
+  }
 }
 
 message HierarchicalTableViewKeyTableDescriptor {
@@ -164,13 +156,17 @@ message HierarchicalTableViewKeyTableDescriptor {
 
 message HierarchicalTableViewOperations {
 
+  // Ticket for the resulting hierarchical table
+  Ticket result_hierarchical_table_id = 1;
+
   // Filters to apply to the hierarchical table or nodes
-  repeated Condition filters = 1;
+  repeated Condition filters = 2;
 
   // Sorts to apply to the hierarchical table nodes
-  repeated SortDescriptor sorts = 2;
+  repeated SortDescriptor sorts = 3;
 }
 
 message HierarchicalTableViewResponse {
   // Deliberately empty response, use /ObjectService/FetchObject to access the result_view_id ticket.
+  Ticket source_table_id = 1; // optional new source to associate with result hierarchical table
 }

@@ -74,12 +74,11 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                 .collect(Collectors.toList());
                         final RollupTable rollupTable = sourceTable.rollup(
                                 aggregations, includeConstituents, groupByColumns);
-                        // TODO-RWC: Make and return default view
                         safelyExecute(() -> {
                             responseObserver.onNext(RollupResponse.getDefaultInstance());
                             responseObserver.onCompleted();
                         });
-                        return null;
+                        return rollupTable;
                     });
         });
     }
@@ -115,12 +114,11 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final ColumnName parentIdentifierColumn = ColumnName.of(request.getParentIdentifierColumn());
                         final TreeTable treeTable = sourceTable.tree(
                                 identifierColumn.name(), parentIdentifierColumn.name());
-                        // TODO-RWC: Make and return default view
                         safelyExecute(() -> {
                             responseObserver.onNext(TreeResponse.getDefaultInstance());
                             responseObserver.onCompleted();
                         });
-                        return null;
+                        return treeTable;
                     });
         });
     }
