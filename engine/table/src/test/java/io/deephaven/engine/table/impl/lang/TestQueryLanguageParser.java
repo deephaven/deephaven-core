@@ -1422,13 +1422,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      * Test implicit argument type conversions (e.g. primitive casts and converting Vectors to Java arrays)
      */
     public void testImplicitConversion() throws Exception {
-        String expression = "testImplicitConversion_double(myInt, myDouble, myLong, myInt, myDouble, myLong)";
-        String resultExpression =
-                "testImplicitConversion_double(new double[] { doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
-        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt", "myLong"});
-
-        expression = "testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
-        resultExpression = "testVarArgs(myInt, 'a', new double[] { myDouble, 1.0, 5.0, myDouble })";
+        String expression = "testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
+        String resultExpression = "testVarArgs(myInt, 'a', new double[] { myDouble, 1.0, 5.0, myDouble })";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt"});
 
         expression = "testVarArgs(myDouble)";
@@ -2368,6 +2363,21 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, String.class, new String[] {"myByteVector"});
     }
 
+    public void testVarArgsUnboxing() throws Exception {
+        String expression = "testImplicitConversion_double(myInt)";
+        String resultExpression = "testImplicitConversion_double(new double[] { doubleCast(myInt) })";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myInt"});
+
+        expression = "testImplicitConversion_double(myInt, myFloat)";
+        resultExpression = "testImplicitConversion_double(new double[] { doubleCast(myInt), doubleCast(myFloat) })";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myInt", "myFloat"});
+
+        expression = "testImplicitConversion_double(myInt, myDouble, myLong, myInt, myDouble, myLong)";
+        resultExpression =
+                "testImplicitConversion_double(new double[] { doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt", "myLong"});
+    }
+
     public void testInnerClassesMethods() throws Exception {
         String expression = "myDummyClass.innerClassInstance.innerClassMethod()";
         String resultExpression = "myDummyClass.innerClassInstance.innerClassMethod()";
@@ -2443,6 +2453,44 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression =
                 "LanguageParserDummyClass.interpolate(VectorConversions.nullSafeVectorToArray(myDoubleVector), VectorConversions.nullSafeVectorToArray(myDoubleVector), new double[] { myDouble }, LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleVector"});
+
+        // @formatter:off
+        // This following two cases are derived from CumulativeUtilTest.testCumMin, which caught a bug where a
+        // primitive cast is an operand to a binary operator that's used in a method argument. Specifically, the problem
+        // arises when:
+        // - a method call argument is converted into a new expression, e.g. the BinaryExpr 'aDouble * myInt' into multiply(aDouble, myInt)
+        // - that converted method call argument is pushed down into a new expression (e.g. wrapping varargs with explicit array initializer)
+        // - the method call's arguments are replaced with .setArguments(theNewExpression)
+        //
+        // In this case, the BinaryExpr has the ArrayInitializerExpr as its parent, but the original method call still
+        // has the BinaryExpr as an argument. So when .setArguments() is called with the ArrayCreationExpr, the
+        // original MethodCallExpr will still see the BinaryExpr among its children and will (incorrectly) clear the
+        // BinaryExpr's parent. This leaves the BinaryExpr without a reference to the ArrayInitializerExpr, which
+        // will prevent the BinaryExpr from being replaced with a 'multiply()' method call.
+        //
+        // This problem could arise for both MethodCallExprs and ObjectCreationExprs. It is fixed by using DummyNodes
+        // as placeholders when modifying argument expressions in QueryLanguageParser.convertParameters().
+        // @formatter:on
+        expression = "io.deephaven.function.Numeric.min(myDouble, myDouble*myDouble)";
+        resultExpression = "io.deephaven.function.Numeric.min(new double[] { myDouble, multiply(myDouble, myDouble) })";
+        check(expression, resultExpression, double.class, new String[] {"myDouble"});
+
+        expression = "io.deephaven.function.Numeric.min(myDouble, (double)1*myInt)";
+        resultExpression =
+                "io.deephaven.function.Numeric.min(new double[] { myDouble, multiply(doubleCast(1), myInt) })";
+        check(expression, resultExpression, double.class, new String[] {"myDouble", "myInt"});
+
+        // another case of same bug (varargs widening primitive)
+        expression = "testImplicitConversion_double(myFloat, myFloat*myFloat)";
+        resultExpression =
+                "testImplicitConversion_double(new double[] { doubleCast(myFloat), doubleCast(multiply(myFloat, myFloat)) })";
+        check(expression, resultExpression, double[].class, new String[] {"myFloat"});
+
+        // check another case (varargs unboxing)
+        expression = "testImplicitConversion_boolean(myBooleanObj, myBooleanObj & myBooleanObj==null)";
+        resultExpression =
+                "testImplicitConversion_boolean(new boolean[] { myBooleanObj.booleanValue(), binaryAnd(myBooleanObj, isNull(myBooleanObj)).booleanValue() })";
+        check(expression, resultExpression, boolean[].class, new String[] {"myBooleanObj"});
     }
 
     public void testUnsupportedOperators() throws Exception {

@@ -180,6 +180,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
             Class<?> type = expr.accept(this, printer);
 
+            if (type == null) {
+                throw new IllegalStateException("Parser returned null type!");
+            }
+
             if (type == NULL_CLASS) {
                 type = Object.class;
             }
@@ -560,7 +564,20 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 final TypeVariable<? extends Class<?>>[] scopeTypeParameters = scope.getTypeParameters();
                 for (int i = 0; i < scopeTypeParameters.length; i++) {
                     if (scopeTypeParameters[i].equals(genericReturnType)) {
-                        return typeArguments[i];
+                        final Class<?> typeArgument = typeArguments[i];
+                        // use the type from the type arg if available; otherwise return first generic bound
+                        if (typeArgument != null) {
+                            return typeArgument;
+                        }
+                        final Type[] typeParamBounds = scopeTypeParameters[i].getBounds();
+                        Assert.neqNull(typeParamBounds, "typeParamBounds");
+                        Assert.gtZero(typeParamBounds.length, "typeParamBounds.length");
+                        final Type genericTypeBound = typeParamBounds[0];
+                        if (!(genericTypeBound instanceof Class<?>)) {
+                            throw new IllegalStateException("Unexpected type: " + genericTypeBound);
+                        }
+
+                        return (Class<?>) genericTypeBound;
                     }
                 }
             }
@@ -1012,9 +1029,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                                 .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())),
                         expressions[ai]);
             } else if (unboxArguments && argumentTypes[ai].isPrimitive() && !expressionTypes[ai].isPrimitive()) {
+                // note: the setArguments() bug does not arise here in practice, since nodes representing boxed types
+                // are not replaced by the parser, but it is better to insert the DummyExpr anyway as future-proofing.
+                expressions[ai].replace(new DummyExpr());
                 expressions[ai] = new MethodCallExpr(expressions[ai],
                         argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
             } else if (argumentTypes[ai].isArray() && isTypedVector(expressionTypes[ai])) {
+                // note: the setArguments() bug does not arise here in practice, since nodes representing a Vector
+                // are not replaced by the parser, but it is better to insert the DummyExpr anyway as future-proofing.
+                expressions[ai].replace(new DummyExpr());
                 expressions[ai] = new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                         new NodeList<>(expressions[ai]));
                 expressionTypes[ai] = convertVector(expressionTypes[ai],
@@ -1034,6 +1057,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (nArgExpressions == nArgs
                     && varArgType != expressionTypes[lastArgIndex]
                     && isTypedVector(expressionTypes[lastArgIndex])) {
+                // note: the setArguments() bug does not arise here in practice, since nodes representing a Vector
+                // are not replaced by the parser, but it is better to insert the DummyExpr anyway as future-proofing.
+                expressions[lastArgIndex].replace(new DummyExpr());
                 expressions[lastArgIndex] =
                         new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                                 new NodeList<>(expressions[lastArgIndex]));
@@ -1052,11 +1078,17 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
                     if (varArgType.isPrimitive() && expressionTypes[ei].isPrimitive()) {
                         // cast primitives to the appropriate type
+                        // replace node in its parent, otherwise setArguments() will clear the parent of
+                        // 'expressions[ei]'
+                        expressions[ei].replace(new DummyExpr());
                         expressions[ei] = new CastExpr(
                                 new PrimitiveType(PrimitiveType.Primitive
                                         .valueOf(varArgType.getSimpleName().toUpperCase())),
                                 expressions[ei]);
                     } else if (unboxArguments && varArgType.isPrimitive() && !expressionTypes[ei].isPrimitive()) {
+                        // replace node in its parent, otherwise setArguments() will clear the parent of
+                        // 'expressions[ei]'
+                        expressions[ei].replace(new DummyExpr());
                         expressions[ei] = new MethodCallExpr(expressions[ei],
                                 varArgType.getSimpleName() + "Value", new NodeList<>());
                     } else if (!expressionTypes[ei].isPrimitive()) {
@@ -1072,6 +1104,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 System.arraycopy(expressions, 0, temp, 0, temp.length - 1);
                 System.arraycopy(expressions, nArgs - 1, varArgExpressions, 0,
                         varArgExpressions.length);
+
+                for (Expression expr : varArgExpressions) {
+                    // replace node in its parent, otherwise setArguments() will clear the parent of 'expr''
+                    expr.replace(new DummyExpr());
+                }
 
                 NodeList<ArrayCreationLevel> levels = new NodeList<>(new ArrayCreationLevel());
                 temp[temp.length - 1] = new ArrayCreationExpr(
@@ -1986,21 +2023,20 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         final VisitArgs scopePrinter = VisitArgs.create();
 
-        Class<?> scope = n.getScope().map(sc -> {
+        final Class<?> scopeType = n.getScope().map(sc -> {
             Class<?> result = sc.accept(this, scopePrinter);
             scopePrinter.append('.');
             return result;
         }).orElse(null);
 
-        Expression[] expressions = n.getArguments() == null ? new Expression[0]
-                : n.getArguments().toArray(new Expression[0]);
+        final Expression[] argExpressions = getExpressionsArray(n.getArguments());
 
-        Class<?>[] expressionTypes = printArguments(expressions, VisitArgs.WITHOUT_STRING_BUILDER);
+        Class<?>[] expressionTypes = printArguments(argExpressions, VisitArgs.WITHOUT_STRING_BUILDER);
 
-        Class<?>[][] parameterizedTypes = getParameterizedTypes(expressions);
+        final Class<?>[][] parameterizedTypes = getParameterizedTypes(argExpressions);
 
         final String methodName = n.getNameAsString();
-        Method method = getMethod(scope, methodName, expressionTypes, parameterizedTypes);
+        final Method method = getMethod(scopeType, methodName, expressionTypes, parameterizedTypes);
 
 
         // TODO: we can swap out method calls for better ones here, e.g. python functions to Java ones, or
@@ -2009,16 +2045,20 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // methodToOptimizerMap.get(method).apply(n, printer);
         // }
 
-        Class<?>[] argumentTypes = method.getParameterTypes();
+        final Class<?>[] argumentTypes = method.getParameterTypes();
+        final Expression[] convertedArgExpressions;
 
         // now do some parameter conversions...
         if (n.getComment().orElse(null) != QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG) {
-            expressions = convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, expressions);
+            convertedArgExpressions =
+                    convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, argExpressions);
+        } else {
+            convertedArgExpressions = argExpressions;
         }
-        n.setArguments(NodeList.nodeList(expressions));
+        n.setArguments(NodeList.nodeList(convertedArgExpressions));
 
         if (isPotentialImplicitCall(method.getDeclaringClass())) {
-            if (scope == null) { // python func call or Groovy closure call
+            if (scopeType == null) { // python func call or Groovy closure call
                 /*
                  * @formatter:off
                  * python func call
@@ -2055,7 +2095,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
 
                 final boolean isExplicitCall = methodName.equals("call")
-                        || PyObject.class.isAssignableFrom(scope) && methodName.equals("getAttribute");
+                        || PyObject.class.isAssignableFrom(scopeType) && methodName.equals("getAttribute");
                 if (isExplicitCall) {
                     printer.append(scopePrinter);
                     printer.append(methodName);
@@ -2091,15 +2131,21 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             printer.append(methodName);
         }
 
-        Class<?>[] argTypes = printArguments(expressions, printer);
+        final Class<?>[] argTypes = printArguments(convertedArgExpressions, printer);
 
         // Python function call vectorization
-        if (PyCallableWrapper.class.equals(scope)) {
-            vectorizePythonCallable(n, scope, expressions, argTypes);
+        if (PyCallableWrapper.class.equals(scopeType)) {
+            vectorizePythonCallable(n, scopeType, convertedArgExpressions, argTypes);
         }
 
-        return calculateMethodReturnTypeUsingGenerics(scope, n.getScope().orElse(null), method, expressionTypes,
+        return calculateMethodReturnTypeUsingGenerics(scopeType, n.getScope().orElse(null), method, expressionTypes,
                 parameterizedTypes);
+    }
+
+    @NotNull
+    private static Expression[] getExpressionsArray(final NodeList<Expression> exprNodeList) {
+        return exprNodeList == null ? new Expression[0]
+                : exprNodeList.toArray(new Expression[0]);
     }
 
     private void vectorizePythonCallable(MethodCallExpr n, Class<?> scopeType, Expression[] argExpressions,
@@ -2257,18 +2303,17 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     public Class<?> visit(ObjectCreationExpr n, VisitArgs printer) {
         printer.append("new ");
 
-        Class<?> ret = n.getType().accept(this, printer);
+        final Class<?> ret = n.getType().accept(this, printer);
 
-        Expression[] expressions = n.getArguments() == null ? new Expression[0]
-                : n.getArguments().toArray(new Expression[0]);
+        Expression[] expressions = getExpressionsArray(n.getArguments());
 
-        Class<?>[] expressionTypes = printArguments(expressions, VisitArgs.WITHOUT_STRING_BUILDER);
+        final Class<?>[] expressionTypes = printArguments(expressions, VisitArgs.WITHOUT_STRING_BUILDER);
 
-        Class<?>[][] parameterizedTypes = getParameterizedTypes(expressions);
+        final Class<?>[][] parameterizedTypes = getParameterizedTypes(expressions);
 
-        Constructor<?> constructor = getConstructor(ret, expressionTypes, parameterizedTypes);
+        final Constructor<?> constructor = getConstructor(ret, expressionTypes, parameterizedTypes);
 
-        Class<?>[] argumentTypes = constructor.getParameterTypes();
+        final Class<?>[] argumentTypes = constructor.getParameterTypes();
 
         // now do some parameter conversions...
 
@@ -2319,6 +2364,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
         printer.append('}');
 
+        // return null; the type is determined from the parent ArrayCreationExpr
         return null;
     }
 
@@ -2656,12 +2702,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     public static class Result {
+
         private final Class<?> type;
         private final String source;
         private final HashSet<String> variablesUsed;
 
         Result(Class<?> type, String source, HashSet<String> variablesUsed) {
-            this.type = type;
+            this.type = Objects.requireNonNull(type, "type");
             this.source = source;
             this.variablesUsed = variablesUsed;
         }
@@ -2809,6 +2856,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
+    /**
+     * A placeholder expression used to temporarily take the place of a node whose parent is being changed.
+     * <p>
+     * This used because the JavaParser sometimes incorrectly unsets a node's parent. For example, if {@code exprA} is
+     * the parent of {@code exprB}, and a new node {@code exprX} is added as the parent of {@code exprB}, then
+     * {@code exprX} will automatically become the parent of {@code exprB}, but setting {@code exprX} as the child of
+     * {@code exprA} may cause {@code exprA} to descend into its (former) child {@code exprB} and set its parent to null
+     * (instead of keeping {@code exprB}'s parent as {@code exprX}).
+     */
     private static class DummyExpr extends Expression {
         protected DummyExpr() {
             super(TokenRange.INVALID);
