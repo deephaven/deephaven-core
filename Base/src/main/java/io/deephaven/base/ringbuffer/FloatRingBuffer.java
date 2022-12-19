@@ -35,8 +35,6 @@ public class FloatRingBuffer implements Serializable {
             }
             head = 0;
             storage = newStorage;
-        } else {
-            head = (head + 1) % storage.length;
         }
     }
 
@@ -44,10 +42,23 @@ public class FloatRingBuffer implements Serializable {
         return (tail + 1) % storage.length == head;
     }
 
+    /**
+     * Create an unbounded-growth ring buffer of float primitives
+     *
+     * @param capacity minimum capacity of ring buffer
+     */
     public FloatRingBuffer(int capacity) {
         this(capacity, true);
     }
 
+    /**
+     * Create a ring buffer of float primitives
+     *
+     * @param capacity minimum capacity of ring buffer
+     * @param growable whether to allow growth when the buffer is full. If this is {@code false} and {@code add()} is
+     *        called, an
+     *
+     */
     public FloatRingBuffer(int capacity, boolean growable) {
         this.growable = growable;
         this.storage = new float[capacity + 1];
@@ -74,15 +85,33 @@ public class FloatRingBuffer implements Serializable {
         tail = head = 0;
     }
 
+    /**
+     * Adds an entry to the ring buffer, will throw an {@link UnsupportedOperationException} if buffer is full. For a
+     * graceful failure, use {@link #offer(float)}
+     *
+     * @param e the float to be added to the buffer
+     * @return true if the float was added successfully
+     */
     public boolean add(float e) {
         if (isFull()) {
-            grow();
+            if (!growable) {
+                throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
+            } else {
+                grow();
+            }
         }
         storage[tail] = e;
         tail = (tail + 1) % storage.length;
         return true;
     }
 
+    /**
+     * Add an entry to the ring buffer. If the buffer is full, will overwrite the oldest entry with the new one.
+     *
+     * @param e the float to be added to the buffer
+     * @param notFullResult value to return is the buffer is not full
+     * @return the overwritten entry if the buffer is full, the provided value otherwise
+     */
     public float addOverwrite(float e, float notFullResult) {
         float result = notFullResult;
         if (isFull()) {
@@ -93,6 +122,13 @@ public class FloatRingBuffer implements Serializable {
         return result;
     }
 
+    /**
+     * Attempt to add an entry to the ring buffer. If the buffer is full, the write will fail and the buffer will not
+     * grow even if allowed.
+     *
+     * @param e the float to be added to the buffer
+     * @return true if the value was added successfully, false otherwise
+     */
     public boolean offer(float e) {
         if (isFull()) {
             return false;

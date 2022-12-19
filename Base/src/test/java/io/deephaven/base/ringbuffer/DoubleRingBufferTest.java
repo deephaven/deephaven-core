@@ -9,8 +9,12 @@
 package io.deephaven.base.ringbuffer;
 
 import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
+
+import static org.junit.Assert.assertThrows;
 
 public class DoubleRingBufferTest extends TestCase {
 
@@ -78,7 +82,7 @@ public class DoubleRingBufferTest extends TestCase {
         }
     }
 
-    private void assertContents(DoubleRingBuffer rb, double[] expectedData) {
+    private void assertContents(DoubleRingBuffer rb, double... expectedData) {
         final double[] data = rb.getAll();
         assertEquals(data.length, expectedData.length);
         for (int ii = 0; ii < data.length; ii++) {
@@ -102,31 +106,32 @@ public class DoubleRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertContents(rb, new double[] {A, B, C});
+        assertContents(rb, A, B, C);
         assertFull(rb);
 
         assertRemove(rb, 3, A);
-        assertContents(rb, new double[] {B, C});
+        assertContents(rb, B, C);
 
         assertRemove(rb, 2, B);
-        assertContents(rb, new double[] {C});
+        assertContents(rb, C);
 
         assertRemove(rb, 1, C);
         assertContents(rb, new double[0]);
+
         assertEmpty(rb);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
-        assertContents(rb, new double[] {A, B});
+        assertContents(rb, A, B);
 
         assertRemove(rb, 2, A);
-        assertContents(rb, new double[] {B});
+        assertContents(rb, B);
 
         assertAdd(rb, C, 2, B);
-        assertContents(rb, new double[] {B, C});
+        assertContents(rb, B, C);
 
         assertRemove(rb, 2, B);
-        assertContents(rb, new double[] {C});
+        assertContents(rb, C);
 
         assertRemove(rb, 1, C);
         assertContents(rb, new double[0]);
@@ -156,13 +161,13 @@ public class DoubleRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertContents(rb, new double[] {A, B, C});
+        assertContents(rb, A, B, C);
         assertFull(rb);
 
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
         assertAdd(rb, F, 6, A);
-        assertContents(rb, new double[] {A, B, C, D, E, F});
+        assertContents(rb, A, B, C, D, E, F);
 
         assertRemove(rb, 6, A);
         assertRemove(rb, 5, B);
@@ -340,6 +345,11 @@ public class DoubleRingBufferTest extends TestCase {
         assertTrue(iter.hasNext());
         assertEquals(F, iter.next());
         assertFalse(iter.hasNext());
+
+        final DoubleRingBuffer.Iterator iterFinal = rb.iterator();
+
+        assertThrows(UnsupportedOperationException.class,
+                () -> iterFinal.remove());
     }
 
     public void testBack() {
@@ -395,5 +405,58 @@ public class DoubleRingBufferTest extends TestCase {
                 assertEquals((double) (i - 100 + 1), rb.front(1));
             assertEquals((double) (i - 100), rb.poll(SENTINEL));
         }
+    }
+
+    public void testAddExceptionWhenFull() {
+        DoubleRingBuffer rb = new DoubleRingBuffer(3, false);
+        assert (rb.add(A));
+        assert (rb.add(B));
+        assert (rb.add(C));
+
+        // this should throw
+        assertThrows(UnsupportedOperationException.class,
+                () -> rb.add(D));
+    }
+
+    public void testAddOverwriteAndOffer() {
+        DoubleRingBuffer rb = new DoubleRingBuffer(3, false);
+        assert (3 == rb.remaining());
+
+        assert (F == rb.addOverwrite(A, F));
+        assert (2 == rb.remaining());
+
+        assert (F == rb.addOverwrite(B, F));
+        assert (1 == rb.remaining());
+
+        assert (F == rb.addOverwrite(C, F));
+        assert (0 == rb.remaining());
+        assert (rb.isFull());
+
+        // now full, should return first value
+        assert (A == rb.addOverwrite(D, F));
+        assert (B == rb.addOverwrite(E, F));
+        assert (rb.isFull());
+
+        // offer() testing
+        assert (false == rb.offer(F));
+        assert (C == rb.remove());
+        assert (true == rb.offer(F));
+
+        // peek testing
+        assert (D == rb.front());
+        assert (E == rb.front(1));
+        assert (F == rb.front(2));
+        // this should throw
+        assertThrows(NoSuchElementException.class,
+                () -> rb.front(99));
+
+        assert (F == rb.peekBack(A));
+
+        // clear() testing
+        rb.clear();
+        assert (rb.isEmpty());
+
+        assert (A == rb.peekBack(A));
+
     }
 }

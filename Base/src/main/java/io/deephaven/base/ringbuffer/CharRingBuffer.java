@@ -30,8 +30,6 @@ public class CharRingBuffer implements Serializable {
             }
             head = 0;
             storage = newStorage;
-        } else {
-            head = (head + 1) % storage.length;
         }
     }
 
@@ -39,10 +37,23 @@ public class CharRingBuffer implements Serializable {
         return (tail + 1) % storage.length == head;
     }
 
+    /**
+     * Create an unbounded-growth ring buffer of char primitives
+     *
+     * @param capacity minimum capacity of ring buffer
+     */
     public CharRingBuffer(int capacity) {
         this(capacity, true);
     }
 
+    /**
+     * Create a ring buffer of char primitives
+     *
+     * @param capacity minimum capacity of ring buffer
+     * @param growable whether to allow growth when the buffer is full. If this is {@code false} and {@code add()} is
+     *        called, an
+     *
+     */
     public CharRingBuffer(int capacity, boolean growable) {
         this.growable = growable;
         this.storage = new char[capacity + 1];
@@ -69,15 +80,33 @@ public class CharRingBuffer implements Serializable {
         tail = head = 0;
     }
 
+    /**
+     * Adds an entry to the ring buffer, will throw an {@link UnsupportedOperationException} if buffer is full. For a
+     * graceful failure, use {@link #offer(char)}
+     *
+     * @param e the char to be added to the buffer
+     * @return true if the char was added successfully
+     */
     public boolean add(char e) {
         if (isFull()) {
-            grow();
+            if (!growable) {
+                throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
+            } else {
+                grow();
+            }
         }
         storage[tail] = e;
         tail = (tail + 1) % storage.length;
         return true;
     }
 
+    /**
+     * Add an entry to the ring buffer. If the buffer is full, will overwrite the oldest entry with the new one.
+     *
+     * @param e the char to be added to the buffer
+     * @param notFullResult value to return is the buffer is not full
+     * @return the overwritten entry if the buffer is full, the provided value otherwise
+     */
     public char addOverwrite(char e, char notFullResult) {
         char result = notFullResult;
         if (isFull()) {
@@ -88,6 +117,13 @@ public class CharRingBuffer implements Serializable {
         return result;
     }
 
+    /**
+     * Attempt to add an entry to the ring buffer. If the buffer is full, the write will fail and the buffer will not
+     * grow even if allowed.
+     *
+     * @param e the char to be added to the buffer
+     * @return true if the value was added successfully, false otherwise
+     */
     public boolean offer(char e) {
         if (isFull()) {
             return false;

@@ -700,15 +700,17 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
 
         public void add(long numWrites, long numRequestedAdds) {
-            if (writes.size() == writes.capacity()) {
+            if (writes.isFull()) {
                 totalNumWrites -= writes.remove();
                 totalNumRequestedAdds -= requestedAdds.remove();
             }
 
             totalNumWrites += numWrites;
             totalNumRequestedAdds += numRequestedAdds;
-            writes.add(numWrites);
-            requestedAdds.add(numRequestedAdds);
+
+            // assert that the buffers are not overwritten
+            Assert.eqTrue(writes.offer(numWrites), "writes.offer(numWrites)");
+            Assert.eqTrue(requestedAdds.add(numRequestedAdds), "requestedAdds.add(numRequestedAdds)");
         }
 
         String summarize() {
