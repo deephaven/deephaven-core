@@ -3,7 +3,7 @@ cachetools==5.2.0
 certifi==2022.9.24
 charset-normalizer==2.1.1
 deephaven-plugin==0.3.0
-google-auth==2.14.1
+google-auth==2.15.0
 google-auth-oauthlib==0.4.6
 grpcio==1.51.1
 idna==3.4

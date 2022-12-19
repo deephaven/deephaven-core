@@ -6,7 +6,7 @@ charset-normalizer==2.1.1
 deephaven-plugin==0.3.0
 flatbuffers==2.0.7
 gast==0.4.0
-google-auth==2.14.1
+google-auth==2.15.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 grpcio==1.51.1
