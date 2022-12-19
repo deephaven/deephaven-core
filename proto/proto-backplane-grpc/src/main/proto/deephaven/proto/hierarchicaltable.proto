@@ -169,12 +169,12 @@ message HierarchicalTableViewRequest {
 
 message HierarchicalTableViewKeyTableDescriptor {
 
-  // Ticket that represents expanded or contracted keys from a HierarchicalTable (RollupTable or TreeTable).
-  // If empty or not present, the result will have all nodes collapsed.
-  // The format for the key table is dictated by the corresponding HierarchicalTableDescriptor. It is expected to
+  // Ticket that represents a Table of expanded or contracted keys from a HierarchicalTable (RollupTable or TreeTable).
+  // The format for the key Table is dictated by the corresponding HierarchicalTableDescriptor. It is expected to
   // have one column for each "expand-by column", one for the "row depth column" for RollupTables only, and
   // (optionally) an "action" column whose name is specified in the key_table_action_column field.
-  Ticket key_table = 1;
+  // If the Table is empty the result will have all nodes collapsed.
+  Ticket key_table_id = 1;
 
   // The name of a column of bytes found in the key table that specifies the action desired for the node selected by
   // the other columns for each row. Takes on the value 1 for nodes that should be expanded, 3 for nodes that should be
