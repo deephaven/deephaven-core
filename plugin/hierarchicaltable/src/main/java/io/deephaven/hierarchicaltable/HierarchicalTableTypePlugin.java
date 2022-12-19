@@ -4,6 +4,7 @@
 package io.deephaven.hierarchicaltable;
 
 import com.google.auto.service.AutoService;
+import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
@@ -11,21 +12,25 @@ import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor;
 import io.deephaven.proto.backplane.grpc.RollupDescriptorDetails;
+import io.deephaven.proto.backplane.grpc.RollupNodeType;
 import io.deephaven.proto.backplane.grpc.TreeDescriptorDetails;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.stream.Collectors;
 
 /**
- * } An object type named &quot;HierarchicalTable&quot; of java class type {@link HierarchicalTable}.
+ * An object type named {@value #NAME} of java class type {@link HierarchicalTable}.
  */
 @AutoService(ObjectType.class)
 public class HierarchicalTableTypePlugin extends ObjectTypeBase {
 
+    private static final String NAME = "HierarchicalTable";
+
     @Override
     public String name() {
-        return "HierarchicalTable";
+        return NAME;
     }
 
     @Override
@@ -39,31 +44,40 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase {
             @NotNull final Object object,
             @NotNull final OutputStream out) throws IOException {
         final HierarchicalTable<?> hierarchicalTable = (HierarchicalTable<?>) object;
-        exporter.reference(hierarchicalTable.getSource(), false, true);
-        exporter.reference(null /* default view */, true, true);
 
-        final HierarchicalTableDescriptor.Builder builder = HierarchicalTableDescriptor.newBuilder();
+        final HierarchicalTableDescriptor.Builder builder = HierarchicalTableDescriptor.newBuilder()
+                .setRowDepthColumn(hierarchicalTable.getRowDepthColumn().name())
+                .setRowExpandedColumn(hierarchicalTable.getRowExpandedColumn().name());
 
+        // TODO-RWC: Build the schema!
         // final ByteString schemaWrappedInMessage =
         // BarrageUtil.schemaBytesFromTable(partitionedTable.constituentDefinition(), Collections.emptyMap());
 
         if (hierarchicalTable instanceof RollupTable) {
+            final RollupTable rollupTable = (RollupTable) hierarchicalTable;
+            builder.addAllExpandByColumns(rollupTable.getGroupByColumns().stream()
+                    .map(ColumnName::name)
+                    .collect(Collectors.toList()));
             builder.setRollup(RollupDescriptorDetails.newBuilder()
+                    .setLeafNodeType(rollupTable.includesConstituents()
+                            ? RollupNodeType.CONSTITUENT
+                            : RollupNodeType.AGGREGATED)
+                    .addAllOutputInputColumnPairs(rollupTable.getColumnPairs().stream()
+                            .map(cnp -> cnp.output().equals(cnp.input())
+                                    ? cnp.output().name()
+                                    : cnp.output().name() + '=' + cnp.input().name())
+                            .collect(Collectors.toList()))
                     .build());
         } else if (hierarchicalTable instanceof TreeTable) {
+            final TreeTable treeTable = (TreeTable) hierarchicalTable;
+            builder.addExpandByColumns(treeTable.getIdentifierColumn().name());
             builder.setTree(TreeDescriptorDetails.getDefaultInstance());
         } else {
-            // panic
+            throw new IllegalArgumentException("Unknown HierarchicalTable type");
         }
         builder.build();
 
         final HierarchicalTableDescriptor result = builder.build();
         result.writeTo(out);
-
-
-    }
-
-    private HierarchicalTableView makeDefaultView() {
-        return null;
     }
 }

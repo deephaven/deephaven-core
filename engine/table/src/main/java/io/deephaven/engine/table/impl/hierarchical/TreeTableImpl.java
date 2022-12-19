@@ -83,6 +83,20 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
+    public Table getRootOnlyKeyTable() {
+        return makeNullIdentifierColumnSingleRowTable(getSource(), getIdentifierColumn());
+    }
+
+    private static Table makeNullIdentifierColumnSingleRowTable(
+            @NotNull final Table source,
+            @NotNull final ColumnName identifierColumn) {
+        final ColumnDefinition identifierColumnDefinition = source.getDefinition().getColumn(identifierColumn.name());
+        final TableDefinition identifierColumnOnlyTableDefinition = TableDefinition.of(identifierColumnDefinition);
+        return new QueryTable(identifierColumnOnlyTableDefinition, RowSetFactory.flat(1).toTracking(),
+                NullValueColumnSource.createColumnSourceMap(identifierColumnOnlyTableDefinition), null, null);
+    }
+
+    @Override
     public ColumnName getIdentifierColumn() {
         return identifierColumn;
     }
@@ -190,12 +204,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     private static QueryTable computeTree(
             @NotNull final QueryTable source,
             @NotNull final ColumnName parentIdColumn) {
-        final ColumnDefinition parentIdColumnDefinition = source.getDefinition().getColumn(parentIdColumn.name());
-        final TableDefinition parentIdOnlyTableDefinition = TableDefinition.of(parentIdColumnDefinition);
-        final Table nullParent = new QueryTable(parentIdOnlyTableDefinition, RowSetFactory.flat(1).toTracking(),
-                NullValueColumnSource.createColumnSourceMap(parentIdOnlyTableDefinition), null, null);
         return source.aggNoMemo(AggregationProcessor.forAggregation(List.of(Partition.of(TREE_COLUMN))),
-                true, nullParent, List.of(parentIdColumn));
+                true, makeNullIdentifierColumnSingleRowTable(source, parentIdColumn), List.of(parentIdColumn));
     }
 
     private static QueryTable getTreeRoot(@NotNull final QueryTable tree) {

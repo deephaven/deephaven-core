@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
@@ -130,6 +131,16 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     public Collection<? extends ColumnName> getGroupByColumns() {
         return groupByColumns;
+    }
+
+    @Override
+    public Table getRootOnlyKeyTable() {
+        final Collection<ColumnDefinition<?>> groupByColumnDefinitions = getGroupByColumns().stream()
+                .map(gbcn -> getSource().getDefinition().getColumn(gbcn.name()))
+                .collect(Collectors.toList());
+        final TableDefinition groupByColumnsOnlyTableDefinition = TableDefinition.of(groupByColumnDefinitions);
+        return new QueryTable(groupByColumnsOnlyTableDefinition, RowSetFactory.flat(1).toTracking(),
+                NullValueColumnSource.createColumnSourceMap(groupByColumnsOnlyTableDefinition), null, null);
     }
 
     @Override

@@ -35,6 +35,13 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     Table getRoot();
 
     /**
+     * Get a re-usable, static key {@link Table} that will expand only the root node.
+     *
+     * @return A root-only key {@link Table}
+     */
+    Table getRootOnlyKeyTable();
+
+    /**
      * Get the name of a column of {@link java.lang.Boolean Booleans} that denotes whether a row is expanded (or
      * expandable). It takes on the value {@code null} for rows that are not expandable, {@code false} for expandable
      * but unexpanded rows, and {@code true} for expanded rows. This column is "synthetic"; that is, it's not part of
@@ -75,7 +82,9 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     }
 
     /**
-     * Make a re-usable snapshot state.
+     * Make a re-usable snapshot state. The result will ensure liveness for {@code this} HierarchicalTable if the
+     * {@link #getSource() source} {@link Table#isRefreshing() isRefreshing}, and callers must similarly retain the
+     * result for the duration of their usage under the same conditions.
      */
     SnapshotState makeSnapshotState();
 
