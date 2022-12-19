@@ -285,9 +285,14 @@ public class FuzzerTest {
         // noinspection unchecked
         ((Map<String, Object>) session.getBinding().getVariables())
                 .entrySet().forEach((final Map.Entry<String, Object> varEntry) -> {
-                    if (varEntry.getValue() instanceof Table) {
-                        varEntry.setValue(((Table) varEntry.getValue())
-                                .withAttributes(Map.of("BINDING_VARIABLE_NAME", varEntry.getKey())));
+                    if (varEntry.getValue() instanceof LiveAttributeMap) {
+                        final LiveAttributeMap<?, ?> liveAttributeMap = (LiveAttributeMap<?, ?>) varEntry.getValue();
+                        if (liveAttributeMap.published()) {
+                            varEntry.setValue(liveAttributeMap
+                                    .withAttributes(Map.of("BINDING_VARIABLE_NAME", varEntry.getKey())));
+                        } else {
+                            liveAttributeMap.setAttribute("BINDING_VARIABLE_NAME", varEntry.getKey());
+                        }
                     }
                 });
     }

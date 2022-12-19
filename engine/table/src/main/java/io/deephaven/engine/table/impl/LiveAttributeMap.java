@@ -194,6 +194,16 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         }
     }
 
+    /**
+     * Test if this LiveAttributeMap has been published yet. This determines whether it's safe to call
+     * {@link #setAttribute(String, Object)} or {@link #setAttribute(String, UnaryOperator)}.
+     * 
+     * @return Whether this LiveAttributeMap has been published
+     */
+    public boolean published() {
+        return immutableAttributes != null;
+    }
+
     private void checkMutable() {
         if (immutableAttributes != null) {
             throw new UnsupportedOperationException("Cannot mutate attributes after they have been published");
