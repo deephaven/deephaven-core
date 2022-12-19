@@ -207,8 +207,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private final Stats stats;
 
-    private final ColumnSource<?>[] sourceColumns; // might be reinterpreted
+    /** the possibly reinterpretted source column */
+    private final ColumnSource<?>[] sourceColumns;
+    /** which source columns are object columns and thus need proactive garbage collection */
     private final BitSet objectColumns = new BitSet();
+    /** internally, booleans are reinterpretted to bytes; however we need to be packed bitsets over Arrow */
+    private final Class<?>[] realColumnType;
 
     // We keep this RowSet in-sync with deltas being propagated to subscribers.
     private final WritableRowSet propagationRowSet;
@@ -328,19 +332,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         sourceColumns = parent.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         deltaColumns = new WritableColumnSource[sourceColumns.length];
+        realColumnType = new Class<?>[sourceColumns.length];
 
         // we start off with initial sizes of zero, because its quite possible no one will ever look at this table
         final int capacity = 0;
 
-        for (int i = 0; i < sourceColumns.length; ++i) {
-            // If the source column is a DBDate time we'll just always use longs to avoid silly reinterpretations during
-            // serialization/deserialization
-            sourceColumns[i] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumns[i]);
-            deltaColumns[i] = ArrayBackedColumnSource.getMemoryColumnSource(
-                    capacity, sourceColumns[i].getType(), sourceColumns[i].getComponentType());
+        for (int ci = 0; ci < sourceColumns.length; ++ci) {
+            // avoid silly reinterpretations during ser/deser by using primitive types when possible
+            realColumnType[ci] = sourceColumns[ci].getType();
+            sourceColumns[ci] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumns[ci]);
+            deltaColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
+                    capacity, sourceColumns[ci].getType(), sourceColumns[ci].getComponentType());
 
-            if (deltaColumns[i] instanceof ObjectArraySource) {
-                objectColumns.set(i);
+            if (deltaColumns[ci] instanceof ObjectArraySource) {
+                objectColumns.set(ci);
             }
         }
     }
@@ -1640,7 +1645,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     }
                 }
 
-                adds.type = deltaColumn.getType();
+                adds.type = realColumnType[ci];
                 adds.componentType = deltaColumn.getComponentType();
             }
 
@@ -1671,7 +1676,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     mods.rowsModified = RowSetFactory.empty();
                 }
 
-                mods.type = deltaColumn.getType();
+                mods.type = realColumnType[ci];
                 mods.componentType = deltaColumn.getComponentType();
             }
         } else {
@@ -1850,21 +1855,21 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     }
                 }
 
-                adds.type = deltaColumn.getType();
+                adds.type = realColumnType[ci];
                 adds.componentType = deltaColumn.getComponentType();
             }
 
             int numActualModCols = 0;
-            for (int i = 0; i < downstream.modColumnData.length; ++i) {
-                final ColumnSource<?> sourceColumn = deltaColumns[i];
+            for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
+                final ColumnSource<?> sourceColumn = deltaColumns[ci];
                 final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
                 mods.data = new ArrayList<>();
                 mods.chunkType = sourceColumn.getChunkType();
 
                 downstream.modColumnData[numActualModCols++] = mods;
 
-                if (modColumnSet.get(i)) {
-                    final ColumnInfo info = getColumnInfo.apply(i);
+                if (modColumnSet.get(ci)) {
+                    final ColumnInfo info = getColumnInfo.apply(ci);
                     mods.rowsModified = info.recordedMods.copy();
                     for (long[] modifiedMapping : info.modifiedMappings) {
                         final WritableChunk<Values> chunk = mods.chunkType.makeWritableChunk(modifiedMapping.length);
@@ -1878,7 +1883,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     mods.rowsModified = RowSetFactory.empty();
                 }
 
-                mods.type = sourceColumn.getType();
+                mods.type = realColumnType[ci];
                 mods.componentType = sourceColumn.getComponentType();
             }
         }

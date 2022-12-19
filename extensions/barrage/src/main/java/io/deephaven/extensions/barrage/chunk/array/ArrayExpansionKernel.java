@@ -22,6 +22,12 @@ public interface ArrayExpansionKernel {
             case Char:
                 return CharArrayExpansionKernel.INSTANCE;
             case Byte:
+                // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
+                if (componentType == boolean.class) {
+                    return BooleanArrayExpansionKernel.INSTANCE;
+                } else if (componentType == Boolean.class) {
+                    return BoxedBooleanArrayExpansionKernel.INSTANCE;
+                }
                 return ByteArrayExpansionKernel.INSTANCE;
             case Short:
                 return ShortArrayExpansionKernel.INSTANCE;

@@ -1341,7 +1341,7 @@ public class ConstructSnapshot {
                 // when empty
                 final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
                 acd.data = getSnapshotDataAsChunkList(sourceToUse, columnIsEmpty ? null : sharedContext, rows, usePrev);
-                acd.type = sourceToUse.getType();
+                acd.type = columnSource.getType();
                 acd.componentType = sourceToUse.getComponentType();
                 acd.chunkType = sourceToUse.getChunkType();
 

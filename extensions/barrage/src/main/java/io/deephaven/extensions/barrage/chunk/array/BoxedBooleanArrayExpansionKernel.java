@@ -16,9 +16,9 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 
-public class BooleanArrayExpansionKernel implements ArrayExpansionKernel {
-    private final static boolean[] ZERO_LEN_ARRAY = new boolean[0];
-    public final static BooleanArrayExpansionKernel INSTANCE = new BooleanArrayExpansionKernel();
+public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel {
+    private final static Boolean[] ZERO_LEN_ARRAY = new Boolean[0];
+    public final static BoxedBooleanArrayExpansionKernel INSTANCE = new BoxedBooleanArrayExpansionKernel();
 
     @Override
     public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
@@ -27,11 +27,11 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel {
             return WritableByteChunk.makeWritableChunk(0);
         }
 
-        final ObjectChunk<boolean[], A> typedSource = source.asObjectChunk();
+        final ObjectChunk<Boolean[], A> typedSource = source.asObjectChunk();
 
         long totalSize = 0;
         for (int i = 0; i < typedSource.size(); ++i) {
-            final boolean[] row = typedSource.get(i);
+            final Boolean[] row = typedSource.get(i);
             totalSize += row == null ? 0 : row.length;
         }
         final WritableByteChunk<A> result = WritableByteChunk.makeWritableChunk(
@@ -40,7 +40,7 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel {
         int lenWritten = 0;
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
-            final boolean[] row = typedSource.get(i);
+            final Boolean[] row = typedSource.get(i);
             perElementLengthDest.set(i, lenWritten);
             if (row == null) {
                 continue;
@@ -84,9 +84,9 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel {
             if (rowLen == 0) {
                 result.set(outOffset + i, ZERO_LEN_ARRAY);
             } else {
-                final boolean[] row = new boolean[rowLen];
+                final Boolean[] row = new Boolean[rowLen];
                 for (int j = 0; j < rowLen; ++j) {
-                    row[j] = typedSource.get(lenRead + j) == BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
+                    row[j] = BooleanUtils.byteAsBoolean(typedSource.get(lenRead + j));
                 }
                 lenRead += rowLen;
                 result.set(outOffset + i, row);
