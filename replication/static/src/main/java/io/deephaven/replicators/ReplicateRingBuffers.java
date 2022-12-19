@@ -17,17 +17,11 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 public class ReplicateRingBuffers {
 
     public static void main(String... args) throws IOException {
-        // replicate ring buffers
+        // replicate ring buffers to all but Object (since RingBuffer<> already exisits)
         charToAllButBoolean("Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
-        String objectResult = ReplicatePrimitiveCode.charToObject(
-                "Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
 
         // replicate the tests
         charToAllButBoolean("Base/src/test/java/io/deephaven/base/ringbuffer/CharRingBufferTest.java");
-        objectResult = ReplicatePrimitiveCode.charToObject(
-                "Base/src/test/java/io/deephaven/base/ringbuffer/CharRingBufferTest.java");
-        replaceLines(objectResult,
-                "SENTINEL = Object.MIN_VALUE", "SENTINEL = \"SENTINEL\"");
     }
 
     private static void replaceLines(String fileResult, String... replacements) throws IOException {

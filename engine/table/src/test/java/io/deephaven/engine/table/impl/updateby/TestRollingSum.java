@@ -8,6 +8,11 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.Generator;
+import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
@@ -23,9 +28,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
-import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.testTable;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.function.Basic.isNull;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
@@ -84,7 +90,7 @@ public class TestRollingSum extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKeyTimed() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -120,7 +126,7 @@ public class TestRollingSum extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKeyFwdWindowTimed() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -156,7 +162,7 @@ public class TestRollingSum extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKeyFwdRevWindowTimed() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -269,7 +275,7 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(10000, true, grouped, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -348,7 +354,7 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     private void doTestAppendOnlyTimed(boolean bucketed) {
         final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TstUtils.Generator[] {new TstUtils.SortedDateTimeGenerator(
+                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
         final QueryTable t = result.t;
