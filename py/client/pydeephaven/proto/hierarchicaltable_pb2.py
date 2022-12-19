@@ -15,7 +15,7 @@ from pydeephaven.proto import table_pb2 as deephaven_dot_proto_dot_table__pb2
 from pydeephaven.proto import ticket_pb2 as deephaven_dot_proto_dot_ticket__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'deephaven/proto/hierarchicaltable.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1b\x64\x65\x65phaven/proto/table.proto\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"\xa2\x02\n\rRollupRequest\x12\x41\n\x0eresult_view_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12<\n\tsource_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12X\n\x0c\x61ggregations\x18\x03 \x03(\x0b\x32\x42.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate\x12\x1c\n\x14include_constituents\x18\x04 \x01(\x08\x12\x18\n\x10group_by_columns\x18\x05 \x03(\t\"\x10\n\x0eRollupResponse\"\xcb\x01\n\x0bTreeRequest\x12\x41\n\x0eresult_view_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12<\n\tsource_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x19\n\x11identifier_column\x18\x03 \x01(\t\x12 \n\x18parent_identifier_column\x18\x04 \x01(\t\"\x0e\n\x0cTreeResponse\"\xa0\x01\n$HierarchicalTableSourceExportRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12:\n\x07view_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\xad\x02\n\x1fHierarchicalTableViewDescriptor\x12\x19\n\x11\x65xpand_by_columns\x18\x01 \x03(\t\x12\x18\n\x10row_depth_column\x18\x02 \x01(\t\x12\x1b\n\x13row_expanded_column\x18\x03 \x01(\t\x12L\n\x06rollup\x18\x04 \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.RollupDescriptorDetailsH\x00\x12H\n\x04tree\x18\x05 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.TreeDescriptorDetailsH\x00\x12\x15\n\rschema_header\x18\x06 \x01(\x0c\x42\t\n\x07\x64\x65tails\"\x87\x01\n\x17RollupDescriptorDetails\x12I\n\x0eleaf_node_type\x18\x01 \x01(\x0e\x32\x31.io.deephaven.proto.backplane.grpc.RollupNodeType\x12!\n\x19output_input_column_pairs\x18\x02 \x03(\t\"\x17\n\x15TreeDescriptorDetails\"\x9a\x03\n\x1cHierarchicalTableViewRequest\x12\x41\n\x0eresult_view_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x43\n\x10\x65xisting_view_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12m\n\x14key_table_descriptor\x18\x03 \x01(\x0b\x32J.io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptorH\x00\x88\x01\x01\x12[\n\noperations\x18\x04 \x01(\x0b\x32\x42.io.deephaven.proto.backplane.grpc.HierarchicalTableViewOperationsH\x01\x88\x01\x01\x42\x17\n\x15_key_table_descriptorB\r\n\x0b_operations\"\xa9\x01\n\'HierarchicalTableViewKeyTableDescriptor\x12<\n\tkey_table\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12$\n\x17key_table_action_column\x18\x02 \x01(\tH\x00\x88\x01\x01\x42\x1a\n\x18_key_table_action_column\"\xa2\x01\n\x1fHierarchicalTableViewOperations\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\x12@\n\x05sorts\x18\x02 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.SortDescriptor\"\x1f\n\x1dHierarchicalTableViewResponse*@\n\x0eRollupNodeType\x12\r\n\tUNDEFINED\x10\x00\x12\x0e\n\nAGGREGATED\x10\x01\x12\x0f\n\x0b\x43ONSTITUENT\x10\x02\x32\x9a\x04\n\x18HierarchicalTableService\x12m\n\x06Rollup\x12\x30.io.deephaven.proto.backplane.grpc.RollupRequest\x1a\x31.io.deephaven.proto.backplane.grpc.RollupResponse\x12g\n\x04Tree\x12..io.deephaven.proto.backplane.grpc.TreeRequest\x1a/.io.deephaven.proto.backplane.grpc.TreeResponse\x12\x99\x01\n\x0c\x45xportSource\x12G.io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\x12\x89\x01\n\x04View\x12?.io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest\x1a@.io.deephaven.proto.backplane.grpc.HierarchicalTableViewResponseBMH\x01P\x01ZGgithub.com/deephaven/deephaven-core/go/internal/proto/hierarchicaltableb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'deephaven/proto/hierarchicaltable.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1b\x64\x65\x65phaven/proto/table.proto\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"\xb0\x02\n\rRollupRequest\x12I\n\x16result_rollup_table_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x0fsource_table_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12X\n\x0c\x61ggregations\x18\x03 \x03(\x0b\x32\x42.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate\x12\x1c\n\x14include_constituents\x18\x04 \x01(\x08\x12\x18\n\x10group_by_columns\x18\x05 \x03(\t\"\x10\n\x0eRollupResponse\"\xd7\x01\n\x0bTreeRequest\x12G\n\x14result_tree_table_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x0fsource_table_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x19\n\x11identifier_column\x18\x03 \x01(\t\x12 \n\x18parent_identifier_column\x18\x04 \x01(\t\"\x0e\n\x0cTreeResponse\"\xc1\x02\n\x1dHierarchicalTableApplyRequest\x12O\n\x1cresult_hierarchical_table_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12N\n\x1binput_hierarchical_table_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12=\n\x07\x66ilters\x18\x03 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\x12@\n\x05sorts\x18\x04 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.SortDescriptor\" \n\x1eHierarchicalTableApplyResponse\"\xa9\x02\n\x1bHierarchicalTableDescriptor\x12\x19\n\x11\x65xpand_by_columns\x18\x01 \x03(\t\x12\x18\n\x10row_depth_column\x18\x02 \x01(\t\x12\x1b\n\x13row_expanded_column\x18\x03 \x01(\t\x12L\n\x06rollup\x18\x04 \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.RollupDescriptorDetailsH\x00\x12H\n\x04tree\x18\x05 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.TreeDescriptorDetailsH\x00\x12\x15\n\rschema_header\x18\x06 \x01(\x0c\x42\t\n\x07\x64\x65tails\"\x87\x01\n\x17RollupDescriptorDetails\x12I\n\x0eleaf_node_type\x18\x01 \x01(\x0e\x32\x31.io.deephaven.proto.backplane.grpc.RollupNodeType\x12!\n\x19output_input_column_pairs\x18\x02 \x03(\t\"\x17\n\x15TreeDescriptorDetails\"\xd0\x02\n\x1cHierarchicalTableViewRequest\x12\x41\n\x0eresult_view_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12H\n\x15hierarchical_table_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x43\n\x10\x65xisting_view_id\x18\x03 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12^\n\nexpansions\x18\x04 \x01(\x0b\x32J.io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor\"\xa9\x01\n\'HierarchicalTableViewKeyTableDescriptor\x12<\n\tkey_table\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12$\n\x17key_table_action_column\x18\x02 \x01(\tH\x00\x88\x01\x01\x42\x1a\n\x18_key_table_action_column\"\x1f\n\x1dHierarchicalTableViewResponse*@\n\x0eRollupNodeType\x12\r\n\tUNDEFINED\x10\x00\x12\x0e\n\nAGGREGATED\x10\x01\x12\x0f\n\x0b\x43ONSTITUENT\x10\x02\x32\x8d\x04\n\x18HierarchicalTableService\x12m\n\x06Rollup\x12\x30.io.deephaven.proto.backplane.grpc.RollupRequest\x1a\x31.io.deephaven.proto.backplane.grpc.RollupResponse\x12g\n\x04Tree\x12..io.deephaven.proto.backplane.grpc.TreeRequest\x1a/.io.deephaven.proto.backplane.grpc.TreeResponse\x12\x8c\x01\n\x05\x41pply\x12@.io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest\x1a\x41.io.deephaven.proto.backplane.grpc.HierarchicalTableApplyResponse\x12\x89\x01\n\x04View\x12?.io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest\x1a@.io.deephaven.proto.backplane.grpc.HierarchicalTableViewResponseBMH\x01P\x01ZGgithub.com/deephaven/deephaven-core/go/internal/proto/hierarchicaltableb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'deephaven.proto.hierarchicaltable_pb2', globals())
@@ -23,32 +23,32 @@ if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'H\001P\001ZGgithub.com/deephaven/deephaven-core/go/internal/proto/hierarchicaltable'
-  _ROLLUPNODETYPE._serialized_start=2083
-  _ROLLUPNODETYPE._serialized_end=2147
+  _ROLLUPNODETYPE._serialized_start=2061
+  _ROLLUPNODETYPE._serialized_end=2125
   _ROLLUPREQUEST._serialized_start=138
-  _ROLLUPREQUEST._serialized_end=428
-  _ROLLUPRESPONSE._serialized_start=430
-  _ROLLUPRESPONSE._serialized_end=446
-  _TREEREQUEST._serialized_start=449
-  _TREEREQUEST._serialized_end=652
-  _TREERESPONSE._serialized_start=654
-  _TREERESPONSE._serialized_end=668
-  _HIERARCHICALTABLESOURCEEXPORTREQUEST._serialized_start=671
-  _HIERARCHICALTABLESOURCEEXPORTREQUEST._serialized_end=831
-  _HIERARCHICALTABLEVIEWDESCRIPTOR._serialized_start=834
-  _HIERARCHICALTABLEVIEWDESCRIPTOR._serialized_end=1135
-  _ROLLUPDESCRIPTORDETAILS._serialized_start=1138
-  _ROLLUPDESCRIPTORDETAILS._serialized_end=1273
-  _TREEDESCRIPTORDETAILS._serialized_start=1275
-  _TREEDESCRIPTORDETAILS._serialized_end=1298
-  _HIERARCHICALTABLEVIEWREQUEST._serialized_start=1301
-  _HIERARCHICALTABLEVIEWREQUEST._serialized_end=1711
-  _HIERARCHICALTABLEVIEWKEYTABLEDESCRIPTOR._serialized_start=1714
-  _HIERARCHICALTABLEVIEWKEYTABLEDESCRIPTOR._serialized_end=1883
-  _HIERARCHICALTABLEVIEWOPERATIONS._serialized_start=1886
-  _HIERARCHICALTABLEVIEWOPERATIONS._serialized_end=2048
-  _HIERARCHICALTABLEVIEWRESPONSE._serialized_start=2050
-  _HIERARCHICALTABLEVIEWRESPONSE._serialized_end=2081
-  _HIERARCHICALTABLESERVICE._serialized_start=2150
-  _HIERARCHICALTABLESERVICE._serialized_end=2688
+  _ROLLUPREQUEST._serialized_end=442
+  _ROLLUPRESPONSE._serialized_start=444
+  _ROLLUPRESPONSE._serialized_end=460
+  _TREEREQUEST._serialized_start=463
+  _TREEREQUEST._serialized_end=678
+  _TREERESPONSE._serialized_start=680
+  _TREERESPONSE._serialized_end=694
+  _HIERARCHICALTABLEAPPLYREQUEST._serialized_start=697
+  _HIERARCHICALTABLEAPPLYREQUEST._serialized_end=1018
+  _HIERARCHICALTABLEAPPLYRESPONSE._serialized_start=1020
+  _HIERARCHICALTABLEAPPLYRESPONSE._serialized_end=1052
+  _HIERARCHICALTABLEDESCRIPTOR._serialized_start=1055
+  _HIERARCHICALTABLEDESCRIPTOR._serialized_end=1352
+  _ROLLUPDESCRIPTORDETAILS._serialized_start=1355
+  _ROLLUPDESCRIPTORDETAILS._serialized_end=1490
+  _TREEDESCRIPTORDETAILS._serialized_start=1492
+  _TREEDESCRIPTORDETAILS._serialized_end=1515
+  _HIERARCHICALTABLEVIEWREQUEST._serialized_start=1518
+  _HIERARCHICALTABLEVIEWREQUEST._serialized_end=1854
+  _HIERARCHICALTABLEVIEWKEYTABLEDESCRIPTOR._serialized_start=1857
+  _HIERARCHICALTABLEVIEWKEYTABLEDESCRIPTOR._serialized_end=2026
+  _HIERARCHICALTABLEVIEWRESPONSE._serialized_start=2028
+  _HIERARCHICALTABLEVIEWRESPONSE._serialized_end=2059
+  _HIERARCHICALTABLESERVICE._serialized_start=2128
+  _HIERARCHICALTABLESERVICE._serialized_end=2653
 # @@protoc_insertion_point(module_scope)

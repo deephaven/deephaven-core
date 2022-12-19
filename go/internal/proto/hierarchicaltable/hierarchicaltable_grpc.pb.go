@@ -8,7 +8,6 @@ package hierarchicaltable
 
 import (
 	context "context"
-	table "github.com/deephaven/deephaven-core/go/internal/proto/table"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -23,13 +22,15 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HierarchicalTableServiceClient interface {
-	// Performs a rollup operation on a table and exports a default hierarchical table view of the result.
+	// Applies a rollup operation to a Table and exports the resulting RollupTable
 	Rollup(ctx context.Context, in *RollupRequest, opts ...grpc.CallOption) (*RollupResponse, error)
-	// Performs a tree operation on a table and exports a default hierarchical table view of the result.
+	// Applies a tree operation to a Table and exports the resulting TreeTable
 	Tree(ctx context.Context, in *TreeRequest, opts ...grpc.CallOption) (*TreeResponse, error)
-	// Exports the source table for a hierarchical table view.
-	ExportSource(ctx context.Context, in *HierarchicalTableSourceExportRequest, opts ...grpc.CallOption) (*table.ExportedTableCreationResponse, error)
-	// Derives a new hierarchical table view from an existing hierarchical table view.
+	// Applies operations to an existing HierarchicalTable (RollupTable or TreeTable) and exports the resulting
+	// HierarchicalTable
+	Apply(ctx context.Context, in *HierarchicalTableApplyRequest, opts ...grpc.CallOption) (*HierarchicalTableApplyResponse, error)
+	// Creates a view associating a Table of expansion keys and actions with an existing HierarchicalTable and exports
+	// the resulting HierarchicalTableView for subsequent snapshot or subscription requests
 	View(ctx context.Context, in *HierarchicalTableViewRequest, opts ...grpc.CallOption) (*HierarchicalTableViewResponse, error)
 }
 
@@ -59,9 +60,9 @@ func (c *hierarchicalTableServiceClient) Tree(ctx context.Context, in *TreeReque
 	return out, nil
 }
 
-func (c *hierarchicalTableServiceClient) ExportSource(ctx context.Context, in *HierarchicalTableSourceExportRequest, opts ...grpc.CallOption) (*table.ExportedTableCreationResponse, error) {
-	out := new(table.ExportedTableCreationResponse)
-	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.HierarchicalTableService/ExportSource", in, out, opts...)
+func (c *hierarchicalTableServiceClient) Apply(ctx context.Context, in *HierarchicalTableApplyRequest, opts ...grpc.CallOption) (*HierarchicalTableApplyResponse, error) {
+	out := new(HierarchicalTableApplyResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.HierarchicalTableService/Apply", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +82,15 @@ func (c *hierarchicalTableServiceClient) View(ctx context.Context, in *Hierarchi
 // All implementations must embed UnimplementedHierarchicalTableServiceServer
 // for forward compatibility
 type HierarchicalTableServiceServer interface {
-	// Performs a rollup operation on a table and exports a default hierarchical table view of the result.
+	// Applies a rollup operation to a Table and exports the resulting RollupTable
 	Rollup(context.Context, *RollupRequest) (*RollupResponse, error)
-	// Performs a tree operation on a table and exports a default hierarchical table view of the result.
+	// Applies a tree operation to a Table and exports the resulting TreeTable
 	Tree(context.Context, *TreeRequest) (*TreeResponse, error)
-	// Exports the source table for a hierarchical table view.
-	ExportSource(context.Context, *HierarchicalTableSourceExportRequest) (*table.ExportedTableCreationResponse, error)
-	// Derives a new hierarchical table view from an existing hierarchical table view.
+	// Applies operations to an existing HierarchicalTable (RollupTable or TreeTable) and exports the resulting
+	// HierarchicalTable
+	Apply(context.Context, *HierarchicalTableApplyRequest) (*HierarchicalTableApplyResponse, error)
+	// Creates a view associating a Table of expansion keys and actions with an existing HierarchicalTable and exports
+	// the resulting HierarchicalTableView for subsequent snapshot or subscription requests
 	View(context.Context, *HierarchicalTableViewRequest) (*HierarchicalTableViewResponse, error)
 	mustEmbedUnimplementedHierarchicalTableServiceServer()
 }
@@ -102,8 +105,8 @@ func (UnimplementedHierarchicalTableServiceServer) Rollup(context.Context, *Roll
 func (UnimplementedHierarchicalTableServiceServer) Tree(context.Context, *TreeRequest) (*TreeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Tree not implemented")
 }
-func (UnimplementedHierarchicalTableServiceServer) ExportSource(context.Context, *HierarchicalTableSourceExportRequest) (*table.ExportedTableCreationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ExportSource not implemented")
+func (UnimplementedHierarchicalTableServiceServer) Apply(context.Context, *HierarchicalTableApplyRequest) (*HierarchicalTableApplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedHierarchicalTableServiceServer) View(context.Context, *HierarchicalTableViewRequest) (*HierarchicalTableViewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method View not implemented")
@@ -158,20 +161,20 @@ func _HierarchicalTableService_Tree_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HierarchicalTableService_ExportSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HierarchicalTableSourceExportRequest)
+func _HierarchicalTableService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HierarchicalTableApplyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HierarchicalTableServiceServer).ExportSource(ctx, in)
+		return srv.(HierarchicalTableServiceServer).Apply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/io.deephaven.proto.backplane.grpc.HierarchicalTableService/ExportSource",
+		FullMethod: "/io.deephaven.proto.backplane.grpc.HierarchicalTableService/Apply",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HierarchicalTableServiceServer).ExportSource(ctx, req.(*HierarchicalTableSourceExportRequest))
+		return srv.(HierarchicalTableServiceServer).Apply(ctx, req.(*HierarchicalTableApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -210,8 +213,8 @@ var HierarchicalTableService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HierarchicalTableService_Tree_Handler,
 		},
 		{
-			MethodName: "ExportSource",
-			Handler:    _HierarchicalTableService_ExportSource_Handler,
+			MethodName: "Apply",
+			Handler:    _HierarchicalTableService_Apply_Handler,
 		},
 		{
 			MethodName: "View",

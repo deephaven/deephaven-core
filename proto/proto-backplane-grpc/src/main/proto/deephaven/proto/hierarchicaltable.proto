@@ -16,23 +16,28 @@ import "deephaven/proto/ticket.proto";
 // This service provides tools to create and view hierarchical tables (rollups and trees).
 service HierarchicalTableService {
 
-  // Performs a rollup operation on a table and exports a default hierarchical table view of the result.
+  // Applies a rollup operation to a Table and exports the resulting RollupTable
   rpc Rollup(RollupRequest) returns (RollupResponse);
 
-  // Performs a tree operation on a table and exports a default hierarchical table view of the result.
+  // Applies a tree operation to a Table and exports the resulting TreeTable
   rpc Tree(TreeRequest) returns (TreeResponse);
 
-  // Derives a new hierarchical table view from an existing hierarchical table view.
+  // Applies operations to an existing HierarchicalTable (RollupTable or TreeTable) and exports the resulting
+  // HierarchicalTable
+  rpc Apply(HierarchicalTableApplyRequest) returns (HierarchicalTableApplyResponse);
+
+  // Creates a view associating a Table of expansion keys and actions with an existing HierarchicalTable and exports
+  // the resulting HierarchicalTableView for subsequent snapshot or subscription requests
   rpc View(HierarchicalTableViewRequest) returns (HierarchicalTableViewResponse);
 }
 
 message RollupRequest {
 
-  // Ticket to use to hold the result of the rollup operation
-  Ticket result_id = 1;
+  // Ticket to use to hold the result RollupTable from the rollup operation
+  Ticket result_rollup_table_id = 1;
 
-  // Ticket for the source Table object to rollup
-  Ticket source_id = 2;
+  // Ticket for the source Table to rollup
+  Ticket source_table_id = 2;
 
   // The aggregations that should be applied at each level of the rollup
   repeated ComboAggregateRequest.Aggregate aggregations = 3;
@@ -45,17 +50,17 @@ message RollupRequest {
 }
 
 message RollupResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to access the result_id ticket as a
-  // HierarchicalTableViewDescriptor. See HierarchicalTableViewDescriptor documentation for details.
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_rollup_table_id ticket as
+  // a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
 }
 
 message TreeRequest {
 
-  // Ticket to use to hold the result of the tree operation
-  Ticket result_id = 1;
+  // Ticket to use to hold the result TreeTable from the tree operation
+  Ticket result_tree_table_id = 1;
 
-  // Ticket for the source Table object to tree
-  Ticket source_id = 2;
+  // Ticket for the source Table to tree
+  Ticket source_table_id = 2;
 
   // The name of the column containing the unique identifier for each row in the source table
   string identifier_column = 3;
@@ -65,8 +70,28 @@ message TreeRequest {
 }
 
 message TreeResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to access the result_id ticket as a
-  // HierarchicalTableViewDescriptor. See HierarchicalTableViewDescriptor documentation for details.
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_tree_table_id ticket as
+  // a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
+}
+
+message HierarchicalTableApplyRequest {
+
+  // Ticket to use to hold the result HierarchicalTable (RollupTable or TreeTable) from the applying the operations
+  Ticket result_hierarchical_table_id = 1;
+
+  // Ticket for the input HierarchicalTable (RollupTable or TreeTable) to apply operations to
+  Ticket input_hierarchical_table_id = 2;
+
+  // Filters to apply to the input HierarchicalTable's to produce the result HierarchicalTable
+  repeated Condition filters = 3;
+
+  // Sorts to apply to the input HierarchicalTable's to produce the result HierarchicalTable
+  repeated SortDescriptor sorts = 4;
+}
+
+message HierarchicalTableApplyResponse {
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_hierarchical_table_id ticket as
+  // a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
 }
 
 message HierarchicalTableDescriptor {
@@ -75,15 +100,15 @@ message HierarchicalTableDescriptor {
   // Should be user-visible, and displayed before other columns.
   // Must be included in view request key tables.
   // Implementation notes:
-  // In rollups, these are the group-by columns.
-  // In trees, this is the (singular) identifier column.
+  // For RollupTables, these are the group-by columns.
+  // For TreeTables, this is the (singular) identifier column.
   repeated string expand_by_columns = 1;
 
-  // The name of a column that specifies the depth of a row. Note that for rollups, this also represents the number of
-  // group-by columns that are "defined" for a row for all expandable rows.
+  // The name of a column that specifies the depth of a row. Note that for RollupTables, this also represents the number
+  // of group-by columns that are "defined" for a row for all expandable rows.
   // Should not be (directly) user-visible.
-  // Must be included along with expand-by columns in a rollup view request's key table. Need not be sent in a tree
-  // view request's key table.
+  // Must be included along with expand-by columns in a HierarchicalTableViewRequest's key table for RollupTables.
+  // Need not be included in a HierarchicalTableViewRequest's key table for TreeTables.
   string row_depth_column = 2;
 
   // The name of a nullable column of booleans that specifies whether a row is expandable or expanded. Will be null
@@ -109,7 +134,7 @@ enum RollupNodeType {
 
 message RollupDescriptorDetails {
 
-  // Whether this rollup's leaf nodes are first level aggregations or constituents
+  // Whether this RollupTable's leaf nodes are first level aggregations or constituents
   RollupNodeType leaf_node_type = 1;
 
   // '='-delimited pairs from output (aggregation) column name to input (constituent) column name, or singular names
@@ -123,28 +148,28 @@ message TreeDescriptorDetails {
 
 message HierarchicalTableViewRequest {
 
-  // Ticket for the resulting hierarchical table view
+  // Ticket to use to hold the result HierarchicalTableView
   Ticket result_view_id = 1;
 
-  // Ticket for the hierarchical table to optionally apply operations to
+  // Ticket for the HierarchicalTable (RollupTable or TreeTable) to expand
   Ticket hierarchical_table_id = 2;
 
-  oneof action {
-    // Key table to use, if it should be different than the one associated with the existing view
-    HierarchicalTableViewKeyTableDescriptor key_table_descriptor = 3;
+  // Optional ticket for an existing HierarchicalTableView on the same HierarchicalTable. Specifying this field allows
+  // state sharing between the existing view and result view, at the expense of concurrency for snapshots.
+  Ticket existing_view_id = 3;
 
-    // Operations to apply, if they should be different from those associated with the existing view
-    HierarchicalTableViewOperations operations = 4;
-  }
+  // Description for the expansions that define this view of the HierarchicalTable. If not present, the result will
+  // have only the root node expanded.
+  HierarchicalTableViewKeyTableDescriptor expansions = 4;
 }
 
 message HierarchicalTableViewKeyTableDescriptor {
 
-  // Ticket that represents expanded or contracted keys from a hierarchical (rollup or tree) table.
+  // Ticket that represents expanded or contracted keys from a HierarchicalTable (RollupTable or TreeTable).
   // If empty or not present, the result will have all nodes collapsed.
-  // The format for the key table is dictated by the corresponding HierarchicalTableViewDescriptor. It is expected to
-  // have one column for each "expand-by column", one for the "row depth column" for rollups only, and (optionally) an
-  // "action" column.
+  // The format for the key table is dictated by the corresponding HierarchicalTableDescriptor. It is expected to
+  // have one column for each "expand-by column", one for the "row depth column" for RollupTables only, and
+  // (optionally) an "action" column whose name is specified in the key_table_action_column field.
   Ticket key_table = 1;
 
   // The name of a column of bytes found in the key table that specifies the action desired for the node selected by
@@ -154,19 +179,7 @@ message HierarchicalTableViewKeyTableDescriptor {
   optional string key_table_action_column = 2;
 }
 
-message HierarchicalTableViewOperations {
-
-  // Ticket for the resulting hierarchical table
-  Ticket result_hierarchical_table_id = 1;
-
-  // Filters to apply to the hierarchical table or nodes
-  repeated Condition filters = 2;
-
-  // Sorts to apply to the hierarchical table nodes
-  repeated SortDescriptor sorts = 3;
-}
-
 message HierarchicalTableViewResponse {
-  // Deliberately empty response, use /ObjectService/FetchObject to access the result_view_id ticket.
-  Ticket source_table_id = 1; // optional new source to associate with result hierarchical table
+  // Deliberately empty response, use /FlightService/DoExchange to snapshot or subscribe to snapshots from the result
+  // result_view_id
 }
