@@ -10,28 +10,21 @@ package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.util.compare.DoubleComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.ResettableWritableChunk;
-import io.deephaven.chunk.WritableDoubleChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.compare.DoubleComparisons;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK2_MASK;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.type.TypeUtils.box;
 import static io.deephaven.util.type.TypeUtils.unbox;
@@ -70,25 +63,25 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
 
     /**
      * This version of `prepareForParallelPopulation` will internally call {@link #ensureCapacity(long, boolean)} to
-     * make sure there is room for the incoming values.
+     * create room for incoming values.
      *
-     * @param changedIndices indices in the dense table
+     * @param changedRows indices in the dense table
      */
     @Override
-    public void prepareForParallelPopulation(RowSet changedIndices) {
+    public void prepareForParallelPopulation(RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
         ensurePreviousClockCycle = currentStep;
 
-        if (changedIndices.isEmpty()) {
+        if (changedRows.isEmpty()) {
             return;
         }
 
-        // ensure that this source will have sufficient capacity to store these indices, does not need to be
-        // null-filled as the values will be immediately written
-        ensureCapacity(changedIndices.lastRowKey() + 1, false);
+        // ensure that this source will have sufficient capacity to store these rows, does not need to be
+        // null-filled as the values will be immediately overwritten
+        ensureCapacity(changedRows.lastRowKey() + 1, false);
 
         if (prevFlusher != null) {
             prevFlusher.maybeActivate();
@@ -97,7 +90,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
             return;
         }
 
-        try (final RowSequence.Iterator it = changedIndices.getRowSequenceIterator()) {
+        try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
             do {
                 final long firstKey = it.peekNextKey();
 

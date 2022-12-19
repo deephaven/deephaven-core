@@ -3,27 +3,24 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.table.impl.util.copy.CopyKernel;
-import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TIntArrayList;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.util.copy.CopyKernel;
+import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.IN_USE_MASK;
 
 abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         implements WritableSourceWithPrepareForParallelPopulation {

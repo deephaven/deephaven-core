@@ -10,28 +10,21 @@ package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.util.compare.ByteComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.ResettableWritableChunk;
-import io.deephaven.chunk.WritableByteChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.compare.ByteComparisons;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
-import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK2_MASK;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.type.TypeUtils.box;
 import static io.deephaven.util.type.TypeUtils.unbox;

@@ -147,14 +147,14 @@ public class BarrageRedirectedTable extends BarrageTable {
 
                 // update the table with the rowsIncluded set (in manageable batch sizes)
                 try (final RowSequence.Iterator rowsIncludedIterator = update.rowsIncluded.getRowSequenceIterator();
-                        final ChunkSink.FillFromContext redirHelper =
+                        final ChunkSink.FillFromContext redirContext =
                                 rowRedirection.makeFillFromContext(addBatchSize)) {
                     while (rowsIncludedIterator.hasMore()) {
                         final RowSequence rowsToRedirect =
                                 rowsIncludedIterator.getNextRowSequenceWithLength(addBatchSize);
                         try (final RowSet newRows = getFreeRows(rowsToRedirect.intSize())) {
                             // Update redirection mapping:
-                            rowRedirection.fillFromChunk(redirHelper, newRows.asRowKeyChunk(), rowsToRedirect);
+                            rowRedirection.fillFromChunk(redirContext, newRows.asRowKeyChunk(), rowsToRedirect);
                             // add these rows to the final destination set
                             destinationRowSet.insert(newRows);
                         }
@@ -200,7 +200,7 @@ public class BarrageRedirectedTable extends BarrageTable {
                 final int modBatchSize = (int) Math.min(column.rowsModified.size(), BATCH_SIZE);
                 modifiedColumnSet.setColumnWithIndex(ii);
 
-                try (final ChunkSource.FillContext redirHelper = rowRedirection.makeFillContext(modBatchSize, null);
+                try (final ChunkSource.FillContext redirContext = rowRedirection.makeFillContext(modBatchSize, null);
                         final ChunkSink.FillFromContext fillContext = destSources[ii].makeFillFromContext(modBatchSize);
                         final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(modBatchSize);
                         final RowSequence.Iterator destIterator = column.rowsModified.getRowSequenceIterator()) {
@@ -214,7 +214,7 @@ public class BarrageRedirectedTable extends BarrageTable {
                             int effectiveBatchSize = Math.min(modBatchSize, chunk.size() - chunkOffset);
                             final RowSequence chunkKeys = destIterator.getNextRowSequenceWithLength(effectiveBatchSize);
                             // fill the key chunk with the keys from this rowset
-                            rowRedirection.fillChunk(redirHelper, keys, chunkKeys);
+                            rowRedirection.fillChunk(redirContext, keys, chunkKeys);
                             Chunk<Values> slicedChunk = chunk.slice(chunkOffset, effectiveBatchSize);
 
                             destSources[ii].fillFromChunkUnordered(fillContext, slicedChunk, keys);
