@@ -18,6 +18,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.bar
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.*;
 import jsinterop.base.Js;
@@ -59,6 +61,19 @@ public class WebBarrageUtils {
         double offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0);
         builder.finish(offset);
         return builder.asUint8Array();
+    }
+
+    public static InitialTableDefinition readTableDefinition(Schema schema) {
+        ColumnDefinition[] cols = readColumnDefinitions(schema);
+
+        TableAttributesDefinition attributes = new TableAttributesDefinition(
+                keyValuePairs("deephaven:attribute.", schema.customMetadataLength(), schema::customMetadata),
+                keyValuePairs("deephaven:attribute_type.", schema.customMetadataLength(), schema::customMetadata),
+                keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
+                        .keySet());
+        return new InitialTableDefinition()
+                .setAttributes(attributes)
+                .setColumns(cols);
     }
 
     public static ColumnDefinition[] readColumnDefinitions(Schema schema) {

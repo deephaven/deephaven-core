@@ -3,6 +3,10 @@
  */
 package io.deephaven.web.client.api.barrage.def;
 
+import io.deephaven.web.client.api.Column;
+
+import java.util.Map;
+
 public class ColumnDefinition {
     private int columnIndex;
     private String name;
@@ -137,4 +141,29 @@ public class ColumnDefinition {
     public String getDescription() {
         return description;
     }
+
+    public Column makeJsColumn(int index, Map<String, ColumnDefinition> byNameMap) {
+        if (isForRow()) {
+            return makeColumn(-1, this, null, null, false, null, null, false);
+        }
+        ColumnDefinition format = byNameMap.get(getFormatColumnName());
+        ColumnDefinition style = byNameMap.get(getStyleColumnName());
+
+        return makeColumn(index,
+                this,
+                format == null || !format.isNumberFormatColumn() ? null : format.getColumnIndex(),
+                style == null ? null : style.getColumnIndex(),
+                isPartitionColumn(),
+                format == null || format.isNumberFormatColumn() ? null : format.getColumnIndex(),
+                getDescription(),
+                isInputTableKeyColumn());
+    }
+
+    private static Column makeColumn(int jsIndex, ColumnDefinition definition, Integer numberFormatIndex,
+                                     Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description,
+                                     boolean inputTableKeyColumn) {
+        return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
+                definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn);
+    }
+
 }
