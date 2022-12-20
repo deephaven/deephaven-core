@@ -41,6 +41,9 @@ public class AggSpecUnique {
             String getLongValue();
 
             @JsProperty
+            double getNullValue();
+
+            @JsProperty
             double getShortValue();
 
             @JsProperty
@@ -69,6 +72,9 @@ public class AggSpecUnique {
 
             @JsProperty
             void setLongValue(String longValue);
+
+            @JsProperty
+            void setNullValue(double nullValue);
 
             @JsProperty
             void setShortValue(double shortValue);
@@ -124,6 +130,9 @@ public class AggSpecUnique {
             String getLongValue();
 
             @JsProperty
+            double getNullValue();
+
+            @JsProperty
             double getShortValue();
 
             @JsProperty
@@ -152,6 +161,9 @@ public class AggSpecUnique {
 
             @JsProperty
             void setLongValue(String longValue);
+
+            @JsProperty
+            void setNullValue(double nullValue);
 
             @JsProperty
             void setShortValue(double shortValue);

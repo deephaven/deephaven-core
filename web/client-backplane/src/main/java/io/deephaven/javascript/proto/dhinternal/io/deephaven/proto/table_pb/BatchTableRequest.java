@@ -207,6 +207,9 @@ public class BatchTableRequest {
                             String getLongValue();
 
                             @JsProperty
+                            double getNullValue();
+
+                            @JsProperty
                             double getShortValue();
 
                             @JsProperty
@@ -235,6 +238,9 @@ public class BatchTableRequest {
 
                             @JsProperty
                             void setLongValue(String longValue);
+
+                            @JsProperty
+                            void setNullValue(double nullValue);
 
                             @JsProperty
                             void setShortValue(double shortValue);
@@ -2664,6 +2670,9 @@ public class BatchTableRequest {
                             String getLongValue();
 
                             @JsProperty
+                            double getNullValue();
+
+                            @JsProperty
                             double getShortValue();
 
                             @JsProperty
@@ -2692,6 +2701,9 @@ public class BatchTableRequest {
 
                             @JsProperty
                             void setLongValue(String longValue);
+
+                            @JsProperty
+                            void setNullValue(double nullValue);
 
                             @JsProperty
                             void setShortValue(double shortValue);

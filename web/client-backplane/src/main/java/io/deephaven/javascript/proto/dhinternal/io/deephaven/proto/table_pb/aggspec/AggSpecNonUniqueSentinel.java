@@ -40,6 +40,9 @@ public class AggSpecNonUniqueSentinel {
         String getLongValue();
 
         @JsProperty
+        double getNullValue();
+
+        @JsProperty
         double getShortValue();
 
         @JsProperty
@@ -68,6 +71,9 @@ public class AggSpecNonUniqueSentinel {
 
         @JsProperty
         void setLongValue(String longValue);
+
+        @JsProperty
+        void setNullValue(double nullValue);
 
         @JsProperty
         void setShortValue(double shortValue);
@@ -102,6 +108,9 @@ public class AggSpecNonUniqueSentinel {
         String getLongValue();
 
         @JsProperty
+        double getNullValue();
+
+        @JsProperty
         double getShortValue();
 
         @JsProperty
@@ -130,6 +139,9 @@ public class AggSpecNonUniqueSentinel {
 
         @JsProperty
         void setLongValue(String longValue);
+
+        @JsProperty
+        void setNullValue(double nullValue);
 
         @JsProperty
         void setShortValue(double shortValue);
@@ -163,6 +175,8 @@ public class AggSpecNonUniqueSentinel {
 
     public native void clearLongValue();
 
+    public native void clearNullValue();
+
     public native void clearShortValue();
 
     public native void clearStringValue();
@@ -180,6 +194,8 @@ public class AggSpecNonUniqueSentinel {
     public native double getIntValue();
 
     public native String getLongValue();
+
+    public native double getNullValue();
 
     public native double getShortValue();
 
@@ -201,6 +217,8 @@ public class AggSpecNonUniqueSentinel {
 
     public native boolean hasLongValue();
 
+    public native boolean hasNullValue();
+
     public native boolean hasShortValue();
 
     public native boolean hasStringValue();
@@ -220,6 +238,8 @@ public class AggSpecNonUniqueSentinel {
     public native void setIntValue(double value);
 
     public native void setLongValue(String value);
+
+    public native void setNullValue(double value);
 
     public native void setShortValue(double value);
 
