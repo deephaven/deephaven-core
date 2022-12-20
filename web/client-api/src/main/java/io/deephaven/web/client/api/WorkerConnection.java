@@ -870,7 +870,7 @@ public class WorkerConnection {
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
         return getWidget(varDef).then(w -> {
-            return Promise.resolve(new JsTreeTable(this, w).finishFetch());
+            return Promise.resolve(new JsTreeTable(this, w));
         });
     }
 

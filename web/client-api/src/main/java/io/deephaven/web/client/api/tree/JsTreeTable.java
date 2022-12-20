@@ -24,10 +24,9 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.bar
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Hierarchicaltable_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupDescriptorDetails;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.hierarchicaltableviewdescriptor.DetailsCase;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.hierarchicaltabledescriptor.DetailsCase;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -44,10 +43,8 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
-import io.deephaven.web.shared.data.treetable.Key;
 import io.deephaven.web.shared.data.treetable.TableDetails;
 import io.deephaven.web.shared.data.treetable.TreeTableRequest;
-import io.deephaven.web.shared.data.treetable.TreeTableResult;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
@@ -111,13 +108,9 @@ public class JsTreeTable extends HasEventHandling {
         private final JsArray<TreeRow> rows;
 
         private final ColumnData[] columnData;
-        private final Map<String, ColumnData> constituentColumns;
         private final Object[] data;
 
-        private TreeViewportData(RangeSet includedRows, ColumnData[] dataColumns, BitSet childPresence, Column[] columns,
-                String[] constituentColumnNames, ColumnData[] constituentColumnData) {
-            this.expandedColumn = expandedColumn;
-            this.depthColumn = depthColumn;
+        private TreeViewportData(RangeSet includedRows, ColumnData[] dataColumns, Column[] columns) {
             this.offset = includedRows.getFirstRow();
             this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
 
@@ -128,15 +121,11 @@ public class JsTreeTable extends HasEventHandling {
             this.data = new Object[dataColumns.length];
 
             columnData = dataColumns;
-            constituentColumns = new HashMap<>();
 
-            // keep a reference to constituent data for equals checks
-            if (constituentColumnNames != null) {
-                for (int i = 0; i < constituentColumnNames.length; i++) {
-                    constituentColumns.put(constituentColumnNames[i], constituentColumnData[i]);
-                }
-            }
+            expandedColumn = (Boolean[]) ViewportData.cleanData(columnData[rowExpandedCol.getIndex()].getData(), rowExpandedCol);
+            depthColumn = (int[]) ViewportData.cleanData(columnData[rowDepthCol.getIndex()].getData(), rowDepthCol);
 
+            int constituentDepth = keyColumns.length + 1;
             for (int i = 0; i < columns.length; i++) {
                 Column c = columns[i];
                 int index = c.getIndex();
@@ -157,7 +146,7 @@ public class JsTreeTable extends HasEventHandling {
                 // if there is a matching constituent column array, clean it and copy from it
                 Column sourceColumn = sourceColumns.get(c.getName());
                 if (sourceColumn != null) {
-                    ColumnData constituentColumn = constituentColumns.get(sourceColumn.getName());
+                    ColumnData constituentColumn = dataColumns[sourceColumn.getIndex()];
                     if (constituentColumn != null) {
                         JsArray<Any> cleanConstituentColumn =
                                 Js.uncheckedCast(ViewportData.cleanData(constituentColumn.getData(), sourceColumn));
@@ -165,9 +154,8 @@ public class JsTreeTable extends HasEventHandling {
                         // We use cleanConstituentColumn to find max item rather than data[index], since we
                         // are okay stopping at the last constituent value, in case the server sends shorter
                         // arrays.
-                        for (int rowIndex =
-                                childPresence.nextClearBit(0); rowIndex < cleanConstituentColumn.length; rowIndex =
-                                        childPresence.nextClearBit(rowIndex + 1)) {
+                        for (int rowIndex = 0; rowIndex < cleanConstituentColumn.length; rowIndex++) {
+                            if (depthColumn[rowIndex] == constituentDepth)
                             Js.asArrayLike(data[index]).setAt(rowIndex, cleanConstituentColumn.getAt(rowIndex));
                         }
                     }
@@ -250,14 +238,6 @@ public class JsTreeTable extends HasEventHandling {
             public int depth() {
                 return depthColumn[offsetInSnapshot];
             }
-
-            public Key parentKey() {
-                return parentKeyColumn[offsetInSnapshot];
-            }
-
-            public Key myKey() {
-                return keyColumn[offsetInSnapshot];
-            }
         }
     }
 
@@ -310,13 +290,19 @@ public class JsTreeTable extends HasEventHandling {
 //    }
 
     private final WorkerConnection connection;
+
     private final JsWidget widget;
-    private final HierarchicalTableViewDescriptor treeDescriptor;
+    private final HierarchicalTableDescriptor treeDescriptor;
     private final InitialTableDefinition tableDefinition;
     private final Column[] visibleColumns;
-    private final JsLazy<Map<String, Column>> columnsByName;
+    private final Map<String, Column> columnsByName = new HashMap<>();
     private final int rowFormatColumn;
+    private final Map<String, Column> sourceColumns = new HashMap<>();
+    private final JsArray<Column> keyColumns;
+    private Column rowDepthCol;
+    private Column rowExpandedCol;
 
+    private final JsLazy<Promise<JsTable>> sourceTable;
 
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
@@ -347,8 +333,6 @@ public class JsTreeTable extends HasEventHandling {
 
     private NextSnapshotState nextSnapshotState;
 
-    private final Promise<JsTable> sourceTable;
-    private final Map<String, Column> sourceColumns = new HashMap<>();
     private JsArray<Column> groupedColumns = null;
 
     private boolean closed = false;
@@ -356,17 +340,18 @@ public class JsTreeTable extends HasEventHandling {
     public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
         this.widget = widget;
-        this.treeDescriptor = HierarchicalTableViewDescriptor.deserializeBinary(widget.getDataAsU8());
+        this.treeDescriptor = HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
 
-        Uint8Array flightSchemaMessage = treeDescriptor.getSchemaHeader_asU8();
+        Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotDefinitionSchema_asU8();
         Schema schema = BarrageUtils.readSchemaMessage(flightSchemaMessage);
 
         this.tableDefinition = BarrageUtils.readTableDefinition(schema);
         Column[] columns = new Column[0];
-        Map<String, ColumnDefinition> columnsByName = tableDefinition.getColumnsByName();
+        Map<String, ColumnDefinition> columnDefsByName = tableDefinition.getColumnsByName();
         int rowFormatColumn = -1;
+
         for (ColumnDefinition definition : tableDefinition.getColumns()) {
-            Column column = definition.makeJsColumn(columns.length, columnsByName);
+            Column column = definition.makeJsColumn(columns.length, columnDefsByName);
             if (definition.isForRow()) {
                 assert rowFormatColumn == -1;
                 rowFormatColumn = definition.getColumnIndex();
@@ -375,84 +360,56 @@ public class JsTreeTable extends HasEventHandling {
 
             if (definition.isVisible()) {
                 columns[columns.length] = column;
+            } else if (definition.getName().equals(treeDescriptor.getRowDepthColumn())) {
+                rowDepthCol = column;
+            } else if (definition.getName().equals(treeDescriptor.getRowExpandedColumn())) {
+                rowExpandedCol = column;
             }
         }
         this.rowFormatColumn = rowFormatColumn;
         this.visibleColumns = JsObject.freeze(columns);
-        this.columnsByName = JsLazy.of(() -> {
-            Map<String, Column> lookup = new HashMap<>();
-            for (int i = 0; i < visibleColumns.length; i++) {
-                Column column = visibleColumns[i];
-                lookup.put(column.getName(), column);
-            }
-            return lookup;
-        });
+        for (int i = 0; i < visibleColumns.length; i++) {
+            Column column = visibleColumns[i];
+            columnsByName.put(column.getName(), column);
+        }
+        keyColumns = treeDescriptor.getExpandByColumnsList().map((p0, p1, p2) -> columnsByName.get(p0));
 
-
-
-        expandedMap.put(Key.root(), new TreeNodeState(Key.root(), 0));
-
-        sourceTable = workerConnection.newState((callback, newState, metadata) -> {
-            workerConnection.hierarchicalTableServiceClient().exportSource(new HierarchicalTableSourceExportRequest(),
-                    workerConnection.metadata(), callback::apply);
-        }, "treetable source attr")
-                .refetch(this, workerConnection.metadata())
-                .then(sourceState -> {
-                    JsTable table = new JsTable(workerConnection, sourceState);
-
-                    table.addEventListener(JsTable.INTERNAL_EVENT_SIZELISTENER, ignore -> {
-                        if (nextSnapshotState == NextSnapshotState.TIMER_RUNNING) {
-                            nextSnapshotState = NextSnapshotState.QUERY_WHEN_TIMER_ENDS;
-                        } else if (nextSnapshotState == NextSnapshotState.QUERY_WHEN_UPDATE_SEEN) {
-                            scheduleSnapshotQuery(false);
-                        }
-                    });
-
-                    return Promise.resolve(table);
-                });
-    }
-
-    /**
-     * Must be called on any tree table that needs the source table in order to be usable. At this time. it is only
-     * required to work out constituent column types for rollup columns.
-     */
-    public Promise<JsTreeTable> finishFetch() {
         if (treeDescriptor.getDetailsCase() == DetailsCase.ROLLUP) {
             RollupDescriptorDetails rollupDef = treeDescriptor.getRollup();
 
-            return sourceTable.then(sourceTable -> {
-                final Set<String> presentNames = new HashSet<>();
-                rollupDef.getOutputInputColumnPairsList().forEach((pair, index, arr) -> {
-                    String[] split = pair.split("=");
-                    String rollupColName = split[0];
-                    presentNames.add(rollupColName);
-                    String sourceColName = split[1];
-                    if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()
-                            && !isTableAggregationColumn(sourceColName)) {
-                        Column sourceColumn = sourceTable.findColumn(sourceColName);
-                        String sourceType = sourceColumn.getType();
-                        findColumn(rollupColName).setConstituentType(sourceType);
-                        this.sourceColumns.put(rollupColName, sourceColumn);
-                    }
+            final Set<String> presentNames = new HashSet<>();
+            rollupDef.getOutputInputColumnPairsList().forEach((pair, index, arr) -> {
+                String[] split = pair.split("=");
+                String rollupColName = split[0];
+                presentNames.add(rollupColName);
+                String sourceColName = split[1];
+                if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()
+                        && !isTableAggregationColumn(sourceColName)) {
+                    Column sourceColumn = findColumn(sourceColName);
+                    String sourceType = sourceColumn.getType();
+                    findColumn(rollupColName).setConstituentType(sourceType);
+                    this.sourceColumns.put(rollupColName, sourceColumn);
+                }
 
+                return null;
+            });
+            groupedColumns = JsObject
+                    .freeze(getColumns()
+                            .filter((column, index, array) -> !presentNames.contains(column.getName())));
+            if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()) {
+                groupedColumns.forEach((column, index, array) -> {
+                    column.setConstituentType(null);
                     return null;
                 });
-                groupedColumns = JsObject
-                        .freeze(getColumns()
-                                .filter((column, index, array) -> !presentNames.contains(column.getName())));
-                if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()) {
-                    groupedColumns.forEach((column, index, array) -> {
-                        column.setConstituentType(null);
-                        return null;
-                    });
-                }
-                return Promise.resolve(this);
-            });
-        } else if (treeDescriptor.getDetailsCase() == DetailsCase.TREE) {
-            // treeDescriptor.getTree()//TODO
+            }
+
+        } else {
+            assert treeDescriptor.getDetailsCase() == DetailsCase.TREE : "Unexpected type " + treeDescriptor.getDetailsCase();
         }
 
-        return Promise.resolve(this);
+        sourceTable = JsLazy.of(() -> {
+            throw new UnsupportedOperationException("source table isn't yet supported");
+        });
     }
 
     /**
@@ -551,8 +508,13 @@ public class JsTreeTable extends HasEventHandling {
             snapshotRequestWrapper.setAppMetadata(
                     BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
             doExchange.send(snapshotRequestWrapper);
-            doExchange.end();
 
+            // hang on to this to get server-sent snapshots, cancel when needed
+            // doExchange.end();
+
+            String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
+                    .map(ColumnDefinition::getType)
+                    .toArray(String[]::new);
             doExchange.onData(flightData -> {
                 Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
                 if (message.headerType() == MessageHeader.Schema) {
@@ -582,35 +544,21 @@ public class JsTreeTable extends HasEventHandling {
                 TreeViewportData vd = new TreeViewportData(
                         includedRows,
                         snapshot.getDataColumns(),
-                        result.getChildPresence(),
-                        columns,
-                        NO_ROW_FORMAT_COLUMN, // TODO read this from the schema in the widget
-                        result.getConstituentColumnNames(),
-                        result.getConstituentColumnData());
+                        columns);
 
-                handleUpdate(queryColumns, nextSort, nextFilters, vd, alwaysFireEvent);
+                try {
+                    handleUpdate(queryColumns, nextSort, nextFilters, vd, alwaysFireEvent);
+                } finally {
+                    running = false;
+                    if (queuedOperations != null) {
+                        // Something changed since our last request, start another one.
+                        // We allow skipping the event since whatever enqueued the operation should have passed true
+                        // if needed, or it could have been a slow reply from the server, etc.
+                        scheduleSnapshotQuery(false);
+                    }
+                }
             });
 
-
-            // connection.getServer().treeSnapshotQuery(baseTable.getHandle(), query, Callbacks.of((success, failure) ->
-            // {
-            // try {
-            // if (success != null) {
-            // handleUpdate(queryColumns, nextSort, nextFilters, success, alwaysFireEvent);
-            // } else {
-            // failureHandled(failure);
-            // }
-            // } finally {
-            // running = false;
-            // if (queuedOperations != null) {
-            // // Something changed since our last request, start another one.
-            // // We allow skipping the event since whatever enqueued the operation should have passed true
-            // // if needed, or it could have been a slow reply from the server, etc.
-            // scheduleSnapshotQuery(false);
-            // }
-            // }
-            // }));
-            throw new UnsupportedOperationException("treeSnapshotQuery");
         } else {
             JsLog.debug("Connection not ready, skipping tree table poll", this);
         }
@@ -618,26 +566,20 @@ public class JsTreeTable extends HasEventHandling {
 
     private void handleUpdate(Column[] columns, List<Sort> nextSort, List<FilterCondition> nextFilters,
                               TreeViewportData viewportData, boolean alwaysFireEvent) {
-        JsLog.debug("tree table response arrived", result);
+        JsLog.debug("tree table response arrived", viewportData);
         lastResult = result;
         if (closed) {
             if (viewportUpdateTimeoutId != null) {
                 DomGlobal.clearTimeout(viewportUpdateTimeoutId);
             }
 
-            sourceTable.then(t -> {
-                t.close();
-                return null;
-            });
-
-            expandedMap.clear();
             return;
         }
 
         // if requested to fire the event, or if the data has changed in some way, fire the event
-        final boolean fireEvent = alwaysFireEvent || !vd.containsSameDataAs(currentViewportData);
+        final boolean fireEvent = alwaysFireEvent || !viewportData.containsSameDataAs(currentViewportData);
 
-        this.currentViewportData = vd;
+        this.currentViewportData = viewportData;
 
 //        Set<Key> presentKeys = new HashSet<>();
 //        for (int i = 0; i < result.getTableDetails().length; i++) {
@@ -663,7 +605,7 @@ public class JsTreeTable extends HasEventHandling {
 
         if (fireEvent) {
             CustomEventInit updatedEvent = CustomEventInit.create();
-            updatedEvent.setDetail(vd);
+            updatedEvent.setDetail(viewportData);
             fireEvent(EVENT_UPDATED, updatedEvent);
         }
     }
@@ -785,8 +727,8 @@ public class JsTreeTable extends HasEventHandling {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
 
-        Key myRowKey = r.myKey();
-        Key parentRowKey = r.parentKey();
+//        Key myRowKey = r.myKey();
+//        Key parentRowKey = r.parentKey();
         JsLog.debug("setExpanded enqueued");
         // With the keys collected for the currently-visible item to expand/collapse, we can enqueue an operation
         // to modify that node
@@ -892,7 +834,7 @@ public class JsTreeTable extends HasEventHandling {
 
             // apply the filter to the source table (used to produce totals table, limits our
             // size changed events)
-            sourceTable.then(t -> {
+            sourceTable.get().then(t -> {
                 t.applyFilter(filter);
                 return null;
             });
@@ -936,7 +878,7 @@ public class JsTreeTable extends HasEventHandling {
 
     @JsMethod
     public Column findColumn(String key) {
-        Column c = columnsByName.get().get(key);
+        Column c = columnsByName.get(key);
         if (c == null) {
             throw new NoSuchElementException(key);
         }
@@ -978,7 +920,7 @@ public class JsTreeTable extends HasEventHandling {
      */
     @JsMethod
     public Promise<JsTable> selectDistinct(Column[] columns) {
-        return sourceTable.then(t -> {
+        return sourceTable.get().then(t -> {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
             // up.
             if (!t.getFilter().asList().equals(getFilter().asList())) {
@@ -994,12 +936,12 @@ public class JsTreeTable extends HasEventHandling {
         // returning null here, rather than a default config. They can then easily build a
         // default config, but without this ability, there is no way to indicate that the
         // config omitted a totals table
-        return sourceTable.then(t -> Promise.resolve(t.getTotalsTableConfig()));
+        return sourceTable.get().then(t -> Promise.resolve(t.getTotalsTableConfig()));
     }
 
     @JsMethod
     public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
-        return sourceTable.then(t -> {
+        return sourceTable.get().then(t -> {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
             // up.
             if (!t.getFilter().asList().equals(getFilter().asList())) {
@@ -1011,7 +953,7 @@ public class JsTreeTable extends HasEventHandling {
 
     @JsMethod
     public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
-        return sourceTable.then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
+        return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
     }
 
     // TODO core#279 restore this with protobuf once smartkey has some pb-based analog
