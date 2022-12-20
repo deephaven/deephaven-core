@@ -41,6 +41,9 @@ public final class HierarchicalTableView extends LivenessArtifact {
         this.snapshotState = snapshotState;
         this.keyTable = keyTable;
         this.keyTableActionColumn = keyTableActionColumn;
+        if (keyTable.isRefreshing()) {
+            manage(keyTable);
+        }
         if (hierarchicalTable.getSource().isRefreshing()) {
             // snapshotState is responsible for managing hierarchicalTable, and hierarchicalTable is responsible for
             // managing its source and any other dependencies.
