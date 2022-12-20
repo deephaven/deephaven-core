@@ -37,7 +37,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     private HashSet<Class<?>> classImports;
     private HashSet<Class<?>> staticImports;
 
-    private HashMap<String, Class<?>> testOverrideCLassLookups;
+    private HashMap<String, Class<?>> testOverrideClassLookups;
 
     private HashMap<String, Class<?>> variables;
     private HashMap<String, Class<?>[]> variableParameterizedTypes;
@@ -148,9 +148,9 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variableParameterizedTypes.put("myParameterizedHashMap", new Class[] {Integer.class, Double.class});
         variableParameterizedTypes.put("myVector", new Class[] {Double.class});
 
-        testOverrideCLassLookups = new HashMap<>();
+        testOverrideClassLookups = new HashMap<>();
         // This is here becasue in tests, QueryLanguageParser.findClass() fails trying to (re?)initialize this class
-        testOverrideCLassLookups.put("io.deephaven.engine.util.PyCallableWrapper", PyCallableWrapper.class);
+        testOverrideClassLookups.put("io.deephaven.engine.util.PyCallableWrapper", PyCallableWrapper.class);
     }
 
     public void testSimpleCalculations() throws Exception {
@@ -3068,7 +3068,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
             throws Exception {
         QueryLanguageParser.Result result =
                 new QueryLanguageParser(expression, packageImports, classImports, staticImports,
-                        testOverrideCLassLookups,
+                        testOverrideClassLookups,
                         variables, variableParameterizedTypes,
                         true,
                         verifyIdempotence).getResult();
