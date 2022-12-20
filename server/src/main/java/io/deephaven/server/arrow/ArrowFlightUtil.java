@@ -16,6 +16,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -81,7 +82,7 @@ public class ArrowFlightUtil {
                 .onError(observer)
                 .submit(() -> {
                     metrics.queueNanos = System.nanoTime() - queueStartTm;
-                    final BaseTable table = export.get();
+                    final BaseTable<?> table = export.get();
                     metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                     metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -284,7 +285,7 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory;
-        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> operationFactory;
+        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> ;
         private final HierarchicalTableViewSubscription.Factory htvsFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
@@ -455,7 +456,7 @@ public class ArrowFlightUtil {
             public SnapshotRequestHandler() {}
 
             @Override
-            public void handleMessage(MessageInfo message) {
+            public void handleMessage(@NotNull final BarrageProtoUtil.MessageInfo message) {
                 // verify this is the correct type of message for this handler
                 if (message.app_metadata.msgType() != BarrageMessageType.BarrageSnapshotRequest) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -467,7 +468,7 @@ public class ArrowFlightUtil {
                     final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                             .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    final SessionState.ExportObject<BaseTable> parent =
+                    final SessionState.ExportObject<BaseTable<?>> parent =
                             ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "ticket");
 
                     final BarragePerformanceLog.SnapshotMetricsHelper metrics =
@@ -479,7 +480,7 @@ public class ArrowFlightUtil {
                             .onError(listener)
                             .submit(() -> {
                                 metrics.queueNanos = System.nanoTime() - queueStartTm;
-                                final BaseTable table = parent.get();
+                                final BaseTable<?> table = parent.get();
                                 metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                                 metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -529,7 +530,7 @@ public class ArrowFlightUtil {
             public SubscriptionRequestHandler() {}
 
             @Override
-            public void handleMessage(MessageInfo message) {
+            public void handleMessage(@NotNull final MessageInfo message) {
                 // verify this is the correct type of message for this handler
                 if (message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -690,7 +691,6 @@ public class ArrowFlightUtil {
                     bmp.removeSubscription(listener);
                     bmp = null;
                 } else if (htvs != null) {
-                    // TODO-RWC: Deactivate, or can we rely on liveness?
                     htvs = null;
                 } else {
                     GrpcUtil.safelyExecuteLocked(listener, listener::onCompleted);
