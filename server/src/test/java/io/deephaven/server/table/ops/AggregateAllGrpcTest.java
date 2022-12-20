@@ -1,6 +1,5 @@
 package io.deephaven.server.table.ops;
 
-import com.google.protobuf.NullValue;
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.util.TableTools;
@@ -10,6 +9,7 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.NullValue;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.Status.Code;

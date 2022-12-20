@@ -1,6 +1,5 @@
 package io.deephaven.server.table.ops;
 
-import com.google.protobuf.NullValue;
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.proto.backplane.grpc.AggSpec;
@@ -8,6 +7,7 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAvg;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
+import io.deephaven.proto.backplane.grpc.NullValue;
 import io.deephaven.server.table.ops.AggSpecAdapter.Singleton;
 import io.grpc.StatusRuntimeException;
 import org.junit.Test;
@@ -110,7 +110,7 @@ public class AggSpecAdapterTest {
     }
 
     @Test
-    public void validateNonUniqueSentinel() {
+    public void validateNullSentinel() {
         AggSpecAdapter.validate(NULL_SENTINEL);
     }
 }

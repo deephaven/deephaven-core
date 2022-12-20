@@ -1,7 +1,6 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.MessageOrBuilder;
-import com.google.protobuf.NullValue;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.api.object.UnionObject.Visitor;
@@ -30,6 +29,7 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecVar;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.Builder;
+import io.deephaven.proto.backplane.grpc.NullValue;
 
 import java.util.Objects;
 import java.util.function.BiFunction;

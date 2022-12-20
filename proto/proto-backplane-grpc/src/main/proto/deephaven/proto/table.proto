@@ -9,8 +9,6 @@ option java_multiple_files = true;
 option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/table";
 
-import "google/protobuf/struct.proto";
-
 import "deephaven/proto/ticket.proto";
 
 service TableService {
@@ -601,6 +599,10 @@ message AggregateAllRequest {
   repeated string group_by_columns = 4;
 }
 
+enum NullValue {
+  NULL_VALUE = 0;
+}
+
 message AggSpec {
   message AggSpecApproximatePercentile {
     // Percentile. Must be in range [0.0, 1.0].
@@ -670,7 +672,7 @@ message AggSpec {
 
   message AggSpecNonUniqueSentinel {
     oneof type {
-      google.protobuf.NullValue null_value = 1;
+      NullValue null_value = 1;
       string string_value = 2;
       sint32 int_value = 3;
       sint64 long_value = 4 [jstype=JS_STRING];

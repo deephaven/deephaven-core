@@ -37,6 +37,7 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecVar;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
+import io.deephaven.proto.backplane.grpc.NullValue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -86,7 +87,6 @@ class AggSpecAdapter {
         GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(nonUniqueSentinel);
         final AggSpecNonUniqueSentinel.TypeCase type = nonUniqueSentinel.getTypeCase();
         switch (type) {
-            case NULL_VALUE:
             case STRING_VALUE:
             case INT_VALUE:
             case LONG_VALUE:
@@ -94,6 +94,12 @@ class AggSpecAdapter {
             case DOUBLE_VALUE:
             case BOOL_VALUE:
                 // All native proto types valid
+                return;
+            case NULL_VALUE:
+                if (nonUniqueSentinel.getNullValue() != NullValue.NULL_VALUE) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "AggSpecNonUniqueSentinel null_value out of range");
+                }
                 return;
             case BYTE_VALUE:
                 if (nonUniqueSentinel.getByteValue() != (byte) nonUniqueSentinel.getByteValue()) {
