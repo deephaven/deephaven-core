@@ -82,6 +82,13 @@ type TableServiceClient interface {
 	AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns the result of an aggregate table operation.
 	ComboAggregate(ctx context.Context, in *ComboAggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Aggregates all non-grouping columns against a single aggregation specification.
+	AggregateAll(ctx context.Context, in *AggregateAllRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
+	// aggregations to each resulting group of rows. The result table will have one row per group, ordered by
+	// the encounter order within the source_id table, thereby ensuring that the row key for a given group never
+	// changes.
+	Aggregate(ctx context.Context, in *AggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Snapshot rightId, triggered by leftId, and export the resulting new Table.
 	// The left table's change events cause a new snapshot to be taken. The result table includes a
 	// "snapshot key" which is a subset (possibly all) of the left table's columns. The
@@ -385,6 +392,24 @@ func (c *tableServiceClient) ComboAggregate(ctx context.Context, in *ComboAggreg
 	return out, nil
 }
 
+func (c *tableServiceClient) AggregateAll(ctx context.Context, in *AggregateAllRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/AggregateAll", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tableServiceClient) Aggregate(ctx context.Context, in *AggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/Aggregate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tableServiceClient) Snapshot(ctx context.Context, in *SnapshotTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/Snapshot", in, out, opts...)
@@ -557,6 +582,13 @@ type TableServiceServer interface {
 	AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Returns the result of an aggregate table operation.
 	ComboAggregate(context.Context, *ComboAggregateRequest) (*ExportedTableCreationResponse, error)
+	// Aggregates all non-grouping columns against a single aggregation specification.
+	AggregateAll(context.Context, *AggregateAllRequest) (*ExportedTableCreationResponse, error)
+	// Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
+	// aggregations to each resulting group of rows. The result table will have one row per group, ordered by
+	// the encounter order within the source_id table, thereby ensuring that the row key for a given group never
+	// changes.
+	Aggregate(context.Context, *AggregateRequest) (*ExportedTableCreationResponse, error)
 	// Snapshot rightId, triggered by leftId, and export the resulting new Table.
 	// The left table's change events cause a new snapshot to be taken. The result table includes a
 	// "snapshot key" which is a subset (possibly all) of the left table's columns. The
@@ -682,6 +714,12 @@ func (UnimplementedTableServiceServer) AsOfJoinTables(context.Context, *AsOfJoin
 }
 func (UnimplementedTableServiceServer) ComboAggregate(context.Context, *ComboAggregateRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ComboAggregate not implemented")
+}
+func (UnimplementedTableServiceServer) AggregateAll(context.Context, *AggregateAllRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AggregateAll not implemented")
+}
+func (UnimplementedTableServiceServer) Aggregate(context.Context, *AggregateRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Aggregate not implemented")
 }
 func (UnimplementedTableServiceServer) Snapshot(context.Context, *SnapshotTableRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Snapshot not implemented")
@@ -1239,6 +1277,42 @@ func _TableService_ComboAggregate_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_AggregateAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AggregateAllRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).AggregateAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/AggregateAll",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).AggregateAll(ctx, req.(*AggregateAllRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TableService_Aggregate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AggregateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).Aggregate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/Aggregate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).Aggregate(ctx, req.(*AggregateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_Snapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SnapshotTableRequest)
 	if err := dec(in); err != nil {
@@ -1493,6 +1567,14 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ComboAggregate",
 			Handler:    _TableService_ComboAggregate_Handler,
+		},
+		{
+			MethodName: "AggregateAll",
+			Handler:    _TableService_AggregateAll_Handler,
+		},
+		{
+			MethodName: "Aggregate",
+			Handler:    _TableService_Aggregate_Handler,
 		},
 		{
 			MethodName: "Snapshot",

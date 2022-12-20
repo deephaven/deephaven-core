@@ -35,8 +35,8 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -90,7 +90,7 @@ public class QueryTableAggregationTest {
     private static AggregationContextFactory makeGroupByACF(
             @NotNull final Table table, @NotNull final String... groupByColumns) {
         return AggregationProcessor.forAggregation(List.of(
-                AggregateAllByTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
+                AggregateAllTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
                         table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                                 .map(ColumnName::of).collect(Collectors.toList()))
                         .orElseThrow()));

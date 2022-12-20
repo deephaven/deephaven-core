@@ -4,25 +4,41 @@
 package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
 /**
  * Specifier for a column aggregation that produces a percentile value from the input column's values for each group.
  * Only works for numeric or {@link Comparable} input types.
  */
 @Immutable
-@BuildableStyle
+@SimpleStyle
 public abstract class AggSpecPercentile extends AggSpecBase {
 
+    public static final boolean AVERAGE_EVENLY_DIVIDED = false;
+
+    /**
+     * Create a new AggSpecPercentile with {@code averageEvenlyDivided} of {@value AVERAGE_EVENLY_DIVIDED}.
+     *
+     * @param percentile the percentile
+     * @return the agg spec
+     */
     public static AggSpecPercentile of(double percentile) {
-        return ImmutableAggSpecPercentile.builder().percentile(percentile).build();
+        return of(percentile, AVERAGE_EVENLY_DIVIDED);
     }
 
+    /**
+     * Create a new AggSpecPercentile.
+     *
+     * @param percentile the percentile
+     * @param averageEvenlyDivided see {@link #averageEvenlyDivided()}
+     * @return the agg spec
+     */
     public static AggSpecPercentile of(double percentile, boolean averageEvenlyDivided) {
-        return ImmutableAggSpecPercentile.builder().percentile(percentile).averageEvenlyDivided(averageEvenlyDivided)
-                .build();
+        return ImmutableAggSpecPercentile.of(percentile, averageEvenlyDivided);
     }
 
     @Override
@@ -37,6 +53,7 @@ public abstract class AggSpecPercentile extends AggSpecBase {
      *
      * @return The percentile to calculate
      */
+    @Parameter
     public abstract double percentile();
 
     /**
@@ -45,10 +62,8 @@ public abstract class AggSpecPercentile extends AggSpecBase {
      *
      * @return Whether to average the two result candidates for evenly-divided input sets of numeric types
      */
-    @Default
-    public boolean averageEvenlyDivided() {
-        return false;
-    }
+    @Parameter
+    public abstract boolean averageEvenlyDivided();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

@@ -17,12 +17,12 @@ import java.util.stream.Collectors;
 /**
  * Computes the columns to exclude from aggregation output
  */
-final class AggAllByExclusions implements Visitor {
+final class AggregateAllExclusions implements Visitor {
 
     public static Set<ColumnName> of(AggSpec spec, Collection<? extends Selectable> groupByColumns) {
         final Set<ColumnName> exclusions =
                 groupByColumns.stream().map(Selectable::newColumn).collect(Collectors.toSet());
-        final Set<ColumnName> otherExclusions = spec.walk(new AggAllByExclusions()).out();
+        final Set<ColumnName> otherExclusions = spec.walk(new AggregateAllExclusions()).out();
         exclusions.addAll(otherExclusions);
         return exclusions;
     }

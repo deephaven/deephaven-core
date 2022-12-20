@@ -5,8 +5,8 @@ package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.agg.Aggregation;
-import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;
@@ -18,17 +18,17 @@ import java.util.Optional;
  */
 @Immutable
 @NodeStyle
-public abstract class AggregationTable extends ByTableBase {
+public abstract class AggregateTable extends ByTableBase {
 
     public static Builder builder() {
-        return ImmutableAggregationTable.builder();
+        return ImmutableAggregateTable.builder();
     }
 
     public abstract List<Aggregation> aggregations();
 
-    @Value.Default
+    @Default
     public boolean preserveEmpty() {
-        return false;
+        return AGG_BY_PRESERVE_EMPTY_DEFAULT;
     }
 
     public abstract Optional<TableSpec> initialGroups();
@@ -53,8 +53,7 @@ public abstract class AggregationTable extends ByTableBase {
         }
     }
 
-
-    public interface Builder extends ByTableBase.Builder<AggregationTable, Builder> {
+    public interface Builder extends ByTableBase.Builder<AggregateTable, Builder> {
         Builder addAggregations(Aggregation element);
 
         Builder addAggregations(Aggregation... elements);
