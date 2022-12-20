@@ -70,6 +70,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         staticImports.add(Math.class);
         staticImports.add(QueryConstants.class);
         staticImports.add(TestQueryLanguageParser.class);
+        staticImports.add(LanguageParserDummyClass.StaticNestedClass.class);
 
         variables = new HashMap<>();
         variables.put("myByte", byte.class);
@@ -2771,6 +2772,73 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "LanguageParserDummyInterface.class";
         resultExpression = "LanguageParserDummyInterface.class";
         check(expression, resultExpression, LanguageParserDummyInterface.class.getClass(), new String[] {});
+    }
+
+    public void testClassImports() throws Exception {
+        String expression = "LanguageParserDummyClass.value";
+        String resultExpression = "LanguageParserDummyClass.value";
+        check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.value";
+        resultExpression = "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.value";
+        check(expression, resultExpression, int.class, new String[] {});
+
+        expression = "(LanguageParserDummyClass) myObject";
+        resultExpression = "(LanguageParserDummyClass) myObject";
+        check(expression, resultExpression, LanguageParserDummyClass.class, new String[] {"myObject"});
+
+        expression = "(io.deephaven.engine.table.impl.lang.LanguageParserDummyClass) myObject";
+        resultExpression = "(io.deephaven.engine.table.impl.lang.LanguageParserDummyClass) myObject";
+        check(expression, resultExpression, LanguageParserDummyClass.class, new String[] {"myObject"});
+    }
+
+
+    public void testStaticImports() throws Exception {
+        // test using imports from io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.StaticNestedClass
+        String expression = "staticVar";
+        String resultExpression = "staticVar";
+        check(expression, resultExpression, String.class, new String[] {});
+
+        expression = "staticMethod()";
+        resultExpression = "staticMethod()";
+        check(expression, resultExpression, String.class, new String[] {});
+        expression = "(StaticDoubleNestedClass) myObject";
+        resultExpression = "(StaticDoubleNestedClass) myObject";
+        check(expression, resultExpression, LanguageParserDummyClass.StaticNestedClass.StaticDoubleNestedClass.class,
+                new String[] {"myObject"});
+
+        expression =
+                "(io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.StaticNestedClass.StaticDoubleNestedClass) myObject";
+        resultExpression =
+                "(io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.StaticNestedClass.StaticDoubleNestedClass) myObject";
+        check(expression, resultExpression, LanguageParserDummyClass.StaticNestedClass.StaticDoubleNestedClass.class,
+                new String[] {"myObject"});
+
+        // make sure the non-static members are not treated as imported:
+        try {
+            expression = "instanceVar";
+            resultExpression = "instanceVar";
+            check(expression, resultExpression, String.class, new String[] {});
+            fail("Should have thrown an exception!");
+        } catch (QueryLanguageParseException ignored) {
+        }
+
+        try {
+            expression = "instanceMethod()";
+            resultExpression = "instanceMethod()";
+            check(expression, resultExpression, String.class, new String[] {});
+            fail("Should have thrown an exception!");
+        } catch (QueryLanguageParseException ignored) {
+        }
+
+        // make sure static imports that *aren't* classes throw exceptions:
+        try {
+            expression = "(staticVar) myObject";
+            resultExpression = "(staticVar) myObject";
+            check(expression, resultExpression, String.class, new String[] {"myObject"});
+            fail("Should have thrown an exception!");
+        } catch (QueryLanguageParseException ignored) {
+        }
     }
 
 

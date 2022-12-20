@@ -35,8 +35,10 @@ import io.deephaven.vector.*;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.*;
 import java.util.*;
@@ -48,7 +50,7 @@ import java.util.stream.Stream;
 public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, QueryLanguageParser.VisitArgs> {
     /**
      * Verify that the source code obtained from printing the AST is the same as the source code produced by the
-     * original technique of writing code to a StringBuilder while visting nodes.
+     * original technique of writing code to a StringBuilder while visiting nodes.
      */
     private static final boolean VERIFY_AST_CHANGES = true;
 
@@ -65,9 +67,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     // We need some class to represent null. We know for certain that this one won't be used...
     private static final Class<?> NULL_CLASS = QueryLanguageParser.class;
-
-    private static final Set<String> simpleNameWhiteList = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("java.lang", Vector.class.getPackage().getName())));
 
     /**
      * The result of the QueryLanguageParser for the expression passed given to the constructor.
@@ -135,35 +134,27 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 false);
     }
 
-    QueryLanguageParser(String expression,
-            Collection<Package> packageImports,
-            Collection<Class<?>> classImports,
-            Collection<Class<?>> staticImports,
-            Map<String, Class<?>> testOverrideClassLookups,
-            Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
-        this(expression, packageImports, classImports, staticImports, testOverrideClassLookups, variables,
-                variableParameterizedTypes, true, false);
-    }
-
-    QueryLanguageParser(String expression,
-            Collection<Package> packageImports,
-            Collection<Class<?>> classImports,
-            Collection<Class<?>> staticImports,
-            Map<String, Class<?>> testOverrideClassLookups,
-            Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments, final boolean verifyIdempotence)
+    QueryLanguageParser(
+            String expression,
+            final Collection<Package> packageImports,
+            final Collection<Class<?>> classImports,
+            final Collection<Class<?>> staticImports,
+            final Map<String, Class<?>> testOverrideClassLookups,
+            final Map<String, Class<?>> variables,
+            final Map<String, Class<?>[]> variableParameterizedTypes,
+            final boolean unboxArguments,
+            final boolean verifyIdempotence)
             throws QueryLanguageParseException {
         this.packageImports = packageImports == null ? Collections.emptySet()
-                : Require.notContainsNull(packageImports, "packageImports");
-        this.classImports =
-                classImports == null ? Collections.emptySet() : Require.notContainsNull(classImports, "classImports");
+                : Collections.unmodifiableCollection(Require.notContainsNull(packageImports, "packageImports"));
+        this.classImports = classImports == null ? Collections.emptySet()
+                : Collections.unmodifiableCollection(Require.notContainsNull(classImports, "classImports"));
         this.staticImports = staticImports == null ? Collections.emptySet()
-                : Require.notContainsNull(staticImports, "staticImports");
+                : Collections.unmodifiableCollection(Require.notContainsNull(staticImports, "staticImports"));
         this.testOverrideClassLookups = testOverrideClassLookups;
-        this.variables = variables == null ? Collections.emptyMap() : variables;
-        this.variableParameterizedTypes =
-                variableParameterizedTypes == null ? Collections.emptyMap() : variableParameterizedTypes;
+        this.variables = variables == null ? Collections.emptyMap() : Collections.unmodifiableMap(variables);
+        this.variableParameterizedTypes = variableParameterizedTypes == null ? Collections.emptyMap()
+                : Collections.unmodifiableMap(variableParameterizedTypes);
         this.unboxArguments = unboxArguments;
 
         // Convert backticks *before* converting single equals!
@@ -199,8 +190,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 // output from the printer to ensure behavior is the same:
                 if (!parserExpressionDumped.equals(printedSource)) {
                     throw new ParserVerificationFailure("Expression changed!\n" +
-                            "    Orig result               : " + printedSource + ".\n" +
-                            "    Printed parsed expression : " + parserExpressionDumped);
+                            "    Original printer result : " + printedSource + ".\n" +
+                            "    Printed AST expression  : " + parserExpressionDumped);
                 }
             }
 
@@ -434,11 +425,30 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             } catch (ClassNotFoundException ignored) {
             }
         } else { // Simple name
+
+            // check whether 'name' is an imported class:
             for (Class<?> classImport : classImports) {
                 if (name.equals(classImport.getSimpleName())) {
                     return classImport;
                 }
             }
+
+            // check whether 'name' is a static member of a static-imported class:
+            final Class<?> potentialStaticImportedClass = lookupStaticImport(name);
+            if (potentialStaticImportedClass != null) {
+                if (!name.equals(potentialStaticImportedClass.getSimpleName())) {
+                    // Make sure we actually got back a class matching 'name', not some other static
+                    // member that happens to be imported and match 'name'.
+                    final Class<?> declaringClass = potentialStaticImportedClass.getDeclaringClass();
+                    final String declaringClassName = declaringClass == null ? "null" : declaringClass.getName();
+                    throw new ParserResolutionFailure(
+                            "Expected class named \"" + name + "\" but found " + potentialStaticImportedClass.getName()
+                                    + " instead. Declaring class: " + declaringClassName);
+                }
+                return potentialStaticImportedClass;
+            }
+
+            // check whether 'name' is the name of a class in an imported package:
             for (Package packageImport : packageImports) {
                 try {
                     return Class.forName(packageImport.getName() + '.' + name);
@@ -446,6 +456,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
         }
+
         return null;
     }
 
@@ -471,14 +482,16 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (scope == null) {
             for (final Class<?> classImport : staticImports) {
                 for (Method method : classImport.getDeclaredMethods()) {
-                    possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
+                    if (Modifier.isStatic(method.getModifiers())) {
+                        possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
+                    }
                 }
             }
             // for Python function/Groovy closure call syntax without the explicit 'call' keyword, check if it is
             // defined in Query scope
             if (acceptableMethods.size() == 0) {
                 // if the method name corresponds to an object in the query scope, and the type of that object
-                // is something that could be potentially implicitly call()ed (e.g. PyCallableWrapepr/Closure),
+                // is something that could be potentially implicitly call()ed (e.g. PyCallableWrapper/Closure),
                 // then try to add its call() method to the acceptableMethods list.
                 final Class<?> methodClass = variables.get(methodName);
                 if (methodClass != null && isPotentialImplicitCall(methodClass)) {
@@ -824,7 +837,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         final Class<?>[] e1ParamTypes = e1.getParameterTypes();
         final Class<?>[] e2ParamTypes = e2.getParameterTypes();
 
-        if (e1.isVarArgs() && e2.isVarArgs()) {
+        // note that at this point, e1.isVarArgs() == e2.isVarArgs()
+        final boolean bothExecutablesAreVarargs = e1.isVarArgs();
+        if (bothExecutablesAreVarargs) {
             e1ParamTypes[e1ParamTypes.length - 1] = e1ParamTypes[e1ParamTypes.length - 1].getComponentType();
             e2ParamTypes[e2ParamTypes.length - 1] = e2ParamTypes[e2ParamTypes.length - 1].getComponentType();
         }
@@ -1127,45 +1142,77 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     @Override
     public Class<?> visit(NameExpr n, VisitArgs printer) {
+        // TODO: should we cache these results?
+        final String nameStr = n.getNameAsString();
+
         /*
-         * JLS on how to resolve names: https://docs.oracle.com/javase/specs/jls/se8/html/jls-6.html#jls-6.5
-         *
-         * Our parser doesn't work exactly this way (some cases are not relevant, and the work is split between this
-         * class and the parser library), but the behavior should be consistent with the spec.
-         *
-         * What matters here: 1) If it's a simple name (i.e. not a qualified name; doesn't contain a '.'), then 1. Check
-         * whether it's in the scope 2. If it's not in the scope, see if it's a static import 3. If it's not a static
-         * import, then it's not a situation the QueryLanguageParser has to worry about. 2) Qualified names -- we just
-         * throw them to 'findClass()'. Many details are not relevant here. For example, field access is handled by a
-         * different method: visit(FieldAccessExpr, StringBuilder).
+        @formatter:off
+        JLS on how to resolve names: https://docs.oracle.com/javase/specs/jls/se11/html/jls-6.html#jls-6.5
+
+        The QueryLanguageParser doesn't work exactly this way (some cases are not relevant, and the work
+        is split between this class and the JavaParser library), but the behavior should be consistent with the spec.
+
+        Situations where this method will be called include:
+        - resolving a variable name (e.g. 'myObject')
+        - resolving a statically-imported field or class name (e.g. 'MyStaticNestedClass', 'myStaticVar')
+        - resolving a method invocation target (e.g. 'someName.myMethod()')
+
+        There is
+        1)  Simple names (i.e. name does not contain a '.'):
+                1. Check whether it's in the scope.
+                2. If it's not in the scope, see if it's a static import.
+                3. If it's not a static import, assume it's a class and look it up with 'findClass()'.
+        2)  Qualified names: just look up the name immediately with 'findClass()'
+
+        @formatter:on
          */
-        printer.append(n.getNameAsString());
+        printer.append(nameStr);
 
-        Class<?> ret = variables.get(n.getNameAsString());
-
-        if (ret != null) {
-            variablesUsed.add(n.getNameAsString());
-
-            return ret;
-        }
-
-        // We don't support static imports of individual fields/methods -- have to check among
-        // *all* members of a class.
-        for (Class<?> classImport : staticImports) {
-            try {
-                ret = classImport.getField(n.getNameAsString()).getType();
+        Class<?> ret;
+        final boolean isSimpleName = nameStr.indexOf('.') < 0;
+        if (isSimpleName) {
+            ret = variables.get(nameStr);
+            if (ret != null) {
+                variablesUsed.add(nameStr);
                 return ret;
-            } catch (NoSuchFieldException ignored) {
+            }
+
+            ret = lookupStaticImport(nameStr);
+            if (ret != null) {
+                return ret;
             }
         }
 
-        ret = findClass(n.getNameAsString());
-
+        // If we have not returned a result yet, then 'n' must be a class name. (Or something invalid.)
+        ret = findClass(nameStr);
         if (ret != null) {
             return ret;
         }
 
         throw new ParserResolutionFailure("Cannot find variable or class " + n.getName());
+    }
+
+    @Nullable
+    private Class<?> lookupStaticImport(@NotNull final String name) {
+        // TODO: should we cache these results?
+        for (Class<?> staticImportedClass : staticImports) {
+            // We don't support static imports of individual fields/methods -- have to check among
+            // *all* members of a class.
+            try {
+                final Field field = staticImportedClass.getField(name);
+                if (Modifier.isStatic(field.getModifiers())) {
+                    return field.getType();
+                }
+            } catch (NoSuchFieldException ignored) {
+            }
+
+            for (Class<?> nestedClass : staticImportedClass.getDeclaredClasses()) {
+                if (Modifier.isStatic(nestedClass.getModifiers()) && nestedClass.getSimpleName().equals(name)) {
+                    return nestedClass;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -1327,12 +1374,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return binaryOpOverloadMethod.accept(this, printer);
         }
 
-        // printer.append(methodName + '(');
-        // n.getLeft().accept(this, printer);
-        // printer.append(',');
-        // n.getRight().accept(this, printer);
-        // printer.append(')');
-
         return getMethodReturnType(null, methodName, new Class[] {lhType, rhType},
                 getParameterizedTypes(n.getLeft(), n.getRight()));
     }
@@ -1416,7 +1457,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     public Class<?> visit(CastExpr n, VisitArgs printer) {
         final Runnable nothingPrintedAssertion = getNothingPrintedAssertion(printer);
 
-        final Class<?> ret = n.getType().accept(this, VisitArgs.WITHOUT_STRING_BUILDER); // the target type
+        // resolve the target type:
+        final Class<?> ret = n.getType().accept(this, VisitArgs.WITHOUT_STRING_BUILDER);
+        final String targetTypeSimpleName = ret.getSimpleName();
         final Expression origExprToCast = n.getExpression();
 
         // retrieve the expression's type. (ignore the StringBuilder; just need the type.)
@@ -1535,14 +1578,14 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (isPyCast) {
                 if (!toPrimitive) {
                     // e.g. "doStringPyCast"
-                    castMethodName = "do" + ret.getSimpleName() + "PyCast";
+                    castMethodName = "do" + targetTypeSimpleName + "PyCast";
                 } else {
                     // e.g. "intPyCast"
-                    castMethodName = ret.getSimpleName() + "PyCast";
+                    castMethodName = targetTypeSimpleName + "PyCast";
                 }
             } else {
                 // e.g. "intCast"
-                castMethodName = ret.getSimpleName() + "Cast";
+                castMethodName = targetTypeSimpleName + "Cast";
             }
 
 
@@ -1588,11 +1631,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (printer.hasStringBuilder()) {
             /* Print the cast normally - "(targetType) (expression)" */
             printer.append('(');
-            if (ret.getPackage() != null && simpleNameWhiteList.contains(ret.getPackage().getName())) {
-                printer.append(ret.getSimpleName());
-            } else {
-                printer.append(ret.getCanonicalName());
-            }
+            printer.append(n.getType().toString());
             printer.append(')');
             printer.append(' ');
 
@@ -1608,7 +1647,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * {@code !myMethod("some", "args")} or {@code !myVar} work fine, but {@code !a&&b} is very different from
      * {@code !(a&&b)}.)
      * 
-     * @param expr
+     * @param expr The expression to check.
      * @return {@code true} if prepending a unary operator will apply the operator to the entire expression instead of
      *         just its first term.
      */
@@ -1760,7 +1799,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (classA == boolean.class && classB == Boolean.class) {
             // a little hacky, but this handles the null case where it unboxes. very weird stuff
             final Expression uncastExpr = n.getThenExpr();
-            final CastExpr castExpr = new CastExpr(new ClassOrInterfaceType("Boolean"), uncastExpr);
+            final CastExpr castExpr = new CastExpr(new ClassOrInterfaceType(null, "Boolean"), uncastExpr);
             n.setThenExpr(castExpr);
             // fix parent in uncastExpr (it is cleared when it is replaced with the CastExpr)
             uncastExpr.setParentNode(castExpr);
@@ -1769,7 +1808,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (classA == Boolean.class && classB == boolean.class) {
             // a little hacky, but this handles the null case where it unboxes. very weird stuff
             final Expression uncastExpr = n.getElseExpr();
-            final CastExpr castExpr = new CastExpr(new ClassOrInterfaceType("Boolean"), uncastExpr);
+            final CastExpr castExpr = new CastExpr(new ClassOrInterfaceType(null, "Boolean"), uncastExpr);
             n.setElseExpr(castExpr);
             // fix parent in uncastExpr (it is cleared when it is replaced with the CastExpr)
             uncastExpr.setParentNode(castExpr);
@@ -2108,7 +2147,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
                     final ObjectCreationExpr newPyCallableExpr = new ObjectCreationExpr(
                             null,
-                            new ClassOrInterfaceType("io.deephaven.engine.util.PyCallableWrapper"),
+                            new ClassOrInterfaceType(null, "io.deephaven.engine.util.PyCallableWrapper"),
                             NodeList.nodeList(getAttributeCall));
 
                     final MethodCallExpr callMethodCall = new MethodCallExpr(
@@ -2286,6 +2325,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
+    @SuppressWarnings("unused")
     private static boolean isSafelyCoerceable(Class<?> expressionType, Class<?> aClass) {
         // TODO (core#709): numba does appear to check for type coercing at runtime, though no explicit rules exist
         // also the dh_vectorize is type-blind for now and simply calls the wrapped function with the provided data.
@@ -2739,7 +2779,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         /**
          * Underlying StringBuilder or 'null' if we don't need a buffer (i.e. if we are just running the visitor pattern
-         * to calculate a type and don't care about side effects.
+         * to calculate a type and don't care about side effects).
          */
         private final StringBuilder builder;
         private final Class<?> pythonCastContext;

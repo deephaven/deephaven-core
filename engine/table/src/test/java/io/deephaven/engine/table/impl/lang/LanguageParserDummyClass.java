@@ -151,6 +151,9 @@ public class LanguageParserDummyClass {
         public String instanceMethod() {
             return "instanceMethod";
         }
+
+        public static class StaticDoubleNestedClass {
+        }
     }
 
     public static class StaticNestedGenericClass<T> {
