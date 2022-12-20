@@ -75,8 +75,8 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase {
             throw new IllegalArgumentException("Unknown HierarchicalTable type");
         }
 
-        final ByteString snapshotDefinitionSchema =
-                BarrageUtil.schemaBytesFromTable(hierarchicalTable.getSnapshotDefinition(), Collections.emptyMap());
+        final ByteString snapshotDefinitionSchema = BarrageUtil.schemaBytesFromTable(
+                hierarchicalTable.getSnapshotDefinition(), hierarchicalTable.getAttributes());
         builder.setSnapshotDefinitionSchema(snapshotDefinitionSchema);
 
         final HierarchicalTableDescriptor result = builder.build();
