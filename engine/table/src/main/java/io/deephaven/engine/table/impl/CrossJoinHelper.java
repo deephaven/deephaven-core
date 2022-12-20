@@ -88,14 +88,14 @@ public class CrossJoinHelper {
                     jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-                    // We can only build from right, because the left hand side does not permit us to nicely rehash as
-                    // we only have the row redirection when building left and no way to reverse the lookup.
-                    final TrackingWritableRowSet resultRowSet = jsm.buildFromRight(leftTable,
-                            bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
-                            .toTracking();
+                    final WritableRowSet resultRowSet = control.buildLeft(leftTable, rightTable)
+                            ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
+                            : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable, bucketingContext.rightSources);
 
-                    return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                            cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
+                    final StaticChunkedCrossJoinStateManager.ResultOnlyCrossJoinStateManager resultStateManager = jsm.getResultOnlyStateManager();
+
+                    return makeResult(leftTable, rightTable, columnsToAdd, resultStateManager, resultRowSet.toTracking(),
+                        cs -> new CrossJoinRightColumnSource<>(resultStateManager, cs, rightTable.isRefreshing()));
                 }
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =

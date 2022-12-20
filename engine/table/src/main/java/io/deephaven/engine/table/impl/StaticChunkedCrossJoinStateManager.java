@@ -14,11 +14,11 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.sort.permute.LongPermuteKernel;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
 // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
-import io.deephaven.chunk.util.hashing.ObjectChunkIdentityEquals;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.*;
@@ -28,7 +28,6 @@ import io.deephaven.engine.table.impl.util.*;
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.engine.table.impl.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
@@ -76,8 +75,8 @@ class StaticChunkedCrossJoinStateManager
     // endregion preamble variables
 
     @HashTableAnnotations.EmptyStateValue
-    // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QTrackingWritableRowSet\E
-    private static final TrackingWritableRowSet EMPTY_RIGHT_VALUE = null;
+    // @NullStateValue@ from \QQueryConstants.NULL_LONG\E, @StateValueType@ from \Qlong\E
+    private static final long EMPTY_RIGHT_VALUE = QueryConstants.NULL_LONG;
 
     // mixin getStateValue
     // region overflow pivot
@@ -106,7 +105,7 @@ class StaticChunkedCrossJoinStateManager
      * <p>This has the effect of only using hash table locations < hashTablePivot.  When we want to expand the table
      * we can move some of the entries from the location {@code tableHashPivot - 2^(L-1)} to tableHashPivot.  This
      * provides for incremental expansion of the hash table, without the need for a full rehash.</p>
-      */
+     */
     private int tableHashPivot;
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
@@ -127,10 +126,10 @@ class StaticChunkedCrossJoinStateManager
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @HashTableAnnotations.StateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
-    private final ObjectArraySource<TrackingWritableRowSet> rightRowSetSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E
-            = new ObjectArraySource<>(TrackingWritableRowSet.class);
+    // @StateColumnSourceType@ from \QLongArraySource\E
+    private final LongArraySource slotSource
+            // @StateColumnSourceConstructor@ from \QLongArraySource()\E
+            = new LongArraySource();
 
     // the keys for overflow
     private int nextOverflowLocation = 0;
@@ -139,10 +138,10 @@ class StaticChunkedCrossJoinStateManager
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
-    private final ObjectArraySource<TrackingWritableRowSet> overflowRightRowSetSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E
-            = new ObjectArraySource<>(TrackingWritableRowSet.class);
+    // @StateColumnSourceType@ from \QLongArraySource\E
+    private final LongArraySource overflowSlotSource
+            // @StateColumnSourceConstructor@ from \QLongArraySource()\E
+            = new LongArraySource();
 
     // the type of each of our key chunks
     private final ChunkType[] keyChunkTypes;
@@ -161,7 +160,12 @@ class StaticChunkedCrossJoinStateManager
 
     // region extra variables
     // maintain a mapping from left rowSet to its slot
-    private final WritableRowRedirection leftIndexToSlot;
+    private final ObjectArraySource<TrackingWritableRowSet> rightRowSetSource =
+            new ObjectArraySource<>(TrackingWritableRowSet.class);
+
+    private long maxSlot = 0;
+
+    private final WritableRowRedirection leftRowSetToSlot;
     private long maxRightGroupSize = 0;
     // endregion extra variables
 
@@ -214,14 +218,14 @@ class StaticChunkedCrossJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexToSlot = JoinRowRedirection.makeRowRedirection(control, leftTable);
+        leftRowSetToSlot = JoinRowRedirection.makeRowRedirection(control, leftTable);
         // endregion constructor
 
         ensureCapacity(tableSize);
     }
 
     private void ensureCapacity(int tableSize) {
-        rightRowSetSource.ensureCapacity(tableSize);
+        slotSource.ensureCapacity(tableSize);
         overflowLocationSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             keySources[ii].ensureCapacity(tableSize);
@@ -240,7 +244,7 @@ class StaticChunkedCrossJoinStateManager
         // endmixin rehash
         // altmixin rehash: final int newCapacity = nextOverflowLocation + locationsToAllocate;
         overflowOverflowLocationSource.ensureCapacity(newCapacity);
-        overflowRightRowSetSource.ensureCapacity(newCapacity);
+        overflowSlotSource.ensureCapacity(newCapacity);
         //noinspection ForLoopReplaceableByForEach
         for (int ii = 0; ii < overflowKeySources.length; ++ii) {
             overflowKeySources[ii].ensureCapacity(newCapacity);
@@ -259,11 +263,20 @@ class StaticChunkedCrossJoinStateManager
         if (!rightTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(rightKeys, rightTable.size())) {
                 buildTable(bc, rightTable.getRowSet(), rightKeys, (slot, index) -> {
+                    final LongArraySource source;
                     if (isOverflowLocation(slot)) {
-                        addToIndex(overflowRightRowSetSource, hashLocationToOverflowLocation(slot), index, ignoreMissing);
+                        slot = hashLocationToOverflowLocation(slot);
+                        source = overflowSlotSource;
                     } else {
-                        addToIndex(rightRowSetSource, slot, index, ignoreMissing);
+                        source = slotSource;
                     }
+
+                    long indexSlot;
+                    if ((indexSlot = source.getUnsafe(slot)) == EMPTY_RIGHT_VALUE) {
+                        source.set(slot, indexSlot = maxSlot++);
+                    }
+
+                    addToRowSet(indexSlot, index, ignoreMissing);
                 });
             }
         }
@@ -277,9 +290,10 @@ class StaticChunkedCrossJoinStateManager
             try (final ProbeContext pc = makeProbeContext(leftKeys, leftTable.size())) {
                 decorationProbe(pc, leftTable.getRowSet(), leftKeys, (slot, index) -> {
                     final long regionStart = index << getNumShiftBits();
-                    final RowSet rightRowSet = getRightRowSet(slot);
+                    final long rowSetSlot = getRowSetSlot(slot);
+                    final RowSet rightRowSet = getRightRowSetForSlot(rightRowSetSource, rowSetSlot);
                     if (rightRowSet.isNonempty()) {
-                        leftIndexToSlot.put(index, slot);
+                        leftRowSetToSlot.put(index, rowSetSlot);
                         resultIndex.addRange(regionStart, regionStart + rightRowSet.size() - 1);
                     }
                 });
@@ -297,18 +311,21 @@ class StaticChunkedCrossJoinStateManager
         if (!leftTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(leftKeys, leftTable.size())) {
                 buildTable(bc, leftTable.getRowSet(), leftKeys, (slot, index) -> {
-                    leftIndexToSlot.put(index, slot);
-                    final ObjectArraySource<TrackingWritableRowSet> source;
+                    final LongArraySource source;
                     if (isOverflowLocation(slot)) {
                         slot = hashLocationToOverflowLocation(slot);
-                        source = overflowRightRowSetSource;
+                        source = overflowSlotSource;
                     } else {
-                        source = rightRowSetSource;
+                        source = slotSource;
                     }
 
-                    if (source.getUnsafe(slot) == EMPTY_RIGHT_VALUE) {
-                        source.set(slot, RowSetFactory.empty().toTracking());
+                    long rowSetSlot;
+                    if ((rowSetSlot = source.getUnsafe(slot)) == EMPTY_RIGHT_VALUE) {
+                        source.set(slot, rowSetSlot = maxSlot++);
+                        rightRowSetSource.set(rowSetSlot, RowSetFactory.empty().toTracking());
                     }
+                    leftRowSetToSlot.put(index, rowSetSlot);
+
                 });
             }
         }
@@ -317,11 +334,7 @@ class StaticChunkedCrossJoinStateManager
         if (!rightTable.isEmpty()) {
             try (final ProbeContext pc = makeProbeContext(rightKeys, rightTable.size())) {
                 decorationProbe(pc, rightTable.getRowSet(), rightKeys, (slot, index) -> {
-                    if (isOverflowLocation(slot)) {
-                        addToIndex(overflowRightRowSetSource, hashLocationToOverflowLocation(slot), index, ignoreMissing);
-                    } else {
-                        addToIndex(rightRowSetSource, slot, index, ignoreMissing);
-                    }
+                    addToRowSet(getRowSetSlot(slot), index, ignoreMissing);
                 });
             }
         }
@@ -342,15 +355,15 @@ class StaticChunkedCrossJoinStateManager
         return resultIndex.build();
     }
 
-    private void addToIndex(final ObjectArraySource<TrackingWritableRowSet> source, final long location, final long keyToAdd, boolean ignoreMissing) {
+    private void addToRowSet(final long location, final long keyToAdd, boolean ignoreMissing) {
         final long size;
-        final WritableRowSet rowSet = source.get(location);
+        final WritableRowSet rowSet = rightRowSetSource.get(location);
         if (rowSet == null) {
             if (ignoreMissing) {
                 return;
             }
 
-            source.set(location, RowSetFactory.fromKeys(keyToAdd).toTracking());
+            rightRowSetSource.set(location, RowSetFactory.fromKeys(keyToAdd).toTracking());
             size = 1;
         } else {
             rowSet.insert(keyToAdd);
@@ -407,8 +420,8 @@ class StaticChunkedCrossJoinStateManager
         final WritableLongChunk<RowKeys> overflowLocationForEqualityCheck;
 
         // the chunk of state values that we read from the hash table
-        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
-        final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
+        // @WritableStateChunkType@ from \QWritableLongChunk<Values>\E
+        final WritableLongChunk<Values> workingStateEntries;
 
         // the chunks for getting key values from the hash table
         final WritableChunk<Values>[] workingKeyChunks;
@@ -433,8 +446,8 @@ class StaticChunkedCrossJoinStateManager
         final ResettableWritableLongChunk<Any> overflowLocationForPromotionLoop = ResettableWritableLongChunk.makeResettableChunk();
 
         // mixin allowUpdateWriteThroughState
-        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E, @WritableStateChunkName@ from \QWritableObjectChunk\E
-        final ResettableWritableObjectChunk<TrackingWritableRowSet,Values> writeThroughState = ResettableWritableObjectChunk.makeResettableChunk();
+        // @WritableStateChunkType@ from \QWritableLongChunk<Values>\E, @WritableStateChunkName@ from \QWritableLongChunk\E
+        final ResettableWritableLongChunk<Values> writeThroughState = ResettableWritableLongChunk.makeResettableChunk();
         // endmixin allowUpdateWriteThroughState
         final ResettableWritableIntChunk<Values> writeThroughOverflowLocations = ResettableWritableIntChunk.makeResettableChunk();
         // endmixin rehash
@@ -477,7 +490,7 @@ class StaticChunkedCrossJoinStateManager
             sourceIndexKeys = WritableLongChunk.makeWritableChunk(chunkSize);
             // endregion build context constructor
             sortContext = LongIntTimsortKernel.createContext(chunkSize);
-            stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
+            stateSourceFillContext = slotSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -492,8 +505,8 @@ class StaticChunkedCrossJoinStateManager
             insertPositionsInSourceChunk = WritableIntChunk.makeWritableChunk(chunkSize);
             chunkPositionsToCheckForEquality = WritableIntChunk.makeWritableChunk(chunkSize * 2);
             overflowLocationForEqualityCheck = WritableLongChunk.makeWritableChunk(chunkSize);
-            // @WritableStateChunkName@ from \QWritableObjectChunk\E
-            workingStateEntries = WritableObjectChunk.makeWritableChunk(chunkSize);
+            // @WritableStateChunkName@ from \QWritableLongChunk\E
+            workingStateEntries = WritableLongChunk.makeWritableChunk(chunkSize);
             workingKeyChunks = getWritableKeyChunks(chunkSize);
             overflowKeyChunks = getWritableKeyChunks(chunkSize);
             chunkPositionsForFetches = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -502,7 +515,7 @@ class StaticChunkedCrossJoinStateManager
             overflowLocations = WritableIntChunk.makeWritableChunk(chunkSize);
             // mixin rehash
             rehashLocations = WritableLongChunk.makeWritableChunk(chunkSize);
-            overflowStateSourceFillContext = overflowRightRowSetSource.makeFillContext(chunkSize);
+            overflowStateSourceFillContext = overflowSlotSource.makeFillContext(chunkSize);
             overflowLocationsToMigrate = WritableIntChunk.makeWritableChunk(chunkSize);
             overflowLocationsAsKeyIndices = WritableLongChunk.makeWritableChunk(chunkSize);
             shouldMoveBucket = WritableBooleanChunk.makeWritableChunk(chunkSize);
@@ -626,6 +639,7 @@ class StaticChunkedCrossJoinStateManager
 
                 // region build loop initialization
                 chunkOk.fillRowKeyChunk(bc.sourceIndexKeys);
+                rightRowSetSource.ensureCapacity(maxSlot + CHUNK_SIZE);
                 // endregion build loop initialization
 
                 // turn hash codes into indices within our table
@@ -635,11 +649,11 @@ class StaticChunkedCrossJoinStateManager
                 fillKeys(bc.workingFillContexts, bc.workingKeyChunks, bc.tableLocationsChunk);
 
                 // and the corresponding states, if a value is null, we've found our insertion point
-                rightRowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
+                slotSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
 
                 // find things that exist
-                // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
-                ObjectChunkIdentityEquals.notEqual(bc.workingStateEntries, EMPTY_RIGHT_VALUE, bc.filledValues);
+                // @StateChunkIdentityName@ from \QLongChunk\E
+                LongChunkEquals.notEqual(bc.workingStateEntries, EMPTY_RIGHT_VALUE, bc.filledValues);
 
                 // to be equal, the location must exist; and each of the keyChunks must match
                 bc.equalValues.setSize(bc.filledValues.size());
@@ -947,9 +961,9 @@ class StaticChunkedCrossJoinStateManager
 
             // now rehash the main entries
 
-            rightRowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.rehashLocations);
-            // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
-            ObjectChunkIdentityEquals.notEqual(bc.workingStateEntries, EMPTY_RIGHT_VALUE, bc.shouldMoveBucket);
+            slotSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.rehashLocations);
+            // @StateChunkIdentityName@ from \QLongChunk\E
+            LongChunkEquals.notEqual(bc.workingStateEntries, EMPTY_RIGHT_VALUE, bc.shouldMoveBucket);
 
             // crush down things that don't exist
             LongCompactKernel.compact(bc.rehashLocations, bc.shouldMoveBucket);
@@ -979,11 +993,11 @@ class StaticChunkedCrossJoinStateManager
                         lastBackingChunkLocation = firstBackingChunkLocation + bc.writeThroughChunks[0].size() - 1;
                     }
 
-                    // @StateValueType@ from \QTrackingWritableRowSet\E
-                    final TrackingWritableRowSet stateValueToMove = rightRowSetSource.getUnsafe(oldHashLocation);
-                    rightRowSetSource.set(newHashLocation, stateValueToMove);
-                    rightRowSetSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
-                                // region rehash move values
+                    // @StateValueType@ from \Qlong\E
+                    final long stateValueToMove = slotSource.getUnsafe(oldHashLocation);
+                    slotSource.set(newHashLocation, stateValueToMove);
+                    slotSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
+                    // region rehash move values
                     // endregion rehash move values
 
                     bc.sourcePositions.add(ii);
@@ -1023,7 +1037,7 @@ class StaticChunkedCrossJoinStateManager
                 // now fetch the overflow key values
                 fillOverflowKeys(bc.overflowContexts, bc.workingKeyChunks, bc.overflowLocationsAsKeyIndices);
                 // and their state values
-                overflowRightRowSetSource.fillChunkUnordered(bc.overflowStateSourceFillContext, bc.workingStateEntries, bc.overflowLocationsAsKeyIndices);
+                overflowSlotSource.fillChunkUnordered(bc.overflowStateSourceFillContext, bc.workingStateEntries, bc.overflowLocationsAsKeyIndices);
                 // and where their next pointer is
                 overflowOverflowLocationSource.fillChunkUnordered(bc.overflowOverflowFillContext, bc.overflowLocationsToMigrate, bc.overflowLocationsAsKeyIndices);
 
@@ -1041,8 +1055,8 @@ class StaticChunkedCrossJoinStateManager
                                 // the permutes here are flushing the write through for the state and overflow locations
 
                                 // mixin allowUpdateWriteThroughState
-                                // @StateChunkTypeEnum@ from \QObject\E
-                                ObjectPermuteKernel.permute(bc.sourcePositions, bc.workingStateEntries, bc.destinationLocationPositionInWriteThrough, bc.writeThroughState);
+                                // @StateChunkTypeEnum@ from \QLong\E
+                                LongPermuteKernel.permute(bc.sourcePositions, bc.workingStateEntries, bc.destinationLocationPositionInWriteThrough, bc.writeThroughState);
                                 // endmixin allowUpdateWriteThroughState
                                 IntPermuteKernel.permute(bc.sourcePositions, bc.overflowLocationsToMigrate, bc.destinationLocationPositionInWriteThrough, bc.writeThroughOverflowLocations);
                                 flushWriteThrough(bc.sourcePositions, bc.workingKeyChunks, bc.destinationLocationPositionInWriteThrough, bc.writeThroughChunks);
@@ -1064,8 +1078,8 @@ class StaticChunkedCrossJoinStateManager
 
                 // the permutes are completing the state and overflow promotions write through
                 // mixin allowUpdateWriteThroughState
-                // @StateChunkTypeEnum@ from \QObject\E
-                ObjectPermuteKernel.permute(bc.sourcePositions, bc.workingStateEntries, bc.destinationLocationPositionInWriteThrough, bc.writeThroughState);
+                // @StateChunkTypeEnum@ from \QLong\E
+                LongPermuteKernel.permute(bc.sourcePositions, bc.workingStateEntries, bc.destinationLocationPositionInWriteThrough, bc.writeThroughState);
                 // endmixin allowUpdateWriteThroughState
                 IntPermuteKernel.permute(bc.sourcePositions, bc.overflowLocationsToMigrate, bc.destinationLocationPositionInWriteThrough, bc.writeThroughOverflowLocations);
                 flushWriteThrough(bc.sourcePositions, bc.workingKeyChunks, bc.destinationLocationPositionInWriteThrough, bc.writeThroughChunks);
@@ -1109,16 +1123,16 @@ class StaticChunkedCrossJoinStateManager
              final WritableLongChunk<RowKeys> tableLocationsChunk = WritableLongChunk.makeWritableChunk(maxSize);
              final SafeCloseableArray ignored = new SafeCloseableArray<>(keyFillContext);
              final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
-             // @StateChunkName@ from \QObjectChunk\E
-             final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
-             final ChunkSource.FillContext fillContext = rightRowSetSource.makeFillContext(maxSize)) {
+             // @StateChunkName@ from \QLongChunk\E
+             final WritableLongChunk stateChunk = WritableLongChunk.makeWritableChunk(maxSize);
+             final ChunkSource.FillContext fillContext = slotSource.makeFillContext(maxSize)) {
 
-            rightRowSetSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
+            slotSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
-            // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
-            ObjectChunkIdentityEquals.notEqual(stateChunk, EMPTY_RIGHT_VALUE, exists);
+            // @StateChunkIdentityName@ from \QLongChunk\E
+            LongChunkEquals.notEqual(stateChunk, EMPTY_RIGHT_VALUE, exists);
 
             // crush down things that don't exist
             LongCompactKernel.compact(positions, exists);
@@ -1194,9 +1208,9 @@ class StaticChunkedCrossJoinStateManager
     }
 
     // mixin allowUpdateWriteThroughState
-    // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
-    private void updateWriteThroughState(ResettableWritableObjectChunk<TrackingWritableRowSet,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
-        final long firstBackingChunkPosition = rightRowSetSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
+    // @WritableStateChunkType@ from \QWritableLongChunk<Values>\E
+    private void updateWriteThroughState(ResettableWritableLongChunk<Values> writeThroughState, long firstPosition, long expectedLastPosition) {
+        final long firstBackingChunkPosition = slotSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
             throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
         }
@@ -1260,7 +1274,7 @@ class StaticChunkedCrossJoinStateManager
         }
         // region nullOverflowObjectSources
         for (int ii = 0; ii < locationsToNull.size(); ++ii) {
-            overflowRightRowSetSource.set(locationsToNull.get(ii), null);
+            overflowSlotSource.set(locationsToNull.get(ii), null);
         }
         // endregion nullOverflowObjectSources
     }
@@ -1337,8 +1351,8 @@ class StaticChunkedCrossJoinStateManager
 
         // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
-        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
-        final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
+        // @WritableStateChunkType@ from \QWritableLongChunk<Values>\E
+        final WritableLongChunk<Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
         final WritableLongChunk<RowKeys> overflowLocationsToFetch;
@@ -1388,13 +1402,13 @@ class StaticChunkedCrossJoinStateManager
             // region probe context constructor
             keyIndices = WritableLongChunk.makeWritableChunk(chunkSize);
             // endregion probe context constructor
-            stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
+            stateSourceFillContext = slotSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
             tableLocationsChunk = WritableLongChunk.makeWritableChunk(chunkSize);
-            // @WritableStateChunkName@ from \QWritableObjectChunk\E
-            workingStateEntries = WritableObjectChunk.makeWritableChunk(chunkSize);
+            // @WritableStateChunkName@ from \QWritableLongChunk\E
+            workingStateEntries = WritableLongChunk.makeWritableChunk(chunkSize);
             overflowLocationsToFetch = WritableLongChunk.makeWritableChunk(chunkSize);
             overflowPositionInWorkingChunk = WritableIntChunk.makeWritableChunk(chunkSize);
             overflowLocations = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -1501,10 +1515,10 @@ class StaticChunkedCrossJoinStateManager
                 // - otherwise we check for equality; if we are equal, we have found our thing to set
                 //   (or to complain if we are already set)
                 // - if we are not equal, then we are an overflow block
-                rightRowSetSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
+                slotSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
 
-                // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
-                ObjectChunkIdentityEquals.notEqual(pc.workingStateEntries, EMPTY_RIGHT_VALUE, pc.equalValues);
+                // @StateChunkIdentityName@ from \QLongChunk\E
+                LongChunkEquals.notEqual(pc.workingStateEntries, EMPTY_RIGHT_VALUE, pc.equalValues);
                 checkKeyEquality(pc.equalValues, pc.workingKeyChunks, sourceKeyChunks);
 
                 pc.overflowPositionInWorkingChunk.setSize(0);
@@ -1629,26 +1643,69 @@ class StaticChunkedCrossJoinStateManager
     }
 
     // region extraction functions
-    public TrackingRowSet getRightRowSet(long slot) {
-        TrackingRowSet retVal;
+    ResultOnlyCrossJoinStateManager getResultOnlyStateManager() {
+        return new ResultOnlyCrossJoinStateManager(rightRowSetSource, leftRowSetToSlot, getNumShiftBits());
+    }
+
+    /**
+     * For the result we do not need to maintain the hash table, we only need to have the densely packed set of right
+     * indices and the redirection from the left table to the corresponding Index.  By returning this simple state
+     * manager instead of preserving the full StaticChunkedCrossJoinStateManager we can drop the intermediate table.
+     */
+    static class ResultOnlyCrossJoinStateManager extends CrossJoinShiftState implements CrossJoinStateManager {
+        private final ObjectArraySource<TrackingWritableRowSet> rightRowSetSource;
+        private final RowRedirection leftRowSetToSlot;
+
+        public ResultOnlyCrossJoinStateManager(
+                ObjectArraySource<TrackingWritableRowSet> rightRowSetSource, RowRedirection leftRowSetToSlot, int numBits) {
+            super(numBits);
+            this.rightRowSetSource = rightRowSetSource;
+            this.leftRowSetToSlot = leftRowSetToSlot;
+        }
+
+        @Override
+        public TrackingRowSet getRightRowSetFromLeftIndex(long leftRowSlot) {
+            return StaticChunkedCrossJoinStateManager.getRightRowSetFromLeftIndex(leftRowSetToSlot, rightRowSetSource, leftRowSlot);
+        }
+
+        @Override
+        public TrackingRowSet getRightRowSetFromPrevLeftIndex(long leftIndex) {
+            return getRightRowSetFromLeftIndex(leftIndex);
+        }
+    }
+
+    private long getRowSetSlot(long slot) {
+        final long indexSlot;
         if (isOverflowLocation(slot)) {
-            retVal = overflowRightRowSetSource.get(hashLocationToOverflowLocation(slot));
+            indexSlot = overflowSlotSource.getUnsafe(hashLocationToOverflowLocation(slot));
         } else {
-            retVal = rightRowSetSource.get(slot);
+            indexSlot = slotSource.getUnsafe(slot);
         }
-        if (retVal == null) {
-            retVal = RowSetFactory.empty().toTracking();
+        return indexSlot;
+    }
+
+    @NotNull
+    private static TrackingRowSet getRightRowSetForSlot(ObjectArraySource<TrackingWritableRowSet> rightIndexSource, long indexSlot) {
+        final TrackingRowSet retVal = rightIndexSource.getUnsafe(indexSlot);
+        if (retVal != null) {
+            return retVal;
         }
-        return retVal;
+        return RowSetFactory.empty().toTracking();
     }
 
     @Override
     public TrackingRowSet getRightRowSetFromLeftIndex(long leftIndex) {
-        long slot = leftIndexToSlot.get(leftIndex);
-        if (slot == RowSequence.NULL_ROW_KEY) {
+        return getRightRowSetFromLeftIndex(leftRowSetToSlot, rightRowSetSource, leftIndex);
+    }
+
+    @NotNull
+    private static TrackingRowSet getRightRowSetFromLeftIndex(
+            RowRedirection leftRowSetToSlot, ObjectArraySource<TrackingWritableRowSet> rightIndexSource, long leftIndex) {
+        long slot = leftRowSetToSlot.get(leftIndex);
+        if (slot == RowSet.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
-        return getRightRowSet(slot);
+        return getRightRowSetForSlot(rightIndexSource, slot);
     }
 
     @Override
