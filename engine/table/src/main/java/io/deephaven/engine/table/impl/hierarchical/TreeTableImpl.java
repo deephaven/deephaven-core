@@ -47,6 +47,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     private final ColumnName parentIdentifierColumn;
     private final Set<ColumnName> nodeFilterColumns;
     private final TreeNodeOperationsRecorder nodeOperations;
+    private final TableDefinition snapshotDefinition;
 
     private TreeTableImpl(
             @NotNull final Map<String, Object> initialAttributes,
@@ -56,7 +57,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn,
             @NotNull final Set<ColumnName> nodeFilterColumns,
-            @Nullable final TreeNodeOperationsRecorder nodeOperations) {
+            @Nullable final TreeNodeOperationsRecorder nodeOperations,
+            @Nullable final TableDefinition snapshotDefinition) {
         super(initialAttributes, source, getTreeRoot(tree));
         if (source.isRefreshing()) {
             manage(tree);
@@ -72,6 +74,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         this.parentIdentifierColumn = parentIdentifierColumn;
         this.nodeFilterColumns = nodeFilterColumns;
         this.nodeOperations = nodeOperations;
+        this.snapshotDefinition = snapshotDefinition == null
+                ? computeSnapshotDefinition(getNodeDefinition())
+                : snapshotDefinition;
 
         if (source.isRefreshing()) {
             Assert.assertion(tree.isRefreshing(), "tree.isRefreshing() if source.isRefreshing()");
@@ -112,12 +117,26 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
+    public TableDefinition getSnapshotDefinition() {
+        return snapshotDefinition;
+    }
+
+    private static TableDefinition computeSnapshotDefinition(@NotNull final TableDefinition nodeDefinition) {
+        final List<ColumnDefinition<?>> snapshotColumnDefinitions =
+                new ArrayList<>(EXTRA_COLUMN_COUNT + nodeDefinition.numColumns());
+        snapshotColumnDefinitions.add(ROW_DEPTH_COLUMN_DEFINITION);
+        snapshotColumnDefinitions.add(ROW_EXPANDED_COLUMN_DEFINITION);
+        snapshotColumnDefinitions.addAll(nodeDefinition.getColumns());
+        return TableDefinition.of(snapshotColumnDefinitions);
+    }
+
+    @Override
     public TreeTable withNodeFilterColumns(@NotNull final Collection<? extends ColumnName> columns) {
         final Set<ColumnName> resultNodeFilterColumns = new HashSet<>(nodeFilterColumns);
         resultNodeFilterColumns.addAll(columns);
         return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn,
-                Collections.unmodifiableSet(resultNodeFilterColumns), nodeOperations);
+                Collections.unmodifiableSet(resultNodeFilterColumns), nodeOperations, snapshotDefinition);
     }
 
     @Override
@@ -148,7 +167,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
         final QueryTable filteredTree = computeTree(filteredSource, parentIdentifierColumn);
         return new TreeTableImpl(getAttributes(), filteredSource, filteredTree, sourceRowLookup, identifierColumn,
-                parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder));
+                parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder),
+                snapshotDefinition);
     }
 
     /**
@@ -166,8 +186,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     public TreeTable withNodeOperations(@NotNull final NodeOperationsRecorder nodeOperations) {
         return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
-                parentIdentifierColumn,
-                nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations));
+                parentIdentifierColumn, nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations),
+                snapshotDefinition);
     }
 
     private static TreeNodeOperationsRecorder accumulateOperations(
@@ -183,8 +203,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     @Override
     protected TreeTableImpl copy() {
         return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
-                parentIdentifierColumn,
-                nodeFilterColumns, nodeOperations);
+                parentIdentifierColumn, nodeFilterColumns, nodeOperations, snapshotDefinition);
     }
 
     public static TreeTable makeTree(
@@ -196,7 +215,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         final TreeSourceRowLookup reverseLookup = new TreeSourceRowLookup(source, reverseLookupTable);
         final TreeTableImpl result = new TreeTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)),
-                source, tree, reverseLookup, identifierColumn, parentIdentifierColumn, Set.of(), null);
+                source, tree, reverseLookup, identifierColumn, parentIdentifierColumn, Set.of(), null, null);
         source.copySortableColumns(result, (final String columnName) -> true);
         return result;
     }

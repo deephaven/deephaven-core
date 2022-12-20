@@ -4,10 +4,12 @@
 package io.deephaven.hierarchicaltable;
 
 import com.google.auto.service.AutoService;
+import com.google.protobuf.ByteString;
 import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor;
@@ -18,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 /**
@@ -49,10 +52,6 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase {
                 .setRowDepthColumn(hierarchicalTable.getRowDepthColumn().name())
                 .setRowExpandedColumn(hierarchicalTable.getRowExpandedColumn().name());
 
-        // TODO-RWC: Build the schema!
-        // final ByteString schemaWrappedInMessage =
-        // BarrageUtil.schemaBytesFromTable(partitionedTable.constituentDefinition(), Collections.emptyMap());
-
         if (hierarchicalTable instanceof RollupTable) {
             final RollupTable rollupTable = (RollupTable) hierarchicalTable;
             builder.addAllExpandByColumns(rollupTable.getGroupByColumns().stream()
@@ -75,7 +74,10 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase {
         } else {
             throw new IllegalArgumentException("Unknown HierarchicalTable type");
         }
-        builder.build();
+
+        final ByteString snapshotDefinitionSchema =
+                BarrageUtil.schemaBytesFromTable(hierarchicalTable.getSnapshotDefinition(), Collections.emptyMap());
+        builder.setSnapshotDefinitionSchema(snapshotDefinitionSchema);
 
         final HierarchicalTableDescriptor result = builder.build();
         result.writeTo(out);

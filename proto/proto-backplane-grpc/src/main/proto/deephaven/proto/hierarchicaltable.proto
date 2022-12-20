@@ -123,7 +123,7 @@ message HierarchicalTableDescriptor {
   }
 
   // Schema as described in Arrow Message.fbs::Message.
-  bytes schema_header = 6;
+  bytes snapshot_definition_schema = 6;
 }
 
 enum RollupNodeType {
