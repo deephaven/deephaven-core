@@ -80,7 +80,11 @@ type TableServiceClient interface {
 	LeftJoinTables(ctx context.Context, in *LeftJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns the result of an as of join operation.
 	AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Returns the result of an aggregate table operation.
+	//
+	// Deprecated: Please use AggregateAll or Aggregate instead
 	ComboAggregate(ctx context.Context, in *ComboAggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Aggregates all non-grouping columns against a single aggregation specification.
 	AggregateAll(ctx context.Context, in *AggregateAllRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
@@ -383,6 +387,7 @@ func (c *tableServiceClient) AsOfJoinTables(ctx context.Context, in *AsOfJoinTab
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *tableServiceClient) ComboAggregate(ctx context.Context, in *ComboAggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate", in, out, opts...)
@@ -580,7 +585,11 @@ type TableServiceServer interface {
 	LeftJoinTables(context.Context, *LeftJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Returns the result of an as of join operation.
 	AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Returns the result of an aggregate table operation.
+	//
+	// Deprecated: Please use AggregateAll or Aggregate instead
 	ComboAggregate(context.Context, *ComboAggregateRequest) (*ExportedTableCreationResponse, error)
 	// Aggregates all non-grouping columns against a single aggregation specification.
 	AggregateAll(context.Context, *AggregateAllRequest) (*ExportedTableCreationResponse, error)

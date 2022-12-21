@@ -438,6 +438,8 @@ class TableServiceServicer(object):
     def ComboAggregate(self, request, context):
         """
         Returns the result of an aggregate table operation.
+
+        Deprecated: Please use AggregateAll or Aggregate instead
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
