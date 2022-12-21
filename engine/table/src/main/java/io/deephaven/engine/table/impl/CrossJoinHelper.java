@@ -89,13 +89,17 @@ public class CrossJoinHelper {
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
                     final WritableRowSet resultRowSet = control.buildLeft(leftTable, rightTable)
-                            ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
-                            : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable, bucketingContext.rightSources);
+                            ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable,
+                                    bucketingContext.rightSources)
+                            : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable,
+                                    bucketingContext.rightSources);
 
-                    final StaticChunkedCrossJoinStateManager.ResultOnlyCrossJoinStateManager resultStateManager = jsm.getResultOnlyStateManager();
+                    final StaticChunkedCrossJoinStateManager.ResultOnlyCrossJoinStateManager resultStateManager =
+                            jsm.getResultOnlyStateManager();
 
-                    return makeResult(leftTable, rightTable, columnsToAdd, resultStateManager, resultRowSet.toTracking(),
-                        cs -> new CrossJoinRightColumnSource<>(resultStateManager, cs, rightTable.isRefreshing()));
+                    return makeResult(leftTable, rightTable, columnsToAdd, resultStateManager,
+                            resultRowSet.toTracking(),
+                            cs -> new CrossJoinRightColumnSource<>(resultStateManager, cs, rightTable.isRefreshing()));
                 }
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
