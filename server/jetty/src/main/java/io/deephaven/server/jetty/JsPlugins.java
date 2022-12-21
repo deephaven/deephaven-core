@@ -2,6 +2,8 @@ package io.deephaven.server.jetty;
 
 import io.deephaven.configuration.ConfigDir;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -9,7 +11,6 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,6 +22,8 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.NO_SESSIONS;
 
 class JsPlugins {
 
+    private static final Logger log = LoggerFactory.getLogger(JsPlugins.class);
+
     public static void maybeAdd(Consumer<Handler> addHandler) {
         resource()
                 .map(ControlledCacheResource::wrap)
@@ -28,6 +31,7 @@ class JsPlugins {
     }
 
     private static void addResource(Consumer<Handler> addHandler, ControlledCacheResource resource) {
+        log.info().append("Creating JsPlugins context with resource '").append(resource.toString()).append('\'').endl();
         WebAppContext context =
                 new WebAppContext(null, "/js-plugins/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
         context.setBaseResource(resource);
