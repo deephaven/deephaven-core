@@ -88,6 +88,14 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
+    public String getDescription() {
+        return "TreeTable(" + source.getDescription()
+                + ", " + identifierColumn.name()
+                + ", " + parentIdentifierColumn.name()
+                + ")";
+    }
+
+    @Override
     public Table getRootOnlyKeyTable() {
         return makeNullIdentifierColumnSingleRowTable(getSource(), getIdentifierColumn());
     }

@@ -21,6 +21,13 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
         extends AttributeMap<IFACE_TYPE>, GridAttributes<IFACE_TYPE> {
 
     /**
+     * Get a description of this HierarchicalTable.
+     *
+     * @return The description
+     */
+    String getDescription();
+
+    /**
      * Get the source {@link Table} that was aggregated to make this HierarchicalTable.
      *
      * @return The source table

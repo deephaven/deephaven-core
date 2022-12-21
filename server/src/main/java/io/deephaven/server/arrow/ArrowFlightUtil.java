@@ -637,7 +637,7 @@ public class ArrowFlightUtil {
                 } else if (htvs != null) {
                     htvs.setViewport(columns, viewport, reverseViewport);
                 } else {
-                    //noinspection ThrowableNotThrown
+                    // noinspection ThrowableNotThrown
                     Assert.statementNeverExecuted();
                 }
 
@@ -691,6 +691,7 @@ public class ArrowFlightUtil {
                     bmp.removeSubscription(listener);
                     bmp = null;
                 } else if (htvs != null) {
+                    htvs.completed();
                     htvs = null;
                 } else {
                     GrpcUtil.safelyExecuteLocked(listener, listener::onCompleted);

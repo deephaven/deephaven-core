@@ -1,12 +1,12 @@
 package io.deephaven.server.hierarchicaltable;
 
+import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -17,18 +17,32 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.barrage.BarrageStreamGenerator;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
+import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
+
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Tool that manages an active subscription to a {@link HierarchicalTableView}.
@@ -44,30 +58,45 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 long intervalMillis);
     }
 
+    private static final Logger log = LoggerFactory.getLogger(HierarchicalTableViewSubscription.class);
+
     private final Scheduler scheduler;
     private final BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory;
 
     private final HierarchicalTableView view;
     private final StreamObserver<BarrageStreamGenerator.View> listener;
     private final BarrageSubscriptionOptions subscriptionOptions;
-    private final long intervalMillis;
+    private final long intervalDurationNanos;
+
+    private final Stats stats;
 
     private final TableUpdateListener keyTableListener;
     private final TableUpdateListener sourceTableListener;
 
-    private final Runnable snapshotSender;
+    private final Runnable propagationJob;
 
+    private final Object schedulingLock = new Object();
+    // region Guarded by scheduling lock
+    private long scheduledTimeNanos = Long.MAX_VALUE;
+    private long lastSnapshotTimeNanos = 0;
+    private BitSet pendingColumns;
+    private RowSet pendingRows;
+    private boolean upstreamDataChanged;
+    private Throwable upstreamFailure;
+    // endregion Guarded by scheduling lock
+
+    private final Object snapshotLock = new Object();
+    // region Guarded by snapshot lock
     private BitSet columns;
     private RowSet rows;
-
-    // TODO-RWC: Plumb control flow and metrics
-    private long lastSnapshotTimeMillis;
-    private long scheduledTimeMillis = Long.MAX_VALUE;
-    private boolean scheduledImmediately;
-    private boolean subscriptionChanged;
-    private volatile boolean dataChanged;
-    private volatile Throwable upstreamFailure;
     private long lastExpandedSize;
+    // endregion Guarded by snapshot lock
+
+    private enum State {
+        Active, Failed, Done
+    }
+
+    private volatile State state = State.Active;
 
     @AssistedInject
     public HierarchicalTableViewSubscription(
@@ -76,13 +105,22 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             @Assisted @NotNull final HierarchicalTableView view,
             @Assisted @NotNull final StreamObserver<BarrageStreamGenerator.View> listener,
             @Assisted @NotNull final BarrageSubscriptionOptions subscriptionOptions,
-            @Assisted final long intervalMillis) {
+            @Assisted final long intervalDurationMillis) {
         this.scheduler = scheduler;
         this.streamGeneratorFactory = streamGeneratorFactory;
         this.view = view;
         this.listener = listener;
         this.subscriptionOptions = subscriptionOptions;
-        this.intervalMillis = intervalMillis;
+        this.intervalDurationNanos = NANOSECONDS.convert(intervalDurationMillis, MILLISECONDS);
+
+        final String statsKey = BarragePerformanceLog.getKeyFor(
+                view.getHierarchicalTable(), view.getHierarchicalTable()::getDescription);
+        if (scheduler.inTestMode() || statsKey == null) {
+            // When testing do not schedule statistics, as the scheduler will never empty its work queue.
+            stats = null;
+        } else {
+            stats = new Stats(statsKey);
+        }
 
         if (view.getKeyTable().isRefreshing()) {
             view.getKeyTable().addUpdateListener(keyTableListener = new ChangeListener());
@@ -100,7 +138,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             manage(view);
         }
 
-        snapshotSender = this::sendSnapshot;
+        propagationJob = this::process;
 
         columns = new BitSet();
         columns.set(0, view.getHierarchicalTable().getSnapshotDefinition().numColumns());
@@ -120,7 +158,32 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         if (sourceTableListener != null) {
             view.getHierarchicalTable().getSource().removeUpdateListener(sourceTableListener);
         }
-        rows.close();
+        if (stats != null) {
+            stats.stop();
+        }
+    }
+
+    public void completed() {
+        state = State.Done;
+        forceReferenceCountToZero();
+    }
+
+    private void recordSnapshotNanos(final long snapshotNanos) {
+        recordMetric(stats -> stats.snapshotNanos, snapshotNanos);
+    }
+
+    private void recordWriteMetrics(final long bytes, final long cpuNanos) {
+        recordMetric(stats -> stats.writeBits, bytes * 8);
+        recordMetric(stats -> stats.writeNanos, cpuNanos);
+    }
+
+    private void recordMetric(@NotNull final Function<Stats, Histogram> histogramGetter, final long value) {
+        if (stats == null) {
+            return;
+        }
+        synchronized (stats) {
+            histogramGetter.apply(stats).recordValue(value);
+        }
     }
 
     private class ChangeListener extends InstrumentedTableUpdateListener {
@@ -131,45 +194,124 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
         @Override
         public void onUpdate(@NotNull final TableUpdate upstream) {
-            dataChanged = true;
+            if (state != State.Active) {
+                return;
+            }
+            final long currentTimeNanos = System.nanoTime();
+            synchronized (schedulingLock) {
+                if (state != State.Active) {
+                    return;
+                }
+                upstreamDataChanged = true;
+                scheduleAtInterval(currentTimeNanos);
+            }
         }
 
         @Override
         protected void onFailureInternal(@NotNull final Throwable originalException, @NotNull final Entry sourceEntry) {
-            upstreamFailure = originalException;
+            if (state != State.Active) {
+                return;
+            }
+            HierarchicalTableViewSubscription.this.forceReferenceCountToZero();
+            final long currentTimeNanos = System.nanoTime();
+            synchronized (schedulingLock) {
+                if (state != State.Active) {
+                    return;
+                }
+                upstreamFailure = originalException;
+                state = State.Failed;
+                scheduleImmediately(currentTimeNanos);
+            }
         }
     }
 
-    private void sendSnapshot() {
-        // synchronized (this) {
-        // if (!dataChanged && upstreamFailure == null && !
-        // }
+    private void process() {
+        if (state == State.Done) {
+            return;
+        }
+        synchronized (snapshotLock) {
+            final boolean sendError;
+            synchronized (schedulingLock) {
+                final State localState = state;
+                if (localState == State.Done) {
+                    return;
+                }
+                sendError = localState == State.Failed;
+                if (sendError) {
+                    // Let other threads know we're sending the error, and to stop scheduling or doing work
+                    state = State.Done;
+                    // Strictly gratuitous cleanup
+                    pendingColumns = null;
+                    try (final SafeCloseable ignored1 = pendingRows;
+                            final SafeCloseable ignored2 = rows) {
+                        pendingRows = null;
+                    }
+                    upstreamDataChanged = false;
+                } else {
+                    boolean sendSnapshot = upstreamDataChanged;
+                    upstreamDataChanged = false;
+                    if (pendingColumns != null) {
+                        columns = pendingColumns;
+                        sendSnapshot = true;
+                    }
+                    if (pendingRows != null) {
+                        try (final SafeCloseable ignored = rows) {
+                            rows = pendingRows;
+                        }
+                        sendSnapshot = true;
+                    }
+                    if (!sendSnapshot) {
+                        return;
+                    }
+                    lastSnapshotTimeNanos = System.nanoTime();
+                }
+            }
+            if (sendError) {
+                GrpcUtil.safelyExecute(() -> listener.onError(upstreamFailure));
+                return;
+            }
+            try {
+                lastExpandedSize = buildAndSendSnapshot(streamGeneratorFactory, listener, subscriptionOptions, view,
+                        this::recordSnapshotNanos, this::recordWriteMetrics, columns, rows, lastExpandedSize);
+            } catch (Exception e) {
+                GrpcUtil.safelyExecute(() -> listener.onError(e));
+                state = State.Done;
+            }
+        }
     }
 
-    private static void sendSnapshot(
+    private static long buildAndSendSnapshot(
             @NotNull final BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
             @NotNull final StreamObserver<BarrageStreamGenerator.View> listener,
             @NotNull final BarrageSubscriptionOptions subscriptionOptions,
             @NotNull final HierarchicalTableView view,
+            @NotNull final LongConsumer snapshotNanosConsumer,
+            @NotNull final BarragePerformanceLog.WriteMetricsConsumer writeMetricsConsumer,
             @NotNull final BitSet columns,
             @NotNull final RowSet rows,
             final long lastExpandedSize) {
-
+        // 1. Grab some schema and snapshot information
         final List<ColumnDefinition<?>> columnDefinitions =
                 view.getHierarchicalTable().getSnapshotDefinition().getColumns();
         final int numAvailableColumns = columnDefinitions.size();
         final int numRows = rows.intSize();
+
+        // 2. Allocate our destination chunks
         // noinspection unchecked
         final WritableChunk<Values>[] destinations = columns.stream()
                 .mapToObj(ci -> ReinterpretUtils
                         .maybeConvertToPrimitiveChunkType(columnDefinitions.get(ci).getDataType())
                         .makeWritableChunk(numRows))
                 .toArray(WritableChunk[]::new);
+
+        // 3. Take the snapshot
+        final long snapshotStartNanos = System.nanoTime();
         final long expandedSize = view.getHierarchicalTable().snapshot(
                 view.getSnapshotState(), view.getKeyTable(), view.getKeyTableActionColumn(),
                 columns, rows, destinations);
+        snapshotNanosConsumer.accept(System.nanoTime() - snapshotStartNanos);
 
-        // Make a BarrageMessage
+        // 4. Make and populate a BarrageMessage
         final BarrageMessage barrageMessage = new BarrageMessage();
         barrageMessage.isSnapshot = true;
         // We don't populate length, snapshotRowSet, snapshotRowSetIsReversed, or snapshotColumns; they are only set by
@@ -200,61 +342,156 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         }
         barrageMessage.modColumnData = new BarrageMessage.ModColumnData[0];
 
+        // 5. Send the BarrageMessage
         final BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> streamGenerator =
-                streamGeneratorFactory.newGenerator(barrageMessage, (a, b) -> {
-                });
+                streamGeneratorFactory.newGenerator(barrageMessage, writeMetricsConsumer);
+        // Note that we're always specifying "isInitialSnapshot=true". This is to provoke the subscription view to
+        // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
+        // (2) we're relying on added rows to signal the full expanded size to the client.
         listener.onNext(streamGenerator.getSubView(subscriptionOptions, true, rows, false, rows, columns));
+
+        // 6. Let the caller know what the expanded size was
+        return expandedSize;
     }
 
     public void setViewport(
-            @Nullable final BitSet columns,
-            @Nullable final RowSet viewport,
+            @Nullable final BitSet viewportColumns,
+            @Nullable final RowSet viewportRows,
             final boolean reverseViewport) {
-        if (columns != null) {
-            if (columns.length() > view.getHierarchicalTable().getSnapshotDefinition().numColumns()) {
-                throw new IllegalArgumentException(String.format(
+
+        if (state != State.Active) {
+            return;
+        }
+
+        if (viewportColumns != null) {
+            if (viewportColumns.length() > view.getHierarchicalTable().getSnapshotDefinition().numColumns()) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "Requested columns out of range: length=%d, available length=%d",
-                        columns.length(), view.getHierarchicalTable().getSnapshotDefinition().numColumns()));
+                        viewportColumns.length(), view.getHierarchicalTable().getSnapshotDefinition().numColumns()));
             }
         }
-        if (viewport != null) {
-            if (!viewport.isContiguous()) {
-                throw new IllegalArgumentException(
+        if (viewportRows != null) {
+            if (!viewportRows.isContiguous()) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "HierarchicalTableView subscriptions only support contiguous viewports");
             }
-            if (viewport.size() > ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY) {
-                throw new IllegalArgumentException(String.format(
+            if (viewportRows.size() > LARGEST_POOLED_CHUNK_CAPACITY) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "HierarchicalTableView subscriptions only support viewport size up to %d rows, requested %d rows",
-                        ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY, viewport.size()));
+                        LARGEST_POOLED_CHUNK_CAPACITY, viewportRows.size()));
             }
         }
         if (reverseViewport) {
-            throw new IllegalArgumentException("HierarchicalTableView subscriptions do not support reverse viewports");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "HierarchicalTableView subscriptions do not support reverse viewports");
         }
-        synchronized (this) {
-            if (columns != null) {
-                this.columns = (BitSet) columns.clone();
+
+        final BitSet newColumns = viewportColumns == null ? null : (BitSet) viewportColumns.clone();
+        final RowSet newRows = viewportRows == null ? null : viewportRows.copy();
+        final long currentTimeNanos = System.nanoTime();
+        synchronized (schedulingLock) {
+            if (state != State.Active) {
+                return;
             }
-            if (viewport != null) {
-                try (final SafeCloseable ignored = this.rows) {
-                    this.rows = viewport.copy();
+            if (newColumns != null) {
+                this.pendingColumns = newColumns;
+            }
+            if (newRows != null) {
+                try (final SafeCloseable ignored = this.pendingRows) {
+                    this.pendingRows = newRows;
                 }
             }
-            scheduleImmediately();
+            if (newColumns != null || newRows != null) {
+                scheduleImmediately(currentTimeNanos);
+            }
         }
     }
 
-    private void scheduleImmediately() {
-        Assert.holdsLock(this, "this");
-        if (!scheduledImmediately) {
-            scheduledImmediately = true;
-            scheduler.runImmediately(snapshotSender);
+    private void scheduleImmediately(final long currentTimeNanos) {
+        Assert.holdsLock(schedulingLock, "schedulingLock");
+        if (currentTimeNanos < scheduledTimeNanos) {
+            scheduledTimeNanos = currentTimeNanos;
+            scheduler.runImmediately(propagationJob);
         }
     }
 
-    private void scheduleAt(final long nextRunTimeMillis) {
+    private void scheduleAtInterval(final long currentTimeNanos) {
+        Assert.holdsLock(schedulingLock, "schedulingLock");
+        final long targetTimeNanos = lastSnapshotTimeNanos + intervalDurationNanos;
+        final long delayNanos = targetTimeNanos - currentTimeNanos;
+        if (delayNanos < 0) {
+            scheduleImmediately(currentTimeNanos);
+        } else if (targetTimeNanos < scheduledTimeNanos) {
+            scheduledTimeNanos = targetTimeNanos;
+            final long delayMillis = MILLISECONDS.convert(delayNanos, NANOSECONDS);
+            scheduler.runAfterDelay(delayMillis, propagationJob);
+        }
+    }
 
-        Assert.holdsLock(this, "this");
-        scheduler.runAtTime(nextRunTimeMillis, snapshotSender);
+    private class Stats implements Runnable {
+
+        private final int NUM_SIG_FIGS = 3;
+
+        private final String statsKey;
+        private final String statsId;
+        private final Histogram snapshotNanos = new Histogram(NUM_SIG_FIGS);
+        private final Histogram writeNanos = new Histogram(NUM_SIG_FIGS);
+        private final Histogram writeBits = new Histogram(NUM_SIG_FIGS);
+
+        private volatile boolean running = true;
+
+        private Stats(@NotNull final String statsKey) {
+            this.statsKey = statsKey;
+            statsId = Integer.toHexString(System.identityHashCode(HierarchicalTableViewSubscription.this));
+            scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
+        }
+
+        private void stop() {
+            running = false;
+        }
+
+        @Override
+        public synchronized void run() {
+            if (!running) {
+                return;
+            }
+
+            final DateTime now = DateTime.ofMillis(scheduler);
+            scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
+
+            final BarrageSubscriptionPerformanceLogger logger =
+                    BarragePerformanceLog.getInstance().getSubscriptionLogger();
+            try {
+                // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                synchronized (logger) {
+                    flush(now, logger, snapshotNanos, "SnapshotMillis");
+                    flush(now, logger, writeNanos, "WriteMillis");
+                    flush(now, logger, writeBits, "WriteMegabits");
+                }
+            } catch (IOException ioe) {
+                log.error().append("HierarchicalTableViewSubscription-").append(statsId)
+                        .append(": Unexpected exception while flushing barrage stats: ")
+                        .append(ioe).endl();
+            }
+        }
+
+        private void flush(
+                @NotNull final DateTime now,
+                @NotNull final BarrageSubscriptionPerformanceLogger logger,
+                @NotNull final Histogram hist,
+                @NotNull final String statType) throws IOException {
+            if (hist.getTotalCount() == 0) {
+                return;
+            }
+            logger.log(statsId, statsKey, statType, now,
+                    hist.getTotalCount(),
+                    hist.getValueAtPercentile(50) / 1e6,
+                    hist.getValueAtPercentile(75) / 1e6,
+                    hist.getValueAtPercentile(90) / 1e6,
+                    hist.getValueAtPercentile(95) / 1e6,
+                    hist.getValueAtPercentile(99) / 1e6,
+                    hist.getMaxValue() / 1e6);
+            hist.reset();
+        }
     }
 }

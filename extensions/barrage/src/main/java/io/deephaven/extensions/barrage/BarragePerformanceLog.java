@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 /**
  * Enable barrage performance metrics by setting the {@code BarragePerformanceLog.enableAll} configuration property, or
@@ -55,24 +56,26 @@ public class BarragePerformanceLog {
      * @return the table key or null if no entry should not be logged
      */
     public static String getKeyFor(@NotNull final Table table) {
-        return getKeyFor(table, table.getDescription());
+        return getKeyFor(table, table::getDescription);
     }
 
     /**
      * Return the performance key for the provided source.
      *
      * @param source the source that will be logged
-     * @param description a description of the source
+     * @param descriptionSupplier supplier for a description of the source
      * @return the table key or null if no entry should not be logged
      */
     @Nullable
-    public static String getKeyFor(@NotNull final AttributeMap source, @Nullable final String description) {
-        final Object tableKey = source.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
+    public static String getKeyFor(
+            @NotNull final AttributeMap source,
+            @NotNull final Supplier<String> descriptionSupplier) {
+        final Object statsKey = source.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
 
-        if (tableKey instanceof String) {
-            return (String) tableKey;
+        if (statsKey instanceof String) {
+            return (String) statsKey;
         } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
-            return description;
+            return descriptionSupplier.get();
         }
 
         return null;

@@ -140,6 +140,13 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
+    public String getDescription() {
+        return "RollupTable(" + source.getDescription()
+                + ", [" + groupByColumns.stream().map(ColumnName::name).collect(Collectors.joining())
+                + "])";
+    }
+
+    @Override
     public Table getRootOnlyKeyTable() {
         final Collection<ColumnDefinition<?>> groupByColumnDefinitions = getGroupByColumns().stream()
                 .map(gbcn -> getSource().getDefinition().getColumn(gbcn.name()))
