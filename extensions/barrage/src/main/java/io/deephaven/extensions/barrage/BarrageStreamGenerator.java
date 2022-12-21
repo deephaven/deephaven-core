@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.barrage;
+package io.deephaven.extensions.barrage;
 
 import com.google.common.io.LittleEndianDataOutputStream;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -26,9 +26,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -49,8 +46,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -92,10 +87,8 @@ public class BarrageStreamGenerator implements
         RowSet modRowOffsets(int col);
     }
 
-    @Singleton
     public static class Factory
             implements BarrageMessageProducer.StreamGenerator.Factory<View> {
-        @Inject
         public Factory() {}
 
         @Override
@@ -116,8 +109,7 @@ public class BarrageStreamGenerator implements
     }
 
     /**
-     * This sub-generator factory is used by the TableToArrowConverter to write data in plain Arrow Ipc format without
-     * decorating them with Arrow Flight metadata first
+     * This factory writes data in Arrow's IPC format which has a terse header and no room for metadata.
      */
     public static class ArrowFactory extends Factory {
         @Override
@@ -125,9 +117,11 @@ public class BarrageStreamGenerator implements
                 BarrageMessage message, BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
             return new BarrageStreamGenerator(message, metricsConsumer) {
                 @Override
-                protected void writeHeader(ByteBuffer metadata, MutableInt size, FlatBufferBuilder header,
+                protected void writeHeader(
+                        ByteBuffer metadata,
+                        MutableInt size,
+                        FlatBufferBuilder header,
                         ExposedByteArrayOutputStream baos) throws IOException {
-                    // This implementation prepares the IPC header (which has no field for metadata).
                     baos.write(toIpcBytes(header));
                 }
             };
@@ -733,9 +727,14 @@ public class BarrageStreamGenerator implements
         }
     }
 
-    protected void writeHeader(ByteBuffer metadata, MutableInt size, FlatBufferBuilder header,
+    /**
+     * This implementation prepares the protobuf FlightData header.
+     */
+    protected void writeHeader(
+            ByteBuffer metadata,
+            MutableInt size,
+            FlatBufferBuilder header,
             ExposedByteArrayOutputStream baos) throws IOException {
-        // This implementation prepares the protobuf FlightData header.
         final CodedOutputStream cos = CodedOutputStream.newInstance(baos);
 
         cos.writeByteBuffer(Flight.FlightData.DATA_HEADER_FIELD_NUMBER, header.dataBuffer().slice());
@@ -1299,7 +1298,7 @@ public class BarrageStreamGenerator implements
     public static class ConsecutiveDrainableStreams extends DefensiveDrainable {
         final InputStream[] streams;
 
-        ConsecutiveDrainableStreams(final InputStream... streams) {
+        public ConsecutiveDrainableStreams(final InputStream... streams) {
             this.streams = streams;
             for (final InputStream stream : streams) {
                 if (!(stream instanceof Drainable)) {

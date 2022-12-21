@@ -3,52 +3,43 @@
  */
 package io.deephaven.server.arrow;
 
-import com.google.common.io.LittleEndianDataInputStream;
-import com.google.protobuf.CodedInputStream;
 import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.*;
+import io.deephaven.extensions.barrage.util.ArrowToTableConverter;
+import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.MessageInfo;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.server.barrage.BarrageMessageProducer;
-import io.deephaven.server.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageProducer;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.server.barrage.BarrageMessageProducerOperation;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.grpc.Drainable;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
-import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
@@ -59,21 +50,15 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
-import java.util.concurrent.locks.Condition;
 
-import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
-import static io.deephaven.extensions.barrage.util.BarrageUtil.schemaBytesFromTable;
-import static io.deephaven.server.arrow.FlightServiceGrpcImpl.DEFAULT_SNAPSHOT_DESER_OPTIONS;
-import static io.deephaven.server.barrage.BarrageMessageProducer.*;
-import static io.deephaven.server.barrage.BarrageMessageProducer.TARGET_SNAPSHOT_PERCENTAGE;
+import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS;
+import static io.deephaven.extensions.barrage.BarrageMessageProducer.*;
 
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
     public static final int DEFAULT_MIN_UPDATE_INTERVAL_MS =
             Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
-
-    static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
 
     public static void DoGetCustom(
             final StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
@@ -106,349 +91,11 @@ public class ArrowFlightUtil {
                     listener.onNext(streamGeneratorFactory.getSchemaView(table.getDefinition(), table.getAttributes()));
 
                     // shared code between `DoGet` and `BarrageSnapshotRequest`
-                    createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
+                    BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
                             DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
 
                     listener.onCompleted();
                 });
-    }
-
-    private static void createAndSendStaticSnapshot(
-            StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
-            BaseTable table,
-            BitSet columns, RowSet viewport, boolean reverseViewport,
-            BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGenerator.View> listener,
-            BarragePerformanceLog.SnapshotMetricsHelper metrics) {
-        // start with small value and grow
-        long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
-        double snapshotNanosPerCell = 0.0;
-
-        final long columnCount =
-                Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().size());
-
-        try (final WritableRowSet snapshotViewport = RowSetFactory.empty();
-                final WritableRowSet targetViewport = RowSetFactory.empty()) {
-            // compute the target viewport
-            if (viewport == null) {
-                targetViewport.insertRange(0, table.size() - 1);
-            } else if (!reverseViewport) {
-                targetViewport.insert(viewport);
-            } else {
-                // compute the forward version of the reverse viewport
-                try (final RowSet rowKeys = table.getRowSet().subSetForReversePositions(viewport);
-                        final RowSet inverted = table.getRowSet().invert(rowKeys)) {
-                    targetViewport.insert(inverted);
-                }
-            }
-
-            try (final RowSequence.Iterator rsIt = targetViewport.getRowSequenceIterator()) {
-                while (rsIt.hasMore()) {
-                    // compute the next range to snapshot
-                    final long cellCount =
-                            Math.max(MIN_SNAPSHOT_CELL_COUNT,
-                                    Math.min(snapshotTargetCellCount, MAX_SNAPSHOT_CELL_COUNT));
-
-                    final RowSequence snapshotPartialViewport = rsIt.getNextRowSequenceWithLength(cellCount);
-                    // add these ranges to the running total
-                    snapshotPartialViewport.forEachRowKeyRange((start, end) -> {
-                        snapshotViewport.insertRange(start, end);
-                        return true;
-                    });
-
-                    // grab the snapshot and measure elapsed time for next projections
-                    long start = System.nanoTime();
-                    final BarrageMessage msg =
-                            ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
-                                    columns, snapshotPartialViewport, null);
-                    msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data for DoGet
-                    long elapsed = System.nanoTime() - start;
-                    // accumulate snapshot time in the metrics
-                    metrics.snapshotNanos += elapsed;
-
-                    // send out the data. Note that although a `BarrageUpdateMetaData` object will
-                    // be provided with each unique snapshot, vanilla Flight clients will ignore
-                    // these and see only an incoming stream of batches
-                    try (final StreamGenerator<BarrageStreamGenerator.View> bsg =
-                            streamGeneratorFactory.newGenerator(msg, metrics)) {
-                        if (rsIt.hasMore()) {
-                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
-                                    snapshotViewport, false,
-                                    msg.rowsIncluded, columns));
-                        } else {
-                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
-                                    viewport, reverseViewport,
-                                    msg.rowsIncluded, columns));
-                        }
-                    }
-
-                    if (msg.rowsIncluded.size() > 0) {
-                        // very simplistic logic to take the last snapshot and extrapolate max
-                        // number of rows that will not exceed the target UGP processing time
-                        // percentage
-                        long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis()
-                                * 1000000);
-
-                        long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
-
-                        // apply an exponential moving average to filter the data
-                        if (snapshotNanosPerCell == 0) {
-                            snapshotNanosPerCell = nanosPerCell; // initialize to first value
-                        } else {
-                            // EMA smoothing factor is 0.1 (N = 10)
-                            snapshotNanosPerCell =
-                                    (snapshotNanosPerCell * 0.9) + (nanosPerCell * 0.1);
-                        }
-
-                        snapshotTargetCellCount =
-                                (long) (targetNanos / Math.max(1, snapshotNanosPerCell));
-                    }
-                }
-            }
-        }
-    }
-
-    private static void createAndSendSnapshot(
-            StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
-            BaseTable table,
-            BitSet columns, RowSet viewport, boolean reverseViewport,
-            BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGenerator.View> listener,
-            BarragePerformanceLog.SnapshotMetricsHelper metrics) {
-
-        // if the table is static and a full snapshot is requested, we can make and send multiple
-        // snapshots to save memory and operate more efficiently
-        if (!table.isRefreshing()) {
-            createAndSendStaticSnapshot(streamGeneratorFactory, table, columns, viewport, reverseViewport,
-                    snapshotRequestOptions, listener, metrics);
-            return;
-        }
-
-        // otherwise snapshot the entire request and send to the client
-        final BarrageMessage msg;
-
-        final long snapshotStartTm = System.nanoTime();
-        if (reverseViewport) {
-            msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
-                    columns, null, viewport);
-        } else {
-            msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
-                    columns, viewport, null);
-        }
-        metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
-
-        msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
-
-        // translate the viewport to keyspace and make the call
-        try (final StreamGenerator<BarrageStreamGenerator.View> bsg = streamGeneratorFactory.newGenerator(msg, metrics);
-                final RowSet keySpaceViewport = viewport != null
-                        ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
-                        : null) {
-            listener.onNext(bsg.getSnapshotView(
-                    snapshotRequestOptions, viewport, reverseViewport, keySpaceViewport, columns));
-        }
-    }
-
-    /**
-     * This class allows the incremental making of a BarrageTable from Arrow IPC messages, starting with an Arrow Schema
-     * message followed by zero or more RecordBatches
-     */
-    @SuppressWarnings("unused")
-    public static class ArrowToTableConverter {
-        protected long totalRowsRead = 0;
-        protected BarrageTable resultTable;
-        private ChunkType[] columnChunkTypes;
-        private int[] columnConversionFactors;
-        private Class<?>[] columnTypes;
-        private Class<?>[] componentTypes;
-        protected BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
-
-        private volatile Condition completedCondition = null;
-        private volatile boolean completed = false;
-        private volatile Throwable exceptionWhileCompleting = null;
-
-        private static MessageInfo parseArrowIpcMessage(final byte[] ipcMessage) throws IOException {
-            final MessageInfo mi = new MessageInfo();
-
-            final ByteBuffer bb = ByteBuffer.wrap(ipcMessage);
-            bb.order(ByteOrder.LITTLE_ENDIAN);
-            final int continuation = bb.getInt();
-            final int metadata_size = bb.getInt();
-            mi.header = Message.getRootAsMessage(bb);
-
-            if (mi.header.headerType() == MessageHeader.RecordBatch) {
-                bb.position(metadata_size + 8);
-                final ByteBuffer bodyBB = bb.slice();
-                final ByteBufferInputStream bbis = new ByteBufferInputStream(bodyBB);
-                final CodedInputStream decoder = CodedInputStream.newInstance(bbis);
-                // noinspection UnstableApiUsage
-                mi.inputStream = new LittleEndianDataInputStream(
-                        new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, bodyBB.remaining()));
-            }
-            return mi;
-        }
-
-        public synchronized void setSchema(final byte[] ipcMessage) {
-            if (completed) {
-                throw new IllegalStateException("Conversion is complete; cannot process additional messages");
-            }
-            final MessageInfo mi = getMessageInfo(ipcMessage);
-            if (mi.header.headerType() != MessageHeader.Schema) {
-                throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
-            }
-            parseSchema((Schema) mi.header.header(new Schema()));
-        }
-
-        public synchronized void addRecordBatch(final byte[] ipcMessage) {
-            if (completed) {
-                throw new IllegalStateException("Conversion is complete; cannot process additional messages");
-            }
-            if (resultTable == null) {
-                throw new IllegalStateException("Arrow schema must be provided before record batches can be added");
-            }
-
-            final MessageInfo mi = getMessageInfo(ipcMessage);
-            if (mi.header.headerType() != MessageHeader.RecordBatch) {
-                throw new IllegalArgumentException("The input is not a valid Arrow RecordBatch IPC message");
-            }
-
-            final int numColumns = resultTable.getColumnSources().size();
-            BarrageMessage msg = createBarrageMessage(mi, numColumns);
-            msg.rowsAdded = RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
-            msg.rowsIncluded = msg.rowsAdded.copy();
-            msg.modColumnData = ZERO_MOD_COLUMNS;
-            totalRowsRead += msg.length;
-            resultTable.handleBarrageMessage(msg);
-        }
-
-        public synchronized BarrageTable getResultTable() {
-            if (!completed) {
-                throw new IllegalStateException("Conversion must be completed prior to requesting the result");
-            }
-            return resultTable;
-        }
-
-        public synchronized void onCompleted() throws InterruptedException {
-            if (completed) {
-                throw new IllegalStateException("Conversion cannot be completed twice");
-            }
-
-            if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-                completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
-            }
-
-            resultTable.sealTable(() -> {
-                completed = true;
-                signalCompletion();
-            }, () -> {
-                exceptionWhileCompleting = new Exception();
-                signalCompletion();
-            });
-
-            while (!completed && exceptionWhileCompleting == null) {
-                // handle the condition where this function may have the exclusive lock
-                if (completedCondition != null) {
-                    completedCondition.await();
-                } else {
-                    wait(); // ArrowToTableConverter lock
-                }
-            }
-
-            if (exceptionWhileCompleting != null) {
-                throw new UncheckedDeephavenException("Error while sealing result table:", exceptionWhileCompleting);
-            }
-        }
-
-        private void signalCompletion() {
-            if (completedCondition != null) {
-                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
-            } else {
-                synchronized (ArrowToTableConverter.this) {
-                    ArrowToTableConverter.this.notifyAll();
-                }
-            }
-        }
-
-        protected void parseSchema(final Schema header) {
-            if (resultTable != null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
-            }
-
-            final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
-            resultTable = BarrageTable.make(null, result.tableDef, result.attributes, -1);
-            columnConversionFactors = result.conversionFactors;
-            columnChunkTypes = resultTable.getWireChunkTypes();
-            columnTypes = resultTable.getWireTypes();
-            componentTypes = resultTable.getWireComponentTypes();
-
-            // retain reference until the resultTable can be sealed
-            resultTable.retainReference();
-        }
-
-        protected BarrageMessage createBarrageMessage(MessageInfo mi, int numColumns) {
-            final BarrageMessage msg = new BarrageMessage();
-            final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
-
-            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
-                    new FlatBufferIteratorAdapter<>(batch.nodesLength(),
-                            i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
-
-            final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
-            for (int bi = 0; bi < batch.buffersLength(); ++bi) {
-                int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
-                int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
-
-                if (bi < batch.buffersLength() - 1) {
-                    final int nextOffset =
-                            LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
-                    // our parsers handle overhanging buffers
-                    length += Math.max(0, nextOffset - offset - length);
-                }
-                bufferInfo.add(length);
-            }
-            final TLongIterator bufferInfoIter = bufferInfo.iterator();
-
-            msg.rowsRemoved = RowSetFactory.empty();
-            msg.shifted = RowSetShiftData.EMPTY;
-
-            // include all columns as add-columns
-            int numRowsAdded = LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());
-            msg.addColumnData = new BarrageMessage.AddColumnData[numColumns];
-            for (int ci = 0; ci < numColumns; ++ci) {
-                final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
-                msg.addColumnData[ci] = acd;
-                msg.addColumnData[ci].data = new ArrayList<>();
-                final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
-                try {
-                    acd.data.add(ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
-                            columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                            bufferInfoIter, mi.inputStream, null, 0, 0));
-                } catch (final IOException unexpected) {
-                    throw new UncheckedDeephavenException(unexpected);
-                }
-
-                if (acd.data.get(0).size() != numRowsAdded) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
-                }
-                acd.type = columnTypes[ci];
-                acd.componentType = componentTypes[ci];
-            }
-
-            msg.length = numRowsAdded;
-            return msg;
-        }
-
-        private MessageInfo getMessageInfo(byte[] ipcMessage) {
-            final MessageInfo mi;
-            try {
-                mi = parseArrowIpcMessage(ipcMessage);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return mi;
-        }
     }
 
     /**
@@ -520,7 +167,7 @@ public class ArrowFlightUtil {
                 final BarrageMessage msg = createBarrageMessage(mi, numColumns);
                 msg.rowsAdded = RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
                 msg.rowsIncluded = msg.rowsAdded.copy();
-                msg.modColumnData = ZERO_MOD_COLUMNS;
+                msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
                 totalRowsRead += msg.length;
                 resultTable.handleBarrageMessage(msg);
 
@@ -635,7 +282,7 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory;
-        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGenerator.View> operationFactory;
+        private final BarrageMessageProducerOperation.Factory<BarrageStreamGenerator.View> operationFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
 
@@ -652,7 +299,7 @@ public class ArrowFlightUtil {
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
                 final StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
-                final BarrageMessageProducer.Operation.Factory<BarrageStreamGenerator.View> operationFactory,
+                final BarrageMessageProducerOperation.Factory<BarrageStreamGenerator.View> operationFactory,
                 final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> listenerAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
@@ -847,8 +494,8 @@ public class ArrowFlightUtil {
                                 final boolean reverseViewport = snapshotRequest.reverseViewport();
 
                                 // leverage common code for `DoGet` and `BarrageSnapshotOptions`
-                                createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport, reverseViewport,
-                                        snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
+                                BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
+                                        reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
                                 listener.onCompleted();
                             });
                 }
@@ -1019,79 +666,6 @@ public class ArrowFlightUtil {
                     preExportSubscriptions = null;
                 }
             }
-        }
-    }
-
-    /**
-     * This class produces Arrow Ipc Messages for a Deephaven table, including the schema and all columnar data. The
-     * data is split into chunks and returned as multiple Arrow RecordBatch messages.
-     */
-    @SuppressWarnings("unused")
-    public static class TableToArrowConverter {
-        private final BaseTable table;
-        private ArrowBuilderObserver listener = null;
-
-        public TableToArrowConverter(BaseTable table) {
-            this.table = table;
-        }
-
-        private void populateRecordBatches() {
-            if (listener != null) {
-                return;
-            }
-
-            final BarragePerformanceLog.SnapshotMetricsHelper metrics =
-                    new BarragePerformanceLog.SnapshotMetricsHelper();
-            listener = new ArrowBuilderObserver();
-            createAndSendSnapshot(new BarrageStreamGenerator.ArrowFactory(), table, null, null,
-                    false, DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
-        }
-
-        public byte[] getSchema() {
-            return schemaBytesFromTable(table).toByteArray();
-        }
-
-        public boolean hasNext() {
-            populateRecordBatches();
-            return !listener.batchMessages.isEmpty();
-        }
-
-        public byte[] next() {
-            populateRecordBatches();
-            if (listener.batchMessages.isEmpty()) {
-                throw new NoSuchElementException("There are no more RecordBatches for the table");
-            }
-            return listener.batchMessages.pop();
-        }
-
-        private static class ArrowBuilderObserver implements StreamObserver<BarrageStreamGenerator.View> {
-            final Deque<byte[]> batchMessages = new ArrayDeque<>();
-
-            @Override
-            public void onNext(final BarrageStreamGenerator.View messageView) {
-                try {
-                    messageView.forEachStream(inputStream -> {
-                        try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                                new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
-                            ((Drainable) inputStream).drainTo(baos);
-                            batchMessages.add(baos.toByteArray());
-                            inputStream.close();
-                        } catch (final IOException e) {
-                            throw new IllegalStateException("Failed to build barrage message: ", e);
-                        }
-                    });
-                } catch (final IOException e) {
-                    throw new IllegalStateException("Failed to generate barrage message: ", e);
-                }
-            }
-
-            @Override
-            public void onError(final Throwable throwable) {
-                throw new IllegalStateException(throwable);
-            }
-
-            @Override
-            public void onCompleted() {}
         }
     }
 }

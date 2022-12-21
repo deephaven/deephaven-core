@@ -49,7 +49,7 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.session.TicketResolverBase;
-import io.deephaven.server.util.Scheduler;
+import io.deephaven.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
 import io.grpc.ManagedChannel;

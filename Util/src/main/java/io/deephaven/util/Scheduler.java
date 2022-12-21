@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.util;
+package io.deephaven.util;
 
 import io.deephaven.base.clock.Clock;
 import org.jetbrains.annotations.NotNull;

@@ -6,13 +6,12 @@ package io.deephaven.server.auth;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.auth.AnonymousAuthenticationHandler;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.server.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;

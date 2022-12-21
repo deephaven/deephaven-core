@@ -12,8 +12,8 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.server.barrage.BarrageMessageProducer;
-import io.deephaven.server.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageProducer;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.grpc.BindableService;
 import io.grpc.stub.StreamObserver;
 
@@ -31,14 +31,15 @@ public abstract class ArrowModule {
     @IntoSet
     abstract BindableService bindBrowserFlightServiceBinding(BrowserFlightServiceGrpcBinding service);
 
-    @Binds
+    @Provides
     @Singleton
-    abstract BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> bindStreamGenerator(
-            BarrageStreamGenerator.Factory factory);
+    static BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> bindStreamGenerator() {
+        return new BarrageStreamGenerator.Factory();
+    }
 
     @Provides
     static BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> provideListenerAdapter() {
-        return delegate -> new StreamObserver<BarrageStreamGenerator.View>() {
+        return delegate -> new StreamObserver<>() {
             @Override
             public void onNext(final BarrageStreamGenerator.View view) {
                 try {

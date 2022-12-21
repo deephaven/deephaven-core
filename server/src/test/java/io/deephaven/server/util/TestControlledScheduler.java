@@ -10,6 +10,7 @@ import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.Scheduler;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;

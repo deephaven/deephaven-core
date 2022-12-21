@@ -1,12 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.barrage;
+package io.deephaven.extensions.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
-import dagger.assisted.Assisted;
-import dagger.assisted.AssistedFactory;
-import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -31,24 +28,17 @@ import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import io.deephaven.util.Scheduler;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
@@ -196,88 +186,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      */
     public interface Adapter<T, V> {
         V adapt(T t);
-    }
-
-    public static class Operation<MessageView>
-            implements QueryTable.MemoizableOperation<BarrageMessageProducer<MessageView>> {
-
-        @AssistedFactory
-        public interface Factory<MessageView> {
-            Operation<MessageView> create(BaseTable parent, long updateIntervalMs);
-        }
-
-        private final Scheduler scheduler;
-        private final StreamGenerator.Factory<MessageView> streamGeneratorFactory;
-        private final BaseTable parent;
-        private final long updateIntervalMs;
-        private final Runnable onGetSnapshot;
-
-        @AssistedInject
-        public Operation(final Scheduler scheduler,
-                final StreamGenerator.Factory<MessageView> streamGeneratorFactory,
-                @Assisted final BaseTable parent,
-                @Assisted final long updateIntervalMs) {
-            this(scheduler, streamGeneratorFactory, parent, updateIntervalMs, null);
-        }
-
-        @VisibleForTesting
-        public Operation(final Scheduler scheduler,
-                final StreamGenerator.Factory<MessageView> streamGeneratorFactory,
-                final BaseTable parent,
-                final long updateIntervalMs,
-                @Nullable final Runnable onGetSnapshot) {
-            this.scheduler = scheduler;
-            this.streamGeneratorFactory = streamGeneratorFactory;
-            this.parent = parent;
-            this.updateIntervalMs = updateIntervalMs;
-            this.onGetSnapshot = onGetSnapshot;
-        }
-
-        @Override
-        public String getDescription() {
-            return "BarrageMessageProducer(" + updateIntervalMs + ")";
-        }
-
-        @Override
-        public String getLogPrefix() {
-            return "BarrageMessageProducer.Operation(" + System.identityHashCode(this) + "): ";
-        }
-
-        @Override
-        public MemoizedOperationKey getMemoizedOperationKey() {
-            return new MyMemoKey(updateIntervalMs);
-        }
-
-        @Override
-        public Result<BarrageMessageProducer<MessageView>> initialize(final boolean usePrev,
-                final long beforeClock) {
-            final BarrageMessageProducer<MessageView> result = new BarrageMessageProducer<>(
-                    scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
-            return new Result<>(result, result.constructListener());
-        }
-    }
-
-    private static class MyMemoKey extends MemoizedOperationKey {
-        private final long interval;
-
-        private MyMemoKey(final long interval) {
-            this.interval = interval;
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            final MyMemoKey that = (MyMemoKey) o;
-            return interval == that.interval;
-        }
-
-        @Override
-        public int hashCode() {
-            return Long.hashCode(interval);
-        }
     }
 
     private final String logPrefix;
@@ -645,7 +553,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     // Update Processing and Data Recording Methods //
     //////////////////////////////////////////////////
 
-    private DeltaListener constructListener() {
+    public DeltaListener constructListener() {
         return parentIsRefreshing ? new DeltaListener() : null;
     }
 

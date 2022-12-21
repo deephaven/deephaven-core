@@ -28,7 +28,7 @@ import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
 import io.deephaven.server.runner.DeephavenApiServerModule;
 import io.deephaven.server.runner.Main;
-import io.deephaven.server.util.Scheduler;
+import io.deephaven.util.Scheduler;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 

@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.barrage;
+package io.deephaven.extensions.barrage;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.util.NullOutputStream;

@@ -16,8 +16,8 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
-import io.deephaven.server.barrage.BarrageMessageProducer;
-import io.deephaven.server.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageProducer;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
@@ -36,9 +36,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
-    static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
-            BarrageSnapshotOptions.builder().build();
-
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
     private final ScheduledExecutorService executorService;
