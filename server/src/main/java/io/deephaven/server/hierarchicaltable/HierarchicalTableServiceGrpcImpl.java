@@ -5,6 +5,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.auth.codegen.impl.HierarchicalTableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
@@ -19,6 +20,8 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ops.AggregationAdapter;
+import io.deephaven.server.table.ops.FilterTableGrpcImpl;
+import io.deephaven.server.table.ops.filter.FilterFactory;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -143,22 +146,39 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         if (request.getFiltersCount() == 0 && request.getSortsCount() == 0) {
                             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No operations specified");
                         }
+                        final Collection<Condition> finishedConditions = request.getFiltersCount() == 0
+                                ? null
+                                : FilterTableGrpcImpl.finishConditions(request.getFiltersList());
+
                         final HierarchicalTable<?> result;
                         if (inputHierarchicalTable instanceof RollupTable) {
                             RollupTable rollupTable = (RollupTable) inputHierarchicalTable;
-                            if (request.getFiltersCount() > 0) {
-                                // TODO-RWC: Convert and apply operations
-                                // rollupTable = rollupTable.withFilters(request.getFiltersList());
+                            // Rollups only support filtering on the group-by columns, so we can safely use the
+                            // aggregated node definition here.
+                            final TableDefinition nodeDefinition =
+                                    rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated);
+                            if (finishedConditions != null) {
+                                rollupTable = rollupTable.withFilters(finishedConditions.stream()
+                                        .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
+                                        .collect(Collectors.toList()));
                             }
+                            // TODO-RWC: Do we support reverse in node-level sorts?
                             result = rollupTable;
                         } else if (inputHierarchicalTable instanceof TreeTable) {
                             TreeTable treeTable = (TreeTable) inputHierarchicalTable;
-                            // TODO-RWC: Convert and apply operations
+                            final TableDefinition nodeDefinition = treeTable.getNodeDefinition();
+                            if (finishedConditions != null) {
+                                treeTable = treeTable.withFilters(finishedConditions.stream()
+                                        .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
+                                        .collect(Collectors.toList()));
+                            }
+                            // TODO-RWC: Sorting for trees
                             result = treeTable;
                         } else {
                             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                                     "Input is not a supported HierarchicalTable type");
                         }
+
                         final HierarchicalTable<?> transformedResult = authTransformation.transform(result);
                         safelyExecute(() -> {
                             responseObserver.onNext(HierarchicalTableApplyResponse.getDefaultInstance());

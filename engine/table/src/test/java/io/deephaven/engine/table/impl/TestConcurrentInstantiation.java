@@ -583,8 +583,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testIterativeQuickFilter() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(t -> t.where("boolCol2"));
-        transformations.add(t -> t.where(DisjunctiveFilter
-                .makeDisjunctiveFilter(WhereFilterFactory.expandQuickFilter(t, "10", QuickFilterMode.NORMAL))));
+        transformations.add(t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(
+                WhereFilterFactory.expandQuickFilter(t.getDefinition(), "10", QuickFilterMode.NORMAL))));
         transformations.add(t -> t.sortDescending("doubleCol"));
         transformations.add(Table::flatten);
         testIterative(transformations);

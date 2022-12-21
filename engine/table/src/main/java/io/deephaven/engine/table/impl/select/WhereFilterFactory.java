@@ -4,9 +4,9 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
@@ -211,28 +211,37 @@ public class WhereFilterFactory {
         return expressions.stream().map(WhereFilterFactory::getExpression).toArray(WhereFilter[]::new);
     }
 
-    public static WhereFilter[] expandQuickFilter(Table t, String quickFilter, Set<String> columnNames) {
-        return expandQuickFilter(t, quickFilter, QuickFilterMode.NORMAL, columnNames);
+    public static WhereFilter[] expandQuickFilter(
+            @NotNull final TableDefinition tableDefinition,
+            final String quickFilter,
+            @NotNull final Set<String> columnNames) {
+        return expandQuickFilter(tableDefinition, quickFilter, QuickFilterMode.NORMAL, columnNames);
     }
 
-    public static WhereFilter[] expandQuickFilter(Table t, String quickFilter, QuickFilterMode filterMode) {
-        return expandQuickFilter(t, quickFilter, filterMode, Collections.emptySet());
+    public static WhereFilter[] expandQuickFilter(
+            @NotNull final TableDefinition tableDefinition,
+            final String quickFilter,
+            final QuickFilterMode filterMode) {
+        return expandQuickFilter(tableDefinition, quickFilter, filterMode, Collections.emptySet());
     }
 
-    public static WhereFilter[] expandQuickFilter(Table t, String quickFilter, QuickFilterMode filterMode,
-            @NotNull Set<String> columnNames) {
+    public static WhereFilter[] expandQuickFilter(
+            @NotNull final TableDefinition tableDefinition,
+            final String quickFilter,
+            final QuickFilterMode filterMode,
+            @NotNull final Set<String> columnNames) {
         // Do some type inference
         if (quickFilter != null && !quickFilter.isEmpty()) {
             if (filterMode == QuickFilterMode.MULTI) {
-                return expandMultiColumnQuickFilter(t, quickFilter);
+                return expandMultiColumnQuickFilter(tableDefinition, quickFilter);
             }
 
-            return t.getColumnSourceMap().entrySet().stream()
-                    .filter(entry -> !ColumnFormattingValues.isFormattingColumn(entry.getKey()) &&
-                            (columnNames.isEmpty() || columnNames.contains(entry.getKey())))
-                    .map(entry -> {
-                        final Class<?> colClass = entry.getValue().getType();
-                        final String colName = entry.getKey();
+            return tableDefinition.getColumnStream()
+                    .filter(cd -> !ColumnFormattingValues.isFormattingColumn(cd.getName()) &&
+                            (columnNames.isEmpty() || columnNames.contains(cd.getName())))
+                    .map(cd -> {
+                        final Class<?> colClass = cd.getDataType();
+                        final String colName = cd.getName();
                         if (filterMode == QuickFilterMode.REGEX) {
                             if (colClass.isAssignableFrom(String.class)) {
                                 return new RegexFilter(MatchFilter.CaseSensitivity.IgnoreCase,
@@ -269,16 +278,16 @@ public class WhereFilterFactory {
         return WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY;
     }
 
-    private static WhereFilter[] expandMultiColumnQuickFilter(Table t, String quickFilter) {
+    private static WhereFilter[] expandMultiColumnQuickFilter(TableDefinition tableDefinition, String quickFilter) {
         final String[] parts = quickFilter.split("\\s+");
         final List<WhereFilter> filters = new ArrayList<>(parts.length);
 
         for (String part : parts) {
-            final WhereFilter[] filterArray = t.getColumnSourceMap().entrySet().stream()
-                    .filter(entry -> !ColumnFormattingValues.isFormattingColumn(entry.getKey()))
-                    .map(entry -> {
-                        final Class<?> colClass = entry.getValue().getType();
-                        final String colName = entry.getKey();
+            final WhereFilter[] filterArray = tableDefinition.getColumnStream()
+                    .filter(cd -> !ColumnFormattingValues.isFormattingColumn(cd.getName()))
+                    .map(cd -> {
+                        final Class<?> colClass = cd.getDataType();
+                        final String colName = cd.getName();
                         return getSelectFilter(colName, part, QuickFilterMode.MULTI, colClass);
                     }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
             if (filterArray.length > 0) {
@@ -340,16 +349,19 @@ public class WhereFilterFactory {
         return null;
     }
 
-    public static WhereFilter[] getExpressionsWithQuickFilter(String[] expressions, Table t, String quickFilter,
-            QuickFilterMode filterMode) {
+    public static WhereFilter[] getExpressionsWithQuickFilter(
+            @NotNull final String[] expressions,
+            @NotNull final TableDefinition tableDefinition,
+            final String quickFilter,
+            final QuickFilterMode filterMode) {
         if (quickFilter != null && !quickFilter.isEmpty()) {
             return Stream.concat(
                     Arrays.stream(getExpressions(expressions)),
                     Stream.of(filterMode == QuickFilterMode.MULTI
                             ? ConjunctiveFilter.makeConjunctiveFilter(
-                                    WhereFilterFactory.expandQuickFilter(t, quickFilter, filterMode))
+                                    WhereFilterFactory.expandQuickFilter(tableDefinition, quickFilter, filterMode))
                             : DisjunctiveFilter.makeDisjunctiveFilter(
-                                    WhereFilterFactory.expandQuickFilter(t, quickFilter, filterMode))))
+                                    WhereFilterFactory.expandQuickFilter(tableDefinition, quickFilter, filterMode))))
                     .toArray(WhereFilter[]::new);
         }
         return getExpressions(expressions);

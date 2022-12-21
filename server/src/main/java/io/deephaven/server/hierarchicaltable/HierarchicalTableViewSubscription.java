@@ -23,6 +23,7 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.server.arrow.ArrowFlightUtil;
 import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.barrage.BarrageStreamGenerator;
 import io.deephaven.server.util.Scheduler;
@@ -340,7 +341,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                         ReinterpretUtils.maybeConvertToPrimitiveChunkType(columnDefinition.getDataType());
             }
         }
-        barrageMessage.modColumnData = new BarrageMessage.ModColumnData[0];
+        barrageMessage.modColumnData = ArrowFlightUtil.ZERO_MOD_COLUMNS;
 
         // 5. Send the BarrageMessage
         final BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> streamGenerator =
