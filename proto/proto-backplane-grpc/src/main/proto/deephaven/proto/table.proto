@@ -155,8 +155,12 @@ service TableService {
 
   /*
    * Returns the result of an aggregate table operation.
+   *
+   * Deprecated: Please use AggregateAll or Aggregate instead
    */
-  rpc ComboAggregate(ComboAggregateRequest) returns (ExportedTableCreationResponse) {}
+  rpc ComboAggregate(ComboAggregateRequest) returns (ExportedTableCreationResponse) {
+    option deprecated = true;
+  }
 
   /*
    * Aggregates all non-grouping columns against a single aggregation specification.
@@ -560,6 +564,8 @@ message AsOfJoinTablesRequest {
 }
 
 message ComboAggregateRequest {
+  option deprecated = true;
+
   Ticket result_id = 1;
   TableReference source_id = 2;
   repeated Aggregate aggregates = 3;
