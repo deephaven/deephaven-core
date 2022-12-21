@@ -23,6 +23,7 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
+import java.lang.Object;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,7 +65,9 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     .onError(responseObserver)
                     .submit(() -> {
                         final Table sourceTable = sourceTableExport.get();
+
                         authWiring.checkPermissionRollup(session.getAuthContext(), request, List.of(sourceTable));
+
                         final Collection<? extends Aggregation> aggregations = request.getAggregationsList().stream()
                                 .map(AggregationAdapter::adapt)
                                 .collect(Collectors.toList());
@@ -72,13 +75,15 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Collection<ColumnName> groupByColumns = request.getGroupByColumnsList().stream()
                                 .map(ColumnName::of)
                                 .collect(Collectors.toList());
-                        final RollupTable rollupTable = sourceTable.rollup(
+                        final RollupTable result = sourceTable.rollup(
                                 aggregations, includeConstituents, groupByColumns);
+
+                        final RollupTable transformedResult = authTransformation.transform(result);
                         safelyExecute(() -> {
                             responseObserver.onNext(RollupResponse.getDefaultInstance());
                             responseObserver.onCompleted();
                         });
-                        return rollupTable;
+                        return transformedResult;
                     });
         });
     }
@@ -98,16 +103,20 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     .onError(responseObserver)
                     .submit(() -> {
                         final Table sourceTable = sourceTableExport.get();
+
                         authWiring.checkPermissionTree(session.getAuthContext(), request, List.of(sourceTable));
+
                         final ColumnName identifierColumn = ColumnName.of(request.getIdentifierColumn());
                         final ColumnName parentIdentifierColumn = ColumnName.of(request.getParentIdentifierColumn());
-                        final TreeTable treeTable = sourceTable.tree(
+                        final TreeTable result = sourceTable.tree(
                                 identifierColumn.name(), parentIdentifierColumn.name());
+
+                        final TreeTable transformedResult = authTransformation.transform(result);
                         safelyExecute(() -> {
                             responseObserver.onNext(TreeResponse.getDefaultInstance());
                             responseObserver.onCompleted();
                         });
-                        return treeTable;
+                        return transformedResult;
                     });
         });
     }
@@ -127,8 +136,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     .onError(responseObserver)
                     .submit(() -> {
                         final HierarchicalTable<?> inputHierarchicalTable = inputHierarchicalTableExport.get();
-                        // TODO-RWC: Get auth wiring updated and integrated here.
-                        // authWiring.checkPermissionTree(session.getAuthContext(), request, List.of(sourceTable));
+
+                        authWiring.checkPermissionApply(session.getAuthContext(), request,
+                                List.of(inputHierarchicalTable.getSource()));
+
                         if (request.getFiltersCount() == 0 && request.getSortsCount() == 0) {
                             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No operations specified");
                         }
@@ -148,11 +159,12 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                                     "Input is not a supported HierarchicalTable type");
                         }
+                        final HierarchicalTable<?> transformedResult = authTransformation.transform(result);
                         safelyExecute(() -> {
                             responseObserver.onNext(HierarchicalTableApplyResponse.getDefaultInstance());
                             responseObserver.onCompleted();
                         });
-                        return result;
+                        return transformedResult;
                     });
         });
     }
@@ -167,7 +179,6 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             if (!request.hasHierarchicalTableId() && !request.hasExistingViewId()) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No target specified");
             }
-            // TODO-RWC: Get auth wiring updated and integrated here.
 
             final SessionState.ExportBuilder<HierarchicalTableView> resultExportBuilder =
                     session.newExport(request.getResultViewId(), "view.resultViewId");
@@ -190,37 +201,49 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             resultExportBuilder.onError(responseObserver)
                     .submit(() -> {
                         final Table keyTable = keyTableExport == null ? null : keyTableExport.get();
+                        final Object target = targetExport.get();
+                        final HierarchicalTableView targetExistingView = usedExisting
+                                ? (HierarchicalTableView) target
+                                : null;
+                        final HierarchicalTable targetHierarchicalTable = usedExisting
+                                ? targetExistingView.getHierarchicalTable()
+                                : (HierarchicalTable) target;
+
+                        authWiring.checkPermissionView(session.getAuthContext(), request, keyTable == null
+                                ? List.of(targetHierarchicalTable.getSource())
+                                : List.of(keyTable, targetHierarchicalTable.getSource()));
+
                         final HierarchicalTableView result;
                         if (usedExisting) {
-                            final HierarchicalTableView existingView = (HierarchicalTableView) targetExport.get();
                             if (keyTable != null) {
                                 result = HierarchicalTableView.makeFromExistingView(
-                                        existingView,
+                                        targetExistingView,
                                         keyTable,
                                         request.getExpansions().hasKeyTableActionColumn()
                                                 ? ColumnName.of(request.getExpansions().getKeyTableActionColumn())
                                                 : null);
                             } else {
-                                result = HierarchicalTableView.makeFromExistingView(existingView);
+                                result = HierarchicalTableView.makeFromExistingView(targetExistingView);
                             }
                         } else {
-                            final HierarchicalTable<?> hierarchicalTable = (HierarchicalTable<?>) targetExport.get();
                             if (keyTable != null) {
                                 result = HierarchicalTableView.makeFromHierarchicalTable(
-                                        hierarchicalTable,
+                                        targetHierarchicalTable,
                                         keyTable,
                                         request.getExpansions().hasKeyTableActionColumn()
                                                 ? ColumnName.of(request.getExpansions().getKeyTableActionColumn())
                                                 : null);
                             } else {
-                                result = HierarchicalTableView.makeFromHierarchicalTable(hierarchicalTable);
+                                result = HierarchicalTableView.makeFromHierarchicalTable(targetHierarchicalTable);
                             }
                         }
+
+                        final HierarchicalTableView transformedResult = authTransformation.transform(result);
                         safelyExecute(() -> {
                             responseObserver.onNext(HierarchicalTableViewResponse.getDefaultInstance());
                             responseObserver.onCompleted();
                         });
-                        return result;
+                        return transformedResult;
                     });
         });
     }
@@ -232,8 +255,6 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
-            // TODO-RWC: Get auth wiring updated and integrated here.
-
             final SessionState.ExportObject<HierarchicalTable> hierarchicalTableExport = ticketRouter.resolve(
                     session, request.getHierarchicalTableId(), "exportSource.hierarchicalTableId");
 
@@ -242,14 +263,18 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     .onError(responseObserver)
                     .submit(() -> {
                         final HierarchicalTable<?> hierarchicalTable = hierarchicalTableExport.get();
+
                         final Table result = hierarchicalTable.getSource();
+                        authWiring.checkPermissionExportSource(session.getAuthContext(), request, List.of(result));
+
+                        final Table transformedResult = authTransformation.transform(result);
                         final ExportedTableCreationResponse response =
-                                ExportUtil.buildTableCreationResponse(request.getResultTableId(), result);
+                                ExportUtil.buildTableCreationResponse(request.getResultTableId(), transformedResult);
                         safelyExecute(() -> {
                             responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
-                        return result;
+                        return transformedResult;
                     });
         });
     }
