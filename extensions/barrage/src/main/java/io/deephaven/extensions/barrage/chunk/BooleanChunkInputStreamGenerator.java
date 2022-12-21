@@ -31,7 +31,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
 
     public static BooleanChunkInputStreamGenerator convertBoxed(
             final ObjectChunk<Boolean, Values> inChunk, final long rowOffset) {
-        // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
+        // This code path is utilized for arrays / vectors, which cannot be reinterpreted.
         WritableByteChunk<Values> outChunk = WritableByteChunk.makeWritableChunk(inChunk.size());
         for (int i = 0; i < inChunk.size(); ++i) {
             final Boolean value = inChunk.get(i);
@@ -79,8 +79,8 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             if (sendValidityBuffer()) {
                 size += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
             }
-            size += getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * 8L;
-            return LongSizedDataStructure.intSize("BaseChunkInputStream.getRawSize", size);
+            size += getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * (long) Long.BYTES;
+            return LongSizedDataStructure.intSize(DEBUG_NAME, size);
         }
 
         @Override
@@ -94,7 +94,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             int validityLen = sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)) : 0;
             listener.noteLogicalBuffer(validityLen);
             // payload
-            listener.noteLogicalBuffer(getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * 8L);
+            listener.noteLogicalBuffer(getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * (long) Long.BYTES);
         }
 
         @Override
@@ -138,7 +138,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             subset.forAllRowKeys(row -> {
                 final byte byteValue = chunk.get((int) row);
                 if (byteValue != NULL_BYTE) {
-                    context.accumulator |= (byteValue & 0x1L) << context.count;
+                    context.accumulator |= (byteValue > 0 ? 1L : 0L) << context.count;
                 }
                 if (++context.count == 64) {
                     flush.run();
@@ -147,7 +147,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             if (context.count > 0) {
                 flush.run();
             }
-            bytesWritten += getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * 8L;
+            bytesWritten += getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * (long) Long.BYTES;
 
             return LongSizedDataStructure.intSize(DEBUG_NAME, bytesWritten);
         }

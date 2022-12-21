@@ -86,7 +86,7 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel {
             } else {
                 final boolean[] row = new boolean[rowLen];
                 for (int j = 0; j < rowLen; ++j) {
-                    row[j] = typedSource.get(lenRead + j) == BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
+                    row[j] = typedSource.get(lenRead + j) > 0;
                 }
                 lenRead += rowLen;
                 result.set(outOffset + i, row);

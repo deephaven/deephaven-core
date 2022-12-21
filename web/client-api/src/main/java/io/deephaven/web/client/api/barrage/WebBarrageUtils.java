@@ -369,12 +369,12 @@ public class WebBarrageUtils {
                 // booleans are stored as a bitset, but internally we represent booleans as bytes
                 data.position((int) positions.offset().toFloat64());
                 BitSet wireValues = readBitSetWithLength(data, (int) (positions.length().toFloat64()));
-                byte[] boolArray = new byte[size];
+                Boolean[] boolArray = new Boolean[size];
                 for (int i = 0; i < size; ++i) {
                     if (!hasNulls || valid.get(i)) {
-                        boolArray[i] = (byte) (wireValues.get(i) ? 1 : 0);
+                        boolArray[i] = wireValues.get(i);
                     } else {
-                        boolArray[i] = (byte) -128;
+                        boolArray[i] = null;
                     }
                 }
                 return new ByteArrayColumnData(Js.uncheckedCast(boolArray));

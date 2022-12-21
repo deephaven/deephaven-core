@@ -192,7 +192,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     public Class<?>[] getWireComponentTypes() {
-        return Arrays.stream(destSources).map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
+        return getColumnSources().stream().map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
     }
 
     @VisibleForTesting
