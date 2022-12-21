@@ -8,6 +8,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -17,7 +18,7 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.server.table.ops.ComboAggregateGrpcImpl;
+import io.deephaven.server.table.ops.AggregationAdapter;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -65,7 +66,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Table sourceTable = sourceTableExport.get();
                         authWiring.checkPermissionRollup(session.getAuthContext(), request, List.of(sourceTable));
                         final Collection<? extends Aggregation> aggregations = request.getAggregationsList().stream()
-                                .map(HierarchicalTableServiceGrpcImpl::makeAggregation)
+                                .map(AggregationAdapter::adapt)
                                 .collect(Collectors.toList());
                         final boolean includeConstituents = request.getIncludeConstituents();
                         final Collection<ColumnName> groupByColumns = request.getGroupByColumnsList().stream()
@@ -80,17 +81,6 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         return rollupTable;
                     });
         });
-    }
-
-    private static String[] extractAggColumnPairs(@NotNull final ComboAggregateRequest.Aggregate agg) {
-        if (agg.getMatchPairsCount() == 0) {
-            throw new UnsupportedOperationException("Column aggregations must specify column name input/output pairs");
-        }
-        return agg.getMatchPairsList().toArray(String[]::new);
-    }
-
-    private static Aggregation makeAggregation(@NotNull final ComboAggregateRequest.Aggregate agg) {
-        return ComboAggregateGrpcImpl.makeAggregation(agg, HierarchicalTableServiceGrpcImpl::extractAggColumnPairs);
     }
 
     @Override
@@ -228,6 +218,35 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         }
                         safelyExecute(() -> {
                             responseObserver.onNext(HierarchicalTableViewResponse.getDefaultInstance());
+                            responseObserver.onCompleted();
+                        });
+                        return result;
+                    });
+        });
+    }
+
+    @Override
+    public void exportSource(
+            @NotNull final HierarchicalTableSourceExportRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = sessionService.getCurrentSession();
+
+            // TODO-RWC: Get auth wiring updated and integrated here.
+
+            final SessionState.ExportObject<HierarchicalTable> hierarchicalTableExport = ticketRouter.resolve(
+                    session, request.getHierarchicalTableId(), "exportSource.hierarchicalTableId");
+
+            session.newExport(request.getResultTableId(), "exportSource.resultTableId")
+                    .require(hierarchicalTableExport)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        final HierarchicalTable<?> hierarchicalTable = hierarchicalTableExport.get();
+                        final Table result = hierarchicalTable.getSource();
+                        final ExportedTableCreationResponse response =
+                                ExportUtil.buildTableCreationResponse(request.getResultTableId(), result);
+                        safelyExecute(() -> {
+                            responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
                         return result;

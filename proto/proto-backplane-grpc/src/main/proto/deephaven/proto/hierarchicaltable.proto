@@ -29,6 +29,9 @@ service HierarchicalTableService {
   // Creates a view associating a Table of expansion keys and actions with an existing HierarchicalTable and exports
   // the resulting HierarchicalTableView for subsequent snapshot or subscription requests
   rpc View(HierarchicalTableViewRequest) returns (HierarchicalTableViewResponse);
+
+  // Exports the source Table for a HierarchicalTable (Rollup or TreeTable)
+  rpc ExportSource(HierarchicalTableSourceExportRequest) returns (ExportedTableCreationResponse);
 }
 
 message RollupRequest {
@@ -40,7 +43,7 @@ message RollupRequest {
   Ticket source_table_id = 2;
 
   // The aggregations that should be applied at each level of the rollup
-  repeated ComboAggregateRequest.Aggregate aggregations = 3;
+  repeated Aggregation aggregations = 3;
 
   // Whether to include the leaf-level constituents in the result
   bool include_constituents = 4;
@@ -186,4 +189,13 @@ message HierarchicalTableViewKeyTableDescriptor {
 message HierarchicalTableViewResponse {
   // Deliberately empty response, use /FlightService/DoExchange to snapshot or subscribe to snapshots from the result
   // result_view_id
+}
+
+message HierarchicalTableSourceExportRequest {
+
+  // Ticket to use to hold an export of the HierarchicalTable's source Table
+  Ticket result_table_id = 1;
+
+  // Ticket for the (existing) HierarchicalTable (RollupTable or TreeTable) to export the source Table for
+  Ticket hierarchical_table_id = 2;
 }

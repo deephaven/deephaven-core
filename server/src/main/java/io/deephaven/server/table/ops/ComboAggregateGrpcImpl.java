@@ -191,7 +191,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         return agg.getMatchPairsList().toArray(String[]::new);
     }
 
-    public static Aggregation makeAggregation(
+    private static Aggregation makeAggregation(
             @NotNull final ComboAggregateRequest.Aggregate agg,
             @NotNull final Function<ComboAggregateRequest.Aggregate, String[]> getPairs) {
         switch (agg.getType()) {

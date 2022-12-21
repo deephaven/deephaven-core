@@ -3,6 +3,7 @@
 import grpc
 
 from pydeephaven.proto import hierarchicaltable_pb2 as deephaven_dot_proto_dot_hierarchicaltable__pb2
+from pydeephaven.proto import table_pb2 as deephaven_dot_proto_dot_table__pb2
 
 
 class HierarchicalTableServiceStub(object):
@@ -34,6 +35,11 @@ class HierarchicalTableServiceStub(object):
                 '/io.deephaven.proto.backplane.grpc.HierarchicalTableService/View',
                 request_serializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableViewRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableViewResponse.FromString,
+                )
+        self.ExportSource = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.HierarchicalTableService/ExportSource',
+                request_serializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
 
 
@@ -71,6 +77,13 @@ class HierarchicalTableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ExportSource(self, request, context):
+        """Exports the source Table for a HierarchicalTable (Rollup or TreeTable)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_HierarchicalTableServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -93,6 +106,11 @@ def add_HierarchicalTableServiceServicer_to_server(servicer, server):
                     servicer.View,
                     request_deserializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableViewRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableViewResponse.SerializeToString,
+            ),
+            'ExportSource': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExportSource,
+                    request_deserializer=deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -170,5 +188,22 @@ class HierarchicalTableService(object):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.HierarchicalTableService/View',
             deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableViewRequest.SerializeToString,
             deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableViewResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ExportSource(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.HierarchicalTableService/ExportSource',
+            deephaven_dot_proto_dot_hierarchicaltable__pb2.HierarchicalTableSourceExportRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

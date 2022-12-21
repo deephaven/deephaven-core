@@ -30,7 +30,7 @@ import java.util.function.Function;
 
 import static io.deephaven.server.table.ops.GrpcErrorHelper.extractField;
 
-class AggregationAdapter {
+public class AggregationAdapter {
 
     enum Singleton {
         INSTANCE;
