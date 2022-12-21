@@ -213,7 +213,4 @@ tasks.withType(CreateStartScripts).configureEach {
   // Note that we don't call compilerArgs() at this time, there is no way to template those strings.
   // Instead, we hard code the expected paths in the above templates to match the path etc/dh-compiler-directives.txt
 //  defaultJvmOpts += compilerArgs(compilerDirectivesFile.singleFile.path)
-
-  // The start script has its own logic for parsing the START_OPTS environment variable
-  // defaultJvmOpts += START_OPTS
 }
