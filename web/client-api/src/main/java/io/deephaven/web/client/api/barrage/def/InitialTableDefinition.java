@@ -43,6 +43,7 @@ public class InitialTableDefinition {
         return Arrays.stream(columns)
                 .collect(columnCollector(false));
     }
+
     private static Collector<? super ColumnDefinition, ?, Map<String, ColumnDefinition>> columnCollector(
             boolean ordered) {
         return Collectors.toMap(ColumnDefinition::getName, Function.identity(), assertNoDupes(),

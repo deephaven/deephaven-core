@@ -93,7 +93,7 @@ public class JsRollupConfig {
             switch (key) {
                 case JsAggregationOperation.COUNT: {
                     AggregationCount count = new AggregationCount();
-                    count.setColumnName("count");//TODO use this
+                    count.setColumnName("count");// TODO use this
                     agg.setCount(count);
                     break;
                 }
@@ -205,17 +205,17 @@ public class JsRollupConfig {
                     columns.setMatchPairsList(aggColumns);
                     break;
                 }
-//                case JsAggregationOperation.SORTED_FIRST: {
-//                    // TODO support this
-//                }
-//                case JsAggregationOperation.SORTED_LAST: {
-//                    // TODO support this=
-//                }
-//                case JsAggregationOperation.WSUM: {
-//                    //TODO support this
-//                }
+                // case JsAggregationOperation.SORTED_FIRST: {
+                // // TODO support this
+                // }
+                // case JsAggregationOperation.SORTED_LAST: {
+                // // TODO support this=
+                // }
+                // case JsAggregationOperation.WSUM: {
+                // //TODO support this
+                // }
                 case JsAggregationOperation.SKIP: {
-                    //TODO mark this as not getting the default applied to it
+                    // TODO mark this as not getting the default applied to it
                 }
             }
         });

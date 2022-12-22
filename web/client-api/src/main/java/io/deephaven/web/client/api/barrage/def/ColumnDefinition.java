@@ -160,8 +160,8 @@ public class ColumnDefinition {
     }
 
     private static Column makeColumn(int jsIndex, ColumnDefinition definition, Integer numberFormatIndex,
-                                     Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description,
-                                     boolean inputTableKeyColumn) {
+            Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description,
+            boolean inputTableKeyColumn) {
         return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
                 definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn);
     }

@@ -8,6 +8,7 @@ import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
+import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
@@ -20,13 +21,18 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.bar
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Hierarchicaltable_pb;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableApplyRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupDescriptorDetails;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.hierarchicaltabledescriptor.DetailsCase;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -43,9 +49,7 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
-import io.deephaven.web.shared.data.treetable.TableDetails;
 import io.deephaven.web.shared.data.treetable.TreeTableRequest;
-import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
@@ -81,10 +85,6 @@ public class JsTreeTable extends HasEventHandling {
     private static final String TABLE_AGGREGATION_COLUMN_PREFIX = "Rollup_";
 
     private static final String[] TABLE_AGGREGATIONS = new String[] {JsAggregationOperation.COUNT};
-
-    private enum NextSnapshotState {
-        TIMER_RUNNING, QUERY_WHEN_TIMER_ENDS, QUERY_WHEN_UPDATE_SEEN
-    }
 
     private static boolean isTableAggregationColumn(String columnName) {
         if (!columnName.startsWith(TABLE_AGGREGATION_COLUMN_PREFIX)) {
@@ -124,7 +124,8 @@ public class JsTreeTable extends HasEventHandling {
 
             columnData = dataColumns;
 
-            expandedColumn = (Boolean[]) ViewportData.cleanData(columnData[rowExpandedCol.getIndex()].getData(), rowExpandedCol);
+            expandedColumn =
+                    (Boolean[]) ViewportData.cleanData(columnData[rowExpandedCol.getIndex()].getData(), rowExpandedCol);
             depthColumn = (int[]) ViewportData.cleanData(columnData[rowDepthCol.getIndex()].getData(), rowDepthCol);
 
             int constituentDepth = keyColumns.length + 1;
@@ -158,7 +159,7 @@ public class JsTreeTable extends HasEventHandling {
                         // arrays.
                         for (int rowIndex = 0; rowIndex < cleanConstituentColumn.length; rowIndex++) {
                             if (depthColumn[rowIndex] == constituentDepth)
-                            Js.asArrayLike(data[index]).setAt(rowIndex, cleanConstituentColumn.getAt(rowIndex));
+                                Js.asArrayLike(data[index]).setAt(rowIndex, cleanConstituentColumn.getAt(rowIndex));
                         }
                     }
                 }
@@ -193,35 +194,6 @@ public class JsTreeTable extends HasEventHandling {
         }
 
         /**
-         * Checks if two viewport data objects contain the same data, based on comparing four fields, none of which can
-         * be null.
-         * <ul>
-         * <li>The columnData array is the actual contents of the rows - if these change, clearly we have different
-         * data</li>
-         * <li>The constituentColumns array is the actual contents of the constituent column values, mapped by their
-         * column name - if these change, the visible data will be different</li>
-         * <li>The childPresence field is the main other change that could happen, where a node changes its status of
-         * having children.</li>
-         * <li>The keyColumn contents, if they change, might require the UI to change the "expanded" property. This is a
-         * stretch, but it could happen.</li>
-         * <li>The parentColumn is even more of a stretch, but if it were to change without the item itself moving its
-         * position in the viewport, the depth (and indentation in the UI) would visibly change.</li>
-         * </ul>
-         *
-         * We aren't interested in the other fields - rows and data are just a different way to see the original data in
-         * the columnData field, and if either offset or columns change, we would automatically force an event to happen
-         * anyway, so that we confirm to the user that the change happened (even if the visible data didn't change for
-         * some reason).
-         */
-        public boolean containsSameDataAs(TreeViewportData that) {
-            return Arrays.equals(keyColumn, that.keyColumn)
-                    && Arrays.equals(parentKeyColumn, that.parentKeyColumn)
-                    && childPresence.equals(that.childPresence)
-                    && Arrays.equals(columnData, that.columnData)
-                    && Objects.equals(constituentColumns, that.constituentColumns);
-        }
-
-        /**
          * Row implementation that also provides additional read-only properties.
          */
         class TreeRow extends ViewportRow {
@@ -246,56 +218,9 @@ public class JsTreeTable extends HasEventHandling {
         }
     }
 
-//    /**
-//     * Tracks state of a given table that is part of the tree. Updates from the server in the form of a TableDetails
-//     * object are folded into this as needed
-//     */
-//    class TreeNodeState {
-//        private Key key;
-//        private Set<Key> expandedChildren = new HashSet<>();
-//
-//        public TreeNodeState(Key key) {
-//            this.key = key;
-//        }
-//
-//        public void expand(Key child) {
-//            if (expandedChildren.add(child)) {
-//                TreeNodeState childState = new TreeNodeState(child);
-//                expandedMap.put(child, childState);
-//                JsLog.debug("user expanded ", child);
-//                scheduleSnapshotQuery(false);
-//            }
-//        }
-//
-//        public void collapse(Key child) {
-//            if (expandedChildren.remove(child)) {
-//                JsLog.debug("user collapsed ", child);
-//
-//                // from the entire tree's map, remove this child's expanded details,
-//                // then iteratively remove each expanded child in the same way
-//                List<TreeNodeState> removed = new ArrayList<>();
-//                removed.add(expandedMap.remove(child));
-//                while (!removed.isEmpty()) {
-//                    TreeNodeState treeNode = removed.remove(0);
-//                    for (Key expandedChild : treeNode.expandedChildren) {
-//                        removed.add(expandedMap.remove(expandedChild));
-//                    }
-//                }
-//
-//                scheduleSnapshotQuery(false);
-//            }
-//        }
-//
-//        public TableDetails toTableDetails() {
-//            TableDetails output = new TableDetails();
-//            output.setKey(key);
-//            output.setChildren(expandedChildren.toArray(new Key[0]));
-//            return output;
-//        }
-//    }
-
     private final WorkerConnection connection;
 
+    // This group of fields represent the underlying state of the original HierarchicalTable
     private final JsWidget widget;
     private final HierarchicalTableDescriptor treeDescriptor;
     private final InitialTableDefinition tableDefinition;
@@ -306,11 +231,19 @@ public class JsTreeTable extends HasEventHandling {
     private final JsArray<Column> keyColumns;
     private Column rowDepthCol;
     private Column rowExpandedCol;
+    private final JsArray<Column> groupedColumns;
 
+    // The source JsTable behind the original HierarchicalTable, lazily built at this time
     private final JsLazy<Promise<JsTable>> sourceTable;
 
+    // The current filter and sort state
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
+    private Promise<Ticket> filteredTable;
+    private Promise<Ticket> sortedTable;
+
+    private Promise<Ticket> viewTicket;
+    private Promise<BiDiStream<?, ?>> stream;
 
     // the "next" set of filters/sorts that we'll use. these either are "==" to the above fields, or are scheduled
     // to replace them soon.
@@ -323,21 +256,9 @@ public class JsTreeTable extends HasEventHandling {
     private Column[] columns;
     private int updateInterval = 1000;
 
-//    private final Map<Key, TreeNodeState> expandedMap = new HashMap<>();
-
-    private JsRunnable queuedOperations = null;
-    private TreeTableRequest.TreeRequestOperation[] nextRequestOps = new TreeTableRequest.TreeRequestOperation[0];
-
-    private Double viewportUpdateTimeoutId;
-    private boolean scheduled;
-    private boolean running;
     private TreeViewportData currentViewportData;
 
     private boolean alwaysFireNextEvent = false;
-
-    private NextSnapshotState nextSnapshotState;
-
-    private JsArray<Column> groupedColumns = null;
 
     private boolean closed = false;
 
@@ -408,7 +329,9 @@ public class JsTreeTable extends HasEventHandling {
             }
 
         } else {
-            assert treeDescriptor.getDetailsCase() == DetailsCase.TREE : "Unexpected type " + treeDescriptor.getDetailsCase();
+            assert treeDescriptor.getDetailsCase() == DetailsCase.TREE
+                    : "Unexpected type " + treeDescriptor.getDetailsCase();
+            groupedColumns = null;
         }
 
         sourceTable = JsLazy.of(() -> {
@@ -416,172 +339,174 @@ public class JsTreeTable extends HasEventHandling {
         });
     }
 
-    /**
-     * Requests an update as soon as possible, canceling any future update but scheduling a new one. Any change in
-     * viewport or configuration should call this.
-     *
-     * @param alwaysFireEvent force the updated event to fire based on this scheduled snapshot, even if the data is the
-     *        same as before
-     */
-    private void scheduleSnapshotQuery(boolean alwaysFireEvent) {
-        // track if we should force the event to fire when the data comes back, even if there is no change
-        alwaysFireNextEvent |= alwaysFireEvent;
+    private Promise<Ticket> prepareFilter() {
+        if (filteredTable != null) {
+            return filteredTable;
+        }
+        if (nextFilters.isEmpty()) {
+            return Promise.resolve(widget.getTicket());
+        }
+        Ticket ticket = connection.getConfig().newTicket();
+        filteredTable = Callbacks.grpcUnaryPromise(c -> {
 
-        if (running) {
-            // already in flight, so when the response comes back make sure the queue is non-empty so we schedule
-            // another
-            if (queuedOperations == null) {
-                queuedOperations = JsRunnable.doNothing();
-            }
-            return;
+            HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
+            applyFilter.setFiltersList(
+                    nextFilters.stream().map(FilterCondition::makeDescriptor).toArray(Condition[]::new));
+            applyFilter.setInputHierarchicalTableId(widget.getTicket());
+            applyFilter.setResultHierarchicalTableId(ticket);
+            connection.hierarchicalTableServiceClient().apply(applyFilter, connection.metadata(), c::apply);
+        }).then(ignore -> Promise.resolve(ticket));
+        return filteredTable;
+    }
+
+    private Promise<Ticket> prepareSort(Ticket prevTicket) {
+        if (sortedTable != null) {
+            return sortedTable;
         }
-        if (scheduled) {
-            // next one is already set up, upgrade requirement for event, if need be
-            return;
+        if (nextSort.isEmpty()) {
+            return Promise.resolve(prevTicket);
         }
-        scheduled = true;
-        if (viewportUpdateTimeoutId != null) {
-            DomGlobal.clearTimeout(viewportUpdateTimeoutId);
+        Ticket ticket = connection.getConfig().newTicket();
+        sortedTable = Callbacks.grpcUnaryPromise(c -> {
+
+            HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
+            applyFilter.setSortsList(nextSort.stream().map(Sort::makeDescriptor).toArray(
+                    io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortDescriptor[]::new));
+            applyFilter.setInputHierarchicalTableId(prevTicket);
+            applyFilter.setResultHierarchicalTableId(ticket);
+            connection.hierarchicalTableServiceClient().apply(applyFilter, connection.metadata(), c::apply);
+        }).then(ignore -> Promise.resolve(ticket));
+        return sortedTable;
+    }
+
+    private Promise<Ticket> makeView(Ticket prevTicket) {
+        if (viewTicket != null) {
+            return viewTicket;
         }
-        viewportUpdateTimeoutId = DomGlobal.setTimeout(p0 -> this.snapshotQuery(), 30);
+        Ticket ticket = connection.getConfig().newTicket();
+        viewTicket = Callbacks.grpcUnaryPromise(c -> {
+            HierarchicalTableViewRequest viewRequest = new HierarchicalTableViewRequest();
+            viewRequest.setHierarchicalTableId(prevTicket);
+            viewRequest.setResultViewId(ticket);
+            connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
+        }).then(ignore -> Promise.resolve(ticket));
+        return viewTicket;
+    }
+
+    private void replaceSubscription() {
+        this.stream = Promise.resolve(defer())
+                .then(ignore -> prepareFilter())
+                .then(this::prepareSort)
+                .then(this::makeView)
+                .then(ticket -> {
+                    TreeTableRequest query = buildQuery();
+                    Column[] queryColumns = this.columns;
+
+                    boolean alwaysFireEvent = this.alwaysFireNextEvent;
+                    this.alwaysFireNextEvent = false;
+
+                    JsLog.debug("Sending tree table request", this,
+                            LazyString.of(() -> widget.getTicket().getTicket_asB64()),
+                            query,
+                            alwaysFireEvent);
+                    BiDiStream<FlightData, FlightData> doExchange =
+                            connection.<FlightData, FlightData>streamFactory().create(
+                                    headers -> connection.flightServiceClient().doExchange(headers),
+                                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first,
+                                            headers),
+                                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next,
+                                            headers,
+                                            c::apply),
+                                    new FlightData());
+
+                    FlightData subscriptionRequestWrapper = new FlightData();
+                    Builder doGetRequest = new Builder(1024);
+                    double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
+                            makeUint8ArrayFromBitset(query.getColumns()));
+                    double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest,
+                            serializeRanges(
+                                    Collections.singleton(
+                                            RangeSet.ofRange(query.getViewportStart(), query.getViewportEnd()))));
+                    double serializationOptionsOffset = BarrageSubscriptionOptions
+                            .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true,
+                                    updateInterval, 0, 0);
+                    double tableTicketOffset =
+                            BarrageSubscriptionRequest.createTicketVector(doGetRequest, widget.getDataAsU8());
+                    BarrageSubscriptionRequest.startBarrageSubscriptionRequest(doGetRequest);
+                    BarrageSubscriptionRequest.addTicket(doGetRequest, tableTicketOffset);
+                    BarrageSubscriptionRequest.addColumns(doGetRequest, columnsOffset);
+                    BarrageSubscriptionRequest.addSubscriptionOptions(doGetRequest, serializationOptionsOffset);
+                    BarrageSubscriptionRequest.addViewport(doGetRequest, viewportOffset);
+                    doGetRequest.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(doGetRequest));
+
+                    subscriptionRequestWrapper.setAppMetadata(
+                            BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSubscriptionRequest));
+                    doExchange.send(subscriptionRequestWrapper);
+
+                    // hang on to this to get server-sent snapshots, cancel when needed
+                    // doExchange.end();
+
+                    String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
+                            .map(ColumnDefinition::getType)
+                            .toArray(String[]::new);
+                    doExchange.onData(flightData -> {
+                        Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
+                        if (message.headerType() == MessageHeader.Schema) {
+                            // ignore for now, we'll handle this later
+                            return;
+                        }
+                        assert message.headerType() == MessageHeader.RecordBatch;
+                        RecordBatch header = message.header(new RecordBatch());
+                        Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
+                        BarrageUpdateMetadata update = null;
+                        if (appMetadataBytes.length != 0) {
+                            BarrageMessageWrapper barrageMessageWrapper =
+                                    BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
+                                            new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
+                                                    appMetadataBytes));
+
+                            update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
+                                    new ByteBuffer(
+                                            new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
+                        }
+                        TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
+                                BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
+                                true,
+                                columnTypes);
+
+                        final RangeSet includedRows = snapshot.getIncludedRows();
+                        TreeViewportData vd = new TreeViewportData(
+                                includedRows,
+                                snapshot.getTableSize(),
+                                snapshot.getDataColumns(),
+                                queryColumns);
+
+                        handleUpdate(nextSort, nextFilters, vd, alwaysFireEvent);
+                    });
+                    return Promise.resolve(doExchange);
+                });
     }
 
     /**
-     * Requests an update from the server. Should only be called by itself and scheduleSnapshotQuery.
+     * Instead of a micro-task between chained promises, insert a regular task so that control is returned to the
+     * browser long enough to prevent the UI hanging.
      */
-    private void snapshotQuery() {
-        if (closed) {
-            JsLog.warn("TreeTable already closed, cannot perform operation");
-            return;
-        }
-        // we're running now, so mark as already scheduled
-        scheduled = false;
-
-        if (firstRow == null || lastRow == null) {
-            // viewport not set yet, don't start loading data
-            return;
-        }
-
-        // clear any size update, we're getting data either way, future updates should be noted
-        nextSnapshotState = NextSnapshotState.TIMER_RUNNING;
-        viewportUpdateTimeoutId = DomGlobal.setTimeout(p -> {
-            // timer has elapsed, we'll actually perform our regular check only if a change was seen since we were
-            // started
-            if (nextSnapshotState == NextSnapshotState.QUERY_WHEN_TIMER_ENDS) {
-                scheduleSnapshotQuery(false);
-            } else {
-                // otherwise, this means that we should query right away if any update arrives
-                nextSnapshotState = NextSnapshotState.QUERY_WHEN_UPDATE_SEEN;
-            }
-        }, updateInterval);
-        if (connection.isUsable()) {
-            running = true;
-            TreeTableRequest query = buildQuery();
-            Column[] queryColumns = this.columns;
-
-            boolean alwaysFireEvent = this.alwaysFireNextEvent;
-            this.alwaysFireNextEvent = false;
-
-            JsLog.debug("Sending tree table request", this, LazyString.of(() -> widget.getTicket().getTicket_asB64()),
-                    query,
-                    alwaysFireEvent);
-            BiDiStream<FlightData, FlightData> doExchange = connection.<FlightData, FlightData>streamFactory().create(
-                    headers -> connection.flightServiceClient().doExchange(headers),
-                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
-                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
-                            c::apply),
-                    new FlightData());
-
-            FlightData snapshotRequestWrapper = new FlightData();
-            Builder doGetRequest = new Builder(1024);
-            double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
-                    makeUint8ArrayFromBitset(query.getColumns()));
-            double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest, serializeRanges(
-                    Collections.singleton(RangeSet.ofRange(query.getViewportStart(), query.getViewportEnd()))));
-            double serializationOptionsOffset = BarrageSnapshotOptions
-                    .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0, 0);
-            double tableTicketOffset =
-                    BarrageSubscriptionRequest.createTicketVector(doGetRequest, widget.getDataAsU8());
-            BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);
-            BarrageSnapshotRequest.addTicket(doGetRequest, tableTicketOffset);
-            BarrageSnapshotRequest.addColumns(doGetRequest, columnsOffset);
-            BarrageSnapshotRequest.addSnapshotOptions(doGetRequest, serializationOptionsOffset);
-            BarrageSnapshotRequest.addViewport(doGetRequest, viewportOffset);
-            doGetRequest.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(doGetRequest));
-
-            snapshotRequestWrapper.setAppMetadata(
-                    BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
-            doExchange.send(snapshotRequestWrapper);
-
-            // hang on to this to get server-sent snapshots, cancel when needed
-            // doExchange.end();
-
-            String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
-                    .map(ColumnDefinition::getType)
-                    .toArray(String[]::new);
-            doExchange.onData(flightData -> {
-                Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
-                if (message.headerType() == MessageHeader.Schema) {
-                    // ignore for now, we'll handle this later
-                    return;
-                }
-                assert message.headerType() == MessageHeader.RecordBatch;
-                RecordBatch header = message.header(new RecordBatch());
-                Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
-                BarrageUpdateMetadata update = null;
-                if (appMetadataBytes.length != 0) {
-                    BarrageMessageWrapper barrageMessageWrapper =
-                            BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
-                                    new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
-                                            appMetadataBytes));
-
-                    update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
-                            new ByteBuffer(
-                                    new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
-                }
-                TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
-                        BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
-                        true,
-                        columnTypes);
-
-                final RangeSet includedRows = snapshot.getIncludedRows();
-                TreeViewportData vd = new TreeViewportData(
-                        includedRows,
-                        snapshot.getTableSize(),
-                        snapshot.getDataColumns(),
-                        queryColumns);
-
-                try {
-                    handleUpdate(nextSort, nextFilters, vd, alwaysFireEvent);
-                } finally {
-                    running = false;
-                    if (queuedOperations != null) {
-                        // Something changed since our last request, start another one.
-                        // We allow skipping the event since whatever enqueued the operation should have passed true
-                        // if needed, or it could have been a slow reply from the server, etc.
-                        scheduleSnapshotQuery(false);
-                    }
-                }
-            });
-
-        } else {
-            JsLog.debug("Connection not ready, skipping tree table poll", this);
-        }
+    private <T> IThenable.ThenOnFulfilledCallbackFn<T, T> defer() {
+        return val -> new Promise<>((resolve, reject) -> {
+            DomGlobal.setTimeout(ignoreArgs -> resolve.onInvoke(val), 0);
+        });
     }
 
     private void handleUpdate(List<Sort> nextSort, List<FilterCondition> nextFilters,
-                              TreeViewportData viewportData, boolean alwaysFireEvent) {
+            TreeViewportData viewportData, boolean alwaysFireEvent) {
         JsLog.debug("tree table response arrived", viewportData);
         if (closed) {
-            if (viewportUpdateTimeoutId != null) {
-                DomGlobal.clearTimeout(viewportUpdateTimeoutId);
-            }
-
+            // ignore
             return;
         }
 
         // if requested to fire the event, or if the data has changed in some way, fire the event
-        final boolean fireEvent = alwaysFireEvent || !viewportData.containsSameDataAs(currentViewportData);
+        final boolean fireEvent = true;// alwaysFireEvent || !viewportData.containsSameDataAs(currentViewportData);
 
         this.currentViewportData = viewportData;
 
@@ -612,49 +537,12 @@ public class JsTreeTable extends HasEventHandling {
     private TreeTableRequest buildQuery() {
         TreeTableRequest request = new TreeTableRequest();
 
-
-        // before building, evaluate all queued operations
-        if (queuedOperations != null) {
-            queuedOperations.run();
-            queuedOperations = null;
-        }
-
-        // if any of those operations asks for a close, just do the close and skip the rest
-        if (Arrays.asList(nextRequestOps).contains(TreeTableRequest.TreeRequestOperation.Close)) {
-            closed = true;
-            request.setIncludedOps(
-                    new TreeTableRequest.TreeRequestOperation[] {TreeTableRequest.TreeRequestOperation.Close});
-            request.setExpandedNodes(new TableDetails[0]);
-            request.setSorts(new SortDescriptor[0]);
-            request.setFilters(new FilterDescriptor[0]);
-            request.setColumns(new BitSet());
-            return request;
-        }
-
-        //TODO DoPut the expanded nodes table
-//        request.setExpandedNodes(
-//                expandedMap.values().stream().map(TreeNodeState::toTableDetails).toArray(TableDetails[]::new));
-
-//        final int hierarchicalChildrenColumnIndex = Arrays.stream(tableDefinition.getColumns())
-//                .filter(col -> col.getName()
-//                        .equals(tableDefinition.getAttributes().getTreeHierarchicalColumnName()))
-//                .mapToInt(ColumnDefinition::getColumnIndex)
-//                .findFirst()
-//                .orElseThrow(() -> new IllegalStateException("TreeTable definition has no hierarchy column"));
-//
-//        request.setKeyColumn(hierarchicalChildrenColumnIndex);
-
-        // avoid sending filters unless they changed for smaller overhead on requests, there is no need to recompute
-        // filters on child tables, only on the root table
-        if (!filters.equals(nextFilters)) {
-            request.setFilters(
-                    nextFilters.stream().map(FilterCondition::makeDescriptor).toArray(FilterDescriptor[]::new));
-        } else {
-            request.setFilters(new FilterDescriptor[0]);
-        }
-
-        // always include the sort setup, the viewport content could have changed in practically any way
-        request.setSorts(nextSort.stream().map(Sort::makeDescriptor).toArray(SortDescriptor[]::new));
+        // TODO DoPut the expanded nodes table
+        // connection.newTable(
+        // keyTableColumnNames,
+        // keyTableColumnTypes,
+        //
+        // )
 
         // Build the bitset for the columns that are needed to get the data, style, and maintain structure
         BitSet columnsBitset = new BitSet(tableDefinition.getColumns().length);
@@ -675,26 +563,7 @@ public class JsTreeTable extends HasEventHandling {
         request.setViewportEnd((long) (double) lastRow);
         request.setViewportStart((long) (double) firstRow);
 
-        request.setIncludedOps(nextRequestOps);
-        nextRequestOps = new TreeTableRequest.TreeRequestOperation[0];
-
         return request;
-    }
-
-    private void enqueue(TreeTableRequest.TreeRequestOperation operation, JsRunnable r) {
-        if (queuedOperations != null) {
-            JsRunnable old = queuedOperations;
-            queuedOperations = () -> {
-                nextRequestOps[nextRequestOps.length] = operation;
-                old.run();
-                r.run();
-            };
-        } else {
-            queuedOperations = () -> {
-                nextRequestOps[nextRequestOps.length] = operation;
-                r.run();
-            };
-        }
     }
 
     @JsMethod
@@ -713,38 +582,34 @@ public class JsTreeTable extends HasEventHandling {
 
         final TreeRow r;
         if (row instanceof Double) {
-            r = currentViewportData.rows.getAt((int) ((double) row - lastResult.getSnapshotStart()));
+            r = currentViewportData.rows.getAt((int) ((double) row - currentViewportData.offset));
         } else if (row instanceof TreeRow) {
             r = (TreeRow) row;
         } else {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
 
-//        Key myRowKey = r.myKey();
-//        Key parentRowKey = r.parentKey();
-        JsLog.debug("setExpanded enqueued");
-        // With the keys collected for the currently-visible item to expand/collapse, we can enqueue an operation
-        // to modify that node
-        enqueue(isExpanded ? TreeTableRequest.TreeRequestOperation.Expand
-                : TreeTableRequest.TreeRequestOperation.Contract, () -> {
-                    TreeNodeState node = expandedMap.get(parentRowKey);
-                    if (node == null) {
-                        throw new IllegalStateException("Parent isn't available, can't manipulate child: setExpanded("
-                                + row + ", " + isExpanded + ")");
-                    }
-                    if (isExpanded) {
-                        node.expand(myRowKey);
-                    } else {
-                        node.collapse(myRowKey);
-                    }
-                });
-        scheduleSnapshotQuery(true);
+        if (viewTicket != null) {
+            viewTicket.then(ticket -> {
+                connection.releaseTicket(ticket);
+                return null;
+            });
+            viewTicket = null;
+        }
+        if (stream != null) {
+            stream.then(stream -> {
+                stream.end();
+                return null;
+            });
+            stream = null;
+        }
+        replaceSubscription();
     }
 
     @JsMethod
     public boolean isExpanded(Object row) {
         if (row instanceof Double) {
-            row = currentViewportData.rows.getAt((int) ((double) row - lastResult.getSnapshotStart()));
+            row = currentViewportData.rows.getAt((int) ((double) row - currentViewportData.offset));
         } else if (!(row instanceof TreeRow)) {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
@@ -762,7 +627,14 @@ public class JsTreeTable extends HasEventHandling {
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : visibleColumns;
         this.updateInterval = updateInterval == null ? 1000 : (int) (double) updateInterval;
 
-        scheduleSnapshotQuery(true);
+        if (stream != null) {
+            stream.then(stream -> {
+                stream.end();
+                return null;
+            });
+            stream = null;
+        }
+        replaceSubscription();
     }
 
     @JsMethod
@@ -783,9 +655,37 @@ public class JsTreeTable extends HasEventHandling {
     @JsMethod
     public void close() {
         JsLog.debug("Closing tree table", this);
-        // perform one final call, mark the object as closed
-        enqueue(TreeTableRequest.TreeRequestOperation.Close, JsRunnable.doNothing());
-        scheduleSnapshotQuery(false);
+
+        connection.releaseTicket(widget.getTicket());
+
+        if (filteredTable != null) {
+            filteredTable.then(ticket -> {
+                connection.releaseTicket(ticket);
+                return null;
+            });
+            filteredTable = null;
+        }
+        if (sortedTable != null) {
+            sortedTable.then(ticket -> {
+                connection.releaseTicket(ticket);
+                return null;
+            });
+            sortedTable = null;
+        }
+        if (viewTicket != null) {
+            viewTicket.then(ticket -> {
+                connection.releaseTicket(ticket);
+                return null;
+            });
+            viewTicket = null;
+        }
+        if (stream != null) {
+            stream.then(stream -> {
+                stream.end();
+                return null;
+            });
+            stream = null;
+        }
     }
 
     @JsMethod
@@ -796,46 +696,68 @@ public class JsTreeTable extends HasEventHandling {
                 throw new IllegalArgumentException("Tree Tables do no support reverse");
             }
         }
-        enqueue(TreeTableRequest.TreeRequestOperation.SortChanged, () -> {
-            this.nextSort = Arrays.asList(sort);
+        nextSort = Arrays.asList(sort);
+        if (sortedTable != null) {
+            sortedTable.then(ticket -> {
+                connection.releaseTicket(ticket);
+                return null;
+            });
+            sortedTable = null;
+        }
+        if (viewTicket != null) {
+            viewTicket.then(ticket -> {
+                connection.releaseTicket(ticket);
+                return null;
+            });
+            viewTicket = null;
+        }
+        if (stream != null) {
+            stream.then(stream -> {
+                stream.end();
+                return null;
+            });
+            stream = null;
+        }
 
-            releaseAllNodes(true);
-        });
-        scheduleSnapshotQuery(true);
+        replaceSubscription();
 
         return getSort();
-    }
-
-    /**
-     * Helper to indicate that table handles in nodes are no longer valid and need to be rebuilt. Parameter
-     * "invalidateFilters" should be true in all cases except when setting a new filter, and will result in the current
-     * filters being sent to the server to correctly filter any re-created handles.
-     */
-    private void releaseAllNodes(boolean invalidateFilters) {
-        if (invalidateFilters) {
-            // clear the "current" filters - either we didn't need them (already blank), or this
-            // will make them unequal and we'll send them to the server for this request.
-            this.filters = new ArrayList<>();
-        }
     }
 
     @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<FilterCondition> applyFilter(FilterCondition[] filter) {
-        enqueue(TreeTableRequest.TreeRequestOperation.FilterChanged, () -> {
-            this.nextFilters = Arrays.asList(filter);
-
-            // apply the filter to the source table (used to produce totals table, limits our
-            // size changed events)
-            sourceTable.get().then(t -> {
-                t.applyFilter(filter);
+        nextFilters = Arrays.asList(filter);
+        if (filteredTable != null) {
+            filteredTable.then(ticket -> {
+                connection.releaseTicket(ticket);
                 return null;
             });
+            filteredTable = null;
+        }
+        if (sortedTable != null) {
+            sortedTable.then(ticket -> {
+                connection.releaseTicket(ticket);
+                return null;
+            });
+            sortedTable = null;
+        }
+        if (viewTicket != null) {
+            viewTicket.then(ticket -> {
+                connection.releaseTicket(ticket);
+                return null;
+            });
+            viewTicket = null;
+        }
+        if (stream != null) {
+            stream.then(stream -> {
+                stream.end();
+                return null;
+            });
+            stream = null;
+        }
 
-            // don't invalidate filters, we've already replaced them
-            releaseAllNodes(false);
-        });
-        scheduleSnapshotQuery(true);
+        replaceSubscription();
 
         return getFilter();
     }
@@ -849,7 +771,7 @@ public class JsTreeTable extends HasEventHandling {
     public double getSize() {
         // read the size of the last tree response
         if (currentViewportData != null) {
-            return (double) currentViewportData.getTreeSize();
+            return currentViewportData.getTreeSize();
         }
         return -1;// not ready yet
     }
