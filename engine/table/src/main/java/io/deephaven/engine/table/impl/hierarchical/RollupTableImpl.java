@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.agg.AggregationPairs;
@@ -23,6 +24,7 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,6 +37,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.api.ColumnName.names;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.*;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
@@ -298,54 +301,77 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     public NodeOperationsRecorder translateAggregatedNodeOperationsForConstituentNodes(
             @NotNull final NodeOperationsRecorder aggregatedNodeOperationsToTranslate) {
-        final RollupNodeOperationsRecorder input = (RollupNodeOperationsRecorder) aggregatedNodeOperationsToTranslate;
-        RollupNodeOperationsRecorder output = makeNodeOperationsRecorder(NodeType.Constituent);
-        final TableDefinition inputTableDefinition = getNodeDefinition(NodeType.Aggregated);
-        final TableDefinition outputTableDefinition = getNodeDefinition(NodeType.Constituent);
-        output = translateFormats(input, output, inputTableDefinition, outputTableDefinition);
-        final Map<ColumnName, ColumnName> outputInputPairs = AggregationPairs.of(aggregations)
-                .collect(Collectors.toMap(Pair::output, Pair::input));
-        translateSorts(input, output, outputInputPairs);
-        return output;
+        final RollupNodeOperationsRecorder aggregated =
+                (RollupNodeOperationsRecorder) aggregatedNodeOperationsToTranslate;
+        RollupNodeOperationsRecorder constituent = makeNodeOperationsRecorder(NodeType.Constituent);
+        final TableDefinition aggregatedTableDefinition = getNodeDefinition(NodeType.Aggregated);
+        final TableDefinition constituentTableDefinition = getNodeDefinition(NodeType.Constituent);
+        constituent = translateFormats(aggregated, constituent, aggregatedTableDefinition, constituentTableDefinition);
+        final Map<String, String> aggregatedConstituentPairs = AggregationPairs.of(aggregations)
+                .collect(Collectors.toMap(p -> p.output().name(), p -> p.input().name()));
+        return translateSorts(aggregated, constituent, constituentTableDefinition, aggregatedConstituentPairs);
     }
 
     private static RollupNodeOperationsRecorder translateFormats(
-            @NotNull final RollupNodeOperationsRecorder input,
-            @NotNull final RollupNodeOperationsRecorder output,
-            @NotNull final TableDefinition inputTableDefinition,
-            @NotNull final TableDefinition outputTableDefinition) {
-        if (input.getRecordedFormats().isEmpty()) {
-            return output;
+            @NotNull final RollupNodeOperationsRecorder aggregated,
+            @NotNull final RollupNodeOperationsRecorder constituent,
+            @NotNull final TableDefinition aggregatedTableDefinition,
+            @NotNull final TableDefinition constituentTableDefinition) {
+        if (aggregated.getRecordedFormats().isEmpty()) {
+            return constituent;
         }
-        final List<? extends SelectColumn> outputFormats = input.getRecordedFormats().stream()
-                .filter((final SelectColumn format) -> Stream
-                        .concat(format.getColumns().stream(), format.getColumnArrays().stream())
+        final List<? extends SelectColumn> constituentFormats = aggregated.getRecordedFormats().stream()
+                .filter((final SelectColumn aggregatedFormat) -> Stream
+                        .concat(aggregatedFormat.getColumns().stream(), aggregatedFormat.getColumnArrays().stream())
                         .allMatch((final String columnName) -> {
-                            final ColumnDefinition<?> outputColumnDefinition =
-                                    outputTableDefinition.getColumn(columnName);
-                            if (outputColumnDefinition == null) {
+                            final ColumnDefinition<?> constituentColumnDefinition =
+                                    constituentTableDefinition.getColumn(columnName);
+                            if (constituentColumnDefinition == null) {
                                 return false;
                             }
-                            final ColumnDefinition<?> inputColumnDefinition =
-                                    inputTableDefinition.getColumn(columnName);
-                            return outputColumnDefinition.isCompatible(inputColumnDefinition);
+                            final ColumnDefinition<?> aggregatedColumnDefinition =
+                                    aggregatedTableDefinition.getColumn(columnName);
+                            return constituentColumnDefinition.isCompatible(aggregatedColumnDefinition);
                         }))
                 .collect(Collectors.toList());
-        if (outputFormats.isEmpty()) {
-            return output;
+        if (constituentFormats.isEmpty()) {
+            return constituent;
         }
-        return (RollupNodeOperationsRecorder) output.withFormats(outputFormats.stream());
+        return (RollupNodeOperationsRecorder) constituent.withFormats(constituentFormats.stream());
     }
 
     private static RollupNodeOperationsRecorder translateSorts(
-            @NotNull final RollupNodeOperationsRecorder input,
-            @NotNull final RollupNodeOperationsRecorder output,
-            @NotNull final Map<ColumnName, ColumnName> outputInputPairs) {
-        if (input.getRecordedSorts().isEmpty()) {
-            return output;
+            @NotNull final RollupNodeOperationsRecorder aggregated,
+            @NotNull final RollupNodeOperationsRecorder constituent,
+            @NotNull final TableDefinition constituentTableDefinition,
+            @NotNull final Map<String, String> aggregatedConstituentPairs) {
+        if (aggregated.getRecordedSorts().isEmpty()) {
+            return constituent;
         }
-        // TODO-RWC: Finish this logic
-        return output;
+        final List<SortColumn> constituentSortColumns = aggregated.getRecordedSorts().stream()
+                .map((final SortColumn aggregatedSortColumn) -> {
+                    String aggregatedColumnName = aggregatedSortColumn.column().name();
+                    final boolean aggregatedAbsolute = isAbsoluteColumnName(aggregatedColumnName);
+                    if (aggregatedAbsolute) {
+                        aggregatedColumnName = absoluteColumnNameToBaseName(aggregatedColumnName);
+                    }
+                    String constituentColumnName = aggregatedConstituentPairs.get(aggregatedColumnName);
+                    if (aggregatedAbsolute) {
+                        final ColumnDefinition<?> constituentColumnDefinition =
+                                constituentTableDefinition.getColumn(constituentColumnName);
+                        if (Number.class.isAssignableFrom(
+                                TypeUtils.getBoxedType(constituentColumnDefinition.getDataType()))) {
+                            constituentColumnName = baseColumnNameToAbsoluteName(constituentColumnName);
+                        }
+                    }
+                    return aggregatedSortColumn.order() == SortColumn.Order.ASCENDING
+                            ? SortColumn.asc(ColumnName.of(constituentColumnName))
+                            : SortColumn.desc(ColumnName.of(constituentColumnName));
+
+                })
+                .collect(Collectors.toList());
+        // Let the logic in SortRecordingTableAdapter handle absolute views and column repetition filtering.
+        return (RollupNodeOperationsRecorder) constituent.sort(constituentSortColumns);
     }
 
     private static RollupNodeOperationsRecorder accumulateOperations(

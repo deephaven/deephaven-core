@@ -139,8 +139,8 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     RollupTable withNodeOperations(@NotNull NodeOperationsRecorder... nodeOperations);
 
     /**
-     * Translate node operations for an aggregated to the closest equivalent for a constituent node. May only be invoked
-     * if {@code includesConstituents() == false}.
+     * Translate node operations for aggregated nodes to the closest equivalent for a constituent node. May only be
+     * invoked if {@code includesConstituents() == true}.
      *
      * @param aggregatedNodeOperationsToTranslate Node-level operations for aggregated nodes, initially supplied by
      *        {@code makeNodeOperationsRecorder(NodeType.Aggregated)}.

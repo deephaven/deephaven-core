@@ -123,7 +123,11 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             @NotNull final Stream<SortColumn> scs2) {
         // Note that we order the new sorts before the old sorts, because they take precedence; that is, we want the
         // effect of sorting previously sorted input.
-        return Stream.concat(scs2, scs1).collect(Collectors.toList());
+        // Note also that we also collapse repeated sorts on the same column, picking the first occurrence as it
+        // takes precedence.
+        return new ArrayList<>(Stream.concat(scs2, scs1)
+                .collect(Collectors.toMap(sc -> sc.column().name(), sc -> sc, (scA, scB) -> scA, LinkedHashMap::new))
+                .values());
     }
 
     static Collection<? extends SelectColumn> mergeAbsoluteViews(

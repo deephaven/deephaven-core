@@ -2,6 +2,7 @@ package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.auth.codegen.impl.HierarchicalTableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
@@ -31,6 +32,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
 
 public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGrpc.HierarchicalTableServiceImplBase {
@@ -149,6 +151,11 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Collection<Condition> finishedConditions = request.getFiltersCount() == 0
                                 ? null
                                 : FilterTableGrpcImpl.finishConditions(request.getFiltersList());
+                        final Collection<SortColumn> translatedSorts = request.getSortsCount() == 0
+                                ? null
+                                : request.getSortsList().stream()
+                                        .map(HierarchicalTableServiceGrpcImpl::translateSort)
+                                        .collect(Collectors.toList());
 
                         final HierarchicalTable<?> result;
                         if (inputHierarchicalTable instanceof RollupTable) {
@@ -162,7 +169,18 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                         .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
                                         .collect(Collectors.toList()));
                             }
-                            // TODO-RWC: Do we support reverse in node-level sorts?
+                            if (translatedSorts != null) {
+                                final RollupTable.NodeOperationsRecorder aggregatedSorts =
+                                        rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated);
+                                aggregatedSorts.sort(translatedSorts);
+                                if (rollupTable.includesConstituents()) {
+                                    final RollupTable.NodeOperationsRecorder constituentSorts = rollupTable
+                                            .translateAggregatedNodeOperationsForConstituentNodes(aggregatedSorts);
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedSorts, constituentSorts);
+                                } else {
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedSorts);
+                                }
+                            }
                             result = rollupTable;
                         } else if (inputHierarchicalTable instanceof TreeTable) {
                             TreeTable treeTable = (TreeTable) inputHierarchicalTable;
@@ -172,7 +190,12 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                         .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
                                         .collect(Collectors.toList()));
                             }
-                            // TODO-RWC: Sorting for trees
+                            if (translatedSorts != null) {
+                                final TreeTable.NodeOperationsRecorder treeSorts =
+                                        treeTable.makeNodeOperationsRecorder();
+                                treeSorts.sort(translatedSorts);
+                                treeTable = treeTable.withNodeOperations(treeSorts);
+                            }
                             result = treeTable;
                         } else {
                             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -187,6 +210,24 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         return transformedResult;
                     });
         });
+    }
+
+    private static SortColumn translateSort(@NotNull final SortDescriptor sortDescriptor) {
+        switch (sortDescriptor.getDirection()) {
+            case DESCENDING:
+                return SortColumn.desc(ColumnName.of(sortDescriptor.getIsAbsolute()
+                        ? baseColumnNameToAbsoluteName(sortDescriptor.getColumnName())
+                        : sortDescriptor.getColumnName()));
+            case ASCENDING:
+                return SortColumn.asc(ColumnName.of(sortDescriptor.getIsAbsolute()
+                        ? baseColumnNameToAbsoluteName(sortDescriptor.getColumnName())
+                        : sortDescriptor.getColumnName()));
+            case UNKNOWN:
+            case REVERSE:
+            default:
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unsupported or unknown sort direction: " + sortDescriptor.getDirection());
+        }
     }
 
     @Override
