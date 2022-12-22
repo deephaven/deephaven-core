@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -223,8 +222,7 @@ public class BarrageUtil {
         }
     }
 
-    private static Class<?> getDefaultType(
-            final String name, final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
+    private static Class<?> getDefaultType(final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
         final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
         switch (arrowType.getTypeID()) {
             case Int:
@@ -385,7 +383,7 @@ public class BarrageUtil {
             });
 
             if (type.getValue() == null) {
-                Class<?> defaultType = getDefaultType(name, getArrowType.apply(i), result, i);
+                Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());

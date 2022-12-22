@@ -16,7 +16,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -285,7 +284,7 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory;
-        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> ;
+        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> bmpOperationFactory;
         private final HierarchicalTableViewSubscription.Factory htvsFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
