@@ -283,18 +283,14 @@ public class FuzzerTest {
 
     private void annotateBinding(GroovyDeephavenSession session) {
         // noinspection unchecked
-        ((Map<String, Object>) session.getBinding().getVariables())
-                .entrySet().forEach((final Map.Entry<String, Object> varEntry) -> {
-                    if (varEntry.getValue() instanceof LiveAttributeMap) {
-                        final LiveAttributeMap<?, ?> liveAttributeMap = (LiveAttributeMap<?, ?>) varEntry.getValue();
-                        if (liveAttributeMap.published()) {
-                            varEntry.setValue(liveAttributeMap
-                                    .withAttributes(Map.of("BINDING_VARIABLE_NAME", varEntry.getKey())));
-                        } else {
-                            liveAttributeMap.setAttribute("BINDING_VARIABLE_NAME", varEntry.getKey());
-                        }
-                    }
-                });
+        ((Map<String, Object>) session.getBinding().getVariables()).forEach((key, value) -> {
+            if (value instanceof LiveAttributeMap) {
+                final LiveAttributeMap<?, ?> liveAttributeMap = (LiveAttributeMap<?, ?>) value;
+                if (!liveAttributeMap.published()) {
+                    liveAttributeMap.setAttribute("BINDING_VARIABLE_NAME", key);
+                }
+            }
+        });
     }
 
     private void addPrintListener(
