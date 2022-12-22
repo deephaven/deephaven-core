@@ -752,15 +752,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         Ticket rollupTicket = workerConnection.getConfig().newTicket();
 
         Promise<Object> rollupPromise = Callbacks.grpcUnaryPromise(c -> {
-            RollupRequest request = new RollupRequest();
-            request.setSourceId(state().getHandle().makeTicket());
-            request.setResultViewId(rollupTicket);
-//            request.setAggregationsList(config.buildRequest().TODO);
-            request.setGroupByColumnsList(Js.<String[]>cast(config.groupingColumns));
-            request.setIncludeConstituents(config.includeConstituents);
-            //TODO
-//            config.includeDescriptions
-//            config.includeOriginalColumns
+            RollupRequest request = config.buildRequest(getColumns());
+            request.setSourceTableId(state().getHandle().makeTicket());
+            request.setResultRollupTableId(rollupTicket);
             workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
         });
 

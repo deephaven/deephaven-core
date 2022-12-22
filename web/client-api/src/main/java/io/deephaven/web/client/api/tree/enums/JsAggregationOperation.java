@@ -23,4 +23,7 @@ public class JsAggregationOperation {
             // Array operation isn't legal in all contexts, just omit it for now
             // ARRAY = "Array",
             SKIP = "Skip";
+//            SORTED_FIRST="SortedFirst",
+//            SORTED_LAST="SortedLast",
+//            WSUM = "WeightedSum";
 }

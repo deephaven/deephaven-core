@@ -103,6 +103,7 @@ public class JsTreeTable extends HasEventHandling {
         private final Boolean[] expandedColumn;
         private final int[] depthColumn;
         private final double offset;
+        private final double treeSize;
 
         private final JsArray<Column> columns;
         private final JsArray<TreeRow> rows;
@@ -110,8 +111,9 @@ public class JsTreeTable extends HasEventHandling {
         private final ColumnData[] columnData;
         private final Object[] data;
 
-        private TreeViewportData(RangeSet includedRows, ColumnData[] dataColumns, Column[] columns) {
+        private TreeViewportData(RangeSet includedRows, double treeSize, ColumnData[] dataColumns, Column[] columns) {
             this.offset = includedRows.getFirstRow();
+            this.treeSize = treeSize;
             this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
 
             // Unlike ViewportData, assume that we own this copy of the data and can mutate at will. As such,
@@ -186,6 +188,9 @@ public class JsTreeTable extends HasEventHandling {
             return rows;
         }
 
+        public double getTreeSize() {
+            return treeSize;
+        }
 
         /**
          * Checks if two viewport data objects contain the same data, based on comparing four fields, none of which can
@@ -326,7 +331,6 @@ public class JsTreeTable extends HasEventHandling {
     private Double viewportUpdateTimeoutId;
     private boolean scheduled;
     private boolean running;
-//    private TreeTableResult lastResult;
     private TreeViewportData currentViewportData;
 
     private boolean alwaysFireNextEvent = false;
@@ -543,11 +547,12 @@ public class JsTreeTable extends HasEventHandling {
                 final RangeSet includedRows = snapshot.getIncludedRows();
                 TreeViewportData vd = new TreeViewportData(
                         includedRows,
+                        snapshot.getTableSize(),
                         snapshot.getDataColumns(),
-                        columns);
+                        queryColumns);
 
                 try {
-                    handleUpdate(queryColumns, nextSort, nextFilters, vd, alwaysFireEvent);
+                    handleUpdate(nextSort, nextFilters, vd, alwaysFireEvent);
                 } finally {
                     running = false;
                     if (queuedOperations != null) {
@@ -564,10 +569,9 @@ public class JsTreeTable extends HasEventHandling {
         }
     }
 
-    private void handleUpdate(Column[] columns, List<Sort> nextSort, List<FilterCondition> nextFilters,
+    private void handleUpdate(List<Sort> nextSort, List<FilterCondition> nextFilters,
                               TreeViewportData viewportData, boolean alwaysFireEvent) {
         JsLog.debug("tree table response arrived", viewportData);
-        lastResult = result;
         if (closed) {
             if (viewportUpdateTimeoutId != null) {
                 DomGlobal.clearTimeout(viewportUpdateTimeoutId);
@@ -580,25 +584,6 @@ public class JsTreeTable extends HasEventHandling {
         final boolean fireEvent = alwaysFireEvent || !viewportData.containsSameDataAs(currentViewportData);
 
         this.currentViewportData = viewportData;
-
-//        Set<Key> presentKeys = new HashSet<>();
-//        for (int i = 0; i < result.getTableDetails().length; i++) {
-//            TableDetails detail = result.getTableDetails()[i];
-//            TreeNodeState treeNodeState = expandedMap.get(detail.getKey());
-//
-//            Set<Key> expandedChildren = new HashSet<>(Arrays.asList(detail.getChildren()));
-//            expandedChildren.retainAll(expandedMap.keySet());
-//            treeNodeState.expandedChildren = expandedChildren;
-//
-//            presentKeys.add(detail.getKey());
-//        }
-//        expandedMap.entrySet().removeIf(e -> {
-//            if (!presentKeys.contains(e.getKey())) {
-//                return true;
-//            } else {
-//                return false;
-//            }
-//        });
 
         this.sorts = nextSort;
         this.filters = nextFilters;
@@ -646,8 +631,9 @@ public class JsTreeTable extends HasEventHandling {
             return request;
         }
 
-        request.setExpandedNodes(
-                expandedMap.values().stream().map(TreeNodeState::toTableDetails).toArray(TableDetails[]::new));
+        //TODO DoPut the expanded nodes table
+//        request.setExpandedNodes(
+//                expandedMap.values().stream().map(TreeNodeState::toTableDetails).toArray(TableDetails[]::new));
 
 //        final int hierarchicalChildrenColumnIndex = Arrays.stream(tableDefinition.getColumns())
 //                .filter(col -> col.getName()
@@ -670,6 +656,7 @@ public class JsTreeTable extends HasEventHandling {
         // always include the sort setup, the viewport content could have changed in practically any way
         request.setSorts(nextSort.stream().map(Sort::makeDescriptor).toArray(SortDescriptor[]::new));
 
+        // Build the bitset for the columns that are needed to get the data, style, and maintain structure
         BitSet columnsBitset = new BitSet(tableDefinition.getColumns().length);
         Arrays.stream(columns).flatMapToInt(Column::getRequiredColumns).forEach(columnsBitset::set);
         for (ColumnDefinition column : tableDefinition.getColumns()) {
@@ -677,7 +664,13 @@ public class JsTreeTable extends HasEventHandling {
                 columnsBitset.set(column.getColumnIndex());
             }
         }
-//        columnsBitset.set(hierarchicalChildrenColumnIndex);
+        columnsBitset.set(rowDepthCol.getIndex());
+        columnsBitset.set(rowExpandedCol.getIndex());
+        keyColumns.forEach((p0, p1, p2) -> {
+            columnsBitset.set(p0.getIndex());
+            return null;
+        });
+
         request.setColumns(columnsBitset);
         request.setViewportEnd((long) (double) lastRow);
         request.setViewportStart((long) (double) firstRow);
@@ -855,8 +848,8 @@ public class JsTreeTable extends HasEventHandling {
     @JsProperty
     public double getSize() {
         // read the size of the last tree response
-        if (lastResult != null) {
-            return (double) lastResult.getTreeSize();
+        if (currentViewportData != null) {
+            return (double) currentViewportData.getTreeSize();
         }
         return -1;// not ready yet
     }
