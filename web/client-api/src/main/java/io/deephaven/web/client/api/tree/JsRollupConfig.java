@@ -84,6 +84,7 @@ public class JsRollupConfig {
         request.setGroupByColumnsList(Js.<String[]>cast(groupingColumns));
         request.setIncludeConstituents(includeConstituents);
         JsArray<Aggregation> aggregations = new JsArray<>();
+        request.setAggregationsList(aggregations);
 
         this.aggregations.forEach(key -> {
             Aggregation agg = new Aggregation();
