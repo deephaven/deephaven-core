@@ -238,7 +238,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     private static QueryTable getTreeRoot(@NotNull final QueryTable tree) {
         // NB: This is "safe" because we rely on the implementation details of aggregation and the partition operator,
         // which ensure that the initial groups are bucketed first and the result row set is flat.
-        return (QueryTable) tree.getColumnSource(CONSTITUENT.name()).get(0);
+        return (QueryTable) tree.getColumnSource(TREE_COLUMN.name()).get(0);
     }
 
     private static QueryTable computeSourceRowLookupTable(
