@@ -19,8 +19,6 @@ import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
@@ -34,7 +32,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicalt
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.*;
-import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -58,8 +56,8 @@ import jsinterop.base.Js;
 
 import java.util.*;
 
-import static io.deephaven.web.client.api.barrage.BarrageUtils.makeUint8ArrayFromBitset;
-import static io.deephaven.web.client.api.barrage.BarrageUtils.serializeRanges;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
@@ -268,9 +266,9 @@ public class JsTreeTable extends HasEventHandling {
         this.treeDescriptor = HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
 
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotDefinitionSchema_asU8();
-        Schema schema = BarrageUtils.readSchemaMessage(flightSchemaMessage);
+        Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
-        this.tableDefinition = BarrageUtils.readTableDefinition(schema);
+        this.tableDefinition = WebBarrageUtils.readTableDefinition(schema);
         Column[] columns = new Column[0];
         Map<String, ColumnDefinition> columnDefsByName = tableDefinition.getColumnsByName();
         int rowFormatColumn = -1;
@@ -440,7 +438,7 @@ public class JsTreeTable extends HasEventHandling {
                     doGetRequest.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(doGetRequest));
 
                     subscriptionRequestWrapper.setAppMetadata(
-                            BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSubscriptionRequest));
+                            WebBarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSubscriptionRequest));
                     doExchange.send(subscriptionRequestWrapper);
 
                     // hang on to this to get server-sent snapshots, cancel when needed
@@ -469,8 +467,8 @@ public class JsTreeTable extends HasEventHandling {
                                     new ByteBuffer(
                                             new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
                         }
-                        TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
-                                BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
+                        TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
+                                WebBarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
                                 true,
                                 columnTypes);
 
