@@ -19,7 +19,7 @@ import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.object.TypeLookup;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.Scheduler;
+import io.deephaven.server.util.Scheduler;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 

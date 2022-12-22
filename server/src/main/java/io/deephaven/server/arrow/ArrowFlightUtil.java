@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.ArrowToTableConverter;
@@ -30,9 +31,8 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.extensions.barrage.BarrageMessageProducer;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
-import io.deephaven.server.barrage.BarrageMessageProducerOperation;
+import io.deephaven.server.barrage.BarrageMessageProducer;
+import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.Status;
@@ -52,7 +52,6 @@ import java.nio.ByteOrder;
 import java.util.*;
 
 import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS;
-import static io.deephaven.extensions.barrage.BarrageMessageProducer.*;
 
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
@@ -61,7 +60,7 @@ public class ArrowFlightUtil {
             Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
     public static void DoGetCustom(
-            final StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
+            final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
             final SessionState session,
             final TicketRouter ticketRouter,
             final Flight.Ticket request,
@@ -84,7 +83,7 @@ public class ArrowFlightUtil {
                     metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                     // create an adapter for the response observer
-                    final StreamObserver<BarrageStreamGenerator.View> listener =
+                    final StreamObserver<BarrageStreamGeneratorImpl.View> listener =
                             ArrowModule.provideListenerAdapter().adapt(observer);
 
                     // push the schema to the listener
@@ -274,15 +273,15 @@ public class ArrowFlightUtil {
         private final String myPrefix;
         private final SessionState session;
 
-        private final StreamObserver<BarrageStreamGenerator.View> listener;
+        private final StreamObserver<BarrageStreamGeneratorImpl.View> listener;
 
         private boolean isClosed = false;
 
         private boolean isFirstMsg = true;
 
         private final TicketRouter ticketRouter;
-        private final StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory;
-        private final BarrageMessageProducerOperation.Factory<BarrageStreamGenerator.View> operationFactory;
+        private final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory;
+        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> operationFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
 
@@ -298,9 +297,9 @@ public class ArrowFlightUtil {
         @AssistedInject
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
-                final StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
-                final BarrageMessageProducerOperation.Factory<BarrageStreamGenerator.View> operationFactory,
-                final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> listenerAdapter,
+                final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
+                final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> operationFactory,
+                final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGeneratorImpl.View>> listenerAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
                 @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
@@ -513,7 +512,7 @@ public class ArrowFlightUtil {
         private class SubscriptionRequestHandler
                 implements Handler {
 
-            private BarrageMessageProducer<BarrageStreamGenerator.View> bmp;
+            private BarrageMessageProducer<BarrageStreamGeneratorImpl.View> bmp;
             private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
             private SessionState.ExportObject<?> onExportResolvedContinuation;
 

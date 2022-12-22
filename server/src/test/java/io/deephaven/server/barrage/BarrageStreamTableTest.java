@@ -27,15 +27,15 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.extensions.barrage.BarrageMessageProducer;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.server.arrow.ArrowModule;
-import io.deephaven.util.Scheduler;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -62,7 +62,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
     private QueryTable sourceTable;
     private TrackingWritableRowSet streamRowSet;
     private QueryTable streamTable;
-    private BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer;
+    private BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer;
     private TableUpdateValidator originalTUV;
     private FailureListener originalTUVListener;
 
@@ -71,7 +71,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> getStreamGeneratorFactory();
+        BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {
@@ -100,7 +100,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         streamTable.setRefreshing(true);
         streamTable.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 
-        barrageMessageProducer = streamTable.getResult(new BarrageMessageProducerOperation<>(
+        barrageMessageProducer = streamTable.getResult(new BarrageMessageProducer.Operation<>(
                 scheduler, daggerRoot.getStreamGeneratorFactory(), streamTable, UPDATE_INTERVAL, () -> {
                 }));
 

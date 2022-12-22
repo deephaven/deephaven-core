@@ -32,7 +32,7 @@ import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.util.Scheduler;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;

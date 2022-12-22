@@ -9,7 +9,7 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.GetTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.MergeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionedTableDescriptor;
-import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
@@ -70,8 +70,8 @@ public class JsPartitionedTable extends HasEventHandling {
             descriptor = PartitionedTableDescriptor.deserializeBinary(w.getDataAsU8());
 
             keyColumnTypes = new ArrayList<>();
-            ColumnDefinition[] columnDefinitions = BarrageUtils.readColumnDefinitions(
-                    BarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
+            ColumnDefinition[] columnDefinitions = WebBarrageUtils.readColumnDefinitions(
+                    WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
             for (int i = 0; i < columnDefinitions.length; i++) {
                 ColumnDefinition columnDefinition = columnDefinitions[i];
                 if (descriptor.getKeyColumnNamesList().indexOf(columnDefinition.getName()) != -1) {

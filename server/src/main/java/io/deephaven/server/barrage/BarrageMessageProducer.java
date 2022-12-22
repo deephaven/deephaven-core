@@ -1,9 +1,12 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.extensions.barrage;
+package io.deephaven.server.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -28,14 +31,18 @@ import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
-import io.deephaven.util.Scheduler;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -54,6 +61,9 @@ import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
+import static io.deephaven.extensions.barrage.util.BarrageUtil.MAX_SNAPSHOT_CELL_COUNT;
+import static io.deephaven.extensions.barrage.util.BarrageUtil.MIN_SNAPSHOT_CELL_COUNT;
+import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_PERCENTAGE;
 
 /**
  * The server-side implementation of a Barrage replication source.
@@ -86,97 +96,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class,
                     "subscriptionGrowthEnabled", false);
 
-    public static final double TARGET_SNAPSHOT_PERCENTAGE =
-            Configuration.getInstance().getDoubleForClassWithDefault(BarrageMessageProducer.class,
-                    "targetSnapshotPercentage", 0.25);
-
-    public static final long MIN_SNAPSHOT_CELL_COUNT =
-            Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
-                    "minSnapshotCellCount", 50000);
-    public static final long MAX_SNAPSHOT_CELL_COUNT =
-            Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
-                    "maxSnapshotCellCount", Long.MAX_VALUE);
-
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
-
-    /**
-     * A StreamGenerator takes a BarrageMessage and re-uses portions of the serialized payload across different
-     * subscribers that may subscribe to different viewports and columns.
-     *
-     * @param <MessageView> The sub-view type that the listener expects to receive.
-     */
-    public interface StreamGenerator<MessageView> extends SafeCloseable {
-
-        interface Factory<MessageView> {
-            /**
-             * Create a StreamGenerator that now owns the BarrageMessage.
-             *
-             * @param message the message that contains the update that we would like to propagate
-             * @param metricsConsumer a method that can be used to record write metrics
-             */
-            StreamGenerator<MessageView> newGenerator(
-                    BarrageMessage message, BarragePerformanceLog.WriteMetricsConsumer metricsConsumer);
-
-            /**
-             * Create a MessageView of the Schema to send as the initial message to a new subscriber.
-             *
-             * @param table the description of the table's data layout
-             * @param attributes the table attributes
-             * @return a MessageView that can be sent to a subscriber
-             */
-            MessageView getSchemaView(TableDefinition table, Map<String, Object> attributes);
-        }
-
-        /**
-         * @return the BarrageMessage that this generator is operating on
-         */
-        BarrageMessage getMessage();
-
-        /**
-         * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
-         *
-         * @param options serialization options for this specific view
-         * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
-         * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
-         */
-        MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot);
-
-        /**
-         * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
-         *
-         * @param options serialization options for this specific view
-         * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
-         * @param viewport is the position-space viewport
-         * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-         * @param keyspaceViewport is the key-space viewport
-         * @param subscribedColumns are the columns subscribed for this view
-         * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
-         */
-        MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot, @Nullable RowSet viewport,
-                boolean reverseViewport, @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
-
-        /**
-         * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single requestor.
-         *
-         * @param options serialization options for this specific view
-         * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
-         */
-        MessageView getSnapshotView(BarrageSnapshotOptions options);
-
-        /**
-         * Obtain a View of this StreamGenerator that can be sent to a single requestor.
-         *
-         * @param options serialization options for this specific view
-         * @param viewport is the position-space viewport
-         * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-         * @param snapshotColumns are the columns included for this view
-         * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
-         */
-        MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport, boolean reverseViewport,
-                @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
-
-    }
 
     /**
      * Helper to convert from SubscriptionRequest to Options and from MessageView to InputStream.
@@ -188,9 +109,93 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         V adapt(T t);
     }
 
+    public static class Operation<MessageView>
+            implements QueryTable.MemoizableOperation<BarrageMessageProducer<MessageView>> {
+
+        @AssistedFactory
+        public interface Factory<MessageView> {
+            Operation<MessageView> create(BaseTable parent, long updateIntervalMs);
+        }
+
+        private final Scheduler scheduler;
+        private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
+        private final BaseTable parent;
+        private final long updateIntervalMs;
+        private final Runnable onGetSnapshot;
+
+        @AssistedInject
+        public Operation(
+                final Scheduler scheduler,
+                final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
+                @Assisted final BaseTable parent,
+                @Assisted final long updateIntervalMs) {
+            this(scheduler, streamGeneratorFactory, parent, updateIntervalMs, null);
+        }
+
+        @VisibleForTesting
+        public Operation(
+                final Scheduler scheduler,
+                final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
+                final BaseTable parent,
+                final long updateIntervalMs,
+                @Nullable final Runnable onGetSnapshot) {
+            this.scheduler = scheduler;
+            this.streamGeneratorFactory = streamGeneratorFactory;
+            this.parent = parent;
+            this.updateIntervalMs = updateIntervalMs;
+            this.onGetSnapshot = onGetSnapshot;
+        }
+
+        @Override
+        public String getDescription() {
+            return "BarrageMessageProducer(" + updateIntervalMs + ")";
+        }
+
+        @Override
+        public String getLogPrefix() {
+            return "BarrageMessageProducer.Operation(" + System.identityHashCode(this) + "): ";
+        }
+
+        @Override
+        public MemoizedOperationKey getMemoizedOperationKey() {
+            return new MyMemoKey(updateIntervalMs);
+        }
+
+        @Override
+        public Result<BarrageMessageProducer<MessageView>> initialize(final boolean usePrev,
+                final long beforeClock) {
+            final BarrageMessageProducer<MessageView> result = new BarrageMessageProducer<MessageView>(
+                    scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
+            return new Result<>(result, result.constructListener());
+        }
+    }
+
+    private static class MyMemoKey extends MemoizedOperationKey {
+        private final long interval;
+
+        private MyMemoKey(final long interval) {
+            this.interval = interval;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            final MyMemoKey that = (MyMemoKey) o;
+            return interval == that.interval;
+        }
+
+        @Override
+        public int hashCode() {
+            return Long.hashCode(interval);
+        }
+    }
+
     private final String logPrefix;
     private final Scheduler scheduler;
-    private final StreamGenerator.Factory<MessageView> streamGeneratorFactory;
+    private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
 
     private final BaseTable parent;
     private final long updateIntervalMs;
@@ -289,7 +294,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final boolean parentIsRefreshing;
 
     public BarrageMessageProducer(final Scheduler scheduler,
-            final StreamGenerator.Factory<MessageView> streamGeneratorFactory,
+            final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
             final BaseTable parent,
             final long updateIntervalMs,
             final Runnable onGetSnapshot) {
@@ -1376,7 +1381,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         if (snapshot != null) {
-            try (final StreamGenerator<MessageView> snapshotGenerator =
+            try (final BarrageStreamGenerator<MessageView> snapshotGenerator =
                     streamGeneratorFactory.newGenerator(snapshot, this::recordWriteMetrics)) {
                 for (final Subscription subscription : growingSubscriptions) {
                     if (subscription.pendingDelete) {
@@ -1426,7 +1431,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private void propagateToSubscribers(final BarrageMessage message, final RowSet propRowSetForMessage) {
         // message is released via transfer to stream generator (as it must live until all view's are closed)
-        try (final StreamGenerator<MessageView> generator = streamGeneratorFactory.newGenerator(
+        try (final BarrageStreamGenerator<MessageView> generator = streamGeneratorFactory.newGenerator(
                 message, this::recordWriteMetrics)) {
             for (final Subscription subscription : activeSubscriptions) {
                 if (subscription.pendingInitialSnapshot || subscription.pendingDelete) {
@@ -1481,7 +1486,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private void propagateSnapshotForSubscription(
             final Subscription subscription,
-            final StreamGenerator<MessageView> snapshotGenerator) {
+            final BarrageStreamGenerator<MessageView> snapshotGenerator) {
         boolean needsSnapshot = subscription.pendingInitialSnapshot;
 
         // This is a little confusing, but by the time we propagate, the `snapshotViewport`/`snapshotColumns` objects

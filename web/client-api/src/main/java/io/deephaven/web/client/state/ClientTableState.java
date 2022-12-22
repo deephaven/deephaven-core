@@ -12,7 +12,7 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_gene
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
-import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
@@ -33,7 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static io.deephaven.web.client.api.barrage.BarrageUtils.keyValuePairs;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.keyValuePairs;
 import static io.deephaven.web.client.fu.JsItr.iterate;
 
 /**
@@ -1040,9 +1040,9 @@ public final class ClientTableState extends TableConfig {
         handle.setConnected(true);
 
         Uint8Array flightSchemaMessage = def.getSchemaHeader_asU8();
-        Schema schema = BarrageUtils.readSchemaMessage(flightSchemaMessage);
+        Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
-        ColumnDefinition[] cols = BarrageUtils.readColumnDefinitions(schema);
+        ColumnDefinition[] cols = WebBarrageUtils.readColumnDefinitions(schema);
 
         TableAttributesDefinition attributes = new TableAttributesDefinition(
                 keyValuePairs("deephaven:attribute.", schema.customMetadataLength(), schema::customMetadata),

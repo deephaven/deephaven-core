@@ -13,7 +13,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.Scheduler;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.DateTimeUtils;
 import io.grpc.StatusRuntimeException;
 

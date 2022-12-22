@@ -5,7 +5,7 @@ package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.grpc.Drainable;
 import io.grpc.stub.StreamObserver;
 
@@ -37,7 +37,7 @@ public class TableToArrowConverter {
         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
                 new BarragePerformanceLog.SnapshotMetricsHelper();
         listener = new ArrowBuilderObserver();
-        BarrageUtil.createAndSendSnapshot(new BarrageStreamGenerator.ArrowFactory(), table, null, null,
+        BarrageUtil.createAndSendSnapshot(new BarrageStreamGeneratorImpl.ArrowFactory(), table, null, null,
                 false, DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
     }
 
@@ -58,11 +58,11 @@ public class TableToArrowConverter {
         return listener.batchMessages.pop();
     }
 
-    private static class ArrowBuilderObserver implements StreamObserver<BarrageStreamGenerator.View> {
+    private static class ArrowBuilderObserver implements StreamObserver<BarrageStreamGeneratorImpl.View> {
         final Deque<byte[]> batchMessages = new ArrayDeque<>();
 
         @Override
-        public void onNext(final BarrageStreamGenerator.View messageView) {
+        public void onNext(final BarrageStreamGeneratorImpl.View messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
                     try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =

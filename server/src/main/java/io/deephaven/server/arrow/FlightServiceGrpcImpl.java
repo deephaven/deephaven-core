@@ -10,14 +10,13 @@ import com.google.rpc.Code;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
-import io.deephaven.extensions.barrage.BarrageMessageProducer;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
@@ -39,7 +38,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
     private final ScheduledExecutorService executorService;
-    private final BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory;
+    private final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory;
     private final SessionService sessionService;
     private final TicketRouter ticketRouter;
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
@@ -49,7 +48,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     @Inject
     public FlightServiceGrpcImpl(
             @Nullable final ScheduledExecutorService executorService,
-            final BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
+            final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
             final SessionService sessionService,
             final TicketRouter ticketRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,

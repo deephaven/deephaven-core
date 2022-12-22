@@ -9,6 +9,7 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -21,10 +22,10 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.extensions.barrage.BarrageMessageProducer;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -71,10 +72,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-import static io.deephaven.extensions.barrage.BarrageMessageProducer.MAX_SNAPSHOT_CELL_COUNT;
-import static io.deephaven.extensions.barrage.BarrageMessageProducer.MIN_SNAPSHOT_CELL_COUNT;
-import static io.deephaven.extensions.barrage.BarrageMessageProducer.TARGET_SNAPSHOT_PERCENTAGE;
-
 public class BarrageUtil {
     public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
             BarrageSnapshotOptions.builder().build();
@@ -82,6 +79,17 @@ public class BarrageUtil {
     public static final long FLATBUFFER_MAGIC = 0x6E687064;
 
     private static final Logger log = LoggerFactory.getLogger(BarrageUtil.class);
+
+    public static final double TARGET_SNAPSHOT_PERCENTAGE =
+            Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
+                    "targetSnapshotPercentage", 0.25);
+
+    public static final long MIN_SNAPSHOT_CELL_COUNT =
+            Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
+                    "minSnapshotCellCount", 50000);
+    public static final long MAX_SNAPSHOT_CELL_COUNT =
+            Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
+                    "maxSnapshotCellCount", Long.MAX_VALUE);
 
     // year is 4 bytes, month is 1 byte, day is 1 byte
     public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);
@@ -613,13 +621,13 @@ public class BarrageUtil {
     }
 
     public static void createAndSendStaticSnapshot(
-            BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
+            BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
             BaseTable table,
             BitSet columns,
             RowSet viewport,
             boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGenerator.View> listener,
+            StreamObserver<BarrageStreamGeneratorImpl.View> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // start with small value and grow
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
@@ -670,7 +678,7 @@ public class BarrageUtil {
                     // send out the data. Note that although a `BarrageUpdateMetaData` object will
                     // be provided with each unique snapshot, vanilla Flight clients will ignore
                     // these and see only an incoming stream of batches
-                    try (final BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> bsg =
+                    try (final BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> bsg =
                             streamGeneratorFactory.newGenerator(msg, metrics)) {
                         if (rsIt.hasMore()) {
                             listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
@@ -711,11 +719,11 @@ public class BarrageUtil {
     }
 
     public static void createAndSendSnapshot(
-            BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> streamGeneratorFactory,
+            BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
             BaseTable table,
             BitSet columns, RowSet viewport, boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGenerator.View> listener,
+            StreamObserver<BarrageStreamGeneratorImpl.View> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
 
         // if the table is static and a full snapshot is requested, we can make and send multiple
@@ -742,7 +750,7 @@ public class BarrageUtil {
         msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data
 
         // translate the viewport to keyspace and make the call
-        try (final BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> bsg =
+        try (final BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> bsg =
                 streamGeneratorFactory.newGenerator(msg, metrics);
                 final RowSet keySpaceViewport = viewport != null
                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)

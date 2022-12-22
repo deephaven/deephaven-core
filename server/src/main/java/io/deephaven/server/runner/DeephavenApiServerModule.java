@@ -25,7 +25,7 @@ import io.deephaven.server.session.SessionModule;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.table.inputtables.InputTableModule;
 import io.deephaven.server.uri.UriModule;
-import io.deephaven.util.Scheduler;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.grpc.BindableService;
