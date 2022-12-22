@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.barrage;
+package io.deephaven.extensions.barrage;
 
 import com.google.common.io.LittleEndianDataOutputStream;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -26,9 +26,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -49,8 +46,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -58,24 +53,26 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
+import static io.deephaven.proto.flight.util.MessageHelper.toIpcBytes;
 
-public class BarrageStreamGenerator implements
-        BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> {
-    private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
+public class BarrageStreamGeneratorImpl implements
+        BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> {
+
+    private static final Logger log = LoggerFactory.getLogger(BarrageStreamGeneratorImpl.class);
     // NB: This should likely be something smaller, such as 1<<16, but since the js api is not yet able
     // to receive multiple record batches we crank this up to MAX_INT.
     private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "batchSize", Integer.MAX_VALUE);
+            .getIntegerForClassWithDefault(BarrageStreamGeneratorImpl.class, "batchSize", Integer.MAX_VALUE);
 
     // defaults to a small value that is likely to succeed and provide data for following batches
     private static final int DEFAULT_INITIAL_BATCH_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "initialBatchSize", 4096);
+            .getIntegerForClassWithDefault(BarrageStreamGeneratorImpl.class, "initialBatchSize", 4096);
 
     // default to 100MB to match 100MB java-client and w2w default incoming limits
     private static final int DEFAULT_MESSAGE_SIZE_LIMIT = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "maxOutboundMessageSize", 100 * 1024 * 1024);
+            .getIntegerForClassWithDefault(BarrageStreamGeneratorImpl.class, "maxOutboundMessageSize",
+                    100 * 1024 * 1024);
 
     public interface View {
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
@@ -91,16 +88,14 @@ public class BarrageStreamGenerator implements
         RowSet modRowOffsets(int col);
     }
 
-    @Singleton
     public static class Factory
-            implements BarrageMessageProducer.StreamGenerator.Factory<View> {
-        @Inject
+            implements BarrageStreamGenerator.Factory<View> {
         public Factory() {}
 
         @Override
-        public BarrageMessageProducer.StreamGenerator<View> newGenerator(
+        public BarrageStreamGenerator<View> newGenerator(
                 final BarrageMessage message, final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
-            return new BarrageStreamGenerator(message, metricsConsumer);
+            return new BarrageStreamGeneratorImpl(message, metricsConsumer);
         }
 
         @Override
@@ -111,6 +106,26 @@ public class BarrageStreamGenerator implements
             builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                     org.apache.arrow.flatbuf.MessageHeader.Schema));
             return new SchemaView(builder.dataBuffer());
+        }
+    }
+
+    /**
+     * This factory writes data in Arrow's IPC format which has a terse header and no room for metadata.
+     */
+    public static class ArrowFactory extends Factory {
+        @Override
+        public BarrageStreamGenerator<View> newGenerator(
+                BarrageMessage message, BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+            return new BarrageStreamGeneratorImpl(message, metricsConsumer) {
+                @Override
+                protected void writeHeader(
+                        ByteBuffer metadata,
+                        MutableInt size,
+                        FlatBufferBuilder header,
+                        ExposedByteArrayOutputStream baos) throws IOException {
+                    baos.write(toIpcBytes(header));
+                }
+            };
         }
     }
 
@@ -192,7 +207,7 @@ public class BarrageStreamGenerator implements
      * @param message the generator takes ownership of the message and its internal objects
      * @param writeConsumer a method that can be used to record write time
      */
-    public BarrageStreamGenerator(final BarrageMessage message,
+    public BarrageStreamGeneratorImpl(final BarrageMessage message,
             final BarragePerformanceLog.WriteMetricsConsumer writeConsumer) {
         this.message = message;
         this.writeConsumer = writeConsumer;
@@ -290,7 +305,7 @@ public class BarrageStreamGenerator implements
     }
 
     public static class SubView implements View {
-        public final BarrageStreamGenerator generator;
+        public final BarrageStreamGeneratorImpl generator;
         public final BarrageSubscriptionOptions options;
         public final boolean isInitialSnapshot;
         public final RowSet viewport;
@@ -303,7 +318,7 @@ public class BarrageStreamGenerator implements
         public final RowSet addRowKeys;
         public final RowSet[] modRowOffsets;
 
-        public SubView(final BarrageStreamGenerator generator,
+        public SubView(final BarrageStreamGeneratorImpl generator,
                 final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
                 @Nullable final RowSet viewport,
@@ -463,7 +478,7 @@ public class BarrageStreamGenerator implements
     }
 
     public static class SnapshotView implements View {
-        public final BarrageStreamGenerator generator;
+        public final BarrageStreamGeneratorImpl generator;
         public final BarrageSnapshotOptions options;
         public final RowSet viewport;
         public final boolean reverseViewport;
@@ -473,7 +488,7 @@ public class BarrageStreamGenerator implements
         public final RowSet addRowKeys;
         public final RowSet addRowOffsets;
 
-        public SnapshotView(final BarrageStreamGenerator generator,
+        public SnapshotView(final BarrageStreamGeneratorImpl generator,
                 final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
                 final boolean reverseViewport,
@@ -704,23 +719,33 @@ public class BarrageStreamGenerator implements
 
         // now create the proto header
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
-            final CodedOutputStream cos = CodedOutputStream.newInstance(baos);
-
-            cos.writeByteBuffer(Flight.FlightData.DATA_HEADER_FIELD_NUMBER, header.dataBuffer().slice());
-            if (metadata != null) {
-                cos.writeByteBuffer(Flight.FlightData.APP_METADATA_FIELD_NUMBER, metadata);
-            }
-
-            cos.writeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-            cos.writeUInt32NoTag(size.intValue());
-            cos.flush();
-
+            writeHeader(metadata, size, header, baos);
             streams.addFirst(new DrainableByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
 
             return new ConsecutiveDrainableStreams(streams.toArray(new InputStream[0]));
         } catch (final IOException ex) {
             throw new UncheckedDeephavenException("Unexpected IOException", ex);
         }
+    }
+
+    /**
+     * This implementation prepares the protobuf FlightData header.
+     */
+    protected void writeHeader(
+            ByteBuffer metadata,
+            MutableInt size,
+            FlatBufferBuilder header,
+            ExposedByteArrayOutputStream baos) throws IOException {
+        final CodedOutputStream cos = CodedOutputStream.newInstance(baos);
+
+        cos.writeByteBuffer(Flight.FlightData.DATA_HEADER_FIELD_NUMBER, header.dataBuffer().slice());
+        if (metadata != null) {
+            cos.writeByteBuffer(Flight.FlightData.APP_METADATA_FIELD_NUMBER, metadata);
+        }
+
+        cos.writeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
+        cos.writeUInt32NoTag(size.intValue());
+        cos.flush();
     }
 
     private static int createByteVector(final FlatBufferBuilder builder, final byte[] data, final int offset,
@@ -1274,7 +1299,7 @@ public class BarrageStreamGenerator implements
     public static class ConsecutiveDrainableStreams extends DefensiveDrainable {
         final InputStream[] streams;
 
-        ConsecutiveDrainableStreams(final InputStream... streams) {
+        public ConsecutiveDrainableStreams(final InputStream... streams) {
             this.streams = streams;
             for (final InputStream stream : streams) {
                 if (!(stream instanceof Drainable)) {

@@ -14,7 +14,6 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.appmode.ApplicationsModule;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.notebook.FilesystemStorageServiceModule;
-import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.object.ObjectServiceModule;
 import io.deephaven.server.partitionedtable.PartitionedTableServiceModule;
 import io.deephaven.server.plugin.PluginsModule;
