@@ -318,9 +318,20 @@ type HierarchicalTableApplyRequest struct {
 	ResultHierarchicalTableId *ticket.Ticket `protobuf:"bytes,1,opt,name=result_hierarchical_table_id,json=resultHierarchicalTableId,proto3" json:"result_hierarchical_table_id,omitempty"`
 	// Ticket for the input HierarchicalTable (RollupTable or TreeTable) to apply operations to
 	InputHierarchicalTableId *ticket.Ticket `protobuf:"bytes,2,opt,name=input_hierarchical_table_id,json=inputHierarchicalTableId,proto3" json:"input_hierarchical_table_id,omitempty"`
-	// Filters to apply to the input HierarchicalTable's to produce the result HierarchicalTable
+	// Filters to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
+	// the "extra" columns included in the a HierarchicalTableDescriptor's snapshot_definition_schema.
+	// For RollupTables, only the group-by columns may be filtered. The names are always expressed as they appear
+	// in aggregated node columns (and in the group-by columns). The filtering will result in a complete or partial
+	// new Table.rollup operation.
+	// For TreeTables, these may be variously applied to the source (resulting in a new Table.tree operation) or to the
+	// nodes (resulting in filtering at snapshot time).
 	Filters []*table.Condition `protobuf:"bytes,3,rep,name=filters,proto3" json:"filters,omitempty"`
-	// Sorts to apply to the input HierarchicalTable's to produce the result HierarchicalTable
+	// Sorts to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
+	// the "extra" columns included in the a HierarchicalTableDescriptor's snapshot_definition_schema.
+	// For TreeTables, these are simply applied to the nodes at snapshot time.
+	// For RollupTables, these are expressed against the aggregated node columns, and will be applied to the appropriate
+	// input (constituent) columns as well. The appropriate (aggregated or constituent) sorts are applied to the nodes at
+	// snapshot time.
 	Sorts []*table.SortDescriptor `protobuf:"bytes,4,rep,name=sorts,proto3" json:"sorts,omitempty"`
 }
 
@@ -451,6 +462,8 @@ type HierarchicalTableDescriptor struct {
 	//	*HierarchicalTableDescriptor_Tree
 	Details isHierarchicalTableDescriptor_Details `protobuf_oneof:"details"`
 	// Schema as described in Arrow Message.fbs::Message.
+	// Note that for RollupTables, the constituent columns have a prefix "__CONSTITUENT_" prepended to their names in
+	// order to disambiguate them from the aggregated columns.
 	SnapshotDefinitionSchema []byte `protobuf:"bytes,6,opt,name=snapshot_definition_schema,json=snapshotDefinitionSchema,proto3" json:"snapshot_definition_schema,omitempty"`
 }
 
@@ -559,7 +572,9 @@ type RollupDescriptorDetails struct {
 	// Whether this RollupTable's leaf nodes are first level aggregations or constituents
 	LeafNodeType RollupNodeType `protobuf:"varint,1,opt,name=leaf_node_type,json=leafNodeType,proto3,enum=io.deephaven.proto.backplane.grpc.RollupNodeType" json:"leaf_node_type,omitempty"`
 	// '='-delimited pairs from output (aggregation) column name to input (constituent) column name, or singular names
-	// for aggregations with identical output and input column names.
+	// for aggregations with identical output and input column names. In practice, input column names are always
+	// prefixed with "__CONSTITUENT_" to match the constituent column definitions in the HierarchicalTableDescriptor's
+	// snapshot_definition_schema.
 	OutputInputColumnPairs []string `protobuf:"bytes,2,rep,name=output_input_column_pairs,json=outputInputColumnPairs,proto3" json:"output_input_column_pairs,omitempty"`
 }
 

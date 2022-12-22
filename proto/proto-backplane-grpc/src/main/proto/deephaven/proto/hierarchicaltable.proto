@@ -85,10 +85,21 @@ message HierarchicalTableApplyRequest {
   // Ticket for the input HierarchicalTable (RollupTable or TreeTable) to apply operations to
   Ticket input_hierarchical_table_id = 2;
 
-  // Filters to apply to the input HierarchicalTable's to produce the result HierarchicalTable
+  // Filters to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
+  // the "extra" columns included in the a HierarchicalTableDescriptor's snapshot_definition_schema.
+  // For RollupTables, only the group-by columns may be filtered. The names are always expressed as they appear
+  // in aggregated node columns (and in the group-by columns). The filtering will result in a complete or partial
+  // new Table.rollup operation.
+  // For TreeTables, these may be variously applied to the source (resulting in a new Table.tree operation) or to the
+  // nodes (resulting in filtering at snapshot time).
   repeated Condition filters = 3;
 
-  // Sorts to apply to the input HierarchicalTable's to produce the result HierarchicalTable
+  // Sorts to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
+  // the "extra" columns included in the a HierarchicalTableDescriptor's snapshot_definition_schema.
+  // For TreeTables, these are simply applied to the nodes at snapshot time.
+  // For RollupTables, these are expressed against the aggregated node columns, and will be applied to the appropriate
+  // input (constituent) columns as well. The appropriate (aggregated or constituent) sorts are applied to the nodes at
+  // snapshot time.
   repeated SortDescriptor sorts = 4;
 }
 
@@ -126,6 +137,8 @@ message HierarchicalTableDescriptor {
   }
 
   // Schema as described in Arrow Message.fbs::Message.
+  // Note that for RollupTables, the constituent columns have a prefix "__CONSTITUENT_" prepended to their names in
+  // order to disambiguate them from the aggregated columns.
   bytes snapshot_definition_schema = 6;
 }
 
@@ -141,7 +154,9 @@ message RollupDescriptorDetails {
   RollupNodeType leaf_node_type = 1;
 
   // '='-delimited pairs from output (aggregation) column name to input (constituent) column name, or singular names
-  // for aggregations with identical output and input column names.
+  // for aggregations with identical output and input column names. In practice, input column names are always
+  // prefixed with "__CONSTITUENT_" to match the constituent column definitions in the HierarchicalTableDescriptor's
+  // snapshot_definition_schema.
   repeated string output_input_column_pairs = 2;
 }
 

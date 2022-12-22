@@ -79,9 +79,23 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     TableDefinition getNodeDefinition(@NotNull NodeType nodeType);
 
     /**
+     * @inheritDoc
+     * @implNote RollupTable implementations of this method have three distinct sets of columns: the "extra" columns,
+     *           the aggregated node columns, and the constituent node columns (if and only if constituents are
+     *           included), included in the listed order. Constituent node columns will have their names mangled to
+     *           disambiguate them from aggregated node columns, since {@link TableDefinition table definitions} do not
+     *           permit name collisions.
+     * @return The externally-visible {@link TableDefinition} for snapshots
+     */
+    TableDefinition getSnapshotDefinition();
+
+    /**
      * Get the {@link Pair input/output column name pairs} from input (source) column names to output (rollup
-     * aggregation) column names.
+     * aggregation) column names. These are used in conjunction with the {@link #getSnapshotDefinition() snapshot
+     * definition} by snapshot-driven consumers.
      *
+     * @implNote The input column names will be "mangled" to match the disambiguated constituent column names found in
+     *           {@link #getSnapshotDefinition() snapshot definitions} for constituent columns.
      * @return The input/output column name pairs
      */
     Collection<? extends Pair> getColumnPairs();
@@ -123,4 +137,15 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
      * @return The new RollupTable
      */
     RollupTable withNodeOperations(@NotNull NodeOperationsRecorder... nodeOperations);
+
+    /**
+     * Translate node operations for an aggregated to the closest equivalent for a constituent node. May only be invoked
+     * if {@code includesConstituents() == false}.
+     *
+     * @param aggregatedNodeOperationsToTranslate Node-level operations for aggregated nodes, initially supplied by
+     *        {@code makeNodeOperationsRecorder(NodeType.Aggregated)}.
+     * @return Node-level operations for constituent nodes
+     */
+    NodeOperationsRecorder translateAggregatedNodeOperationsForConstituentNodes(
+            @NotNull NodeOperationsRecorder aggregatedNodeOperationsToTranslate);
 }

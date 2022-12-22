@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortOperation;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -264,7 +265,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    public NodeOperationsRecorder makeNodeOperationsRecorder(@NotNull final NodeType nodeType) {
+    public RollupNodeOperationsRecorder makeNodeOperationsRecorder(@NotNull final NodeType nodeType) {
         return new RollupNodeOperationsRecorder(getNodeDefinition(nodeType), nodeType);
     }
 
@@ -292,6 +293,59 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, null, newAggregatedNodeOperations, null, newConstituentNodeOperations,
                 snapshotDefinition);
+    }
+
+    @Override
+    public NodeOperationsRecorder translateAggregatedNodeOperationsForConstituentNodes(
+            @NotNull final NodeOperationsRecorder aggregatedNodeOperationsToTranslate) {
+        final RollupNodeOperationsRecorder input = (RollupNodeOperationsRecorder) aggregatedNodeOperationsToTranslate;
+        RollupNodeOperationsRecorder output = makeNodeOperationsRecorder(NodeType.Constituent);
+        final TableDefinition inputTableDefinition = getNodeDefinition(NodeType.Aggregated);
+        final TableDefinition outputTableDefinition = getNodeDefinition(NodeType.Constituent);
+        output = translateFormats(input, output, inputTableDefinition, outputTableDefinition);
+        final Map<ColumnName, ColumnName> outputInputPairs = AggregationPairs.of(aggregations)
+                .collect(Collectors.toMap(Pair::output, Pair::input));
+        translateSorts(input, output, outputInputPairs);
+        return output;
+    }
+
+    private static RollupNodeOperationsRecorder translateFormats(
+            @NotNull final RollupNodeOperationsRecorder input,
+            @NotNull final RollupNodeOperationsRecorder output,
+            @NotNull final TableDefinition inputTableDefinition,
+            @NotNull final TableDefinition outputTableDefinition) {
+        if (input.getRecordedFormats().isEmpty()) {
+            return output;
+        }
+        final List<? extends SelectColumn> outputFormats = input.getRecordedFormats().stream()
+                .filter((final SelectColumn format) -> Stream
+                        .concat(format.getColumns().stream(), format.getColumnArrays().stream())
+                        .allMatch((final String columnName) -> {
+                            final ColumnDefinition<?> outputColumnDefinition =
+                                    outputTableDefinition.getColumn(columnName);
+                            if (outputColumnDefinition == null) {
+                                return false;
+                            }
+                            final ColumnDefinition<?> inputColumnDefinition =
+                                    inputTableDefinition.getColumn(columnName);
+                            return outputColumnDefinition.isCompatible(inputColumnDefinition);
+                        }))
+                .collect(Collectors.toList());
+        if (outputFormats.isEmpty()) {
+            return output;
+        }
+        return (RollupNodeOperationsRecorder) output.withFormats(outputFormats.stream());
+    }
+
+    private static RollupNodeOperationsRecorder translateSorts(
+            @NotNull final RollupNodeOperationsRecorder input,
+            @NotNull final RollupNodeOperationsRecorder output,
+            @NotNull final Map<ColumnName, ColumnName> outputInputPairs) {
+        if (input.getRecordedSorts().isEmpty()) {
+            return output;
+        }
+        // TODO-RWC: Finish this logic
+        return output;
     }
 
     private static RollupNodeOperationsRecorder accumulateOperations(

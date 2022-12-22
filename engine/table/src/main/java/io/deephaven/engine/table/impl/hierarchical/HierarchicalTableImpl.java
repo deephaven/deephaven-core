@@ -1599,6 +1599,4 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     static void maybeWaitForSatisfaction(@Nullable final NotificationQueue.Dependency dependency) {
         ConstructSnapshot.maybeWaitForSatisfaction(dependency);
     }
-
-    // TODO-RWC: Prune and split formats and sorts applied to both rollup node types from UI.
 }
