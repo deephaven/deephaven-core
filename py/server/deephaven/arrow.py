@@ -11,8 +11,8 @@ import pyarrow as pa
 from deephaven import DHError
 from deephaven.table import Table
 
-_JArrowToTableConverter = jpy.get_type("io.deephaven.server.arrow.ArrowFlightUtil$ArrowToTableConverter")
-_JTableToArrowConverter = jpy.get_type("io.deephaven.server.arrow.ArrowFlightUtil$TableToArrowConverter")
+_JArrowToTableConverter = jpy.get_type("io.deephaven.extensions.barrage.util.ArrowToTableConverter")
+_JTableToArrowConverter = jpy.get_type("io.deephaven.extensions.barrage.util.TableToArrowConverter")
 
 
 def _map_arrow_type(arrow_type) -> typing.Dict[str, str]:
