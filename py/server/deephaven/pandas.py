@@ -20,7 +20,7 @@ _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.comm
 
 
 def _column_to_series(table: Table, col_def: Column) -> pandas.Series:
-    """ Produce a copy of the specified column as a pandas.Series object.
+    """Produce a copy of the specified column as a pandas.Series object.
 
     Args:
         table (Table): the table
@@ -44,7 +44,7 @@ def _column_to_series(table: Table, col_def: Column) -> pandas.Series:
 
 
 def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
-    """  Produces a pandas.DataFrame from a table.
+    """Produces a pandas.DataFrame from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
     should be considered before blindly doing this. For large tables, consider using the Deephaven query language to
@@ -120,7 +120,7 @@ def _map_na(np_array: np.ndarray):
 
 
 def to_table(df: pandas.DataFrame, cols: List[str] = None) -> Table:
-    """  Creates a new table from a pandas.DataFrame.
+    """Creates a new table from a pandas.DataFrame.
 
     Args:
         df (DataFrame): the Pandas DataFrame instance
