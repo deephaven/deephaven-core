@@ -1731,6 +1731,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             Assert.eqNull(refreshScope, "refreshScope");
             refreshScope = new LivenessScope();
             final long updatingCycleValue = LogicalClock.DEFAULT.startUpdateCycle();
+            logDependencies().append("Beginning UpdateGraphProcessor cycle step=")
+                    .append(LogicalClock.DEFAULT.currentStep()).endl();
             try (final SafeCloseable ignored = LivenessScopeStack.open(refreshScope, true)) {
                 refreshFunction.run();
                 flushNotificationsAndCompleteCycle();
@@ -1738,6 +1740,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 LogicalClock.DEFAULT.ensureUpdateCycleCompleted(updatingCycleValue);
                 refreshScope = null;
             }
+            logDependencies().append("Completed UpdateGraphMonitor cycle step=")
+                    .append(LogicalClock.DEFAULT.currentStep()).endl();
         });
     }
 

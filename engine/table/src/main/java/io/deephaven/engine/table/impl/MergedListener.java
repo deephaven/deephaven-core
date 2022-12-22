@@ -50,8 +50,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private final String logPrefix;
 
     private long notificationStep = -1;
-    private long queuedNotificationStep = -1;
-    private long lastCompletedStep;
+    private volatile long queuedNotificationStep = -1;
+    private volatile long lastCompletedStep;
     private Throwable upstreamError;
     private TableListener.Entry errorSourceEntry;
 
