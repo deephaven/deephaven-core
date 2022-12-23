@@ -1740,7 +1740,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 LogicalClock.DEFAULT.ensureUpdateCycleCompleted(updatingCycleValue);
                 refreshScope = null;
             }
-            logDependencies().append("Completed UpdateGraphMonitor cycle step=")
+            logDependencies().append("Completed UpdateGraphProcessor cycle step=")
                     .append(LogicalClock.DEFAULT.currentStep()).endl();
         });
     }
