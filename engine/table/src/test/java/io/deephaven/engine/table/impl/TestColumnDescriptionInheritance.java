@@ -35,7 +35,7 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
         System.out.println("Running basic \"maybeCopyColumnDescriptions\" tests...");
         final QueryTable destTable =
                 new QueryTable(sourceTable.getDefinition(), sourceTable.getRowSet(), sourceTable.getColumnSourceMap());
-        //noinspection unchecked
+        // noinspection unchecked
         final Map<String, String> descriptionMap =
                 (Map<String, String>) withDescriptions.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         assertNotNull(descriptionMap);
@@ -143,7 +143,7 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
         final Table rightTable = withDescriptions
                 .renameColumns("rightInt=intCol", "rightDouble=doubleCol")
                 .withColumnDescription("Sym", "Ignored Sym");
-        //noinspection unchecked
+        // noinspection unchecked
         final Map<String, String> rightMap =
                 (Map<String, String>) rightTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         assertNotNull(rightMap);
