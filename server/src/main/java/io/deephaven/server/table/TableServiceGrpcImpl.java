@@ -285,8 +285,14 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     private Object getSeekValue(Literal literal, Class<?> dataType) {
         if (literal.hasStringValue()) {
+            if (!String.class.isAssignableFrom(dataType)) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid String type for seek: " + dataType);
+            }
             return literal.getStringValue();
         } else if (literal.hasNanoTimeValue()) {
+            if (!DateTime.class.isAssignableFrom(dataType)) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid Date type for seek: " + dataType);
+            }
             return new DateTime(literal.getNanoTimeValue());
         } else if (literal.hasLongValue()) {
             Long longValue = literal.getLongValue();
