@@ -758,20 +758,18 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
         });
 
-        Promise<JsTreeTable> fetchPromise =
-                Promise.resolve(new JsTreeTable(workerConnection, new JsWidget(workerConnection, c -> {
-                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-                    partitionedTableRequest.setSourceId(new TypedTicket());
-                    partitionedTableRequest.getSourceId().setType(JsVariableChanges.TREETABLE);
-                    partitionedTableRequest.getSourceId().setTicket(rollupTicket);
-                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                            workerConnection.metadata(), (fail, success) -> {
-                                c.handleResponse(fail, success, rollupTicket);
-                            });
-                })));
+        JsWidget widget = new JsWidget(workerConnection, c -> {
+            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+            partitionedTableRequest.setSourceId(new TypedTicket());
+            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setTicket(rollupTicket);
+            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                    workerConnection.metadata(), (fail, success) -> {
+                        c.handleResponse(fail, success, rollupTicket);
+                    });
+        });
 
-
-        return rollupPromise.then(ignore -> fetchPromise);
+        return Promise.all(widget.refetch(), rollupPromise).then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
     }
 
     @JsMethod
@@ -797,20 +795,18 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                     c::apply);
         });
 
-        Promise<JsTreeTable> fetchPromise =
-                Promise.resolve(new JsTreeTable(workerConnection, new JsWidget(workerConnection, c -> {
-                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-                    partitionedTableRequest.setSourceId(new TypedTicket());
-                    partitionedTableRequest.getSourceId().setType(JsVariableChanges.TREETABLE);
-                    partitionedTableRequest.getSourceId().setTicket(treeTicket);
-                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                            workerConnection.metadata(), (fail, success) -> {
-                                c.handleResponse(fail, success, treeTicket);
-                            });
-                })));
+        JsWidget widget = new JsWidget(workerConnection, c -> {
+            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+            partitionedTableRequest.setSourceId(new TypedTicket());
+            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setTicket(treeTicket);
+            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                    workerConnection.metadata(), (fail, success) -> {
+                        c.handleResponse(fail, success, treeTicket);
+                    });
+        });
 
-
-        return treePromise.then(ignore -> fetchPromise);
+        return Promise.all(widget.refetch(), treePromise).then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
     }
 
     @JsMethod

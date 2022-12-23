@@ -81,7 +81,7 @@ public class JsRollupConfig {
     public RollupRequest buildRequest(JsArray<Column> tableColumns) {
         RollupRequest request = new RollupRequest();
 
-        request.setGroupByColumnsList(Js.<String[]>cast(groupingColumns));
+        request.setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupingColumns));
         request.setIncludeConstituents(includeConstituents);
         JsArray<Aggregation> aggregations = new JsArray<>();
         request.setAggregationsList(aggregations);
@@ -89,7 +89,7 @@ public class JsRollupConfig {
         this.aggregations.forEach(key -> {
             Aggregation agg = new Aggregation();
             aggregations.push(agg);
-            JsArray<String> aggColumns = Js.cast(this.aggregations.get(JsAggregationOperation.COUNT_DISTINCT));
+            JsArray<String> aggColumns = Js.cast(this.aggregations.get(key));
             switch (key) {
                 case JsAggregationOperation.COUNT: {
                     AggregationCount count = new AggregationCount();

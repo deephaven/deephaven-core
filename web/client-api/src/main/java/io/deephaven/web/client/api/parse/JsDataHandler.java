@@ -322,7 +322,7 @@ public enum JsDataHandler {
                     Float64Array::new);
         }
     },
-    BOOLEAN(Type.Int, "boolean", "bool") {
+    BOOLEAN(Type.Int, "boolean", "bool", "java.lang.Boolean") {
         @Override
         public double writeType(Builder builder) {
             return Int.createInt(builder, 8, true);

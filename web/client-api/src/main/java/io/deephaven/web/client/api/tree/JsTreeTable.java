@@ -281,12 +281,12 @@ public class JsTreeTable extends HasEventHandling {
                 continue;
             }
 
-            if (definition.isVisible()) {
-                columns[columns.length] = column;
-            } else if (definition.getName().equals(treeDescriptor.getRowDepthColumn())) {
+            if (definition.getName().equals(treeDescriptor.getRowDepthColumn())) {
                 rowDepthCol = column;
             } else if (definition.getName().equals(treeDescriptor.getRowExpandedColumn())) {
                 rowExpandedCol = column;
+            } else if (definition.isVisible()) {
+                columns[columns.length] = column;
             }
         }
         this.rowFormatColumn = rowFormatColumn;
@@ -429,7 +429,7 @@ public class JsTreeTable extends HasEventHandling {
                             .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true,
                                     updateInterval, 0, 0);
                     double tableTicketOffset =
-                            BarrageSubscriptionRequest.createTicketVector(doGetRequest, widget.getDataAsU8());
+                            BarrageSubscriptionRequest.createTicketVector(doGetRequest, ticket.getTicket_asU8());
                     BarrageSubscriptionRequest.startBarrageSubscriptionRequest(doGetRequest);
                     BarrageSubscriptionRequest.addTicket(doGetRequest, tableTicketOffset);
                     BarrageSubscriptionRequest.addColumns(doGetRequest, columnsOffset);
