@@ -8,7 +8,6 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
@@ -17,12 +16,16 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.deephaven.engine.util.NullSafeAddition.plusLong;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * Iterative Boolean Sum. Result is the number of {@code true} values, or {@code null} if all values are {@code null}.
 */
 public final class BooleanChunkedSumOperator implements IterativeChunkedAggregationOperator {
+
+    private static final long INVALID_COUNT = -1;
+
     private final String name;
     private final LongArraySource resultColumn = new LongArraySource();
     private final LongArraySource falseCount = new LongArraySource();
@@ -36,6 +39,7 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
      *
      * @param source the column source to update
      * @param destPos the position within the column source
+     * @param count the number of values to add
      * @return the value, before the update
      */
     private static long getAndAdd(LongArraySource source, long destPos, long count) {
@@ -55,6 +59,7 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
      *
      * @param source the column source to update
      * @param destPos the position within the column source
+     * @param count the number of values to add
      * @return the value, after the update
      */
     private static long addAndGet(LongArraySource source, long destPos, long count) {
@@ -159,14 +164,14 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
             modified = true;
         }
         if (chunkFalse.intValue() > 0) {
-            final long oldFalse = getAndAdd(falseCount, destination, chunkFalse.intValue());
-            if (oldFalse == 0 && chunkTrue.intValue() == 0 && !hasTrue(destination)) {
+            final long oldFalseCount = getAndAdd(falseCount, destination, chunkFalse.intValue());
+            if (oldFalseCount == 0 && chunkTrue.intValue() == 0 && !hasTrue(destination)) {
                 resultColumn.set(destination, 0L);
                 modified = true;
             }
         }
-        // New or resurrected slots are adds, not modifies, and will already have null in the result, so we never need
-        // to update the result to null or report a mod if there are only nulls in the chunk.
+        // New or resurrected slots will already have null in the result, so we never need to update the result to null
+        // or report a mod if there are only nulls in the chunk.
         return modified;
     }
 
@@ -175,34 +180,33 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         final MutableInt chunkFalse = new MutableInt(0);
         sumChunk(values, chunkStart, chunkSize, chunkTrue, chunkFalse);
 
-        boolean modified = false;
-
-        long newFalse = -1;
+        long newFalseCount = INVALID_COUNT;
         if (chunkFalse.intValue() > 0) {
-            newFalse = addAndGet(falseCount, destination, -chunkFalse.intValue());
+            newFalseCount = addAndGet(falseCount, destination, -chunkFalse.intValue());
         }
+
         if (chunkTrue.intValue() > 0) {
-            final long oldTrue = resultColumn.getUnsafe(destination);
-            Assert.gtZero(oldTrue, "oldTrue");
-            long newTrue = oldTrue - chunkTrue.intValue();
+            final long oldTrueCount = resultColumn.getUnsafe(destination);
+            Assert.gtZero(oldTrueCount, "oldTrueCount");
+            long newTrue = oldTrueCount - chunkTrue.intValue();
             if (newTrue == 0) {
-                if (chunkFalse.intValue() == 0) {
-                    newFalse = falseCount.getUnsafe(destination);
+                if (newFalseCount == INVALID_COUNT) {
+                    newFalseCount = falseCount.getUnsafe(destination);
                 }
-                if (newFalse == NULL_LONG || newFalse == 0) {
+                if (newFalseCount == NULL_LONG || newFalseCount == 0) {
                     newTrue = NULL_LONG;
                 }
             }
             resultColumn.set(destination, newTrue);
             return true;
-        } else if (newFalse == 0) {
-            if (resultColumn.getUnsafe(destination) == 0) {
-                resultColumn.set(destination, NULL_LONG);
-                modified = true;
-            }
         }
 
-        return modified;
+        if (newFalseCount == 0 && resultColumn.getUnsafe(destination) == 0) {
+            resultColumn.set(destination, NULL_LONG);
+            return true;
+        }
+
+        return false;
     }
 
     private boolean modifyChunk(ObjectChunk<Boolean, ? extends Values> preValues, ObjectChunk<Boolean, ? extends Values> postValues, long destination, int chunkStart, int chunkSize) {
@@ -221,28 +225,33 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
             return false;
         }
 
-        long newFalse = -1;
+        long newFalseCount = INVALID_COUNT;
         if (falseModified) {
-            newFalse = addAndGet(falseCount, destination, postChunkFalse.intValue() - preChunkFalse.intValue());
+            newFalseCount = addAndGet(falseCount, destination, postChunkFalse.intValue() - preChunkFalse.intValue());
         }
 
         if (trueModified) {
-            final long oldTrue = resultColumn.getUnsafe(destination);
-            long newTrue = NullSafeAddition.plusLong(oldTrue, postChunkTrue.intValue() - preChunkTrue.intValue());
-            if (newTrue == 0) {
-                if (!falseModified) {
-                    newFalse = falseCount.getUnsafe(destination);
+            final long oldTrueCount = resultColumn.getUnsafe(destination);
+            long newTrueCount = plusLong(oldTrueCount, postChunkTrue.intValue() - preChunkTrue.intValue());
+            if (newTrueCount == 0) {
+                if (newFalseCount == INVALID_COUNT) {
+                    newFalseCount = falseCount.getUnsafe(destination);
                 }
-                if (newFalse == NULL_LONG || newFalse == 0) {
-                    newTrue = NULL_LONG;
+                if (newFalseCount == NULL_LONG || newFalseCount == 0) {
+                    newTrueCount = NULL_LONG;
                 }
             }
-            resultColumn.set(destination, newTrue);
+            resultColumn.set(destination, newTrueCount);
             return true;
         }
 
-        if (newFalse == 0) {
+        final long existingTrueCount = resultColumn.getUnsafe(destination);
+        if (newFalseCount == 0 && existingTrueCount == 0) {
             resultColumn.set(destination, NULL_LONG);
+            return true;
+        }
+        if (newFalseCount > 0 & existingTrueCount == NULL_LONG) {
+            resultColumn.set(destination, 0L);
             return true;
         }
 

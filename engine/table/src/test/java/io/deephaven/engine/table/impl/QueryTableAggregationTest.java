@@ -1625,10 +1625,9 @@ public class QueryTableAggregationTest {
         final ColumnInfo[] columnInfo;
         final List<ColumnInfo.ColAttributes> ea = Collections.emptyList();
         final List<ColumnInfo.ColAttributes> ga = Collections.singletonList(ColumnInfo.ColAttributes.Grouped);
-        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Sym",
-                "charCol",
-                "byteCol", "shortCol", "intCol", "longCol", "bigI", "bigD", "doubleCol", "doubleNanCol", "boolCol"
-        },
+        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
+                new String[] {"Sym", "charCol", "byteCol", "shortCol", "intCol", "longCol", "bigI", "bigD",
+                        "doubleCol", "doubleNanCol", "boolCol"},
                 Arrays.asList(grouped ? ga : ea, ea, ea, ea, ea, ea, ea, ea, ea, ea, ea),
                 lotsOfStrings ? new StringGenerator(1000000) : new SetGenerator<>("a", "b", "c", "d"),
                 new CharGenerator('a', 'z'),
