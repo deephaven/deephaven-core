@@ -225,7 +225,7 @@ public class SeekRow implements Function<Table, Long> {
 
         final ColumnSource columnSource = table.getColumnSource(columnName);
 
-        final boolean isComparable = !contains && Comparable.class.isAssignableFrom(columnSource.getType());
+        final boolean isComparable = !contains && (Comparable.class.isAssignableFrom(columnSource.getType()) || columnSource.getType().isPrimitive());
 
         final Object useSeek =
                 (seekValue instanceof String && insensitive) ? ((String) seekValue).toLowerCase() : seekValue;
