@@ -26,6 +26,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.bar
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Hierarchicaltable_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableApplyRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewKeyTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupDescriptorDetails;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.hierarchicaltabledescriptor.DetailsCase;
@@ -213,6 +214,15 @@ public class JsTreeTable extends HasEventHandling {
             public int depth() {
                 return depthColumn[offsetInSnapshot];
             }
+
+            public void appendKeyData(Object[][] keyTableData, boolean expanded) {
+                int i;
+                for (i = 0; i < keyColumns.length; i++) {
+                    Js.<JsArray<Any>>cast(keyTableData[i]).push(keyColumns.getAt(i).get(this));
+                }
+                Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth());
+                Js.<JsArray<Boolean>>cast(keyTableData[i++]).push(expanded);
+            }
         }
     }
 
@@ -239,6 +249,9 @@ public class JsTreeTable extends HasEventHandling {
     private List<Sort> sorts = new ArrayList<>();
     private Promise<Ticket> filteredTable;
     private Promise<Ticket> sortedTable;
+
+    private Object[][] keyTableData;
+    private Promise<JsTable> keyTable;
 
     private Promise<Ticket> viewTicket;
     private Promise<BiDiStream<?, ?>> stream;
@@ -296,6 +309,7 @@ public class JsTreeTable extends HasEventHandling {
             columnsByName.put(column.getName(), column);
         }
         keyColumns = treeDescriptor.getExpandByColumnsList().map((p0, p1, p2) -> columnsByName.get(p0));
+        keyTableData = new Object[keyColumns.length + 2][0];
 
         if (treeDescriptor.getDetailsCase() == DetailsCase.ROLLUP) {
             RollupDescriptorDetails rollupDef = treeDescriptor.getRollup();
@@ -377,6 +391,23 @@ public class JsTreeTable extends HasEventHandling {
         return sortedTable;
     }
 
+    private Promise<JsTable> makeKeyTable() {
+        if (keyTable != null) {
+            return keyTable;
+        }
+        JsArray<Column> keyTableColumns = keyColumns.slice();
+        keyTableColumns.push(rowDepthCol);
+        keyTableColumns.push(rowExpandedCol);
+        keyTable = connection.newTable(
+                Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getName())),
+                Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getType())),
+                keyTableData,
+                null,
+                null
+        );
+        return keyTable;
+    }
+
     private Promise<Ticket> makeView(Ticket prevTicket) {
         if (viewTicket != null) {
             return viewTicket;
@@ -386,13 +417,22 @@ public class JsTreeTable extends HasEventHandling {
             HierarchicalTableViewRequest viewRequest = new HierarchicalTableViewRequest();
             viewRequest.setHierarchicalTableId(prevTicket);
             viewRequest.setResultViewId(ticket);
-            connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
+            makeKeyTable().then(keyTable -> {
+                if (keyTableData[0].length > 0) {
+                    HierarchicalTableViewKeyTableDescriptor expansions = new HierarchicalTableViewKeyTableDescriptor();
+                    expansions.setKeyTableId(keyTable.getHandle().makeTicket());
+                    viewRequest.setExpansions(expansions);
+                }
+                connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
+                return null;//TODO actually handle error from this properly
+            });
         }).then(ignore -> Promise.resolve(ticket));
         return viewTicket;
     }
 
     private void replaceSubscription() {
         this.stream = Promise.resolve(defer())
+                .then(ignore -> makeKeyTable())//TODO we can race this instead of finishing it first
                 .then(ignore -> prepareFilter())
                 .then(this::prepareSort)
                 .then(this::makeView)
@@ -535,13 +575,6 @@ public class JsTreeTable extends HasEventHandling {
     private TreeTableRequest buildQuery() {
         TreeTableRequest request = new TreeTableRequest();
 
-        // TODO DoPut the expanded nodes table
-        // connection.newTable(
-        // keyTableColumnNames,
-        // keyTableColumnTypes,
-        //
-        // )
-
         // Build the bitset for the columns that are needed to get the data, style, and maintain structure
         BitSet columnsBitset = new BitSet(tableDefinition.getColumns().length);
         Arrays.stream(columns).flatMapToInt(Column::getRequiredColumns).forEach(columnsBitset::set);
@@ -585,6 +618,15 @@ public class JsTreeTable extends HasEventHandling {
             r = (TreeRow) row;
         } else {
             throw new IllegalArgumentException("row parameter must be an index or a row");
+        }
+
+        r.appendKeyData(keyTableData, isExpanded);
+        if (keyTable != null) {
+            keyTable.then(t -> {
+                t.close();
+                return null;
+            });
+            keyTable = null;
         }
 
         if (viewTicket != null) {
