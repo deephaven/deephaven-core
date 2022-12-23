@@ -3,19 +3,15 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 
-import java.io.IOException;
 import java.util.BitSet;
 import java.util.Map;
 
