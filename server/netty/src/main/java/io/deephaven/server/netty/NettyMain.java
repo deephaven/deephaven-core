@@ -5,6 +5,7 @@ package io.deephaven.server.netty;
 
 import io.deephaven.base.system.PrintStreamGlobals;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.runner.Main;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ public class NettyMain extends Main {
         DaggerNettyServerComponent
                 .builder()
                 .withNettyConfig(nettyConfig)
+                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(PrintStreamGlobals.getOut())
                 .withErr(PrintStreamGlobals.getErr())
                 .build()

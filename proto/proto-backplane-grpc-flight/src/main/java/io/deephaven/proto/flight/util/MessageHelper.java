@@ -4,7 +4,6 @@
 package io.deephaven.proto.flight.util;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.protobuf.ByteStringAccess;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MetadataVersion;
 

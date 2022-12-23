@@ -43,6 +43,7 @@ import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -1513,6 +1514,65 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             assertEquals(new int[] {101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
         });
     }
+
+    /** Test #1 for DHC issue #3202 */
+    public void testDHC3202_v1() throws IOException {
+        // flood the hashtable with large updates
+        final Random random = new Random(0x31313131);
+
+        final ColumnInfo[] leftColumnInfo;
+        final QueryTable leftTable = getTable(true, 0, random,
+                leftColumnInfo = initColumnInfos(new String[] {"idx", "LeftValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(10_000_000, 10_010_000)));
+
+        final ColumnInfo[] rightColumnInfo;
+        final QueryTable rightTable = getTable(true, 0, random,
+                rightColumnInfo = initColumnInfos(new String[] {"idx", "RightValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(20_000_000, 20_010_000)));
+
+
+        final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
+
+        for (int ii = 0; ii < 10; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> {
+                        generateAppends(10_000, random, leftTable, leftColumnInfo);
+                        generateAppends(10_000, random, rightTable, rightColumnInfo);
+                    });
+        }
+    }
+
+    /** Test #1 for DHC issue #3202 */
+    public void testDHC3202_v2() throws IOException {
+        // flood the hashtable with large updates
+        final Random random = new Random(0x31313131);
+
+        final ColumnInfo[] leftColumnInfo;
+        final QueryTable leftTable = getTable(true, 0, random,
+                leftColumnInfo = initColumnInfos(new String[] {"idx", "LeftValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(10_000_000, 10_010_000)));
+
+        final ColumnInfo[] rightColumnInfo;
+        final QueryTable rightTable = getTable(true, 0, random,
+                rightColumnInfo = initColumnInfos(new String[] {"idx", "RightValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(20_000_000, 20_010_000)));
+
+
+        final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
+
+        for (int ii = 0; ii < 10; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> {
+                        generateAppends(100_000, random, leftTable, leftColumnInfo);
+                        generateAppends(100_000, random, rightTable, rightColumnInfo);
+                    });
+        }
+    }
+
 
     private void diskBackedTestHarness(BiConsumer<Table, Table> testFunction) throws IOException {
         final File leftDirectory = Files.createTempDirectory("QueryTableJoinTest-Left").toFile();

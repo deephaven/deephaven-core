@@ -342,6 +342,8 @@ include(':hotspot-impl')
 project(':hotspot-impl').projectDir = file('hotspot-impl')
 
 include ':authentication'
+include ':authorization-codegen'
+include ':authorization'
 
 include ':clock'
 include ':clock-impl'

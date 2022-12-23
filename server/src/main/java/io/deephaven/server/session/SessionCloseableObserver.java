@@ -42,7 +42,7 @@ public abstract class SessionCloseableObserver<T> implements Closeable {
     /**
      * Override this to perform any additional specific clean up that must be performed.
      */
-    void onClose() {
+    protected void onClose() {
 
     }
 }

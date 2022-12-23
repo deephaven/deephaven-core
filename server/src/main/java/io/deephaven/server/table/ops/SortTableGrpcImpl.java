@@ -3,11 +3,11 @@
  */
 package io.deephaven.server.table.ops;
 
-
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -25,12 +25,14 @@ import java.util.List;
 public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
 
     @Inject
-    public SortTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getSort, SortTableRequest::getResultId, SortTableRequest::getSourceId);
+    public SortTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionSort, BatchTableRequest.Operation::getSort,
+                SortTableRequest::getResultId, SortTableRequest::getSourceId);
     }
 
     @Override
-    public Table create(final SortTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final SortTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table original = sourceTables.get(0).get();

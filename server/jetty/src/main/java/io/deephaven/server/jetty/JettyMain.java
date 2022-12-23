@@ -5,6 +5,7 @@ package io.deephaven.server.jetty;
 
 import io.deephaven.base.system.PrintStreamGlobals;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.runner.Main;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ public class JettyMain extends Main {
         DaggerJettyServerComponent
                 .builder()
                 .withJettyConfig(jettyConfig)
+                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(PrintStreamGlobals.getOut())
                 .withErr(PrintStreamGlobals.getErr())
                 .build()

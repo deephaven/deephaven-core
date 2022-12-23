@@ -13,6 +13,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.vector.BooleanVector;
+import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.FloatVector;
@@ -27,6 +28,9 @@ public interface VectorExpansionKernel {
     static Class<?> getComponentType(final Class<?> type, final Class<?> componentType) {
         if (BooleanVector.class.isAssignableFrom(type)) {
             return boolean.class;
+        }
+        if (ByteVector.class.isAssignableFrom(type)) {
+            return byte.class;
         }
         if (CharVector.class.isAssignableFrom(type)) {
             return char.class;

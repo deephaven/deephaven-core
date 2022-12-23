@@ -276,14 +276,18 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
-
                 while (doRehash(initialBuild, bc.rehashCredits, chunkOk.intSize())) {
                     migrateFront();
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
+                final long oldEntries = numEntries;
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                final long entriesAdded = numEntries - oldEntries;
+                // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
+                // don't penalize this build call with additional rehashing
+                bc.rehashCredits.subtract(entriesAdded);
 
                 bc.resetSharedContexts();
             }

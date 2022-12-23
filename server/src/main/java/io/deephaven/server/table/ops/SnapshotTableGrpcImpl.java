@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
@@ -36,13 +37,17 @@ public class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableReque
             };
 
     @Inject
-    public SnapshotTableGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
-        super(BatchTableRequest.Operation::getSnapshot, SnapshotTableRequest::getResultId, EXTRACT_DEPS);
+    public SnapshotTableGrpcImpl(
+            final TableServiceContextualAuthWiring authWiring,
+            final UpdateGraphProcessor updateGraphProcessor) {
+        super(authWiring::checkPermissionSnapshot, BatchTableRequest.Operation::getSnapshot,
+                SnapshotTableRequest::getResultId, EXTRACT_DEPS);
         this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
-    public Table create(final SnapshotTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final SnapshotTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         final Table lhs;
         final Table rhs;
         if (sourceTables.size() == 1) {

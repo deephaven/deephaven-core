@@ -37,6 +37,7 @@ import static org.junit.Assert.*;
 public class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
+    public static final int LARGE_TABLE_SIZE = 2000000;
 
     private static File rootFile;
 
@@ -220,7 +221,7 @@ public class ParquetTableReadWriteTest {
     public void flatParquetFormat() {
         flatTable("emptyFlatParquet", 0, true);
         flatTable("smallFlatParquet", 20, true);
-        flatTable("largeFlatParquet", 4000000, false);
+        flatTable("largeFlatParquet", LARGE_TABLE_SIZE, false);
     }
 
     @Test
@@ -228,9 +229,9 @@ public class ParquetTableReadWriteTest {
         testEmptyArrayStore("smallEmpty", 20);
         groupedOneColumnTable("smallAggOneColumn", 20);
         groupedTable("smallAggParquet", 20, true);
-        testEmptyArrayStore("largeEmpty", 4000000);
-        groupedOneColumnTable("largeAggOneColumn", 4000000);
-        groupedTable("largeAggParquet", 4000000, false);
+        testEmptyArrayStore("largeEmpty", LARGE_TABLE_SIZE);
+        groupedOneColumnTable("largeAggOneColumn", LARGE_TABLE_SIZE);
+        groupedTable("largeAggParquet", LARGE_TABLE_SIZE, false);
     }
 
     @Test

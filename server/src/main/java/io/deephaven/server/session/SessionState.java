@@ -156,7 +156,7 @@ public class SessionState {
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
         this.authContext = authContext;
-        this.executionContext = executionContextProvider.get();
+        this.executionContext = executionContextProvider.get().withAuthContext(authContext);
         log.info().append(logPrefix).append("session initialized").endl();
     }
 
@@ -819,7 +819,10 @@ public class SessionState {
 
                         assignErrorId();
                         dependentHandle = parent.logIdentity;
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
+                        if (!(caughtException instanceof StatusRuntimeException)) {
+                            log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails)
+                                    .endl();
+                        }
                     }
 
                     setState(terminalState);
@@ -886,7 +889,9 @@ public class SessionState {
                 synchronized (this) {
                     if (!isExportStateTerminal(state)) {
                         assignErrorId();
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                        if (!(caughtException instanceof StatusRuntimeException)) {
+                            log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                        }
                         setState(ExportNotification.State.FAILED);
                     }
                 }
