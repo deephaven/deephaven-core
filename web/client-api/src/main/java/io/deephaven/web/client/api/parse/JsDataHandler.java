@@ -340,8 +340,8 @@ public enum JsDataHandler {
                 if (val == null) {
                     boolValue = NULL_BOOLEAN_AS_BYTE;
                 } else {
-                    String typeof = Js.typeof(val);
-                    switch (typeof) {
+                    String t = Js.typeof(val);
+                    switch (t) {
                         case "boolean":
                             boolValue = Js.isTruthy(val) ? TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE;
                             break;
@@ -367,7 +367,7 @@ public enum JsDataHandler {
                             break;
                         default:
                             throw new IllegalArgumentException(
-                                    "Unsupported type to handle as a boolean value " + typeof);
+                                    "Unsupported type to handle as a boolean value " + t);
                     }
                 }
 

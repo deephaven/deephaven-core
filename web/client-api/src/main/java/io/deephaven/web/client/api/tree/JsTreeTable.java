@@ -123,9 +123,8 @@ public class JsTreeTable extends HasEventHandling {
 
             columnData = dataColumns;
 
-            expandedColumn =
-                    (Boolean[]) ViewportData.cleanData(columnData[rowExpandedCol.getIndex()].getData(), rowExpandedCol);
-            depthColumn = (int[]) ViewportData.cleanData(columnData[rowDepthCol.getIndex()].getData(), rowDepthCol);
+            expandedColumn = Js.<Boolean[]>uncheckedCast(ViewportData.cleanData(columnData[rowExpandedCol.getIndex()].getData(), rowExpandedCol));
+            depthColumn = Js.<int[]>uncheckedCast(ViewportData.cleanData(columnData[rowDepthCol.getIndex()].getData(), rowDepthCol));
 
             int constituentDepth = keyColumns.length + 1;
             for (int i = 0; i < columns.length; i++) {
