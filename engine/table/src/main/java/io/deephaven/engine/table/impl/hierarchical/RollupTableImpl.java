@@ -645,7 +645,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         Assert.eq(isBaseLevel, "isBaseLevel", includesConstituents, "includesConstituents");
 
         final BitSet columns = snapshotState.getColumns();
-        for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci)) {
+        for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci + 1)) {
             if (result[ci] != null || ci == ROW_EXPANDED_COLUMN_INDEX) {
                 continue;
             }

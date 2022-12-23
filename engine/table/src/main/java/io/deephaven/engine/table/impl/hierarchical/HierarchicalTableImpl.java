@@ -3,6 +3,8 @@
  */
 package io.deephaven.engine.table.impl.hierarchical;
 
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
@@ -140,8 +142,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private final KeyedLongObjectHash.ValueFactory<NodeTableState> nodeTableStateFactory =
                 new NodeTableStateIdFactory();
 
-        private final List<ChunkSource.FillContext[]> perLevelFillContextArrays = new ArrayList<>();
-        private final List<SharedContext> perLevelSharedContexts = new ArrayList<>();
+        private final TIntObjectMap<ChunkSource.FillContext[]> perLevelFillContextArrays = new TIntObjectHashMap<>();
+        private final TIntObjectMap<SharedContext> perLevelSharedContexts = new TIntObjectHashMap<>();
 
         // region Per-snapshot parameters and state
         private BitSet columns;
@@ -180,7 +182,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private ChunkSource.FillContext[] getFillContextArrayForLevel() {
             ChunkSource.FillContext[] result = perLevelFillContextArrays.get(currentDepth);
             if (result == null) {
-                perLevelFillContextArrays.set(currentDepth, result = new ChunkSource.FillContext[destinations.length]);
+                perLevelFillContextArrays.put(currentDepth, result = new ChunkSource.FillContext[destinations.length]);
             }
             return result;
         }
@@ -189,7 +191,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private SharedContext getSharedContextForLevel() {
             SharedContext result = perLevelSharedContexts.get(currentDepth);
             if (result == null) {
-                perLevelSharedContexts.set(currentDepth, result = SharedContext.makeSharedContext());
+                perLevelSharedContexts.put(currentDepth, result = SharedContext.makeSharedContext());
             }
             return result;
         }
@@ -774,7 +776,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          * {@link VisitAction#Linkage} if this directive is created in order to provide connectivity to another, and
          * overwritten with the key table's action if found.
          */
-        private VisitAction action;
+        private VisitAction action = Undefined;
 
         /**
          * This is not a complete list of children, just those that occur in the key table for the current snapshot, or
@@ -1349,7 +1351,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                         rowsIter == null ? rows : rowsIter.getNextRowSequenceWithLength(chunkSize);
                 final int chunkRowsSize = chunkRows.intSize();
                 do {
-                    for (int di = 0, ci = columns.nextSetBit(0); ci >= 0; ++di, ci = columns.nextSetBit(ci)) {
+                    for (int di = 0, ci = columns.nextSetBit(0); ci >= 0; ++di, ci = columns.nextSetBit(ci + 1)) {
                         if (ci == ROW_EXPANDED_COLUMN_INDEX) {
                             continue;
                         }
@@ -1373,7 +1375,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 sharedContext = snapshotState.getSharedContextForLevel();
                 fillContexts = snapshotState.getFillContextArrayForLevel();
                 final BitSet columns = snapshotState.getColumns();
-                for (int di = 0, ci = columns.nextSetBit(0); ci >= 0; ++di, ci = columns.nextSetBit(ci)) {
+                for (int di = 0, ci = columns.nextSetBit(0); ci >= 0; ++di, ci = columns.nextSetBit(ci + 1)) {
                     if (ci == ROW_EXPANDED_COLUMN_INDEX) {
                         continue;
                     }

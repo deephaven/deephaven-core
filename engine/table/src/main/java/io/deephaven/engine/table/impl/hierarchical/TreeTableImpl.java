@@ -352,7 +352,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 maybeAllocateResultChunkSourceArray(existingChunkSources, numColumns);
 
         final BitSet columns = snapshotState.getColumns();
-        for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci)) {
+        for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci + 1)) {
             if (ci == ROW_DEPTH_COLUMN_INDEX) {
                 // Tree nodes can change depth, so update regardless of existing result
                 result[ci] = getDepthSource(snapshotState.getCurrentDepth() + 1);
