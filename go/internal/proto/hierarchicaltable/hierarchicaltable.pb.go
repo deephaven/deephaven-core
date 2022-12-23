@@ -445,7 +445,7 @@ type HierarchicalTableDescriptor struct {
 	// For RollupTables, these are the group-by columns.
 	// For TreeTables, this is the (singular) identifier column.
 	ExpandByColumns []string `protobuf:"bytes,1,rep,name=expand_by_columns,json=expandByColumns,proto3" json:"expand_by_columns,omitempty"`
-	// The name of a column that specifies the depth of a row. Note that for RollupTables, this also represents the number
+	// The name of a column that specifies the depth of a row. Note that for RollupTables, this is related to the number
 	// of group-by columns that are "defined" for a row for all expandable rows.
 	// Should not be (directly) user-visible.
 	// Must be included along with expand-by columns in a HierarchicalTableViewRequest's key table for RollupTables.

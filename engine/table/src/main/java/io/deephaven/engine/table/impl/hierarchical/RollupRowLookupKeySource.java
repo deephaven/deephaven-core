@@ -21,20 +21,22 @@ import java.util.stream.Stream;
  */
 final class RollupRowLookupKeySource implements DefaultChunkSource.WithPrev<Values> {
 
-    private final ColumnSource<Integer> keyWidthSource;
+    static final Object ROOT_NODE_KEY = new Object();
+
+    private final ColumnSource<Integer> depthSource;
     private final ColumnSource<?>[] groupByValueSources;
 
     /**
      * Construct a new RollupRowLookupKeySource backed by the supplied column sources.
      *
-     * @param keyWidthSource A source of {@code int} widths that determines how many of the {@code groupByValueSources}
+     * @param depthSource A source of {@code int} widths that determines how many of the {@code groupByValueSources}
      *        should have their values included in the result
      * @param groupByValueSources Sources corresponding to the aggregation group-by values in the rollup
      */
     RollupRowLookupKeySource(
-            @NotNull final ColumnSource<Integer> keyWidthSource,
+            @NotNull final ColumnSource<Integer> depthSource,
             @NotNull final ColumnSource<?>... groupByValueSources) {
-        this.keyWidthSource = keyWidthSource;
+        this.depthSource = depthSource;
         this.groupByValueSources = Stream.of(groupByValueSources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
     }
@@ -69,20 +71,20 @@ final class RollupRowLookupKeySource implements DefaultChunkSource.WithPrev<Valu
             return;
         }
         final FillContext fc = (FillContext) context;
-        final IntChunk<? extends Values> keyWidths = usePrev
-                ? keyWidthSource.getPrevChunk(fc.keyWidthContext, rowSequence).asIntChunk()
-                : keyWidthSource.getChunk(fc.keyWidthContext, rowSequence).asIntChunk();
-        final int maxKeyWidth = getMaxKeyWidth(keyWidths);
+        final IntChunk<? extends Values> depths = usePrev
+                ? depthSource.getPrevChunk(fc.depthContext, rowSequence).asIntChunk()
+                : depthSource.getChunk(fc.depthContext, rowSequence).asIntChunk();
+        final int maxKeyWidth = getMaxKeyWidth(depths);
         final ObjectChunk<?, ? extends Values>[] groupByValues =
                 getGroupByValuesChunks(fc, rowSequence, usePrev, maxKeyWidth);
-        fillFromGroupByValues(rowSequence, keyWidths, groupByValues, destination.asWritableObjectChunk());
+        fillFromGroupByValues(rowSequence, depths, groupByValues, destination.asWritableObjectChunk());
     }
 
-    private static int getMaxKeyWidth(@NotNull final IntChunk<? extends Values> keyWidths) {
-        final int size = keyWidths.size();
+    private static int getMaxKeyWidth(@NotNull final IntChunk<? extends Values> depths) {
+        final int size = depths.size();
         int maxKeyWidth = 0;
         for (int kwi = 0; kwi < size; ++kwi) {
-            final int keyWidth = keyWidths.get(kwi);
+            final int keyWidth = depths.get(kwi) - 1;
             if (keyWidth > maxKeyWidth) {
                 maxKeyWidth = keyWidth;
             }
@@ -108,20 +110,22 @@ final class RollupRowLookupKeySource implements DefaultChunkSource.WithPrev<Valu
 
     private void fillFromGroupByValues(
             @NotNull final RowSequence rowSequence,
-            @NotNull final IntChunk<? extends Values> keyWidths,
+            @NotNull final IntChunk<? extends Values> depths,
             @NotNull final ObjectChunk<?, ? extends Values>[] groupByValues,
             @NotNull final WritableObjectChunk<Object, ? super Values> destination) {
         final int size = rowSequence.intSize();
         destination.setSize(size);
         for (int ri = 0; ri < size; ++ri) {
-            final int keyWidth = keyWidths.get(ri);
-            if (keyWidth == 0) {
+            final int depth = depths.get(ri);
+            if (depth == 0) {
+                destination.set(ri, ROOT_NODE_KEY);
+            } else if (depth == 1) {
                 destination.set(ri, AggregationRowLookup.EMPTY_KEY);
-            } else if (keyWidth == 1) {
+            } else if (depth == 2) {
                 destination.set(ri, groupByValues[0].get(ri));
             } else {
-                final Object[] columnValues = new Object[keyWidth];
-                for (int ci = 0; ci < keyWidth; ++ci) {
+                final Object[] columnValues = new Object[depth - 1];
+                for (int ci = 0; ci < depth - 1; ++ci) {
                     columnValues[ci] = groupByValues[ci].get(ri);
                 }
                 destination.set(ri, columnValues);
@@ -131,15 +135,15 @@ final class RollupRowLookupKeySource implements DefaultChunkSource.WithPrev<Valu
 
     private static class FillContext implements ChunkSource.FillContext {
 
-        private final ChunkSource.GetContext keyWidthContext;
+        private final ChunkSource.GetContext depthContext;
         private final ChunkSource.GetContext[] groupByValueContexts;
 
         private FillContext(
                 final int chunkCapacity,
-                @NotNull final ColumnSource<Integer> keyWidthSource,
+                @NotNull final ColumnSource<Integer> depthSource,
                 @NotNull final ColumnSource[] groupByValueSources,
                 final SharedContext sharedContext) {
-            keyWidthContext = keyWidthSource.makeGetContext(chunkCapacity, sharedContext);
+            depthContext = depthSource.makeGetContext(chunkCapacity, sharedContext);
             groupByValueContexts = Stream.of(groupByValueSources)
                     .map(cs -> cs.makeGetContext(chunkCapacity, sharedContext))
                     .toArray(ChunkSource.GetContext[]::new);
@@ -147,13 +151,13 @@ final class RollupRowLookupKeySource implements DefaultChunkSource.WithPrev<Valu
 
         @Override
         public void close() {
-            keyWidthContext.close();
+            depthContext.close();
             SafeCloseable.closeArray(groupByValueContexts);
         }
     }
 
     @Override
     public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new FillContext(chunkCapacity, keyWidthSource, groupByValueSources, sharedContext);
+        return new FillContext(chunkCapacity, depthSource, groupByValueSources, sharedContext);
     }
 }

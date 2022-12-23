@@ -118,7 +118,7 @@ message HierarchicalTableDescriptor {
   // For TreeTables, this is the (singular) identifier column.
   repeated string expand_by_columns = 1;
 
-  // The name of a column that specifies the depth of a row. Note that for RollupTables, this also represents the number
+  // The name of a column that specifies the depth of a row. Note that for RollupTables, this is related to the number
   // of group-by columns that are "defined" for a row for all expandable rows.
   // Should not be (directly) user-visible.
   // Must be included along with expand-by columns in a HierarchicalTableViewRequest's key table for RollupTables.
