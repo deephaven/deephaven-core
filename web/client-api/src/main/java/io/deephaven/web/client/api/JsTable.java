@@ -1029,12 +1029,14 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     /**
      * Seek the row matching the data provided
+     * 
      * @param startingRow Row to start the seek from
      * @param column Column to seek for value on
      * @param valueType Type of value provided
      * @param seekValue Value to seek
      * @param insensitive Optional value to flag a search as case-insensitive. Defaults to `false`.
-     * @param contains Optional value to have the seek value do a contains search instead of exact equality. Defaults to `false`.
+     * @param contains Optional value to have the seek value do a contains search instead of exact equality. Defaults to
+     *        `false`.
      * @param isBackwards Optional value to seek backwards through the table instead of forwards. Defaults to `false`.
      * @return A promise that resolves to the row value found.
      */

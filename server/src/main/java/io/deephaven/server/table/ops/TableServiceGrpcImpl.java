@@ -308,7 +308,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     private Object getSeekValue(Literal literal, Class<?> dataType) {
         if (literal.hasStringValue()) {
             if (!String.class.isAssignableFrom(dataType)) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid String type for seek: " + dataType);
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Invalid String type for seek: " + dataType);
             }
             return literal.getStringValue();
         } else if (literal.hasNanoTimeValue()) {
