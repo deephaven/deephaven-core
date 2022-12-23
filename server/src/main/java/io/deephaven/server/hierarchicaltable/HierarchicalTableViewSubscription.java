@@ -335,6 +335,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 addColumnData.chunkType =
                         ReinterpretUtils.maybeConvertToPrimitiveChunkType(columnDefinition.getDataType());
             }
+            barrageMessage.addColumnData[ci] = addColumnData;
         }
         barrageMessage.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
 

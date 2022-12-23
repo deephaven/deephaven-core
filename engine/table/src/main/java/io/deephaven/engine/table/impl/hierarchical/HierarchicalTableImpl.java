@@ -1518,7 +1518,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             synchronized (TreeTableImpl.class) {
                 if ((localCachedDepthSources = cachedDepthSources).length <= depth) {
                     final int oldLength = localCachedDepthSources.length;
-                    localCachedDepthSources = Arrays.copyOf(localCachedDepthSources, ((depth + 9) / 10) * 10);
+                    localCachedDepthSources = Arrays.copyOf(localCachedDepthSources, (depth / 10 + 1) * 10);
                     final int newLength = localCachedDepthSources.length;
                     for (int di = oldLength; di < newLength; ++di) {
                         localCachedDepthSources[di] = new ImmutableConstantIntSource(di);

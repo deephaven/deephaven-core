@@ -485,7 +485,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
         return new RollupRowLookupKeySource(
-                nodeKeyTable.getColumnSource(getRowDepthColumn().name(), Integer.class),
+                nodeKeyTable.getColumnSource(getRowDepthColumn().name(), int.class),
                 groupByColumns.stream()
                         .map(cn -> nodeKeyTable.getColumnSource(cn.name(), root.getColumnSource(cn.name()).getType()))
                         .toArray(ColumnSource[]::new));
