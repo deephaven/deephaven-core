@@ -64,8 +64,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     private static final int CHUNK_SIZE = 512;
 
     @SuppressWarnings("unchecked")
-    private static volatile ChunkSource.WithPrev<? extends Values>[] cachedDepthSources =
-            ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
+    private static volatile ColumnSource<Integer>[] cachedDepthSources =
+            ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY;
 
     /**
      * The source table that operations were applied to in order to produce this hierarchical table.
@@ -1512,8 +1512,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * @return An immutable source that maps all rows to {@code depth}
      */
     @NotNull
-    static ChunkSource.WithPrev<? extends Values> getDepthSource(final int depth) {
-        ChunkSource.WithPrev<? extends Values>[] localCachedDepthSources;
+    static ColumnSource<Integer> getDepthSource(final int depth) {
+        ColumnSource<Integer>[] localCachedDepthSources;
         if ((localCachedDepthSources = cachedDepthSources).length <= depth) {
             synchronized (TreeTableImpl.class) {
                 if ((localCachedDepthSources = cachedDepthSources).length <= depth) {

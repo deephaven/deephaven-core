@@ -155,9 +155,20 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final Collection<ColumnDefinition<?>> groupByColumnDefinitions = getGroupByColumns().stream()
                 .map(gbcn -> getSource().getDefinition().getColumn(gbcn.name()))
                 .collect(Collectors.toList());
-        final TableDefinition groupByColumnsOnlyTableDefinition = TableDefinition.of(groupByColumnDefinitions);
-        return new QueryTable(groupByColumnsOnlyTableDefinition, RowSetFactory.flat(1).toTracking(),
-                NullValueColumnSource.createColumnSourceMap(groupByColumnsOnlyTableDefinition), null, null);
+
+        final Collection<ColumnDefinition<?>> keyTableColumnDefinitions = Stream.concat(
+                        Stream.of(ROW_DEPTH_COLUMN_DEFINITION),
+                        groupByColumnDefinitions.stream())
+                .collect(Collectors.toList());
+        final TableDefinition keyTableDefinition = TableDefinition.of(keyTableColumnDefinitions);
+
+        final LinkedHashMap<String, ColumnSource<?>> keyTableSources = new LinkedHashMap<>(
+                keyTableDefinition.numColumns());
+        keyTableSources.put(ROW_DEPTH_COLUMN.name(), getDepthSource(0));
+        groupByColumnDefinitions.forEach(gbcd -> keyTableSources.put(
+                gbcd.getName(), NullValueColumnSource.getInstance(gbcd.getDataType(), gbcd.getComponentType())));
+
+        return new QueryTable(keyTableDefinition, RowSetFactory.flat(1).toTracking(), keyTableSources, null, null);
     }
 
     @Override
