@@ -154,16 +154,6 @@ public interface Table extends
      */
     String SORTED_COLUMNS_ATTRIBUTE = "SortedColumns";
     String SYSTEMIC_TABLE_ATTRIBUTE = "SystemicTable";
-    // TODO: Might be good to take a pass through these and see what we can condense into
-    // TODO: TreeTableInfo and RollupInfo to reduce the attribute noise.
-    String ROLLUP_LEAF_ATTRIBUTE = "RollupLeaf";
-    // TODO (https://github.com/deephaven/deephaven-core/issues/64 or
-    // https://github.com/deephaven/deephaven-core/issues/65):
-    // Rename and repurpose this attribute
-    String HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE = "HierarchicalChildrenTable";
-    String HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable";
-    String TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE = "TreeTableFilterReverseLookup";
-    String HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo";
     /**
      * Attribute on aggregation results used for hierarchical table construction. Specification is left to the
      * implementation.
@@ -173,7 +163,6 @@ public interface Table extends
      * Attribute on sort results used for hierarchical table construction. Specification is left to the implementation.
      */
     String SORT_REVERSE_LOOKUP_ATTRIBUTE = "SortReverseLookup";
-    String PREPARED_RLL_ATTRIBUTE = "PreparedRll";
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
     /**
      * This attribute is used internally by TableTools.merge to detect successive merges. Its presence indicates that it

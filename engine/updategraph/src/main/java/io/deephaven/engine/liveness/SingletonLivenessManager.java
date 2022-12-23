@@ -44,8 +44,7 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
     }
 
     private WeakReference<? extends LivenessReferent> getRetainedReference() {
-        // noinspection unchecked
-        return (WeakReference<? extends LivenessReferent>) RETAINED_REFERENCE_UPDATER.getAndSet(this, null);
+        return retainedReference;
     }
 
     @Override

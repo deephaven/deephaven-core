@@ -810,7 +810,7 @@ public class QueryTableAggregationTest {
         assertTableEquals(expectedLast, lastBy);
 
         final Table expectedFirstComposite =
-                table.update("First=skSet.add(new io.deephaven.datastructures.util.SmartKey(Sym, intCol))")
+                table.update("First=skSet.add(new io.deephaven.tuple.ArrayTuple(Sym, intCol))")
                         .where("First").dropColumns("First").moveColumnsUp("Sym", "intCol");
         final Table firstByComposite = table.firstBy("Sym", "intCol");
         assertTableEquals(expectedFirstComposite, firstByComposite);
@@ -818,7 +818,7 @@ public class QueryTableAggregationTest {
         skSet.clear();
         final Table lastByComposite = table.lastBy("Sym", "intCol").sort("Sym", "intCol");
         final Table expectedLastComposite =
-                table.reverse().update("First=skSet.add(new io.deephaven.datastructures.util.SmartKey(Sym, intCol))")
+                table.reverse().update("First=skSet.add(new io.deephaven.tuple.ArrayTuple(Sym, intCol))")
                         .where("First").dropColumns("First").sort("Sym", "intCol").moveColumnsUp("Sym", "intCol");
         assertTableEquals(expectedLastComposite, lastByComposite);
     }

@@ -23,7 +23,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         try {
             emptyTable(10).tree("ABC", "DEF");
             fail("Expected exception");
-        } catch (UnsupportedOperationException expected) {
+        } catch (IllegalArgumentException expected) {
         }
     }
 
@@ -32,7 +32,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         try {
             emptyTable(10).rollup(List.of(), "ABC", "DEF");
             fail("Expected exception");
-        } catch (UnsupportedOperationException expected) {
+        } catch (IllegalArgumentException expected) {
         }
     }
 

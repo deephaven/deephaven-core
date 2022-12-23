@@ -88,7 +88,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         try {
             emptyTable(10).tree("ABC", "DEF");
             fail("Expected exception");
-        } catch (UnsupportedOperationException expected) {
+        } catch (IllegalArgumentException expected) {
         }
 
         // final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),

@@ -238,49 +238,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         tempMap.put(SYSTEMIC_TABLE_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.None));
 
-        // Tree table attributes
-        tempMap.put(HIERARCHICAL_CHILDREN_TABLE_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.Filter,
-                CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.PartitionBy,
-                CopyAttributeOperation.Flatten,
-                CopyAttributeOperation.RollupCopy));
-
-        tempMap.put(ROLLUP_LEAF_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.Filter,
-                CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.PartitionBy,
-                CopyAttributeOperation.Flatten));
-
-        tempMap.put(TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.RollupCopy));
-
-        tempMap.put(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.RollupCopy));
-
-        tempMap.put(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.RollupCopy));
-
         tempMap.put(AGGREGATION_ROW_LOOKUP_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.RollupCopy,
                 CopyAttributeOperation.TreeCopy));
 
-        tempMap.put(PREPARED_RLL_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.Filter));
 
         tempMap.put(COLUMN_DESCRIPTIONS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
