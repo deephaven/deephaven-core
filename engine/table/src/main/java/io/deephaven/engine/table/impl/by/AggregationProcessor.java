@@ -147,7 +147,6 @@ import static io.deephaven.engine.table.impl.by.RollupConstants.ROW_REDIRECTION_
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
 import static io.deephaven.util.type.TypeUtils.isNumeric;
-import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -206,7 +205,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         baseAggregations.addAll(aggregations);
         baseAggregations.add(includeConstituents
                 ? Partition.of(rollupColumn)
-                : RollupAggregation.nullColumns(rollupColumn.name(), Object.class));
+                : RollupAggregation.nullColumns(rollupColumn.name(), Table.class));
         return new AggregationProcessor(baseAggregations, Type.ROLLUP_BASE);
     }
 
@@ -340,8 +339,9 @@ public class AggregationProcessor implements AggregationContextFactory {
             isStream = this.table.isStream();
         }
 
-        AggregationContext build() {
+        final AggregationContext build() {
             walkAllAggregations();
+            transformers.add(new RowLookupAttributeSetter());
             return makeAggregationContext();
         }
 
@@ -929,13 +929,6 @@ public class AggregationProcessor implements AggregationContextFactory {
             super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
-        @Override
-        AggregationContext build() {
-            walkAllAggregations();
-            transformers.add(new RowLookupAttributeSetter());
-            return makeAggregationContext();
-        }
-
         // -------------------------------------------------------------------------------------------------------------
         // RollupAggregation.Visitor
         // -------------------------------------------------------------------------------------------------------------
@@ -1064,20 +1057,15 @@ public class AggregationProcessor implements AggregationContextFactory {
             super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
-        @Override
-        AggregationContext build() {
-            walkAllAggregations();
-            transformers.add(new RowLookupAttributeSetter());
-            return makeAggregationContext();
-        }
-
         // -------------------------------------------------------------------------------------------------------------
         // RollupAggregation.Visitor
         // -------------------------------------------------------------------------------------------------------------
 
         @Override
         public void visit(@NotNull final Count count) {
-            addBasicOperators((t, n) -> new LongChunkedSumOperator(false, n));
+            final String resultName = count.column().name();
+            final ColumnSource<?> resultSource = table.getColumnSource(resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
         }
 
         @Override

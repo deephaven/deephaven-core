@@ -68,11 +68,9 @@ public class QueryFactory {
             {"AggSum", "AggVar", "AggStd", "AggCount", "AggMin", "AggMax", "AggFirst", "AggLast"};
     private static final String[] SAFE_AGG = {"AggMin", "AggMax", "AggFirst", "AggLast"};
     private static final String[] SAFE_BY = {"maxBy", "minBy", "firstBy", "lastBy", "sortedFirstBy", "sortedLastBy"};
-    // TODO (https://github.com/deephaven/deephaven-core/issues/64): Re-enable tree
-    // TODO (https://github.com/deephaven/deephaven-core/issues/65): Re-enable rollup
     private static final String[] FINAL_OPS =
-            {"selectDistinct", "byOperation", "aggCombo", /* "tree", "rollup", */ "applyToAllBy"};
-    private static final HashMap<String, String[]> DEFAULT_SWITCH_CONTROL = new HashMap<String, String[]>() {
+            {"selectDistinct", "byOperation", "aggCombo", "tree", "rollup", "applyToAllBy"};
+    private static final HashMap<String, String[]> DEFAULT_SWITCH_CONTROL = new HashMap<>() {
         {
             put("supportedOps", IMPLEMENTED_OPS);
             put("changingAgg", CHANGING_AGG);
@@ -161,7 +159,7 @@ public class QueryFactory {
      * @return Single string with the above format.
      */
     private String stringArrayToSingleArgumentList(Collection<String> values) {
-        return "\"" + values.stream().collect(Collectors.joining(",")) + "\"";
+        return "\"" + String.join(",", values) + "\"";
     }
 
     /**

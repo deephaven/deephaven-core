@@ -219,11 +219,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn) {
         final QueryTable tree = computeTree(source, parentIdentifierColumn);
-        final QueryTable reverseLookupTable = computeSourceRowLookupTable(source, identifierColumn);
-        final TreeSourceRowLookup reverseLookup = new TreeSourceRowLookup(source, reverseLookupTable);
+        final QueryTable sourceRowLookupTable = computeSourceRowLookupTable(source, identifierColumn);
+        final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(source, sourceRowLookupTable);
         final TreeTableImpl result = new TreeTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)),
-                source, tree, reverseLookup, identifierColumn, parentIdentifierColumn, Set.of(), null, null);
+                source, tree, sourceRowLookup, identifierColumn, parentIdentifierColumn, Set.of(), null, null);
         source.copySortableColumns(result, (final String columnName) -> true);
         return result;
     }
