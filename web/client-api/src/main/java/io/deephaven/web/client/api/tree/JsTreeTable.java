@@ -84,6 +84,9 @@ public class JsTreeTable extends HasEventHandling {
     private static final String TABLE_AGGREGATION_COLUMN_PREFIX = "Rollup_";
 
     private static final String[] TABLE_AGGREGATIONS = new String[] {JsAggregationOperation.COUNT};
+    public static final double ACTION_EXPAND = 0b001;
+    public static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
+    public static final double ACTION_COLLAPSE = 0b100;
 
     private static boolean isTableAggregationColumn(String columnName) {
         if (!columnName.startsWith(TABLE_AGGREGATION_COLUMN_PREFIX)) {
@@ -220,7 +223,7 @@ public class JsTreeTable extends HasEventHandling {
                     Js.<JsArray<Any>>cast(keyTableData[i]).push(keyColumns.getAt(i).get(this));
                 }
                 Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth());
-                Js.<JsArray<Boolean>>cast(keyTableData[i++]).push(expanded);
+                Js.<JsArray<Double>>cast(keyTableData[i++]).push(expanded ? ACTION_EXPAND : ACTION_COLLAPSE);
             }
         }
     }
@@ -238,6 +241,7 @@ public class JsTreeTable extends HasEventHandling {
     private final JsArray<Column> keyColumns;
     private Column rowDepthCol;
     private Column rowExpandedCol;
+    private final Column actionCol;
     private final JsArray<Column> groupedColumns;
 
     // The source JsTable behind the original HierarchicalTable, lazily built at this time
@@ -309,6 +313,7 @@ public class JsTreeTable extends HasEventHandling {
         }
         keyColumns = treeDescriptor.getExpandByColumnsList().map((p0, p1, p2) -> columnsByName.get(p0));
         keyTableData = new Object[keyColumns.length + 2][0];
+        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false);
 
         if (treeDescriptor.getDetailsCase() == DetailsCase.ROLLUP) {
             RollupDescriptorDetails rollupDef = treeDescriptor.getRollup();
@@ -396,7 +401,7 @@ public class JsTreeTable extends HasEventHandling {
         }
         JsArray<Column> keyTableColumns = keyColumns.slice();
         keyTableColumns.push(rowDepthCol);
-        keyTableColumns.push(rowExpandedCol);
+        keyTableColumns.push(actionCol);
         keyTable = connection.newTable(
                 Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getName())),
                 Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getType())),
@@ -420,6 +425,7 @@ public class JsTreeTable extends HasEventHandling {
                 if (keyTableData[0].length > 0) {
                     HierarchicalTableViewKeyTableDescriptor expansions = new HierarchicalTableViewKeyTableDescriptor();
                     expansions.setKeyTableId(keyTable.getHandle().makeTicket());
+                    expansions.setKeyTableActionColumn(actionCol.getName());
                     viewRequest.setExpansions(expansions);
                 }
                 connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
