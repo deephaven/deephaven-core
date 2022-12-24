@@ -1157,8 +1157,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                         final long lastRowKeyToConsume;
                         final LinkedDirective childDirectiveToExpand;
                         if (snapshotState.expandingAll) {
-                            if (nextContractedPosition ==
-                                    rowsToVisitIter.getRelativePosition() - firstRelativePosition) {
+                            if (nextContractedPosition == rowsToVisitIter.getRelativePosition()
+                                    - firstRelativePosition) {
                                 assert contractedRowPositionsIter != null;
                                 // We're at the start of a contracted range; we need to consume the contracted range
                                 // and expand the first row after if there is one.
