@@ -543,6 +543,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
+    Object rootNodeKey() {
+        return ROOT_NODE_KEY;
+    }
+
+    @Override
     long nodeKeyToNodeId(@Nullable final Object nodeKey) {
         final int nodeDepth = nodeDepth(nodeKey);
         if (nodeDepth >= numLevels) {
@@ -671,7 +676,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final int levelIndex = nodeDepth(nodeId);
         Assert.eq(levelIndex, "levelIndex", snapshotState.getCurrentDepth(), "current snapshot traversal depth");
         final boolean isBaseLevel = levelIndex == baseLevelIndex;
-        Assert.eq(isBaseLevel, "isBaseLevel", includesConstituents, "includesConstituents");
+        if (isBaseLevel) {
+            Assert.assertion(includesConstituents, "includesConstituents",
+                    "filling from base level when not including constituents");
+        }
 
         final BitSet columns = snapshotState.getColumns();
         for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci + 1)) {
@@ -704,7 +712,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         Assert.leq(levelIndex, "levelIndex", baseLevelIndex, "baseLevelIndex");
         final int childLevelIndex = levelIndex + 1;
 
-        return childLevelIndex != baseLevelIndex || includesConstituents ? All : None;
+        return childLevelIndex < baseLevelIndex || (childLevelIndex == baseLevelIndex && includesConstituents)
+                ? All
+                : None;
     }
 
     @Override

@@ -556,9 +556,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             private void filterKeyAndSortChildDirectives(
                     @NotNull final List<LinkedDirective> childDirectives,
                     final boolean filling) {
-                final LongUnaryOperator dataSortReverseLookup = filling
-                        ? getDataSortReverseLookup()
-                        : LongUnaryOperator.identity();
                 int numChildDirectives = childDirectives.size();
                 for (int cdi = 0; cdi < numChildDirectives;) {
                     final LinkedDirective childDirective = childDirectives.get(cdi);
@@ -569,6 +566,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                         ++cdi;
                     }
                 }
+                final LongUnaryOperator dataSortReverseLookup = filling
+                        ? getDataSortReverseLookup()
+                        : null;
                 for (final LinkedDirective childDirective : childDirectives) {
                     childDirective.setRowKeyInParentSorted(dataSortReverseLookup);
                 }
@@ -835,8 +835,12 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             return children;
         }
 
-        private void setRowKeyInParentSorted(@NotNull final LongUnaryOperator dataSortReverseLookup) {
+        private void setRowKeyInParentSorted(@Nullable final LongUnaryOperator dataSortReverseLookup) {
             Assert.neq(rowKeyInParentUnsorted, "rowKeyInParentUnsorted", NULL_ROW_KEY, "null");
+            if (dataSortReverseLookup == null) {
+                rowKeyInParentSorted = rowKeyInParentUnsorted;
+                return;
+            }
             rowKeyInParentSorted = dataSortReverseLookup.applyAsLong(rowKeyInParentUnsorted);
             if (rowKeyInParentSorted == NULL_ROW_KEY) {
                 failIfConcurrentAttemptInconsistent();
@@ -953,6 +957,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 : maybePrevSource(keyTable.getColumnSource(keyTableActionColumn.name(), byte.class), usePrev);
         final KeyedObjectHashSet<Object, KeyTableDirective> directives =
                 new KeyedObjectHashSet<>(KeyTableDirective.HASH_ADAPTER);
+        directives.add(new KeyTableDirective(rootNodeKey(), Expand));
         try (final RowSet prevRowSet = usePrev ? keyTable.getRowSet().copyPrev() : null) {
             final RowSequence rowsToExtract = usePrev ? prevRowSet : keyTable.getRowSet();
             final ColumnIterator<?, ?> nodeKeyIter = ColumnIterator.make(nodeKeySource, rowsToExtract);
@@ -1093,130 +1098,140 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             final long nodeId,
             @NotNull final VisitAction action,
             @Nullable final List<LinkedDirective> childDirectives) {
-
-        // Get our node-table state, and the correct table instance to expand.
-        final SnapshotStateImpl.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
-        final boolean filling = snapshotState.filling();
-        final Table forExpansion = nodeTableState.prepareAndGetTableForExpansion(filling);
-        if (forExpansion.isEmpty()) {
-            // We arrived at an empty node. This is not really an error.
-            return;
-        }
-
-        // Establish whether we are expanding or expanding-all, and update our depth.
-        final boolean oldExpandingAll = snapshotState.expandingAll;
-        final ChildLevelExpandable childLevelExpandable = childLevelExpandable(snapshotState);
-        snapshotState.updateExpansionTypeAndValidateAction(action, childLevelExpandable != None);
-        ++snapshotState.currentDepth;
         try {
-            final int numChildDirectives;
-            if (childLevelExpandable != None && childDirectives != null) {
-                // If we have child directives that we might need to expand for, we need to know where they fit in
-                // this node's row set, and we want to be able to examine them in the order they may be expanded.
-                nodeTableState.filterKeyAndSortChildDirectives(childDirectives, filling);
-                numChildDirectives = childDirectives.size();
-            } else {
-                numChildDirectives = 0;
+            // Get our node-table state, and the correct table instance to expand.
+            final SnapshotStateImpl.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
+            final boolean filling = snapshotState.filling();
+            final Table forExpansion = nodeTableState.prepareAndGetTableForExpansion(filling);
+            if (forExpansion.isEmpty()) {
+                failIfConcurrentAttemptInconsistent();
+                // We arrived at an empty node. This is not really an error.
+                return;
             }
 
-            final RowSet prevRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
-            final RowSet rowsToVisit = prevRows != null ? prevRows : forExpansion.getRowSet();
-            // @formatter:off
-            try (final SafeCloseable ignored = prevRows;
-                 final RowSequence.Iterator rowsToVisitIter = rowsToVisit.getRowSequenceIterator();
-                 final NodeFillContext filler = filling
-                         ? new NodeFillContext(snapshotState, nodeTableState, rowsToVisit.size())
-                         : null;
-                 final RowSet contractedRowKeys = snapshotState.expandingAll && numChildDirectives > 0
-                         ? buildContractedRowKeys(childDirectives)
-                         : null;
-                 final RowSet contractedRowPositions = contractedRowKeys != null && contractedRowKeys.isNonempty()
-                         ? rowsToVisit.invert(contractedRowKeys)
-                         : null;
-                 final RowSet.RangeIterator contractedRowPositionsIter = contractedRowPositions != null
-                         ? contractedRowPositions.rangeIterator()
-                         : null) {
-                // @formatter:on
-                final LongUnaryOperator rowKeyToNodeId = makeChildNodeIdLookup(
-                        snapshotState, forExpansion, filling && nodeTableState.getDataSortReverseLookup() != null);
-                final long firstRelativePosition = rowsToVisitIter.getRelativePosition();
-                int cdi = 0;
-                LinkedDirective nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
-                long nextContractedPosition =
-                        contractedRowPositionsIter != null && contractedRowPositionsIter.hasNext()
-                                ? contractedRowPositionsIter.next()
-                                : NULL_ROW_KEY;
-                while (rowsToVisitIter.hasMore()) {
-                    final boolean expandLastRowToConsume;
-                    final long lastRowKeyToConsume;
-                    final LinkedDirective childDirectiveToExpand;
-                    if (snapshotState.expandingAll) {
-                        if (nextContractedPosition == rowsToVisitIter.getRelativePosition() - firstRelativePosition) {
-                            assert contractedRowPositionsIter != null;
-                            // We're at the start of a contracted range; we need to consume the contracted range
-                            // and expand the first row after if there is one.
-                            final long lastContractedPositionInRange = contractedRowPositionsIter.currentRangeEnd();
-                            final long rangeSize = lastContractedPositionInRange - nextContractedPosition + 1;
-                            cdi += rangeSize;
-                            nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
-                            if (rowsToVisit.size() > lastContractedPositionInRange + 1) {
-                                // Consume the contracted range and one extra row that we will expand.
-                                expandLastRowToConsume = true;
-                                lastRowKeyToConsume = rowsToVisit.get(lastContractedPositionInRange + 1);
-                            } else {
-                                // We're out of rows, consume the rest.
-                                expandLastRowToConsume = false;
-                                lastRowKeyToConsume = clampedRowKeyAfterLast(rowsToVisit.lastRowKey());
-                            }
-                            nextContractedPosition = contractedRowPositionsIter.hasNext()
+            // Establish whether we are expanding or expanding-all, and update our depth.
+            final boolean oldExpandingAll = snapshotState.expandingAll;
+            ++snapshotState.currentDepth;
+            try {
+                final ChildLevelExpandable childLevelExpandable = childLevelExpandable(snapshotState);
+                snapshotState.updateExpansionTypeAndValidateAction(action, childLevelExpandable != None);
+                final int numChildDirectives;
+                if (childLevelExpandable != None && childDirectives != null) {
+                    // If we have child directives that we might need to expand for, we need to know where they fit in
+                    // this node's row set, and we want to be able to examine them in the order they may be expanded.
+                    nodeTableState.filterKeyAndSortChildDirectives(childDirectives, filling);
+                    numChildDirectives = childDirectives.size();
+                } else {
+                    numChildDirectives = 0;
+                }
+
+                final RowSet prevRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
+                final RowSet rowsToVisit = prevRows != null ? prevRows : forExpansion.getRowSet();
+                // @formatter:off
+                try (final SafeCloseable ignored = prevRows;
+                     final RowSequence.Iterator rowsToVisitIter = rowsToVisit.getRowSequenceIterator();
+                     final NodeFillContext filler = filling
+                             ? new NodeFillContext(snapshotState, nodeTableState, rowsToVisit.size())
+                             : null;
+                     final RowSet contractedRowKeys = snapshotState.expandingAll && numChildDirectives > 0
+                             ? buildContractedRowKeys(childDirectives)
+                             : null;
+                     final RowSet contractedRowPositions = contractedRowKeys != null && contractedRowKeys.isNonempty()
+                             ? rowsToVisit.invert(contractedRowKeys)
+                             : null;
+                     final RowSet.RangeIterator contractedRowPositionsIter = contractedRowPositions != null
+                             ? contractedRowPositions.rangeIterator()
+                             : null) {
+                    // @formatter:on
+                    final LongUnaryOperator rowKeyToNodeId = makeChildNodeIdLookup(
+                            snapshotState, forExpansion, filling && nodeTableState.getDataSortReverseLookup() != null);
+                    final long firstRelativePosition = rowsToVisitIter.getRelativePosition();
+                    int cdi = 0;
+                    LinkedDirective nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                    long nextContractedPosition =
+                            contractedRowPositionsIter != null && contractedRowPositionsIter.hasNext()
                                     ? contractedRowPositionsIter.next()
                                     : NULL_ROW_KEY;
+                    while (rowsToVisitIter.hasMore()) {
+                        final boolean expandLastRowToConsume;
+                        final long lastRowKeyToConsume;
+                        final LinkedDirective childDirectiveToExpand;
+                        if (snapshotState.expandingAll) {
+                            if (nextContractedPosition ==
+                                    rowsToVisitIter.getRelativePosition() - firstRelativePosition) {
+                                assert contractedRowPositionsIter != null;
+                                // We're at the start of a contracted range; we need to consume the contracted range
+                                // and expand the first row after if there is one.
+                                final long lastContractedPositionInRange = contractedRowPositionsIter.currentRangeEnd();
+                                final long rangeSize = lastContractedPositionInRange - nextContractedPosition + 1;
+                                cdi += rangeSize;
+                                nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                                if (rowsToVisit.size() > lastContractedPositionInRange + 1) {
+                                    // Consume the contracted range and one extra row that we will expand.
+                                    expandLastRowToConsume = true;
+                                    lastRowKeyToConsume = rowsToVisit.get(lastContractedPositionInRange + 1);
+                                } else {
+                                    // We're out of rows, consume the rest.
+                                    expandLastRowToConsume = false;
+                                    lastRowKeyToConsume = clampedRowKeyAfterLast(rowsToVisit.lastRowKey());
+                                }
+                                nextContractedPosition = contractedRowPositionsIter.hasNext()
+                                        ? contractedRowPositionsIter.next()
+                                        : NULL_ROW_KEY;
+                            } else {
+                                // We're just expanding the next row.
+                                expandLastRowToConsume = true;
+                                lastRowKeyToConsume = rowsToVisitIter.peekNextKey();
+                            }
+                            if (nextChildDirective != null
+                                    && nextChildDirective.getRowKeyInParentSorted() == lastRowKeyToConsume) {
+                                // We can use a directive when we visit.
+                                Assert.assertion(expandLastRowToConsume, "expandingLastRowToConsume");
+                                childDirectiveToExpand = nextChildDirective;
+                                nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                            } else {
+                                // We're expanding-all; just visit with no child information.
+                                childDirectiveToExpand = null;
+                            }
                         } else {
-                            // We're just expanding the next row.
-                            expandLastRowToConsume = true;
-                            lastRowKeyToConsume = rowsToVisitIter.peekNextKey();
+                            if (nextChildDirective != null) {
+                                // We have an expansion directive. Consume the unexpanded prefix and the row to expand.
+                                expandLastRowToConsume = true;
+                                childDirectiveToExpand = nextChildDirective;
+                                lastRowKeyToConsume = childDirectiveToExpand.getRowKeyInParentSorted();
+                                nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                            } else {
+                                // We're out of expansions. Consume the rest.
+                                expandLastRowToConsume = false;
+                                childDirectiveToExpand = null;
+                                lastRowKeyToConsume = clampedRowKeyAfterLast(rowsToVisit.lastRowKey());
+                            }
                         }
-                        if (nextChildDirective != null
-                                && nextChildDirective.getRowKeyInParentSorted() == lastRowKeyToConsume) {
-                            // We can use a directive when we visit.
-                            Assert.assertion(expandLastRowToConsume, "expandingLastRowToConsume");
-                            childDirectiveToExpand = nextChildDirective;
-                            nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
+                        consumeRowsUntilNextExpansion(snapshotState, childLevelExpandable, rowsToVisitIter, filler,
+                                rowKeyToNodeId, lastRowKeyToConsume, expandLastRowToConsume);
+                        if (!expandLastRowToConsume) {
+                            consumeRemainder(snapshotState, rowsToVisitIter);
+                            break;
+                        }
+                        if (childDirectiveToExpand != null) {
+                            visitExpandedNode(snapshotState, childDirectiveToExpand);
                         } else {
-                            // We're expanding-all; just visit with no child information.
-                            childDirectiveToExpand = null;
+                            visitExpandedNode(snapshotState,
+                                    rowKeyToNodeId.applyAsLong(lastRowKeyToConsume), Linkage, null);
                         }
-                    } else {
-                        if (nextChildDirective != null) {
-                            // We have an expansion directive. Consume the unexpanded prefix and the row to expand.
-                            expandLastRowToConsume = true;
-                            childDirectiveToExpand = nextChildDirective;
-                            lastRowKeyToConsume = childDirectiveToExpand.getRowKeyInParentSorted();
-                            nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
-                        } else {
-                            // We're out of expansions. Consume the rest.
-                            expandLastRowToConsume = false;
-                            childDirectiveToExpand = null;
-                            lastRowKeyToConsume = clampedRowKeyAfterLast(rowsToVisit.lastRowKey());
-                        }
-                    }
-                    consumeRowsUntilNextExpansion(snapshotState, childLevelExpandable, rowsToVisitIter, filler,
-                            rowKeyToNodeId, lastRowKeyToConsume, expandLastRowToConsume);
-                    if (!expandLastRowToConsume) {
-                        consumeRemainder(snapshotState, rowsToVisitIter);
-                        break;
-                    }
-                    if (childDirectiveToExpand != null) {
-                        visitExpandedNode(snapshotState, childDirectiveToExpand);
-                    } else {
-                        visitExpandedNode(snapshotState,
-                                rowKeyToNodeId.applyAsLong(lastRowKeyToConsume), Linkage, null);
                     }
                 }
+            } finally {
+                --snapshotState.currentDepth;
+                snapshotState.expandingAll = oldExpandingAll;
             }
-        } finally {
-            --snapshotState.currentDepth;
-            snapshotState.expandingAll = oldExpandingAll;
+        } catch (SnapshotInconsistentException | HierarchicalTableSnapshotException snapshotException) {
+            throw snapshotException;
+        } catch (Exception otherException) {
+            failIfConcurrentAttemptInconsistent();
+            log.error().append("HierarchicalTable.snapshot error at nodeId=").append(nodeId).append(": ")
+                    .append(otherException).endl();
+            throw new HierarchicalTableSnapshotException("HierarchicalTable.snapshot error", otherException);
         }
     }
 
@@ -1406,6 +1421,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      * @return Whether {@code nodeKey} maps to the root node for this HierarchicalTableImpl
      */
     abstract boolean isRootNodeKey(@Nullable Object nodeKey);
+
+    abstract Object rootNodeKey();
 
     /**
      * @param nodeKey The node key to map

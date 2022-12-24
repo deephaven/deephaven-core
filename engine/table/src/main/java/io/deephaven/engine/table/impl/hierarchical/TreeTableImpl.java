@@ -259,6 +259,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
+    Object rootNodeKey() {
+        return null;
+    }
+
+    @Override
     long nodeKeyToNodeId(@Nullable final Object nodeKey) {
         return treeRowLookup.get(nodeKey);
     }
