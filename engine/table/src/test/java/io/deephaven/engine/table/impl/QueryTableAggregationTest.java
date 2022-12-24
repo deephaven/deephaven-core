@@ -3404,10 +3404,11 @@ public class QueryTableAggregationTest {
 
         Table result = table.lastBy("Sym");
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(2, result.getAttributes().size());
+            TestCase.assertEquals(3, result.getAttributes().size());
             TestCase.assertEquals(
-                    new LinkedHashSet<>(
-                            Arrays.asList(Table.SYSTEMIC_TABLE_ATTRIBUTE, Table.COLUMN_DESCRIPTIONS_ATTRIBUTE)),
+                    Set.of(Table.SYSTEMIC_TABLE_ATTRIBUTE,
+                            Table.COLUMN_DESCRIPTIONS_ATTRIBUTE,
+                            Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE),
                     result.getAttributes().keySet());
         } else {
             TestCase.assertEquals(1, result.getAttributes().size());
@@ -3416,10 +3417,11 @@ public class QueryTableAggregationTest {
 
         result = table.firstBy("Sym");
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(2, result.getAttributes().size());
+            TestCase.assertEquals(3, result.getAttributes().size());
             TestCase.assertEquals(
-                    new LinkedHashSet<>(
-                            Arrays.asList(Table.SYSTEMIC_TABLE_ATTRIBUTE, Table.COLUMN_DESCRIPTIONS_ATTRIBUTE)),
+                    Set.of(Table.SYSTEMIC_TABLE_ATTRIBUTE,
+                            Table.COLUMN_DESCRIPTIONS_ATTRIBUTE,
+                            Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE),
                     result.getAttributes().keySet());
         } else {
             TestCase.assertEquals(1, result.getAttributes().size());
