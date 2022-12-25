@@ -496,7 +496,6 @@ public class BarrageUtil {
                 name.equals(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
         putMetadata(metadata, "isDateFormat", name.endsWith(ColumnFormattingValues.TABLE_DATE_FORMAT_NAME) + "");
         putMetadata(metadata, "isNumberFormat", name.endsWith(ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME) + "");
-        // putMetadata(metadata, "isRollupColumn", name.equals(RollupInfo.ROLLUP_COLUMN) + "");
 
         if (description != null) {
             putMetadata(metadata, "description", description);
