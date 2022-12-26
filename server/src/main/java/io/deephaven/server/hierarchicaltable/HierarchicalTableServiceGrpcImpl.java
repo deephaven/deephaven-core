@@ -170,9 +170,9 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                         .collect(Collectors.toList()));
                             }
                             if (translatedSorts != null) {
-                                final RollupTable.NodeOperationsRecorder aggregatedSorts =
+                                RollupTable.NodeOperationsRecorder aggregatedSorts =
                                         rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated);
-                                aggregatedSorts.sort(translatedSorts);
+                                aggregatedSorts = aggregatedSorts.sort(translatedSorts);
                                 if (rollupTable.includesConstituents()) {
                                     final RollupTable.NodeOperationsRecorder constituentSorts = rollupTable
                                             .translateAggregatedNodeOperationsForConstituentNodes(aggregatedSorts);
@@ -191,9 +191,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                         .collect(Collectors.toList()));
                             }
                             if (translatedSorts != null) {
-                                final TreeTable.NodeOperationsRecorder treeSorts =
-                                        treeTable.makeNodeOperationsRecorder();
-                                treeSorts.sort(translatedSorts);
+                                TreeTable.NodeOperationsRecorder treeSorts = treeTable.makeNodeOperationsRecorder();
+                                treeSorts = treeSorts.sort(translatedSorts);
                                 treeTable = treeTable.withNodeOperations(treeSorts);
                             }
                             result = treeTable;
