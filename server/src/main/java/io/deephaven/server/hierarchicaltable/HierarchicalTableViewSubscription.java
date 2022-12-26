@@ -75,10 +75,10 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     // region Guarded by scheduling lock
     private long scheduledTimeNanos = Long.MAX_VALUE;
     private long lastSnapshotTimeNanos = 0;
-    private BitSet pendingColumns;
-    private RowSet pendingRows;
     private boolean upstreamDataChanged;
     private Throwable upstreamFailure;
+    private BitSet pendingColumns;
+    private RowSet pendingRows;
     // endregion Guarded by scheduling lock
 
     private final Object snapshotLock = new Object();
@@ -237,23 +237,25 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                     // Let other threads know we're sending the error, and to stop scheduling or doing work
                     state = State.Done;
                     // Strictly gratuitous cleanup
+                    upstreamDataChanged = false;
                     pendingColumns = null;
                     try (final SafeCloseable ignored1 = pendingRows;
                             final SafeCloseable ignored2 = rows) {
                         pendingRows = null;
                     }
-                    upstreamDataChanged = false;
                 } else {
                     boolean sendSnapshot = upstreamDataChanged;
                     upstreamDataChanged = false;
                     if (pendingColumns != null) {
                         columns = pendingColumns;
+                        pendingColumns = null;
                         sendSnapshot = true;
                     }
                     if (pendingRows != null) {
                         try (final SafeCloseable ignored = rows) {
                             rows = pendingRows;
                         }
+                        pendingRows = null;
                         sendSnapshot = true;
                     }
                     if (!sendSnapshot) {
