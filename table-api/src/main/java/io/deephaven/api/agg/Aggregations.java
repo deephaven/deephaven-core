@@ -32,8 +32,8 @@ public abstract class Aggregations implements Aggregation {
     @Check
     final void checkSize() {
         if (aggregations().size() < 2) {
-            throw new IllegalArgumentException(
-                    String.format("%s should have at least two aggregations", Aggregations.class));
+            throw new IllegalArgumentException(String.format("%s should have at least two aggregations, has %d",
+                    Aggregations.class, aggregations().size()));
         }
     }
 
