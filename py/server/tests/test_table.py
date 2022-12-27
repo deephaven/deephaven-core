@@ -227,12 +227,12 @@ class TableTestCase(BaseTestCase):
 
     def test_restrict_sort_to(self):
         cols = ["b", "e"]
-        self.test_table.restrict_sort_to(cols)
-        result_table = self.test_table.sort(order_by=cols)
-        self.test_table.restrict_sort_to("b")
-        result_table = self.test_table.sort(order_by="b")
+        restricted_table = self.test_table.restrict_sort_to(cols)
+        result_table = restricted_table.sort(order_by=cols)
+        restricted_table = self.test_table.restrict_sort_to("b")
+        result_table = restricted_table.sort(order_by="b")
         with self.assertRaises(DHError) as cm:
-            self.test_table.sort(order_by=["a"])
+            restricted_table.sort(order_by=["a"])
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
     def test_sort_descending(self):

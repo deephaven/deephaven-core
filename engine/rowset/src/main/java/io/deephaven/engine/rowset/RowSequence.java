@@ -97,7 +97,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      *
      * @param chunkToFill A chunk to fill with individual row keys
      */
-    void fillRowKeyChunk(WritableLongChunk<? extends RowKeys> chunkToFill);
+    void fillRowKeyChunk(WritableLongChunk<? super OrderedRowKeys> chunkToFill);
 
     /**
      * <p>

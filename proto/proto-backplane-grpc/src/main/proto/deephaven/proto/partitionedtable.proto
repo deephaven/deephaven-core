@@ -18,7 +18,7 @@ import "deephaven/proto/ticket.proto";
  */
 service PartitionedTableService {
   /*
-   * Transforms a table into a partitioned table, consisting of many separate table, each individually
+   * Transforms a table into a partitioned table, consisting of many separate tables, each individually
    * addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
    */
   rpc PartitionBy(PartitionByRequest) returns (PartitionByResponse);

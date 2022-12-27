@@ -183,7 +183,7 @@ public class TimeTable extends QueryTable implements Runnable {
 
     private static final class SyntheticDateTimeSource extends AbstractColumnSource<DateTime> implements
             ImmutableColumnSourceGetDefaults.LongBacked<DateTime>,
-            FillUnordered {
+            FillUnordered<Values> {
 
         private DateTime startTime;
         private final long period;
@@ -292,7 +292,7 @@ public class TimeTable extends QueryTable implements Runnable {
 
         private class SyntheticDateTimeAsLongSource extends AbstractColumnSource<Long> implements
                 ImmutableColumnSourceGetDefaults.LongBacked<Long>,
-                FillUnordered {
+                FillUnordered<Values> {
 
             SyntheticDateTimeAsLongSource() {
                 super(Long.class);

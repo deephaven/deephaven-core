@@ -37,7 +37,7 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DDoubleArraySource}.
  */
-public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSource<Double> implements ImmutableColumnSourceGetDefaults.ForDouble, WritableColumnSource<Double>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSource<Double> implements ImmutableColumnSourceGetDefaults.ForDouble, WritableColumnSource<Double>, FillUnordered<Values>, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
     private double[] data;
 
     // region constructor

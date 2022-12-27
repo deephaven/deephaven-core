@@ -7,7 +7,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.WritableLongChunk;
@@ -38,7 +38,7 @@ public class RowSetUtils {
     }
 
     public static void fillKeyIndicesChunk(final RowSet index,
-            final WritableLongChunk<? extends RowKeys> chunkToFill) {
+            final WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
         chunkToFill.setSize(0); // so that we can actually add from the beginning.
         index.forEachRowKey((final long v) -> {
             chunkToFill.add(v);

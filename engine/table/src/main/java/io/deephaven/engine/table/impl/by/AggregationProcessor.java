@@ -5,16 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Aggregations;
-import io.deephaven.api.agg.AggregationPairs;
-import io.deephaven.api.agg.ColumnAggregation;
-import io.deephaven.api.agg.ColumnAggregations;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.FirstRowKey;
-import io.deephaven.api.agg.LastRowKey;
-import io.deephaven.api.agg.Pair;
-import io.deephaven.api.agg.Partition;
+import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
@@ -40,9 +31,9 @@ import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.object.UnionObject;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
@@ -50,12 +41,10 @@ import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.ReverseLookup;
-import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.by.rollup.NullColumns;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
-import io.deephaven.engine.table.impl.by.rollup.RollupAggregationPairs;
+import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteChunkedCountDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteRollupCountDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.CharChunkedCountDistinctOperator;
@@ -107,7 +96,6 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniq
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.sources.SingleValueObjectColumnSource;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
@@ -128,7 +116,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -136,11 +124,7 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_DOUBLE
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
-import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
-import static io.deephaven.engine.table.Table.REVERSE_LOOKUP_ATTRIBUTE;
-import static io.deephaven.engine.table.impl.RollupAttributeCopier.DEFAULT_INSTANCE;
-import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
-import static io.deephaven.engine.table.impl.RollupInfo.ROLLUP_COLUMN;
+import static io.deephaven.engine.table.Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID;
@@ -154,7 +138,6 @@ import static io.deephaven.engine.table.impl.by.RollupConstants.ROW_REDIRECTION_
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
 import static io.deephaven.util.type.TypeUtils.isNumeric;
-import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -167,6 +150,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         NORMAL(false),
         ROLLUP_BASE(true),
         ROLLUP_REAGGREGATED(true),
+        TREE_SOURCE_ROW_LOOKUP(false),
         SELECT_DISTINCT(false);
         // @formatter:on
 
@@ -203,15 +187,16 @@ public class AggregationProcessor implements AggregationContextFactory {
      */
     public static AggregationContextFactory forRollupBase(
             @NotNull final Collection<? extends Aggregation> aggregations,
-            final boolean includeConstituents) {
+            final boolean includeConstituents,
+            @NotNull final ColumnName rollupColumn) {
         if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
             rollupUnsupported("Partition");
         }
         final Collection<Aggregation> baseAggregations = new ArrayList<>(aggregations.size() + 1);
         baseAggregations.addAll(aggregations);
         baseAggregations.add(includeConstituents
-                ? Partition.of(ROLLUP_COLUMN)
-                : NullColumns.of(ROLLUP_COLUMN, Object.class));
+                ? Partition.of(rollupColumn)
+                : RollupAggregation.nullColumns(rollupColumn.name(), Table.class));
         return new AggregationProcessor(baseAggregations, Type.ROLLUP_BASE);
     }
 
@@ -226,15 +211,26 @@ public class AggregationProcessor implements AggregationContextFactory {
      */
     public static AggregationContextFactory forRollupReaggregated(
             @NotNull final Collection<? extends Aggregation> aggregations,
-            @NotNull final Map<String, Class<?>> nullColumns) {
+            @NotNull final Map<String, Class<?>> nullColumns,
+            @NotNull final ColumnName rollupColumn) {
         if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
             rollupUnsupported("Partition");
         }
         final Collection<Aggregation> reaggregations = new ArrayList<>(aggregations.size() + 2);
-        reaggregations.add(NullColumns.from(nullColumns));
+        reaggregations.add(RollupAggregation.nullColumns(nullColumns));
         reaggregations.addAll(aggregations);
-        reaggregations.add(Partition.of(ROLLUP_COLUMN));
+        reaggregations.add(Partition.of(rollupColumn));
         return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
+    }
+
+    /**
+     * Create a trivial {@link AggregationContextFactory} to implement source-row lookup functionality for
+     * {@link Table#tree(String, String) tree}.
+     *
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forTreeSourceRowLookup() {
+        return new AggregationProcessor(Collections.emptyList(), Type.TREE_SOURCE_ROW_LOOKUP);
     }
 
     /**
@@ -252,8 +248,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         this.aggregations = aggregations;
         this.type = type;
         final String duplicationErrorMessage = (type.isRollup
-                ? RollupAggregationPairs.outputsOf(aggregations)
-                : AggregationPairs.outputsOf(aggregations))
+                ? RollupAggregationOutputs.of(aggregations)
+                : AggregationOutputs.of(aggregations))
                         .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet()
                         .stream()
                         .filter(kv -> kv.getValue() > 1)
@@ -285,6 +281,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 return new RollupBaseConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_REAGGREGATED:
                 return new RollupReaggregatedConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
+            case TREE_SOURCE_ROW_LOOKUP:
+                return makeSourceRowLookupAggregationContext();
             case SELECT_DISTINCT:
                 return makeEmptyAggregationContext(requireStateChangeRecorder);
             default:
@@ -296,12 +294,14 @@ public class AggregationProcessor implements AggregationContextFactory {
     // Converter Framework
     // -----------------------------------------------------------------------------------------------------------------
 
+    private static final PartitionByChunkedOperator.AttributeCopier PARTITION_ATTRIBUTE_COPIER =
+            (pt, st) -> pt.copyAttributes(st, BaseTable.CopyAttributeOperation.PartitionBy);
+
     /**
      * Base class for conversion from a collection of {@link Aggregation aggregations} to an {@link AggregationContext}
      * for {@code aggregations}. Accumulates state by visiting each aggregation.
      */
     private abstract class Converter implements Aggregation.Visitor, AggSpec.Visitor {
-
         final QueryTable table;
         private final boolean requireStateChangeRecorder;
         final String[] groupByColumnNames;
@@ -330,8 +330,9 @@ public class AggregationProcessor implements AggregationContextFactory {
             isStream = this.table.isStream();
         }
 
-        AggregationContext build() {
+        final AggregationContext build() {
             walkAllAggregations();
+            transformers.add(new RowLookupAttributeSetter());
             return makeAggregationContext();
         }
 
@@ -413,7 +414,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 @Nullable final ChunkSource.WithPrev<Values> inputSource,
                 @NotNull final Stream<String>... inputColumnNames) {
             addOperator(operator, inputSource,
-                    Stream.of(inputColumnNames).flatMap(Function.identity()).toArray(String[]::new));
+                    Arrays.stream(inputColumnNames).flatMap(Function.identity()).toArray(String[]::new));
         }
 
         final void addOperator(@NotNull final IterativeChunkedAggregationOperator operator,
@@ -687,7 +688,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                     table,
                     partition.includeGroupByColumns() ? table : (QueryTable) table.dropColumns(groupByColumnNames),
                     partition.column().name(),
-                    (pt, st) -> pt.copyAttributes(st, BaseTable.CopyAttributeOperation.PartitionBy),
+                    PARTITION_ATTRIBUTE_COPIER,
                     groupByColumnNames));
         }
 
@@ -919,15 +920,6 @@ public class AggregationProcessor implements AggregationContextFactory {
             super(table, requireStateChangeRecorder, groupByColumnNames);
         }
 
-        @Override
-        AggregationContext build() {
-            walkAllAggregations();
-            if (!partitionFound) {
-                transformers.add(new NoKeyLeafRollupAttributeSetter());
-            }
-            return makeAggregationContext();
-        }
-
         // -------------------------------------------------------------------------------------------------------------
         // RollupAggregation.Visitor
         // -------------------------------------------------------------------------------------------------------------
@@ -949,14 +941,10 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (!partition.includeGroupByColumns()) {
                 throw new UnsupportedOperationException("Rollups never drop group-by columns when partitioning");
             }
-
-            final QueryTable adjustedTable = maybeCopyRlAttribute(table, table.updateView(ROLLUP_COLUMN + " = null"));
             final PartitionByChunkedOperator partitionOperator = new PartitionByChunkedOperator(table,
-                    adjustedTable, partition.column().name(), LEAF_WITHCONSTITUENTS_INSTANCE, groupByColumnNames);
+                    table, partition.column().name(), PARTITION_ATTRIBUTE_COPIER, groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
-            transformers.add(makeRollupKeysTransformer(groupByColumnNames));
-            transformers.add(new RollupTableMapAndReverseLookupAttributeSetter(partitionOperator, false, true));
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1066,7 +1054,9 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Count count) {
-            addBasicOperators((t, n) -> new LongChunkedSumOperator(false, n));
+            final String resultName = count.column().name();
+            final ColumnSource<?> resultSource = table.getColumnSource(resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
         }
 
         @Override
@@ -1085,13 +1075,11 @@ public class AggregationProcessor implements AggregationContextFactory {
                     .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).collect(Collectors.toList());
             final QueryTable adjustedTable = columnsToDrop.isEmpty()
                     ? table
-                    : maybeCopyRlAttribute(table, table.dropColumns(columnsToDrop));
+                    : (QueryTable) table.dropColumns(columnsToDrop);
             final PartitionByChunkedOperator partitionOperator = new PartitionByChunkedOperator(
-                    table, adjustedTable, partition.column().name(), DEFAULT_INSTANCE, groupByColumnNames);
+                    table, adjustedTable, partition.column().name(), PARTITION_ATTRIBUTE_COPIER, groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
-            transformers.add(makeRollupKeysTransformer(groupByColumnNames));
-            transformers.add(new RollupTableMapAndReverseLookupAttributeSetter(partitionOperator, true, false));
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1348,6 +1336,19 @@ public class AggregationProcessor implements AggregationContextFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Basic Helpers
     // -----------------------------------------------------------------------------------------------------------------
+
+    private static AggregationContext makeSourceRowLookupAggregationContext() {
+        // NB: UniqueRowKeyChunkedOperator is a StateChangeRecorder
+        Assert.assertion(StateChangeRecorder.class.isAssignableFrom(UniqueRowKeyChunkedOperator.class),
+                "StateChangeRecorder.class.isAssignableFrom(UniqueRowKeyChunkedOperator.class)");
+        // noinspection unchecked
+        return new AggregationContext(
+                new IterativeChunkedAggregationOperator[] {
+                        new UniqueRowKeyChunkedOperator(TreeConstants.SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name())},
+                new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                new ChunkSource.WithPrev[] {null},
+                new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
+    }
 
     private static AggregationContext makeEmptyAggregationContext(final boolean requireStateChangeRecorder) {
         if (requireStateChangeRecorder) {
@@ -1892,112 +1893,35 @@ public class AggregationProcessor implements AggregationContextFactory {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Rollup Structure Helpers
+    // Rollup and Tree Structure Helpers
     // -----------------------------------------------------------------------------------------------------------------
 
     private static String makeRedirectionName(final int columnIdentifier) {
         return ROW_REDIRECTION_PREFIX + columnIdentifier + ROLLUP_COLUMN_SUFFIX;
     }
 
-    private static QueryTable maybeCopyRlAttribute(@NotNull final Table parent, @NotNull final Table child) {
-        if (child != parent && parent.hasAttribute(REVERSE_LOOKUP_ATTRIBUTE)) {
-            child.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, parent.getAttribute(REVERSE_LOOKUP_ATTRIBUTE));
-        }
-        return (QueryTable) child;
-    }
+    private static class RowLookupAttributeSetter implements AggregationContextTransformer {
 
-    private static AggregationContextTransformer makeRollupKeysTransformer(@NotNull final String[] groupByColumnNames) {
-        if (groupByColumnNames.length == 0) {
-            return new StaticColumnSourceTransformer(RollupInfo.ROLLUP_COLUMN,
-                    new SingleValueObjectColumnSource<>(SmartKey.EMPTY));
-        }
-        if (groupByColumnNames.length == 1) {
-            return new RollupKeyColumnDuplicationTransformer(groupByColumnNames[0]);
-        }
-        return new RollupSmartKeyColumnDuplicationTransformer(groupByColumnNames);
-    }
+        private AggregationRowLookup rowLookup;
 
-    private static class RollupTableMapAndReverseLookupAttributeSetter implements AggregationContextTransformer {
-
-        private final PartitionByChunkedOperator partitionOperator;
-        private final boolean reaggregated;
-        private final boolean includeConstituents;
-        private ReverseLookup reverseLookup;
-
-        private RollupTableMapAndReverseLookupAttributeSetter(
-                @NotNull final PartitionByChunkedOperator partitionOperator,
-                final boolean reaggregated,
-                final boolean includeConstituents) {
-            this.partitionOperator = partitionOperator;
-            this.reaggregated = reaggregated;
-            this.includeConstituents = includeConstituents;
-        }
+        private RowLookupAttributeSetter() {}
 
         @Override
         public QueryTable transformResult(@NotNull final QueryTable table) {
-            table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
-                    // TODO (https://github.com/deephaven/deephaven-core/issues/65):
-                    // Make rollups work with partitioned tables instead of table maps. PartitionedTable here?
-                    partitionOperator.getResultColumns().values().iterator().next());
-            if (reaggregated || includeConstituents) {
-                table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-            } else {
-                setRollupLeafAttributes(table);
-            }
+            table.setAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE, rowLookup);
             return table;
         }
 
         @Override
-        public void setReverseLookupFunction(ToIntFunction<Object> reverseLookup) {
-            this.reverseLookup = new ReverseLookupAdapter(reverseLookup);
-        }
-
-        private static class ReverseLookupAdapter implements ReverseLookup {
-
-            private static final String[] KEY_COLUMN_NAMES = new String[] {ROLLUP_COLUMN};
-
-            private final ToIntFunction<Object> reverseLookup;
-
-            public ReverseLookupAdapter(@NotNull final ToIntFunction<Object> reverseLookup) {
-                this.reverseLookup = reverseLookup;
-            }
-
-            @Override
-            public long get(final Object key) {
-                return reverseLookup.applyAsInt(key);
-            }
-
-            @Override
-            public long getPrev(final Object key) {
-                return get(key);
-            }
-
-            @Override
-            public long getNoEntryValue() {
-                return -1;
-            }
-
-            @Override
-            public String[] getKeyColumns() {
-                return KEY_COLUMN_NAMES;
-            }
+        public void supplyRowLookup(@NotNull final Supplier<AggregationRowLookup> rowLookupFactory) {
+            this.rowLookup = rowLookupFactory.get();
         }
     }
 
-    private static class NoKeyLeafRollupAttributeSetter implements AggregationContextTransformer {
-        @Override
-        public QueryTable transformResult(@NotNull final QueryTable table) {
-            setRollupLeafAttributes(table);
-            return table;
-        }
-    }
-
-    private static void setRollupLeafAttributes(@NotNull final QueryTable table) {
-        table.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Normal);
-        table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE,
-                // TODO (https://github.com/deephaven/deephaven-core/issues/65):
-                // Make rollups work with partitioned tables instead of table maps. Empty PartitionedTable here?
-                "placeholder");
-        table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
+    public static AggregationRowLookup getRowLookup(@NotNull final Table aggregationResult) {
+        final Object value = aggregationResult.getAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE);
+        Assert.neqNull(value, "aggregation result row lookup");
+        Assert.instanceOf(value, "aggregation result row lookup", AggregationRowLookup.class);
+        return (AggregationRowLookup) value;
     }
 }

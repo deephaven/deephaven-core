@@ -283,9 +283,12 @@ public class FuzzerTest {
 
     private void annotateBinding(GroovyDeephavenSession session) {
         // noinspection unchecked
-        session.getBinding().getVariables().forEach((k, v) -> {
-            if (v instanceof Table) {
-                ((Table) v).setAttribute("BINDING_VARIABLE_NAME", k);
+        ((Map<String, Object>) session.getBinding().getVariables()).forEach((key, value) -> {
+            if (value instanceof LiveAttributeMap) {
+                final LiveAttributeMap<?, ?> liveAttributeMap = (LiveAttributeMap<?, ?>) value;
+                if (!liveAttributeMap.published()) {
+                    liveAttributeMap.setAttribute("BINDING_VARIABLE_NAME", key);
+                }
             }
         });
     }

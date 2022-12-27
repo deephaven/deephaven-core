@@ -37,7 +37,7 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DShortArraySource}.
  */
-public class ImmutableShortArraySource extends AbstractDeferredGroupingColumnSource<Short> implements ImmutableColumnSourceGetDefaults.ForShort, WritableColumnSource<Short>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class ImmutableShortArraySource extends AbstractDeferredGroupingColumnSource<Short> implements ImmutableColumnSourceGetDefaults.ForShort, WritableColumnSource<Short>, FillUnordered<Values>, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
     private short[] data;
 
     // region constructor

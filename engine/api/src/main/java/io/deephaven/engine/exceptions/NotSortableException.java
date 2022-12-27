@@ -3,8 +3,6 @@
  */
 package io.deephaven.engine.exceptions;
 
-import io.deephaven.base.StringUtils;
-
 import java.util.Collection;
 
 public class NotSortableException extends RuntimeException {
@@ -15,9 +13,9 @@ public class NotSortableException extends RuntimeException {
     private static String buildErrorMessage(Collection<String> unsortableColumns, Collection<String> sortableColumns) {
         String message = sortableColumns.isEmpty() ? "Sorting is not allowed on this table"
                 : "Sorting is not allowed on this table, but was attempted on: "
-                        + StringUtils.joinStrings(unsortableColumns, ", ");
+                        + String.join(", ", unsortableColumns);
 
-        message += " but was attempted on: " + StringUtils.joinStrings(unsortableColumns, ", ");
+        message += " but was attempted on: " + String.join(", ", unsortableColumns);
 
         return message;
     }

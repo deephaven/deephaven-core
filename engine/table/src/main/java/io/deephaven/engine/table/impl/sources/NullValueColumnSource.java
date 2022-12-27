@@ -47,7 +47,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
                 p -> new NullValueColumnSource<T2>(clazz, elementType));
     }
 
-    public static Map<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
+    public static LinkedHashMap<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
         return definition.getColumnStream().collect(Collectors.toMap(
                 ColumnDefinition::getName,
                 c -> getInstance(c.getDataType(), c.getComponentType()),
