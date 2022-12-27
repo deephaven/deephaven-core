@@ -440,21 +440,23 @@ type HierarchicalTableDescriptor struct {
 
 	// The column names to expand by.
 	// Should be user-visible, and displayed before other columns.
-	// Must be included in view request key tables.
+	// Must be included in a HierarchicalTableViewRequest's key table, if a key table is specified.
 	// Implementation notes:
 	// For RollupTables, these are the group-by columns.
 	// For TreeTables, this is the (singular) identifier column.
 	ExpandByColumns []string `protobuf:"bytes,1,rep,name=expand_by_columns,json=expandByColumns,proto3" json:"expand_by_columns,omitempty"`
-	// The name of a column that specifies the depth of a row. Note that for RollupTables, this is related to the number
-	// of group-by columns that are "defined" for a row for all expandable rows.
+	// The name of a column that specifies the depth of a row. Note that for all expandable rows in a RollupTable, this
+	// is identical to the "key width", i.e. the number of group-by columns that are "defined" for a row is the same as
+	// the row depth.
 	// Should not be (directly) user-visible.
 	// Must be included along with expand-by columns in a HierarchicalTableViewRequest's key table for RollupTables.
 	// Need not be included in a HierarchicalTableViewRequest's key table for TreeTables.
 	RowDepthColumn string `protobuf:"bytes,2,opt,name=row_depth_column,json=rowDepthColumn,proto3" json:"row_depth_column,omitempty"`
 	// The name of a nullable column of booleans that specifies whether a row is expandable or expanded. Will be null
 	// for not expandable, true for expanded, false for not expanded (but expandable).
-	// Leaf rows have no children to expand.
+	// Leaf rows have no children to expand, and hence will always have a null value for this column.
 	// Should not be (directly) user-visible.
+	// Need not be included in a HierarchicalTableViewRequest's key table for RollupTables or TreeTables.
 	RowExpandedColumn string `protobuf:"bytes,3,opt,name=row_expanded_column,json=rowExpandedColumn,proto3" json:"row_expanded_column,omitempty"`
 	// Types that are assignable to Details:
 	//

@@ -37,7 +37,7 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.ChildLevelExpandable.None;
+import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.LevelExpandable.None;
 import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.VisitAction.*;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.*;
 import static io.deephaven.util.BooleanUtils.*;
@@ -77,7 +77,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     /**
      * The root node of the hierarchy.
      */
-    final QueryTable root;
+    private final QueryTable root;
 
     protected HierarchicalTableImpl(
             @NotNull final Map<String, Object> initialAttributes,
@@ -267,7 +267,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         private void updateExpansionTypeAndValidateAction(
                 @NotNull final VisitAction action,
-                final boolean childLevelExpandable) {
+                final boolean levelExpandable) {
             switch (action) {
                 case Expand:
                     // There are two reasonable ways to handle "expand" directives when currently expanding-all:
@@ -279,7 +279,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     break;
                 case ExpandAll:
                     // Ignore moot directives to expand-all when we've reached a leaf
-                    expandingAll = childLevelExpandable;
+                    expandingAll = levelExpandable;
                     break;
                 case Linkage:
                     Assert.assertion(expandingAll, "expanding all",
@@ -472,7 +472,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     }
                     // NB: We could drop our reference to filtered here, but there's no real reason to do it now rather
                     // than in release
-                    sortReverseLookup = SortOperation.getReverseLookup(sorted);
+                    sortReverseLookup = SortOperation.getReverseLookup(filtered, sorted);
                 }
             }
 
@@ -957,7 +957,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 : maybePrevSource(keyTable.getColumnSource(keyTableActionColumn.name(), byte.class), usePrev);
         final KeyedObjectHashSet<Object, KeyTableDirective> directives =
                 new KeyedObjectHashSet<>(KeyTableDirective.HASH_ADAPTER);
+
+        // We always expand the root node by default
         directives.add(new KeyTableDirective(rootNodeKey(), Expand));
+
         try (final RowSet prevRowSet = usePrev ? keyTable.getRowSet().copyPrev() : null) {
             final RowSequence rowsToExtract = usePrev ? prevRowSet : keyTable.getRowSet();
             final ColumnIterator<?, ?> nodeKeyIter = ColumnIterator.make(nodeKeySource, rowsToExtract);
@@ -1076,9 +1079,15 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         // Link the node directives together into a tree
         final LinkedDirective rootNodeDirective = linkKeyTableNodeDirectives(keyTableDirectives, usePrev);
+
+        if (rootNodeDirective == null) {
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted("null root node directive");
+            return;
+        }
+
         final VisitAction rootNodeAction;
-        if (rootNodeDirective == null ||
-                ((rootNodeAction = rootNodeDirective.getAction()) != Expand && rootNodeAction != ExpandAll)) {
+        if ((rootNodeAction = rootNodeDirective.getAction()) != Expand && rootNodeAction != ExpandAll) {
             // We *could* auto-expand the root, instead, but for now let's treat this as empty for consistency
             return;
         }
@@ -1113,10 +1122,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             final boolean oldExpandingAll = snapshotState.expandingAll;
             ++snapshotState.currentDepth;
             try {
-                final ChildLevelExpandable childLevelExpandable = childLevelExpandable(snapshotState);
-                snapshotState.updateExpansionTypeAndValidateAction(action, childLevelExpandable != None);
+                final LevelExpandable levelExpandable = levelExpandable(snapshotState);
+                snapshotState.updateExpansionTypeAndValidateAction(action, levelExpandable != None);
                 final int numChildDirectives;
-                if (childLevelExpandable != None && childDirectives != null) {
+                if (levelExpandable != None && childDirectives != null) {
                     // If we have child directives that we might need to expand for, we need to know where they fit in
                     // this node's row set, and we want to be able to examine them in the order they may be expanded.
                     nodeTableState.filterKeyAndSortChildDirectives(childDirectives, filling);
@@ -1207,7 +1216,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                                 lastRowKeyToConsume = clampedRowKeyAfterLast(rowsToVisit.lastRowKey());
                             }
                         }
-                        consumeRowsUntilNextExpansion(snapshotState, childLevelExpandable, rowsToVisitIter, filler,
+                        consumeRowsUntilNextExpansion(snapshotState, levelExpandable, rowsToVisitIter, filler,
                                 rowKeyToNodeId, lastRowKeyToConsume, expandLastRowToConsume);
                         if (!expandLastRowToConsume) {
                             consumeRemainder(snapshotState, rowsToVisitIter);
@@ -1250,7 +1259,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     private void consumeRowsUntilNextExpansion(
             @NotNull final SnapshotStateImpl snapshotState,
-            @NotNull final ChildLevelExpandable childLevelExpandable,
+            @NotNull final LevelExpandable levelExpandable,
             @NotNull final RowSequence.Iterator nodeRowsIter,
             @Nullable final NodeFillContext filler,
             @NotNull final LongUnaryOperator rowKeyToNodeId,
@@ -1281,7 +1290,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
             // Fill the "row expanded" destination
             final WritableByteChunk<? super Values> expandedDestination = snapshotState.getExpandedDestinationToFill();
-            switch (childLevelExpandable) {
+            switch (levelExpandable) {
                 case All:
                     expandedDestination.fillWithValue(0, fillSize - 1, FALSE_BOOLEAN_AS_BYTE);
                     expandedDestination.set(fillSize - 1,
@@ -1422,6 +1431,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
      */
     abstract boolean isRootNodeKey(@Nullable Object nodeKey);
 
+    /**
+     * @return A node key value that maps to the root node for this HierarchicalTableImpl, to use when specifying
+     *         default expansion; note that this should never be used instead of {@link #isRootNodeKey(Object)} to test
+     *         if a node key maps to the root node
+     */
     abstract Object rootNodeKey();
 
     /**
@@ -1549,7 +1563,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         return localCachedDepthSources[depth];
     }
 
-    enum ChildLevelExpandable {
+    enum LevelExpandable {
         /**
          * All Nodes are expandable at the child level.
          */
@@ -1566,10 +1580,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
     /**
      * @param snapshotState The snapshot state for this attempt
-     * @return A {@link ChildLevelExpandable} specifying whether all nodes in the child level are expandable, not
+     * @return A {@link LevelExpandable} specifying whether all nodes in the current level are expandable, not
      *         expandable, or must be individually checked.
      */
-    abstract ChildLevelExpandable childLevelExpandable(@NotNull SnapshotStateImpl snapshotState);
+    abstract LevelExpandable levelExpandable(@NotNull SnapshotStateImpl snapshotState);
 
     /**
      * @param snapshotState The snapshot state for this attempt

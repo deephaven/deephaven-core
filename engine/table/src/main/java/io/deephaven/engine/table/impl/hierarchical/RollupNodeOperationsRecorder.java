@@ -38,6 +38,11 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
     }
 
     @Override
+    public boolean isEmpty() {
+        return super.isEmpty();
+    }
+
+    @Override
     RollupTable.NodeOperationsRecorder withFormats(@NotNull final Stream<? extends SelectColumn> formats) {
         return new RollupNodeOperationsRecorder(definition, nodeType,
                 mergeFormats(getRecordedFormats().stream(), formats), getRecordedSorts(), getRecordedAbsoluteViews());
@@ -58,6 +63,12 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
         if (!definition.equals(other.definition) || nodeType != other.nodeType) {
             throw new IllegalArgumentException(
                     "Incompatible operation recorders; compatible recorders must be created from the same table, with the same node type");
+        }
+        if (other.isEmpty()) {
+            return this;
+        }
+        if (isEmpty()) {
+            return other;
         }
         return new RollupNodeOperationsRecorder(definition, nodeType,
                 mergeFormats(getRecordedFormats().stream(), other.getRecordedFormats().stream()),

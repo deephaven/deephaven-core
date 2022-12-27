@@ -114,6 +114,13 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     interface NodeOperationsRecorder extends
             FormatOperationsRecorder<NodeOperationsRecorder>,
             SortOperationsRecorder<NodeOperationsRecorder> {
+
+        /**
+         * Test if this NodeOperationsRecorder has recorded any operations.
+         *
+         * @return Whether this NodeOperationsRecorder has recorded any operations
+         */
+        boolean isEmpty();
     }
 
     /**

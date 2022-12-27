@@ -48,6 +48,10 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
         this.recordedAbsoluteViews = recordedAbsoluteViews;
     }
 
+    public boolean isEmpty() {
+        return recordedFormats.isEmpty() && recordedSorts.isEmpty();
+    }
+
     Collection<? extends SelectColumn> getRecordedFormats() {
         return recordedFormats;
     }

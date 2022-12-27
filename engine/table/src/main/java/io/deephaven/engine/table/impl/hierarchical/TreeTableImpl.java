@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
-import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.ChildLevelExpandable.Undetermined;
+import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.LevelExpandable.Undetermined;
 
 /**
  * {@link RollupTable} implementation.
@@ -192,6 +192,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     public TreeTable withNodeOperations(@NotNull final NodeOperationsRecorder nodeOperations) {
+        if (nodeOperations.isEmpty()) {
+            return noopResult();
+        }
         return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations),
                 snapshotDefinition);
@@ -250,7 +253,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
         return ReinterpretUtils.maybeConvertToPrimitive(
                 nodeKeyTable.getColumnSource(identifierColumn.name(),
-                        root.getColumnSource(identifierColumn.name()).getType()));
+                        getRoot().getColumnSource(identifierColumn.name()).getType()));
     }
 
     @Override
@@ -279,7 +282,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    long findRowKeyInParentUnsorted(final long childNodeId, @Nullable final Object childNodeKey,
+    long findRowKeyInParentUnsorted(
+            final long childNodeId,
+            @Nullable final Object childNodeKey,
             final boolean usePrev) {
         final long sourceRowKey = usePrev
                 ? sourceRowLookup.getPrev(childNodeKey)
@@ -370,7 +375,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    ChildLevelExpandable childLevelExpandable(@NotNull final SnapshotStateImpl snapshotState) {
+    LevelExpandable levelExpandable(@NotNull final SnapshotStateImpl snapshotState) {
         // We don't have sufficient information to know if any of this level's children are expandable.
         return Undetermined;
     }

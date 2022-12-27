@@ -23,7 +23,7 @@ import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableConstantObjectSource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableConstantIntSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -40,12 +40,14 @@ import static io.deephaven.api.ColumnName.names;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.*;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
-import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
-import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.ChildLevelExpandable.All;
-import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.ChildLevelExpandable.None;
-import static io.deephaven.engine.table.impl.hierarchical.RollupRowLookupKeySource.ROOT_NODE_KEY;
+import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.LevelExpandable.All;
+import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.LevelExpandable.None;
+import static io.deephaven.engine.table.impl.hierarchical.RollupNodeKeySource.ROOT_NODE_KEY;
+import static io.deephaven.engine.table.impl.hierarchical.RollupNodeKeySource.ROOT_PARENT_NODE_DEPTH;
 
 /**
  * {@link RollupTable} implementation.
@@ -56,12 +58,21 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private static final ColumnName ROLLUP_COLUMN = ColumnName.of(ROLLUP_COLUMN_SUFFIX);
     private static final String CONSTITUENT_COLUMN_NAME_PREFIX = "__CONSTITUENT_";
 
+    /**
+     * The "root" node ID: negative parent depth, row position 0.
+     */
+    static final long ROOT_NODE_ID = makeNodeId(ROOT_PARENT_NODE_DEPTH, 0);
+    /**
+     * The "null" node ID: negative depth, negative row position.
+     */
+    static final long NULL_NODE_ID = makeNodeId(-2, -2);
+
     private final Collection<? extends Aggregation> aggregations;
     private final boolean includesConstituents;
     private final Collection<? extends ColumnName> groupByColumns;
 
     private final int numLevels;
-    private final int baseLevelIndex;
+    private final int baseLevelParentDepth;
     private final QueryTable[] levelTables;
     private final AggregationRowLookup[] levelRowLookups;
     private final ColumnSource<Table>[] levelNodeTableSources;
@@ -92,8 +103,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         this.includesConstituents = includesConstituents;
         this.groupByColumns = groupByColumns;
 
-        numLevels = groupByColumns.size() + 2;
-        baseLevelIndex = numLevels - 1;
+        // One level for the "base" aggregation (which may include constituents, but we don't count them as a "rollup"
+        // level), and one more for each group-by key as its removed for reaggregation.
+        // Note that we don't count the "root" as a level in this accounting; the root is levelTables[0], and its
+        // children (parent depth 0, at level 0), are found in levelNodeTableSources[0].
+        numLevels = groupByColumns.size() + 1;
+        baseLevelParentDepth = numLevels - 1;
         Require.eq(numLevels, "level count", levelTables.length, "levelTables.length");
         this.levelTables = levelTables;
         Require.eq(numLevels, "level count", levelRowLookups.length, "levelRowLookups.length");
@@ -165,7 +180,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
         final LinkedHashMap<String, ColumnSource<?>> keyTableSources = new LinkedHashMap<>(
                 keyTableDefinition.numColumns());
-        keyTableSources.put(ROW_DEPTH_COLUMN.name(), getDepthSource(0));
+        keyTableSources.put(ROW_DEPTH_COLUMN.name(), new ImmutableConstantIntSource(ROOT_PARENT_NODE_DEPTH));
         groupByColumnDefinitions.forEach(gbcd -> keyTableSources.put(
                 gbcd.getName(), NullValueColumnSource.getInstance(gbcd.getDataType(), gbcd.getComponentType())));
 
@@ -240,8 +255,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         }
 
         final WhereFilter[] whereFilters = initializeAndValidateFilters(filters);
-        final QueryTable filteredBaseLevel = (QueryTable) levelTables[baseLevelIndex].where(whereFilters);
-        final AggregationRowLookup baseLevelRowLookup = levelRowLookups[baseLevelIndex];
+        final QueryTable filteredBaseLevel = (QueryTable) levelTables[numLevels - 1].where(whereFilters);
+        final AggregationRowLookup baseLevelRowLookup = levelRowLookups[numLevels - 1];
         final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
         final AggregationRowLookup filteredBaseLevelRowLookup = nodeKey -> {
             final int unfilteredRowKey = baseLevelRowLookup.get(nodeKey);
@@ -253,6 +268,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         };
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, filteredBaseLevel);
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);
+        final ColumnSource<Table>[] levelNodeTableSources = makeLevelNodeTableSourcesArray(
+                numLevels, filteredBaseLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class));
         rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
@@ -288,12 +305,15 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     public RollupTable withNodeOperations(@NotNull final NodeOperationsRecorder... nodeOperations) {
-        if (Stream.of(nodeOperations).allMatch(Objects::isNull)) {
+        if (Stream.of(nodeOperations).allMatch(no -> no == null || no.isEmpty())) {
             return noopResult();
         }
         RollupNodeOperationsRecorder newAggregatedNodeOperations = aggregatedNodeOperations;
         RollupNodeOperationsRecorder newConstituentNodeOperations = constituentNodeOperations;
         for (final NodeOperationsRecorder recorder : nodeOperations) {
+            if (recorder == null || recorder.isEmpty()) {
+                continue;
+            }
             final RollupNodeOperationsRecorder recorderTyped = (RollupNodeOperationsRecorder) recorder;
             switch (recorderTyped.getNodeType()) {
                 case Aggregated:
@@ -323,7 +343,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         constituent = translateFormats(aggregated, constituent, aggregatedTableDefinition, constituentTableDefinition);
         final Map<String, String> aggregatedConstituentPairs = AggregationPairs.of(aggregations)
                 .collect(Collectors.toMap(p -> p.output().name(), p -> p.input().name()));
-        return translateSorts(aggregated, constituent, constituentTableDefinition, aggregatedConstituentPairs);
+        final Set<String> groupByColumnNames =
+                groupByColumns.stream().map(ColumnName::name).collect(Collectors.toSet());
+        return translateSorts(aggregated, constituent,
+                constituentTableDefinition, groupByColumnNames, aggregatedConstituentPairs);
     }
 
     private static RollupNodeOperationsRecorder translateFormats(
@@ -358,6 +381,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final RollupNodeOperationsRecorder aggregated,
             @NotNull final RollupNodeOperationsRecorder constituent,
             @NotNull final TableDefinition constituentTableDefinition,
+            @NotNull final Set<String> groupByColumnNames,
             @NotNull final Map<String, String> aggregatedConstituentPairs) {
         if (aggregated.getRecordedSorts().isEmpty()) {
             return constituent;
@@ -369,7 +393,17 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                     if (aggregatedAbsolute) {
                         aggregatedColumnName = absoluteColumnNameToBaseName(aggregatedColumnName);
                     }
+                    if (groupByColumnNames.contains(aggregatedColumnName)) {
+                        // All constituents with the same parent node share the same values for all group-by columns,
+                        // so there's never a need to apply any sort for those columns.
+                        return null;
+                    }
                     String constituentColumnName = aggregatedConstituentPairs.get(aggregatedColumnName);
+                    if (constituentColumnName == null) {
+                        // Some aggregations have no input, and hence there is no corresponding constituent column to
+                        // sort.
+                        return null;
+                    }
                     if (aggregatedAbsolute) {
                         final ColumnDefinition<?> constituentColumnDefinition =
                                 constituentTableDefinition.getColumn(constituentColumnName);
@@ -383,7 +417,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                             : SortColumn.desc(ColumnName.of(constituentColumnName));
 
                 })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+        if (constituentSortColumns.isEmpty()) {
+            return constituent;
+        }
         // Let the logic in SortRecordingTableAdapter handle absolute views and column repetition filtering.
         return (RollupNodeOperationsRecorder) constituent.sort(constituentSortColumns);
     }
@@ -418,7 +456,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includeConstituents,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
-        final int numLevels = groupByColumns.size() + 2;
+        final int numLevels = groupByColumns.size() + 1;
         final QueryTable baseLevel = source.aggNoMemo(
                 AggregationProcessor.forRollupBase(aggregations, includeConstituents, ROLLUP_COLUMN),
                 false, null, groupByColumns);
@@ -494,10 +532,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             levelRowLookups[lastLevelIndex] = getRowLookup(lastLevel);
             levelNodeTableSources[lastLevelIndex] = lastLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class);
         }
-        Assert.eq(lastLevelIndex, "lastLevelIndex", 1);
-        levelTables[0] = lastLevel;
-        levelRowLookups[0] = (final Object nodeKey) -> nodeKey == ROOT_NODE_KEY ? 0 : DEFAULT_UNKNOWN_ROW;
-        levelNodeTableSources[0] = new ImmutableConstantObjectSource<>(Table.class, null, lastLevel);
+        Assert.eqZero(lastLevelIndex, "lastLevelIndex");
     }
 
     private static Stream<ColumnDefinition<?>> filterRollupInternalColumns(
@@ -507,24 +542,25 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
-        return new RollupRowLookupKeySource(
+        return new RollupNodeKeySource(
                 nodeKeyTable.getColumnSource(getRowDepthColumn().name(), int.class),
                 groupByColumns.stream()
-                        .map(cn -> nodeKeyTable.getColumnSource(cn.name(), root.getColumnSource(cn.name()).getType()))
+                        .map(cn -> nodeKeyTable.getColumnSource(cn.name(),
+                                getRoot().getColumnSource(cn.name()).getType()))
                         .toArray(ColumnSource[]::new));
     }
 
-    private int nodeDepth(@Nullable final Object nodeKey) {
+    private static int nodeParentDepth(@Nullable final Object nodeKey) {
         if (nodeKey == ROOT_NODE_KEY) {
-            return 0;
+            return ROOT_PARENT_NODE_DEPTH;
         }
         if (nodeKey instanceof Object[]) {
-            return ((Object[]) nodeKey).length + 1;
+            return ((Object[]) nodeKey).length;
         }
-        return 2;
+        return 1;
     }
 
-    private static int nodeDepth(final long nodeId) {
+    private static int nodeParentDepth(final long nodeId) {
         return (int) (nodeId >>> 32);
     }
 
@@ -532,9 +568,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return (int) nodeId;
     }
 
-    private static long makeNodeId(final int nodeDepth, final int nodeSlot) {
-        // NB: nodeDepth is an integer in [0, baseLevelIndex], and nodeSlot is an integer in [0, 1 << 30)
-        return ((long) nodeDepth << 32) | nodeSlot;
+    private static long makeNodeId(final int nodeParentDepth, final int nodeSlot) {
+        // NB: nodeParentDepth is an integer in [ROOT_PARENT_NODE_DEPTH, baseLevelParentDepth], and nodeSlot is an
+        // integer in [0, 1 << 30)
+        return ((long) nodeParentDepth << 32) | nodeSlot;
     }
 
     @Override
@@ -549,37 +586,42 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     long nodeKeyToNodeId(@Nullable final Object nodeKey) {
-        final int nodeDepth = nodeDepth(nodeKey);
-        if (nodeDepth >= numLevels) {
-            return nullNodeId();
+        if (nodeKey == ROOT_NODE_KEY) {
+            return ROOT_NODE_ID;
         }
-        if (nodeDepth == baseLevelIndex && !includesConstituents) {
-            return nullNodeId();
+        final int nodeParentDepth = nodeParentDepth(nodeKey);
+        if (nodeParentDepth < 0 || nodeParentDepth >= numLevels) {
+            return NULL_NODE_ID;
+        }
+        if (nodeParentDepth == baseLevelParentDepth && !includesConstituents) {
+            return NULL_NODE_ID;
         }
 
-        final AggregationRowLookup rowLookup = levelRowLookups[nodeDepth];
+        final AggregationRowLookup rowLookup = levelRowLookups[nodeParentDepth];
         final int nodeSlot = rowLookup.get(nodeKey);
         if (nodeSlot == rowLookup.noEntryValue()) {
-            return nullNodeId();
+            return NULL_NODE_ID;
         }
 
-        return makeNodeId(nodeDepth, nodeSlot);
+        return makeNodeId(nodeParentDepth, nodeSlot);
     }
 
     @Override
     long nullNodeId() {
-        return NULL_ROW_KEY;
+        return NULL_NODE_ID;
     }
 
     @Override
     long rootNodeId() {
-        return 0;
+        return ROOT_NODE_ID;
     }
 
     @Override
-    long findRowKeyInParentUnsorted(final long childNodeId, @Nullable final Object childNodeKey,
+    long findRowKeyInParentUnsorted(
+            final long childNodeId,
+            @Nullable final Object childNodeKey,
             final boolean usePrev) {
-        return childNodeId == nullNodeId() ? NULL_ROW_KEY : nodeSlot(childNodeId);
+        return childNodeId == NULL_NODE_ID ? NULL_ROW_KEY : nodeSlot(childNodeId);
     }
 
     @Override
@@ -589,23 +631,23 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             final long childRowKeyInParentUnsorted,
             final boolean usePrev,
             @NotNull final MutableObject<Object> parentNodeKeyHolder) {
-        final int nodeDepth = nodeDepth(childNodeKey);
-        switch (nodeDepth) {
-            case 0:
+        final int nodeParentDepth = nodeParentDepth(childNodeKey);
+        switch (nodeParentDepth) {
+            case ROOT_PARENT_NODE_DEPTH:
                 return null;
-            case 1:
+            case 0:
                 parentNodeKeyHolder.setValue(ROOT_NODE_KEY);
                 return true;
-            case 2:
-                parentNodeKeyHolder.setValue(AggregationRowLookup.EMPTY_KEY);
+            case 1:
+                parentNodeKeyHolder.setValue(EMPTY_KEY);
                 return true;
             default:
-                if (nodeDepth > baseLevelIndex) {
+                if (nodeParentDepth > baseLevelParentDepth) {
                     throw new IllegalArgumentException("Invalid node key " + Arrays.toString((Object[]) childNodeKey)
-                            + ": deeper than maximum " + baseLevelIndex);
+                            + ": deeper than maximum " + baseLevelParentDepth);
                 }
                 // noinspection ConstantConditions (null falls under "case 1")
-                parentNodeKeyHolder.setValue(Arrays.copyOf(((Object[]) childNodeKey), nodeDepth - 2));
+                parentNodeKeyHolder.setValue(Arrays.copyOf(((Object[]) childNodeKey), nodeParentDepth - 1));
                 return true;
         }
     }
@@ -613,17 +655,23 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     @Override
     @Nullable
     Table nodeIdToNodeBaseTable(final long nodeId) {
-        final int nodeDepth = nodeDepth(nodeId);
-        if (nodeDepth < baseLevelIndex || includesConstituents) {
+        if (nodeId == ROOT_NODE_ID) {
+            return getRoot();
+        }
+        final int nodeParentDepth = nodeParentDepth(nodeId);
+        if (nodeParentDepth < 0 || nodeParentDepth >= numLevels) {
+            return null;
+        }
+        if (nodeParentDepth < baseLevelParentDepth || includesConstituents) {
             final int nodeSlot = nodeSlot(nodeId);
-            return levelNodeTableSources[nodeDepth].get(nodeSlot);
+            return levelNodeTableSources[nodeParentDepth].get(nodeSlot);
         }
         return null;
     }
 
     private RollupNodeOperationsRecorder nodeOperations(final long nodeId) {
-        final int nodeDepth = nodeDepth(nodeId);
-        if (nodeDepth == baseLevelIndex) {
+        final int nodeDepth = nodeParentDepth(nodeId);
+        if (nodeDepth == baseLevelParentDepth) {
             // We must be including constituents
             return constituentNodeOperations;
         }
@@ -673,9 +721,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final ChunkSource.WithPrev<? extends Values>[] result =
                 maybeAllocateResultChunkSourceArray(existingChunkSources, numColumns);
 
-        final int levelIndex = nodeDepth(nodeId);
-        Assert.eq(levelIndex, "levelIndex", snapshotState.getCurrentDepth(), "current snapshot traversal depth");
-        final boolean isBaseLevel = levelIndex == baseLevelIndex;
+        final int nodeParentDepth = nodeParentDepth(nodeId);
+        Assert.eq(nodeParentDepth + 1, "nodeParentDepth + 1", snapshotState.getCurrentDepth(),
+                "current snapshot traversal depth");
+        final boolean isBaseLevel = nodeParentDepth == baseLevelParentDepth;
         if (isBaseLevel) {
             Assert.assertion(includesConstituents, "includesConstituents",
                     "filling from base level when not including constituents");
@@ -687,7 +736,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 continue;
             }
             if (ci == ROW_DEPTH_COLUMN_INDEX) {
-                result[ci] = getDepthSource(levelIndex + 1);
+                result[ci] = getDepthSource(nodeParentDepth + 1);
             } else if (ci < firstConstituentColumnIndex) {
                 final ColumnDefinition<?> cd =
                         aggregatedNodeDefinition.getColumns().get(ci - FIRST_AGGREGATED_COLUMN_INDEX);
@@ -706,13 +755,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    ChildLevelExpandable childLevelExpandable(@NotNull final SnapshotStateImpl snapshotState) {
-        final int levelIndex = snapshotState.getCurrentDepth();
+    LevelExpandable levelExpandable(@NotNull final SnapshotStateImpl snapshotState) {
+        final int levelDepth = snapshotState.getCurrentDepth();
 
-        Assert.leq(levelIndex, "levelIndex", baseLevelIndex, "baseLevelIndex");
-        final int childLevelIndex = levelIndex + 1;
+        Assert.leq(levelDepth, "levelDepth", baseLevelParentDepth + 1, "baseLevelParentDepth + 1");
 
-        return childLevelIndex < baseLevelIndex || (childLevelIndex == baseLevelIndex && includesConstituents)
+        return levelDepth < baseLevelParentDepth || (levelDepth == baseLevelParentDepth && includesConstituents)
                 ? All
                 : None;
     }
@@ -723,29 +771,27 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final Table nodeTableToExpand,
             final boolean sorted) {
-        final int levelIndex = snapshotState.getCurrentDepth();
+        final int levelDepth = snapshotState.getCurrentDepth();
 
-        Assert.leq(levelIndex, "levelIndex", baseLevelIndex, "baseLevelIndex");
-        final int childLevelIndex = levelIndex + 1;
+        Assert.leq(levelDepth, "levelDepth", baseLevelParentDepth + 1, "baseLevelDepth + 1");
 
-        if (levelIndex == baseLevelIndex || (childLevelIndex == baseLevelIndex && !includesConstituents)) {
+        if (levelDepth == baseLevelParentDepth && !includesConstituents) {
             // There are no expandable nodes below the base level ever.
             // Base level nodes are only expandable if we're including constituents.
-            final long nullNodeId = nullNodeId();
-            return (final long rowKey) -> nullNodeId;
+            return (final long rowKey) -> NULL_NODE_ID;
         }
         final RowRedirection sortRedirection = sorted ? SortOperation.getRowRedirection(nodeTableToExpand) : null;
         if (sortRedirection == null) {
-            return (final long rowKey) -> makeNodeId(childLevelIndex, (int) rowKey);
+            return (final long rowKey) -> makeNodeId(levelDepth, (int) rowKey);
         }
         return snapshotState.usePrev()
-                ? (final long sortedRowKey) -> makeNodeId(childLevelIndex, (int) sortRedirection.getPrev(sortedRowKey))
-                : (final long sortedRowKey) -> makeNodeId(childLevelIndex, (int) sortRedirection.get(sortedRowKey));
+                ? (final long sortedRowKey) -> makeNodeId(levelDepth, (int) sortRedirection.getPrev(sortedRowKey))
+                : (final long sortedRowKey) -> makeNodeId(levelDepth, (int) sortRedirection.get(sortedRowKey));
     }
 
     @Override
     boolean nodeIdExpandable(@NotNull final SnapshotStateImpl snapshotState, final long nodeId) {
-        return nodeId != nullNodeId();
+        return nodeId != NULL_NODE_ID;
     }
 
     @Override

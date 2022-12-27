@@ -311,11 +311,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * <p>
      * For static tables, do note that the reverse lookup will be produced on-demand within this method.
      *
-     * @param sortResult The sort result table; <em>must</em> be the direct result of a sort
+     * @param parent The sort input table; must have been sorted in order to produce {@code sortResult}
+     * @param sortResult The sort result table; <em>must</em> be the direct result of a sort on {@code parent}
      * @return The reverse lookup
      */
-    public static LongUnaryOperator getReverseLookup(@NotNull final Table sortResult) {
-        if (StreamTableTools.isStream(sortResult)) {
+    public static LongUnaryOperator getReverseLookup(@NotNull final Table parent, @NotNull final Table sortResult) {
+        if (StreamTableTools.isStream(parent)) {
             throw new UnsupportedOperationException("Stream tables do not support sort reverse lookup");
         }
         final Object value = sortResult.getAttribute(SORT_REVERSE_LOOKUP_ATTRIBUTE);
@@ -327,7 +328,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return (LongUnaryOperator) value;
         }
         final RowRedirection sortRedirection = getRowRedirection(sortResult);
-        if (sortRedirection == null) {
+        if (sortRedirection == null || sortRedirection == getRowRedirection(parent)) {
             // Static table was already sorted
             return LongUnaryOperator.identity();
         }

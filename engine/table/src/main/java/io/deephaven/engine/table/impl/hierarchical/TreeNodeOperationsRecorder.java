@@ -49,6 +49,11 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
     }
 
     @Override
+    public boolean isEmpty() {
+        return super.isEmpty() && recordedFilters.isEmpty();
+    }
+
+    @Override
     TreeTable.NodeOperationsRecorder withFormats(@NotNull final Stream<? extends SelectColumn> formats) {
         return new TreeNodeOperationsRecorder(definition,
                 mergeFormats(getRecordedFormats().stream(), formats),
@@ -75,6 +80,12 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
         if (!definition.equals(other.definition)) {
             throw new IllegalArgumentException(
                     "Incompatible operation recorders; compatible recorders must be created from the same table");
+        }
+        if (other.isEmpty()) {
+            return this;
+        }
+        if (isEmpty()) {
+            return other;
         }
         return new TreeNodeOperationsRecorder(definition,
                 mergeFormats(getRecordedFormats().stream(), other.getRecordedFormats().stream()),

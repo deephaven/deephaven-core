@@ -5,16 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Aggregations;
-import io.deephaven.api.agg.AggregationPairs;
-import io.deephaven.api.agg.ColumnAggregation;
-import io.deephaven.api.agg.ColumnAggregations;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.FirstRowKey;
-import io.deephaven.api.agg.LastRowKey;
-import io.deephaven.api.agg.Pair;
-import io.deephaven.api.agg.Partition;
+import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
@@ -53,7 +44,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.by.rollup.NullColumns;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
-import io.deephaven.engine.table.impl.by.rollup.RollupAggregationPairs;
+import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteChunkedCountDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteRollupCountDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.CharChunkedCountDistinctOperator;
@@ -257,8 +248,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         this.aggregations = aggregations;
         this.type = type;
         final String duplicationErrorMessage = (type.isRollup
-                ? RollupAggregationPairs.outputsOf(aggregations)
-                : AggregationPairs.outputsOf(aggregations))
+                ? RollupAggregationOutputs.of(aggregations)
+                : AggregationOutputs.of(aggregations))
                         .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet()
                         .stream()
                         .filter(kv -> kv.getValue() > 1)

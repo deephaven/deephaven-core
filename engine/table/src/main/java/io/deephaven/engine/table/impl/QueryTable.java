@@ -618,8 +618,8 @@ public class QueryTable extends BaseTable<QueryTable> {
         final Table aggregationTable = memoizeResult(aggKey, () -> aggNoMemo(
                 AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
 
-        final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
-        final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
+        final List<ColumnName> optimizedOrder = AggregationOutputs.of(optimized).collect(Collectors.toList());
+        final List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
         if (userOrder.equals(optimizedOrder)) {
             return aggregationTable;
         }

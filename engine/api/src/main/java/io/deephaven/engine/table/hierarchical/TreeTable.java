@@ -77,6 +77,13 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
             FormatOperationsRecorder<NodeOperationsRecorder>,
             SortOperationsRecorder<NodeOperationsRecorder>,
             FilterOperationsRecorder<NodeOperationsRecorder> {
+
+        /**
+         * Test if this NodeOperationsRecorder has recorded any operations.
+         *
+         * @return Whether this NodeOperationsRecorder has recorded any operations
+         */
+        boolean isEmpty();
     }
 
     /**
