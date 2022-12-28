@@ -74,7 +74,7 @@ public interface Aggregation extends Serializable {
     static Aggregation of(AggSpec spec, List<String> pairs) {
         if (pairs.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Must have at least one pair to create an Aggregation. Did you mean to use TableOperations#aggAllBy?");
+                    "Must have at least one pair to create an Aggregation from an AggSpec. Did you mean to use TableOperations#aggAllBy?");
         }
         if (pairs.size() == 1) {
             return of(spec, pairs.get(0));
