@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.barrage;
+package io.deephaven.extensions.barrage;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.util.NullOutputStream;
@@ -14,8 +14,8 @@ public class BarrageStreamGeneratorTest {
     @Test
     public void testDrainableStreamIsEmptied() throws IOException {
         final int length = 512;
-        final BarrageStreamGenerator.DrainableByteArrayInputStream inputStream =
-                new BarrageStreamGenerator.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
+        final BarrageStreamGeneratorImpl.DrainableByteArrayInputStream inputStream =
+                new BarrageStreamGeneratorImpl.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
 
         int bytesRead = inputStream.drainTo(new NullOutputStream());
 
@@ -26,12 +26,12 @@ public class BarrageStreamGeneratorTest {
     @Test
     public void testConsecutiveDrainableStreamIsEmptied() throws IOException {
         final int length = 512;
-        final BarrageStreamGenerator.DrainableByteArrayInputStream in1 =
-                new BarrageStreamGenerator.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
-        final BarrageStreamGenerator.DrainableByteArrayInputStream in2 =
-                new BarrageStreamGenerator.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
-        final BarrageStreamGenerator.ConsecutiveDrainableStreams inputStream =
-                new BarrageStreamGenerator.ConsecutiveDrainableStreams(in1, in2);
+        final BarrageStreamGeneratorImpl.DrainableByteArrayInputStream in1 =
+                new BarrageStreamGeneratorImpl.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
+        final BarrageStreamGeneratorImpl.DrainableByteArrayInputStream in2 =
+                new BarrageStreamGeneratorImpl.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
+        final BarrageStreamGeneratorImpl.ConsecutiveDrainableStreams inputStream =
+                new BarrageStreamGeneratorImpl.ConsecutiveDrainableStreams(in1, in2);
 
         int bytesRead = inputStream.drainTo(new NullOutputStream());
 

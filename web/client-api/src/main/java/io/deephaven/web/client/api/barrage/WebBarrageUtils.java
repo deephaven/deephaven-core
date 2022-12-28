@@ -40,7 +40,7 @@ import java.util.stream.IntStream;
 /**
  * Utility to read barrage record batches.
  */
-public class BarrageUtils {
+public class WebBarrageUtils {
     private static final int MAGIC = 0x6E687064;
 
     public static Uint8Array wrapMessage(Builder innerBuilder, int messageType) {

@@ -63,7 +63,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Time
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
-import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -111,7 +111,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.deephaven.web.client.api.barrage.BarrageUtils.*;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.*;
 
 /**
  * Non-exported class, manages the connection to a given worker server. Exported types like QueryInfo and Table will
@@ -1008,7 +1008,7 @@ public class WorkerConnection {
                     createMessage(schema, MessageHeader.Schema, Schema.endSchema(schema), 0, 0);
             schemaMessage.setDataHeader(schemaMessagePayload);
 
-            schemaMessage.setAppMetadata(BarrageUtils.emptyMessage());
+            schemaMessage.setAppMetadata(WebBarrageUtils.emptyMessage());
             schemaMessage.setFlightDescriptor(cts.getHandle().makeFlightDescriptor());
 
             // we wait for any errors in this response to pass to the caller, but success is determined by the eventual
@@ -1037,7 +1037,7 @@ public class WorkerConnection {
                 }
             });
             FlightData bodyMessage = new FlightData();
-            bodyMessage.setAppMetadata(BarrageUtils.emptyMessage());
+            bodyMessage.setAppMetadata(WebBarrageUtils.emptyMessage());
 
             Builder bodyData = new Builder(1024);
 
@@ -1341,7 +1341,7 @@ public class WorkerConnection {
 
                 FlightData request = new FlightData();
                 request.setAppMetadata(
-                        BarrageUtils.wrapMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest));
+                        WebBarrageUtils.wrapMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest));
 
                 BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                         headers -> flightServiceClient.doExchange(headers),

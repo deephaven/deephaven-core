@@ -27,6 +27,8 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
@@ -60,7 +62,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
     private QueryTable sourceTable;
     private TrackingWritableRowSet streamRowSet;
     private QueryTable streamTable;
-    private BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer;
+    private BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer;
     private TableUpdateValidator originalTUV;
     private FailureListener originalTUVListener;
 
@@ -69,7 +71,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> getStreamGeneratorFactory();
+        BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {

@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.server.table;
+package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
@@ -10,9 +10,13 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
+import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
@@ -49,7 +53,7 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.server.table.ops.GrpcTableOperation;
+import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -188,6 +192,17 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
+    public void aggregateAll(AggregateAllRequest request,
+            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(OpCase.AGGREGATE_ALL, request, responseObserver);
+    }
+
+    @Override
+    public void aggregate(AggregateRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AGGREGATE, request, responseObserver);
+    }
+
+    @Override
     public void snapshot(final SnapshotTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT, request, responseObserver);
@@ -297,6 +312,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     public void batch(final BatchTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            GrpcErrorHelper.checkRepeatedFieldNonEmpty(request, BatchTableRequest.OPS_FIELD_NUMBER);
+            GrpcErrorHelper.checkHasNoUnknownFields(request);
+            for (Operation operation : request.getOpsList()) {
+                GrpcErrorHelper.checkHasOneOf(operation, "op");
+                GrpcErrorHelper.checkHasNoUnknownFields(operation);
+            }
             final SessionState session = sessionService.getCurrentSession();
 
             // step 1: initialize exports
@@ -347,21 +368,19 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         errorInfo += " cause: " + cause.getMessage();
                         firstFailure.compareAndSet(null, (StatusRuntimeException) cause);
                     }
-                    final String finalErrorInfo = errorInfo;
-                    safelyExecuteLocked(responseObserver,
-                            () -> responseObserver.onNext(ExportedTableCreationResponse.newBuilder()
-                                    .setResultId(resultId)
-                                    .setSuccess(false)
-                                    .setErrorInfo(finalErrorInfo)
-                                    .build()));
+                    final ExportedTableCreationResponse response = ExportedTableCreationResponse.newBuilder()
+                            .setResultId(resultId)
+                            .setSuccess(false)
+                            .setErrorInfo(errorInfo)
+                            .build();
+                    safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
                     onOneResolved.run();
                 }).submit(() -> {
                     final Table table = exportBuilder.doExport();
-
-                    safelyExecuteLocked(responseObserver,
-                            () -> responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, table)));
+                    final ExportedTableCreationResponse response =
+                            ExportUtil.buildTableCreationResponse(resultId, table);
+                    safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
                     onOneResolved.run();
-
                     return table;
                 });
             }
@@ -405,8 +424,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         }
                         authWiring.checkPermissionGetExportedTableCreationResponse(
                                 session.getAuthContext(), request, Collections.singletonList((Table) obj));
-                        responseObserver.onNext(ExportUtil.buildTableCreationResponse(request, (Table) obj));
-                        responseObserver.onCompleted();
+                        final ExportedTableCreationResponse response =
+                                ExportUtil.buildTableCreationResponse(request, (Table) obj);
+                        safelyExecute(() -> {
+                            responseObserver.onNext(response);
+                            responseObserver.onCompleted();
+                        });
                     });
         });
     }
@@ -443,8 +466,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .submit(() -> {
                         operation.checkPermission(request, dependencies);
                         final Table result = operation.create(request, dependencies);
+                        final ExportedTableCreationResponse response =
+                                ExportUtil.buildTableCreationResponse(resultId, result);
                         safelyExecute(() -> {
-                            responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, result));
+                            responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
                         return result;

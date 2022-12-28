@@ -313,7 +313,7 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @ConcurrentMethod
     default TOPS aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends ColumnName> groupByColumns) {
-        return aggBy(aggregations, false, null, groupByColumns);
+        return aggBy(aggregations, AGG_BY_PRESERVE_EMPTY_DEFAULT, null, groupByColumns);
     }
 
     // -------------------------------------------------------------------------------------------

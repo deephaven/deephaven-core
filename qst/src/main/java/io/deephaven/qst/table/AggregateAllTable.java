@@ -17,10 +17,10 @@ import java.util.Set;
 
 @Immutable
 @NodeStyle
-public abstract class AggregateAllByTable extends ByTableBase implements SingleParentTable {
+public abstract class AggregateAllTable extends ByTableBase implements SingleParentTable {
 
     public static Builder builder() {
-        return ImmutableAggregateAllByTable.builder();
+        return ImmutableAggregateAllTable.builder();
     }
 
     /**
@@ -35,7 +35,7 @@ public abstract class AggregateAllByTable extends ByTableBase implements SingleP
     public static Optional<Aggregation> singleAggregation(
             AggSpec spec, Collection<? extends ColumnName> groupByColumns,
             Collection<? extends ColumnName> tableColumns) {
-        Set<ColumnName> exclusions = AggAllByExclusions.of(spec, groupByColumns);
+        Set<ColumnName> exclusions = AggregateAllExclusions.of(spec, groupByColumns);
         List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());
         for (ColumnName column : tableColumns) {
             if (exclusions.contains(column)) {
@@ -49,15 +49,15 @@ public abstract class AggregateAllByTable extends ByTableBase implements SingleP
     public abstract AggSpec spec();
 
     /**
-     * Transform {@code this} agg-all-by table into an {@link AggregationTable} by constructing the necessary
+     * Transform {@code this} agg-all-by table into an {@link AggregateTable} by constructing the necessary
      * {@link Aggregation} from the {@link #spec()} and {@code tableColumns}.
      *
      * @param tableColumns the table columns
      * @return the aggregation table
      * @see #singleAggregation(AggSpec, Collection, Collection)
      */
-    public final AggregationTable asAggregation(Collection<? extends ColumnName> tableColumns) {
-        AggregationTable.Builder builder = AggregationTable.builder()
+    public final AggregateTable asAggregation(Collection<? extends ColumnName> tableColumns) {
+        AggregateTable.Builder builder = AggregateTable.builder()
                 .parent(parent())
                 .addAllGroupByColumns(groupByColumns());
         singleAggregation(spec(), groupByColumns(), tableColumns).ifPresent(builder::addAggregations);
@@ -70,7 +70,7 @@ public abstract class AggregateAllByTable extends ByTableBase implements SingleP
         return visitor;
     }
 
-    public interface Builder extends ByTableBase.Builder<AggregateAllByTable, Builder> {
+    public interface Builder extends ByTableBase.Builder<AggregateAllTable, Builder> {
         Builder spec(AggSpec spec);
     }
 }

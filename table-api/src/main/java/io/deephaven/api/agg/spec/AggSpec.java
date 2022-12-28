@@ -8,6 +8,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.agg.Pair;
+import io.deephaven.api.object.UnionObject;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -234,6 +235,13 @@ public interface AggSpec {
     }
 
     /**
+     * @return {@link AggSpecUnique#of(boolean, UnionObject)} for {@code includeNulls} and {@code nonUniqueSentinel}
+     */
+    static AggSpecUnique unique(boolean includeNulls, UnionObject nonUniqueSentinel) {
+        return AggSpecUnique.of(includeNulls, nonUniqueSentinel);
+    }
+
+    /**
      * @return {@link AggSpecVar#of()}
      */
     static AggSpecVar var() {
@@ -252,6 +260,37 @@ public interface AggSpec {
      */
     static AggSpecWSum wsum(String weightColumn) {
         return AggSpecWSum.of(ColumnName.of(weightColumn));
+    }
+
+    /**
+     * Calls every single visit method of {@code visitor} with a {@code null} object.
+     *
+     * @param visitor the visitor
+     */
+    static void visitAll(Visitor visitor) {
+        visitor.visit((AggSpecAbsSum) null);
+        visitor.visit((AggSpecApproximatePercentile) null);
+        visitor.visit((AggSpecAvg) null);
+        visitor.visit((AggSpecCountDistinct) null);
+        visitor.visit((AggSpecDistinct) null);
+        visitor.visit((AggSpecFirst) null);
+        visitor.visit((AggSpecFormula) null);
+        visitor.visit((AggSpecFreeze) null);
+        visitor.visit((AggSpecGroup) null);
+        visitor.visit((AggSpecLast) null);
+        visitor.visit((AggSpecMax) null);
+        visitor.visit((AggSpecMedian) null);
+        visitor.visit((AggSpecMin) null);
+        visitor.visit((AggSpecPercentile) null);
+        visitor.visit((AggSpecSortedFirst) null);
+        visitor.visit((AggSpecSortedLast) null);
+        visitor.visit((AggSpecStd) null);
+        visitor.visit((AggSpecSum) null);
+        visitor.visit((AggSpecTDigest) null);
+        visitor.visit((AggSpecUnique) null);
+        visitor.visit((AggSpecWAvg) null);
+        visitor.visit((AggSpecWSum) null);
+        visitor.visit((AggSpecVar) null);
     }
 
     /**
