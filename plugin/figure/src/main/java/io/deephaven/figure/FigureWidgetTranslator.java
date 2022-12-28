@@ -300,6 +300,19 @@ public class FigureWidgetTranslator {
                             // with the x and y we have so far mapped to this
 
                             if (s instanceof AbstractXYDataSeries) {
+                                AbstractXYDataSeries abstractSeries = (AbstractXYDataSeries) s;
+
+                                // TODO color label
+                                Double pointSize = abstractSeries.getPointSize(0);
+                                if (pointSize != null) {
+                                    clientSeries.setShapeSize(pointSize);
+                                }
+
+                                Shape pointShape = abstractSeries.getPointShape(0);
+                                if (pointShape != null) {
+                                    clientSeries.setShape(pointShape.toString());
+                                }
+
                                 if (s instanceof IntervalXYDataSeriesArray) {
                                     // interval (aka histogram)
                                     IntervalXYDataSeriesArray series = (IntervalXYDataSeriesArray) s;
@@ -334,8 +347,6 @@ public class FigureWidgetTranslator {
                                     // warn about other unsupported series types
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }
-
-                                // TODO color label size shape
                             } else if (s instanceof AbstractCategoryDataSeries) {
                                 if (s instanceof CategoryDataSeriesPartitionedTable) {// bar and pie from a table
                                     CategoryDataSeriesPartitionedTable series = (CategoryDataSeriesPartitionedTable) s;
