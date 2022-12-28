@@ -153,6 +153,14 @@ public class FigureWidgetTranslator {
         return clientFigure.build();
     }
 
+    private static void assignOptionalStringField(Object value, Consumer<String> setter, Runnable clear) {
+        if (value != null) {
+            setter.accept(value.toString());
+        } else {
+            clear.run();
+        }
+    }
+
     private static <T> void assignOptionalField(T value, Consumer<T> setter, Runnable clear) {
         if (value != null) {
             setter.accept(value);
@@ -289,6 +297,8 @@ public class FigureWidgetTranslator {
                             assignOptionalField(toCssColorString(s.getLineColor()), clientSeries::setLineColor,
                                     clientSeries::clearLineColor);
                             // clientSeries.setLineStyle(s.getLineStyle().toString());
+                            assignOptionalField(toCssColorString(s.getSeriesColor()), clientSeries::setShapeColor,
+                                    clientSeries::clearShapeColor);
                             assignOptionalField(s.getPointLabelFormat(), clientSeries::setPointLabelFormat,
                                     clientSeries::clearPointLabelFormat);
                             assignOptionalField(s.getXToolTipPattern(), clientSeries::setXToolTipPattern,
@@ -300,18 +310,12 @@ public class FigureWidgetTranslator {
                             // with the x and y we have so far mapped to this
 
                             if (s instanceof AbstractXYDataSeries) {
+                                // TODO: Individual point shapes/sizes/labels
+                                // Right now just gets one set for the whole series
                                 AbstractXYDataSeries abstractSeries = (AbstractXYDataSeries) s;
-
-                                // TODO color label
-                                Double pointSize = abstractSeries.getPointSize(0);
-                                if (pointSize != null) {
-                                    clientSeries.setShapeSize(pointSize);
-                                }
-
-                                Shape pointShape = abstractSeries.getPointShape(0);
-                                if (pointShape != null) {
-                                    clientSeries.setShape(pointShape.toString());
-                                }
+                                assignOptionalStringField(abstractSeries.getPointShape(0), clientSeries::setShape, clientSeries::clearShape);
+                                assignOptionalField(abstractSeries.getPointSize(0), clientSeries::setShapeSize, clientSeries::clearShapeSize);
+                                assignOptionalField(abstractSeries.getPointLabel(0), clientSeries::setShapeLabel, clientSeries::clearShapeLabel);
 
                                 if (s instanceof IntervalXYDataSeriesArray) {
                                     // interval (aka histogram)
@@ -348,6 +352,13 @@ public class FigureWidgetTranslator {
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }
                             } else if (s instanceof AbstractCategoryDataSeries) {
+                                // TODO: Individual point shapes/sizes/labels
+                                // Right now just gets one set for the whole series
+                                AbstractCategoryDataSeries abstractSeries = (AbstractCategoryDataSeries) s;
+                                assignOptionalStringField(abstractSeries.getPointShape(0), clientSeries::setShape, clientSeries::clearShape);
+                                assignOptionalField(abstractSeries.getPointSize(0), clientSeries::setShapeSize, clientSeries::clearShapeSize);
+                                assignOptionalField(abstractSeries.getLabel(0), clientSeries::setShapeLabel, clientSeries::clearShapeLabel);
+
                                 if (s instanceof CategoryDataSeriesPartitionedTable) {// bar and pie from a table
                                     CategoryDataSeriesPartitionedTable series = (CategoryDataSeriesPartitionedTable) s;
                                     clientAxes
@@ -393,7 +404,6 @@ public class FigureWidgetTranslator {
                                 } else if (s instanceof CategoryDataSeriesMap) {// bar and plot from constant data
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }
-                                // TODO color label size shape
                             }
 
                             clientSeries.addAllDataSources(clientAxes.build().collect(Collectors.toList()));
