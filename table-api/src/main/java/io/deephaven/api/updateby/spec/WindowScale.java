@@ -10,16 +10,16 @@ import java.time.Duration;
 
 @Immutable
 @SimpleStyle
-public abstract class TimeScale {
-    public static TimeScale ofTime(final String timestampCol, long timeScaleNanos) {
+public abstract class WindowScale {
+    public static WindowScale ofTime(final String timestampCol, long timeScaleNanos) {
         return ImmutableTimeScale.of(timestampCol, timeScaleNanos);
     }
 
-    public static TimeScale ofTime(final String timestampCol, Duration duration) {
+    public static WindowScale ofTime(final String timestampCol, Duration duration) {
         return ImmutableTimeScale.of(timestampCol, duration.toNanos());
     }
 
-    public static TimeScale ofTicks(long tickWindow) {
+    public static WindowScale ofTicks(long tickWindow) {
         return ImmutableTimeScale.of(null, tickWindow);
     }
 
@@ -51,7 +51,7 @@ public abstract class TimeScale {
     @Value.Check
     final void checkTimestampColEmpty() {
         if (timestampCol() != null && timestampCol().isEmpty()) {
-            throw new IllegalArgumentException("TimeScale.timestampCol() must not be an empty string");
+            throw new IllegalArgumentException("WindowScale.timestampCol() must not be an empty string");
         }
     }
 }

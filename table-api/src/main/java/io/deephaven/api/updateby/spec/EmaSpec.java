@@ -14,45 +14,45 @@ import java.util.Optional;
 @BuildableStyle
 public abstract class EmaSpec extends UpdateBySpecBase {
 
-    public static EmaSpec of(OperationControl control, TimeScale timeScale) {
-        return ImmutableEmaSpec.builder().control(control).timeScale(timeScale).build();
+    public static EmaSpec of(OperationControl control, WindowScale windowScale) {
+        return ImmutableEmaSpec.builder().control(control).timeScale(windowScale).build();
     }
 
-    public static EmaSpec of(TimeScale timeScale) {
-        return ImmutableEmaSpec.builder().timeScale(timeScale).build();
+    public static EmaSpec of(WindowScale windowScale) {
+        return ImmutableEmaSpec.builder().timeScale(windowScale).build();
     }
 
     public static EmaSpec ofTime(final OperationControl control,
             final String timestampCol,
             long timeScaleNanos) {
-        return of(control, TimeScale.ofTime(timestampCol, timeScaleNanos));
+        return of(control, WindowScale.ofTime(timestampCol, timeScaleNanos));
     }
 
     public static EmaSpec ofTime(final String timestampCol, long timeScaleNanos) {
-        return of(TimeScale.ofTime(timestampCol, timeScaleNanos));
+        return of(WindowScale.ofTime(timestampCol, timeScaleNanos));
     }
 
     public static EmaSpec ofTime(final OperationControl control,
             final String timestampCol,
             Duration emaDuration) {
-        return of(control, TimeScale.ofTime(timestampCol, emaDuration));
+        return of(control, WindowScale.ofTime(timestampCol, emaDuration));
     }
 
     public static EmaSpec ofTime(final String timestampCol, Duration emaDuration) {
-        return of(TimeScale.ofTime(timestampCol, emaDuration));
+        return of(WindowScale.ofTime(timestampCol, emaDuration));
     }
 
     public static EmaSpec ofTicks(OperationControl control, long tickWindow) {
-        return of(control, TimeScale.ofTicks(tickWindow));
+        return of(control, WindowScale.ofTicks(tickWindow));
     }
 
     public static EmaSpec ofTicks(long tickWindow) {
-        return of(TimeScale.ofTicks(tickWindow));
+        return of(WindowScale.ofTicks(tickWindow));
     }
 
     public abstract Optional<OperationControl> control();
 
-    public abstract TimeScale timeScale();
+    public abstract WindowScale timeScale();
 
     public final OperationControl controlOrDefault() {
         return control().orElseGet(OperationControl::defaultInstance);

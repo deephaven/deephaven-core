@@ -34,7 +34,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link CumSumSpec cumulative sum} for the supplied column name pairs.
+     * Create a {@link CumSumSpec cumulative sum} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -44,7 +44,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link CumProdSpec cumulative produce} for the supplied column name pairs.
+     * Create a {@link CumProdSpec cumulative product} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -54,7 +54,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link CumMinMaxSpec cumulative minimum} for the supplied column name pairs.
+     * Create a {@link CumMinMaxSpec cumulative minimum} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -64,7 +64,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link CumMinMaxSpec cumulative maximum} for the supplied column name pairs.
+     * Create a {@link CumMinMaxSpec cumulative maximum} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -74,7 +74,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link FillBySpec fill by} for the supplied column name pairs.
+     * Create a {@link FillBySpec forward fill} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -216,7 +216,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
+     * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevTimeTicks the look-behind window size (in rows/ticks)
@@ -228,7 +228,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
+     * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevTimeTicks the look-behind window size (in rows/ticks)
@@ -241,7 +241,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link RollingSumSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using time as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevWindowDuration the look-behind window size (in Duration)

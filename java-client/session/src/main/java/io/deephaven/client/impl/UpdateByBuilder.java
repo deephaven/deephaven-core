@@ -92,18 +92,18 @@ class UpdateByBuilder {
             return builder.build();
         }
 
-        private static UpdateByEmaTimescale adapt(TimeScale timeScale) {
-            if (timeScale.isTimeBased()) {
+        private static UpdateByEmaTimescale adapt(WindowScale windowScale) {
+            if (windowScale.isTimeBased()) {
                 return UpdateByEmaTimescale.newBuilder()
                         .setTime(UpdateByEmaTime.newBuilder()
-                                .setColumn(timeScale.timestampCol())
-                                .setPeriodNanos(timeScale.timescaleUnits())
+                                .setColumn(windowScale.timestampCol())
+                                .setPeriodNanos(windowScale.timescaleUnits())
                                 .build())
                         .build();
             } else {
                 return UpdateByEmaTimescale.newBuilder()
                         .setTicks(UpdateByEmaTicks.newBuilder()
-                                .setTicks(timeScale.timescaleUnits())
+                                .setTicks(windowScale.timescaleUnits())
                                 .build())
                         .build();
             }

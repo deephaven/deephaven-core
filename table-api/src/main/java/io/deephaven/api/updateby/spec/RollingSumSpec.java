@@ -18,38 +18,38 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
     // most common usages first, will complete the list later
 
     public static RollingSumSpec ofTicks(long tickWindow) {
-        return of(TimeScale.ofTicks(tickWindow));
+        return of(WindowScale.ofTicks(tickWindow));
     }
 
     public static RollingSumSpec ofTicks(long prevTickWindow, long fwdTickWindow) {
-        return of(TimeScale.ofTicks(prevTickWindow), TimeScale.ofTicks(fwdTickWindow));
+        return of(WindowScale.ofTicks(prevTickWindow), WindowScale.ofTicks(fwdTickWindow));
     }
 
     public static RollingSumSpec ofTime(final String timestampCol, Duration prevWindowDuration) {
-        return of(TimeScale.ofTime(timestampCol, prevWindowDuration));
+        return of(WindowScale.ofTime(timestampCol, prevWindowDuration));
     }
 
     public static RollingSumSpec ofTime(final String timestampCol, Duration prevWindowDuration,
             Duration fwdWindowDuration) {
-        return of(TimeScale.ofTime(timestampCol, prevWindowDuration),
-                TimeScale.ofTime(timestampCol, fwdWindowDuration));
+        return of(WindowScale.ofTime(timestampCol, prevWindowDuration),
+                WindowScale.ofTime(timestampCol, fwdWindowDuration));
     }
 
     // general use constructors
 
-    public static RollingSumSpec of(TimeScale prevTimeScale) {
-        return ImmutableRollingSumSpec.builder().prevTimeScale(prevTimeScale).build();
+    public static RollingSumSpec of(WindowScale prevWindowScale) {
+        return ImmutableRollingSumSpec.builder().prevTimeScale(prevWindowScale).build();
     }
 
-    public static RollingSumSpec of(TimeScale prevTimeScale, TimeScale fwdTimeScale) {
-        return ImmutableRollingSumSpec.builder().prevTimeScale(prevTimeScale).fwdTimeScale(fwdTimeScale).build();
+    public static RollingSumSpec of(WindowScale prevWindowScale, WindowScale fwdWindowScale) {
+        return ImmutableRollingSumSpec.builder().prevTimeScale(prevWindowScale).fwdTimeScale(fwdWindowScale).build();
     }
 
-    // public static RollingSumSpec of(TimeScale prevTimeScale) {
+    // public static RollingSumSpec of(WindowScale prevTimeScale) {
     // return ImmutableWindowedOpSpec.builder().prevTimeScale(prevTimeScale).build();
     // }
     //
-    // public static RollingSumSpec of(OperationControl control, TimeScale prevTimeScale, TimeScale fwdTimeScale) {
+    // public static RollingSumSpec of(OperationControl control, WindowScale prevTimeScale, WindowScale fwdTimeScale) {
     // return
     // ImmutableWindowedOpSpec.builder().control(control).prevTimeScale(prevTimeScale).fwdTimeScale(fwdTimeScale).build();
     // }
@@ -57,21 +57,21 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
     // public static RollingSumSpec ofTime(final OperationControl control,
     // final String timestampCol,
     // long prevWindowTimeScaleNanos) {
-    // return of(control, TimeScale.ofTime(timestampCol, prevWindowTimeScaleNanos));
+    // return of(control, WindowScale.ofTime(timestampCol, prevWindowTimeScaleNanos));
     // }
     //
     // public static RollingSumSpec ofTime(final OperationControl control,
     // final String timestampCol,
     // long prevWindowTimeScaleNanos,
     // long fwdWindowTimeScaleNanos) {
-    // return of(control, TimeScale.ofTime(timestampCol, prevWindowTimeScaleNanos), TimeScale.ofTime(timestampCol,
+    // return of(control, WindowScale.ofTime(timestampCol, prevWindowTimeScaleNanos), WindowScale.ofTime(timestampCol,
     // fwdWindowTimeScaleNanos));
     // }
     //
     // public static RollingSumSpec ofTime(final OperationControl control,
     // final String timestampCol,
     // Duration prevWindowDuration) {
-    // return of(control, TimeScale.ofTime(timestampCol, prevWindowDuration));
+    // return of(control, WindowScale.ofTime(timestampCol, prevWindowDuration));
     // }
     //
     //
@@ -79,27 +79,27 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
     // final String timestampCol,
     // Duration prevWindowDuration,
     // Duration fwdWindowDuration) {
-    // return of(control, TimeScale.ofTime(timestampCol, prevWindowDuration), TimeScale.ofTime(timestampCol,
+    // return of(control, WindowScale.ofTime(timestampCol, prevWindowDuration), WindowScale.ofTime(timestampCol,
     // fwdWindowDuration));
     // }
     //
     // public static RollingSumSpec ofTicks(OperationControl control, long prevTickWindow) {
-    // return of(control, TimeScale.ofTicks(prevTickWindow));
+    // return of(control, WindowScale.ofTicks(prevTickWindow));
     // }
     //
     // public static RollingSumSpec ofTicks(OperationControl control, long prevTickWindow, long fwdTickWindow) {
-    // return of(control, TimeScale.ofTicks(prevTickWindow), TimeScale.ofTicks(fwdTickWindow));
+    // return of(control, WindowScale.ofTicks(prevTickWindow), WindowScale.ofTicks(fwdTickWindow));
     // }
 
 
     public abstract Optional<OperationControl> control();
 
-    public abstract TimeScale prevTimeScale();
+    public abstract WindowScale prevTimeScale();
 
     // provide a default forward-looking timescale
     @Value.Default
-    public TimeScale fwdTimeScale() {
-        return TimeScale.ofTicks(0);
+    public WindowScale fwdTimeScale() {
+        return WindowScale.ofTicks(0);
     }
 
     public final OperationControl controlOrDefault() {

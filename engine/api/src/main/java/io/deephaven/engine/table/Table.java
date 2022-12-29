@@ -140,6 +140,7 @@ public interface Table extends
      * <ol>
      * <li>{@link #groupBy} is unsupported
      * <li>{@link #partitionBy} is unsupported</li>
+     * <li>{@link #partitionedAggBy(Collection, boolean, Table, String...) partitionedAggBy} is unsupported</li>
      * <li>{@link #rollup(Collection, boolean, ColumnName...) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
      * <li>{@link #treeTable(String, String) treeTable()} is unsupported</li>
