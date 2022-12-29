@@ -1,0 +1,13 @@
+Trigger Select Distinct
+temp1 = TableViewportSubscription, internalClose
+temp2 = TableViewportSubscription, constructor, created from applyBufferedViewport
+temp3 = JsTable, constructor, created from TableViewportSubscription copy
+temp4 = TableViewportSubscription, internalClose, triggered by removing listeners, temp4 == temp2
+temp5 = JsTable, close, triggered by internalClose lambda, temp5 != temp3
+temp6 = JsTable, from lambda calling onRunning, temp6 == temp3
+temp7 = TableViewportSubscription, from lambda calling onRunning, temp7 == temp2
+temp8 = TableViewportSubscription, within onRunning lambda, temp8 == temp2
+temp9 = JsTable, within onRunning lambda, temp9 == temp3
+
+
+// Why is updateViewport being called from IrisGridModelUpdater at all? None of the values should have changed...
