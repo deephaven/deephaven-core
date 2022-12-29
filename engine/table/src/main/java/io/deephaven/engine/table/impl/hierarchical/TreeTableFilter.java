@@ -5,12 +5,12 @@ package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.util.ConcurrentMethod;
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.ObjectChunkIterator;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -441,26 +441,47 @@ class TreeTableFilter {
     }
 
     private void shiftParentIdToChildRows(@NotNull final RowSetShiftData upstreamShifts) {
+        // Map from parent identifier to a pair of removed, added row set builders.
+        final Map<Object, Pair<RowSetBuilderSequential, RowSetBuilderSequential>> affectedParents = new HashMap<>();
         try (final ChunkSource.GetContext parentIdGetContext = parentIdSource.makeGetContext(CHUNK_SIZE);
                 final ChunkBoxer.BoxerKernel boxer =
                         ChunkBoxer.getBoxer(parentIdSource.getChunkType(), CHUNK_SIZE)) {
-            final Set<Object> affectedParents = new HashSet<>();
-            upstreamShifts.apply((final long beginRange, final long endRange, final long shiftDelta) -> {
-                try (final RowSequence affectedRows = resultRows.subSetByKeyRange(beginRange, endRange);
-                        final RowSequence.Iterator affectedRowsIter = affectedRows.getRowSequenceIterator()) {
-                    while (affectedRowsIter.hasMore()) {
-                        final RowSequence chunkAffectedRows =
-                                affectedRowsIter.getNextRowSequenceWithLength(CHUNK_SIZE);
-                        final ObjectChunk<?, ? extends Values> parentIds =
-                                getIds(true, parentIdSource, parentIdGetContext, boxer, chunkAffectedRows);
-                        new ObjectChunkIterator<>(parentIds).forEachRemaining(affectedParents::add);
+            final int numShifts = upstreamShifts.size();
+            for (int si = 0; si < numShifts; ++si) {
+                final long beginRange = upstreamShifts.getBeginRange(si);
+                final long endRange = upstreamShifts.getEndRange(si);
+                final long shiftDelta = upstreamShifts.getShiftDelta(si);
+                try (final RowSequence.Iterator rowsIter = resultRows.getRowSequenceIterator()) {
+                    rowsIter.advance(beginRange);
+                    final RowSequence affectedRows = rowsIter.getNextRowSequenceThrough(endRange);
+                    try (final RowSequence.Iterator affectedRowsIter = affectedRows.getRowSequenceIterator()) {
+                        while (affectedRowsIter.hasMore()) {
+                            final RowSequence chunkAffectedRows =
+                                    affectedRowsIter.getNextRowSequenceWithLength(CHUNK_SIZE);
+                            final ObjectChunk<?, ? extends Values> parentIds =
+                                    getIds(true, parentIdSource, parentIdGetContext, boxer, chunkAffectedRows);
+                            final MutableInt chunkIndex = new MutableInt(0);
+                            chunkAffectedRows.forAllRowKeys((final long affectedRowKey) -> {
+                                final Object parentId = parentIds.get(chunkIndex.getAndIncrement());
+                                final Pair<RowSetBuilderSequential, RowSetBuilderSequential> removedAddedPair =
+                                        affectedParents.computeIfAbsent(parentId, pId -> new Pair<>(
+                                                RowSetFactory.builderSequential(), RowSetFactory.builderSequential()));
+                                removedAddedPair.first.appendKey(affectedRowKey);
+                                removedAddedPair.second.appendKey(affectedRowKey + shiftDelta);
+                            });
+                        }
                     }
-                    affectedParents.forEach((final Object parentId) -> RowSetShiftData.applyShift(
-                            parentIdToChildRows.get(parentId), beginRange, endRange, shiftDelta));
-                    affectedParents.clear();
                 }
-            });
+            }
         }
+        affectedParents.forEach((parentId, pair) -> {
+            try (final RowSet removed = pair.first.build();
+                    final RowSet added = pair.second.build()) {
+                final WritableRowSet childRows = parentIdToChildRows.get(parentId);
+                childRows.remove(removed);
+                childRows.insert(added);
+            }
+        });
     }
 
     private class Listener extends BaseTable.ListenerImpl {
