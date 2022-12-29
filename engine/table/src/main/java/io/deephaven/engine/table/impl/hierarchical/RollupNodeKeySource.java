@@ -13,6 +13,9 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
@@ -84,23 +87,22 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         final IntChunk<? extends Values> depths = usePrev
                 ? depthSource.getPrevChunk(fc.depthContext, rowSequence).asIntChunk()
                 : depthSource.getChunk(fc.depthContext, rowSequence).asIntChunk();
-        final int maxKeyWidth = getMaxKeyWidth(depths);
-        if (maxKeyWidth > groupByValueSources.length) {
-            throw new IllegalArgumentException(String.format("Invalid key width %d, maximum for this rollup is %d",
-                    maxKeyWidth, groupByValueSources.length));
-        }
+        final int maxKeyWidth = getMaxKeyWidth(depths, groupByValueSources.length);
         final ObjectChunk<?, ? extends Values>[] groupByValues =
                 getGroupByValuesChunks(fc, rowSequence, usePrev, maxKeyWidth);
         fillFromGroupByValues(rowSequence, depths, groupByValues, destination.asWritableObjectChunk());
     }
 
-    private static int getMaxKeyWidth(@NotNull final IntChunk<? extends Values> depths) {
+    private static int getMaxKeyWidth(@NotNull final IntChunk<? extends Values> depths, final int maxMaxKeyWidth) {
         final int size = depths.size();
         int maxKeyWidth = 0;
         for (int kwi = 0; kwi < size; ++kwi) {
             // No need to special case the root's parent depth, since it's less than 0. For all other node keys, parent
             // depth is key width.
             final int keyWidth = depths.get(kwi);
+            if (keyWidth >= maxMaxKeyWidth) {
+                return maxMaxKeyWidth;
+            }
             if (keyWidth > maxKeyWidth) {
                 maxKeyWidth = keyWidth;
             }
@@ -133,6 +135,16 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         destination.setSize(size);
         for (int ri = 0; ri < size; ++ri) {
             final int parentDepth = depths.get(ri);
+            if (parentDepth < ROOT_PARENT_NODE_DEPTH || parentDepth > groupByValueSources.length) {
+                final int usableDepth = Math.min(groupByValueSources.length, parentDepth);
+                final int fri = ri;
+                throw new IllegalArgumentException(String.format(
+                        "Invalid depth %d, maximum for this rollup is %d, partial node key is [%s]",
+                        parentDepth, groupByValueSources.length,
+                        IntStream.range(0, usableDepth)
+                                .mapToObj(ci -> Objects.toString(groupByValues[ci].get(fri)))
+                                .collect(Collectors.joining())));
+            }
             switch (parentDepth) {
                 case ROOT_PARENT_NODE_DEPTH: // Root node
                     destination.set(ri, ROOT_NODE_KEY);

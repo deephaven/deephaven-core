@@ -536,6 +536,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              */
             private Table prepareAndGetTableForExpansion(final boolean filling) {
                 if (filling) {
+                    // TODO (https://github.com/deephaven/deephaven-core/issues/3247): Avoid sorting when not needed to
+                    // determine order in viewport
                     ensurePreparedForDataRetrieval();
                     return getDataRetrievalTable();
                 } else {
@@ -1384,7 +1386,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                         final WritableChunk<? super Values> destination = destinations[di];
                         final WritableChunk<? super Values> destinationSlice = destinationSlices[di].resetFromChunk(
                                 destination, offset, capacity);
-                        chunkSource.fillChunk(fillContext, destinationSlice, chunkRows);
+                        if (snapshotState.usePrev()) {
+                            chunkSource.fillPrevChunk(fillContext, destinationSlice, chunkRows);
+                        } else {
+                            chunkSource.fillChunk(fillContext, destinationSlice, chunkRows);
+                        }
                     }
                     sharedContext.reset();
                     offset += chunkRowsSize;
@@ -1548,7 +1554,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     static ColumnSource<Integer> getDepthSource(final int depth) {
         ColumnSource<Integer>[] localCachedDepthSources;
         if ((localCachedDepthSources = cachedDepthSources).length <= depth) {
-            synchronized (TreeTableImpl.class) {
+            synchronized (HierarchicalTableImpl.class) {
                 if ((localCachedDepthSources = cachedDepthSources).length <= depth) {
                     final int oldLength = localCachedDepthSources.length;
                     localCachedDepthSources = Arrays.copyOf(localCachedDepthSources, (depth / 10 + 1) * 10);

@@ -172,9 +172,8 @@ public class LivenessScopeStack {
             @NotNull final Supplier<RESULT_TYPE> computation,
             @NotNull final BooleanSupplier shouldEnclose,
             @NotNull final Predicate<RESULT_TYPE> shouldManageResult) {
-        final boolean manage = shouldEnclose.getAsBoolean();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = manage ? LivenessScopeStack.open() : null) {
+        try (final SafeCloseable ignored = shouldEnclose.getAsBoolean() ? LivenessScopeStack.open() : null) {
             final RESULT_TYPE result = computation.get();
             if (shouldManageResult.test(result)) {
                 enclosingLivenessManager.manage(result);
@@ -199,9 +198,8 @@ public class LivenessScopeStack {
             @NotNull final Supplier<RESULT_TYPE[]> computation,
             @NotNull final BooleanSupplier shouldEnclose,
             @NotNull final Predicate<RESULT_TYPE> shouldManageResult) {
-        final boolean manage = shouldEnclose.getAsBoolean();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = manage ? LivenessScopeStack.open() : null) {
+        try (final SafeCloseable ignored = shouldEnclose.getAsBoolean() ? LivenessScopeStack.open() : null) {
             final RESULT_TYPE[] results = computation.get();
             for (final RESULT_TYPE result : results) {
                 if (shouldManageResult.test(result)) {
