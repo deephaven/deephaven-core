@@ -33,7 +33,7 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
  *
  * If your size is smaller than the maximum array size, prefer {@link ImmutableCharArraySource}.
  */
-public class Immutable2DCharArraySource extends AbstractDeferredGroupingColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class Immutable2DCharArraySource extends AbstractDeferredGroupingColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered<Values>, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;
     private final long segmentShift;
     private final int segmentMask;

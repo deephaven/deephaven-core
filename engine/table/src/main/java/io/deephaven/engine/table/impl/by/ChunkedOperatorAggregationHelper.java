@@ -3,6 +3,9 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import gnu.trove.impl.Constants;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
@@ -11,7 +14,6 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -47,10 +49,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.LongFunction;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
+import java.util.function.*;
+
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 
 @SuppressWarnings("rawtypes")
 public class ChunkedOperatorAggregationHelper {
@@ -316,7 +318,7 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
-        setReverseLookupFunction(keySources, ac, stateManager);
+        ac.supplyRowLookup(() -> stateManager::findPositionForKey);
         return stateManager;
     }
 
@@ -330,47 +332,6 @@ public class ChunkedOperatorAggregationHelper {
         }
         return new TableUpdateImpl(upstream.added(), RowSetFactory.empty(), upstream.modified(), upstream.shifted(),
                 upstream.modifiedColumnSet());
-    }
-
-    private static void setReverseLookupFunction(ColumnSource<?>[] keySources, AggregationContext ac,
-            OperatorAggregationStateManager stateManager) {
-        if (keySources.length == 1) {
-            if (keySources[0].getType() == DateTime.class) {
-                ac.setReverseLookupFunction(key -> stateManager
-                        .findPositionForKey(key == null ? null : DateTimeUtils.nanos((DateTime) key)));
-            } else if (keySources[0].getType() == Boolean.class) {
-                ac.setReverseLookupFunction(
-                        key -> stateManager.findPositionForKey(BooleanUtils.booleanAsByte((Boolean) key)));
-            } else {
-                ac.setReverseLookupFunction(stateManager::findPositionForKey);
-            }
-        } else {
-            final List<Consumer<Object[]>> transformers = new ArrayList<>();
-            for (int ii = 0; ii < keySources.length; ++ii) {
-                if (keySources[ii].getType() == DateTime.class) {
-                    final int fii = ii;
-                    transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null : DateTimeUtils.nanos((DateTime) reinterpreted[fii]));
-                } else if (keySources[ii].getType() == Boolean.class) {
-                    final int fii = ii;
-                    transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null
-                                    : BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
-                }
-            }
-            if (transformers.isEmpty()) {
-                ac.setReverseLookupFunction(sk -> stateManager.findPositionForKey(((SmartKey) sk).values_));
-            } else {
-                ac.setReverseLookupFunction(key -> {
-                    final SmartKey smartKey = (SmartKey) key;
-                    final Object[] reinterpreted = Arrays.copyOf(smartKey.values_, smartKey.values_.length);
-                    for (final Consumer<Object[]> transform : transformers) {
-                        transform.accept(reinterpreted);
-                    }
-                    return stateManager.findPositionForKey(reinterpreted);
-                });
-            }
-        }
     }
 
     private static class KeyedUpdateContext implements SafeCloseable {
@@ -1588,8 +1549,13 @@ public class ChunkedOperatorAggregationHelper {
                 resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, responsiveGroups);
 
-        final ReverseLookupListener rll = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(result, keyName);
-        ac.setReverseLookupFunction(k -> (int) rll.get(k));
+        ac.supplyRowLookup(() -> {
+            final TObjectIntMap<Object> keyToSlot = new TObjectIntHashMap<>(
+                    responsiveGroups, Constants.DEFAULT_LOAD_FACTOR, DEFAULT_UNKNOWN_ROW);
+            final MutableInt slotNumber = new MutableInt(0);
+            grouping.keySet().forEach(k -> keyToSlot.put(k, slotNumber.getAndIncrement()));
+            return keyToSlot::get;
+        });
 
         return ac.transformResult(result);
     }
@@ -2115,7 +2081,7 @@ public class ChunkedOperatorAggregationHelper {
             swapListener.setListenerAndResult(listener, result);
         }
 
-        ac.setReverseLookupFunction(key -> SmartKey.EMPTY.equals(key) ? 0 : -1);
+        ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
 
         return ac.transformResult(result);
     }

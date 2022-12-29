@@ -52,6 +52,17 @@ public class BooleanUtils {
     }
 
     /**
+     * Convert {@code booleanValue} to a byte.
+     *
+     * @param booleanValue the unboxed boolean value to convert to a byte
+     *
+     * @return booleanValue represented as a byte
+     */
+    public static byte booleanAsByte(final boolean booleanValue) {
+        return booleanValue ? TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE;
+    }
+
+    /**
      * Convert an array of {@code booleanValues} to an array of bytes.
      *
      * @param booleanArray the primitive boolean array to convert to a byte

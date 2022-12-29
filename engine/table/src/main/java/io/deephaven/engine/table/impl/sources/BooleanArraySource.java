@@ -470,7 +470,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         }
     }
 
-    private class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {
+    private class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered<Values>, WritableColumnSource<Byte> {
         private ReinterpretedAsByte() {
             super(byte.class);
         }

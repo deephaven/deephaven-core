@@ -14,7 +14,6 @@ import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
 import io.deephaven.util.datastructures.hash.TNullableLongLongMap;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -253,7 +252,8 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     }
 
     @Override
-    public void fillFromChunk(@NotNull ChunkSink.FillFromContext context,
+    public void fillFromChunk(
+            @NotNull ChunkSink.FillFromContext context,
             @NotNull Chunk<? extends RowKeys> innerRowKeys,
             @NotNull RowSequence outerRowKeys) {
         if (updateCommitter != null) {
@@ -261,11 +261,27 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         }
 
         final MutableInt offset = new MutableInt();
-        final LongChunk<? extends Values> valuesLongChunk = innerRowKeys.asLongChunk();
-        outerRowKeys.forAllRowKeys(key -> {
-            updates.put(key, valuesLongChunk.get(offset.intValue()));
+        final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
+        outerRowKeys.forAllRowKeys(outerRowKey -> {
+            updates.put(outerRowKey, innerRowKeysTyped.get(offset.intValue()));
             offset.increment();
         });
+    }
+
+    @Override
+    public void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends RowKeys> innerRowKeys,
+            @NotNull final LongChunk<RowKeys> outerRowKeys) {
+        if (updateCommitter != null) {
+            updateCommitter.maybeActivate();
+        }
+
+        final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
+        final int size = innerRowKeysTyped.size();
+        for (int ki = 0; ki < size; ++ki) {
+            updates.put(outerRowKeys.get(ki), innerRowKeysTyped.get(ki));
+        }
     }
 
     private static final int hashBucketWidth = Configuration.getInstance()

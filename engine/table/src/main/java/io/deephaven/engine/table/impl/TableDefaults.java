@@ -9,7 +9,10 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -113,17 +116,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default boolean isEmpty() {
         return size() == 0;
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Attributes
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Map<String, Object> getAttributes() {
-        return getAttributes(Collections.emptySet());
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -325,6 +317,30 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return formatColumns(
                 columnName + " = (" + condition + ") ? io.deephaven.engine.util.ColorUtil.toLong(" + formula
                         + ") : io.deephaven.engine.util.ColorUtil.toLong(NO_FORMATTING)");
+    }
+
+    @Override
+    @ConcurrentMethod
+    @FinalDefault
+    default Table formatColumns(String... columnFormats) {
+        final SelectColumn[] selectColumns = SelectColumnFactory.getFormatExpressions(columnFormats);
+
+        final Set<String> existingColumns = getDefinition().getColumnNames()
+                .stream()
+                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
+                .collect(Collectors.toSet());
+
+        final String[] unknownColumns = Arrays.stream(selectColumns)
+                .map(SelectColumnFactory::getFormatBaseColumn)
+                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
+                .toArray(String[]::new);
+
+        if (unknownColumns.length > 0) {
+            throw new RuntimeException(
+                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
+        }
+
+        return updateView(selectColumns);
     }
 
     @Override
@@ -561,60 +577,44 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Hierarchical table operations (rollup and treeTable).
+    // Hierarchical table operations (rollup and tree).
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> groupByColumns) {
-        return rollup(aggregations, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations) {
+        return rollup(aggregations, Collections.emptyList());
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Collection<String> groupByColumns) {
-        return rollup(aggregations, includeConstituents,
-                ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
+        return rollup(aggregations, includeConstituents, Collections.emptyList());
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
-        return rollup(aggregations, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+        return rollup(aggregations, ColumnName.from(groupByColumns));
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             String... groupByColumns) {
-        return rollup(aggregations, includeConstituents,
-                ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+        return rollup(aggregations, includeConstituents, ColumnName.from(groupByColumns));
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, ColumnName... groupByColumns) {
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations,
+            Collection<? extends ColumnName> groupByColumns) {
         return rollup(aggregations, false, groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations) {
-        return rollup(aggregations, false, ZERO_LENGTH_COLUMNNAME_ARRAY);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
-        return rollup(aggregations, includeConstituents, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -662,13 +662,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         } finally {
             nugget.done();
         }
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table withColumnDescription(String column, String description) {
-        return withColumnDescription(Collections.singletonMap(column, description));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

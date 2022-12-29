@@ -782,8 +782,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
     public void testAlreadySorted() {
         final Table t = emptyTable(10000).update("Key=i");
         final Table s = t.sort("Key");
-        assertSame(t, s);
+        assertSame(t.getRowSet(), s.getRowSet());
         final Table sd = t.sortDescending("Key");
-        assertNotSame(t, sd);
+        assertNotSame(t.getRowSet(), sd.getRowSet());
     }
 }

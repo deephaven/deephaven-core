@@ -10,7 +10,6 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -52,7 +51,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
+        implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
