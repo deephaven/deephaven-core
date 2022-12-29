@@ -109,14 +109,11 @@ public class TableViewportSubscription extends HasEventHandling {
         this.original = existingTable;
         this.originalState = original.state();
         copy = existingTable.copy(false).then(table -> new Promise<>((resolve, reject) -> {
-            if (this.status == Status.DONE) {
-                JsLog.debug("TableViewportSubscription closed before copied table resolved, ignoring");
-                return;
-            }
             // Wait until the state is running to copy it
             originalState.onRunning(newState -> {
                 if (this.status == Status.DONE) {
                     JsLog.debug("TableViewportSubscription closed before originalState.onRunning completed, ignoring");
+                    table.close();
                     return;
                 }
                 table.batch(batcher -> {
