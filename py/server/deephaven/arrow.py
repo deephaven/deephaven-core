@@ -2,8 +2,8 @@
 #     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """This module supports conversions between Arrow tables and Deephaven tables."""
-import typing
-from typing import List
+
+from typing import List, Dict
 
 import jpy
 import pyarrow as pa
@@ -14,56 +14,63 @@ from deephaven.table import Table
 _JArrowToTableConverter = jpy.get_type("io.deephaven.extensions.barrage.util.ArrowToTableConverter")
 _JTableToArrowConverter = jpy.get_type("io.deephaven.extensions.barrage.util.TableToArrowConverter")
 
+_ARROW_DH_DATA_TYPE_MAPPING = {
+    pa.null(): '',
+    pa.bool_(): '',
+    pa.int8(): 'byte',
+    pa.int16(): 'short',
+    pa.int32(): 'int',
+    pa.int64(): 'long',
+    pa.uint8(): '',
+    pa.uint16(): 'char',
+    pa.uint32(): '',
+    pa.uint64(): '',
+    pa.float16(): '',
+    pa.float32(): 'float',
+    pa.float64(): 'double',
+    pa.time32('s'): '',
+    pa.time32('ms'): '',
+    pa.time64('us'): '',
+    pa.time64('ns'): 'io.deephaven.time.DateTime',
+    pa.timestamp('s', tz=None): '',
+    pa.timestamp('ms', tz=None): '',
+    pa.timestamp('us', tz=None): '',
+    pa.timestamp('ns', tz=None): '',
+    pa.date32(): 'java.time.LocalDate',
+    pa.date64(): 'java.time.LocalDate',
+    pa.duration('s'): '',
+    pa.duration('ms'): '',
+    pa.duration('us'): '',
+    pa.duration('ns'): '',
+    pa.month_day_nano_interval(): '',
+    pa.binary(): '',
+    pa.string(): 'java.lang.String',
+    pa.utf8(): 'java.lang.String',
+    pa.large_binary(): '',
+    pa.large_string(): '',
+    pa.large_utf8(): '',
+    # decimal128(int precision, int scale=0)
+    # list_(value_type, int list_size=-1)
+    # large_list(value_type)
+    # map_(key_type, item_type[, keys_sorted])
+    # struct(fields)
+    # dictionary(index_type, value_type, …)
+}
 
-def _map_arrow_type(arrow_type) -> typing.Dict[str, str]:
+SUPPORTED_ARROW_TYPES = [k for k, v in _ARROW_DH_DATA_TYPE_MAPPING.items() if v]
+
+
+def _map_arrow_type(arrow_type) -> Dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
-    arrow_to_dh = {
-        pa.null(): '',
-        pa.bool_(): '',
-        pa.int8(): 'byte',
-        pa.int16(): 'short',
-        pa.int32(): 'int',
-        pa.int64(): 'long',
-        pa.uint8(): '',
-        pa.uint16(): 'char',
-        pa.uint32(): '',
-        pa.uint64(): '',
-        pa.float16(): '',
-        pa.float32(): 'float',
-        pa.float64(): 'double',
-        pa.time32('s'): '',
-        pa.time32('ms'): '',
-        pa.time64('us'): '',
-        pa.time64('ns'): 'io.deephaven.time.DateTime',
-        pa.timestamp('us', tz=None): '',
-        pa.timestamp('ns', tz=None): '',
-        pa.date32(): 'java.time.LocalDate',
-        pa.date64(): 'java.time.LocalDate',
-        pa.binary(): '',
-        pa.string(): 'java.lang.String',
-        pa.utf8(): 'java.lang.String',
-        pa.large_binary(): '',
-        pa.large_string(): '',
-        pa.large_utf8(): '',
-        # decimal128(int precision, int scale=0)
-        # list_(value_type, int list_size=-1)
-        # large_list(value_type)
-        # map_(key_type, item_type[, keys_sorted])
-        # struct(fields)
-        # dictionary(index_type, value_type, …)
-        # field(name, type, bool nullable = True[, metadata])
-        # schema(fields[, metadata])
-        # from_numpy_dtype(dtype)
-    }
-
-    dh_type = arrow_to_dh.get(arrow_type)
+    dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
     if not dh_type:
         # if this is a case of timestamp with tz specified
-        if isinstance(arrow_type, pa.TimestampType):
+        if isinstance(arrow_type, pa.TimestampType) and arrow_type.tz:
             dh_type = "io.deephaven.time.DateTime"
 
     if not dh_type:
-        raise DHError(message=f'unsupported arrow data type : {arrow_type}')
+        raise DHError(message=f'unsupported arrow data type : {arrow_type}, refer to '
+                              f'deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported Arrow types.')
 
     return {"deephaven:type": dh_type}
 

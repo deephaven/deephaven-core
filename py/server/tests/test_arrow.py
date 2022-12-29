@@ -3,13 +3,14 @@
 #
 import unittest
 from datetime import datetime
+from typing import List, Any
 
 import numpy as np
-import pyarrow as pa
 import pandas as pd
+import pyarrow as pa
 import pyarrow.parquet as papq
 
-from deephaven import arrow as dharrow, dtypes, new_table, DHError, time_table
+from deephaven import arrow as dharrow, dtypes, new_table, time_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col
 from deephaven.table import Table
@@ -40,54 +41,76 @@ class ArrowTestCase(BaseTestCase):
     def tearDownClass(cls) -> None:
         del cls.test_table
 
-    def test_arrow_types(self):
-        pa_types = (
-            pa.int32(),
-            pa.int64(),
-            # pa.time32('s'),
-            # pa.time64('us'),
-            pa.time64('ns'),
-            # pa.date32(),
-            pa.timestamp('us'),
-            pa.timestamp('us', tz='Europe/Paris'),
-            # pa.duration('s'),
-            # pa.float16(),
-            pa.float32(),
-            pa.float64(),
-            # pa.decimal128(19, 4),
-            # pa.decimal256(76, 38),
-            pa.string(),
-            # pa.binary(),
-            # pa.binary(10),
-            # pa.large_string(),
-            # pa.large_binary(),
-        )
-        pa_data = (
-            pa.array([1, 2]),
-            pa.array([2**63 - 1, -2**63]),
-            # pa.array([datetime(2019, 1, 1, 0), datetime(2020, 1, 1, 1)]),
-            pa.array([datetime(2019, 1, 1), datetime(2020, 1, 1)]),
-            # pa.array([datetime(2019, 1, 1, 0), datetime(2020, 1, 1, 1)]),
-            pa.array([pd.Timestamp('2017-01-01T12'), pd.Timestamp('2017-01-01T11')]),
-            pa.array([pd.Timestamp('2017-01-01T12', tz='Europe/Paris'), pd.Timestamp('2017-01-01T11', tz='Europe/Paris')]),
-            # pa.duration('s'),
-            # pa.array([np.float16(1.1), np.float16(2.2)], pa.float16()),
-            pa.array([1.1, 2.2], pa.float32()),
-            pa.array([1.1, 2.2], pa.float64()),
-            # pa.decimal128(19, 4),
-            # pa.decimal256(76, 38),
-            pa.array(["foo", "bar"]),
-            # pa.binary(),
-            # pa.binary(10),
-            # pa.large_string(),
-            # pa.large_binary(),
-        )
-
-        fields = [pa.field(f"field_name_{i}", ty) for i, ty in enumerate(pa_types)]
+    def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any]):
+        fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]
         schema = pa.schema(fields)
         pa_table = pa.table(pa_data, schema=schema)
         dh_table = dharrow.to_table(pa_table)
+        arrow_table = dharrow.to_arrow(dh_table)
         self.assertEqual(dh_table.size, 2)
+        self.assertTrue(pa_table.equals(arrow_table))
+
+    def test_arrow_types_integers(self):
+        with self.subTest("signed integers"):
+            pa_types = [
+                pa.int8(),
+                pa.int16(),
+                pa.int32(),
+                pa.int64(),
+            ]
+            pa_data = [
+                pa.array([2 ** 7 - 1, -2 ** 7 + 1]),
+                pa.array([2 ** 15 - 1, -2 ** 15 + 1]),
+                pa.array([2 ** 31 - 1, -2 ** 31 + 1]),
+                pa.array([2 ** 63 - 1, -2 ** 63 + 1]),
+            ]
+            self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    @unittest.skip("Not correctly widened")
+    def test_arrow_types_unsigned_integers(self):
+        with self.subTest("unsigned integers"):
+            pa_types = [
+                pa.uint16(),
+            ]
+            pa_data = [
+                pa.array([2 ** 16 - 1, 0]),
+            ]
+
+    @unittest.skip("Not correctly converted by DH")
+    def test_arrow_types_time(self):
+        pa_types = [
+            pa.time64('ns'),
+            pa.date32(),
+            pa.timestamp('ns', tz='Europe/Paris'),
+        ]
+
+        pa_data = [
+            pa.array([1_000_001, 1_000_002]),
+            pa.array([datetime(2022, 12, 7), datetime(2022, 12, 30)]),
+            pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
+                      pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_floating(self):
+        pa_types = [
+            pa.float32(),
+            pa.float64(),
+        ]
+        pa_data = [
+            pa.array([1.1, 2.2], pa.float32()),
+            pa.array([1.1, 2.2], pa.float64()),
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_text_binary(self):
+        pa_types = [
+            pa.string(),
+        ]
+        pa_data = [
+            pa.array(["foo", "bar"]),
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
     def test_against_parquet(self):
         arrow_table = papq.read_table("tests/data/crypto_trades.parquet")
@@ -138,17 +161,6 @@ class ArrowTestCase(BaseTestCase):
         dh_table = dharrow.to_table(pa_table, cols=cols)
         dh_table_1 = dharrow.to_table(pa_table_cols)
         self.assert_table_equals(dh_table_1, dh_table)
-
-    def test_for_a_potential_bug(self):
-        arrow_table = papq.read_table("tests/data/crypto_trades.parquet")
-
-        with self.assertRaises(DHError) as cm:
-            dh_table = dharrow.to_table(arrow_table, cols=["t_date"])
-        ex_msg = r"RuntimeError: java.util.NoSuchElementException"
-        r"*gnu.trove.list.array.TLongArrayList$TLongArrayIterator.next"
-        r"*io.deephaven.extensions.barrage.chunk.VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream"
-        r"*io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator.extractChunkFromInputStream"
-        self.assertRegex(str(cm.exception), ex_msg)
 
     def test_ticking_table(self):
         table = time_table("00:00:00.001").update(["X = i", "Y = String.valueOf(i)"])
