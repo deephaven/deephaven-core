@@ -677,7 +677,9 @@ type HierarchicalTableViewRequest struct {
 	//	*HierarchicalTableViewRequest_ExistingViewId
 	Target isHierarchicalTableViewRequest_Target `protobuf_oneof:"target"`
 	// Description for the expansions that define this view of the HierarchicalTable. If not present, the result will
-	// have only the root node expanded.
+	// have default expansions, For RollupTables this will be the root (single row, top-level aggregation) and the next
+	// level if one exists (that is, if there are one or more group-by columns, or constituents are included). For
+	// TreeTables, this will be the root (one row for each child of the "null" parent identifier).
 	Expansions *HierarchicalTableViewKeyTableDescriptor `protobuf:"bytes,4,opt,name=expansions,proto3" json:"expansions,omitempty"`
 }
 
@@ -778,7 +780,7 @@ type HierarchicalTableViewKeyTableDescriptor struct {
 	// The format for the key Table is dictated by the corresponding HierarchicalTableDescriptor. It is expected to
 	// have one column for each "expand-by column", one for the "row depth column" for RollupTables only, and
 	// (optionally) an "action" column whose name is specified in the key_table_action_column field.
-	// If the Table is empty the result will have all nodes collapsed.
+	// If the Table is empty the result will have only default nodes expanded.
 	KeyTableId *ticket.Ticket `protobuf:"bytes,1,opt,name=key_table_id,json=keyTableId,proto3" json:"key_table_id,omitempty"`
 	// The name of a column of bytes found in the key table that specifies the action desired for the node selected by
 	// the other columns for each row. Takes on the value 1 for nodes that should be expanded, 3 for nodes that should be

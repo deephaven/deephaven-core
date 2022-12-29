@@ -960,8 +960,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         final KeyedObjectHashSet<Object, KeyTableDirective> directives =
                 new KeyedObjectHashSet<>(KeyTableDirective.HASH_ADAPTER);
 
-        // We always expand the root node by default
-        directives.add(new KeyTableDirective(rootNodeKey(), Expand));
+        // We always expand certain nodes by default
+        getDefaultExpansionNodeKeys().forEach(nk -> directives.add(new KeyTableDirective(nk, Expand)));
 
         try (final RowSet prevRowSet = usePrev ? keyTable.getRowSet().copyPrev() : null) {
             final RowSequence rowsToExtract = usePrev ? prevRowSet : keyTable.getRowSet();
@@ -977,6 +977,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         }
         return directives;
     }
+
+    /**
+     * @return The default node keys that should always be expanded unless a key table explicitly provides an action
+     */
+    abstract Iterable<Object> getDefaultExpansionNodeKeys();
 
     private static <ATTR extends Any> ChunkSource<ATTR> maybePrevSource(
             @NotNull final ChunkSource.WithPrev<ATTR> chunkSource,

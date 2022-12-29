@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableConstantIntSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -167,24 +166,17 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    public Table getRootOnlyKeyTable() {
+    public Table getDefaultExpansionsTable() {
         final Collection<ColumnDefinition<?>> groupByColumnDefinitions = getGroupByColumns().stream()
                 .map(gbcn -> getSource().getDefinition().getColumn(gbcn.name()))
                 .collect(Collectors.toList());
-
         final Collection<ColumnDefinition<?>> keyTableColumnDefinitions = Stream.concat(
                 Stream.of(ROW_DEPTH_COLUMN_DEFINITION),
                 groupByColumnDefinitions.stream())
                 .collect(Collectors.toList());
         final TableDefinition keyTableDefinition = TableDefinition.of(keyTableColumnDefinitions);
-
-        final LinkedHashMap<String, ColumnSource<?>> keyTableSources = new LinkedHashMap<>(
-                keyTableDefinition.numColumns());
-        keyTableSources.put(ROW_DEPTH_COLUMN.name(), new ImmutableConstantIntSource(ROOT_PARENT_NODE_DEPTH));
-        groupByColumnDefinitions.forEach(gbcd -> keyTableSources.put(
-                gbcd.getName(), NullValueColumnSource.getInstance(gbcd.getDataType(), gbcd.getComponentType())));
-
-        return new QueryTable(keyTableDefinition, RowSetFactory.flat(1).toTracking(), keyTableSources, null, null);
+        return new QueryTable(keyTableDefinition, RowSetFactory.empty().toTracking(),
+                NullValueColumnSource.createColumnSourceMap(keyTableDefinition), null, null);
     }
 
     @Override
@@ -538,6 +530,15 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private static Stream<ColumnDefinition<?>> filterRollupInternalColumns(
             @NotNull final Stream<ColumnDefinition<?>> columnDefinitions) {
         return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX));
+    }
+
+    @Override
+    Iterable<Object> getDefaultExpansionNodeKeys() {
+        if (groupByColumns.isEmpty() && !includesConstituents) {
+            return Collections.singletonList(ROOT_NODE_KEY);
+        } else {
+            return List.of(ROOT_NODE_KEY, EMPTY_KEY);
+        }
     }
 
     @Override

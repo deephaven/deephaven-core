@@ -73,8 +73,9 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
     private final Object schedulingLock = new Object();
     // region Guarded by scheduling lock
+    private boolean snapshotPending;
     private long scheduledTimeNanos = Long.MAX_VALUE;
-    private long lastSnapshotTimeNanos = 0;
+    private long lastSnapshotTimeNanos;
     private boolean upstreamDataChanged;
     private Throwable upstreamFailure;
     private BitSet pendingColumns;
@@ -228,6 +229,10 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         synchronized (snapshotLock) {
             final boolean sendError;
             synchronized (schedulingLock) {
+                if (!snapshotPending) {
+                    return;
+                }
+                snapshotPending = false;
                 final State localState = state;
                 if (localState == State.Done) {
                     return;
@@ -408,7 +413,8 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
     private void scheduleImmediately(final long currentTimeNanos) {
         Assert.holdsLock(schedulingLock, "schedulingLock");
-        if (currentTimeNanos < scheduledTimeNanos) {
+        if (!snapshotPending || currentTimeNanos < scheduledTimeNanos) {
+            snapshotPending = true;
             scheduledTimeNanos = currentTimeNanos;
             scheduler.runImmediately(propagationJob);
         }
@@ -420,7 +426,8 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         final long delayNanos = targetTimeNanos - currentTimeNanos;
         if (delayNanos < 0) {
             scheduleImmediately(currentTimeNanos);
-        } else if (targetTimeNanos < scheduledTimeNanos) {
+        } else if (!snapshotPending || targetTimeNanos < scheduledTimeNanos) {
+            snapshotPending = true;
             scheduledTimeNanos = targetTimeNanos;
             final long delayMillis = MILLISECONDS.convert(delayNanos, NANOSECONDS);
             scheduler.runAfterDelay(delayMillis, propagationJob);

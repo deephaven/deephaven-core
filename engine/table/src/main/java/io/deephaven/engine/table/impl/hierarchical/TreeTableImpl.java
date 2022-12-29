@@ -95,17 +95,18 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    public Table getRootOnlyKeyTable() {
-        return makeNullIdentifierColumnSingleRowTable(getSource(), getIdentifierColumn());
+    public Table getDefaultExpansionsTable() {
+        return makeNullSingleColumnTable(getSource(), getIdentifierColumn(), 0);
     }
 
-    private static Table makeNullIdentifierColumnSingleRowTable(
+    private static Table makeNullSingleColumnTable(
             @NotNull final Table source,
-            @NotNull final ColumnName identifierColumn) {
-        final ColumnDefinition identifierColumnDefinition = source.getDefinition().getColumn(identifierColumn.name());
-        final TableDefinition identifierColumnOnlyTableDefinition = TableDefinition.of(identifierColumnDefinition);
-        return new QueryTable(identifierColumnOnlyTableDefinition, RowSetFactory.flat(1).toTracking(),
-                NullValueColumnSource.createColumnSourceMap(identifierColumnOnlyTableDefinition), null, null);
+            @NotNull final ColumnName column,
+            final long size) {
+        final ColumnDefinition columnDefinition = source.getDefinition().getColumn(column.name());
+        final TableDefinition columnOnlyTableDefinition = TableDefinition.of(columnDefinition);
+        return new QueryTable(columnOnlyTableDefinition, RowSetFactory.flat(size).toTracking(),
+                NullValueColumnSource.createColumnSourceMap(columnOnlyTableDefinition), null, null);
     }
 
     @Override
@@ -234,7 +235,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final QueryTable source,
             @NotNull final ColumnName parentIdColumn) {
         return source.aggNoMemo(AggregationProcessor.forAggregation(List.of(Partition.of(TREE_COLUMN))),
-                true, makeNullIdentifierColumnSingleRowTable(source, parentIdColumn), List.of(parentIdColumn));
+                true, makeNullSingleColumnTable(source, parentIdColumn, 1), List.of(parentIdColumn));
     }
 
     private static QueryTable getTreeRoot(@NotNull final QueryTable tree) {
@@ -247,6 +248,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final QueryTable source,
             @NotNull final ColumnName idColumn) {
         return source.aggNoMemo(AggregationProcessor.forTreeSourceRowLookup(), false, null, List.of(idColumn));
+    }
+
+    @Override
+    Iterable<Object> getDefaultExpansionNodeKeys() {
+        return Collections.singletonList(null);
     }
 
     @Override

@@ -306,8 +306,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * Unsupported if the sort result's parent was a {@link BaseTable#isStream() stream table}.
      * <p>
      * For refreshing tables, using the reverse lookup concurrently requires careful consideration. The mappings are
-     * always against "current" data. It is only safe to use before the parent table notifies on a given cycle, or
-     * after the sorted table notifies (and during idle phases).
+     * always against "current" data. It is only safe to use before the parent table notifies on a given cycle, or after
+     * the sorted table notifies (and during idle phases).
      * <p>
      * For static tables, do note that the reverse lookup will be produced on-demand within this method.
      *
