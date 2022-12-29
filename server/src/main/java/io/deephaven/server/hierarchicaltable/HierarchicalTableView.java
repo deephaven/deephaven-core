@@ -97,7 +97,7 @@ public final class HierarchicalTableView extends LivenessArtifact {
             @NotNull final HierarchicalTable<?> hierarchicalTable) {
         return new HierarchicalTableView(
                 hierarchicalTable, hierarchicalTable.makeSnapshotState(),
-                hierarchicalTable.getDefaultExpansionsTable(), null);
+                hierarchicalTable.getEmptyExpansionsTable(), null);
     }
 
     /**
@@ -131,6 +131,6 @@ public final class HierarchicalTableView extends LivenessArtifact {
             @NotNull final HierarchicalTableView existingView) {
         return new HierarchicalTableView(
                 existingView.hierarchicalTable, existingView.snapshotState,
-                existingView.hierarchicalTable.getDefaultExpansionsTable(), null);
+                existingView.hierarchicalTable.getEmptyExpansionsTable(), null);
     }
 }

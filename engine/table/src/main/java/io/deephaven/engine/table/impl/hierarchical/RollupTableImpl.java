@@ -166,7 +166,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    public Table getDefaultExpansionsTable() {
+    public Table getEmptyExpansionsTable() {
         final Collection<ColumnDefinition<?>> groupByColumnDefinitions = getGroupByColumns().stream()
                 .map(gbcn -> getSource().getDefinition().getColumn(gbcn.name()))
                 .collect(Collectors.toList());

@@ -42,12 +42,12 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     Table getRoot();
 
     /**
-     * Get a re-usable, static key {@link Table} that will expand only the default nodes.
+     * Get a re-usable, static key {@link Table} with zero rows that will cause a snapshot to expand only the default
+     * nodes.
      *
-     * @return A key {@link Table} for default expansions
-     * @implNote In practice, this is a Table with the correct schema and zero rows.
+     * @return An empty key {@link Table} for default expansions
      */
-    Table getDefaultExpansionsTable();
+    Table getEmptyExpansionsTable();
 
     /**
      * Get the name of a column of {@link java.lang.Boolean Booleans} that denotes whether a row is expanded (or

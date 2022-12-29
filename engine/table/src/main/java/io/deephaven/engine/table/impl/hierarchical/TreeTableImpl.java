@@ -95,7 +95,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    public Table getDefaultExpansionsTable() {
+    public Table getEmptyExpansionsTable() {
         return makeNullSingleColumnTable(getSource(), getIdentifierColumn(), 0);
     }
 
