@@ -327,6 +327,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         return object;
     }
 
+    public PythonScope<PyObject> scope() {
+        return scope;
+    }
+
     interface PythonScriptSessionModule extends Closeable {
         PyObject create_change_list(PyObject from, PyObject to);
 

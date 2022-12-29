@@ -14,32 +14,29 @@ class Mode(Enum):
         return self.value
 
 
-class Completer(object):
+class Settings:
     def __init__(self):
-        self._docs = {}
-        self._versions = {}
-        # we will replace this w/ top-level globals() when we open the document
-        self.__scope = globals()
-        # might want to make this a {uri: []} instead of []
-        self.pending = []
-        try:
-            import jedi
-
-            self.__can_jedi = True
-            self.mode = Mode.STRONG
-        except ImportError:
-            self.__can_jedi = False
-            self.mode = Mode.OFF
+        self._mode = Mode.STRONG
 
     @property
     def mode(self) -> Mode:
-        return self.__mode
+        return self._mode
 
     @mode.setter
-    def mode(self, mode) -> None:
-        if type(mode) == "str":
-            mode = Mode[mode]
-        self.__mode = mode
+    def mode(self, mode: Mode):
+        self._mode = mode
+
+
+jedi_settings = Settings()
+
+
+class Completer(object):
+    def __init__(self, scope: dict):
+        self._docs = {}
+        self._versions = {}
+        self.__scope = scope
+        # might want to make this a {uri: []} instead of []
+        self.pending = []
 
     def open_doc(self, text: str, uri: str, version: int) -> None:
         self._docs[uri] = text
@@ -61,18 +58,13 @@ class Completer(object):
         for pending in self.pending:
             pending.set()
 
-    def is_enabled(self) -> bool:
-        return self.__mode != Mode.OFF
-
-    def can_jedi(self) -> bool:
-        return self.__can_jedi
-
-    def set_scope(self, scope: dict) -> None:
-        self.__scope = scope
-
     def do_completion(
         self, uri: str, version: int, line: int, col: int
     ) -> list[list[Any]]:
+        global jedi_settings
+        if jedi_settings.mode == Mode.OFF:
+            return []
+
         if not self._versions[uri] == version:
             # if you aren't the newest completion, you get nothing, quickly
             return []

@@ -24,6 +24,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.*;
 import io.deephaven.server.console.completer.JavaAutoCompleteObserver;
+import io.deephaven.server.console.completer.JediCompleter;
 import io.deephaven.server.console.completer.PythonAutoCompleteObserver;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
@@ -31,6 +32,7 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
+import org.jpy.PyModule;
 import org.jpy.PyObject;
 
 import javax.inject.Inject;
@@ -109,14 +111,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .onError(responseObserver)
                     .submit(() -> {
                         final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
-
+                        final StartConsoleResponse response = StartConsoleResponse.newBuilder()
+                                .setResultId(request.getResultId())
+                                .build();
                         safelyExecute(() -> {
-                            responseObserver.onNext(StartConsoleResponse.newBuilder()
-                                    .setResultId(request.getResultId())
-                                    .build());
+                            responseObserver.onNext(response);
                             responseObserver.onCompleted();
                         });
-
                         return scriptSession;
                     });
         });
@@ -255,23 +256,27 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             if (AUTOCOMPLETE_DISABLED) {
                 return new NoopAutoCompleteObserver(session, responseObserver);
             }
-            if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
-                PyObject[] settings = new PyObject[1];
-                safelyExecute(() -> {
-                    final ScriptSession scriptSession = scriptSessionProvider.get();
-                    scriptSession.evaluateScript(
-                            "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
-                    settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
-                });
-                boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
-                log.info().append(canJedi ? "Using jedi for python autocomplete"
-                        : "No jedi dependency available in python environment; disabling autocomplete.").endl();
-                return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session)
-                        : new NoopAutoCompleteObserver(session, responseObserver);
+            final ScriptSession scriptSession = scriptSessionProvider.get();
+            if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSession.scriptType())) {
+                final PyObject scope = ((PythonDeephavenSession) scriptSession).scope().mainGlobals().unwrap();
+                // noinspection EmptyTryBlock,unused
+                try (final JediCompleter _unused = jedi(scope)) {
+                    // ensure we can create it
+                } catch (RuntimeException e) {
+                    log.debug(e).append("Unable to create autocomplete; is jedi installed?").endl();
+                    return new NoopAutoCompleteObserver(session, responseObserver);
+                }
+                log.debug().append("Using jedi for python autocomplete").endl();
+                return new PythonAutoCompleteObserver(responseObserver, session, () -> jedi(scope));
             }
-
             return new JavaAutoCompleteObserver(session, responseObserver);
         });
+    }
+
+    private static JediCompleter jedi(final PyObject scope) {
+        try (final PyModule pyModule = PyModule.importModule("deephaven_internal.auto_completer")) {
+            return pyModule.call("Completer", scope).createProxy(JediCompleter.class);
+        }
     }
 
     private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
@@ -284,13 +289,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         public void onNext(AutoCompleteRequest value) {
             // This implementation only responds to autocomplete requests with "success, nothing found"
             if (value.getRequestCase() == AutoCompleteRequest.RequestCase.GET_COMPLETION_ITEMS) {
-                safelyExecuteLocked(responseObserver, () -> {
-                    responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                            .setCompletionItems(
-                                    GetCompletionItemsResponse.newBuilder().setSuccess(true)
-                                            .setRequestId(value.getGetCompletionItems().getRequestId()))
-                            .build());
-                });
+                final AutoCompleteResponse response = AutoCompleteResponse.newBuilder()
+                        .setCompletionItems(GetCompletionItemsResponse.newBuilder()
+                                .setSuccess(true)
+                                .setRequestId(value.getGetCompletionItems().getRequestId()))
+                        .build();
+                safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
             }
         }
 
