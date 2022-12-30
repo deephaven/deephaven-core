@@ -12,15 +12,15 @@ import java.time.Duration;
 @SimpleStyle
 public abstract class WindowScale {
     public static WindowScale ofTime(final String timestampCol, long timeScaleNanos) {
-        return ImmutableTimeScale.of(timestampCol, timeScaleNanos);
+        return ImmutableWindowScale.of(timestampCol, timeScaleNanos);
     }
 
     public static WindowScale ofTime(final String timestampCol, Duration duration) {
-        return ImmutableTimeScale.of(timestampCol, duration.toNanos());
+        return ImmutableWindowScale.of(timestampCol, duration.toNanos());
     }
 
     public static WindowScale ofTicks(long tickWindow) {
-        return ImmutableTimeScale.of(null, tickWindow);
+        return ImmutableWindowScale.of(null, tickWindow);
     }
 
     @Parameter

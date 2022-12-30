@@ -96,7 +96,8 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
 
     public abstract WindowScale prevTimeScale();
 
-    // provide a default forward-looking timescale
+    /** provide a default forward-looking timescale
+     */
     @Value.Default
     public WindowScale fwdTimeScale() {
         return WindowScale.ofTicks(0);

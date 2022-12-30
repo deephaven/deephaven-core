@@ -154,7 +154,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
                         Assert.eqTrue(ssaIt.hasNext() && ssaIt.nextValue() >= head,
                                 "SSA Iterator outside of window");
 
-                        // step through the SSA and collect keys until outside of the window
+                        // step through the SSA and collect keys until outside the window
                         while (ssaIt.hasNext() && ssaIt.nextValue() <= tail) {
                             builder.appendKey(ssaIt.nextKey());
                             ssaIt.next();
@@ -285,16 +285,23 @@ public class UpdateByWindowTime extends UpdateByWindow {
         WritableRowSet tmpAffected = computeAffectedRowsTime(ctx.sourceRowSet, changed, prevUnits, fwdUnits,
                 ctx.timestampColumnSource, ctx.timestampSsa, false);
 
-        // other rows can be affected by removes
+        // other rows can be affected by removes or mods
         if (upstream.removed().isNonempty()) {
             try (final RowSet prev = ctx.sourceRowSet.copyPrev();
                     final WritableRowSet affectedByRemoves =
                             computeAffectedRowsTime(prev, upstream.removed(), prevUnits, fwdUnits,
-                                    ctx.timestampColumnSource, ctx.timestampSsa, true)) {
+                                    ctx.timestampColumnSource, ctx.timestampSsa, true);
+                 final WritableRowSet affectedByModifies =
+                         computeAffectedRowsTime(prev, upstream.getModifiedPreShift(), prevUnits, fwdUnits,
+                                 ctx.timestampColumnSource, ctx.timestampSsa, true);
+                    ) {
                 // we used the SSA (post-shift) to get these keys, no need to shift
                 // retain only the rows that still exist in the sourceRowSet
                 affectedByRemoves.retain(ctx.sourceRowSet);
+                affectedByModifies.retain(ctx.sourceRowSet);
+
                 tmpAffected.insert(affectedByRemoves);
+                tmpAffected.insert(affectedByModifies);
             }
         }
 

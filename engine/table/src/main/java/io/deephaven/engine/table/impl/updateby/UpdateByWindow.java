@@ -263,9 +263,6 @@ public abstract class UpdateByWindow {
      */
     protected void prepareValuesChunkForSource(final UpdateByWindowContext context, final int srcIdx,
             final RowSequence rs) {
-        if (rs.isEmpty()) {
-            return;
-        }
         if (!context.inputSourceChunkPopulated[srcIdx]) {
             context.inputSourceChunks[srcIdx] =
                     context.inputSources[srcIdx].getChunk(context.inputSourceGetContexts[srcIdx], rs);
