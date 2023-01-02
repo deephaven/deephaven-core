@@ -18,7 +18,7 @@ import java.util.BitSet;
  * Base interface for the results of operations that produce a hierarchy of table nodes.
  */
 public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>>
-        extends AttributeMap<IFACE_TYPE>, GridAttributes<IFACE_TYPE> {
+        extends AttributeMap<IFACE_TYPE>, GridAttributes<IFACE_TYPE>, LivenessReferent {
 
     /**
      * Get a description of this HierarchicalTable.
