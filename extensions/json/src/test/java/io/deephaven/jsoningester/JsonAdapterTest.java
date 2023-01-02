@@ -734,8 +734,7 @@ public class JsonAdapterTest {
 
         final String[] names = new String[] {"A", "B", "c_id"};
         @SuppressWarnings("rawtypes")
-        final Class[] types = new Class[] {String.class, double.class, long.class, String.class, int.class,
-                String.class, String.class};
+        final Class[] types = new Class[] {String.class, double.class, long.class};
 
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable resultMain = writer.getTable();
@@ -791,6 +790,164 @@ public class JsonAdapterTest {
                     stringCol("E", "Foo", "Bar", "Baz", null, "Quux"),
                     // the nested parallel fields
                     longCol("SubtableRecordId", 0, 0, 1, 1, 1));
+            Assert.assertEquals("", diff(resultSubtable, expectedSubtable, 10));
+        }
+    }
+
+    @Test
+    public void testSubtablesAndNestedFields() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factorySubtableDe = new JSONToTableWriterAdapterBuilder()
+                .allowMissingKeys(true)
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .addNestedField("X1",
+                        new JSONToTableWriterAdapterBuilder().autoValueMapping(false).addColumnFromField("X1_y", "y"))
+                .autoValueMapping(false);
+
+        final DynamicTableWriter subtableWriter = new DynamicTableWriter(
+                new String[] {"D", "E", "X1_y", "SubtableRecordId"},
+                Type.fromClasses(long.class, String.class, int.class, long.class));
+        final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
+
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+                        .allowUnmapped("B")
+                        .addColumnFromField("A", "a")
+                        .addFieldToSubTableMapping("c", factorySubtableDe)
+                        .addNestedField("X2",
+                                new JSONToTableWriterAdapterBuilder().autoValueMapping(false).addColumnFromField("X2_y",
+                                        "y"))
+                        .autoValueMapping(false)
+                        .nConsumerThreads(0));
+
+        final String[] names = new String[] {"A", "B", "X2_y", "c_id"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class, double.class, int.class, long.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable resultMain = writer.getTable();
+
+        adapter = factory.apply(writer, Map.of("c", subtableWriter));
+
+        injectJson(
+                "{\"a\": \"test\", \"b\": 42.2, \"X2\": { \"y\": 100 }, \"c\": [ {\"d\": 123, \"e\": \"Foo\", \"X1\": { \"y\": 7 }}, {\"d\": 456, \"e\": \"Bar\"} ], \"X1\": { \"y\": 7 }}",
+                "id", resultMain, resultSubtable);
+
+        {
+            // Check the main table:
+            TableTools.show(resultMain);
+            Assert.assertEquals(1, resultMain.intSize());
+            final Table expectedMain = newTable(
+                    col("A", "test"),
+                    doubleCol("B", QueryConstants.NULL_DOUBLE),
+                    intCol("X2_y", 100),
+                    // the subtable row IDs
+                    longCol("c_id", 0));
+            Assert.assertEquals("", diff(resultMain, expectedMain, 10));
+
+            // Check the subtable:
+            TableTools.show(resultSubtable);
+            Assert.assertEquals(2, resultSubtable.intSize());
+            final Table expectedSubtable = newTable(
+                    longCol("D", 123, 456),
+                    stringCol("E", "Foo", "Bar"),
+                    intCol("X1_y", 7, QueryConstants.NULL_INT),
+                    // the nested parallel fields
+                    longCol("SubtableRecordId", 0, 0));
+            Assert.assertEquals("", diff(resultSubtable, expectedSubtable, 10));
+        }
+
+        injectJson(
+                "{\"a\": \"test\", \"b\": 42.2, \"X2\": { \"y\": 101 }, \"c\": [ {\"d\": 124, \"e\": \"Baz\", \"X1\": { \"y\": -7 }}, null, {\"d\": 457, \"e\": \"Quux\"} ]}",
+                "id", resultMain, resultSubtable);
+
+        {
+            // Check the main table:
+            TableTools.show(resultMain);
+            Assert.assertEquals(2, resultMain.intSize());
+            final Table expectedMain = newTable(
+                    col("A", "test", "test"),
+                    doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
+                    intCol("X2_y", 100, 101),
+                    // the subtable row IDs
+                    longCol("c_id", 0, 1));
+            Assert.assertEquals("", diff(resultMain, expectedMain, 10));
+
+            // Check the subtable:
+            TableTools.show(resultSubtable);
+            Assert.assertEquals(5, resultSubtable.intSize());
+            final Table expectedSubtable = newTable(
+                    longCol("D", 123, 456, 124, QueryConstants.NULL_LONG, 457),
+                    stringCol("E", "Foo", "Bar", "Baz", null, "Quux"),
+                    intCol("X1_y", 7, QueryConstants.NULL_INT, -7, QueryConstants.NULL_INT, QueryConstants.NULL_INT),
+                    // the nested parallel fields
+                    longCol("SubtableRecordId", 0, 0, 1, 1, 1));
+            Assert.assertEquals("", diff(resultSubtable, expectedSubtable, 10));
+        }
+    }
+
+    @Test
+    public void testSubtablesAndNestedFields2() throws IOException, InterruptedException, TimeoutException {
+        // test to catch a bug where a nested field's adapter can't be built if a sibling nested field includes a
+        // subtable
+
+        final JSONToTableWriterAdapterBuilder factorySubtableDe = new JSONToTableWriterAdapterBuilder()
+                .allowMissingKeys(true)
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .autoValueMapping(false);
+
+        final DynamicTableWriter subtableWriter = new DynamicTableWriter(
+                new String[] {"D", "E", "SubtableRecordId"},
+                Type.fromClasses(long.class, String.class, long.class));
+        final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
+
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+                        .allowUnmapped("B")
+                        .addColumnFromField("A", "a")
+                        .addNestedField("X1",
+                                new JSONToTableWriterAdapterBuilder().autoValueMapping(false).addColumnFromField("X1_y",
+                                        "y"))
+                        .addNestedField("X2",
+                                new JSONToTableWriterAdapterBuilder().autoValueMapping(false)
+                                        .addFieldToSubTableMapping("c", factorySubtableDe))
+                        .autoValueMapping(false)
+                        .nConsumerThreads(0));
+
+        final String[] names = new String[] {"A", "B", "X1_y", "c_id"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class, double.class, int.class, long.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable resultMain = writer.getTable();
+
+        adapter = factory.apply(writer, Map.of("c", subtableWriter));
+
+        injectJson(
+                "{\"a\": \"test\", \"b\": 42.2, \"X1\": { \"y\": 7 }, \"X2\": { \"c\": [ {\"d\": 123, \"e\": \"Foo\", \"X1\": { \"y\": 7 }}, {\"d\": 456, \"e\": \"Bar\"} ]}}",
+                "id", resultMain, resultSubtable);
+
+        {
+            // Check the main table:
+            TableTools.show(resultMain);
+            Assert.assertEquals(1, resultMain.intSize());
+            final Table expectedMain = newTable(
+                    col("A", "test"),
+                    doubleCol("B", QueryConstants.NULL_DOUBLE),
+                    intCol("X1_y", 7),
+                    // the subtable row IDs
+                    longCol("c_id", 0));
+            Assert.assertEquals("", diff(resultMain, expectedMain, 10));
+
+            // Check the subtable:
+            TableTools.show(resultSubtable);
+            Assert.assertEquals(2, resultSubtable.intSize());
+            final Table expectedSubtable = newTable(
+                    longCol("D", 123, 456),
+                    stringCol("E", "Foo", "Bar"),
+                    // the nested parallel fields
+                    longCol("SubtableRecordId", 0, 0));
             Assert.assertEquals("", diff(resultSubtable, expectedSubtable, 10));
         }
     }

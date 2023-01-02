@@ -163,7 +163,6 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
             final String field,
             final JSONToTableWriterAdapterBuilder subtableBuilder) {
         checkSubtableBuilder(subtableBuilder, field);
-        addNestedColumns(subtableBuilder);
         fieldToSubtableBuilders.put(field, subtableBuilder);
         return this;
     }

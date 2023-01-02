@@ -284,7 +284,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 .map(JSONToTableWriterAdapter::getSubtableRowIdColName)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        final List<String> outputColumnNames = new LinkedList<>(columnToJsonField.keySet());
+        // Build a collection of all columns expected to be available in the output table writer.
+        final Collection<String> outputColumnNames = new LinkedHashSet<>(columnToJsonField.keySet());
         outputColumnNames.addAll(columnToIntFunctions.keySet());
         outputColumnNames.addAll(columnToLongFunctions.keySet());
         outputColumnNames.addAll(columnToDoubleFunctions.keySet());
@@ -433,7 +434,6 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             ) {
                 consumerThreadGroup =
                         new ThreadGroup(JSONToTableWriterAdapter.class.getSimpleName() + instanceId + "_ThreadGroup");
-                consumerThreadGroup.setDaemon(true);
 
                 for (int threadCount = 0; threadCount < numThreads; threadCount++) {
                     final Thread t = new ConsumerThread(consumerThreadGroup, instanceId, threadCount);
@@ -1036,7 +1036,6 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param json The input JSON string
      * @return The {@link BaseMessageMetadata#getMsgNo() message number} assigned to the message. This is automatically
      *         set to the current value of {@link #messagesQueued}.
-     * @throws IOException
      */
     public synchronized long consumeStream(final InputStream json, final Runnable afterParse) {
         long msgId = messagesQueued.get();
@@ -1696,7 +1695,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     /**
-     * Stores the message metadata in the row holder. (It is copied to the table writer's seters by
+     * Stores the message metadata in the row holder. (It is copied to the table writer's setters by
      * {@link #cleanupMetadata}).
      * 
      * @param metadata The message metadata.
