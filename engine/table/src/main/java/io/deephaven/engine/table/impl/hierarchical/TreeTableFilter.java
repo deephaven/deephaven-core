@@ -23,8 +23,10 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
@@ -39,18 +41,21 @@ import java.util.stream.Stream;
  * source for a subsequent tree operation with the same parameters as the input. The result table includes any rows
  * matched by the input filters, as well as all ancestors of those rows.
  */
-class TreeTableFilter {
+@VisibleForTesting
+public class TreeTableFilter {
 
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("TreeTableFilter.debug", false);
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
-    static final class Operator implements Function<Table, Table>, MemoizedOperationKey.Provider {
+    @VisibleForTesting
+    public static final class Operator implements Function<Table, Table>, MemoizedOperationKey.Provider {
 
         private final TreeTableImpl treeTable;
         private final WhereFilter[] filters;
 
-        Operator(@NotNull final TreeTableImpl treeTable, @NotNull final WhereFilter[] filters) {
+        @VisibleForTesting
+        public Operator(@NotNull final TreeTableImpl treeTable, @NotNull final WhereFilter[] filters) {
             this.treeTable = treeTable;
             this.filters = filters; // NB: The tree will always have initialized these filters ahead of time
         }
@@ -107,12 +112,6 @@ class TreeTableFilter {
     private final ColumnSource parentIdSource;
 
     /**
-     * Swap listener for concurrent instantiation.
-     */
-    @ReferentialIntegrity
-    private final SwapListenerEx swapListener;
-
-    /**
      * The eventual listener that maintains {@link #result}.
      */
     @SuppressWarnings("FieldCanBeLocal")
@@ -151,26 +150,26 @@ class TreeTableFilter {
         parentIdColumnName = tree.getParentIdentifierColumn();
         sourceRowLookup = tree.getSourceRowLookup();
         this.filters = filters;
+        Arrays.stream(filters).forEach((final WhereFilter filter) -> filter.init(source.getDefinition()));
 
         idSource = source.getColumnSource(tree.getIdentifierColumn().name());
         parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());
 
         if (source.isRefreshing()) {
-            swapListener = new SwapListenerEx(source, sourceRowLookup);
+            final SwapListenerEx swapListener = new SwapListenerEx(source, sourceRowLookup);
             source.addUpdateListener(swapListener);
             ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
                     swapListener.makeSnapshotControl(),
                     (usePrev, beforeClockValue) -> {
-                        doInitialFilter(usePrev);
+                        doInitialFilter(swapListener, usePrev);
                         return true;
                     });
         } else {
-            swapListener = null;
-            doInitialFilter(false);
+            doInitialFilter(null, false);
         }
     }
 
-    private void doInitialFilter(final boolean usePrev) {
+    private void doInitialFilter(@Nullable final SwapListener swapListener, final boolean usePrev) {
         try (final RowSet sourcePrevRows = usePrev ? source.getRowSet().copyPrev() : null) {
             final RowSet sourceRows = usePrev ? sourcePrevRows : source.getRowSet();
 
