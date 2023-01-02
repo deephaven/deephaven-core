@@ -73,7 +73,6 @@
 <button id="open">Display Rollup Table</button>
 <div id="treetable"></div>
 <script>
-    // var table;
     var connection;
     var ide;
     var treeParent = document.getElementById('treetable');
@@ -81,8 +80,6 @@
     var aggColumns = document.getElementById('aggColumns');
 
     var oldTableHandlerCleanup;
-    // var currentOffset;
-    // var PAGE_SIZE = 20;
     (async () => {
         connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
         var types = await connection.getConsoleTypes();

@@ -17,54 +17,49 @@
 </head>
 <body>
 <script>
-  var url = new URL('/socket', window.location);
-  if (url.protocol === 'http:') {
-    url.protocol = 'ws:';
-  } else {
-    url.protocol = 'wss:';
-  }
-  var c = new dh.Client(url.href);
-  c.addEventListener(dh.Client.EVENT_CONNECT, () => {
-    c.login({username:'dh',token:'dh',type:'password'}).then(result => {
-      console.log("login successful");
-    });
-    c.addEventListener(dh.Client.EVENT_CONFIG_UPDATED, event => {
-      addQuery(event.detail);
-    });
-    c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
-      addQuery(event.detail);
-    });
-  });
-  function addQuery(queryInfo) {
-    if (queryInfo.name === 'SimpleQueries') {
-      if (queryInfo.status === 'Running') {
-        queryInfo.getTreeTable('TreeTable').then(treeTable => {
-          // Note that this class is in treegrid.js
-          var tableElt = new TreeGrid(treeTable).element;
-          document.body.appendChild(tableElt);
+    var connection;
+    var ide;
+    (async () => {
+        connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+        var types = await connection.getConsoleTypes();
 
-          var readBtn = document.createElement('button');
-          readBtn.onclick = e => {
-              window.prompt("Current expanded rows (copy this result to \"save\" the current state): ", treeTable.saveExpandedState());
-          };
-          var writeBtn = document.createElement('button');
-          writeBtn.onclick = e => {
-              var value = window.prompt("Current expanded rows (paste the result from a read operation to \"restore\" that state):", "");
-              treeTable.restoreExpandedState(value);
-          };
-          readBtn.innerText = "Read expanded nodes";
-          writeBtn.innerText = "Write expanded nodes";
-          document.body.appendChild(readBtn);
-          document.body.appendChild(writeBtn);
+        if (types.indexOf("python") !== -1) {
+            ide = await connection.startSession("python");
+            await ide.runCode(`
+from deephaven import empty_table
+remoteTable = empty_table(100).update("I=\`\` + i", "J = \`\` + (int)(i/10)")
+#TODO
+`)
+        } else if (types.indexOf("groovy") !== -1) {
+            ide = await connection.startSession("groovy");
+            await ide.runCode(`
+remoteTable = emptyTable(100).update("I= \`\` + i", "J = i == 0 ? null : \`\` + (int)(i/10)", "K = i % 13")
+treeTable = remoteTable.tree("I", "J")
+`)
+        }
+        var treeTable = await ide.getTreeTable('treeTable');
+        var tableElt = new TreeGrid(treeTable).element;
+        document.body.appendChild(tableElt);
 
-          // build totals, will attach itself. if this demo could replace the treetable,
-          // we would save a reference to this and .close() it, or .updateConfig(...) to
-          // replace the config and try something else
-          var totals = new TotalsTableHelper(null, treeTable, tableElt, 1);
-        });
-      }
-    }
-  }
+        // var readBtn = document.createElement('button');
+        // readBtn.onclick = e => {
+        //     window.prompt("Current expanded rows (copy this result to \"save\" the current state): ", treeTable.saveExpandedState());
+        // };
+        // var writeBtn = document.createElement('button');
+        // writeBtn.onclick = e => {
+        //     var value = window.prompt("Current expanded rows (paste the result from a read operation to \"restore\" that state):", "");
+        //     treeTable.restoreExpandedState(value);
+        // };
+        // readBtn.innerText = "Read expanded nodes";
+        // writeBtn.innerText = "Write expanded nodes";
+        // document.body.appendChild(readBtn);
+        // document.body.appendChild(writeBtn);
+
+        // build totals, will attach itself. if this demo could replace the treetable,
+        // we would save a reference to this and .close() it, or .updateConfig(...) to
+        // replace the config and try something else
+        // var totals = new TotalsTableHelper(null, treeTable, tableElt, 1);
+    })();
 
 </script>
 

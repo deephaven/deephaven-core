@@ -869,9 +869,11 @@ public class WorkerConnection {
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
-        return getWidget(varDef).then(w -> {
-            return Promise.resolve(new JsTreeTable(this, w));
-        });
+        return getWidget(varDef).then(w -> Promise.resolve(new JsTreeTable(this, w)));
+    }
+
+    public Promise<JsTreeTable> getHierarchicalTable(JsVariableDefinition varDef) {
+        return getWidget(varDef).then(w -> Promise.resolve(new JsTreeTable(this, w)));
     }
 
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {

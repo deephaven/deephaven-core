@@ -126,8 +126,10 @@ public class JsTreeTable extends HasEventHandling {
 
             columnData = dataColumns;
 
-            expandedColumn = Js.<Boolean[]>uncheckedCast(ViewportData.cleanData(columnData[rowExpandedCol.getIndex()].getData(), rowExpandedCol));
-            depthColumn = Js.<int[]>uncheckedCast(ViewportData.cleanData(columnData[rowDepthCol.getIndex()].getData(), rowDepthCol));
+            expandedColumn = Js.<Boolean[]>uncheckedCast(
+                    ViewportData.cleanData(columnData[rowExpandedCol.getIndex()].getData(), rowExpandedCol));
+            depthColumn = Js.<int[]>uncheckedCast(
+                    ViewportData.cleanData(columnData[rowDepthCol.getIndex()].getData(), rowDepthCol));
 
             int constituentDepth = keyColumns.length + 1;
             for (int i = 0; i < columns.length; i++) {
@@ -407,8 +409,7 @@ public class JsTreeTable extends HasEventHandling {
                 Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getType())),
                 keyTableData,
                 null,
-                null
-        );
+                null);
         return keyTable;
     }
 
@@ -429,7 +430,7 @@ public class JsTreeTable extends HasEventHandling {
                     viewRequest.setExpansions(expansions);
                 }
                 connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
-                return null;//TODO actually handle error from this properly
+                return null;// TODO actually handle error from this properly
             });
         }).then(ignore -> Promise.resolve(ticket));
         return viewTicket;
@@ -437,7 +438,7 @@ public class JsTreeTable extends HasEventHandling {
 
     private void replaceSubscription() {
         this.stream = Promise.resolve(defer())
-                .then(ignore -> makeKeyTable())//TODO we can race this instead of finishing it first
+                .then(ignore -> makeKeyTable())// TODO we can race this instead of finishing it first
                 .then(ignore -> prepareFilter())
                 .then(this::prepareSort)
                 .then(this::makeView)
@@ -513,7 +514,8 @@ public class JsTreeTable extends HasEventHandling {
                                             new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
                         }
                         TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
-                                WebBarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
+                                WebBarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()),
+                                update,
                                 true,
                                 columnTypes);
 

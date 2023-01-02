@@ -15,6 +15,7 @@ import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
@@ -102,6 +103,16 @@ public class IdeSession extends HasEventHandling {
 
     public Promise<JsFigure> getFigure(String name) {
         return connection.getVariableDefinition(name, JsVariableChanges.FIGURE).then(connection::getFigure);
+    }
+
+    public Promise<JsTreeTable> getTreeTable(String name) {
+        return connection.getVariableDefinition(name, JsVariableChanges.HIERARCHICALTABLE)
+                .then(connection::getTreeTable);
+    }
+
+    public Promise<JsTreeTable> getHierarchicalTable(String name) {
+        return connection.getVariableDefinition(name, JsVariableChanges.HIERARCHICALTABLE)
+                .then(connection::getTreeTable);
     }
 
     public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
