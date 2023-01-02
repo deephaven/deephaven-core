@@ -99,14 +99,33 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      */
     private final CountDownLatch consumerThreadsCountDownLatch;
 
+    /**
+     * The queue of messages that are awaiting processing. After a message is removed from this queue, parsed, and
+     * processed into a {@link InMemoryRowHolder row holder}, it is added to the {@link #processedMessages} queue.
+     */
     private final BlockingQueue<JsonMessage> waitingMessages = new LinkedBlockingQueue<>();
+
+    /**
+     * The queue of messages that have been processed into {@link InMemoryRowHolder row holders}, but not yet flushed by
+     * {@link #cleanup()}.
+     */
     private final BlockingQueue<InMemoryRowHolder> processedMessages = new LinkedBlockingQueue<>();
     private final int CONSUMER_WAIT_INTERVAL_MS =
             Configuration.getInstance().getIntegerWithDefault("JSONToTableWriterAdapter.consumerWaitInterval", 100);
     private final int CONSUMER_REPORT_INTERVAL_MS =
             Configuration.getInstance().getIntegerWithDefault("JSONToTableWriterAdapter.consumerReportInterval", 60000);
     private InMemoryRowHolder[] holders;
+
+    /**
+     * The number of messages that have been enqueued for processing (e.g. by calling {@link #consumeJson}
+     */
     private final AtomicLong messagesQueued = new AtomicLong();
+
+    /**
+     * The number of messages that have been processed into a {@link InMemoryRowHolder row holder}. Processed messages
+     * must be written and flushed to tables by calling {@link #cleanup()} beforer they are available to the query
+     * engine.
+     */
     private final LongAdder messagesProcessed = new LongAdder();
 
     /**
