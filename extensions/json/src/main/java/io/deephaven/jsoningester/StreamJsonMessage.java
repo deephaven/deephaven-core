@@ -13,24 +13,25 @@ import java.io.UncheckedIOException;
 public class StreamJsonMessage extends BaseMessageMetadata implements JsonMessage {
 
     private final InputStream inputStream;
-    private final Runnable afterParse;
+    private final Runnable afterParseAction;
 
     /**
      * Create a new instance of this class.
      *
-     * @param sentTime      The time (if available) when this message was sent
-     * @param receiveTime   The time (reported by subscriber) when this message was received.
-     * @param ingestTime    The time when this message was finished processing by its ingester and was ready to be flushed.
-     * @param messageId     The unique, monotonically-increasing ID for this message.
+     * @param sentTime The time (if available) when this message was sent
+     * @param receiveTime The time (reported by subscriber) when this message was received.
+     * @param ingestTime The time when this message was finished processing by its ingester and was ready to be flushed.
+     * @param messageId The unique, monotonically-increasing ID for this message.
      * @param messageNumber The sequential number indicating the sequence this message was received in by the ingester.
-     * @param inputStream   The stream containing the message body.
-     * @param afterParse    Runnable to run after closing the input stream (e.g. to close an http response)
+     * @param inputStream The stream containing the message body.
+     * @param afterParseAction Operation to run after parsing the JSON and closing the input stream (e.g. to close an
+     *        http response)
      */
     public StreamJsonMessage(DateTime sentTime, DateTime receiveTime, DateTime ingestTime, String messageId,
-                             long messageNumber, InputStream inputStream, Runnable afterParse) {
+            long messageNumber, InputStream inputStream, Runnable afterParseAction) {
         super(sentTime, receiveTime, ingestTime, messageId, messageNumber);
         this.inputStream = inputStream;
-        this.afterParse = afterParse;
+        this.afterParseAction = afterParseAction;
     }
 
     @Override
@@ -47,8 +48,8 @@ public class StreamJsonMessage extends BaseMessageMetadata implements JsonMessag
                 }
             }
         } finally {
-            if (afterParse != null) {
-                afterParse.run();
+            if (afterParseAction != null) {
+                afterParseAction.run();
             }
         }
 

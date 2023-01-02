@@ -62,7 +62,7 @@ public class JsonNodeUtil {
     private static void checkNode(Object key, JsonNode node, boolean allowMissingKeys, boolean allowNullValues) {
         if (!allowMissingKeys && (node == null || node.isMissingNode())) {
             throw new IllegalArgumentException(
-                    String.format("Key '%s' not found in the record, and allowMissingKeys is false.", key));
+                    String.format("Key '%s' not found in the record, but allowMissingKeys is false.", key));
         }
         // 'node==null || node.isMissingNode()' is OK here, because missing keys are allowed.
         // only *explicit* null values are disallowed -- so if explicit nulls are disallowed,
@@ -70,7 +70,7 @@ public class JsonNodeUtil {
         // the node is a null node (`node.isNull()`), then we want to throw the exception.
         if (!allowNullValues && node != null && node.isNull()) {
             throw new IllegalArgumentException(String
-                    .format("Value for '%s' is null or missing in the record, and allowNullValues is false.", key));
+                    .format("Value for '%s' is null in the record, but allowNullValues is false.", key));
         }
     }
 

@@ -28,7 +28,8 @@ public class ComplexJsonImportTest2 {
 
 
     private static final Logger log =
-            ProcessStreamLoggerImpl.makeLogger(() -> DateTimeUtils.currentClock().currentTimeMicros(), TimeZone.getDefault());
+            ProcessStreamLoggerImpl.makeLogger(() -> DateTimeUtils.currentClock().currentTimeMicros(),
+                    TimeZone.getDefault());
 
     public static void main(String[] args) {
 

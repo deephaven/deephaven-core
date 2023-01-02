@@ -32,6 +32,9 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
     private final Set<String> nestedColumns = new HashSet<>();
     private final Map<String, JSONToTableWriterAdapterBuilder> nestedFieldBuilders = new HashMap<>();
     private final Map<String, JSONToTableWriterAdapterBuilder> parallelNestedFieldBuilders = new HashMap<>();
+
+    private BiConsumer<MessageMetadata, JsonNode> postProcessConsumer;
+
     private boolean autoValueMapping = true;
     private boolean allowMissingKeys;
     private boolean allowNullValues;
@@ -58,6 +61,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         this.nestedColumns.addAll(other.nestedColumns);
         this.nestedFieldBuilders.putAll(other.nestedFieldBuilders);
         this.parallelNestedFieldBuilders.putAll(other.parallelNestedFieldBuilders);
+        this.postProcessConsumer = other.postProcessConsumer;
 
         for (Map.Entry<String, JSONToTableWriterAdapterBuilder> entry : other.fieldToSubtableBuilders.entrySet()) {
             final JSONToTableWriterAdapterBuilder subtableBuilderCopy =
@@ -282,6 +286,10 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         return this;
     }
 
+    public void setPostProcessConsumer(BiConsumer<MessageMetadata, JsonNode> postProcessConsumer) {
+        this.postProcessConsumer = postProcessConsumer;
+    }
+
     /**
      * Indicates that a column is unmapped (and therefore null filled).
      *
@@ -443,7 +451,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 fieldToSubtableBuilders,
                 allUnmapped,
                 autoValueMapping,
-                createHolders);
+                createHolders,
+                postProcessConsumer);
     }
 
     /**
@@ -471,6 +480,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         // TODO: allowMissingKeys for nested adapters should be handled independently
         final boolean allowMissingKeys = true;
 
+        final boolean isSubtableAdapter = false;
+
         return new JSONToTableWriterAdapter(tw,
                 log,
                 allowMissingKeys,
@@ -491,7 +502,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 autoValueMapping,
                 createHolders,
                 subtableProcessingQueue,
-                false);
+                postProcessConsumer,
+                isSubtableAdapter);
     }
 
     /**
@@ -524,6 +536,10 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                     return subtableRecordCounter.get().longValue();
                 });
 
+        final boolean createHolders = true;
+
+        final boolean isSubtableAdapter = true;
+
         return new JSONToTableWriterAdapter(tw, log, allowMissingKeys, allowNullValues, processArrays,
                 0,
                 columnToJsonField, columnToIntFunction, columnToLongFunctionForSubtableAdapter, columnToDoubleFunction,
@@ -535,9 +551,10 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 fieldToSubtableBuilders,
                 Collections.emptySet(),
                 autoValueMapping,
-                true,
+                createHolders,
                 subtableProcessingQueue,
-                true);
+                postProcessConsumer,
+                isSubtableAdapter);
     }
 
 }

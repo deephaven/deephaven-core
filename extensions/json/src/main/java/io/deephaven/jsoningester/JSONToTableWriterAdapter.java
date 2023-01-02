@@ -150,27 +150,29 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     /**
      * Function to run after processing a JSON record.
      */
-    private BiConsumer<MessageMetadata, JsonNode> afterProcess;
+    @Nullable
+    private final BiConsumer<MessageMetadata, JsonNode> postProcessConsumer;
 
-    JSONToTableWriterAdapter(final TableWriter<?> writer,
+    JSONToTableWriterAdapter(@NotNull final TableWriter<?> writer,
             @NotNull final Logger log,
             final boolean allowMissingKeys,
             final boolean allowNullValues,
             final boolean processArrays,
             final int nConsumerThreads,
-            final Map<String, String> columnToJsonField,
-            final Map<String, ToIntFunction<JsonNode>> columnToIntFunctions,
-            final Map<String, ToLongFunction<JsonNode>> columnToLongFunctions,
-            final Map<String, ToDoubleFunction<JsonNode>> columnToDoubleFunctions,
-            final Map<String, Pair<Class<?>, Function<JsonNode, ?>>> columnToObjectFunctions,
-            final Map<String, JSONToTableWriterAdapterBuilder> nestedFieldBuilders,
-            final Map<String, String> columnToParallelField,
-            final Map<String, JSONToTableWriterAdapterBuilder> parallelNestedFieldBuilders,
-            final Map<String, TableWriter<?>> fieldToSubtableWriters,
-            final Map<String, JSONToTableWriterAdapterBuilder> fieldToSubtableBuilders,
-            final Set<String> columnsUnmapped,
+            @NotNull final Map<String, String> columnToJsonField,
+            @NotNull final Map<String, ToIntFunction<JsonNode>> columnToIntFunctions,
+            @NotNull final Map<String, ToLongFunction<JsonNode>> columnToLongFunctions,
+            @NotNull final Map<String, ToDoubleFunction<JsonNode>> columnToDoubleFunctions,
+            @NotNull final Map<String, Pair<Class<?>, Function<JsonNode, ?>>> columnToObjectFunctions,
+            @NotNull final Map<String, JSONToTableWriterAdapterBuilder> nestedFieldBuilders,
+            @NotNull final Map<String, String> columnToParallelField,
+            @NotNull final Map<String, JSONToTableWriterAdapterBuilder> parallelNestedFieldBuilders,
+            @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
+            @NotNull final Map<String, JSONToTableWriterAdapterBuilder> fieldToSubtableBuilders,
+            @NotNull final Set<String> columnsUnmapped,
             final boolean autoValueMapping,
-            final boolean createHolders) {
+            final boolean createHolders,
+            @Nullable final BiConsumer<MessageMetadata, JsonNode> postProcessConsumer) {
         this(writer, log, allowMissingKeys, allowNullValues, processArrays,
                 nConsumerThreads,
                 columnToJsonField,
@@ -187,11 +189,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 autoValueMapping,
                 createHolders,
                 ThreadLocal.withInitial(ConcurrentLinkedDeque::new),
+                postProcessConsumer,
                 false);
     }
 
     /**
-     *
      * @param writer
      * @param log
      * @param allowMissingKeys
@@ -212,6 +214,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param autoValueMapping
      * @param createHolders Whether to create the InMemmoryRowHolders and associated thread pool.
      * @param subtableProcessingQueueThreadLocal
+     * @param postProcessConsumer
      */
     JSONToTableWriterAdapter(
             @NotNull final TableWriter<?> writer,
@@ -234,6 +237,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             final boolean autoValueMapping,
             final boolean createHolders,
             final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal,
+            @Nullable final BiConsumer<MessageMetadata, JsonNode> postProcessConsumer,
             final boolean isSubtableAdapter) {
         this.log = log;
         this.writer = writer;
@@ -243,6 +247,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         this.numThreads = nThreads;
         this.subtableProcessingQueueThreadLocal = subtableProcessingQueueThreadLocal;
         this.isSubtableAdapter = isSubtableAdapter;
+        this.postProcessConsumer = postProcessConsumer;
 
         instanceId = instanceCounter.getAndIncrement();
 
@@ -1023,12 +1028,17 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     @Override
-    public void consumeString(final TextMessage msg) {
+    public void consumeString(@NotNull final TextMessage msg) {
         consumeJson(new JsonMessage() {
             @Override
             public JsonNode getJson() throws JsonNodeUtil.JsonStringParseException {
                 return JsonNodeUtil.makeJsonNode(msg.getText());
 
+            }
+
+            @Override
+            public String getOriginalText() {
+                return msg.getText();
             }
 
             @Override
@@ -1120,9 +1130,12 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                         // there was a parsing exception for this message; we should log the error and proceed to the
                         // next message
                         if (unparseableMessagesLogged++ < MAX_UNPARSEABLE_LOG_MESSAGES) {
+                            final String origMsgTxt = finalHolder.getOriginalText();
+                            final String origTxtFormatted = origMsgTxt == null ? "null" : "\"" + origMsgTxt + "\": ";
                             log.error()
                                     .append("Unable to parse JSON message: ")
-                                    .append(finalHolder.getOriginalText() == null ? "null" : "\"" + finalHolder.getOriginalText() + "\": ")
+                                    .append(origTxtFormatted)
+                                    .nl()
                                     .append(finalHolder.getParseException()).endl();
                         }
                         if (!skipUnparseableMessages) {
@@ -1257,7 +1270,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     @Override
-    public void setOwner(final StringMessageToTableAdapter<?> parent) {
+    public void setOwner(@Nullable final StringMessageToTableAdapter<?> parent) {
         this.owner = parent;
     }
 
@@ -1363,15 +1376,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         try {
             record = msg.getJson();
         } catch (final JsonNodeUtil.JsonStringParseException parseException) {
-            final String msgText;
-            if (msg instanceof TextMessage) {
-                msgText = ((TextMessage) msg).getText();
-            } else {
-                msgText = null;
-            }
-
             // handle JSON parse exception and keep going
-            processExceptionRecord(holder, parseException, msg, msgText);
+            processExceptionRecord(holder, parseException, msg, msg.getOriginalText());
             return;
         }
         if (processArrays && record.isArray()) {
@@ -1410,7 +1416,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         processHolder(holder, true);
     }
 
-    private void processOneRecordTopLevel(final int holder, @Nullable final MessageMetadata msgData,
+    private void processOneRecordTopLevel(final int holder,
+            @Nullable final MessageMetadata msgData,
             @Nullable final JsonNode record,
             final boolean isFirst, final boolean isLast) {
         // process the row so that it's ready when our turn comes to write.
@@ -1513,33 +1520,39 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         // element across our record, we copy the beginning holder elements to a new holder, thus allowing us to expand
         // the non-array elements to all of the logged rows. Each set of rows from the same message is a transaction.
         if (!arrayFieldNames.isEmpty()) {
+            if (record == null && !allowMissingKeys) {
+                throw new JSONIngesterException("allowMissingKeys is false but array fields are missing: "
+                        + Arrays.toString(arrayFieldNames.toArray(new String[0])));
+            }
             final int nArrayFields = arrayFieldNames.size();
             final ArrayNode[] nodes = new ArrayNode[nArrayFields];
             int expectedLength = -1;
             String lengthFound = null;
-            for (int ii = 0; ii < nArrayFields; ++ii) {
-                final String fieldName = arrayFieldNames.get(ii);
-                final Object object = JsonNodeUtil.getValue(record, fieldName, true, true);
-                if (object == null) {
-                    continue;
-                }
-                if (!(object instanceof ArrayNode)) {
-                    throw new JSONIngesterException(
-                            "Expected array node for " + fieldName + " but was " + object.getClass());
-                }
-                final ArrayNode arrayNode = (ArrayNode) object;
-                final int arrayLength = arrayNode.size();
-                if (expectedLength >= 0) {
-                    if (expectedLength != arrayLength) {
-                        throw new JSONIngesterException(
-                                "Array nodes do not have a consistent length: " + lengthFound + " has length of "
-                                        + expectedLength + ", " + fieldName + " has length of " + arrayLength);
+            if (record != null) {
+                for (int ii = 0; ii < nArrayFields; ++ii) {
+                    final String fieldName = arrayFieldNames.get(ii);
+                    final Object object = JsonNodeUtil.getValue(record, fieldName, true, true);
+                    if (object == null) {
+                        continue;
                     }
-                } else {
-                    lengthFound = fieldName;
-                    expectedLength = arrayLength;
+                    if (!(object instanceof ArrayNode)) {
+                        throw new JSONIngesterException(
+                                "Expected array node for " + fieldName + " but was " + object.getClass());
+                    }
+                    final ArrayNode arrayNode = (ArrayNode) object;
+                    final int arrayLength = arrayNode.size();
+                    if (expectedLength >= 0) {
+                        if (expectedLength != arrayLength) {
+                            throw new JSONIngesterException(
+                                    "Array nodes do not have a consistent length: " + lengthFound + " has length of "
+                                            + expectedLength + ", " + fieldName + " has length of " + arrayLength);
+                        }
+                    } else {
+                        lengthFound = fieldName;
+                        expectedLength = arrayLength;
+                    }
+                    nodes[ii] = arrayNode;
                 }
-                nodes[ii] = arrayNode;
             }
 
             if (expectedLength <= 0) {
@@ -1595,9 +1608,10 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             processHolder(holder, true);
         }
 
-        if(afterProcess != null) {
-            log.debug().append(Thread.currentThread().getName()).append(": Running afterProcess function")
-            afterProcess.accept(msgData, record);
+        if (postProcessConsumer != null) {
+            log.debug().append(Thread.currentThread().getName()).append(": Running postProcessConsumer function")
+                    .endl();
+            postProcessConsumer.accept(msgData, record);
         }
     }
 

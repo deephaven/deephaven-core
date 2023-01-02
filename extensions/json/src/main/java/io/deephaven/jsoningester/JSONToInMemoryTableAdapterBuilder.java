@@ -88,7 +88,7 @@ public class JSONToInMemoryTableAdapterBuilder {
         final JSONToTableWriterAdapter jsonAdapter =
                 jsonAdpaterBuilder.makeAdapter(log, thisTableWriter, subtableWriters);
 
-        if(flushIntervalMillis > 0) {
+        if (flushIntervalMillis > 0) {
             jsonAdapter.createCleanupThread(flushIntervalMillis);
         }
 
@@ -204,6 +204,12 @@ public class JSONToInMemoryTableAdapterBuilder {
 
     public JSONToInMemoryTableAdapterBuilder nConsumerThreads(final int nConsumerThreads) {
         jsonAdpaterBuilder.nConsumerThreads(nConsumerThreads);
+        return this;
+    }
+
+    public JSONToInMemoryTableAdapterBuilder setPostProcessConsumer(
+            BiConsumer<MessageMetadata, JsonNode> postProcessConsumer) {
+        jsonAdpaterBuilder.setPostProcessConsumer(postProcessConsumer);
         return this;
     }
 

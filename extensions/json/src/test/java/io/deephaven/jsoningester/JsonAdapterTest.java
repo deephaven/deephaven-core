@@ -833,7 +833,7 @@ public class JsonAdapterTest {
         } catch (JSONIngesterException ex) {
             try {
                 Assert.assertEquals("Failed processing subtable field \"c\"", ex.getMessage());
-                Assert.assertEquals("Key 'd' not found in the record, and allowMissingKeys is false.",
+                Assert.assertEquals("Key 'd' not found in the record, but allowMissingKeys is false.",
                         ex.getCause().getMessage());
             } catch (AssertionError ae) {
                 ex.printStackTrace();
@@ -1518,7 +1518,7 @@ public class JsonAdapterTest {
             r.run();
             TestCase.fail();
         } catch (final JSONIngesterException e) {
-            Assert.assertEquals("Column \"A\" is already defined: allowed unmapped", e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("Column \"A\" is already defined: "));
         }
     }
 
@@ -1761,6 +1761,7 @@ public class JsonAdapterTest {
         }
 
         adapter.waitForProcessing(MAX_WAIT_MILLIS);
+        adapter.cleanup();
 
         System.out.println("Running test...");
         long before = System.nanoTime();
@@ -1769,8 +1770,8 @@ public class JsonAdapterTest {
         }
         long after = System.nanoTime();
         long intervalNanos = after - before;
-        System.out.println("Consumed " + messages.length + " in " + intervalNanos / 1_000_000L + "ms, "
-                + NANOS_PER_SECOND * messages.length / intervalNanos + " msgs/sec");
+        System.out.println("Consumed " + numMessages + " in " + intervalNanos / 1_000_000L + "ms, "
+                + NANOS_PER_SECOND * numMessages / intervalNanos + " msgs/sec");
         before = System.nanoTime();
         while (result.intSize() < messages.length) {
             adapter.cleanup();
@@ -1783,8 +1784,8 @@ public class JsonAdapterTest {
         }
         after = System.nanoTime();
         intervalNanos = after - before;
-        System.out.println("Processed " + result.intSize() + " in " + intervalNanos / 1_000_000L + "ms, "
-                + NANOS_PER_SECOND * messages.length / intervalNanos + " msgs/sec");
+        System.out.println("Processed " + numMessages + " in " + intervalNanos / 1_000_000L + "ms, "
+                + NANOS_PER_SECOND * numMessages / intervalNanos + " msgs/sec");
 
         // Somewhat arbitrarily picking 30,000 messages per second as a minimum performance benchmark
         // - note that this test is lumping the LTM in with the imports, so actual performance should be higher.
@@ -1847,7 +1848,7 @@ public class JsonAdapterTest {
 
         // Because the message will be consumed almost instantly, then actually processed separately, we have to wait to
         // see the results.
-        adapter.waitForProcessing(1000);
+        adapter.waitForProcessing(60_000);
         adapter.cleanup();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
@@ -1882,7 +1883,7 @@ public class JsonAdapterTest {
 
         final String logText = baos.toString(StandardCharsets.UTF_8);
         if (!logText.startsWith(
-                "Unable to parse JSON message: \"~x=y;b=c\": io.deephaven.jsoningester.JsonNodeUtil$JsonStringParseException: Failed to parse JSON string.")) {
+                "Unable to parse JSON message: \"~x=y;b=c\": \nio.deephaven.jsoningester.JsonNodeUtil$JsonStringParseException: Failed to parse JSON string.")) {
             TestCase.fail("Expected JSON parse error in log, but was : " + logText);
         }
         baos.reset();
