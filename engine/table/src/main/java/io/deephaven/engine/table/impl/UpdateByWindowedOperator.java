@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 public abstract class UpdateByWindowedOperator extends UpdateByOperator {
 
-    public abstract class Context implements UpdateContext {
+    public abstract static class Context implements UpdateContext {
         public int nullCount = 0;
 
         @Override

@@ -14,7 +14,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -37,7 +36,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
         public double curVal = NULL_DOUBLE;
 
         protected Context(final int chunkSize) {
-            super(chunkSize);
+            super();
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableDoubleChunk.makeWritableChunk(chunkSize);
         }
@@ -150,11 +149,11 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByCumulativeOpera
     // endregion
 
     @Override
-    public void prepareForParallelPopulation(final RowSet added) {
+    public void prepareForParallelPopulation(final RowSet changedRows) {
         if (redirHelper.isRedirected()) {
-            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
+            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
         } else {
-            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);
+            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
         }
     }
 

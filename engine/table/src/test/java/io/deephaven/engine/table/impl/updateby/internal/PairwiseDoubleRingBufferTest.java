@@ -1,21 +1,26 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl.updateby;
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PairwiseFloatRingBufferTest and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+package io.deephaven.engine.table.impl.updateby.internal;
 
-import io.deephaven.engine.table.impl.updateby.internal.PairwiseFloatRingBuffer;
+import io.deephaven.engine.table.impl.updateby.internal.PairwiseDoubleRingBuffer;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.experimental.categories.Category;
 
 import java.util.NoSuchElementException;
 
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 @Category(OutOfBandTest.class)
-public class PairwiseFloatRingBufferTest extends TestCase {
+public class PairwiseDoubleRingBufferTest extends TestCase {
 
-    private void assertEmpty(PairwiseFloatRingBuffer rb) {
+    private void assertEmpty(PairwiseDoubleRingBuffer rb) {
         assertTrue(rb.isEmpty());
         assertEquals(0, rb.size());
 
@@ -34,7 +39,7 @@ public class PairwiseFloatRingBufferTest extends TestCase {
         }
     }
 
-    private void assertNotEmpty(PairwiseFloatRingBuffer rb, int expectedSize, float expectedHead) {
+    private void assertNotEmpty(PairwiseDoubleRingBuffer rb, int expectedSize, double expectedHead) {
         assertFalse(rb.isEmpty());
         assertEquals(expectedSize, rb.size());
 
@@ -46,12 +51,12 @@ public class PairwiseFloatRingBufferTest extends TestCase {
         }
     }
 
-    private void assertAdd(PairwiseFloatRingBuffer rb, float newHead, int expectedSize, float expectedHead) {
+    private void assertAdd(PairwiseDoubleRingBuffer rb, double newHead, int expectedSize, double expectedHead) {
         rb.push(newHead);
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertRemove(PairwiseFloatRingBuffer rb, int expectedSize, float expectedHead) {
+    private void assertRemove(PairwiseDoubleRingBuffer rb, int expectedSize, double expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertTrue(expectedHead == rb.pop());
@@ -60,25 +65,25 @@ public class PairwiseFloatRingBufferTest extends TestCase {
         }
     }
 
-    float A = 'A';
-    float B = 'B';
-    float C = 'C';
-    float D = 'D';
-    float E = 'E';
-    float F = 'F';
-    float G = 'G';
+    double A = 'A';
+    double B = 'B';
+    double C = 'C';
+    double D = 'D';
+    double E = 'E';
+    double F = 'F';
+    double G = 'G';
 
     public void testAddRemove() {
 
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, NULL_FLOAT, Float::min);
+        PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, NULL_DOUBLE, Double::min);
 
         assertEmpty(rb);
 
         // move the head and tail off zero
-        for (float i = 0; i < 1000; i++) {
+        for (double i = 0; i < 1000; i++) {
             rb.push(i);
         }
-        for (float i = 0; i < 1000; i++) {
+        for (double i = 0; i < 1000; i++) {
             rb.pop();
         }
 
@@ -93,7 +98,7 @@ public class PairwiseFloatRingBufferTest extends TestCase {
         assertEquals(rb.front(1), B);
         assertEquals(rb.front(2), C);
         assertEquals(rb.back(),C);
-        assertEquals(rb.peekBack(NULL_FLOAT),C);
+        assertEquals(rb.peekBack(NULL_DOUBLE),C);
 
         assertRemove(rb, 3, A);
         assertRemove(rb, 2, B);
@@ -146,7 +151,7 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     }
 
      public void testGrowSimple() {
-         PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+         PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(5, NULL_DOUBLE, Double::min);
 
          assertAdd(rb, A, 1, A);
          assertAdd(rb, B, 2, A);
@@ -166,7 +171,7 @@ public class PairwiseFloatRingBufferTest extends TestCase {
          assertEmpty(rb);
 
          rb.pushEmptyValue();
-         assertEquals(rb.front(), NULL_FLOAT);
+         assertEquals(rb.front(), NULL_DOUBLE);
          try {
              rb.front(-1);
              fail("expected a NoSuchElement exception");
@@ -179,11 +184,11 @@ public class PairwiseFloatRingBufferTest extends TestCase {
          } catch (NoSuchElementException x) {
              // expected
          }
-         assertEquals(rb.poll(0.0f), NULL_FLOAT);
+         assertEquals(rb.poll(0.0f), NULL_DOUBLE);
      }
 
     public void testGrowComplex() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+        PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(5, NULL_DOUBLE, Double::min);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -212,7 +217,7 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     }
 
     public void testWhenEmpty() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+        PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(5, NULL_DOUBLE, Double::min);
         try {
             rb.back();
             fail("expected a NoSuchElement exception");
@@ -231,13 +236,13 @@ public class PairwiseFloatRingBufferTest extends TestCase {
         } catch (NoSuchElementException x) {
             // expected
         }
-        assertEquals(rb.poll((float)-1), (float)-1);
-        assertEquals(rb.peek((float)-1), (float)-1);
-        assertEquals(rb.peekBack((float)-1), (float)-1);
+        assertEquals(rb.poll((double)-1), (double)-1);
+        assertEquals(rb.peek((double)-1), (double)-1);
+        assertEquals(rb.peekBack((double)-1), (double)-1);
     }
 
     public void testBack() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+        PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(5, NULL_DOUBLE, Double::min);
 
         assertAdd(rb, A, 1, A);
         assertEquals(rb.back(), A);
@@ -248,7 +253,7 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     }
 
     public void testBackTailIsZero() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+        PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(5, NULL_DOUBLE, Double::min);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -262,20 +267,20 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     }
 
     public void testLargeAmounts() {
-        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, 0.0f, Float::sum)) {
+        try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, 0.0f, Double::sum)) {
 
             // move the head and tail off zero
-            for (float i = 0; i < 1000; i++) {
+            for (double i = 0; i < 1000; i++) {
                 rb.push(i);
             }
-            for (float i = 0; i < 1000; i++) {
+            for (double i = 0; i < 1000; i++) {
                 rb.pop();
             }
 
-            for (float i = 0; i < 10_000; i++)
+            for (double i = 0; i < 10_000; i++)
                 rb.push(i);
 
-            for (float i = 10_000; i < 1_000_000; i++) {
+            for (double i = 10_000; i < 1_000_000; i++) {
                 rb.push(i);
                 assertEquals(i - 10_000 + 1, rb.front(1));
                 assertEquals(i - 10_000, rb.pop());
@@ -285,11 +290,11 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     }
 
     public void testEvaluateMinLargeAmounts() {
-        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, Float.MAX_VALUE, Float::min)) {
-            for (float i = 0; i < 10_000; i++)
+        try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, Double.MAX_VALUE, Double::min)) {
+            for (double i = 0; i < 10_000; i++)
                 rb.push(i);
 
-            for (float i = 10_000; i < 1_000_000; i++) {
+            for (double i = 10_000; i < 1_000_000; i++) {
                 rb.push(i);
                 assertEquals(i - 10_000 + 1, rb.front(1));
                 assertEquals(i - 10_000, rb.evaluate()); // front of queue is min
@@ -299,11 +304,11 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     }
 
     public void testEvaluateMaxLargeAmounts() {
-        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, Float.MIN_VALUE, Float::max)) {
-            for (float i = 0; i < 10_000; i++)
+        try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, Double.MIN_VALUE, Double::max)) {
+            for (double i = 0; i < 10_000; i++)
                 rb.push(i);
 
-            for (float i = 10_000; i < 1_000_000; i++) {
+            for (double i = 10_000; i < 1_000_000; i++) {
                 rb.push(i);
                 assertEquals(i - 10_000 + 1, rb.front(1));
                 assertEquals(i, rb.evaluate()); // last value added is max
@@ -313,17 +318,17 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     }
 
     public void testEvaluateSumLargeAmounts() {
-        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, 0.0f, Float::sum)) {
+        try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, 0.0f, Double::sum)) {
 
-            float runningSum = 0.0f;
+            double runningSum = 0.0f;
 
-            for (float i = 0; i < 1_000; i++) {
+            for (double i = 0; i < 1_000; i++) {
                 rb.push(i);
                 runningSum += i;
             }
 
-            // stay small enough to avoid floating errors but prove the concept
-            for (float i = 1_000; i < 10_000; i++) {
+            // stay small enough to avoid doubleing errors but prove the concept
+            for (double i = 1_000; i < 10_000; i++) {
                 rb.push(i);
                 runningSum += i; // add the current value
                 assertEquals(i - 1_000 + 1, rb.front(1));
@@ -339,19 +344,19 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     }
 
     public void testEvaluationEdgeCase() {
-        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, -Float.MAX_VALUE, Float::max)) {
+        try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, -Double.MAX_VALUE, Double::max)) {
             // move the head and tail off zero
-            for (float i = 0; i < 500; i++) {
+            for (double i = 0; i < 500; i++) {
                 rb.push(i);
             }
-            for (float i = 0; i < 500; i++) {
+            for (double i = 0; i < 500; i++) {
                 rb.pop();
             }
 
-            for (float i = 0; i < 100; i++) {
+            for (double i = 0; i < 100; i++) {
                 rb.push(i);
             }
-            assertEquals((float)99, rb.evaluate()); // last value added is max
+            assertEquals((double)99, rb.evaluate()); // last value added is max
         }
     }
 }

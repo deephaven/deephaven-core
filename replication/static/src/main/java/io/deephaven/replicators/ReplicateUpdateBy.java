@@ -110,7 +110,7 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/PairwiseFloatRingBuffer.java",
                 exemptions);
         ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/updateby/PairwiseFloatRingBufferTest.java",
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/updateby/internal/PairwiseFloatRingBufferTest.java",
                 exemptions);
     }
 

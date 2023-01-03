@@ -11,7 +11,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -147,17 +146,17 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
 
     // region Shifts
     @Override
-    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
-        ((CharacterSparseArraySource)outputSource).shift(subIndexToShift, delta);
+    public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
+        ((CharacterSparseArraySource)outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 
     @Override
-    public void prepareForParallelPopulation(final RowSet added) {
+    public void prepareForParallelPopulation(final RowSet changedRows) {
         if (redirHelper.isRedirected()) {
-            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
+            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
         } else {
-            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);
+            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
         }
     }
 

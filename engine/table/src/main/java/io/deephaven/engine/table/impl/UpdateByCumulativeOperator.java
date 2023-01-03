@@ -11,10 +11,10 @@ import org.jetbrains.annotations.NotNull;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
-    public abstract class Context implements UpdateContext {
+    public abstract static class Context implements UpdateContext {
         public long curTimestamp;
 
-        protected Context(final int chunkSize) {
+        protected Context() {
             curTimestamp = NULL_LONG;
         }
 

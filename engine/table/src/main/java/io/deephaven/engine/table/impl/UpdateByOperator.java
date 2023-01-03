@@ -38,16 +38,19 @@ public abstract class UpdateByOperator {
     protected final String[] affectingColumns;
     protected final UpdateBy.UpdateByRedirectionHelper redirHelper;
 
-
     // these will be used by the timestamp-aware operators (EMA for example)
     protected OperationControl control;
     protected long reverseTimeScaleUnits;
     protected long forwardTimeScaleUnits;
     protected String timestampColumnName;
 
-    // individual input modifiedColumnSet for this operator
+    /**
+     * The input modifiedColumnSet for this operator
+     */
     protected ModifiedColumnSet inputModifiedColumnSet;
-    // individual output modifiedColumnSet for this operators
+    /**
+     * The output modifiedColumnSet for this operator
+     */
     protected ModifiedColumnSet outputModifiedColumnSet;
 
     /**
@@ -55,9 +58,9 @@ public abstract class UpdateByOperator {
      */
     public interface UpdateContext extends SafeCloseable {
 
-        void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk);
+        void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
 
-        void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk);
+        void setTimestampChunk(@NotNull LongChunk<? extends Values> valuesChunk);
 
         /**
          * Add a value to the operators current data set
@@ -110,9 +113,9 @@ public abstract class UpdateByOperator {
     }
 
     /**
-     * Get the name of the input column(s) this operator depends on.
+     * Get the names of the input column(s) for this operator.
      *
-     * @return the name of the input column
+     * @return the names of the input column
      */
     @NotNull
     public String[] getInputColumnNames() {
@@ -120,9 +123,9 @@ public abstract class UpdateByOperator {
     }
 
     /**
-     * Get the name of the timestamp column this operator depends on.
+     * Get the name of the timestamp column for this operator (or null if the operator does not require timestamp data).
      *
-     * @return the name of the input column
+     * @return the name of the timestamp column
      */
     @Nullable
     public String getTimestampColumnName() {
@@ -130,18 +133,14 @@ public abstract class UpdateByOperator {
     }
 
     /**
-     * Get the value of the backward-looking window (might be nanos or ticks).
-     *
-     * @return the name of the input column
+     * Get the value of the backward-looking window (might be nanoseconds or ticks).
      */
     public long getPrevWindowUnits() {
         return reverseTimeScaleUnits;
     }
 
     /**
-     * Get the value of the forward-looking window (might be nanos or ticks).
-     *
-     * @return the name of the input column
+     * Get the value of the forward-looking window (might be nanoseconds or ticks).
      */
     public long getFwdWindowUnits() {
         return forwardTimeScaleUnits;
@@ -190,7 +189,7 @@ public abstract class UpdateByOperator {
     public abstract UpdateContext makeUpdateContext(final int chunkSize);
 
     /**
-     * Perform and bookkeeping required at the end of a single part of the update. This is always preceded with a call
+     * Perform any bookkeeping required at the end of a single part of the update. This is always preceded with a call
      * to {@code #initializeUpdate(UpdateContext)} (specialized for each type of operator)
      *
      * @param context the context object
@@ -200,12 +199,12 @@ public abstract class UpdateByOperator {
     /**
      * Apply a shift to the operation.
      */
-    public abstract void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta);
+    public abstract void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta);
 
     /**
      * Prepare this operator output column for parallel updated.
      */
-    public abstract void prepareForParallelPopulation(final RowSet added);
+    public abstract void prepareForParallelPopulation(final RowSet changedRows);
 
     /**
      * Create the modified column set for the input columns of this operator.

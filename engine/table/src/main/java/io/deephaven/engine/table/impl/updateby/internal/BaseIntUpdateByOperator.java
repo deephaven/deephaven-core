@@ -15,7 +15,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -38,7 +37,7 @@ public abstract class BaseIntUpdateByOperator extends UpdateByCumulativeOperator
         public int curVal = NULL_INT;
 
         protected Context(final int chunkSize) {
-            super(chunkSize);
+            super();
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableIntChunk.makeWritableChunk(chunkSize);
         }
@@ -146,17 +145,17 @@ public abstract class BaseIntUpdateByOperator extends UpdateByCumulativeOperator
 
     // region Shifts
     @Override
-    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
-        ((IntegerSparseArraySource)outputSource).shift(subIndexToShift, delta);
+    public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
+        ((IntegerSparseArraySource)outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 
     @Override
-    public void prepareForParallelPopulation(final RowSet added) {
+    public void prepareForParallelPopulation(final RowSet changedRows) {
         if (redirHelper.isRedirected()) {
-            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(added);
+            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
         } else {
-            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(added);
+            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
         }
     }
 
