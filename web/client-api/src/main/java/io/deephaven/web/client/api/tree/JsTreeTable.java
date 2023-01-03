@@ -224,7 +224,7 @@ public class JsTreeTable extends HasEventHandling {
                 for (i = 0; i < keyColumns.length; i++) {
                     Js.<JsArray<Any>>cast(keyTableData[i]).push(keyColumns.getAt(i).get(this));
                 }
-                Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth());
+                Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth() - 1);
                 Js.<JsArray<Double>>cast(keyTableData[i++]).push(expanded ? ACTION_EXPAND : ACTION_COLLAPSE);
             }
         }
