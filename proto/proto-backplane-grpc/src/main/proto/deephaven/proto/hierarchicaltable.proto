@@ -70,6 +70,10 @@ message TreeRequest {
 
   // The name of the column containing the parent row's unique identifier for each row in the source table
   string parent_identifier_column = 4;
+
+  // Whether to promote "orphaned" nodes to be children of the root node. Orphans are nodes whose parent identifiers do
+  // not occur as identifiers for any row in the source Table.
+  bool promote_orphans = 5;
 }
 
 message TreeResponse {

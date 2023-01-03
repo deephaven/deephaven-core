@@ -110,7 +110,16 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
                         final ColumnName identifierColumn = ColumnName.of(request.getIdentifierColumn());
                         final ColumnName parentIdentifierColumn = ColumnName.of(request.getParentIdentifierColumn());
-                        final TreeTable result = sourceTable.tree(
+
+                        final Table sourceTableToUse;
+                        if (request.getPromoteOrphans()) {
+                            sourceTableToUse = TreeTable.promoteOrphans(
+                                    sourceTable, identifierColumn.name(), parentIdentifierColumn.name());
+                        } else {
+                            sourceTableToUse = sourceTable;
+                        }
+
+                        final TreeTable result = sourceTableToUse.tree(
                                 identifierColumn.name(), parentIdentifierColumn.name());
 
                         final TreeTable transformedResult = authTransformation.transform(result);
