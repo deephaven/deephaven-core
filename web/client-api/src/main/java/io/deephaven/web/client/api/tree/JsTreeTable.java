@@ -701,7 +701,8 @@ public class JsTreeTable extends HasEventHandling {
     public void close() {
         JsLog.debug("Closing tree table", this);
 
-        connection.releaseTicket(widget.getTicket());
+        // Presently it is never necessary to release widget tickets, since they can't be export tickets.
+//        connection.releaseTicket(widget.getTicket());
 
         if (filteredTable != null) {
             filteredTable.then(ticket -> {
