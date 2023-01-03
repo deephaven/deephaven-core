@@ -1307,6 +1307,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     expandedDestination.fillWithValue(0, fillSize, NULL_BOOLEAN_AS_BYTE);
                     break;
                 case Undetermined:
+                    expandedDestination.setSize(0);
                     fillRows.forAllRowKeys((final long rowKey) -> {
                         final long childNodeId = rowKeyToNodeId.applyAsLong(rowKey);
                         if (nodeIdExpandable(snapshotState, childNodeId)) {
