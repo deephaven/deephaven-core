@@ -373,8 +373,6 @@ public class WebBarrageUtils {
                 for (int i = 0; i < size; ++i) {
                     if (!hasNulls || valid.get(i)) {
                         boolArray[i] = wireValues.get(i);
-                    } else {
-                        boolArray[i] = null;
                     }
                 }
                 return new ByteArrayColumnData(Js.uncheckedCast(boolArray));
