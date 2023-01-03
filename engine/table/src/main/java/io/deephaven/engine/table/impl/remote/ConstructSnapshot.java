@@ -1342,8 +1342,8 @@ public class ConstructSnapshot {
                 // when empty
                 final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
                 acd.data = getSnapshotDataAsChunkList(sourceToUse, columnIsEmpty ? null : sharedContext, rows, usePrev);
-                acd.type = sourceToUse.getType();
-                acd.componentType = sourceToUse.getComponentType();
+                acd.type = columnSource.getType();
+                acd.componentType = columnSource.getComponentType();
                 acd.chunkType = sourceToUse.getChunkType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
