@@ -742,10 +742,15 @@ public class WorkerConnection {
                     .then(widget -> widget.getExportedObjects()[0].fetch());
         } else if (JsVariableChanges.PARTITIONEDTABLE.equals(definition.getType())) {
             return getPartitionedTable(definition);
+        } else if (JsVariableChanges.HIERARCHICALTABLE.equals(definition.getType())) {
+            return getHierarchicalTable(definition);
         } else {
             if (JsVariableChanges.TABLEMAP.equals(definition.getType())) {
                 JsLog.warn(
                         "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
+            }
+            if (JsVariableChanges.TREETABLE.equals(definition.getType())) {
+                JsLog.warn("TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
             }
             return getWidget(definition);
         }
