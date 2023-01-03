@@ -99,9 +99,11 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                                 UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
                                         makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.RollingSum(50, 50,
-                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts", "boolCol")),
+                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
+                                                "boolCol")),
                                 UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-                                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts", "boolCol")),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
+                                                "boolCol")),
 
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),

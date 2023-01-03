@@ -94,7 +94,7 @@ public abstract class UpdateBy {
         protected final WritableRowSet freeRows;
         protected long maxInnerRowKey;
 
-        public UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
+        private UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
             this.rowRedirection = rowRedirection;
             this.freeRows = rowRedirection == null ? null : RowSetFactory.empty();
             this.maxInnerRowKey = 0;
@@ -104,7 +104,7 @@ public abstract class UpdateBy {
             return rowRedirection != null;
         }
 
-        public long requiredCapacity() {
+        private long requiredCapacity() {
             return maxInnerRowKey + 1;
         }
 
@@ -113,7 +113,7 @@ public abstract class UpdateBy {
             return rowRedirection;
         }
 
-        public void processUpdateForRedirection(@NotNull final TableUpdate upstream,
+        private void processUpdateForRedirection(@NotNull final TableUpdate upstream,
                 final TrackingRowSet sourceRowSet) {
             assert rowRedirection != null;
             if (upstream.removed().isNonempty()) {
@@ -172,7 +172,7 @@ public abstract class UpdateBy {
             return !iterator.hasNext();
         }
 
-        public RowSet getInnerKeys(final RowSet outerKeys) {
+        private RowSet getInnerKeys(final RowSet outerKeys) {
             if (rowRedirection == null) {
                 return null;
             }
@@ -237,25 +237,27 @@ public abstract class UpdateBy {
         try (final ResettableWritableObjectChunk<?, ?> backingChunk =
                 ResettableWritableObjectChunk.makeResettableChunk()) {
             for (int srcIdx : uniqueWindowSources) {
-                if (inputSourceCacheNeeded[srcIdx]) {
-                    if (--inputSourceReferenceCounts[srcIdx] == 0) {
-                        // do the cleanup immediately
-                        inputSourceRowSets[srcIdx].close();
-                        inputSourceRowSets[srcIdx] = null;
+                if (!inputSourceCacheNeeded[srcIdx]) {
+                    continue;
+                }
 
-                        // release any objects we are holding in the cache
-                        if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
-                            final long targetCapacity = inputSourceRowSets[srcIdx].size();
-                            for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
-                                    backingChunk.size()) {
-                                ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
-                                        .resetWritableChunkToBackingStore(backingChunk, positionToNull);
-                                backingChunk.fillWithNullValue(0, backingChunk.size());
-                            }
+                if (--inputSourceReferenceCounts[srcIdx] == 0) {
+                    // release any objects we are holding in the cache
+                    if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
+                        final long targetCapacity = inputSourceRowSets[srcIdx].size();
+                        for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
+                                backingChunk.size()) {
+                            ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
+                                    .resetWritableChunkToBackingStore(backingChunk, positionToNull);
+                            backingChunk.fillWithNullValue(0, backingChunk.size());
                         }
-
-                        maybeCachedInputSources[srcIdx] = null;
                     }
+
+                    // release the row set
+                    inputSourceRowSets[srcIdx].close();
+                    inputSourceRowSets[srcIdx] = null;
+
+                    maybeCachedInputSources[srcIdx] = null;
                 }
             }
         }
@@ -284,7 +286,7 @@ public abstract class UpdateBy {
      */
 
     class PhasedUpdateProcessor implements LogOutputAppendable {
-        final TableUpdate update;
+        final TableUpdate upstream;
         final boolean initialStep;
         final UpdateByBucketHelper[] dirtyBuckets;
 
@@ -300,8 +302,8 @@ public abstract class UpdateBy {
 
         WritableRowSet shiftedRows;
 
-        PhasedUpdateProcessor(TableUpdate update, boolean initialStep) {
-            this.update = update;
+        PhasedUpdateProcessor(TableUpdate upstream, boolean initialStep) {
+            this.upstream = upstream;
             this.initialStep = initialStep;
 
             // determine which buckets we'll examine during this update
@@ -548,9 +550,9 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Process all {@code windows} in a serial manner (to minimize cache memory usage). Will create cached input
-         * sources, process the buckets, then release the cached columns before starting the next window. Calls
-         * {@code completedAction} when the work is complete
+         * Process all {@code windows} in a serial manner (to minimize cache memory usage and to protect against races
+         * to fill the cached input sources). Will create cached input sources, process the buckets, then release the
+         * cached columns before starting the next window. Calls {@code completedAction} when the work is complete
          */
         private void processWindows(final Runnable completeAction) {
             jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this, 0, windows.length,
@@ -570,7 +572,8 @@ public abstract class UpdateBy {
                                     }
                                 }
                             } else {
-                                // get the minimal set of rows to be updated for this window
+                                // get the minimal set of rows to be updated for this window (shiftedRows is empty when
+                                // using redirection)
                                 try (final WritableRowSet windowRowSet = shiftedRows.copy()) {
                                     for (UpdateByBucketHelper bucket : dirtyBuckets) {
                                         if (win.isWindowDirty(bucket.windowContexts[winIdx])) {
@@ -587,10 +590,10 @@ public abstract class UpdateBy {
                                 }
                             }
 
-                            if (!redirHelper.isRedirected() && update.shifted().nonempty()) {
+                            if (!redirHelper.isRedirected() && upstream.shifted().nonempty()) {
                                 // shift the non-redirected output sources now, after parallelPopulation
                                 try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                                    update.shifted().apply((begin, end, delta) -> {
+                                    upstream.shifted().apply((begin, end, delta) -> {
                                         try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
                                             for (UpdateByOperator op : win.getOperators()) {
                                                 op.applyOutputShift(subRowSet, delta);
@@ -665,23 +668,21 @@ public abstract class UpdateBy {
         private TableUpdate computeDownstreamUpdate() {
             final TableUpdateImpl downstream = new TableUpdateImpl();
 
-            downstream.added = update.added().copy();
-            downstream.removed = update.removed().copy();
-            downstream.shifted = update.shifted();
+            // get the adds/removes/shifts from upstream, make a copy since TableUpdateImpl#reset will
+            // close them with the upstream update
+            downstream.added = upstream.added().copy();
+            downstream.removed = upstream.removed().copy();
+            downstream.shifted = upstream.shifted();
 
             // union the modifies from all the tables (including source)
             downstream.modifiedColumnSet = result().getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();
 
-            // get the adds/removes/shifts from upstream, make a copy since TableUpdateImpl#reset will
-            // close them with the upstream update
-
-            WritableRowSet modifiedRowSet = RowSetFactory.empty();
+            WritableRowSet modifiedRowSet = upstream.modified().copy();
             downstream.modified = modifiedRowSet;
 
-            if (update.modified().isNonempty()) {
-                modifiedRowSet.insert(update.modified());
-                transformer.transform(update.modifiedColumnSet(), downstream.modifiedColumnSet);
+            if (upstream.modified().isNonempty()) {
+                transformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             }
 
             for (UpdateByBucketHelper bucket : dirtyBuckets) {
@@ -717,23 +718,23 @@ public abstract class UpdateBy {
             if (redirHelper.isRedirected()) {
                 // this call does all the work needed for redirected output sources, for sparse output sources
                 // we will process shifts only after a call to `prepareForParallelPopulation()` on each source
-                redirHelper.processUpdateForRedirection(update, source.getRowSet());
+                redirHelper.processUpdateForRedirection(upstream, source.getRowSet());
                 shiftedRows = RowSetFactory.empty();
             } else {
                 // for our sparse array output sources, we need to identify which rows will be affected by the upstream
                 // shifts and include them in our parallel update preparations
-                if (update.shifted().nonempty()) {
+                if (upstream.shifted().nonempty()) {
                     try (final RowSet prev = source.getRowSet().copyPrev();
                             final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
 
                         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                        final int size = update.shifted().size();
+                        final int size = upstream.shifted().size();
 
                         // get these in ascending order and use a sequential builder
                         for (int ii = 0; ii < size; ii++) {
-                            final long begin = update.shifted().getBeginRange(ii);
-                            final long end = update.shifted().getEndRange(ii);
-                            final long delta = update.shifted().getShiftDelta(ii);
+                            final long begin = upstream.shifted().getBeginRange(ii);
+                            final long end = upstream.shifted().getEndRange(ii);
+                            final long delta = upstream.shifted().getShiftDelta(ii);
 
                             it.advance(begin);
                             final RowSequence rs = it.getNextRowSequenceThrough(end);
@@ -780,7 +781,8 @@ public abstract class UpdateBy {
     }
 
     /**
-     * The Listener for apply to the constituent table updates
+     * The Listener that is called when all input tables (source and constituent) are satisfied. This listener will
+     * initiate UpdateBy operator processing in parallel by bucket
      */
     class UpdateByListener extends InstrumentedTableUpdateListenerAdapter {
         public UpdateByListener(@Nullable String description) {
@@ -816,7 +818,7 @@ public abstract class UpdateBy {
 
     /**
      * Apply the specified operations to each group of rows in the source table and produce a result table with the same
-     * index as the source with each operator applied.
+     * row set as the source with each operator applied.
      *
      * @param source the source to apply to.
      * @param clauses the operations to apply.
@@ -879,7 +881,6 @@ public abstract class UpdateBy {
 
         String timestampColumnName = null;
         final Set<String> problems = new LinkedHashSet<>();
-        // noinspection rawtypes
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
         for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
             final UpdateByOperator op = opArr[opIdx];
@@ -895,9 +896,8 @@ public abstract class UpdateBy {
                 } else {
                     if (!timestampColumnName.equals(op.getTimestampColumnName())) {
                         throw new UncheckedTableException(
-                                "Cannot reference more than one timestamp source on a single UpdateByBucketHelper operation {"
-                                        +
-                                        timestampColumnName + ", " + op.getTimestampColumnName() + "}");
+                                "Cannot reference more than one timestamp source on a single UpdateBy call {"
+                                        + timestampColumnName + ", " + op.getTimestampColumnName() + "}");
                     }
                 }
             }
@@ -912,11 +912,11 @@ public abstract class UpdateBy {
 
         for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
             final String[] inputColumnNames = opArr[opIdx].getInputColumnNames();
+            // add a new entry for this operator
+            operatorInputSourceSlotArr[opIdx] = new int[inputColumnNames.length];
             for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
                 final ColumnSource<?> input = source.getColumnSource(inputColumnNames[colIdx]);
                 final int maybeExistingSlot = sourceToSlotMap.get(input);
-                // add a new entry for this operator
-                operatorInputSourceSlotArr[opIdx] = new int[inputColumnNames.length];
                 if (maybeExistingSlot == sourceToSlotMap.getNoEntryValue()) {
                     int srcIdx = inputSourceList.size();
                     // create a new input source and map the operator to it
@@ -928,7 +928,7 @@ public abstract class UpdateBy {
                 }
             }
         }
-        final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(new ColumnSource<?>[0]);
+        final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
         // now we want to divide the operators into similar windows for efficient processing
         TIntObjectHashMap<TIntArrayList> windowHashToOperatorIndicesMap = new TIntObjectHashMap<>();
@@ -975,7 +975,6 @@ public abstract class UpdateBy {
             return true;
         });
 
-        // noinspection rawtypes
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
         resultSources.putAll(opResultSources);
 
@@ -1008,7 +1007,6 @@ public abstract class UpdateBy {
         for (final MatchPair byColumn : pairs) {
             if (!source.hasColumns(byColumn.rightColumn)) {
                 problems.add(byColumn.rightColumn);
-                continue;
             }
         }
 

@@ -291,10 +291,9 @@ public class UpdateByWindowTime extends UpdateByWindow {
                     final WritableRowSet affectedByRemoves =
                             computeAffectedRowsTime(prev, upstream.removed(), prevUnits, fwdUnits,
                                     ctx.timestampColumnSource, ctx.timestampSsa, true);
-                 final WritableRowSet affectedByModifies =
-                         computeAffectedRowsTime(prev, upstream.getModifiedPreShift(), prevUnits, fwdUnits,
-                                 ctx.timestampColumnSource, ctx.timestampSsa, true);
-                    ) {
+                    final WritableRowSet affectedByModifies =
+                            computeAffectedRowsTime(prev, upstream.getModifiedPreShift(), prevUnits, fwdUnits,
+                                    ctx.timestampColumnSource, ctx.timestampSsa, true);) {
                 // we used the SSA (post-shift) to get these keys, no need to shift
                 // retain only the rows that still exist in the sourceRowSet
                 affectedByRemoves.retain(ctx.sourceRowSet);

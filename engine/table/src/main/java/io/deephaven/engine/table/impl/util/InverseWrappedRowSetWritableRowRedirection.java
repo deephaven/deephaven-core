@@ -16,8 +16,8 @@ import org.jetbrains.annotations.NotNull;
 public class InverseWrappedRowSetWritableRowRedirection implements WritableRowRedirection {
 
     /**
-     * {@link RowSet} used to map from outer row key (row key in {@code wrappedRowSet}) to inner row key
-     * (row position in {@code wrappedRowSet}).
+     * {@link RowSet} used to map from outer row key (row key in {@code wrappedRowSet}) to inner row key (row position
+     * in {@code wrappedRowSet}).
      */
     private final RowSet wrappedRowSet;
 

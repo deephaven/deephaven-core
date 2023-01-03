@@ -359,7 +359,7 @@ public abstract class UpdateByWindow {
                 op.getInputColumnNames(),
                 op.getTimestampColumnName(),
                 op.getPrevWindowUnits(),
-                op.getPrevWindowUnits());
+                op.getFwdWindowUnits());
     }
 
     /**

@@ -10,9 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
- * An interface for submitting jobs to be executed. Submitted jobs may be executed on the current thread, or in
- * separate threads (thus allowing true parallelism). Performance metrics are accumulated for all executions off the
- * current thread for inclusion in overall task metrics.
+ * An interface for submitting jobs to be executed. Submitted jobs may be executed on the current thread, or in separate
+ * threads (thus allowing true parallelism). Performance metrics are accumulated for all executions off the current
+ * thread for inclusion in overall task metrics.
  */
 public interface JobScheduler {
     /**

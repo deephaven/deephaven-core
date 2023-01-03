@@ -241,8 +241,8 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. Uses the default OperationControl settings.
+     * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using time as the windowing unit.
+     * Uses the default OperationControl settings.
      *
      * @param prevWindowDuration the look-behind window size (in Duration)
      * @param fwdWindowDuration the look-ahead window size (in Duration)

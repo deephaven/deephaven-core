@@ -47,7 +47,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     boolean isDirty;
 
     /**
-     * Perform an updateBy without any key columns.
+     * Perform updateBy operations on a single bucket of data (either zero-key or already limited through partitioning)
      *
      * @param description descibes this bucket helper
      * @param source the source table
@@ -164,9 +164,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                     final WritableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
                     final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
 
-                // no need to consider upstream removals
-                previousToShift.remove(upstream.removed());
-
                 final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                 while (sit.hasNext()) {
                     sit.next();
@@ -230,6 +227,8 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                 ssaValues.add(ts);
                 ssaKeys.add(keysChunk.get(i));
             }
+            // store the current ts for comparison
+            lastTimestamp.setValue(ts);
         }
     }
 
@@ -284,7 +283,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * use of cached input sources instead of the original input sources.
      *
      * @param winIdx the index of the window to modify
-     * @param inputSources the input sources for the
+     * @param inputSources the input sources for the operators
      */
     public void assignInputSources(final int winIdx, final ColumnSource<?>[] inputSources) {
         windows[winIdx].assignInputSources(windowContexts[winIdx], inputSources);
@@ -295,7 +294,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * {@code assignInputSources()} call.
      *
      * @param winIdx the index of the window to modify
-     * @param initialStep the input sources for the
+     * @param initialStep indicates whether this is part of the creation phase
      */
     public void processWindow(final int winIdx, final boolean initialStep) {
         if (!windows[winIdx].isWindowDirty(windowContexts[winIdx])) {
@@ -316,7 +315,9 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     }
 
     /**
-     * The Listener for apply an upstream {@link InstrumentedTableUpdateListenerAdapter#onUpdate(TableUpdate) update}
+     * The Listener that accepts an {@link InstrumentedTableUpdateListenerAdapter#onUpdate(TableUpdate) update} and
+     * prepares this bucket for processing. This includes determination of `isDirty` status and the computation of
+     * `affected` and `influencer` row sets for this processing cycle.
      */
     class UpdateByBucketHelperListener extends InstrumentedTableUpdateListenerAdapter {
         public UpdateByBucketHelperListener(@Nullable String description,
