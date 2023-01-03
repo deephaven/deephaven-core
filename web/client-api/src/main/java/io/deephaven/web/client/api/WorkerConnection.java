@@ -750,7 +750,8 @@ public class WorkerConnection {
                         "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
             }
             if (JsVariableChanges.TREETABLE.equals(definition.getType())) {
-                JsLog.warn("TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
+                JsLog.warn(
+                        "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
             }
             return getWidget(definition);
         }

@@ -110,7 +110,8 @@ public class JsTreeTable extends HasEventHandling {
         private final JsArray<Column> columns;
         private final JsArray<TreeRow> rows;
 
-        private TreeViewportData(double offset, long viewportSize, double treeSize, ColumnData[] dataColumns, Column[] columns) {
+        private TreeViewportData(double offset, long viewportSize, double treeSize, ColumnData[] dataColumns,
+                Column[] columns) {
             this.offset = offset;
             this.treeSize = treeSize;
             this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
@@ -702,7 +703,7 @@ public class JsTreeTable extends HasEventHandling {
         JsLog.debug("Closing tree table", this);
 
         // Presently it is never necessary to release widget tickets, since they can't be export tickets.
-//        connection.releaseTicket(widget.getTicket());
+        // connection.releaseTicket(widget.getTicket());
 
         if (filteredTable != null) {
             filteredTable.then(ticket -> {
