@@ -110,11 +110,8 @@ public class JsTreeTable extends HasEventHandling {
         private final JsArray<Column> columns;
         private final JsArray<TreeRow> rows;
 
-        private final ColumnData[] columnData;
-        private final Object[] data;
-
-        private TreeViewportData(RangeSet includedRows, double treeSize, ColumnData[] dataColumns, Column[] columns) {
-            this.offset = includedRows.getFirstRow();
+        private TreeViewportData(double offset, long viewportSize, double treeSize, ColumnData[] dataColumns, Column[] columns) {
+            this.offset = offset;
             this.treeSize = treeSize;
             this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
 
@@ -122,14 +119,12 @@ public class JsTreeTable extends HasEventHandling {
             // we'll just clean the data that the requested columns know about for now.
             // TODO to improve this, we can have synthetic columns to handle data that wasn't requested/expected,
             // and then can share code with ViewportData
-            this.data = new Object[dataColumns.length];
+            Object[] data = new Object[dataColumns.length];
 
-            columnData = dataColumns;
-
-            expandedColumn = Js.<Boolean[]>uncheckedCast(
-                    ViewportData.cleanData(columnData[rowExpandedCol.getIndex()].getData(), rowExpandedCol));
-            depthColumn = Js.<int[]>uncheckedCast(
-                    ViewportData.cleanData(columnData[rowDepthCol.getIndex()].getData(), rowDepthCol));
+            expandedColumn = Js.uncheckedCast(
+                    ViewportData.cleanData(dataColumns[rowExpandedCol.getIndex()].getData(), rowExpandedCol));
+            depthColumn = Js.uncheckedCast(
+                    ViewportData.cleanData(dataColumns[rowDepthCol.getIndex()].getData(), rowDepthCol));
 
             int constituentDepth = keyColumns.length + 1;
             for (int i = 0; i < columns.length; i++) {
@@ -172,7 +167,7 @@ public class JsTreeTable extends HasEventHandling {
             }
 
             rows = new JsArray<>();
-            for (int i = 0; i < includedRows.size(); i++) {
+            for (int i = 0; i < viewportSize; i++) {
                 rows.push(new TreeRow(i, data, data[rowFormatColumn]));
             }
         }
@@ -520,8 +515,11 @@ public class JsTreeTable extends HasEventHandling {
                                 columnTypes);
 
                         final RangeSet includedRows = snapshot.getIncludedRows();
+                        double offset = query.getViewportStart();
+                        assert includedRows.isEmpty() || Js.asInt(offset) == includedRows.getFirstRow();
                         TreeViewportData vd = new TreeViewportData(
-                                includedRows,
+                                offset,
+                                includedRows.isEmpty() ? 0 : includedRows.size(),
                                 snapshot.getTableSize(),
                                 snapshot.getDataColumns(),
                                 queryColumns);
