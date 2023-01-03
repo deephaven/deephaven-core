@@ -11,6 +11,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
@@ -33,6 +34,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
+import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
+import io.deephaven.server.hierarchicaltable.HierarchicalTableViewSubscription;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.Status;
@@ -78,7 +81,7 @@ public class ArrowFlightUtil {
                 .onError(observer)
                 .submit(() -> {
                     metrics.queueNanos = System.nanoTime() - queueStartTm;
-                    final BaseTable table = export.get();
+                    final BaseTable<?> table = export.get();
                     metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                     metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -281,7 +284,8 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory;
-        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> operationFactory;
+        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> bmpOperationFactory;
+        private final HierarchicalTableViewSubscription.Factory htvsFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
 
@@ -298,15 +302,19 @@ public class ArrowFlightUtil {
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
                 final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
-                final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> operationFactory,
+                final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> bmpOperationFactory,
+                final HierarchicalTableViewSubscription.Factory htvsFactory,
                 final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGeneratorImpl.View>> listenerAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
-                @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
+                @Assisted final SessionState session,
+                @Assisted final StreamObserver<InputStream> responseObserver) {
+
             this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
             this.ticketRouter = ticketRouter;
             this.streamGeneratorFactory = streamGeneratorFactory;
-            this.operationFactory = operationFactory;
+            this.bmpOperationFactory = bmpOperationFactory;
+            this.htvsFactory = htvsFactory;
             this.subscriptionOptAdapter = subscriptionOptAdapter;
             this.snapshotOptAdapter = snapshotOptAdapter;
             this.session = session;
@@ -447,7 +455,7 @@ public class ArrowFlightUtil {
             public SnapshotRequestHandler() {}
 
             @Override
-            public void handleMessage(MessageInfo message) {
+            public void handleMessage(@NotNull final BarrageProtoUtil.MessageInfo message) {
                 // verify this is the correct type of message for this handler
                 if (message.app_metadata.msgType() != BarrageMessageType.BarrageSnapshotRequest) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -459,7 +467,7 @@ public class ArrowFlightUtil {
                     final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                             .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    final SessionState.ExportObject<BaseTable> parent =
+                    final SessionState.ExportObject<BaseTable<?>> parent =
                             ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "ticket");
 
                     final BarragePerformanceLog.SnapshotMetricsHelper metrics =
@@ -471,7 +479,7 @@ public class ArrowFlightUtil {
                             .onError(listener)
                             .submit(() -> {
                                 metrics.queueNanos = System.nanoTime() - queueStartTm;
-                                final BaseTable table = parent.get();
+                                final BaseTable<?> table = parent.get();
                                 metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                                 metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -513,13 +521,15 @@ public class ArrowFlightUtil {
                 implements Handler {
 
             private BarrageMessageProducer<BarrageStreamGeneratorImpl.View> bmp;
+            private HierarchicalTableViewSubscription htvs;
+
             private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
             private SessionState.ExportObject<?> onExportResolvedContinuation;
 
             public SubscriptionRequestHandler() {}
 
             @Override
-            public void handleMessage(MessageInfo message) {
+            public void handleMessage(@NotNull final MessageInfo message) {
                 // verify this is the correct type of message for this handler
                 if (message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -537,7 +547,7 @@ public class ArrowFlightUtil {
                     final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
                             .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    if (bmp != null) {
+                    if (bmp != null || htvs != null) {
                         apply(subscriptionRequest);
                         return;
                     }
@@ -580,18 +590,26 @@ public class ArrowFlightUtil {
                 // we know there is at least one request; it was put there when we knew which parent to wait on
                 final BarrageSubscriptionRequest subscriptionRequest = preExportSubscriptions.remove();
 
+                final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options =
+                        subscriptionRequest.subscriptionOptions();
+                long minUpdateIntervalMs = options == null ? 0 : options.minUpdateIntervalMs();
+                if (minUpdateIntervalMs == 0) {
+                    minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
+                }
+
                 final Object export = parent.get();
                 if (export instanceof QueryTable) {
                     final QueryTable table = (QueryTable) export;
-                    final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options =
-                            subscriptionRequest.subscriptionOptions();
-                    long minUpdateIntervalMs = options == null ? 0 : options.minUpdateIntervalMs();
-                    if (minUpdateIntervalMs == 0) {
-                        minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
-                    }
-                    bmp = table.getResult(operationFactory.create(table, minUpdateIntervalMs));
+                    bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
                     if (bmp.isRefreshing()) {
                         manage(bmp);
+                    }
+                } else if (export instanceof HierarchicalTableView) {
+                    final HierarchicalTableView hierarchicalTableView = (HierarchicalTableView) export;
+                    htvs = htvsFactory.create(hierarchicalTableView, listener,
+                            subscriptionOptAdapter.adapt(subscriptionRequest), minUpdateIntervalMs);
+                    if (hierarchicalTableView.getHierarchicalTable().getSource().isRefreshing()) {
+                        manage(htvs);
                     }
                 } else {
                     GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
@@ -612,8 +630,15 @@ public class ArrowFlightUtil {
 
                 final boolean reverseViewport = subscriptionRequest.reverseViewport();
 
-                bmp.addSubscription(listener, subscriptionOptAdapter.adapt(subscriptionRequest), columns, viewport,
-                        reverseViewport);
+                if (bmp != null) {
+                    bmp.addSubscription(listener, subscriptionOptAdapter.adapt(subscriptionRequest), columns, viewport,
+                            reverseViewport);
+                } else if (htvs != null) {
+                    htvs.setViewport(columns, viewport, reverseViewport);
+                } else {
+                    // noinspection ThrowableNotThrown
+                    Assert.statementNeverExecuted();
+                }
 
                 for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
                     apply(request);
@@ -639,8 +664,15 @@ public class ArrowFlightUtil {
 
                 final boolean reverseViewport = subscriptionRequest.reverseViewport();
 
-
-                final boolean subscriptionFound = bmp.updateSubscription(listener, viewport, columns, reverseViewport);
+                final boolean subscriptionFound;
+                if (bmp != null) {
+                    subscriptionFound = bmp.updateSubscription(listener, viewport, columns, reverseViewport);
+                } else if (htvs != null) {
+                    subscriptionFound = true;
+                    htvs.setViewport(columns, viewport, reverseViewport);
+                } else {
+                    subscriptionFound = false;
+                }
 
                 if (!subscriptionFound) {
                     throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");
@@ -657,6 +689,9 @@ public class ArrowFlightUtil {
                 if (bmp != null) {
                     bmp.removeSubscription(listener);
                     bmp = null;
+                } else if (htvs != null) {
+                    htvs.completed();
+                    htvs = null;
                 } else {
                     GrpcUtil.safelyExecuteLocked(listener, listener::onCompleted);
                 }

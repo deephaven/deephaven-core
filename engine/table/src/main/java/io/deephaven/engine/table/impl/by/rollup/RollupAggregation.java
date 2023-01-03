@@ -12,6 +12,10 @@ import java.util.Map;
  */
 public interface RollupAggregation extends Aggregation {
 
+    static RollupAggregation nullColumns(String name, Class<?> type) {
+        return NullColumns.of(name, type);
+    }
+
     static RollupAggregation nullColumns(Map<String, Class<?>> resultColumns) {
         return NullColumns.from(resultColumns);
     }

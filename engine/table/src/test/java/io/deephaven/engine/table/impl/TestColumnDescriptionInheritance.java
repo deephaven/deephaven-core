@@ -7,11 +7,14 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.engine.testutil.TstUtils;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static io.deephaven.engine.testutil.TstUtils.c;
 import static io.deephaven.engine.testutil.TstUtils.i;
+import static io.deephaven.engine.util.TableTools.*;
 
 public class TestColumnDescriptionInheritance extends QueryTableTestBase {
 
@@ -23,25 +26,28 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
     }
 
     public void testMaybeCopyColumnDescriptions() {
-        final Table sourceTable = genTestTable();
-        final Table withDescriptions = sourceTable
+        final QueryTable sourceTable = (QueryTable) genTestTable();
+        final QueryTable withDescriptions = (QueryTable) sourceTable
                 .withColumnDescription("Sym", "Symbol Column")
                 .withColumnDescription("doubleCol", "Double Column");
 
 
         System.out.println("Running basic \"maybeCopyColumnDescriptions\" tests...");
-        final Table destTable =
+        final QueryTable destTable =
                 new QueryTable(sourceTable.getDefinition(), sourceTable.getRowSet(), sourceTable.getColumnSourceMap());
+        // noinspection unchecked
         final Map<String, String> descriptionMap =
                 (Map<String, String>) withDescriptions.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         assertNotNull(descriptionMap);
         assertEquals(2, descriptionMap.size());
 
-        ((BaseTable) sourceTable).maybeCopyColumnDescriptions(destTable);
-        assertNull(destTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+        QueryTable copiedDest = destTable.copy();
+        sourceTable.maybeCopyColumnDescriptions(copiedDest);
+        assertNull(copiedDest.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
-        ((BaseTable) withDescriptions).maybeCopyColumnDescriptions(destTable);
-        assertEquals(descriptionMap, destTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+        copiedDest = destTable.copy();
+        withDescriptions.maybeCopyColumnDescriptions(copiedDest);
+        assertEquals(descriptionMap, copiedDest.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
 
         System.out.println("Running table-operation level column-description tests...");
@@ -137,6 +143,7 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
         final Table rightTable = withDescriptions
                 .renameColumns("rightInt=intCol", "rightDouble=doubleCol")
                 .withColumnDescription("Sym", "Ignored Sym");
+        // noinspection unchecked
         final Map<String, String> rightMap =
                 (Map<String, String>) rightTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         assertNotNull(rightMap);
@@ -163,5 +170,23 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
 
 
         System.out.println("Success");
+    }
+
+    public void testColumnDescriptionCopy() {
+        final Table t = newTable(stringCol("Str", "Apple", "Banana", "Carot", "Date"), intCol("Fib", 1, 1, 2, 3));
+        final Table sdesc = t.withColumnDescription("Str", "Fruit");
+        final Table fdesc = sdesc.withColumnDescription("Fib", "Fibonnaci");
+        final Table fonlydesc = t.withColumnDescription("Fib", "Fibonnaci2");
+        assertNull(t.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+        assertEquals(Collections.singletonMap("Str", "Fruit"), sdesc.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+        assertEquals(Collections.singletonMap("Fib", "Fibonnaci2"),
+                fonlydesc.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+        final Map<String, String> ex = new TreeMap<>();
+        ex.put("Fib", "Fibonnaci");
+        ex.put("Str", "Fruit");
+        assertEquals(ex, fdesc.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+
+        final Table addDuplicate = fdesc.withColumnDescription("Str", "Fruit");
+        assertSame(addDuplicate, fdesc);
     }
 }

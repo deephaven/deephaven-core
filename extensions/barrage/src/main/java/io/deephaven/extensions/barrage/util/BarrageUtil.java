@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -35,8 +34,6 @@ import io.deephaven.time.DateTime;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.config.MutableInputTable;
-import io.deephaven.engine.table.impl.HierarchicalTableInfo;
-import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
@@ -62,7 +59,6 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -175,35 +171,12 @@ public class BarrageUtil {
             }
         }
 
-        // copy rollup details
-        if (attributes.containsKey(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)) {
-            unsentAttributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-            final HierarchicalTableInfo hierarchicalTableInfo =
-                    (HierarchicalTableInfo) attributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-            final String hierarchicalSourceKeyPrefix =
-                    ATTR_ATTR_TAG + "." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
-            putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "hierarchicalColumnName",
-                    hierarchicalTableInfo.getHierarchicalColumnName());
-            if (hierarchicalTableInfo instanceof RollupInfo) {
-                final RollupInfo rollupInfo = (RollupInfo) hierarchicalTableInfo;
-                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "byColumns",
-                        String.join(",", rollupInfo.byColumnNames));
-                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "leafType", rollupInfo.getLeafType().name());
-
-                // mark columns to indicate their sources
-                for (final MatchPair matchPair : rollupInfo.getMatchPairs()) {
-                    putMetadata(getExtraMetadata.apply(matchPair.leftColumn()), "rollup.sourceColumn",
-                            matchPair.rightColumn());
-                }
-            }
-        }
-
         // note which attributes have a value we couldn't send
         for (String unsentAttribute : unsentAttributes) {
             putMetadata(schemaMetadata, "unsent." + ATTR_ATTR_TAG + "." + unsentAttribute, "");
         }
 
-        final Map<String, Field> fields = new LinkedHashMap<>();
+        final List<Field> fields = new ArrayList<>();
         for (final ColumnDefinition<?> column : table.getColumns()) {
             final String colName = column.getName();
             final Map<String, String> extraMetadata = getExtraMetadata.apply(colName);
@@ -220,10 +193,10 @@ public class BarrageUtil {
                 putMetadata(extraMetadata, "dateFormatColumn", colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
             }
 
-            fields.put(colName, arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
+            fields.add(arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
         }
 
-        return new Schema(new ArrayList<>(fields.values()), schemaMetadata).getSchema(builder);
+        return new Schema(fields, schemaMetadata).getSchema(builder);
     }
 
     private static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
@@ -249,8 +222,7 @@ public class BarrageUtil {
         }
     }
 
-    private static Class<?> getDefaultType(
-            final String name, final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
+    private static Class<?> getDefaultType(final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
         final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
         switch (arrowType.getTypeID()) {
             case Int:
@@ -411,7 +383,7 @@ public class BarrageUtil {
             });
 
             if (type.getValue() == null) {
-                Class<?> defaultType = getDefaultType(name, getArrowType.apply(i), result, i);
+                Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
@@ -524,7 +496,6 @@ public class BarrageUtil {
                 name.equals(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
         putMetadata(metadata, "isDateFormat", name.endsWith(ColumnFormattingValues.TABLE_DATE_FORMAT_NAME) + "");
         putMetadata(metadata, "isNumberFormat", name.endsWith(ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME) + "");
-        putMetadata(metadata, "isRollupColumn", name.equals(RollupInfo.ROLLUP_COLUMN) + "");
 
         if (description != null) {
             putMetadata(metadata, "description", description);

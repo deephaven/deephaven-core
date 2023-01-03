@@ -4,12 +4,12 @@
 
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSource;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
@@ -51,25 +51,27 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
     }
 
     @Override
-    public void fillChunk(@NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> mappedKeysOut,
+    public void fillChunk(@NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
+        final WritableLongChunk<? super RowKeys> mappedKeysOutTyped = mappedKeysOut.asWritableLongChunk();
         try (final RowSequence.Iterator okit = wrappedIndex.getRowSequenceIterator()) {
-            doMapping(mappedKeysOut, keysToMap, okit);
+            doMapping(mappedKeysOutTyped, keysToMap, okit);
         }
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> mappedKeysOut,
+    public void fillPrevChunk(@NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
+        final WritableLongChunk<? super RowKeys> mappedKeysOutTyped = mappedKeysOut.asWritableLongChunk();
         try (final RowSet prevWrappedIndex = wrappedIndex.copyPrev();
                 final RowSequence.Iterator prevOkIt = prevWrappedIndex.getRowSequenceIterator()) {
-            doMapping(mappedKeysOut, keysToMap, prevOkIt);
+            doMapping(mappedKeysOutTyped, keysToMap, prevOkIt);
         }
     }
 
-    private void doMapping(@NotNull WritableLongChunk<? extends RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap,
+    private void doMapping(@NotNull WritableLongChunk<? super RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap,
             RowSequence.Iterator okit) {
         final MutableLong currentPosition = new MutableLong(0);
         mappedKeysOut.setSize(0);

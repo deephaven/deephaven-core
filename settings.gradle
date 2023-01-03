@@ -246,6 +246,9 @@ project(':plugin-figure').projectDir = file('plugin/figure')
 include(':plugin-partitionedtable')
 project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
 
+include(':plugin-hierarchicaltable')
+project(':plugin-hierarchicaltable').projectDir = file('plugin/hierarchicaltable')
+
 include(':plugin-gc-app')
 project(':plugin-gc-app').projectDir = file('plugin/gc-app')
 

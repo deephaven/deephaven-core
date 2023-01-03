@@ -1,16 +1,7 @@
 package io.deephaven.server.test;
 
 import io.deephaven.auth.AuthContext;
-import io.deephaven.auth.codegen.impl.ApplicationServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.ConfigServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.HealthAuthWiring;
-import io.deephaven.auth.codegen.impl.InputTableServiceContextualAuthWiring;
-import io.deephaven.auth.codegen.impl.ObjectServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
-import io.deephaven.auth.codegen.impl.SessionServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.StorageServiceAuthWiring;
-import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
+import io.deephaven.auth.codegen.impl.*;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.TicketResolverBase;
 
@@ -35,6 +26,8 @@ public class TestAuthorizationProvider implements AuthorizationProvider {
             new InputTableServiceContextualAuthWiring.TestUseOnly();
     private final PartitionedTableServiceContextualAuthWiring.TestUseOnly partitionedTableServiceContextualAuthWiring =
             new PartitionedTableServiceContextualAuthWiring.TestUseOnly();
+    private final HierarchicalTableServiceContextualAuthWiring.TestUseOnly hierarchicalTableServiceContextualAuthWiring =
+            new HierarchicalTableServiceContextualAuthWiring.TestUseOnly();
 
     public TicketResolverBase.AuthTransformation delegateTicketTransformation;
 
@@ -86,6 +79,11 @@ public class TestAuthorizationProvider implements AuthorizationProvider {
     @Override
     public PartitionedTableServiceContextualAuthWiring.TestUseOnly getPartitionedTableServiceContextualAuthWiring() {
         return partitionedTableServiceContextualAuthWiring;
+    }
+
+    @Override
+    public HierarchicalTableServiceContextualAuthWiring.TestUseOnly getHierarchicalTableServiceContextualAuthWiring() {
+        return hierarchicalTableServiceContextualAuthWiring;
     }
 
     @Override

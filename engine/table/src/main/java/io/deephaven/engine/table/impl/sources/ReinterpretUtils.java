@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
@@ -71,6 +72,40 @@ public class ReinterpretUtils {
             return dateTimeToLongSource(source);
         }
         return source;
+    }
+
+    /**
+     * If {@code dataType} is something that we prefer to handle as a primitive, emit the appropriate {@link ChunkType},
+     * else the normal ChunkType for the data type.
+     *
+     * @param dataType The data type to convert to a {@link ChunkType}
+     * @return The appropriate {@link ChunkType} to use when extracting primitives from the source
+     */
+    public static ChunkType maybeConvertToPrimitiveChunkType(@NotNull final Class<?> dataType) {
+        if (dataType == Boolean.class || dataType == boolean.class) {
+            return ChunkType.Byte;
+        }
+        if (dataType == DateTime.class) {
+            return ChunkType.Long;
+        }
+        return ChunkType.fromElementType(dataType);
+    }
+
+    /**
+     * If {@code dataType} is something that we prefer to handle as a primitive, emit the appropriate {@link Class data
+     * type to use}, else return {@code dataType}.
+     *
+     * @param dataType The data type to examine
+     * @return The appropriate data type to use when extracting primitives from the source
+     */
+    public static Class<?> maybeConvertToPrimitiveDataType(@NotNull final Class<?> dataType) {
+        if (dataType == Boolean.class || dataType == boolean.class) {
+            return byte.class;
+        }
+        if (dataType == DateTime.class) {
+            return long.class;
+        }
+        return dataType;
     }
 
     /**

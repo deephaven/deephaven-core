@@ -502,8 +502,7 @@ public class SessionState {
      * @param <T> Is context sensitive depending on the export.
      *
      * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
-     *          itself.
-     * @apiNote Non-exports do not publish state changes.
+     *          itself. Non-exports do not publish state changes.
      */
     public final static class ExportObject<T> extends LivenessArtifact {
         private final int exportId;

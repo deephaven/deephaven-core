@@ -737,18 +737,22 @@ class Table(JObjectWrapper):
     #
     # region Sort
     def restrict_sort_to(self, cols: Union[str, Sequence[str]]):
-        """The restrict_sort_to method only allows sorting on specified table columns. This can be useful to prevent
-        users from accidentally performing expensive sort operations as they interact with tables in the UI.
+        """The restrict_sort_to method adjusts the input table to produce an output table that only allows sorting on
+        specified table columns. This can be useful to prevent users from accidentally performing expensive sort
+        operations as they interact with tables in the UI.
 
         Args:
             cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            a new table
 
         Raises:
             DHError
         """
         try:
             cols = to_sequence(cols)
-            return self.j_table.restrictSortTo(*cols)
+            return Table(self.j_table.restrictSortTo(*cols))
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 

@@ -1,0 +1,13 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    implementation project(':plugin')
+    implementation project(':proto:proto-backplane-grpc')
+    implementation project(':proto:proto-backplane-grpc-flight')
+
+    implementation project(':extensions-barrage')
+
+    Classpaths.inheritAutoService(project)
+}

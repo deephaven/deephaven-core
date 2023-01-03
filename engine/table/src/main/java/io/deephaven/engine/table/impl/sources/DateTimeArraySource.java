@@ -138,7 +138,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
     }
 
     private class ReinterpretedAsLong extends AbstractColumnSource<Long>
-            implements MutableColumnSourceGetDefaults.ForLong, FillUnordered, WritableColumnSource<Long> {
+            implements MutableColumnSourceGetDefaults.ForLong, FillUnordered<Values>, WritableColumnSource<Long> {
         private ReinterpretedAsLong() {
             super(long.class);
         }

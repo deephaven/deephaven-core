@@ -233,7 +233,7 @@ public interface TableCreator<TABLE> {
     default TABLE merge(TABLE t1, TABLE t2, TABLE t3, TABLE t4, TABLE t5, TABLE t6, TABLE t7,
             TABLE t8, TABLE t9, TABLE... remaining) {
         return merge(
-                () -> Stream.concat(Stream.of(t1, t2, t3, t4, t5, t6, t7, t8, t9), Stream.of(remaining))
+                () -> Stream.concat(Stream.of(t1, t2, t3, t4, t5, t6, t7, t8, t9), Arrays.stream(remaining))
                         .iterator());
     }
 

@@ -382,7 +382,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         try {
             emptyTable(10).rollup(List.of(), "ABC", "DEF");
             fail("Expected exception");
-        } catch (UnsupportedOperationException expected) {
+        } catch (IllegalArgumentException expected) {
         }
 
         // setExpectError(false);
