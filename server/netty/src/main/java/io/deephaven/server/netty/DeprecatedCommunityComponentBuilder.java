@@ -42,9 +42,9 @@ public final class DeprecatedCommunityComponentBuilder extends ComponentBuilderB
     public interface CommunityComponent extends DeephavenApiServerComponent {
 
         @Component.Builder
-        interface InnerBuilder extends DeephavenApiServerComponent.Builder<InnerBuilder, CommunityComponent> {
+        interface Builder extends DeephavenApiServerComponent.Builder<Builder, CommunityComponent> {
             @BindsInstance
-            InnerBuilder withNettyConfig(NettyConfig config);
+            Builder withNettyConfig(NettyConfig config);
         }
     }
 }

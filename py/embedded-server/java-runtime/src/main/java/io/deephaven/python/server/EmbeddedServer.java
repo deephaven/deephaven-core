@@ -3,7 +3,6 @@
  */
 package io.deephaven.python.server;
 
-import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
@@ -20,11 +19,11 @@ import io.deephaven.server.console.python.PythonGlobalScopeModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyConfig.Builder;
+import io.deephaven.server.jetty.JettyServerComponent;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
 import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
-import io.deephaven.server.runner.DeephavenApiServerComponent;
 import io.deephaven.server.runner.DeephavenApiServerModule;
 import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.util.Scheduler;
@@ -56,11 +55,9 @@ public class EmbeddedServer {
             SessionToExecutionStateModule.class,
             CommunityAuthorizationModule.class,
     })
-    public interface PythonServerComponent extends DeephavenApiServerComponent {
+    public interface PythonServerComponent extends JettyServerComponent {
         @Component.Builder
-        interface Builder extends DeephavenApiServerComponent.Builder<Builder, PythonServerComponent> {
-            @BindsInstance
-            Builder withJettyConfig(JettyConfig config);
+        interface Builder extends JettyServerComponent.Builder<Builder, PythonServerComponent> {
         }
 
         void injectFields(EmbeddedServer instance);

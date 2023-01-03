@@ -3,14 +3,12 @@
  */
 package io.deephaven.server.jetty;
 
-import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
 import io.deephaven.server.jetty.CommunityComponentBuilder.CommunityComponent;
 import io.deephaven.server.runner.CommunityDefaultsModule;
 import io.deephaven.server.runner.ComponentBuilderBase;
-import io.deephaven.server.runner.DeephavenApiServerComponent;
 
 import javax.inject.Singleton;
 import java.io.PrintStream;
@@ -43,9 +41,9 @@ public final class CommunityComponentBuilder extends ComponentBuilderBase<Commun
     public CommunityComponent build(Configuration configuration, PrintStream out, PrintStream err) {
         final JettyConfig jettyConfig = JettyConfig.buildFromConfig(configuration).build();
         return DaggerCommunityComponentBuilder_CommunityComponent.builder()
-                .withJettyConfig(jettyConfig)
                 .withOut(out)
                 .withErr(err)
+                .withJettyConfig(jettyConfig)
                 .build();
     }
 
@@ -62,12 +60,10 @@ public final class CommunityComponentBuilder extends ComponentBuilderBase<Commun
             CommunityDefaultsModule.class,
             CommunityAuthorizationModule.class,
     })
-    public interface CommunityComponent extends DeephavenApiServerComponent {
+    public interface CommunityComponent extends JettyServerComponent {
 
         @Component.Builder
-        interface InnerBuilder extends DeephavenApiServerComponent.Builder<InnerBuilder, CommunityComponent> {
-            @BindsInstance
-            InnerBuilder withJettyConfig(JettyConfig config);
+        interface Builder extends JettyServerComponent.Builder<Builder, CommunityComponent> {
         }
     }
 }
