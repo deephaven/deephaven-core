@@ -31,7 +31,6 @@ public interface ToPage<ATTR extends Any, RESULT> {
 
     /**
      * @return The native type for the elements of engine arrays produced by this object.
-     * @apiNote
      */
     @NotNull
     default Class<?> getNativeComponentType() {

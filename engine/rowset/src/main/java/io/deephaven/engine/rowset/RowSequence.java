@@ -64,8 +64,8 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      *
      * @return A {@link RowSet} representation for the same row keys in the same order
      * @apiNote If you use the result across clock ticks, you may observe inconsistencies.
-     * @apiNote You must not mutate the result.
-     * @apiNote You must {@link SafeCloseable#close() close} the result.
+     *          You must not mutate the result.
+     *          You must {@link SafeCloseable#close() close} the result.
      */
     RowSet asRowSet();
 
@@ -75,7 +75,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      * @return A {@link LongChunk} containing the row keys in this {@code RowSequence}
      * @apiNote This {@code RowSequence} owns the result, which is valid only as long as this {@code RowSequence}
      *          remains valid.
-     * @apiNote You must not mutate the result.
+     *          You must not mutate the result.
      */
     LongChunk<OrderedRowKeys> asRowKeyChunk();
 
@@ -85,7 +85,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      * @return A {@link LongChunk} containing the row key ranges in this {@code RowSequence}
      * @apiNote This {@code RowSequence} owns the result, which is valid only as long as this {@code RowSequence}
      *          remains valid.
-     * @apiNote You must not mutate the result.
+     *          You must not mutate the result.
      */
     LongChunk<OrderedRowKeyRanges> asRowKeyRangesChunk();
 
