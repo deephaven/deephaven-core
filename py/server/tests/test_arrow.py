@@ -12,7 +12,7 @@ import pyarrow.parquet as papq
 
 from deephaven import arrow as dharrow, dtypes, new_table, time_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, \
-    string_col, datetime_col
+    string_col, datetime_col, bool_col
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -23,7 +23,7 @@ class ArrowTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cols = [
-            # bool_col(name="Boolean", data=[True, False]),
+            bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
             char_col(name="Char", data='-1'),
             short_col(name="Short", data=[1, -1]),
@@ -49,6 +49,15 @@ class ArrowTestCase(BaseTestCase):
         arrow_table = dharrow.to_arrow(dh_table)
         self.assertEqual(dh_table.size, 2)
         self.assertTrue(pa_table.equals(arrow_table))
+
+    def test_arrow_types_bool(self):
+        pa_types = [
+            pa.bool_(),
+        ]
+        pa_data = [
+            pa.array([True, False]),
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
     def test_arrow_types_integers(self):
         with self.subTest("signed integers"):

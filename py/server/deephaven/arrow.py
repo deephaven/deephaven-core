@@ -16,7 +16,7 @@ _JTableToArrowConverter = jpy.get_type("io.deephaven.extensions.barrage.util.Tab
 
 _ARROW_DH_DATA_TYPE_MAPPING = {
     pa.null(): '',
-    pa.bool_(): '',
+    pa.bool_(): 'java.lang.Boolean',
     pa.int8(): 'byte',
     pa.int16(): 'short',
     pa.int32(): 'int',
