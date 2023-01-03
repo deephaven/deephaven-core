@@ -55,10 +55,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntSupplier;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -2194,11 +2191,11 @@ public class QueryTableTest extends QueryTableTestBase {
         testShiftingModifications(arg -> (QueryTable) arg.select());
     }
 
-    static void testLegacyFlattenModifications(io.deephaven.base.Function.Unary<QueryTable, QueryTable> function) {
+    static void testLegacyFlattenModifications(UnaryOperator<QueryTable> function) {
         final QueryTable queryTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("intCol", 10, 20, 40, 60));
 
-        final QueryTable selected = function.call(queryTable);
+        final QueryTable selected = function.apply(queryTable);
         final io.deephaven.engine.table.impl.SimpleListener simpleListener =
                 new io.deephaven.engine.table.impl.SimpleListener(selected);
         selected.addUpdateListener(simpleListener);
@@ -2284,11 +2281,11 @@ public class QueryTableTest extends QueryTableTestBase {
         simpleListener.close();
     }
 
-    static void testShiftingModifications(io.deephaven.base.Function.Unary<QueryTable, QueryTable> function) {
+    static void testShiftingModifications(UnaryOperator<QueryTable> function) {
         final QueryTable queryTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("intCol", 10, 20, 40, 60));
 
-        final QueryTable selected = function.call(queryTable);
+        final QueryTable selected = function.apply(queryTable);
         final io.deephaven.engine.table.impl.SimpleListener simpleListener =
                 new io.deephaven.engine.table.impl.SimpleListener(selected);
         selected.addUpdateListener(simpleListener);
@@ -2851,17 +2848,17 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(expected, snappy);
     }
 
-    private void testMemoize(QueryTable source, io.deephaven.base.Function.Unary<Table, Table> op) {
+    private void testMemoize(QueryTable source, UnaryOperator<QueryTable> op) {
         testMemoize(source, true, op);
     }
 
-    private void testMemoize(QueryTable source, boolean withCopy, io.deephaven.base.Function.Unary<Table, Table> op) {
-        final Table result = op.call(source);
-        final Table result2 = op.call(source);
+    private void testMemoize(QueryTable source, boolean withCopy, UnaryOperator<QueryTable> op) {
+        final Table result = op.apply(source);
+        final Table result2 = op.apply(source);
         Assert.assertSame(result, result2);
 
         // copy may or may not preserve the operation
-        final Table result3 = op.call(source.copy());
+        final Table result3 = op.apply(source.copy());
         if (withCopy) {
             assertTrue(result3 instanceof QueryTable.CopiedTable);
             assertTrue(((QueryTable.CopiedTable) result3).checkParent(result));
@@ -2870,32 +2867,31 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    private void testNoMemoize(Table source, io.deephaven.base.Function.Unary<Table, Table> op1,
-            io.deephaven.base.Function.Unary<Table, Table> op2) {
-        final Table result = op1.call(source);
-        final Table result2 = op2.call(source);
+    private void testNoMemoize(Table source, UnaryOperator<QueryTable> op1, UnaryOperator<QueryTable> op2) {
+        final Table result = op1.apply(source);
+        final Table result2 = op2.apply(source);
         Assert.assertNotSame(result, result2);
     }
 
-    private void testMemoize(Table source, io.deephaven.base.Function.Unary<Table, Table> op1,
-            io.deephaven.base.Function.Unary<Table, Table> op2) {
-        final Table result = op1.call(source);
-        final Table result2 = op2.call(source);
+    private void testMemoize(Table source, UnaryOperator<QueryTable> op1,
+            UnaryOperator<QueryTable> op2) {
+        final Table result = op1.apply(source);
+        final Table result2 = op2.apply(source);
         Assert.assertSame(result, result2);
     }
 
-    private void testNoMemoize(QueryTable source, io.deephaven.base.Function.Unary<Table, Table> op) {
-        final Table result = op.call(source);
-        final Table result2 = op.call(source);
+    private void testNoMemoize(QueryTable source, UnaryOperator<QueryTable> op) {
+        final Table result = op.apply(source);
+        final Table result2 = op.apply(source);
         Assert.assertNotSame(result, result2);
         // copying shouldn't make anything memoize magically
-        final Table result3 = op.call(source.copy());
+        final Table result3 = op.apply(source.copy());
         Assert.assertNotSame(result, result3);
     }
 
-    private void testNoMemoize(QueryTable source, QueryTable copy, io.deephaven.base.Function.Unary<Table, Table> op) {
-        final Table result = op.call(source);
-        final Table result2 = op.call(copy);
+    private void testNoMemoize(QueryTable source, QueryTable copy, UnaryOperator<QueryTable> op) {
+        final Table result = op.apply(source);
+        final Table result2 = op.apply(copy);
         Assert.assertNotSame(result, result2);
     }
 
