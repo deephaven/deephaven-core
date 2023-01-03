@@ -2848,11 +2848,11 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(expected, snappy);
     }
 
-    private void testMemoize(QueryTable source, UnaryOperator<QueryTable> op) {
+    private void testMemoize(QueryTable source, UnaryOperator<Table> op) {
         testMemoize(source, true, op);
     }
 
-    private void testMemoize(QueryTable source, boolean withCopy, UnaryOperator<QueryTable> op) {
+    private void testMemoize(QueryTable source, boolean withCopy, UnaryOperator<Table> op) {
         final Table result = op.apply(source);
         final Table result2 = op.apply(source);
         Assert.assertSame(result, result2);
@@ -2867,20 +2867,19 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    private void testNoMemoize(Table source, UnaryOperator<QueryTable> op1, UnaryOperator<QueryTable> op2) {
+    private void testNoMemoize(Table source, UnaryOperator<Table> op1, UnaryOperator<Table> op2) {
         final Table result = op1.apply(source);
         final Table result2 = op2.apply(source);
         Assert.assertNotSame(result, result2);
     }
 
-    private void testMemoize(Table source, UnaryOperator<QueryTable> op1,
-            UnaryOperator<QueryTable> op2) {
+    private void testMemoize(Table source, UnaryOperator<Table> op1, UnaryOperator<Table> op2) {
         final Table result = op1.apply(source);
         final Table result2 = op2.apply(source);
         Assert.assertSame(result, result2);
     }
 
-    private void testNoMemoize(QueryTable source, UnaryOperator<QueryTable> op) {
+    private void testNoMemoize(QueryTable source, UnaryOperator<Table> op) {
         final Table result = op.apply(source);
         final Table result2 = op.apply(source);
         Assert.assertNotSame(result, result2);
@@ -2889,7 +2888,7 @@ public class QueryTableTest extends QueryTableTestBase {
         Assert.assertNotSame(result, result3);
     }
 
-    private void testNoMemoize(QueryTable source, QueryTable copy, UnaryOperator<QueryTable> op) {
+    private void testNoMemoize(QueryTable source, QueryTable copy, UnaryOperator<Table> op) {
         final Table result = op.apply(source);
         final Table result2 = op.apply(copy);
         Assert.assertNotSame(result, result2);
