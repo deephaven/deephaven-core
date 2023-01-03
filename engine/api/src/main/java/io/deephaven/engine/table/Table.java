@@ -982,8 +982,8 @@ public interface Table extends
      * to avoid deeply nested structures.
      *
      * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures
-     * @apiNote See TableTools.merge(Table...)
+     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
+     *          TableTools.merge(Table...).
      * @param others The Tables to merge with
      * @return The merged Table
      */
@@ -995,8 +995,8 @@ public interface Table extends
      * to avoid deeply nested structures.
      *
      * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures
-     * @apiNote See TableTools.merge(Table...)
+     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
+     *          TableTools.merge(Table...).
      * @param others The Tables to merge with
      * @return The merged Table
      */
