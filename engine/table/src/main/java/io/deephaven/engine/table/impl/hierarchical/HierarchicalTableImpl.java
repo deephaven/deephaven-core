@@ -1443,13 +1443,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     abstract boolean isRootNodeKey(@Nullable Object nodeKey);
 
     /**
-     * @return A node key value that maps to the root node for this HierarchicalTableImpl, to use when specifying
-     *         default expansion; note that this should never be used instead of {@link #isRootNodeKey(Object)} to test
-     *         if a node key maps to the root node
-     */
-    abstract Object rootNodeKey();
-
-    /**
      * @param nodeKey The node key to map
      * @return The internal node identifier for {@code nodeKey}, or the {@link #nullNodeId() null node id} if not found
      */

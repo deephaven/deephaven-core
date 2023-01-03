@@ -581,11 +581,6 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    Object rootNodeKey() {
-        return ROOT_NODE_KEY;
-    }
-
-    @Override
     long nodeKeyToNodeId(@Nullable final Object nodeKey) {
         if (nodeKey == ROOT_NODE_KEY) {
             return ROOT_NODE_ID;
