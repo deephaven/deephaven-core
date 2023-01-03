@@ -13,10 +13,11 @@ import io.deephaven.engine.table.ChunkSource;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
-public class InverseRowRedirectionImpl implements WritableRowRedirection {
+public class InverseWrappedRowSetWritableRowRedirection implements WritableRowRedirection {
 
     /**
-     * {@link RowSet} used to map from outer key (position in the index) to inner key.
+     * {@link RowSet} used to map from outer row key (row key in {@code wrappedRowSet}) to inner row key
+     * (row position in {@code wrappedRowSet}).
      */
     private final RowSet wrappedRowSet;
 
@@ -27,7 +28,7 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
      *
      * @param wrappedRowSet the RowSet (or TrackingRowSet) to use as the redirection source
      */
-    public InverseRowRedirectionImpl(final RowSet wrappedRowSet) {
+    public InverseWrappedRowSetWritableRowRedirection(final RowSet wrappedRowSet) {
         this.wrappedRowSet = wrappedRowSet;
     }
 
@@ -70,8 +71,8 @@ public class InverseRowRedirectionImpl implements WritableRowRedirection {
     public void fillPrevChunk(@NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableLongChunk<? extends RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
-        try (final RowSet prevWrappedIndex = wrappedRowSet.trackingCast().copyPrev();
-                final RowSequence.Iterator prevOkIt = prevWrappedIndex.getRowSequenceIterator()) {
+        try (final RowSet prevWrappedRowSet = wrappedRowSet.trackingCast().copyPrev();
+                final RowSequence.Iterator prevOkIt = prevWrappedRowSet.getRowSequenceIterator()) {
             doMapping(mappedKeysOut, keysToMap, prevOkIt);
         }
     }

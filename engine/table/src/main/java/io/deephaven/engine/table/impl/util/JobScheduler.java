@@ -10,8 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
- * An interface for submitting jobs to be executed and accumulating their performance of all the tasks performed off
- * thread.
+ * An interface for submitting jobs to be executed. Submitted jobs may be executed on the current thread, or in
+ * separate threads (thus allowing true parallelism). Performance metrics are accumulated for all executions off the
+ * current thread for inclusion in overall task metrics.
  */
 public interface JobScheduler {
     /**
@@ -29,7 +30,7 @@ public interface JobScheduler {
             final Consumer<Exception> onError);
 
     /**
-     * The performance statistics of all runnables that have been completed off-thread, or null if it was executed in
+     * The performance statistics of all runnables that have been completed off-thread, or null if all were executed in
      * the current thread.
      */
     BasePerformanceEntry getAccumulatedPerformance();
@@ -41,7 +42,7 @@ public interface JobScheduler {
     int threadCount();
 
     /**
-     * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a callable interface
+     * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a functional interface
      * with {@code index} indicating which iteration to perform. When this returns, the scheduler will automatically
      * schedule the next iteration.
      */
@@ -51,13 +52,13 @@ public interface JobScheduler {
     }
 
     /**
-     * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a callable interface
+     * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a functional interface
      * with {@code index} indicating which iteration to perform and {@link Runnable resume} providing a mechanism to
      * inform the scheduler that the current task is complete. When {@code resume} is called, the scheduler will
      * automatically schedule the next iteration.
      * <p>
      * NOTE: failing to call {@code resume} will result in the scheduler not scheduling all remaining iterations. This
-     * will not block the scheduler, but the {@code completeAction} {@link Runnable} will never be called
+     * will not block the scheduler, but the {@code completeAction} {@link Runnable} will never be called.
      */
     @FunctionalInterface
     interface IterateResumeAction {
@@ -90,8 +91,10 @@ public interface JobScheduler {
         final AtomicBoolean cancelRemainingExecution = new AtomicBoolean(false);
 
         final Consumer<Exception> localError = exception -> {
-            cancelRemainingExecution.set(true);
-            onError.accept(exception);
+            // signal only on the first error
+            if (cancelRemainingExecution.compareAndSet(false, true)) {
+                onError.accept(exception);
+            }
         };
 
         final Runnable task = () -> {
@@ -155,8 +158,10 @@ public interface JobScheduler {
         final AtomicBoolean cancelRemainingExecution = new AtomicBoolean(false);
 
         final Consumer<Exception> localError = exception -> {
-            cancelRemainingExecution.set(true);
-            onError.accept(exception);
+            // signal only on the first error
+            if (cancelRemainingExecution.compareAndSet(false, true)) {
+                onError.accept(exception);
+            }
         };
 
         final Runnable resumeAction = () -> {

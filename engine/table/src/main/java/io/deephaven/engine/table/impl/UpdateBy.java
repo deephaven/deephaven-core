@@ -82,7 +82,7 @@ public abstract class UpdateBy {
     /** ColumnSet transformer from source to downstream */
     protected ModifiedColumnSet.Transformer transformer;
 
-    /** For refreshing sources, need a listener to react to upstream updates */
+    /** Listener to react to upstream changes to refreshing source tables */
     protected UpdateByListener listener;
 
     /** Store every bucket in this list for processing */
@@ -370,7 +370,7 @@ public abstract class UpdateBy {
             if (initialStep) {
                 for (int srcIdx : cacheableSourceIndices) {
                     if (inputSourceCacheNeeded[srcIdx]) {
-                        // create a RowSet to be used by `InverseRowRedirectionImpl`
+                        // create a RowSet to be used by `InverseWrappedRowSetWritableRowRedirection`
                         inputSourceRowSets[srcIdx] = source.getRowSet().copy();
 
                         // record how many windows require this input source
@@ -440,7 +440,7 @@ public abstract class UpdateBy {
             innerSource.ensureCapacity(inputRowSet.size());
 
             // there will be no updates to this cached column source, so use a simple redirection
-            final WritableRowRedirection rowRedirection = new InverseRowRedirectionImpl(inputRowSet);
+            final WritableRowRedirection rowRedirection = new InverseWrappedRowSetWritableRowRedirection(inputRowSet);
             final WritableColumnSource<?> outputSource =
                     new WritableRedirectedColumnSource<>(rowRedirection, innerSource, 0);
 
@@ -834,7 +834,7 @@ public abstract class UpdateBy {
             if (!source.isRefreshing()) {
                 if (!source.isFlat() && SparseConstants.sparseStructureExceedsOverhead(source.getRowSet(),
                         control.maxStaticSparseMemoryOverheadOrDefault())) {
-                    rowRedirection = new InverseRowRedirectionImpl(source.getRowSet());
+                    rowRedirection = new InverseWrappedRowSetWritableRowRedirection(source.getRowSet());
                 } else {
                     rowRedirection = null;
                 }

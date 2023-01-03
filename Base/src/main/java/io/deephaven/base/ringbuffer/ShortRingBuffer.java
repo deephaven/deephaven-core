@@ -56,7 +56,7 @@ public class ShortRingBuffer implements Serializable {
      *
      * @param capacity minimum capacity of ring buffer
      * @param growable whether to allow growth when the buffer is full. If this is {@code false} and {@code add()} is
-     *        called, an
+     *        called, an {@link UnsupportedOperationException} will be thrown
      *
      */
     public ShortRingBuffer(int capacity, boolean growable) {
