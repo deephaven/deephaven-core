@@ -216,7 +216,7 @@ public class JsTreeTable extends HasEventHandling {
 
             @JsProperty(name = "depth")
             public int depth() {
-                return depthColumn[offsetInSnapshot];
+                return depthColumn[offsetInSnapshot] + 1;
             }
 
             public void appendKeyData(Object[][] keyTableData, boolean expanded) {
