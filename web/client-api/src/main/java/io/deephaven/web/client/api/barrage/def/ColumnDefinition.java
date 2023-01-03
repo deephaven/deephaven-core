@@ -19,7 +19,7 @@ public class ColumnDefinition {
     private boolean isFormatColumn;
     private boolean isNumberFormatColumn;
     private boolean isPartitionColumn;
-    private boolean isRollupHierarchicalColumn;
+    private boolean isConstituentColumn;
 
     // Indicates that this is a style column for the row
     private boolean forRow;
@@ -91,7 +91,7 @@ public class ColumnDefinition {
     }
 
     public boolean isVisible() {
-        return !isStyleColumn() && !isFormatColumn() && !isRollupHierarchicalColumn();
+        return !isStyleColumn() && !isFormatColumn() && !isConstituentColumn();
     }
 
     public boolean isForRow() {
@@ -100,14 +100,6 @@ public class ColumnDefinition {
 
     public void setForRow(boolean forRow) {
         this.forRow = forRow;
-    }
-
-    public boolean isRollupHierarchicalColumn() {
-        return isRollupHierarchicalColumn;
-    }
-
-    public void setRollupHierarchicalColumn(boolean rollupHierarchicalColumn) {
-        isRollupHierarchicalColumn = rollupHierarchicalColumn;
     }
 
     public String getFormatColumnName() {
@@ -142,10 +134,11 @@ public class ColumnDefinition {
         return description;
     }
 
-    public Column makeJsColumn(int index, Map<String, ColumnDefinition> byNameMap) {
+    public Column makeJsColumn(int index, Map<Boolean, Map<String, ColumnDefinition>> map) {
         if (isForRow()) {
             return makeColumn(-1, this, null, null, false, null, null, false);
         }
+        Map<String, ColumnDefinition> byNameMap = map.get(isConstituentColumn());
         ColumnDefinition format = byNameMap.get(getFormatColumnName());
         ColumnDefinition style = byNameMap.get(getStyleColumnName());
 
@@ -166,4 +159,11 @@ public class ColumnDefinition {
                 definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn);
     }
 
+    public boolean isConstituentColumn() {
+        return isConstituentColumn;
+    }
+
+    public void setConstituentColumn(boolean constituentColumn) {
+        isConstituentColumn = constituentColumn;
+    }
 }

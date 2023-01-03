@@ -394,7 +394,8 @@ public final class ClientTableState extends TableConfig {
             ColumnDefinition[] columnDefinitions = tableDef.getColumns();
 
             // iterate through the columns, combine format columns into the normal model
-            Map<String, ColumnDefinition> byNameMap = tableDef.getColumnsByName();
+            Map<Boolean, Map<String, ColumnDefinition>> byNameMap = tableDef.getColumnsByName();
+            assert !byNameMap.containsKey(true) : "Unexpected constituent columns in table " + byNameMap.get(true);
             Column[] columns = new Column[0];
             allColumns = new Column[0];
             for (ColumnDefinition definition : columnDefinitions) {

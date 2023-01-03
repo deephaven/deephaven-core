@@ -39,9 +39,9 @@ public class InitialTableDefinition {
         return this;
     }
 
-    public Map<String, ColumnDefinition> getColumnsByName() {
+    public Map<Boolean, Map<String, ColumnDefinition>> getColumnsByName() {
         return Arrays.stream(columns)
-                .collect(columnCollector(false));
+                .collect(Collectors.partitioningBy(ColumnDefinition::isConstituentColumn, columnCollector(false)));
     }
 
     private static Collector<? super ColumnDefinition, ?, Map<String, ColumnDefinition>> columnCollector(

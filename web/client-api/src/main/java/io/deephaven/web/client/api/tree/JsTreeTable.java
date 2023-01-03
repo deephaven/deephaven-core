@@ -283,7 +283,7 @@ public class JsTreeTable extends HasEventHandling {
 
         this.tableDefinition = WebBarrageUtils.readTableDefinition(schema);
         Column[] columns = new Column[0];
-        Map<String, ColumnDefinition> columnDefsByName = tableDefinition.getColumnsByName();
+        Map<Boolean, Map<String, ColumnDefinition>> columnDefsByName = tableDefinition.getColumnsByName();
         int rowFormatColumn = -1;
 
         for (ColumnDefinition definition : tableDefinition.getColumns()) {
