@@ -4,7 +4,7 @@
 package io.deephaven.server.config;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.server.runner.MainBase;
+import io.deephaven.server.runner.MainHelper;
 import io.deephaven.ssl.config.SSLConfig;
 import org.immutables.value.Value.Default;
 
@@ -75,14 +75,14 @@ public interface ServerConfig {
      * </tr>
      * </table>
      *
-     * Also parses {@link MainBase#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)} and
-     * {@link MainBase#parseOutboundSSLConfig(Configuration)} into {@link Builder#outboundSsl(SSLConfig)}.
+     * Also parses {@link MainHelper#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)} and
+     * {@link MainHelper#parseOutboundSSLConfig(Configuration)} into {@link Builder#outboundSsl(SSLConfig)}.
      *
      * @param builder the builder
      * @param config the configuration
      * @return the builder
      * @param <B> the builder type
-     * @see MainBase#parseSSLConfig(Configuration) for {@link Builder#ssl(SSLConfig)}
+     * @see MainHelper#parseSSLConfig(Configuration) for {@link Builder#ssl(SSLConfig)}
      */
     static <B extends Builder<?, B>> B buildFromConfig(B builder, Configuration config) {
         int httpSessionExpireMs = config.getIntegerWithDefault(HTTP_SESSION_DURATION_MS, -1);
@@ -113,8 +113,8 @@ public interface ServerConfig {
         if (proxyHint != null) {
             builder.proxyHint(Boolean.parseBoolean(proxyHint));
         }
-        MainBase.parseSSLConfig(config).ifPresent(builder::ssl);
-        MainBase.parseOutboundSSLConfig(config).ifPresent(builder::outboundSsl);
+        MainHelper.parseSSLConfig(config).ifPresent(builder::ssl);
+        MainHelper.parseOutboundSSLConfig(config).ifPresent(builder::outboundSsl);
         return builder;
     }
 

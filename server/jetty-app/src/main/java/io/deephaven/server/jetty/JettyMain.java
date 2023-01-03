@@ -3,45 +3,25 @@
  */
 package io.deephaven.server.jetty;
 
-import dagger.BindsInstance;
-import dagger.Component;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.server.auth.CommunityAuthorizationModule;
-import io.deephaven.server.jetty.JettyMain.JettyMainComponent;
-import io.deephaven.server.jetty.JettyMain.JettyMainComponent.Builder;
-import io.deephaven.server.runner.DeephavenApiServerComponent;
-import io.deephaven.server.runner.MainBase;
+import io.deephaven.server.runner.MainHelper;
 
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-public final class JettyMain extends MainBase<JettyMain, Builder, JettyMainComponent> {
-
-    @Singleton
-    @Component(modules = {
-            DefaultsModule.class,
-            JettyServerModule.class,
-            CommunityAuthorizationModule.class,
-    })
-    public interface JettyMainComponent extends DeephavenApiServerComponent {
-        @Component.Builder
-        interface Builder extends DeephavenApiServerComponent.Builder<Builder, JettyMainComponent> {
-            @BindsInstance
-            Builder withJettyConfig(JettyConfig config);
-        }
-    }
-
-    @Override
-    public JettyMainComponent.Builder builderFrom(Configuration config) {
-        final JettyConfig jettyConfig = JettyConfig.buildFromConfig(config).build();
-        return DaggerJettyMain_JettyMainComponent
-                .builder()
-                .withJettyConfig(jettyConfig);
-    }
-
+/**
+ * The out-of-the-box Deephaven community server.
+ *
+ * @see CommunityComponentBuilder
+ */
+public final class JettyMain {
     public static void main(String[] args)
             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
-        new JettyMain().main(args, JettyMain.class);
+        final Configuration configuration = MainHelper.init(args, JettyMain.class);
+        new CommunityComponentBuilder()
+                .build(configuration)
+                .getServer()
+                .run()
+                .join();
     }
 }

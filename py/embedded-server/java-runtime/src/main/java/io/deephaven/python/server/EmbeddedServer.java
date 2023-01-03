@@ -26,7 +26,7 @@ import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
 import io.deephaven.server.runner.DeephavenApiServerModule;
-import io.deephaven.server.runner.MainBase;
+import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.util.Scheduler;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
@@ -86,7 +86,7 @@ public class EmbeddedServer {
         System.setOut(new PrintStream(new PyLogOutputStream(() -> sys.getAttribute("stdout"))));
         System.setErr(new PrintStream(new PyLogOutputStream(() -> sys.getAttribute("stderr"))));
 
-        final Configuration config = MainBase.init(new String[0], EmbeddedServer.class);
+        final Configuration config = MainHelper.init(new String[0], EmbeddedServer.class);
         final Builder builder = JettyConfig.buildFromConfig(config);
         if (host != null) {
             builder.host(host);
