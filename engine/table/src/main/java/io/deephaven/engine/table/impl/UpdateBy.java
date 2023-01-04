@@ -105,7 +105,7 @@ public abstract class UpdateBy {
         }
 
         private long requiredCapacity() {
-            return maxInnerRowKey + 1;
+            return maxInnerRowKey;
         }
 
         @Nullable
@@ -133,7 +133,7 @@ public abstract class UpdateBy {
                 final MutableLong lastAllocated = new MutableLong(0);
                 final WritableRowSet.Iterator freeIt = freeRows.iterator();
                 upstream.added().forAllRowKeys(outerKey -> {
-                    final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerRowKey;
+                    final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : maxInnerRowKey++;
                     lastAllocated.setValue(innerKey);
                     rowRedirection.put(outerKey, innerKey);
                 });
