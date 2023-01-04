@@ -22,7 +22,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
     protected final ColumnSource<?> valueSource;
     protected final OperationControl control;
-    protected final double timeScaleUnits;
     protected final BigDecimal alpha;
     protected final BigDecimal oneMinusAlpha;
 
@@ -75,11 +74,9 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             final long timeScaleUnits,
             @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
             final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, redirHelper, BigDecimal.class);
+        super(pair, affectingColumns, redirHelper, timestampColumnName, timeScaleUnits, BigDecimal.class);
 
         this.control = control;
-        this.timestampColumnName = timestampColumnName;
-        this.timeScaleUnits = (double) timeScaleUnits;
         this.valueSource = valueSource;
 
         alpha = BigDecimal.valueOf(Math.exp(-1.0 / (double) timeScaleUnits));

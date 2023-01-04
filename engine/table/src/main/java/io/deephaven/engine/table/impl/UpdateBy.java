@@ -90,9 +90,9 @@ public abstract class UpdateBy {
 
     public static class UpdateByRedirectionHelper {
         @Nullable
-        protected final WritableRowRedirection rowRedirection;
-        protected final WritableRowSet freeRows;
-        protected long maxInnerRowKey;
+        private final WritableRowRedirection rowRedirection;
+        private final WritableRowSet freeRows;
+        private long maxInnerRowKey;
 
         private UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
             this.rowRedirection = rowRedirection;
@@ -125,28 +125,7 @@ public abstract class UpdateBy {
             if (upstream.shifted().nonempty()) {
                 try (final WritableRowSet prevRowSetLessRemoves = sourceRowSet.copyPrev()) {
                     prevRowSetLessRemoves.remove(upstream.removed());
-                    final RowSet.SearchIterator fwdIt = prevRowSetLessRemoves.searchIterator();
-
-                    upstream.shifted().apply((start, end, delta) -> {
-                        if (delta < 0 && fwdIt.advance(start)) {
-                            for (long key = fwdIt.currentValue(); fwdIt.currentValue() <= end; key = fwdIt.nextLong()) {
-                                if (shiftRedirectedKey(fwdIt, delta, key)) {
-                                    break;
-                                }
-                            }
-                        } else {
-                            try (final RowSet.SearchIterator revIt = prevRowSetLessRemoves.reverseIterator()) {
-                                if (revIt.advance(end)) {
-                                    for (long key = revIt.currentValue(); revIt.currentValue() >= start; key =
-                                            revIt.nextLong()) {
-                                        if (shiftRedirectedKey(revIt, delta, key)) {
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
+                    rowRedirection.applyShift(prevRowSetLessRemoves, upstream.shifted());
                 }
             }
 

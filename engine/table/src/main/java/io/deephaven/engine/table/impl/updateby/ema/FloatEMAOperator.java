@@ -80,7 +80,7 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                             if (dt <= 0) {
                                 handleBadTime(this, dt);
                             } else if (!currentPoisoned) {
-                                final double alpha = Math.exp(-dt / timeScaleUnits);
+                                final double alpha = Math.exp(-dt / (double)reverseTimeScaleUnits);
                                 curVal = alpha * curVal + ((1 - alpha) * input);
                                 lastStamp = timestamp;
                             }

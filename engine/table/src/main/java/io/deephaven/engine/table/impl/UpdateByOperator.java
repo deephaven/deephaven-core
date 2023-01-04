@@ -39,10 +39,10 @@ public abstract class UpdateByOperator {
     protected final UpdateBy.UpdateByRedirectionHelper redirHelper;
 
     // these will be used by the timestamp-aware operators (EMA for example)
-    protected OperationControl control;
-    protected long reverseTimeScaleUnits;
-    protected long forwardTimeScaleUnits;
-    protected String timestampColumnName;
+    protected final OperationControl control;
+    protected final long reverseTimeScaleUnits;
+    protected final long forwardTimeScaleUnits;
+    protected final String timestampColumnName;
 
     /**
      * The input modifiedColumnSet for this operator

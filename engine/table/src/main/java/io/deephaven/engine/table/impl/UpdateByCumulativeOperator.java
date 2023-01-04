@@ -8,6 +8,8 @@ import io.deephaven.engine.table.MatchPair;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
+
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
@@ -49,6 +51,23 @@ public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
             @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
         super(pair, affectingColumns, null, null, 0L, 0L, redirHelper);
     }
+
+    /**
+     * An operator that computes a cumulative operation from a column while providing an optional timestamp column name
+     * and a
+     *
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this operation
+     * @param redirHelper the row redirection context to use for the operation
+     */
+    public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
+                                      @NotNull final String[] affectingColumns,
+                                      @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
+                                      @Nullable final String timestampColumnName,
+                                      @NotNull final long reverseTimeScaleUnits) {
+        super(pair, affectingColumns, null, timestampColumnName, reverseTimeScaleUnits, 0L, redirHelper);
+    }
+
 
     /**
      * Initialize the bucket context for this cumulative operator

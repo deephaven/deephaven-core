@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
@@ -103,8 +104,31 @@ public abstract class BaseIntUpdateByOperator extends UpdateByCumulativeOperator
                                     @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
+    ) {
+        this(pair, affectingColumns, redirHelper, null, 0);
+    }
+
+    /**
+     * Construct a base operator for operations that produce int outputs.
+     *
+     * @param pair             the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
+     *                         of this operator.
+     * @param redirHelper the {@link UpdateBy.UpdateByRedirectionHelper} for the overall update
+     * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
+     *        integer ticks.
+     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds.
+     */
+    public BaseIntUpdateByOperator(@NotNull final MatchPair pair,
+                                    @NotNull final String[] affectingColumns,
+                                    @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
+                                    @Nullable final String timestampColumnName,
+                                    final long timeScaleUnits
+                                    // region extra-constructor-args
+                                    // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, redirHelper);
+        super(pair, affectingColumns, redirHelper, timestampColumnName, timeScaleUnits);
         if(this.redirHelper.isRedirected()) {
             // region create-dense
             this.maybeInnerSource = new IntegerArraySource();

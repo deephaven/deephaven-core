@@ -17,7 +17,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperator {
     protected final OperationControl control;
-    protected final double timeScaleUnits;
     protected final double alpha;
     protected double oneMinusAlpha;
 
@@ -60,10 +59,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
             @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
-        super(pair, affectingColumns, redirHelper);
+        super(pair, affectingColumns, redirHelper, timestampColumnName, timeScaleUnits);
         this.control = control;
-        this.timestampColumnName = timestampColumnName;
-        this.timeScaleUnits = (double) timeScaleUnits;
 
         alpha = Math.exp(-1.0 / (double) timeScaleUnits);
         oneMinusAlpha = 1 - alpha;

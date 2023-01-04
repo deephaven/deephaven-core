@@ -295,7 +295,8 @@ public class ReplicateUpdateBy {
                 "Object previousVal", "T previousVal",
                 "Object singletonVal", "T singletonVal",
                 "getObject", "get",
-                "getPrevObject", "getPrev");
+                "getPrevObject", "getPrev",
+                "this\\(pair, affectingColumns, redirHelper, null, 0\\);", "this(pair, affectingColumns, redirHelper, null, 0, colType);");
         if (extraReplacements != null && extraReplacements.length > 0) {
             lines = globalReplacements(lines, extraReplacements);
         }

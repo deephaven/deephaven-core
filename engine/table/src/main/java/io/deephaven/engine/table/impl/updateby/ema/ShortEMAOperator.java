@@ -72,7 +72,7 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                                 handleBadTime(this, dt);
                             } else {
                                 // alpha is dynamic, based on time
-                                final double alpha = Math.exp(-dt / timeScaleUnits);
+                                final double alpha = Math.exp(-dt / (double)reverseTimeScaleUnits);
                                 curVal = alpha * curVal + ((1 - alpha) * input);
                                 lastStamp = timestamp;
                             }

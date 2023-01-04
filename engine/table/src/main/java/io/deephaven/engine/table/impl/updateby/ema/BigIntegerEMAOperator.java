@@ -71,7 +71,7 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                                 handleBadTime(this, dt);
                             } else {
                                 // alpha is dynamic, based on time
-                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
+                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double)reverseTimeScaleUnits));
                                 BigDecimal oneMinusAlpha = BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
 
                                 curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
