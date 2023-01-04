@@ -103,7 +103,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table rawSorted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TableTools.show(rawSorted);
 
-        assertArrayEquals(new int[]{1, 3, 4, 6, 9}, (int[]) rawSorted.getColumn("Sentinel").getDirect());
+        assertArrayEquals(new int[] {1, 3, 4, 6, 9}, (int[]) rawSorted.getColumn("Sentinel").getDirect());
 
         TstUtils.addToTable(source,
                 i(10),
@@ -138,7 +138,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         assertArrayEquals(
-                new int[]{1, 2, 3, 4, 6, 9, 10, 11, 12},
+                new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
                 (int[]) rawSorted.getColumn("Sentinel").getDirect());
         assertTableEquals(rawSorted, table2);
         assertTableEquals(table2, table3);

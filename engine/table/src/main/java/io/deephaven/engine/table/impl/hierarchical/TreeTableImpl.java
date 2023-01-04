@@ -156,8 +156,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
         final QueryTable filteredTree = computeTree(filteredSource, parentIdentifierColumn);
         return new TreeTableImpl(getAttributes(), filteredSource, filteredTree, sourceRowLookup, identifierColumn,
-                parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder)
-        );
+                parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder));
     }
 
     /**
@@ -178,8 +177,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             return noopResult();
         }
         return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
-                parentIdentifierColumn, nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations)
-        );
+                parentIdentifierColumn, nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations));
     }
 
     private static TreeNodeOperationsRecorder accumulateOperations(

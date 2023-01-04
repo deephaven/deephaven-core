@@ -228,8 +228,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
-                constituentNodeDefinition, constituentNodeOperations
-        );
+                constituentNodeDefinition, constituentNodeOperations);
     }
 
     private WhereFilter[] initializeAndValidateFilters(@NotNull final Collection<? extends Filter> filters) {
@@ -401,8 +400,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
-                constituentNodeDefinition, constituentNodeOperations
-        );
+                constituentNodeDefinition, constituentNodeOperations);
     }
 
     public static RollupTable makeRollup(

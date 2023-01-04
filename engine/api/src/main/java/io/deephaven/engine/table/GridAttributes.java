@@ -77,7 +77,7 @@ public interface GridAttributes<TYPE extends GridAttributes<TYPE>> extends Attri
      */
     @NotNull
     static Map<String, String> getColumnDescriptions(@NotNull final Map<String, Object> attributes) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (Map<String, String>) attributes.getOrDefault(COLUMN_DESCRIPTIONS_ATTRIBUTE, Collections.emptyMap());
     }
 }

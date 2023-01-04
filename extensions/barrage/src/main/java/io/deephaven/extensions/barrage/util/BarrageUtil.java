@@ -218,7 +218,7 @@ public class BarrageUtil {
             }
 
             // Only one of these will be true, if any are true the column will not be visible
-            putMetadata(metadata, "isRowStyle",  ColumnFormatting.isRowStyleFormatColumn(name) + "");
+            putMetadata(metadata, "isRowStyle", ColumnFormatting.isRowStyleFormatColumn(name) + "");
             putMetadata(metadata, "isStyle", ColumnFormatting.isStyleFormatColumn(name) + "");
             putMetadata(metadata, "isNumberFormat", ColumnFormatting.isNumberFormatColumn(name) + "");
             putMetadata(metadata, "isDateFormat", ColumnFormatting.isDateFormatColumn(name) + "");
