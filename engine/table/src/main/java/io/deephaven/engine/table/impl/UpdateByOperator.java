@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +37,7 @@ public abstract class UpdateByOperator {
 
     protected final MatchPair pair;
     protected final String[] affectingColumns;
-    protected final UpdateBy.UpdateByRedirectionHelper redirHelper;
+    protected final WritableRowRedirection rowRedirection;
 
     // these will be used by the timestamp-aware operators (EMA for example)
     protected final OperationControl control;
@@ -102,10 +103,10 @@ public abstract class UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseTimeScaleUnits,
             final long forwardTimeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
+            @Nullable final WritableRowRedirection rowRedirection) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
-        this.redirHelper = redirHelper;
+        this.rowRedirection = rowRedirection;
         this.timestampColumnName = timestampColumnName;
         this.control = control;
         this.reverseTimeScaleUnits = reverseTimeScaleUnits;

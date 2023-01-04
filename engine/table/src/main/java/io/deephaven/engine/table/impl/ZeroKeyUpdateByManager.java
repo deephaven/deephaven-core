@@ -4,6 +4,7 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,7 +29,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
      * @param source the source table
      * @param resultSources the result sources
      * @param timestampColumnName the column to use for all time-aware operators
-     * @param redirHelper the row redirection helper for dense output sources
+     * @param rowRedirection the row redirection for dense output sources
      * @param control the control object.
      */
     protected ZeroKeyUpdateByManager(
@@ -40,9 +41,9 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             @NotNull QueryTable source,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
-            @NotNull UpdateByRedirectionHelper redirHelper,
+            @Nullable WritableRowRedirection rowRedirection,
             @NotNull UpdateByControl control) {
-        super(source, operators, windows, inputSources, operatorInputSourceSlots, timestampColumnName, redirHelper,
+        super(source, operators, windows, inputSources, operatorInputSourceSlots, timestampColumnName, rowRedirection,
                 control);
 
         if (source.isRefreshing()) {
@@ -62,7 +63,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
             // create an updateby bucket instance directly from the source table
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    operatorInputSourceSlots, resultSources, timestampColumnName, redirHelper, control);
+                    operatorInputSourceSlots, resultSources, timestampColumnName, redirHelper.getRowRedirection(),
+                    control);
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
@@ -72,7 +74,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             result.addParentReference(zeroKeyUpdateBy);
         } else {
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    operatorInputSourceSlots, resultSources, timestampColumnName, redirHelper, control);
+                    operatorInputSourceSlots, resultSources, timestampColumnName, redirHelper.getRowRedirection(),
+                    control);
             result = zeroKeyUpdateBy.result;
             buckets.offer(zeroKeyUpdateBy);
         }

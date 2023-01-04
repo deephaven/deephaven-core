@@ -10,6 +10,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +31,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     final UpdateByOperator[] operators;
     final UpdateByWindow[] windows;
     final QueryTable source;
-    final UpdateBy.UpdateByRedirectionHelper redirHelper;
+    final WritableRowRedirection rowRedirection;
     final UpdateByControl control;
     final QueryTable result;
 
@@ -56,7 +57,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * @param operatorInputSourceSlots the mapping from operator index to needed input source indices
      * @param resultSources the result sources
      * @param timestampColumnName the timestamp column used for time-based operations
-     * @param redirHelper the row redirection shared context
+     * @param rowRedirection the row redirection for operator output columns
      * @param control the control object.
      */
 
@@ -68,7 +69,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
-            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
 
         this.source = source;
@@ -76,7 +77,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         this.windows = windows;
         this.inputSources = inputSources;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
-        this.redirHelper = redirHelper;
+        this.rowRedirection = rowRedirection;
         this.control = control;
 
         result = new QueryTable(source.getRowSet(), resultSources);

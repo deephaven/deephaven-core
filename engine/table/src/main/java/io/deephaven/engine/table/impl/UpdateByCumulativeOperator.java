@@ -5,6 +5,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,8 +49,8 @@ public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
      */
     public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
-        super(pair, affectingColumns, null, null, 0L, 0L, redirHelper);
+            @Nullable final WritableRowRedirection rowRedirection) {
+        super(pair, affectingColumns, null, null, 0L, 0L, rowRedirection);
     }
 
     /**
@@ -61,11 +62,11 @@ public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
      * @param redirHelper the row redirection context to use for the operation
      */
     public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
-                                      @NotNull final String[] affectingColumns,
-                                      @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
-                                      @Nullable final String timestampColumnName,
-                                      @NotNull final long reverseTimeScaleUnits) {
-        super(pair, affectingColumns, null, timestampColumnName, reverseTimeScaleUnits, 0L, redirHelper);
+            @NotNull final String[] affectingColumns,
+            @Nullable final WritableRowRedirection rowRedirection,
+            @Nullable final String timestampColumnName,
+            @NotNull final long reverseTimeScaleUnits) {
+        super(pair, affectingColumns, null, timestampColumnName, reverseTimeScaleUnits, 0L, rowRedirection);
     }
 
 

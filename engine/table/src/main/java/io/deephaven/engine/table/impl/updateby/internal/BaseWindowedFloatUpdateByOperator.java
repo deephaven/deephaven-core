@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.engine.table.impl.sources.FloatSparseArraySource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,16 +108,16 @@ public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowed
                                             @Nullable final String timestampColumnName,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
-                                            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
+                                            @Nullable final WritableRowRedirection rowRedirection
                                             // region extra-constructor-args
                                             // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirHelper);
-        if(this.redirHelper.isRedirected()) {
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
+        if(rowRedirection != null) {
             // region create-dense
             this.maybeInnerSource = new FloatArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(this.redirHelper.getRowRedirection(), maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -138,7 +139,7 @@ public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowed
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if (redirHelper.isRedirected()) {
+        if (rowRedirection != null) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -152,7 +153,7 @@ public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowed
 
     @Override
     public void prepareForParallelPopulation(final RowSet changedRows) {
-        if (redirHelper.isRedirected()) {
+        if (rowRedirection != null) {
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);

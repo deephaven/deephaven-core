@@ -11,6 +11,7 @@ import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -72,9 +73,9 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
+            @Nullable final WritableRowRedirection rowRedirection,
             final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, redirHelper, timestampColumnName, timeScaleUnits, BigDecimal.class);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits, BigDecimal.class);
 
         this.control = control;
         this.valueSource = valueSource;

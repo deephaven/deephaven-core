@@ -8,6 +8,7 @@ import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,15 +52,15 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
      *        integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds.
-     * @param redirHelper the row redirection context to use for the EMA
+     * @param rowRedirection the row redirection to use for the EMA output columns
      */
     public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
-        super(pair, affectingColumns, redirHelper, timestampColumnName, timeScaleUnits);
+            @Nullable final WritableRowRedirection rowRedirection) {
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits);
         this.control = control;
 
         alpha = Math.exp(-1.0 / (double) timeScaleUnits);

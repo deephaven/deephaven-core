@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -132,12 +133,12 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                             @NotNull final OperationControl control,
                             @Nullable final String timestampColumnName,
                             final long timeScaleUnits,
-                            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
+                            @Nullable final WritableRowRedirection rowRedirection,
                             final ColumnSource<?> valueSource
                             // region extra-constructor-args
                             // endregion extra-constructor-args
                             ) {
-        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirHelper);
+        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, rowRedirection);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor

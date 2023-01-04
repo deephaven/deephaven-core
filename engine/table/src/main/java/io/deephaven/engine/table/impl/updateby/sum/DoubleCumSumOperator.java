@@ -11,7 +11,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
@@ -45,11 +47,11 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
     }
 
     public DoubleCumSumOperator(@NotNull final MatchPair pair,
-                               @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
+                               @Nullable final WritableRowRedirection rowRedirection
                                // region extra-constructor-args
                                // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, redirHelper);
+        super(pair, new String[] { pair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }

@@ -18,7 +18,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
@@ -48,11 +50,11 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     }
 
     public BooleanFillByOperator(@NotNull final MatchPair fillPair,
-                              @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
+                              @Nullable final WritableRowRedirection rowRedirection
                               // region extra-constructor-args
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, redirHelper);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }

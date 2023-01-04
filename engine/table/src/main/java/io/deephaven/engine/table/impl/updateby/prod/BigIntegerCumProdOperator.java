@@ -6,7 +6,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
 
@@ -45,8 +47,8 @@ public final class BigIntegerCumProdOperator extends BaseObjectUpdateByOperator<
     }
 
     public BigIntegerCumProdOperator(@NotNull final MatchPair inputPair,
-                                     @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
-        super(inputPair, new String[] {inputPair.rightColumn}, redirHelper, BigInteger.class);
+                                     @Nullable final WritableRowRedirection rowRedirection) {
+        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigInteger.class);
     }
 
     @NotNull

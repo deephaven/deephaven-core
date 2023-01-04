@@ -6,6 +6,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,10 +47,10 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
             @Nullable final String timestampColumnName,
-            @NotNull final UpdateByRedirectionHelper redirHelper,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
-        super(source, operators, windows, inputSources, operatorInputSourceSlots, timestampColumnName, redirHelper,
-                control);
+        super(source, operators, windows, inputSources, operatorInputSourceSlots, timestampColumnName,
+                rowRedirection, control);
 
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
@@ -85,7 +86,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                     operatorInputSourceSlots,
                     resultSources,
                     timestampColumnName,
-                    redirHelper,
+                    redirHelper.getRowRedirection(),
                     control);
 
             // add this to the bucket list

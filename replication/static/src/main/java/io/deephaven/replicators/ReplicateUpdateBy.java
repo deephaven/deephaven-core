@@ -34,8 +34,8 @@ public class ReplicateUpdateBy {
         String objectResult = ReplicatePrimitiveCode.charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/fill/CharFillByOperator.java");
         fixupStandardObject(objectResult, "ObjectFillByOperator", false,
-                "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, redirHelper\\);",
-                "super(fillPair, new String[] { fillPair.rightColumn }, redirHelper, colType);",
+                "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, rowRedirection\\);",
+                "super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, colType);",
                 " BaseObjectUpdateByOperator", " BaseObjectUpdateByOperator<T>",
                 "public ObjectChunk<Object,", "public ObjectChunk<T,");
 
@@ -64,7 +64,9 @@ public class ReplicateUpdateBy {
         }
         objectResult = ReplicatePrimitiveCode.charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseCharUpdateByOperator.java");
-        fixupStandardObject(objectResult, "BaseObjectUpdateByOperator", true);
+        fixupStandardObject(objectResult, "BaseObjectUpdateByOperator", true,
+                "this\\(pair, affectingColumns, rowRedirection, null, 0\\);",
+                "this(pair, affectingColumns, rowRedirection, null, 0, colType);");
         ReplicatePrimitiveCode.floatToAllFloatingPoints(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseFloatUpdateByOperator.java",
                 exemptions);
@@ -295,8 +297,7 @@ public class ReplicateUpdateBy {
                 "Object previousVal", "T previousVal",
                 "Object singletonVal", "T singletonVal",
                 "getObject", "get",
-                "getPrevObject", "getPrev",
-                "this\\(pair, affectingColumns, redirHelper, null, 0\\);", "this(pair, affectingColumns, redirHelper, null, 0, colType);");
+                "getPrevObject", "getPrev");
         if (extraReplacements != null && extraReplacements.length > 0) {
             lines = globalReplacements(lines, extraReplacements);
         }

@@ -6,7 +6,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -45,9 +47,9 @@ public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<B
     }
 
     public BigDecimalCumSumOperator(@NotNull final MatchPair inputPair,
-            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final MathContext mathContext) {
-        super(inputPair, new String[] {inputPair.rightColumn}, redirHelper, BigDecimal.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigDecimal.class);
         this.mathContext = mathContext;
     }
 

@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,7 +69,7 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                                 handleBadTime(this, dt);
                             } else {
                                 // alpha is dynamic, based on time
-                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double)reverseTimeScaleUnits));
+                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseTimeScaleUnits));
                                 BigDecimal oneMinusAlpha =
                                         BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
 
@@ -103,16 +104,16 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
      *        integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
      *        in ticks, otherwise it is measured in nanoseconds
-     * @param redirHelper the row redirection context to use for the EMA
+     * @param rowRedirection the row redirection for the EMA output column
      */
     public BigDecimalEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
+            @Nullable final WritableRowRedirection rowRedirection,
             final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, redirHelper, valueSource);
+        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, rowRedirection, valueSource);
     }
 
     @NotNull

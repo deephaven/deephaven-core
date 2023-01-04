@@ -12,6 +12,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.PairwiseDoubleRingBuffer;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,11 +96,11 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
                                    @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
+                                   @Nullable final WritableRowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirHelper);
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
         // region constructor
         // endregion constructor
     }

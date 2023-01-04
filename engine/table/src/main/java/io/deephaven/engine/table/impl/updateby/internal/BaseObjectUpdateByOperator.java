@@ -15,6 +15,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -98,16 +99,16 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param redirHelper the {@link UpdateBy.UpdateByRedirectionHelper} for the overall update
+     * @param rowRedirection the {@link WritableRowRedirection} for the output column
      */
     public BaseObjectUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
+                                    @Nullable final WritableRowRedirection rowRedirection
                                     // region extra-constructor-args
                                       , final Class<T> colType
                                     // endregion extra-constructor-args
     ) {
-        this(pair, affectingColumns, redirHelper, null, 0, colType);
+        this(pair, affectingColumns, rowRedirection, null, 0, colType);
     }
 
     /**
@@ -116,7 +117,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param redirHelper the {@link UpdateBy.UpdateByRedirectionHelper} for the overall update
+     * @param rowRedirection the {@link WritableRowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
@@ -124,19 +125,19 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
      */
     public BaseObjectUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper,
+                                    @Nullable final WritableRowRedirection rowRedirection,
                                     @Nullable final String timestampColumnName,
                                     final long timeScaleUnits
                                     // region extra-constructor-args
                                       , final Class<T> colType
                                     // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, redirHelper, timestampColumnName, timeScaleUnits);
-        if(this.redirHelper.isRedirected()) {
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits);
+        if(rowRedirection != null) {
             // region create-dense
             this.maybeInnerSource = new ObjectArraySource(colType);
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(this.redirHelper.getRowRedirection(), maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -166,7 +167,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if (redirHelper.isRedirected()) {
+        if (rowRedirection != null) {
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -180,7 +181,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
 
     @Override
     public void prepareForParallelPopulation(final RowSet changedRows) {
-        if (redirHelper.isRedirected()) {
+        if (rowRedirection != null) {
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);

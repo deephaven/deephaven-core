@@ -6,6 +6,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +34,7 @@ public abstract class UpdateByWindowedOperator extends UpdateByOperator {
      * @param timestampColumnName the optional time stamp column for windowing (uses ticks if not provided)
      * @param reverseTimeScaleUnits the time (us) or ticks to extend the window backwards
      * @param forwardTimeScaleUnits the time (us) or ticks to extend the window forwards
-     * @param redirHelper the row redirection context to use for the operation
+     * @param rowRedirection the row redirection to use for the operator output columns
      */
     public UpdateByWindowedOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
@@ -41,9 +42,9 @@ public abstract class UpdateByWindowedOperator extends UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseTimeScaleUnits,
             final long forwardTimeScaleUnits,
-            @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
+            @Nullable final WritableRowRedirection rowRedirection) {
         super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits,
-                redirHelper);
+                rowRedirection);
     }
 
     /**

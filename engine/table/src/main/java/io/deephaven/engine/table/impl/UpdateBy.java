@@ -100,7 +100,7 @@ public abstract class UpdateBy {
             this.maxInnerRowKey = 0;
         }
 
-        public boolean isRedirected() {
+        boolean isRedirected() {
             return rowRedirection != null;
         }
 
@@ -109,7 +109,7 @@ public abstract class UpdateBy {
         }
 
         @Nullable
-        public WritableRowRedirection getRowRedirection() {
+        WritableRowRedirection getRowRedirection() {
             return rowRedirection;
         }
 
@@ -177,7 +177,7 @@ public abstract class UpdateBy {
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final int[][] operatorInputSourceSlots,
             @Nullable String timestampColumnName,
-            @NotNull final UpdateByRedirectionHelper redirHelper,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
 
         if (operators.length == 0) {
@@ -190,7 +190,7 @@ public abstract class UpdateBy {
         this.inputSources = inputSources;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.timestampColumnName = timestampColumnName;
-        this.redirHelper = redirHelper;
+        this.redirHelper = new UpdateByRedirectionHelper(rowRedirection);
         this.control = control;
 
         this.inputSourceCacheNeeded = new boolean[inputSources.length];
@@ -837,15 +837,12 @@ public abstract class UpdateBy {
             rowRedirection = null;
         }
 
-        // create an UpdateByRedirectionHelper for use by the UpdateByBucketHelper objects
-        UpdateByRedirectionHelper redirHelper = new UpdateByRedirectionHelper(rowRedirection);
-
         // TODO(deephaven-core#2693): Improve UpdateByBucketHelper implementation for ColumnName
         // generate a MatchPair array for use by the existing algorithm
         MatchPair[] pairs = MatchPair.fromPairs(byColumns);
 
         final UpdateByOperatorFactory updateByOperatorFactory =
-                new UpdateByOperatorFactory(source, pairs, redirHelper, control);
+                new UpdateByOperatorFactory(source, pairs, rowRedirection, control);
         final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
         final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
@@ -968,7 +965,7 @@ public abstract class UpdateBy {
                     source,
                     resultSources,
                     timestampColumnName,
-                    redirHelper,
+                    rowRedirection,
                     control);
 
             if (source.isRefreshing()) {
@@ -1004,7 +1001,7 @@ public abstract class UpdateBy {
                 resultSources,
                 byColumns,
                 timestampColumnName,
-                redirHelper,
+                rowRedirection,
                 control);
 
         if (source.isRefreshing()) {

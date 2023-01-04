@@ -11,7 +11,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
@@ -41,11 +43,11 @@ public class FloatFillByOperator extends BaseFloatUpdateByOperator {
     }
 
     public FloatFillByOperator(@NotNull final MatchPair fillPair,
-                              @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
+                              @Nullable final WritableRowRedirection rowRedirection
                               // region extra-constructor-args
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, redirHelper);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }

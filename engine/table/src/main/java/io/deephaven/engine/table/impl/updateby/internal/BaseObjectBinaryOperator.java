@@ -5,7 +5,9 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOperator<T> {
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
@@ -40,8 +42,8 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
     public BaseObjectBinaryOperator(@NotNull final Class<T> type,
                                     @NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper) {
-        super(pair, affectingColumns, redirHelper, type);
+                                    @Nullable final WritableRowRedirection rowRedirection) {
+        super(pair, affectingColumns, rowRedirection, type);
     }
 
     protected abstract T doOperation(T bucketCurVal, T chunkCurVal);

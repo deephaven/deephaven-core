@@ -7,6 +7,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedFloatUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.PairwiseFloatRingBuffer;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,11 +91,11 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
                                    @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @NotNull final UpdateBy.UpdateByRedirectionHelper redirHelper
+                                   @Nullable final WritableRowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, redirHelper);
+        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
         // region constructor
         // endregion constructor
     }
