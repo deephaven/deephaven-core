@@ -411,39 +411,40 @@ type HierarchicalTableDescriptor struct {
 	// user-visible and displayed before other columns, unless they also have "hierarchicalTable.isStructuralColumn" set.
 	//
 	// "hierarchicalTable.isRowDepthColumn" is always "true" if set, and is set on a single column that specifies the
-	// depth of a row. Will always have "hierarchicalTable.isExpandByColumn" set for RollupTables, but not for
-	// TreeTables.
+	// depth of a row. That column will always have "hierarchicalTable.isExpandByColumn" set for RollupTables, but never
+	// for TreeTables.
 	//
 	// "hierarchicalTable.isRowExpandedColumn" is always "true" if set, and is set on a single nullable column of
-	// booleans that specifies whether a row is expandable or expanded. Will be null for not expandable, true for
-	// expanded, false for not expanded (but expandable). Leaf rows have no children to expand, and hence will always
-	// have a null value for this column.
+	// booleans that specifies whether a row is expandable or expanded. Values will be null for rows that are not
+	// expandable, true for expanded rows, false for rows that are not expanded (but expandable). Leaf rows have no
+	// children to expand, and hence will always have a null value for this column.
+	//
+	// "rollupTable.isAggregatedNodeColumn" is always "true" if set, and is set on all columns of a RollupTable that
+	// belong to the aggregated nodes.
+	//
+	// "rollupTable.isConstituentNodeColumn" is always "true" if set, and is set on all columns of a RollupTable that
+	// belong to the constituent nodes. No such columns will be present if constituents are not included in the
+	// RollupTable.
 	//
 	// "rollupTable.isGroupByColumn" is always "true" if set, and is set on all columns of a RollupTable that are
 	// "group-by columns", whether the node is aggregated or constituent. All nodes have the same names and types for
 	// columns labeled in this way. Such columns will always have "hierarchicalTable.isExpandByColumn" set if and only if
 	// they also have "rollupTable.isAggregatedNodeColumn" set.
 	//
-	// "rollupTable.isAggregatedNodeColumn" is always "true" if set, and is set on all columns of a RollupTable that
-	// belong to the aggregated nodes.
-	//
 	// "rollupTable.aggregationInputColumnName" is set to the (string) name of the corresponding constituent column that
-	// was used as input to this aggregation node column. May have an empty value because some aggregations take no input
-	// columns, for example "Count". This is only ever present on columns with "rollupTable.isAggregatedNodeColumn" set.
-	//
-	// "rollupTable.isConstituentNodeColumn" is always "true" if set, and is set on all columns of a RollupTable that
-	// belong to the constituent nodes. No such columns will be present if constituents are not included in the
-	// RollupTable.
+	// was used as input to this aggregation node column. May have an empty value, because some aggregations take no
+	// input columns, for example "Count". This is only ever present on columns with "rollupTable.isAggregatedNodeColumn"
+	// set.
 	//
 	// "treeTable.isNodeColumn" is always "true" if set, and is set on all columns of a TreeTable that nodes inherit from
 	// the source Table.
 	//
-	// "treeTable.isIdentifierColumn" is always "true" if set, and is set on the column that uniquely identifies a
+	// "treeTable.isIdentifierColumn" is always "true" if set, and is set on the single column that uniquely identifies a
 	// TreeTable row and links it to its children. Such columns will always have "hierarchicalTable.isExpandByColumn"
 	// set.
 	//
-	// "treeTable.isParentIdentifierColumn" is always "true" if set, and is set on the column that links a TreeTable row
-	// to its parent row.
+	// "treeTable.isParentIdentifierColumn" is always "true" if set, and is set on the single column that links a
+	// TreeTable row to its parent row.
 	SnapshotSchema []byte `protobuf:"bytes,1,opt,name=snapshot_schema,json=snapshotSchema,proto3" json:"snapshot_schema,omitempty"`
 }
 
