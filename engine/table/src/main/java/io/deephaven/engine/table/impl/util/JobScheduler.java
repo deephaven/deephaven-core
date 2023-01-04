@@ -79,54 +79,13 @@ public interface JobScheduler {
     @FinalDefault
     default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
             int count, IterateAction action, Runnable completeAction, final Consumer<Exception> onError) {
-
-        if (count == 0) {
-            // no work to do
-            completeAction.run();
-        }
-
-        final AtomicInteger nextIndex = new AtomicInteger(start);
-        final AtomicInteger remaining = new AtomicInteger(count);
-
-        final AtomicBoolean cancelRemainingExecution = new AtomicBoolean(false);
-
-        final Consumer<Exception> localError = exception -> {
-            // signal only on the first error
-            if (cancelRemainingExecution.compareAndSet(false, true)) {
-                onError.accept(exception);
-            }
-        };
-
-        final Runnable task = () -> {
-            // this will run until all tasks have started
-            while (true) {
-                if (cancelRemainingExecution.get()) {
-                    return;
-                }
-                int idx = nextIndex.getAndIncrement();
-                if (idx < start + count) {
-                    // do the work
+        iterateParallel(executionContext, description, start, count,
+                (final int idx, final Runnable resume) ->
+                {
                     action.run(idx);
-
-                    // check for completion
-                    if (remaining.decrementAndGet() == 0) {
-                        completeAction.run();
-                        return;
-                    }
-                } else {
-                    // no more work to do
-                    return;
-                }
-            }
-        };
-
-        // create multiple tasks but not more than one per scheduler thread
-        for (int i = 0; i < Math.min(count, threadCount()); i++) {
-            submit(executionContext,
-                    task,
-                    description,
-                    localError);
-        }
+                    resume.run();
+                },
+                completeAction, onError);
     }
 
     /**
@@ -220,39 +179,29 @@ public interface JobScheduler {
             completeAction.run();
         }
 
-        final AtomicInteger nextIndex = new AtomicInteger(start);
-        final AtomicInteger remaining = new AtomicInteger(count);
-
-        final AtomicBoolean cancelRemainingExecution = new AtomicBoolean(false);
-
-        final Consumer<Exception> localError = exception -> {
-            cancelRemainingExecution.set(true);
-            onError.accept(exception);
-        };
-
         // no lambda, need the `this` reference to re-execute
         final Runnable resumeAction = new Runnable() {
+            int nextIndex = start + 1;
+            int remaining = count;
+
             @Override
             public void run() {
                 // check for completion
-                if (remaining.decrementAndGet() == 0) {
+                if (--remaining == 0) {
                     completeAction.run();
                 } else {
-                    if (cancelRemainingExecution.get()) {
-                        return;
-                    }
 
                     // schedule the next task
                     submit(executionContext,
                             () -> {
-                                int idx = nextIndex.getAndIncrement();
+                                int idx = nextIndex++;
                                 if (idx < start + count) {
                                     // do the work
                                     action.run(idx, this);
                                 }
                             },
                             description,
-                            localError);
+                            onError);
                 }
 
             }
@@ -261,12 +210,9 @@ public interface JobScheduler {
         // create a single task
         submit(executionContext,
                 () -> {
-                    int idx = nextIndex.getAndIncrement();
-                    if (idx < start + count) {
-                        action.run(idx, resumeAction);
-                    }
+                    action.run(start, resumeAction);
                 },
                 description,
-                localError);
+                onError);
     }
 }
