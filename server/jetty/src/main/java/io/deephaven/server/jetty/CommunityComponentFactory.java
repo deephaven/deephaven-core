@@ -4,17 +4,17 @@
 package io.deephaven.server.jetty;
 
 import dagger.Component;
+import dagger.Module;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
-import io.deephaven.server.jetty.CommunityComponentBuilder.CommunityComponent;
 import io.deephaven.server.runner.CommunityDefaultsModule;
-import io.deephaven.server.runner.ComponentBuilderBase;
+import io.deephaven.server.runner.ComponentFactoryBase;
 
 import javax.inject.Singleton;
 import java.io.PrintStream;
 
 /**
- * The out-of-the-box {@link CommunityComponent} builder for the Deephaven community server.
+ * The out-of-the-box {@link CommunityComponent} factory for the Deephaven community server.
  *
  * <p>
  * To use this directly, a main class can be configured as follows:
@@ -24,7 +24,7 @@ import java.io.PrintStream;
  *     public static void main(String[] args)
  *             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
  *         final Configuration configuration = MainHelper.init(args, MyMainClass.class);
- *         new CommunityComponentBuilder()
+ *         new CommunityComponentFactory()
  *                 .build(configuration)
  *                 .getServer()
  *                 .run()
@@ -33,14 +33,15 @@ import java.io.PrintStream;
  * }
  * </pre>
  *
- * Advanced integrators should prefer to create their own component builder that extends {@link ComponentBuilderBase}.
+ * Advanced integrators should prefer to create their own component factory that extends {@link ComponentFactoryBase}.
  */
-public final class CommunityComponentBuilder extends ComponentBuilderBase<CommunityComponent> {
+public final class CommunityComponentFactory
+        extends ComponentFactoryBase<CommunityComponentFactory.CommunityComponent> {
 
     @Override
     public CommunityComponent build(Configuration configuration, PrintStream out, PrintStream err) {
         final JettyConfig jettyConfig = JettyConfig.buildFromConfig(configuration).build();
-        return DaggerCommunityComponentBuilder_CommunityComponent.builder()
+        return DaggerCommunityComponentFactory_CommunityComponent.builder()
                 .withOut(out)
                 .withErr(err)
                 .withJettyConfig(jettyConfig)
@@ -48,22 +49,31 @@ public final class CommunityComponentBuilder extends ComponentBuilderBase<Commun
     }
 
     /**
-     * The out-of-the-box community component.
-     *
-     * @see JettyServerModule
-     * @see CommunityDefaultsModule
-     * @see CommunityAuthorizationModule
+     * The out-of-the-box community {@link Component}. Includes the {@link CommunityModule}.
      */
     @Singleton
-    @Component(modules = {
-            JettyServerModule.class,
-            CommunityDefaultsModule.class,
-            CommunityAuthorizationModule.class,
-    })
+    @Component(modules = CommunityModule.class)
     public interface CommunityComponent extends JettyServerComponent {
 
         @Component.Builder
         interface Builder extends JettyServerComponent.Builder<Builder, CommunityComponent> {
         }
+    }
+
+    /**
+     * The out-of-the-box community {@link Module}.
+     *
+     * @see JettyServerModule
+     * @see CommunityAuthorizationModule
+     * @see CommunityDefaultsModule
+     */
+    @Module(includes = {
+            JettyServerModule.class,
+            CommunityAuthorizationModule.class,
+            CommunityDefaultsModule.class,
+            // Implementation note: when / if modules are migrated out of CommunityDefaultsModule, they will need to be
+            // re-added here.
+    })
+    public interface CommunityModule {
     }
 }

@@ -12,7 +12,11 @@ import io.deephaven.util.SafeCloseable;
 
 import java.util.Objects;
 
+/**
+ * Simple application that creates a single-celled string table named {@value #FIELD_NAME}.
+ */
 public final class CustomApplication1 implements ApplicationState.Factory {
+    public static final String FIELD_NAME = "app1_value";
 
     private final String value;
     @SuppressWarnings("FieldCanBeLocal")
@@ -28,7 +32,7 @@ public final class CustomApplication1 implements ApplicationState.Factory {
                 CustomApplication1.class.getSimpleName());
         scope = new LivenessScope();
         try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
-            state.setField("app1_value", TableTools.newTable(TableTools.stringCol("value", value)));
+            state.setField(FIELD_NAME, TableTools.newTable(TableTools.stringCol("value", value)));
         }
         return state;
     }

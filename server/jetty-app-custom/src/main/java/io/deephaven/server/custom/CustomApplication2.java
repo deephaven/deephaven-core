@@ -10,7 +10,11 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 
+/**
+ * Simple application that creates a single-celled int table named {@value #FIELD_NAME}.
+ */
 public final class CustomApplication2 implements ApplicationState.Factory {
+    public static final String FIELD_NAME = "app2_value";
 
     private final int value;
     @SuppressWarnings("FieldCanBeLocal")
@@ -26,7 +30,7 @@ public final class CustomApplication2 implements ApplicationState.Factory {
                 CustomApplication2.class.getSimpleName());
         scope = new LivenessScope();
         try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
-            state.setField("app2_value", TableTools.newTable(TableTools.intCol("value", value)));
+            state.setField(FIELD_NAME, TableTools.newTable(TableTools.intCol("value", value)));
         }
         return state;
     }

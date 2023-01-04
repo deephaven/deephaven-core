@@ -3,78 +3,16 @@
  */
 package io.deephaven.server.auth;
 
-import io.deephaven.auth.AuthContext;
-import io.deephaven.auth.codegen.impl.*;
-import io.deephaven.server.session.TicketResolverBase;
-
 import javax.inject.Inject;
 
-public class CommunityAuthorizationProvider implements AuthorizationProvider {
+/**
+ * The out-of-the-box authorization provider for the Deephaven community server.
+ *
+ * <p>
+ * This is currently implemented as an "allow all" authorization provider. This is subject to change in the future with
+ * the addition of community authorization configuration parameters.
+ */
+public class CommunityAuthorizationProvider extends AllowAllAuthorizationProvider {
     @Inject
     public CommunityAuthorizationProvider() {}
-
-    @Override
-    public ApplicationServiceAuthWiring getApplicationServiceAuthWiring() {
-        return new ApplicationServiceAuthWiring.AllowAll();
-    }
-
-    @Override
-    public ConfigServiceAuthWiring getConfigServiceAuthWiring() {
-        return new ConfigServiceAuthWiring.AllowAll();
-    }
-
-    @Override
-    public ConsoleServiceAuthWiring getConsoleServiceAuthWiring() {
-        return new ConsoleServiceAuthWiring.AllowAll();
-    }
-
-    @Override
-    public ObjectServiceAuthWiring getObjectServiceAuthWiring() {
-        return new ObjectServiceAuthWiring.AllowAll();
-    }
-
-    @Override
-    public SessionServiceAuthWiring getSessionServiceAuthWiring() {
-        return new SessionServiceAuthWiring.AllowAll();
-    }
-
-    @Override
-    public StorageServiceAuthWiring getStorageServiceAuthWiring() {
-        return new StorageServiceAuthWiring.AllowAll();
-    }
-
-    @Override
-    public HealthAuthWiring getHealthAuthWiring() {
-        return new HealthAuthWiring.AllowAll();
-    }
-
-    @Override
-    public TableServiceContextualAuthWiring getTableServiceContextualAuthWiring() {
-        return new TableServiceContextualAuthWiring.AllowAll();
-    }
-
-    @Override
-    public InputTableServiceContextualAuthWiring getInputTableServiceContextualAuthWiring() {
-        return new InputTableServiceContextualAuthWiring.AllowAll();
-    }
-
-    @Override
-    public PartitionedTableServiceContextualAuthWiring getPartitionedTableServiceContextualAuthWiring() {
-        return new PartitionedTableServiceContextualAuthWiring.AllowAll();
-    }
-
-    @Override
-    public HierarchicalTableServiceContextualAuthWiring getHierarchicalTableServiceContextualAuthWiring() {
-        return new HierarchicalTableServiceContextualAuthWiring.AllowAll();
-    }
-
-    @Override
-    public TicketResolverBase.AuthTransformation getTicketTransformation() {
-        return TicketResolverBase.identityTransformation();
-    }
-
-    @Override
-    public AuthContext getInstanceAuthContext() {
-        return new AuthContext.SuperUser();
-    }
 }

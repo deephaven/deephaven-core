@@ -12,13 +12,13 @@ import java.util.concurrent.TimeoutException;
 /**
  * The out-of-the-box Deephaven community server.
  *
- * @see CommunityComponentBuilder
+ * @see CommunityComponentFactory
  */
 public final class JettyMain {
     public static void main(String[] args)
             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
         final Configuration configuration = MainHelper.init(args, JettyMain.class);
-        new CommunityComponentBuilder()
+        new CommunityComponentFactory()
                 .build(configuration)
                 .getServer()
                 .run()

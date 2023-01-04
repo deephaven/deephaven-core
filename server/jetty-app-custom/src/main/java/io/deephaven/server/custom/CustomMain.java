@@ -10,13 +10,13 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 /**
- * An example of a "custom integrator" main using a {@link CustomComponentBuilder}.
+ * An example of a "custom integrator" main using a {@link CustomComponentFactory}.
  */
 public final class CustomMain {
     public static void main(String[] args)
             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
         final Configuration configuration = MainHelper.init(args, CustomMain.class);
-        new CustomComponentBuilder()
+        new CustomComponentFactory()
                 .build(configuration)
                 .getServer()
                 .run()

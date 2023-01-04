@@ -6,15 +6,14 @@ package io.deephaven.server.runner;
 import io.deephaven.base.system.PrintStreamGlobals;
 import io.deephaven.configuration.Configuration;
 
-import java.io.IOException;
 import java.io.PrintStream;
 
 /**
- * Provides a structured approach to constructing {@link DeephavenApiServerComponent}.
+ * Provides a structured approach for constructing {@link DeephavenApiServerComponent}.
  *
  * @param <Component> the component type
  */
-public abstract class ComponentBuilderBase<Component extends DeephavenApiServerComponent> {
+public abstract class ComponentFactoryBase<Component extends DeephavenApiServerComponent> {
 
     /**
      * Constructs a component according to {@code configuration} and using the prints streams from

@@ -17,7 +17,7 @@ public final class NettyMain {
     public static void main(String[] args)
             throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
         final Configuration configuration = MainHelper.init(args, NettyMain.class);
-        new DeprecatedCommunityComponentBuilder()
+        new DeprecatedCommunityComponentFactory()
                 .build(configuration)
                 .getServer()
                 .run()
