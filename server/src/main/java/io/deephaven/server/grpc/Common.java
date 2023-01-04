@@ -1,12 +1,13 @@
-package io.deephaven.server.table.ops;
+package io.deephaven.server.grpc;
 
 import com.google.rpc.Code;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableReference.RefCase;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 
-class Common {
+public class Common {
 
     public static void validate(Ticket ticket) {
         GrpcErrorHelper.checkHasNoUnknownFields(ticket);

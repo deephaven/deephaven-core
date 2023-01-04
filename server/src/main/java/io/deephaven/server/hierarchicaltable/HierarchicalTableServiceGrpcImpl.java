@@ -16,6 +16,8 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.grpc.Common;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
@@ -55,12 +57,34 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         this.authTransformation = authorizationProvider.getTicketTransformation();
     }
 
+    private static void validate(RollupRequest request) {
+        GrpcErrorHelper.checkHasField(request, RollupRequest.RESULT_ROLLUP_TABLE_ID_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasField(request, RollupRequest.SOURCE_TABLE_ID_FIELD_NUMBER);
+        GrpcErrorHelper.checkRepeatedFieldNonEmpty(request, RollupRequest.AGGREGATIONS_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasNoUnknownFields(request);
+        Common.validate(request.getResultRollupTableId());
+        Common.validate(request.getSourceTableId());
+        for (io.deephaven.proto.backplane.grpc.Aggregation aggregation : request.getAggregationsList()) {
+            AggregationAdapter.validate(aggregation);
+        }
+    }
+
+    private static void validate(TreeRequest request) {
+        GrpcErrorHelper.checkHasField(request, TreeRequest.RESULT_TREE_TABLE_ID_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasField(request, TreeRequest.SOURCE_TABLE_ID_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasNoUnknownFields(request);
+        Common.validate(request.getResultTreeTableId());
+        Common.validate(request.getSourceTableId());
+    }
+
     @Override
     public void rollup(
             @NotNull final RollupRequest request,
             @NotNull final StreamObserver<RollupResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+
+            validate(request);
 
             final SessionState.ExportObject<Table> sourceTableExport = ticketRouter.resolve(
                     session, request.getSourceTableId(), "rollup.sourceTableId");
@@ -96,6 +120,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             @NotNull final StreamObserver<TreeResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+
+            validate(request);
 
             final SessionState.ExportObject<Table> sourceTableExport = ticketRouter.resolve(
                     session, request.getSourceTableId(), "tree.sourceTableId");
