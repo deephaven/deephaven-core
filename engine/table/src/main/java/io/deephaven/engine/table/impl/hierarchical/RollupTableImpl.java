@@ -628,8 +628,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     private RollupNodeOperationsRecorder nodeOperations(final long nodeId) {
-        final int nodeDepth = nodeParentDepth(nodeId);
-        if (nodeDepth == baseLevelParentDepth) {
+        final int nodeParentDepth = nodeParentDepth(nodeId);
+        if (nodeParentDepth == baseLevelParentDepth) {
             // We must be including constituents
             return constituentNodeOperations;
         }
@@ -733,18 +733,19 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
         Assert.leq(levelDepth, "levelDepth", baseLevelParentDepth + 1, "baseLevelDepth + 1");
 
-        if (levelDepth == baseLevelParentDepth && !includesConstituents) {
-            // There are no expandable nodes below the base level ever.
-            // Base level nodes are only expandable if we're including constituents.
-            return (final long rowKey) -> NULL_NODE_ID;
+        if (levelDepth < baseLevelParentDepth || (levelDepth == baseLevelParentDepth && includesConstituents)) {
+            final RowRedirection sortRedirection = sorted ? SortOperation.getRowRedirection(nodeTableToExpand) : null;
+            if (sortRedirection == null) {
+                return (final long rowKey) -> makeNodeId(levelDepth, (int) rowKey);
+            }
+            return snapshotState.usePrev()
+                    ? (final long sortedRowKey) -> makeNodeId(levelDepth, (int) sortRedirection.getPrev(sortedRowKey))
+                    : (final long sortedRowKey) -> makeNodeId(levelDepth, (int) sortRedirection.get(sortedRowKey));
         }
-        final RowRedirection sortRedirection = sorted ? SortOperation.getRowRedirection(nodeTableToExpand) : null;
-        if (sortRedirection == null) {
-            return (final long rowKey) -> makeNodeId(levelDepth, (int) rowKey);
-        }
-        return snapshotState.usePrev()
-                ? (final long sortedRowKey) -> makeNodeId(levelDepth, (int) sortRedirection.getPrev(sortedRowKey))
-                : (final long sortedRowKey) -> makeNodeId(levelDepth, (int) sortRedirection.get(sortedRowKey));
+
+        // There are no expandable nodes below the base level ever.
+        // Base level nodes are only expandable if we're including constituents.
+        return (final long rowKey) -> NULL_NODE_ID;
     }
 
     @Override
