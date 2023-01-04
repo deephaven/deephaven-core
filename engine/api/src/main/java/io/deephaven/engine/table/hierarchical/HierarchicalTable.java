@@ -68,16 +68,13 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     ColumnName getRowDepthColumn();
 
     /**
-     * Get the {@link TableDefinition} of that should be used for snapshotting this HierarchicalTable.
-     * <p>
-     * The result will always begin with the "extra" columns that should be exposed to snapshot consumers. These include
-     * the {@link #getRowDepthColumn() row-depth column} and {@link #getRowExpandedColumn() row-expanded column}.
-     * <p>
-     * The "extra" columns are then followed by type-specific node-level columns.
+     * Get the {@link TableDefinition} of structural columns that should always be included when snapshotting this
+     * HierarchicalTable. This includes the {@link #getRowDepthColumn() row-depth column} and
+     * {@link #getRowExpandedColumn() row-expanded column}. This never includes type-specific node-level columns.
      *
-     * @return The externally-visible {@link TableDefinition} for snapshots
+     * @return The {@link TableDefinition} of structural columns that are always included in snapshots
      */
-    TableDefinition getSnapshotDefinition();
+    TableDefinition getStructuralDefinition();
 
     /**
      * Opaque interface for objects used to cache snapshot state across multiple invocations of

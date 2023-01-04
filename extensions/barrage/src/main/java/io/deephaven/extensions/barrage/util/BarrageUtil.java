@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -32,7 +33,7 @@ import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.time.DateTime;
 import io.deephaven.api.util.NameValidator;
-import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -48,25 +49,17 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntFunction;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class BarrageUtil {
     public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
@@ -118,45 +111,46 @@ public class BarrageUtil {
             DateTime.class,
             Boolean.class));
 
-    public static ByteString schemaBytesFromTable(final Table table) {
-        return schemaBytesFromTable(table.getDefinition(), table.getAttributes());
+    public static ByteString schemaBytesFromTable(@NotNull final Table table) {
+        return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes());
     }
 
-    public static ByteString schemaBytesFromTable(final TableDefinition table,
-            final Map<String, Object> attributes) {
+    public static ByteString schemaBytesFromTableDefinition(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Map<String, Object> attributes) {
+        return schemaBytes(fbb -> makeTableSchemaPayload(fbb, tableDefinition, attributes));
+    }
+
+    public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
+
         // note that flight expects the Schema to be wrapped in a Message prefixed by a 4-byte identifier
         // (to detect end-of-stream in some cases) followed by the size of the flatbuffer message
 
         final FlatBufferBuilder builder = new FlatBufferBuilder();
-        final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table, attributes);
+        final int schemaOffset = schemaPayloadWriter.applyAsInt(builder);
         builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                 org.apache.arrow.flatbuf.MessageHeader.Schema));
 
         return ByteStringAccess.wrap(MessageHelper.toIpcBytes(builder));
     }
 
-    public static int makeSchemaPayload(final FlatBufferBuilder builder,
-            final TableDefinition table,
-            final Map<String, Object> attributes) {
-        final Map<String, Map<String, String>> fieldExtraMetadata = new HashMap<>();
-        final Function<String, Map<String, String>> getExtraMetadata =
-                (colName) -> fieldExtraMetadata.computeIfAbsent(colName, k -> new HashMap<>());
+    public static int makeTableSchemaPayload(
+            @NotNull final FlatBufferBuilder builder,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Map<String, Object> attributes) {
+        final Map<String, String> schemaMetadata = attributesToMetadata(attributes);
 
-        // noinspection unchecked
-        final Map<String, String> descriptions =
-                Optional.ofNullable((Map<String, String>) attributes.get(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE))
-                        .orElse(Collections.emptyMap());
+        final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
+        final List<Field> fields = tableDefinitionToFields(
+                descriptions, inputTable, tableDefinition, ignored -> new HashMap<>()).collect(Collectors.toList());
 
-        // find format columns
-        final Set<String> formatColumns = new HashSet<>();
-        table.getColumnNames().stream().filter(ColumnFormattingValues::isFormattingColumn).forEach(formatColumns::add);
+        return new Schema(fields, schemaMetadata).getSchema(builder);
+    }
 
-        // create metadata on the schema for table attributes
-        final Map<String, String> schemaMetadata = new HashMap<>();
-
-        // copy primitives as strings
-        Set<String> unsentAttributes = new HashSet<>();
+    @NotNull
+    public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes) {
+        final Map<String, String> metadata = new HashMap<>();
         for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
             final String key = entry.getKey();
             final Object val = entry.getValue();
@@ -164,42 +158,87 @@ public class BarrageUtil {
                     val instanceof Long || val instanceof Float || val instanceof Double ||
                     val instanceof Character || val instanceof Boolean ||
                     (val instanceof String && ((String) val).length() < ATTR_STRING_LEN_CUTOFF)) {
-                putMetadata(schemaMetadata, ATTR_ATTR_TAG + "." + key, val.toString());
-                putMetadata(schemaMetadata, ATTR_ATTR_TYPE_TAG + "." + key, val.getClass().getCanonicalName());
+                // Copy primitives as strings
+                putMetadata(metadata, ATTR_ATTR_TAG + "." + key, val.toString());
+                putMetadata(metadata, ATTR_ATTR_TYPE_TAG + "." + key, val.getClass().getCanonicalName());
             } else {
-                unsentAttributes.add(key);
+                // Mote which attributes have a value we couldn't send
+                putMetadata(metadata, "unsent." + ATTR_ATTR_TAG + "." + key, "");
             }
         }
-
-        // note which attributes have a value we couldn't send
-        for (String unsentAttribute : unsentAttributes) {
-            putMetadata(schemaMetadata, "unsent." + ATTR_ATTR_TAG + "." + unsentAttribute, "");
-        }
-
-        final List<Field> fields = new ArrayList<>();
-        for (final ColumnDefinition<?> column : table.getColumns()) {
-            final String colName = column.getName();
-            final Map<String, String> extraMetadata = getExtraMetadata.apply(colName);
-
-            // wire up style and format column references
-            if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_FORMAT_NAME)) {
-                putMetadata(extraMetadata, "styleColumn", colName + ColumnFormattingValues.TABLE_FORMAT_NAME);
-            }
-            if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME)) {
-                putMetadata(extraMetadata, "numberFormatColumn",
-                        colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME);
-            }
-            if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME)) {
-                putMetadata(extraMetadata, "dateFormatColumn", colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
-            }
-
-            fields.add(arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
-        }
-
-        return new Schema(fields, schemaMetadata).getSchema(builder);
+        return metadata;
     }
 
-    private static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
+    public static Stream<Field> tableDefinitionToFields(
+            @NotNull final Map<String, String> columnDescriptions,
+            @Nullable final MutableInputTable inputTable,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory) {
+        // Find the format columns
+        final Set<String> formatColumns = new HashSet<>();
+        tableDefinition.getColumnNames().stream()
+                .filter(ColumnFormatting::isFormattingColumn)
+                .forEach(formatColumns::add);
+
+        // Build metadata for columns and add the fields
+        return tableDefinition.getColumnStream().map((final ColumnDefinition<?> column) -> {
+            final String name = column.getName();
+            final Class<?> dataType = column.getDataType();
+            final Class<?> componentType = column.getComponentType();
+            final Map<String, String> metadata = fieldMetadataFactory.apply(name);
+
+            // Wire up style and format column references
+            final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
+            if (formatColumns.contains(styleFormatName)) {
+                putMetadata(metadata, "styleColumn", styleFormatName);
+            }
+            final String numberFormatName = ColumnFormatting.getNumberFormatColumn(name);
+            if (formatColumns.contains(numberFormatName)) {
+                putMetadata(metadata, "numberFormatColumn", numberFormatName);
+            }
+            final String dateFormatName = ColumnFormatting.getDateFormatColumn(name);
+            if (formatColumns.contains(dateFormatName)) {
+                putMetadata(metadata, "dateFormatColumn", dateFormatName);
+            }
+
+            // Add type information
+            if (isTypeNativelySupported(dataType)) {
+                putMetadata(metadata, ATTR_TYPE_TAG, dataType.getCanonicalName());
+                if (componentType != null) {
+                    if (isTypeNativelySupported(componentType)) {
+                        putMetadata(metadata, ATTR_COMPONENT_TYPE_TAG, componentType.getCanonicalName());
+                    } else {
+                        // Otherwise, component type will be converted to a string
+                        putMetadata(metadata, ATTR_COMPONENT_TYPE_TAG, String.class.getCanonicalName());
+                    }
+                }
+            } else {
+                // Otherwise, data type will be converted to a String
+                putMetadata(metadata, ATTR_TYPE_TAG, String.class.getCanonicalName());
+            }
+
+            // Only one of these will be true, if any are true the column will not be visible
+            putMetadata(metadata, "isRowStyle",  ColumnFormatting.isRowStyleFormatColumn(name) + "");
+            putMetadata(metadata, "isStyle", ColumnFormatting.isStyleFormatColumn(name) + "");
+            putMetadata(metadata, "isNumberFormat", ColumnFormatting.isNumberFormatColumn(name) + "");
+            putMetadata(metadata, "isDateFormat", ColumnFormatting.isDateFormatColumn(name) + "");
+
+            final String columnDescription = columnDescriptions.get(name);
+            if (columnDescription != null) {
+                putMetadata(metadata, "description", columnDescription);
+            }
+            if (inputTable != null) {
+                putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
+            }
+
+            if (Vector.class.isAssignableFrom(dataType)) {
+                return arrowFieldForVectorType(name, dataType, componentType, metadata);
+            }
+            return arrowFieldFor(name, dataType, componentType, metadata);
+        });
+    }
+
+    public static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
         metadata.put(ATTR_DH_PREFIX + key, value);
     }
 
@@ -465,50 +504,6 @@ public class BarrageUtil {
             return isTypeNativelySupported(typ.getComponentType());
         }
         return false;
-    }
-
-    private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description,
-            final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
-        // is hidden?
-        final Class<?> type = column.getDataType();
-        final Class<?> componentType = column.getComponentType();
-        final Map<String, String> metadata = new HashMap<>(extraMetadata);
-
-        if (isTypeNativelySupported(type)) {
-            putMetadata(metadata, ATTR_TYPE_TAG, type.getCanonicalName());
-
-            if (componentType != null) {
-                if (isTypeNativelySupported(componentType)) {
-                    putMetadata(metadata, ATTR_COMPONENT_TYPE_TAG, componentType.getCanonicalName());
-                } else {
-                    // otherwise, it will be converted to a string
-                    putMetadata(metadata, ATTR_COMPONENT_TYPE_TAG, String.class.getCanonicalName());
-                }
-            }
-        } else {
-            // otherwise, it will be converted to a string
-            putMetadata(metadata, ATTR_TYPE_TAG, String.class.getCanonicalName());
-        }
-
-        // only one of these will be true, if any are true the column will not be visible
-        putMetadata(metadata, "isStyle", name.endsWith(ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
-        putMetadata(metadata, "isRowStyle",
-                name.equals(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
-        putMetadata(metadata, "isDateFormat", name.endsWith(ColumnFormattingValues.TABLE_DATE_FORMAT_NAME) + "");
-        putMetadata(metadata, "isNumberFormat", name.endsWith(ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME) + "");
-
-        if (description != null) {
-            putMetadata(metadata, "description", description);
-        }
-        if (inputTable != null) {
-            putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
-        }
-
-        if (Vector.class.isAssignableFrom(type)) {
-            return arrowFieldForVectorType(name, type, componentType, metadata);
-        }
-
-        return arrowFieldFor(name, type, componentType, metadata);
     }
 
     private static Field arrowFieldFor(

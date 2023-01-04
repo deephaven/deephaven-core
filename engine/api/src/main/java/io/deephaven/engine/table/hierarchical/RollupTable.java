@@ -79,30 +79,6 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     TableDefinition getNodeDefinition(@NotNull NodeType nodeType);
 
     /**
-     * @inheritDoc
-     * @implNote RollupTable implementations of this method have three distinct sets of columns: the "extra" columns,
-     *           the aggregated node columns, and the constituent node columns (if and only if constituents are
-     *           included), included in the listed order. Constituent node columns will have their names adjusted to
-     *           disambiguate them from aggregated node columns, since {@link TableDefinition table definitions} do not
-     *           permit name collisions. For example, an implementation might prefix all constituent column names with
-     *           {@code "__CONSTITUENT_"}.
-     * @return The externally-visible {@link TableDefinition} for snapshots
-     */
-    TableDefinition getSnapshotDefinition();
-
-    /**
-     * Get the {@link Pair input/output column name pairs} from input (source) column names to output (rollup
-     * aggregation) column names. These are used in conjunction with the {@link #getSnapshotDefinition() snapshot
-     * definition} by snapshot-driven consumers.
-     *
-     * @implNote The input column names will be adjusted to match the disambiguated constituent column names found in
-     *           {@link #getSnapshotDefinition() snapshot definitions} for constituent columns. For example, an
-     *           implementation might prefix all input column names with {@code "__CONSTITUENT_"}.
-     * @return The input/output column name pairs
-     */
-    Collection<? extends Pair> getColumnPairs();
-
-    /**
      * Apply a set of filters to the group-by columns of this RollupTable in order to produce a new RollupTable.
      *
      * @param filters The filters to apply; must only reference the group-by columns and must not use column arrays

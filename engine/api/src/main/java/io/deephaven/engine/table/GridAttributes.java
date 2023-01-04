@@ -3,6 +3,7 @@ package io.deephaven.engine.table;
 import io.deephaven.api.util.ConcurrentMethod;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -69,4 +70,14 @@ public interface GridAttributes<TYPE extends GridAttributes<TYPE>> extends Attri
      */
     @ConcurrentMethod
     TYPE setLayoutHints(@NotNull String hints);
+
+    /**
+     * @param attributes The map of attributes to examine
+     * @return A possibly-empty map from column name to description
+     */
+    @NotNull
+    static Map<String, String> getColumnDescriptions(@NotNull final Map<String, Object> attributes) {
+        //noinspection unchecked
+        return (Map<String, String>) attributes.getOrDefault(COLUMN_DESCRIPTIONS_ATTRIBUTE, Collections.emptyMap());
+    }
 }

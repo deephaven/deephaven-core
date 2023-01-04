@@ -35,6 +35,7 @@ import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
@@ -1526,8 +1527,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            parent.getDefinition(),
-                            parent.getAttributes()));
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                                    parent.getDefinition(), parent.getAttributes())));
                 }
 
                 // some messages may be empty of rows, but we need to update the client viewport and column set

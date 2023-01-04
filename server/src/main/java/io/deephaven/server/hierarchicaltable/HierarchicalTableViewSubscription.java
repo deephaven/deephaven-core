@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.*;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.HierarchicalTableSchemaUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.util.Scheduler;
@@ -138,12 +139,11 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         propagationJob = this::process;
 
         columns = new BitSet();
-        columns.set(0, view.getHierarchicalTable().getSnapshotDefinition().numColumns());
+        columns.set(0, view.getHierarchicalTable().getStructuralDefinition().numColumns());
         rows = RowSetFactory.empty();
 
         listener.onNext(streamGeneratorFactory.getSchemaView(
-                view.getHierarchicalTable().getSnapshotDefinition(),
-                view.getHierarchicalTable().getAttributes()));
+                fbb -> HierarchicalTableSchemaUtil.makeSchemaPayload(fbb, view.getHierarchicalTable())));
     }
 
     @Override
@@ -295,7 +295,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             final long lastExpandedSize) {
         // 1. Grab some schema and snapshot information
         final List<ColumnDefinition<?>> columnDefinitions =
-                view.getHierarchicalTable().getSnapshotDefinition().getColumns();
+                view.getHierarchicalTable().getStructuralDefinition().getColumns();
         final int numAvailableColumns = columnDefinitions.size();
         final int numRows = rows.intSize();
 
@@ -368,10 +368,10 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         }
 
         if (viewportColumns != null) {
-            if (viewportColumns.length() > view.getHierarchicalTable().getSnapshotDefinition().numColumns()) {
+            if (viewportColumns.length() > view.getHierarchicalTable().getStructuralDefinition().numColumns()) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "Requested columns out of range: length=%d, available length=%d",
-                        viewportColumns.length(), view.getHierarchicalTable().getSnapshotDefinition().numColumns()));
+                        viewportColumns.length(), view.getHierarchicalTable().getStructuralDefinition().numColumns()));
             }
         }
         if (viewportRows != null) {

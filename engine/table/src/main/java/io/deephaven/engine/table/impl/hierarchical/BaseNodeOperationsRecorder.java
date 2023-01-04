@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.TableAdapter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
-import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -204,7 +204,7 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             // NB: This is only reachable from formatColumns right now.
             if (!columns.stream()
                     .map(selectable -> selectable.newColumn().name())
-                    .allMatch(ColumnFormattingValues::isFormattingColumn)) {
+                    .allMatch(ColumnFormatting::isFormattingColumn)) {
                 throw new UnsupportedOperationException("Invalid formatting columns found in " + columns);
             }
             this.formatColumns = columns;
@@ -234,7 +234,7 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
         @Override
         public Table sort(@NotNull final Collection<SortColumn> columnsToSortBy) {
             final Set<String> existingColumns = getDefinition().getColumnNames().stream()
-                    .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
+                    .filter(column -> !ColumnFormatting.isFormattingColumn(column))
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             final List<String> unknownColumns = columnsToSortBy.stream()
                     .map(sc -> sc.column().name())

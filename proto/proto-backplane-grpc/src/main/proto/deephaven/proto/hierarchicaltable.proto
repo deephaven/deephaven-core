@@ -90,7 +90,7 @@ message HierarchicalTableApplyRequest {
   Ticket input_hierarchical_table_id = 2;
 
   // Filters to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
-  // the "extra" columns included in the a HierarchicalTableDescriptor's snapshot_definition_schema.
+  // the "structural" columns included in the a HierarchicalTableDescriptor's snapshot_schema.
   // For RollupTables, only the group-by columns may be filtered. The names are always expressed as they appear
   // in aggregated node columns (and in the group-by columns). The filtering will result in a complete or partial
   // new Table.rollup operation.
@@ -99,7 +99,7 @@ message HierarchicalTableApplyRequest {
   repeated Condition filters = 3;
 
   // Sorts to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
-  // the "extra" columns included in the a HierarchicalTableDescriptor's snapshot_definition_schema.
+  // the "structural" columns included in the a HierarchicalTableDescriptor's snapshot_schema.
   // For TreeTables, these are simply applied to the nodes at snapshot time.
   // For RollupTables, these are expressed against the aggregated node columns, and will be applied to the appropriate
   // input (constituent) columns as well. The appropriate (aggregated or constituent) sorts are applied to the nodes at
@@ -114,60 +114,52 @@ message HierarchicalTableApplyResponse {
 
 message HierarchicalTableDescriptor {
 
-  // The column names to expand by.
-  // Should be user-visible, and displayed before other columns.
-  // Must be included in a HierarchicalTableViewRequest's key table, if a key table is specified.
-  // Implementation notes:
-  // For RollupTables, these are the group-by columns.
-  // For TreeTables, this is the (singular) identifier column.
-  repeated string expand_by_columns = 1;
-
-  // The name of a column that specifies the depth of a row. Note that for all expandable rows in a RollupTable, this
-  // is identical to the "key width", i.e. the number of group-by columns that are "defined" for a row is the same as
-  // the row depth.
-  // Should not be (directly) user-visible.
-  // Must be included along with expand-by columns in a HierarchicalTableViewRequest's key table for RollupTables.
-  // Need not be included in a HierarchicalTableViewRequest's key table for TreeTables.
-  string row_depth_column = 2;
-
-  // The name of a nullable column of booleans that specifies whether a row is expandable or expanded. Will be null
-  // for not expandable, true for expanded, false for not expanded (but expandable).
-  // Leaf rows have no children to expand, and hence will always have a null value for this column.
-  // Should not be (directly) user-visible.
-  // Need not be included in a HierarchicalTableViewRequest's key table for RollupTables or TreeTables.
-  string row_expanded_column = 3;
-
-  oneof details {
-    RollupDescriptorDetails rollup = 4;
-    TreeDescriptorDetails tree = 5;
-  }
-
-  // Schema as described in Arrow Message.fbs::Message.
-  // Note that for RollupTables, the constituent columns have a prefix "__CONSTITUENT_" prepended to their names in
-  // order to disambiguate them from the aggregated columns.
-  bytes snapshot_definition_schema = 6;
-}
-
-enum RollupNodeType {
-  UNDEFINED = 0;
-  AGGREGATED = 1;
-  CONSTITUENT = 2;
-}
-
-message RollupDescriptorDetails {
-
-  // Whether this RollupTable's leaf nodes are first level aggregations or constituents
-  RollupNodeType leaf_node_type = 1;
-
-  // '='-delimited pairs from output (aggregation) column name to input (constituent) column name, or singular names
-  // for aggregations with identical output and input column names. In practice, input column names are always
-  // prefixed with "__CONSTITUENT_" to match the constituent column definitions in the HierarchicalTableDescriptor's
-  // snapshot_definition_schema.
-  repeated string output_input_column_pairs = 2;
-}
-
-message TreeDescriptorDetails {
-  // For future expansion
+  // Schema to be used for snapshot or subscription requests as described in Arrow Message.fbs::Message.
+  // Field metadata is used to convey additional information about the structure of the HierarchicalTable, the
+  // special roles some columns play, and the relationships between columns.
+  //
+  // "hierarchicalTable.isStructuralColumn" is always "true" if set, and is set on columns that should be included on
+  // every snapshot or subscription request, but should not be directly user-visible.
+  //
+  // "hierarchicalTable.isExpandByColumn" is always "true" if set, and is set on all the columns that must be included
+  // in a HierarchicalTableViewRequest's key table, if a key table is specified. These columns are generally
+  // user-visible and displayed before other columns, unless they also have "hierarchicalTable.isStructuralColumn" set.
+  //
+  // "hierarchicalTable.isRowDepthColumn" is always "true" if set, and is set on a single column that specifies the
+  // depth of a row. Will always have "hierarchicalTable.isExpandByColumn" set for RollupTables, but not for
+  // TreeTables.
+  //
+  // "hierarchicalTable.isRowExpandedColumn" is always "true" if set, and is set on a single nullable column of
+  // booleans that specifies whether a row is expandable or expanded. Will be null for not expandable, true for
+  // expanded, false for not expanded (but expandable). Leaf rows have no children to expand, and hence will always
+  // have a null value for this column.
+  //
+  // "rollupTable.isGroupByColumn" is always "true" if set, and is set on all columns of a RollupTable that are
+  // "group-by columns", whether the node is aggregated or constituent. All nodes have the same names and types for
+  // columns labeled in this way. Such columns will always have "hierarchicalTable.isExpandByColumn" set if and only if
+  // they also have "rollupTable.isAggregatedNodeColumn" set.
+  //
+  // "rollupTable.isAggregatedNodeColumn" is always "true" if set, and is set on all columns of a RollupTable that
+  // belong to the aggregated nodes.
+  //
+  // "rollupTable.aggregationInputColumnName" is set to the (string) name of the corresponding constituent column that
+  // was used as input to this aggregation node column. May have an empty value because some aggregations take no input
+  // columns, for example "Count". This is only ever present on columns with "rollupTable.isAggregatedNodeColumn" set.
+  //
+  // "rollupTable.isConstituentNodeColumn" is always "true" if set, and is set on all columns of a RollupTable that
+  // belong to the constituent nodes. No such columns will be present if constituents are not included in the
+  // RollupTable.
+  //
+  // "treeTable.isNodeColumn" is always "true" if set, and is set on all columns of a TreeTable that nodes inherit from
+  // the source Table.
+  //
+  // "treeTable.isIdentifierColumn" is always "true" if set, and is set on the column that uniquely identifies a
+  // TreeTable row and links it to its children. Such columns will always have "hierarchicalTable.isExpandByColumn"
+  // set.
+  //
+  // "treeTable.isParentIdentifierColumn" is always "true" if set, and is set on the column that links a TreeTable row
+  // to its parent row.
+  bytes snapshot_schema = 1;
 }
 
 message HierarchicalTableViewRequest {
@@ -196,9 +188,9 @@ message HierarchicalTableViewRequest {
 message HierarchicalTableViewKeyTableDescriptor {
 
   // Ticket that represents a Table of expanded or contracted keys from a HierarchicalTable (RollupTable or TreeTable).
-  // The format for the key Table is dictated by the corresponding HierarchicalTableDescriptor. It is expected to
-  // have one column for each "expand-by column", one for the "row depth column" for RollupTables only, and
-  // (optionally) an "action" column whose name is specified in the key_table_action_column field.
+  // The format for the key Table is dictated by the schema from the corresponding HierarchicalTableDescriptor. It is
+  // expected to have one column for each "expand-by column", including the "row depth column" for RollupTables only,
+  // and (optionally) an "action" column whose name is specified in the key_table_action_column field.
   // If the Table is empty the result will have only default nodes expanded.
   Ticket key_table_id = 1;
 

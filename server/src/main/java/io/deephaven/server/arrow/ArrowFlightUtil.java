@@ -90,7 +90,8 @@ public class ArrowFlightUtil {
                             ArrowModule.provideListenerAdapter().adapt(observer);
 
                     // push the schema to the listener
-                    listener.onNext(streamGeneratorFactory.getSchemaView(table.getDefinition(), table.getAttributes()));
+                    listener.onNext(streamGeneratorFactory.getSchemaView(
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, table.getDefinition(), table.getAttributes())));
 
                     // shared code between `DoGet` and `BarrageSnapshotRequest`
                     BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
@@ -485,7 +486,8 @@ public class ArrowFlightUtil {
 
                                 // push the schema to the listener
                                 listener.onNext(streamGeneratorFactory.getSchemaView(
-                                        table.getDefinition(), table.getAttributes()));
+                                        fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                                                table.getDefinition(), table.getAttributes())));
 
                                 // collect the viewport and columnsets (if provided)
                                 final boolean hasColumns = snapshotRequest.columnsVector() != null;
