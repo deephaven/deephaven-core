@@ -33,7 +33,7 @@ import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
@@ -396,7 +396,29 @@ public interface TableServiceContextualAuthWiring {
      * @param sourceTables the operation's source tables
      * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke Snapshot
      */
-    void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
+    void checkPermissionSnapshot(AuthContext authContext, SnapshotWhenTableRequest request,
+            List<Table> sourceTables);
+
+    /**
+     * Authorize a request to SnapshotIncremental.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke SnapshotIncremental
+     */
+    void checkPermissionSnapshotIncremental(AuthContext authContext, SnapshotWhenTableRequest request,
+            List<Table> sourceTables);
+
+    /**
+     * Authorize a request to SnapshotHistory.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke SnapshotHistory
+     */
+    void checkPermissionSnapshotHistory(AuthContext authContext, SnapshotWhenTableRequest request,
             List<Table> sourceTables);
 
     /**
@@ -548,8 +570,14 @@ public interface TableServiceContextualAuthWiring {
         public void checkPermissionAggregate(AuthContext authContext, AggregateRequest request,
                 List<Table> sourceTables) {}
 
-        public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
+        public void checkPermissionSnapshot(AuthContext authContext, SnapshotWhenTableRequest request,
                 List<Table> sourceTables) {}
+
+        public void checkPermissionSnapshotIncremental(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {}
+
+        public void checkPermissionSnapshotHistory(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {}
 
         public void checkPermissionFlatten(AuthContext authContext, FlattenRequest request,
                 List<Table> sourceTables) {}
@@ -723,8 +751,18 @@ public interface TableServiceContextualAuthWiring {
             ServiceAuthWiring.operationNotAllowed();
         }
 
-        public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
+        public void checkPermissionSnapshot(AuthContext authContext, SnapshotWhenTableRequest request,
                 List<Table> sourceTables) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
+        public void checkPermissionSnapshotIncremental(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
+        public void checkPermissionSnapshotHistory(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
@@ -974,10 +1012,24 @@ public interface TableServiceContextualAuthWiring {
             }
         }
 
-        public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
+        public void checkPermissionSnapshot(AuthContext authContext, SnapshotWhenTableRequest request,
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionSnapshot(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionSnapshotIncremental(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionSnapshotIncremental(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionSnapshotHistory(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionSnapshotHistory(authContext, request, sourceTables);
             }
         }
 

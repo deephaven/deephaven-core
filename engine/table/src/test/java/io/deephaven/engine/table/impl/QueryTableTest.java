@@ -9,6 +9,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterOr;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
@@ -1199,34 +1200,34 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshot() {
-        final QueryTable right = testRefreshingTable(i(10, 25, 30).toTracking(),
+        final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
-        final QueryTable left1 = testRefreshingTable(c("T", 1));
-        final Table expected = right.naturalJoin(left1, "", "T");
+        final QueryTable trigger1 = testRefreshingTable(c("T", 1));
+        final Table expected = base.naturalJoin(trigger1, "", "T");
         TableTools.showWithRowSet(expected);
-        final Table actual = left1.snapshot(right);
+        final Table actual = base.snapshotWhen(trigger1, Feature.INITIAL);
         validateUpdates(actual);
         assertTableEquals(expected, actual);
 
-        assertTableEquals(right.head(0).updateView("T=1"), left1.snapshot(right, false));
+        assertTableEquals(base.head(0).updateView("T=1"), base.snapshotWhen(trigger1));
 
-        final QueryTable left2 = testRefreshingTable(c("T", 1, 2));
-        final Table snapshot = left2.snapshot(right);
+        final QueryTable trigger2 = testRefreshingTable(c("T", 1, 2));
+        final Table snapshot = base.snapshotWhen(trigger2, Feature.INITIAL);
         validateUpdates(snapshot);
 
         final Table expect1 = newTable(c("A", 3, 1, 2), c("B", "c", "a", "b"), c("T", 2, 2, 2));
         assertTableEquals(expect1, snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
-            right.notifyListeners(i(20, 40), i(), i());
+            addToTable(base, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
+            base.notifyListeners(i(20, 40), i(), i());
         });
         show(snapshot, 50);
         assertTableEquals(expect1, snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left2, i(3), c("T", 5));
-            left2.notifyListeners(i(3), i(), i());
+            addToTable(trigger2, i(3), c("T", 5));
+            trigger2.notifyListeners(i(3), i(), i());
         });
         show(snapshot, 50);
         final Table expect2 =
@@ -1234,39 +1235,39 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(expect2, snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            removeRows(right, i(10, 20, 30));
-            addToTable(right, i(25), c("A", 11), c("B", "A"));
-            right.notifyListeners(i(), i(10, 20, 30), i(25));
+            removeRows(base, i(10, 20, 30));
+            addToTable(base, i(25), c("A", 11), c("B", "A"));
+            base.notifyListeners(i(), i(10, 20, 30), i(25));
         });
         show(snapshot, 50);
         assertTableEquals(expect2, snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left2, i(4, 5), c("T", 7, 8));
-            left2.notifyListeners(i(4, 5), i(), i());
+            addToTable(trigger2, i(4, 5), c("T", 7, 8));
+            trigger2.notifyListeners(i(4, 5), i(), i());
         });
-        show(right, 50);
+        show(base, 50);
         show(snapshot, 50);
         final Table expect3 = newTable(c("A", 11, 50), c("B", "A", "bc"), c("T", 8, 8));
         assertTableEquals(expect3, snapshot);
     }
 
     public void testSnapshotArrayTrigger() {
-        final QueryTable right = testRefreshingTable(i(10, 25, 30).toTracking(),
+        final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
 
         final QueryTable left1 = testRefreshingTable(c("T", 1));
         final Table leftBy = left1.aggBy(AggGroup("T"));
 
-        final Table expected = right.naturalJoin(leftBy, "", "T");
+        final Table expected = base.naturalJoin(leftBy, "", "T");
         TableTools.showWithRowSet(expected);
-        final Table actual = leftBy.snapshot(right);
+        final Table actual = base.snapshotWhen(leftBy, Feature.INITIAL);
         validateUpdates(actual);
         assertTableEquals(expected, actual);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
-            right.notifyListeners(i(20, 40), i(), i());
+            addToTable(base, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
+            base.notifyListeners(i(20, 40), i(), i());
         });
         assertTableEquals(expected.where("A in 1, 2, 3"), actual);
 
@@ -1282,12 +1283,12 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
         final Table rightBy = right.aggAllBy(AggSpec.group());
 
-        final QueryTable left1 = testRefreshingTable(c("T", 1));
+        final QueryTable trigger1 = testRefreshingTable(c("T", 1));
         final Table ex1 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 1, 2)}),
                 col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "a", "b")}), intCol("T", 1));
         TableTools.showWithRowSet(ex1);
 
-        final Table actual = left1.snapshot(rightBy);
+        final Table actual = rightBy.snapshotWhen(trigger1, Feature.INITIAL);
         validateUpdates(actual);
         assertTableEquals(ex1, actual);
 
@@ -1298,8 +1299,8 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(ex1, actual);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left1, i(3), c("T", 5));
-            left1.notifyListeners(i(3), i(), i());
+            addToTable(trigger1, i(3), c("T", 5));
+            trigger1.notifyListeners(i(3), i(), i());
         });
         final Table ex2 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 30, 1, 2, 50)}),
                 col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "aa", "a", "b", "bc")}), intCol("T", 5));
@@ -1312,8 +1313,8 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(ex2, actual);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left1, i(4), c("T", 6));
-            left1.notifyListeners(i(4), i(), i());
+            addToTable(trigger1, i(4), c("T", 6));
+            trigger1.notifyListeners(i(4), i(), i());
         });
 
         final Table ex3 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 31, 1, 2, 50)}),
@@ -1322,30 +1323,30 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotHistorical() {
-        final QueryTable right = testRefreshingTable(i(10, 25, 30).toTracking(),
+        final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
-        final QueryTable left1 = testRefreshingTable(c("T", 1));
-        show(left1.snapshotHistory(right));
-        assertEquals("", diff(left1.snapshotHistory(right),
+        final QueryTable trigger1 = testRefreshingTable(c("T", 1));
+        show(base.snapshotWhen(trigger1, Feature.HISTORY));
+        assertEquals("", diff(base.snapshotWhen(trigger1, Feature.HISTORY),
                 testRefreshingTable(c("T", 1, 1, 1), c("A", 3, 1, 2), c("B", "c", "a", "b")), 10));
 
-        final QueryTable left2 = testRefreshingTable(c("T", 1, 2));
-        final Table snapshot = left2.snapshotHistory(right);
+        final QueryTable trigger2 = testRefreshingTable(c("T", 1, 2));
+        final Table snapshot = base.snapshotWhen(trigger2, Feature.HISTORY);
         show(snapshot);
         assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2), c("A", 3, 1, 2, 3, 1, 2),
                 c("B", "c", "a", "b", "c", "a", "b")), 10));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
-            right.notifyListeners(i(20, 40), i(), i());
+            addToTable(base, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
+            base.notifyListeners(i(20, 40), i(), i());
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2), c("A", 3, 1, 2, 3, 1, 2),
                 c("B", "c", "a", "b", "c", "a", "b")), 10));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left2, i(3), c("T", 5));
-            left2.notifyListeners(i(3), i(), i());
+            addToTable(trigger2, i(3), c("T", 5));
+            trigger2.notifyListeners(i(3), i(), i());
         });
         show(snapshot, 50);
         assertEquals("",
@@ -1356,9 +1357,9 @@ public class QueryTableTest extends QueryTableTestBase {
                         10));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            removeRows(right, i(10, 20, 30));
-            addToTable(right, i(25), c("A", 11), c("B", "A"));
-            right.notifyListeners(i(), i(10, 20, 30), i(25));
+            removeRows(base, i(10, 20, 30));
+            addToTable(base, i(25), c("A", 11), c("B", "A"));
+            base.notifyListeners(i(), i(10, 20, 30), i(25));
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5),
@@ -1366,8 +1367,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc")), 10));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left2, i(4, 5), c("T", 7, 8));
-            left2.notifyListeners(i(4, 5), i(), i());
+            addToTable(trigger2, i(4, 5), c("T", 7, 8));
+            trigger2.notifyListeners(i(4, 5), i(), i());
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
@@ -1375,9 +1376,9 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")), 10));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet rowsToRemove = right.getRowSet().copy();
-            removeRows(right, rowsToRemove);
-            right.notifyListeners(i(), rowsToRemove, i());
+            final RowSet rowsToRemove = base.getRowSet().copy();
+            removeRows(base, rowsToRemove);
+            base.notifyListeners(i(), rowsToRemove, i());
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
@@ -1385,8 +1386,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")), 10));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left2, i(6), c("T", 9));
-            left2.notifyListeners(i(6), i(), i());
+            addToTable(trigger2, i(6), c("T", 9));
+            trigger2.notifyListeners(i(6), i(), i());
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
@@ -1396,15 +1397,15 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotDependencies() {
-        final QueryTable right = testRefreshingTable(i(10).toTracking(), c("A", 1));
-        final QueryTable left = testRefreshingTable(c("T", 1));
+        final QueryTable base = testRefreshingTable(i(10).toTracking(), c("A", 1));
+        final QueryTable trigger = testRefreshingTable(c("T", 1));
 
         QueryScope.addParam("testSnapshotDependenciesCounter", new AtomicInteger());
 
-        final Table snappedFirst = left.snapshot(right);
+        final Table snappedFirst = base.snapshotWhen(trigger, Feature.INITIAL);
         validateUpdates(snappedFirst);
         final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
-        final Table snappedOfSnap = left.snapshot(snappedDep);
+        final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Feature.INITIAL);
         validateUpdates(snappedOfSnap);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1414,8 +1415,8 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left, i(2), c("T", 2));
-            left.notifyListeners(i(2), i(), i());
+            addToTable(trigger, i(2), c("T", 2));
+            trigger.notifyListeners(i(2), i(), i());
             TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(snappedDep.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(snappedOfSnap.satisfied(LogicalClock.DEFAULT.currentStep()));
@@ -1459,15 +1460,15 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotAdditions() {
-        final QueryTable right = testRefreshingTable(i(10).toTracking(), c("A", 1));
-        final QueryTable left = testRefreshingTable(c("T", 1));
+        final QueryTable base = testRefreshingTable(i(10).toTracking(), c("A", 1));
+        final QueryTable trigger = testRefreshingTable(c("T", 1));
 
-        final Table snapshot = left.snapshot(right);
+        final Table snapshot = base.snapshotWhen(trigger, Feature.INITIAL);
         validateUpdates(snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(right, i(20), c("A", 2));
-            left.notifyListeners(i(), i(), i(0));
+            addToTable(base, i(20), c("A", 2));
+            trigger.notifyListeners(i(), i(), i(0));
         });
 
         TestCase.assertEquals(2, snapshot.size());
@@ -1475,15 +1476,15 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotRemovals() {
-        final QueryTable right = testRefreshingTable(i(10, 20).toTracking(), c("A", 1, 2));
-        final QueryTable left = testRefreshingTable(c("T", 1));
+        final QueryTable base = testRefreshingTable(i(10, 20).toTracking(), c("A", 1, 2));
+        final QueryTable trigger = testRefreshingTable(c("T", 1));
 
-        final Table snapshot = left.snapshot(right);
+        final Table snapshot = base.snapshotWhen(trigger, Feature.INITIAL);
         validateUpdates(snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            removeRows(right, i(20));
-            left.notifyListeners(i(), i(), i(0));
+            removeRows(base, i(20));
+            trigger.notifyListeners(i(), i(), i(0));
         });
 
         TestCase.assertEquals(1, snapshot.size());
@@ -1491,15 +1492,15 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotModifies() {
-        final QueryTable right = testRefreshingTable(i(10).toTracking(), c("A", 1));
-        final QueryTable left = testRefreshingTable(c("T", 1));
+        final QueryTable base = testRefreshingTable(i(10).toTracking(), c("A", 1));
+        final QueryTable trigger = testRefreshingTable(c("T", 1));
 
-        final Table snapshot = left.snapshot(right);
+        final Table snapshot = base.snapshotWhen(trigger, Feature.INITIAL);
         validateUpdates(snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            right.notifyListeners(i(), i(), i(20));
-            left.notifyListeners(i(), i(), i(0));
+            base.notifyListeners(i(), i(), i(20));
+            trigger.notifyListeners(i(), i(), i(0));
         });
 
         TestCase.assertEquals(1, snapshot.size());
@@ -1507,14 +1508,14 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotIncrementalDependencies() {
-        final QueryTable right = testRefreshingTable(i(10).toTracking(), c("A", 1));
-        final QueryTable left = testRefreshingTable(c("T", 1));
+        final QueryTable base = testRefreshingTable(i(10).toTracking(), c("A", 1));
+        final QueryTable trigger = testRefreshingTable(c("T", 1));
 
         QueryScope.addParam("testSnapshotDependenciesCounter", new AtomicInteger());
 
-        final Table snappedFirst = left.snapshotIncremental(right);
+        final Table snappedFirst = base.snapshotWhen(trigger, Feature.INCREMENTAL);
         final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
-        final Table snappedOfSnap = left.snapshotIncremental(snappedDep);
+        final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Feature.INCREMENTAL);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             System.out.println("Checking everything is satisfied with no updates.");
@@ -1526,8 +1527,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             System.out.println("Adding Table.");
-            addToTable(left, i(2), c("T", 2));
-            left.notifyListeners(i(2), i(), i());
+            addToTable(trigger, i(2), c("T", 2));
+            trigger.notifyListeners(i(2), i(), i());
 
             System.out.println("Checking initial satisfaction.");
             TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
@@ -1595,8 +1596,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             System.out.println("Adding Right Table.");
-            addToTable(right, i(2), c("A", 3));
-            right.notifyListeners(i(2), i(), i());
+            addToTable(base, i(2), c("A", 3));
+            base.notifyListeners(i(2), i(), i());
 
             System.out.println("Checking initial satisfaction.");
             TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
@@ -1633,12 +1634,12 @@ public class QueryTableTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             System.out.println("Adding Right Table.");
-            addToTable(right, i(2), c("A", 3));
-            right.notifyListeners(i(2), i(), i());
+            addToTable(base, i(2), c("A", 3));
+            base.notifyListeners(i(2), i(), i());
 
             System.out.println("Adding Left Table.");
-            addToTable(left, i(3), c("T", 3));
-            left.notifyListeners(i(3), i(), i());
+            addToTable(trigger, i(3), c("T", 3));
+            trigger.notifyListeners(i(3), i(), i());
 
             System.out.println("Checking initial satisfaction.");
             TestCase.assertFalse(snappedFirst.satisfied(LogicalClock.DEFAULT.currentStep()));
@@ -1864,16 +1865,15 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testSnapshotIncremental() {
-        QueryTable right = testRefreshingTable(i(10, 25, 30).toTracking(),
+        QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
-        QueryTable left = testRefreshingTable(c("T", 1));
-        Table empty = left.snapshotIncremental(right);
-        show(empty);
+        QueryTable trigger = testRefreshingTable(c("T", 1));
+        Table empty = base.snapshotWhen(trigger, Feature.INCREMENTAL);
         assertEquals("", diff(empty, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
 
-        final QueryTable left2 = testRefreshingTable(c("T", 1, 2));
+        final QueryTable trigger2 = testRefreshingTable(c("T", 1, 2));
 
-        final QueryTable snapshot = (QueryTable) left2.snapshotIncremental(right);
+        final Table snapshot = base.snapshotWhen(trigger2, Feature.INCREMENTAL);
         System.out.println("Initial table:");
         show(snapshot);
         System.out.println("Initial prev:");
@@ -1885,31 +1885,31 @@ public class QueryTableTest extends QueryTableTestBase {
         listener.reset();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
-            right.notifyListeners(i(20, 40), i(), i());
+            addToTable(base, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
+            base.notifyListeners(i(20, 40), i(), i());
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
         assertEquals(listener.getCount(), 0);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left2, i(3), c("T", 5));
-            left2.notifyListeners(i(3), i(), i());
+            addToTable(trigger2, i(3), c("T", 5));
+            trigger2.notifyListeners(i(3), i(), i());
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot,
                 testRefreshingTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"), c("T", 5, 5, 5, 5, 5)),
                 10));
         assertEquals(listener.getCount(), 1);
-        assertEquals(right.getRowSet(), added);
+        assertEquals(base.getRowSet(), added);
         assertEquals(i(), modified);
         assertEquals(i(), removed);
         listener.reset();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            removeRows(right, i(10, 20, 30));
-            addToTable(right, i(25, 75), c("A", 11, 34), c("B", "A", "Q"));
-            right.notifyListeners(i(75), i(10, 20, 30), i(25));
+            removeRows(base, i(10, 20, 30));
+            addToTable(base, i(25, 75), c("A", 11, 34), c("B", "A", "Q"));
+            base.notifyListeners(i(75), i(10, 20, 30), i(25));
         });
         TableTools.showWithRowSet(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(
@@ -1919,11 +1919,11 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(listener.getCount(), 0);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left2, i(4, 5), c("T", 7, 8));
-            left2.notifyListeners(i(4, 5), i(), i());
+            addToTable(trigger2, i(4, 5), c("T", 7, 8));
+            trigger2.notifyListeners(i(4, 5), i(), i());
         });
         System.out.println("Right Table:");
-        TableTools.showWithRowSet(right, 50);
+        TableTools.showWithRowSet(base, 50);
         System.out.println("Snapshot Table:");
         TableTools.showWithRowSet(snapshot, 50);
 
@@ -1938,27 +1938,27 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testSnapshotIncrementalBigInitial() {
         final int size = 1000000;
-        final Table right = emptyTable(size).update("X=Long.toString(ii)", "I=ii");
-        final QueryTable left = testRefreshingTable(c("T", 1));
-        final Table result = left.snapshotIncremental(right, true);
+        final Table base = emptyTable(size).update("X=Long.toString(ii)", "I=ii");
+        final QueryTable trigger = testRefreshingTable(c("T", 1));
+        final Table result = base.snapshotWhen(trigger, Feature.INCREMENTAL, Feature.INITIAL);
         final Table expected = emptyTable(size).updateView("X=Long.toString(ii)", "I=ii", "T=1");
         assertTableEquals(expected, result);
 
-        final Table result2 = left.snapshotIncremental(right, false);
+        final Table result2 = base.snapshotWhen(trigger, Feature.INCREMENTAL);
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left, i(1), c("T", 2));
-            left.notifyListeners(i(1), i(), i());
+            addToTable(trigger, i(1), c("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
         });
         final Table expected2 = emptyTable(size).updateView("X=Long.toString(ii)", "I=ii", "T=2");
         assertTableEquals(expected2, result2);
     }
 
     public void testSnapshotIncrementalPrev() {
-        final QueryTable right = testRefreshingTable(i(10, 25, 30).toTracking(),
+        final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
-        final QueryTable left = testRefreshingTable(c("T", 1, 2));
+        final QueryTable trigger = testRefreshingTable(c("T", 1, 2));
 
-        final QueryTable snapshot = (QueryTable) left.snapshotIncremental(right, true);
+        final Table snapshot = base.snapshotWhen(trigger, Feature.INCREMENTAL, Feature.INITIAL);
         validateUpdates(snapshot);
 
         System.out.println("Initial table:");
@@ -1977,8 +1977,8 @@ public class QueryTableTest extends QueryTableTestBase {
             assertEquals("", diff(prevTable(snapshot), firstResult, 10));
             assertEquals("", diff(snapshot, firstResult, 10));
 
-            addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
-            right.notifyListeners(i(20, 40), i(), i());
+            addToTable(base, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
+            base.notifyListeners(i(20, 40), i(), i());
         });
         show(snapshot, 50);
         assertEquals("", diff(snapshot, firstResult, 10));
@@ -1987,8 +1987,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left, i(3), c("T", 5));
-            left.notifyListeners(i(3), i(), i());
+            addToTable(trigger, i(3), c("T", 5));
+            trigger.notifyListeners(i(3), i(), i());
             assertEquals("", diff(prevTable(snapshot), firstResult, 10));
         });
 
@@ -2004,17 +2004,17 @@ public class QueryTableTest extends QueryTableTestBase {
         listener.reset();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            removeRows(right, i(10, 20, 30));
-            addToTable(right, i(25, 75), c("A", 11, 34), c("B", "A", "Q"));
-            right.notifyListeners(i(75), i(10, 20, 30), i(25));
+            removeRows(base, i(10, 20, 30));
+            addToTable(base, i(25, 75), c("A", 11, 34), c("B", "A", "Q"));
+            base.notifyListeners(i(75), i(10, 20, 30), i(25));
         });
         TableTools.showWithRowSet(snapshot, 50);
         assertEquals("", diff(snapshot, secondResult, 10));
         assertEquals(listener.getCount(), 0);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left, i(4, 5), c("T", 7, 8));
-            left.notifyListeners(i(4, 5), i(), i());
+            addToTable(trigger, i(4, 5), c("T", 7, 8));
+            trigger.notifyListeners(i(4, 5), i(), i());
         });
 
         final QueryTable thirdResult = testRefreshingTable(c("A", 11, 50, 34), c("B", "A", "bc", "Q"), c("T", 8, 5, 8));
@@ -2027,13 +2027,13 @@ public class QueryTableTest extends QueryTableTestBase {
         listener.reset();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(right, i(25), c("A", 12), c("B", "R"));
-            right.notifyListeners(i(), i(), i(25));
+            addToTable(base, i(25), c("A", 12), c("B", "R"));
+            base.notifyListeners(i(), i(), i(25));
         });
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left, i(6), c("T", 9));
-            left.notifyListeners(i(6), i(), i());
+            addToTable(trigger, i(6), c("T", 9));
+            trigger.notifyListeners(i(6), i(), i());
         });
 
         final QueryTable fourthResult =
@@ -2060,21 +2060,19 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final QueryTable stampTable = getTable(stampSize, random, stampInfo = initColumnInfos(new String[] {"Stamp"},
                 new IntGenerator(0, 100)));
-        final QueryTable rightTable = getTable(stampSize, random,
+        final QueryTable base = getTable(stampSize, random,
                 rightInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 100)));
 
-        final QueryTable snapshot = (QueryTable) stampTable.snapshotIncremental(rightTable);
-
-
+        final QueryTable snapshot = (QueryTable) base.snapshotWhen(stampTable, Feature.INCREMENTAL);
 
         final SimpleShiftObliviousListener simpleListener = new SimpleShiftObliviousListener(snapshot);
         snapshot.addUpdateListener(simpleListener);
 
-        final CoalescingListener coalescingListener = new CoalescingListener(rightTable);
-        rightTable.addUpdateListener(coalescingListener, true);
+        final CoalescingListener coalescingListener = new CoalescingListener(base);
+        base.addUpdateListener(coalescingListener, true);
 
         Table lastSnapshot = snapshot.silent().select();
         RowSet lastRowSet = RowSetFactory.empty();
@@ -2093,7 +2091,7 @@ public class QueryTableTest extends QueryTableTestBase {
                     }
 
                     if (modifyRightFirst) {
-                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable, rightInfo);
+                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, base, rightInfo);
                     }
                     if (modStamp) {
                         final long lastStamp = stampTable.getRowSet().lastRowKey();
@@ -2110,14 +2108,14 @@ public class QueryTableTest extends QueryTableTestBase {
                                 RowSetFactory.empty());
                     }
                     if (!modifyRightFirst && modRight) {
-                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, rightTable, rightInfo);
+                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, base, rightInfo);
                     }
                 });
                 if (modStamp) {
                     System.out.println("Snapshot Size: " + snapshot.size());
                     TableTools.showWithRowSet(snapshot);
 
-                    assertTableEquals(rightTable, snapshot.dropColumns("Stamp"));
+                    assertTableEquals(base, snapshot.dropColumns("Stamp"));
 
                     if (coalescingListener.getCount() > 0) {
                         System.out.println("Snapshot Added: " + simpleListener.added);
@@ -2170,7 +2168,7 @@ public class QueryTableTest extends QueryTableTestBase {
                     // make sure everything from the right table matches the snapshot
                     lastSnapshot = new QueryTable(snapshot.getRowSet().copy().toTracking(),
                             snapshot.getColumnSourceMap());
-                    lastRowSet = rightTable.getRowSet().copy();
+                    lastRowSet = base.getRowSet().copy();
                     // the coalescing listener can be reset
                     coalescingListener.reset();
                     simpleListener.reset();

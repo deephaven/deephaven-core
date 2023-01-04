@@ -7,6 +7,8 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
@@ -623,8 +625,14 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table snapshotIncremental(Table rightTable, String... stampColumns) {
-        return snapshotIncremental(rightTable, false, stampColumns);
+    default Table snapshotWhen(Table trigger, Feature... features) {
+        return snapshotWhen(trigger, SnapshotWhenOptions.of(features));
+    }
+
+    @Override
+    @FinalDefault
+    default Table snapshotWhen(Table trigger, Collection<Feature> features, String... stampColumns) {
+        return snapshotWhen(trigger, SnapshotWhenOptions.of(features, stampColumns));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

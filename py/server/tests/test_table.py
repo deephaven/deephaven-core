@@ -489,30 +489,32 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(result_pt2.table.size, 2)
             self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
 
-    def test_snapshot(self):
-        with self.subTest("do_init is False"):
-            t = empty_table(0).update(
-                formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
-            )
-            snapshot = t.snapshot(source_table=self.test_table)
+    def test_snapshot_when(self):
+        t = empty_table(0).update(
+            formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
+        )
+        with self.subTest("with defaults"):
+            snapshot = self.test_table.snapshot_when(t)
             self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
             self.assertEqual(0, snapshot.size)
 
-        with self.subTest("do_init is True"):
-            snapshot = t.snapshot(source_table=self.test_table, do_init=True)
+        with self.subTest("initial=True"):
+            snapshot = self.test_table.snapshot_when(t, initial=True)
             self.assertEqual(self.test_table.size, snapshot.size)
 
-        with self.subTest("with cols"):
-            snapshot = t.snapshot(source_table=self.test_table, cols="X")
+        with self.subTest("cols=\"X\""):
+            snapshot = self.test_table.snapshot_when(t, cols="X")
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
-            snapshot = t.snapshot(source_table=self.test_table, cols=["X", "Y"])
+
+        with self.subTest("cols=[\"X\", \"Y\"]"):
+            snapshot = self.test_table.snapshot_when(t, cols=["X", "Y"])
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
-    def test_snapshot_history(self):
+    def test_snapshot_when_with_history(self):
         t = empty_table(1).update(
             formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
         )
-        snapshot_hist = t.snapshot_history(source_table=self.test_table)
+        snapshot_hist = self.test_table.snapshot_when(t, history=True)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
 

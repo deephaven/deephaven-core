@@ -170,9 +170,14 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
-        self.Snapshot = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Snapshot',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
+        self.SnapshotWhen = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
+        self.SingleSnapshot = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/SingleSnapshot',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.SingleSnapshotTableRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
         self.Flatten = channel.unary_unary(
@@ -464,12 +469,20 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Snapshot(self, request, context):
+    def SnapshotWhen(self, request, context):
         """
         Snapshot rightId, triggered by leftId, and export the resulting new Table.
         The left table's change events cause a new snapshot to be taken. The result table includes a
         "snapshot key" which is a subset (possibly all) of the left table's columns. The
         remaining columns in the result table come from right table, the table being snapshotted.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SingleSnapshot(self, request, context):
+        """
+        TODO
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -693,9 +706,14 @@ def add_TableServiceServicer_to_server(servicer, server):
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
-            'Snapshot': grpc.unary_unary_rpc_method_handler(
-                    servicer.Snapshot,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.FromString,
+            'SnapshotWhen': grpc.unary_unary_rpc_method_handler(
+                    servicer.SnapshotWhen,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'SingleSnapshot': grpc.unary_unary_rpc_method_handler(
+                    servicer.SingleSnapshot,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SingleSnapshotTableRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'Flatten': grpc.unary_unary_rpc_method_handler(
@@ -1266,7 +1284,7 @@ class TableService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Snapshot(request,
+    def SnapshotWhen(request,
             target,
             options=(),
             channel_credentials=None,
@@ -1276,8 +1294,25 @@ class TableService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Snapshot',
-            deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen',
+            deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SingleSnapshot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/SingleSnapshot',
+            deephaven_dot_proto_dot_table__pb2.SingleSnapshotTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

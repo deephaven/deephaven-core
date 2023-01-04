@@ -6,10 +6,20 @@ import io.deephaven.qst.table.TableSpec;
 import org.junit.Test;
 
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class TableSpecTestBase extends DeephavenSessionTestBase {
+
+    static Iterable<Object[]> iterable(TableSpec... specs) {
+        return () -> Stream.of(specs).map(TableSpecTestBase::args).iterator();
+    }
+
+    private static Object[] args(TableSpec s) {
+        return new Object[] {s};
+    }
+
     private final TableSpec table;
 
     public TableSpecTestBase(TableSpec table) {

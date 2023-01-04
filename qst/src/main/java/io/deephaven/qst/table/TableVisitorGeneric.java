@@ -48,8 +48,13 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(SnapshotTable snapshotTable) {
+    public void visit(SingleSnapshotTable snapshotTable) {
         accept(snapshotTable);
+    }
+
+    @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        accept(snapshotWhenTable);
     }
 
     @Override

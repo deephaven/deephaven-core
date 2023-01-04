@@ -7,6 +7,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.log.LogOutput;
@@ -261,16 +262,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return throwUnsupported();
-    }
-
-    @Override
-    default Table snapshotHistory(Table rightTable) {
-        return throwUnsupported();
-    }
-
-    @Override
     default Table getSubTable(TrackingRowSet rowSet) {
         return throwUnsupported();
     }
@@ -378,7 +369,12 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
+    default Table snapshot() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
         return throwUnsupported();
     }
 

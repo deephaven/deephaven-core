@@ -3692,7 +3692,7 @@ public class QueryTableAggregationTest {
         final Table initialKeys = testRefreshingTable(c("C", 'A', 'B', 'C', 'D', 'E'));
 
         final Table aggregated = input.aggBy(aggs, true, initialKeys, ColumnName.from("C"));
-        final Table initialState = emptyTable(0).snapshot(aggregated);
+        final Table initialState = aggregated.snapshot();
         TestCase.assertEquals(5, aggregated.size());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

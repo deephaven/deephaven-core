@@ -25,7 +25,8 @@ import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
-import io.deephaven.qst.table.SnapshotTable;
+import io.deephaven.qst.table.SingleSnapshotTable;
+import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableSpec.Visitor;
@@ -153,11 +154,16 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(SnapshotTable snapshotTable) {
-        final TOPS trigger = ops(snapshotTable.trigger());
-        final TABLE base = table(snapshotTable.base());
-        addOp(snapshotTable, trigger.snapshot(base, snapshotTable.doInitialSnapshot(),
-                snapshotTable.stampColumns()));
+    public void visit(SingleSnapshotTable snapshotTable) {
+        final TOPS base = ops(snapshotTable.base());
+        addOp(snapshotTable, base.snapshot());
+    }
+
+    @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        final TOPS base = ops(snapshotWhenTable.base());
+        final TABLE trigger = table(snapshotWhenTable.trigger());
+        addOp(snapshotWhenTable, base.snapshotWhen(trigger, snapshotWhenTable.options()));
     }
 
     @Override

@@ -22,21 +22,11 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     Filter[] ZERO_LENGTH_FILTER_ARRAY = new Filter[0];
     ColumnName[] ZERO_LENGTH_COLUMNNAME_ARRAY = new ColumnName[0];
+    boolean DO_INITIAL_SNAPSHOT_DEFAULT = false;
 
     // -----------------------------------------------------------------------------------------------------------------
     // Snapshot Operations
     // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default TOPS snapshot(TABLE baseTable, String... stampColumns) {
-        return snapshot(baseTable, true, stampColumns);
-    }
-
-    @Override
-    default TOPS snapshot(TABLE baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
-        return snapshot(baseTable, doInitialSnapshot,
-                stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
-    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations

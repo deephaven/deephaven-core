@@ -6,6 +6,8 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.util.ConcurrentMethod;
@@ -37,51 +39,50 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a result. The returned
-     * table will include an initial snapshot.
+     * Creates a table with a single static snapshot of {@code this}.
      *
-     * <p>
-     * Delegates to {@link #snapshot(Object, boolean, Collection)}.
-     *
-     * @param baseTable The table to be snapshotted
-     * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's columns to be
-     *        included in the result at snapshot time. As a special case, an empty stampColumns is taken to mean
-     *        "include all columns".
-     * @return The result table
+     * @return the snapshot
      */
-    TOPS snapshot(TABLE baseTable, String... stampColumns);
+    TOPS snapshot();
 
     /**
-     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a result.
+     * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} ticks.
      *
      * <p>
-     * Delegates to {@link #snapshot(Object, boolean, Collection)}.
+     * Equivalent to {@code snapshotWhen(trigger, SnapshotWhenControl.of(features))}.
      *
-     * @param baseTable The table to be snapshotted
-     * @param doInitialSnapshot Take the first snapshot now (otherwise wait for a change event)
-     * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's columns to be
-     *        included in the result at snapshot time. As a special case, an empty stampColumns is taken to mean
-     *        "include all columns".
-     * @return The result table
+     * @param trigger the trigger table
+     * @param features the snapshot features
+     * @return the snapshotting table
+     * @see #snapshotWhen(Object, SnapshotWhenOptions)
+     * @see SnapshotWhenOptions#of(Feature...)
      */
-    TOPS snapshot(TABLE baseTable, boolean doInitialSnapshot, String... stampColumns);
+    TOPS snapshotWhen(TABLE trigger, Feature... features);
 
     /**
-     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a result.
+     * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} ticks.
      *
      * <p>
-     * {@code this} table is the triggering table, i.e. the table whose change events cause a new snapshot to be taken.
-     * The result table includes a "snapshot key" which is a subset (possibly all) of {@code this} table's columns. The
-     * remaining columns in the result table come from {@code baseTable}, the table being snapshotted.
+     * Equivalent to {@code snapshotWhen(trigger, SnapshotWhenControl.of(features, stampColumns))}.
      *
-     * @param baseTable The table to be snapshotted
-     * @param doInitialSnapshot Take the first snapshot now (otherwise wait for a change event)
-     * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's columns to be
-     *        included in the result at snapshot time. As a special case, an empty stampColumns is taken to mean
-     *        "include all columns".
-     * @return The result table
+     * @param trigger the trigger table
+     * @param features the snapshot features
+     * @param stampColumns the stamp columns
+     * @return the snapshotting table
+     * @see #snapshotWhen(Object, SnapshotWhenOptions)
+     * @see SnapshotWhenOptions#of(Iterable, String...)
      */
-    TOPS snapshot(TABLE baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns);
+    TOPS snapshotWhen(TABLE trigger, Collection<Feature> features, String... stampColumns);
+
+    /**
+     * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} ticks.
+     *
+     * @param trigger the trigger table
+     * @param options the snapshot options
+     * @return the snapshotting table
+     * @see SnapshotWhenOptions
+     */
+    TOPS snapshotWhen(TABLE trigger, SnapshotWhenOptions options);
 
     // -------------------------------------------------------------------------------------------
 

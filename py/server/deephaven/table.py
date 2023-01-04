@@ -35,6 +35,7 @@ _JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
 _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
+_JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -301,56 +302,21 @@ class Table(JObjectWrapper):
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
 
-    def snapshot(self, source_table: Table, do_init: bool = False, cols: Union[str, List[str]] = None) -> Table:
-        """Produces an in-memory copy of a source table that refreshes when this table changes.
-
-        Note, this table is often a time table that adds new rows at a regular, user-defined interval.
-
-        Args:
-            source_table (Table): the table to be snapshot
-            do_init (bool): whether to snapshot when this method is initially called, default is False
-            cols (Union[str, List[str]]): names of the columns of this table to be included in the snapshot, default is
-                None, meaning all the columns
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
+    def snapshot(self) -> Table:
+        """ Returns a static snapshot table."""
         try:
-            cols = to_sequence(cols)
-            with auto_locking_ctx(self, source_table):
-                return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init, *cols))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.snapshot())
         except Exception as e:
-            raise DHError(message="failed to create a snapshot table.") from e
+            raise DHError(message="failed to create a snapshot.") from e
 
-    def snapshot_history(self, source_table: Table) -> Table:
-        """Produces an in-memory history of a source table that adds a new snapshot when this table (trigger table)
-        changes.
-
-        The trigger table is often a time table that adds new rows at a regular, user-defined interval.
-
-        Columns from the trigger table appear in the result table. If the trigger and source tables have columns with
-        the same name, an error will be raised. To avoid this problem, rename conflicting columns.
-
-        Because snapshot_history stores a copy of the source table for every trigger event, large source tables or
-        rapidly changing trigger tables can result in large memory usage.
-
-        Args:
-            source_table (Table): the table to be snapshot
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
+    def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, cols: Union[str, List[str]] = None) -> Table:
         try:
-            with auto_locking_ctx(self, source_table):
-                return Table(j_table=self.j_table.snapshotHistory(source_table.j_table))
+            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(cols))
+            with auto_locking_ctx(self, trigger_table):
+                return Table(j_table=self.j_table.snapshotWhen(trigger_table.j_table, options))
         except Exception as e:
-            raise DHError(message="failed to create a snapshot history table.") from e
+            raise DHError(message="failed to create a snapshot_when table.") from e
 
     #
     # Table operation category: Select
@@ -2106,36 +2072,20 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "reverse operation on the PartitionedTableProxy failed.") from e
 
-    def snapshot(self, source_table: Union[Table, PartitionedTableProxy], do_init: bool = False,
-                 cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying
-        partitioned table with the provided source table or PartitionedTableProxy, and produces a new
-        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
-
-        In the case of source table being another PartitionedTableProxy, the :meth:`~Table.snapshot` table operation
-        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Note, the constituent tables are often time tables that add new rows at a regular, user-defined interval.
-
-        Args:
-            source_table (Union[Table, PartitionedTableProxy]): the table or PartitionedTableProxy to be snapshot
-            do_init (bool): whether to snapshot when this method is initially called, default is False
-            cols (Union[str, List[str]]): names of the columns of the constituent table to be included in the snapshot,
-                default is None, meaning all the columns
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
+    def snapshot(self) -> PartitionedTableProxy:
         try:
-            cols = to_sequence(cols)
-            table_op = jpy.cast(source_table.j_object, _JTableOperations)
-            with auto_locking_ctx(self, source_table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot(table_op, do_init, *cols))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot())
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
+
+    def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
+        try:
+            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(cols))
+            with auto_locking_ctx(self, trigger_table):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshotWhen(trigger_table.j_object, options))
+        except Exception as e:
+            raise DHError(e, "snapshot_when operation on the PartitionedTableProxy failed.") from e
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTableProxy:

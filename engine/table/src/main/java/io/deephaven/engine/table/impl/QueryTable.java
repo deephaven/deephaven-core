@@ -13,6 +13,8 @@ import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
@@ -39,6 +41,7 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.util.annotations.InternalUseOnly;
@@ -1866,17 +1869,15 @@ public class QueryTable extends BaseTable<QueryTable> {
         return newCapacity;
     }
 
-    public Table snapshotHistory(final Table rightTable) {
-        return QueryPerformanceRecorder.withNugget("snapshotHistory", rightTable.sizeForInstrumentation(), () -> {
+    private Table snapshotHistory(final String nuggetName, final Table baseTable) {
+        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
             checkInitiateOperation();
 
             // resultColumns initially contains the left columns, then we insert the right columns into it
-            final Map<String, ArrayBackedColumnSource<?>> resultColumns =
-                    SnapshotUtils.createColumnSourceMap(this.getColumnSourceMap(),
-                            ArrayBackedColumnSource::getMemoryColumnSource);
-            final Map<String, ArrayBackedColumnSource<?>> rightColumns =
-                    SnapshotUtils.createColumnSourceMap(rightTable.getColumnSourceMap(),
-                            ArrayBackedColumnSource::getMemoryColumnSource);
+            final Map<String, ArrayBackedColumnSource<?>> resultColumns = SnapshotUtils
+                    .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
+            final Map<String, ArrayBackedColumnSource<?>> rightColumns = SnapshotUtils.createColumnSourceMap(
+                    baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
             resultColumns.putAll(rightColumns);
 
             // BTW, we don't track prev because these items are never modified or removed.
@@ -1884,45 +1885,39 @@ public class QueryTable extends BaseTable<QueryTable> {
             final Map<String, ? extends ColumnSource<?>> triggerStampColumns =
                     SnapshotUtils.generateTriggerStampColumns(leftTable);
             final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
-                    SnapshotUtils.generateSnapshotDataColumns(rightTable);
+                    SnapshotUtils.generateSnapshotDataColumns(baseTable);
             final long initialSize = snapshotHistoryInternal(triggerStampColumns, leftTable.getRowSet(),
-                    snapshotDataColumns, rightTable.getRowSet(),
-                    resultColumns, 0);
-            final TrackingWritableRowSet resultRowSet =
-                    RowSetFactory.flat(initialSize).toTracking();
+                    snapshotDataColumns, baseTable.getRowSet(), resultColumns, 0);
+            final TrackingWritableRowSet resultRowSet = RowSetFactory.flat(initialSize).toTracking();
             final QueryTable result = new QueryTable(resultRowSet, resultColumns);
             if (isRefreshing()) {
-                addUpdateListener(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(),
-                        this, result) {
-                    private long lastKey = rowSet.lastRowKey();
+                addUpdateListener(
+                        new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(), this, result) {
+                            private long lastKey = rowSet.lastRowKey();
 
-                    @Override
-                    public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
-                        Assert.assertion(removed.size() == 0, "removed.size() == 0",
-                                removed, "removed");
-                        Assert.assertion(modified.size() == 0, "modified.size() == 0",
-                                modified, "modified");
-                        if (added.size() == 0 || rightTable.size() == 0) {
-                            return;
-                        }
-                        Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey",
-                                lastKey, "lastRowKey", added, "added");
-                        final long oldSize = resultRowSet.size();
-                        final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
-                                snapshotDataColumns, rightTable.getRowSet(),
-                                resultColumns, oldSize);
-                        final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
-                        resultRowSet.insert(addedSnapshots);
-                        lastKey = rowSet.lastRowKey();
-                        result.notifyListeners(addedSnapshots, RowSetFactory.empty(),
-                                RowSetFactory.empty());
-                    }
+                            @Override
+                            public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
+                                Assert.assertion(removed.size() == 0, "removed.size() == 0", removed, "removed");
+                                Assert.assertion(modified.size() == 0, "modified.size() == 0", modified, "modified");
+                                if (added.size() == 0 || baseTable.size() == 0) {
+                                    return;
+                                }
+                                Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey",
+                                        lastKey, "lastRowKey", added, "added");
+                                final long oldSize = resultRowSet.size();
+                                final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
+                                        snapshotDataColumns, baseTable.getRowSet(), resultColumns, oldSize);
+                                final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
+                                resultRowSet.insert(addedSnapshots);
+                                lastKey = rowSet.lastRowKey();
+                                result.notifyListeners(addedSnapshots, RowSetFactory.empty(), RowSetFactory.empty());
+                            }
 
-                    @Override
-                    public boolean canExecute(final long step) {
-                        return rightTable.satisfied(step) && super.canExecute(step);
-                    }
-                });
+                            @Override
+                            public boolean canExecute(final long step) {
+                                return baseTable.satisfied(step) && super.canExecute(step);
+                            }
+                        });
             }
             result.setFlat();
             return result;
@@ -1933,21 +1928,16 @@ public class QueryTable extends BaseTable<QueryTable> {
         return new QueryTable(getRowSet(), getColumnSourceMap());
     }
 
-    @Override
-    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget(
-                "snapshot(baseTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")",
-                baseTable.sizeForInstrumentation(), () -> {
-
-                    // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty,
-                    // we get
-                    // a view containing all of the columns (in that case, basically we get this table back).
-                    QueryTable viewTable = (QueryTable) view(stampColumns);
-                    // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
-                    // Whatever viewTable came back from the above, we do the snapshot
-                    return viewTable.snapshotInternal(baseTable, doInitialSnapshot,
-                            viewTable.getDefinition().getColumnNamesArray());
-                });
+    private Table snapshot(String nuggetName, Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
+        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
+            // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty,
+            // we get a view containing all of the columns (in that case, basically we get this table back).
+            QueryTable viewTable = (QueryTable) view(stampColumns);
+            // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
+            // Whatever viewTable came back from the above, we do the snapshot
+            return viewTable.snapshotInternal(baseTable, doInitialSnapshot,
+                    viewTable.getDefinition().getColumnNamesArray());
+        });
     }
 
     private Table snapshotInternal(Table tableToSnapshot, boolean doInitialSnapshot, String... stampColumns) {
@@ -2027,116 +2017,152 @@ public class QueryTable extends BaseTable<QueryTable> {
         return result;
     }
 
-    @Override
-    public Table snapshotIncremental(final Table tableToSnapshot, final boolean doInitialSnapshot,
+    private Table snapshotIncremental(final String nuggetName, final Table baseTable, final boolean doInitialSnapshot,
             final String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget("snapshotIncremental(tableToSnapshot, " + doInitialSnapshot + ", "
-                + Arrays.toString(stampColumns) + ")", tableToSnapshot.sizeForInstrumentation(), () -> {
-                    checkInitiateOperation();
+        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
+            checkInitiateOperation();
 
-                    final QueryTable rightTable =
-                            (QueryTable) (tableToSnapshot instanceof UncoalescedTable ? tableToSnapshot.coalesce()
-                                    : tableToSnapshot);
-                    rightTable.checkInitiateOperation();
+            final QueryTable rightTable =
+                    (QueryTable) (baseTable instanceof UncoalescedTable ? baseTable.coalesce()
+                            : baseTable);
+            rightTable.checkInitiateOperation();
 
-                    // Use the given columns (if specified); otherwise an empty array means all of my columns
-                    final String[] useStampColumns = stampColumns.length == 0
-                            ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
-                            : stampColumns;
+            // Use the given columns (if specified); otherwise an empty array means all of my columns
+            final String[] useStampColumns = stampColumns.length == 0
+                    ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
+                    : stampColumns;
 
-                    final Map<String, ColumnSource<?>> leftColumns = new LinkedHashMap<>();
-                    for (String stampColumn : useStampColumns) {
-                        leftColumns.put(stampColumn,
-                                SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
-                    }
+            final Map<String, ColumnSource<?>> leftColumns = new LinkedHashMap<>();
+            for (String stampColumn : useStampColumns) {
+                leftColumns.put(stampColumn,
+                        SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
+            }
 
-                    final Map<String, SparseArrayColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
-                    for (Map.Entry<String, ColumnSource<?>> entry : leftColumns.entrySet()) {
-                        final String name = entry.getKey();
-                        final ColumnSource<?> cs = entry.getValue();
-                        final Class<?> type = cs.getType();
-                        final SparseArrayColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
-                                ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
-                                : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
+            final Map<String, SparseArrayColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
+            for (Map.Entry<String, ColumnSource<?>> entry : leftColumns.entrySet()) {
+                final String name = entry.getKey();
+                final ColumnSource<?> cs = entry.getValue();
+                final Class<?> type = cs.getType();
+                final SparseArrayColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
+                        ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
+                        : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
 
-                        resultLeftColumns.put(name, stampDest);
-                    }
+                resultLeftColumns.put(name, stampDest);
+            }
 
-                    final Map<String, SparseArrayColumnSource<?>> resultRightColumns =
-                            SnapshotUtils.createColumnSourceMap(rightTable.getColumnSourceMap(),
-                                    SparseArrayColumnSource::getSparseMemoryColumnSource);
+            final Map<String, SparseArrayColumnSource<?>> resultRightColumns =
+                    SnapshotUtils.createColumnSourceMap(rightTable.getColumnSourceMap(),
+                            SparseArrayColumnSource::getSparseMemoryColumnSource);
 
-                    final Map<String, SparseArrayColumnSource<?>> resultColumns =
-                            new LinkedHashMap<>(resultRightColumns);
-                    resultColumns.putAll(resultLeftColumns);
-                    if (resultColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
-                        throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
-                    }
+            final Map<String, SparseArrayColumnSource<?>> resultColumns =
+                    new LinkedHashMap<>(resultRightColumns);
+            resultColumns.putAll(resultLeftColumns);
+            if (resultColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
+                throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
+            }
 
-                    final QueryTable resultTable =
-                            new QueryTable(RowSetFactory.empty().toTracking(),
-                                    resultColumns);
+            final QueryTable resultTable =
+                    new QueryTable(RowSetFactory.empty().toTracking(),
+                            resultColumns);
 
-                    if (isRefreshing() && rightTable.isRefreshing()) {
+            if (isRefreshing() && rightTable.isRefreshing()) {
 
-                        // What's happening here: the left table gets "listener" (some complicated logic that has access
-                        // to the coalescer) whereas the right table (above) gets the one-liner above (but which also
-                        // has access to the same coalescer). So when the right table sees updates they are simply fed
-                        // to the coalescer.
-                        // The coalescer's job is just to remember what rows have changed. When the *left* table gets
-                        // updates, then the SnapshotIncrementalListener gets called, which does all the snapshotting
-                        // work.
+                // What's happening here: the left table gets "listener" (some complicated logic that has access
+                // to the coalescer) whereas the right table (above) gets the one-liner above (but which also
+                // has access to the same coalescer). So when the right table sees updates they are simply fed
+                // to the coalescer.
+                // The coalescer's job is just to remember what rows have changed. When the *left* table gets
+                // updates, then the SnapshotIncrementalListener gets called, which does all the snapshotting
+                // work.
 
-                        final ListenerRecorder rightListenerRecorder =
-                                new ListenerRecorder("snapshotIncremental (rightTable)", rightTable, resultTable);
-                        rightTable.addUpdateListener(rightListenerRecorder);
+                final ListenerRecorder rightListenerRecorder =
+                        new ListenerRecorder("snapshotIncremental (rightTable)", rightTable, resultTable);
+                rightTable.addUpdateListener(rightListenerRecorder);
 
-                        final ListenerRecorder leftListenerRecorder =
-                                new ListenerRecorder("snapshotIncremental (leftTable)", this, resultTable);
-                        addUpdateListener(leftListenerRecorder);
+                final ListenerRecorder leftListenerRecorder =
+                        new ListenerRecorder("snapshotIncremental (leftTable)", this, resultTable);
+                addUpdateListener(leftListenerRecorder);
 
-                        final SnapshotIncrementalListener listener =
-                                new SnapshotIncrementalListener(this, resultTable, resultColumns,
-                                        rightListenerRecorder, leftListenerRecorder, rightTable, leftColumns);
+                final SnapshotIncrementalListener listener =
+                        new SnapshotIncrementalListener(this, resultTable, resultColumns,
+                                rightListenerRecorder, leftListenerRecorder, rightTable, leftColumns);
 
-                        rightListenerRecorder.setMergedListener(listener);
-                        leftListenerRecorder.setMergedListener(listener);
-                        resultTable.addParentReference(listener);
+                rightListenerRecorder.setMergedListener(listener);
+                leftListenerRecorder.setMergedListener(listener);
+                resultTable.addParentReference(listener);
 
-                        if (doInitialSnapshot) {
-                            listener.doFirstSnapshot(true);
-                        }
+                if (doInitialSnapshot) {
+                    listener.doFirstSnapshot(true);
+                }
 
-                        startTrackingPrev(resultColumns.values());
-                        resultTable.getRowSet().writableCast().initializePreviousValue();
-                    } else if (doInitialSnapshot) {
-                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this,
-                                SnapshotUtils.generateSnapshotDataColumns(rightTable),
-                                leftColumns, resultColumns);
-                        resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
-                        resultTable.getRowSet().writableCast().initializePreviousValue();
-                    } else if (isRefreshing()) {
-                        // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our
-                        // (static)
-                        // right table on the very first tick of the leftTable
-                        addUpdateListener(
-                                new ListenerImpl("snapshotIncremental (leftTable)", this, resultTable) {
-                                    @Override
-                                    public void onUpdate(TableUpdate upstream) {
-                                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
-                                                QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(rightTable),
-                                                leftColumns, resultColumns);
-                                        resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
-                                        resultTable.notifyListeners(resultTable.getRowSet().copy(),
-                                                RowSetFactory.empty(),
-                                                RowSetFactory.empty());
-                                        removeUpdateListener(this);
-                                    }
-                                });
-                    }
+                startTrackingPrev(resultColumns.values());
+                resultTable.getRowSet().writableCast().initializePreviousValue();
+            } else if (doInitialSnapshot) {
+                SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this,
+                        SnapshotUtils.generateSnapshotDataColumns(rightTable),
+                        leftColumns, resultColumns);
+                resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
+                resultTable.getRowSet().writableCast().initializePreviousValue();
+            } else if (isRefreshing()) {
+                // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our
+                // (static)
+                // right table on the very first tick of the leftTable
+                addUpdateListener(
+                        new ListenerImpl("snapshotIncremental (leftTable)", this, resultTable) {
+                            @Override
+                            public void onUpdate(TableUpdate upstream) {
+                                SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
+                                        QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(rightTable),
+                                        leftColumns, resultColumns);
+                                resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
+                                resultTable.notifyListeners(resultTable.getRowSet().copy(),
+                                        RowSetFactory.empty(),
+                                        RowSetFactory.empty());
+                                removeUpdateListener(this);
+                            }
+                        });
+            }
 
-                    return resultTable;
-                });
+            return resultTable;
+        });
+    }
+
+    @Override
+    public Table snapshot() {
+        // TODO: should we just return this if static? or select()? (see
+        // io.deephaven.engine.table.impl.util.BaseArrayBackedMutableTable.ArrayBackedMutableInputTable.doSnap(io.deephaven.engine.table.Table))
+        // TODO: improve with more targeted io.deephaven.engine.table.impl.remote.ConstructSnapshot construction (and
+        // can be concurrent?)
+        return QueryPerformanceRecorder.withNugget("snapshot()", sizeForInstrumentation(),
+                () -> ((QueryTable) TableTools.emptyTable(1)).snapshotInternal(this, true));
+    }
+
+    @Override
+    public Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
+        final boolean initial = options.has(Feature.INITIAL);
+        final boolean incremental = options.has(Feature.INCREMENTAL);
+        final boolean history = options.has(Feature.HISTORY);
+        final String[] stampColumns = options.stampColumns().stream().map(ColumnName::name).toArray(String[]::new);
+        final String description = options.description();
+        if (history) {
+            if (incremental) {
+                throw new UnsupportedOperationException(
+                        "snapshotWhen with history does not currently support incremental feature, " + description);
+            }
+            if (initial) {
+                throw new UnsupportedOperationException(
+                        "snapshotWhen with history does not currently support initial feature, " + description);
+            }
+            if (stampColumns.length != 0) {
+                throw new UnsupportedOperationException(
+                        "snapshotWhen with history does not currently support stamp columns, " + description);
+            }
+            return ((QueryTable) trigger).snapshotHistory(description, this);
+        }
+        if (incremental) {
+            return ((QueryTable) trigger).snapshotIncremental(description, this, initial, stampColumns);
+        }
+        return ((QueryTable) trigger).snapshot(description, this, initial, stampColumns);
     }
 
     private static void throwColumnConflictMessage(Set<String> left, Set<String> right) {
