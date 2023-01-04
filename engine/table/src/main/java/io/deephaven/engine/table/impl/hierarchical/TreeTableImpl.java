@@ -100,6 +100,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             final long size) {
         final ColumnDefinition columnDefinition = source.getDefinition().getColumn(column.name());
         final TableDefinition columnOnlyTableDefinition = TableDefinition.of(columnDefinition);
+        // noinspection resource
         return new QueryTable(columnOnlyTableDefinition, RowSetFactory.flat(size).toTracking(),
                 NullValueColumnSource.createColumnSourceMap(columnOnlyTableDefinition), null, null);
     }

@@ -2,7 +2,6 @@ package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;

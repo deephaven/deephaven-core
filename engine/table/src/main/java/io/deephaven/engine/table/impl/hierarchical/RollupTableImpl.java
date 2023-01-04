@@ -168,6 +168,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 groupByColumnDefinitions.stream())
                 .collect(Collectors.toList());
         final TableDefinition keyTableDefinition = TableDefinition.of(keyTableColumnDefinitions);
+        // noinspection resource
         return new QueryTable(keyTableDefinition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(keyTableDefinition), null, null);
     }
