@@ -11,15 +11,16 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
+    public static final int RING_BUFFER_INITIAL_CAPACITY = 512;
     // region extra-fields
     // endregion extra-fields
 
@@ -30,7 +31,7 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
         protected Context(int chunkSize) {
             super(chunkSize);
-            longWindowValues = new LongRingBuffer(512, true);
+            longWindowValues = new LongRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override

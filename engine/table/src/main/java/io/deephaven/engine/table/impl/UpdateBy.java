@@ -28,7 +28,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,6 +49,9 @@ public abstract class UpdateBy {
     /** When caching a column source, what size chunks should be used to move data to the cache? (64K default) */
     public static final int PARALLEL_CACHE_CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault("UpdateBy.parallelCacheChunkSize", 1 << 16);
+
+    /** When extracting keys from the redirection, what size chunks to use? (2K default) */
+    public static final int REDIRECTION_CHUNK_SIZE = 1 << 11;
 
     /** Input sources may be reused by multiple operators, only store and cache unique ones (post-reinterpret) */
     protected final ColumnSource<?>[] inputSources;
@@ -130,25 +132,17 @@ public abstract class UpdateBy {
             }
 
             if (upstream.added().isNonempty()) {
-                final MutableLong lastAllocated = new MutableLong(0);
                 final WritableRowSet.Iterator freeIt = freeRows.iterator();
                 upstream.added().forAllRowKeys(outerKey -> {
                     final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : maxInnerRowKey++;
-                    lastAllocated.setValue(innerKey);
                     rowRedirection.put(outerKey, innerKey);
                 });
-                freeRows.removeRange(0, lastAllocated.longValue());
+                if (freeIt.hasNext()) {
+                    freeRows.removeRange(0, freeIt.nextLong() - 1);
+                } else {
+                    freeRows.clear();
+                }
             }
-        }
-
-        private boolean shiftRedirectedKey(@NotNull final RowSet.SearchIterator iterator, final long delta,
-                final long key) {
-            assert rowRedirection != null;
-            final long inner = rowRedirection.remove(key);
-            if (inner != NULL_ROW_KEY) {
-                rowRedirection.put(key + delta, inner);
-            }
-            return !iterator.hasNext();
         }
 
         private RowSet getInnerKeys(final RowSet outerKeys) {
@@ -156,7 +150,7 @@ public abstract class UpdateBy {
                 return null;
             }
             RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-            final int chunkSize = Math.min(outerKeys.intSize(), 4096);
+            final int chunkSize = Math.min(outerKeys.intSize(), REDIRECTION_CHUNK_SIZE);
             try (final RowSequence.Iterator it = outerKeys.getRowSequenceIterator();
                     ChunkSource.FillContext fillContext = rowRedirection.makeFillContext(chunkSize, null);
                     WritableLongChunk<? extends RowKeys> chunk = WritableLongChunk.makeWritableChunk(chunkSize)) {

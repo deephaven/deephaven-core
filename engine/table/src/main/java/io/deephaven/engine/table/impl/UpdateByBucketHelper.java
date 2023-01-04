@@ -25,6 +25,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * bucket of rows.
  */
 class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucketHelper> {
+    public static final int SSA_LEAF_SIZE = 4096;
     protected final ColumnSource<?>[] inputSources;
     // some columns will have multiple inputs, such as time-based and Weighted computations
     final int[][] operatorInputSourceSlots;
@@ -85,7 +86,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         // do we need a timestamp SSA?
         this.timestampColumnName = timestampColumnName;
         if (timestampColumnName != null) {
-            this.timestampSsa = new LongSegmentedSortedArray(4096);
+            this.timestampSsa = new LongSegmentedSortedArray(SSA_LEAF_SIZE);
             this.timestampColumnSource =
                     ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(this.timestampColumnName));
             this.timestampColumnSet = source.newModifiedColumnSet(timestampColumnName);
@@ -120,87 +121,82 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     private void processUpdateForSsa(TableUpdate upstream) {
         final boolean stampModified = upstream.modifiedColumnSet().containsAny(timestampColumnSet);
 
-        final RowSet restampRemovals;
-        final RowSet restampAdditions;
+        try (final RowSet restampAdditions =
+                stampModified ? upstream.added().union(upstream.modified()) : upstream.added().copy();
+                final RowSet restampRemovals = stampModified ? upstream.removed().union(upstream.getModifiedPreShift())
+                        : upstream.removed().copy()) {
+            // removes
+            if (restampRemovals.isNonempty()) {
+                final int size = (int) Math.min(restampRemovals.size(), 4096);
+                try (final RowSequence.Iterator it = restampRemovals.getRowSequenceIterator();
+                        final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
+                        final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
+                        final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
 
-        // modifies are remove + add operations
-        if (stampModified) {
-            restampAdditions = upstream.added().union(upstream.modified());
-            restampRemovals = upstream.removed().union(upstream.getModifiedPreShift());
-        } else {
-            restampAdditions = upstream.added();
-            restampRemovals = upstream.removed();
-        }
+                    MutableLong lastTimestamp = new MutableLong(NULL_LONG);
+                    while (it.hasMore()) {
+                        RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
 
-        // removes
-        if (restampRemovals.isNonempty()) {
-            final int size = (int) Math.min(restampRemovals.size(), 4096);
-            try (final RowSequence.Iterator it = restampRemovals.getRowSequenceIterator();
-                    final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
-                    final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
-                    final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+                        // get the chunks for values and keys
+                        LongChunk<? extends Values> valuesChunk =
+                                timestampColumnSource.getPrevChunk(context, chunkRs).asLongChunk();
+                        LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
 
-                MutableLong lastTimestamp = new MutableLong(NULL_LONG);
-                while (it.hasMore()) {
-                    RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
-
-                    // get the chunks for values and keys
-                    LongChunk<? extends Values> valuesChunk =
-                            timestampColumnSource.getPrevChunk(context, chunkRs).asLongChunk();
-                    LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
-
-                    // push only non-null values/keys into the Ssa
-                    fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
-                    timestampSsa.remove(ssaValues, ssaKeys);
-                }
-            }
-        }
-
-        // shifts
-        if (upstream.shifted().nonempty()) {
-            final int size = Math.max(
-                    upstream.modified().intSize() + Math.max(upstream.added().intSize(), upstream.removed().intSize()),
-                    (int) upstream.shifted().getEffectiveSize());
-            try (final RowSet fullPrevRowSet = source.getRowSet().copyPrev();
-                    final WritableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
-                    final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
-
-                final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
-                while (sit.hasNext()) {
-                    sit.next();
-                    try (final RowSet subRowSet = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
-                        if (subRowSet.isEmpty()) {
-                            continue;
-                        }
-
-                        final LongChunk<? extends Values> shiftValues =
-                                timestampColumnSource.getPrevChunk(getContext, subRowSet).asLongChunk();
-
-                        timestampSsa.applyShiftReverse(shiftValues, subRowSet.asRowKeyChunk(), sit.shiftDelta());
+                        // push only non-null values/keys into the Ssa
+                        fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
+                        timestampSsa.remove(ssaValues, ssaKeys);
                     }
                 }
             }
-        }
 
-        // adds
-        if (restampAdditions.isNonempty()) {
-            final int size = (int) Math.min(restampAdditions.size(), 4096);
-            try (final RowSequence.Iterator it = restampAdditions.getRowSequenceIterator();
-                    final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
-                    final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
-                    final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
-                MutableLong lastTimestamp = new MutableLong(NULL_LONG);
-                while (it.hasMore()) {
-                    RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
+            // shifts
+            if (upstream.shifted().nonempty()) {
+                final int size = Math.max(
+                        upstream.modified().intSize()
+                                + Math.max(upstream.added().intSize(), upstream.removed().intSize()),
+                        (int) upstream.shifted().getEffectiveSize());
+                try (final RowSet fullPrevRowSet = source.getRowSet().copyPrev();
+                        final WritableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+                        final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
 
-                    // get the chunks for values and keys
-                    LongChunk<? extends Values> valuesChunk =
-                            timestampColumnSource.getChunk(context, chunkRs).asLongChunk();
-                    LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
+                    final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
+                    while (sit.hasNext()) {
+                        sit.next();
+                        try (final RowSet subRowSet =
+                                previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
+                            if (subRowSet.isEmpty()) {
+                                continue;
+                            }
 
-                    // push only non-null values/keys into the Ssa
-                    fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
-                    timestampSsa.insert(ssaValues, ssaKeys);
+                            final LongChunk<? extends Values> shiftValues =
+                                    timestampColumnSource.getPrevChunk(getContext, subRowSet).asLongChunk();
+
+                            timestampSsa.applyShiftReverse(shiftValues, subRowSet.asRowKeyChunk(), sit.shiftDelta());
+                        }
+                    }
+                }
+            }
+
+            // adds
+            if (restampAdditions.isNonempty()) {
+                final int size = (int) Math.min(restampAdditions.size(), 4096);
+                try (final RowSequence.Iterator it = restampAdditions.getRowSequenceIterator();
+                        final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
+                        final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
+                        final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+                    MutableLong lastTimestamp = new MutableLong(NULL_LONG);
+                    while (it.hasMore()) {
+                        RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
+
+                        // get the chunks for values and keys
+                        LongChunk<? extends Values> valuesChunk =
+                                timestampColumnSource.getChunk(context, chunkRs).asLongChunk();
+                        LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
+
+                        // push only non-null values/keys into the Ssa
+                        fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
+                        timestampSsa.insert(ssaValues, ssaKeys);
+                    }
                 }
             }
         }

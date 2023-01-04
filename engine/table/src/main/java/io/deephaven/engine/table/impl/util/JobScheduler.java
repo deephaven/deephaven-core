@@ -80,8 +80,7 @@ public interface JobScheduler {
     default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
             int count, IterateAction action, Runnable completeAction, final Consumer<Exception> onError) {
         iterateParallel(executionContext, description, start, count,
-                (final int idx, final Runnable resume) ->
-                {
+                (final int idx, final Runnable resume) -> {
                     action.run(idx);
                     resume.run();
                 },
@@ -209,9 +208,7 @@ public interface JobScheduler {
 
         // create a single task
         submit(executionContext,
-                () -> {
-                    action.run(start, resumeAction);
-                },
+                () -> action.run(start, resumeAction),
                 description,
                 onError);
     }

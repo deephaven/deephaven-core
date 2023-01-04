@@ -31,6 +31,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * a buffer of `influencer` values to add to the rolling window as the current row changes.
  */
 public class UpdateByWindowTime extends UpdateByWindow {
+    public static final int WINDOW_TIMESTAMP_BUFFER_INITIAL_CAPACITY = 512;
     protected final long prevUnits;
     protected final long fwdUnits;
 
@@ -56,7 +57,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
             super(sourceRowSet, timestampColumnSource, timestampSsa, chunkSize, initialStep);
 
             influencerTimestampContext = timestampColumnSource.makeGetContext(WINDOW_CHUNK_SIZE);
-            currentWindowTimestamps = new LongRingBuffer(512, true);
+            currentWindowTimestamps = new LongRingBuffer(WINDOW_TIMESTAMP_BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override

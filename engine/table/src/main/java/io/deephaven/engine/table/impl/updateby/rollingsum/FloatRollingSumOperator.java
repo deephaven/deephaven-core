@@ -1,10 +1,11 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedFloatUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.PairwiseFloatRingBuffer;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -17,6 +18,7 @@ import java.util.Map;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
+    public static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
     // region extra-fields
     // endregion extra-fields
 
@@ -26,16 +28,13 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            floatPairwiseSum = new PairwiseFloatRingBuffer(64, 0.0f, new PairwiseFloatRingBuffer.FloatFunction() {
-                @Override
-                public float apply(float a, float b) {
-                    if (a == NULL_FLOAT) {
-                        return b;
-                    } else if (b == NULL_FLOAT) {
-                        return  a;
-                    }
-                    return a + b;
+            floatPairwiseSum = new PairwiseFloatRingBuffer(PAIRWISE_BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
+                if (a == NULL_FLOAT) {
+                    return b;
+                } else if (b == NULL_FLOAT) {
+                    return  a;
                 }
+                return a + b;
             });
         }
 

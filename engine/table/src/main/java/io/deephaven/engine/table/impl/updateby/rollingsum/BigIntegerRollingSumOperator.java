@@ -2,10 +2,10 @@ package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.RingBuffer;
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.UpdateBy;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -15,13 +15,16 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigInteger;
 
 public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdateByOperator<BigInteger> {
+
+    public static final int RING_BUFFER_INITIAL_CAPACITY = 512;
+
     protected class Context extends BaseWindowedObjectUpdateByOperator<BigInteger>.Context {
         protected ObjectChunk<BigInteger, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigInteger> objectWindowValues;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            objectWindowValues = new RingBuffer<>(512);
+            objectWindowValues = new RingBuffer<>(RING_BUFFER_INITIAL_CAPACITY);
         }
 
         @Override

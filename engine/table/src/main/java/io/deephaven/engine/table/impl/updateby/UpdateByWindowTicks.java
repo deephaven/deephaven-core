@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
@@ -30,6 +29,7 @@ import java.util.stream.IntStream;
  * of `influencer` values to add to the rolling window as the current row changes.
  */
 public class UpdateByWindowTicks extends UpdateByWindow {
+    public static final int WINDOW_POS_BUFFER_INITIAL_CAPACITY = 512;
     protected final long prevUnits;
     protected final long fwdUnits;
 
@@ -57,7 +57,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                 @Nullable final LongSegmentedSortedArray timestampSsa, final int chunkSize, final boolean initialStep) {
             super(sourceRowSet, null, null, chunkSize, initialStep);
 
-            currentWindowPositions = new IntRingBuffer(512, true);
+            currentWindowPositions = new IntRingBuffer(WINDOW_POS_BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
