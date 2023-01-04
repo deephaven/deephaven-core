@@ -56,6 +56,10 @@ _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDee
 _test_vectorization = False
 _vectorized_count = 0
 
+# Rollup Table and Tree Table
+_JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
+_JTreeTable = jpy.get_type("io.deephaven.engine.table.hierarchical.TreeTable")
+
 
 def _j_py_script_session() -> _JPythonScriptSession:
     j_execution_context = _JExecutionContext.getContext()
@@ -212,6 +216,42 @@ def _td_to_columns(table_definition):
             )
         )
     return cols
+
+
+class RollupTable(JObjectWrapper):
+    """ A RollupTable is generated as a result of applying the :meth:`~Table.rollup` method on a Table.
+
+    Note: It should not be instantiated directly by user code.
+    """
+    j_object_type = _JRollupTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_rollup_table
+
+    def __init__(self, j_rollup_table: jpy.JType, aggs: Sequence[Aggregation], include_constituents: bool,
+                 by: Sequence[str]):
+        self.j_rollup_table = j_rollup_table
+        self.aggs = aggs
+        self.include_constituents = include_constituents
+        self.by = by
+
+
+class TreeTable(JObjectWrapper):
+    """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a Table.
+
+    Note: It should not be instantiated directly by user code.
+    """
+    j_object_type = _JTreeTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_tree_table
+
+    def __init__(self, j_tree_table: jpy.JType, id_col: str, parent_col: str):
+        self.j_tree_table = j_tree_table
+        self.id_col = id_col
+        self.parent_col = parent_col
 
 
 class Table(JObjectWrapper):
@@ -1660,6 +1700,80 @@ class Table(JObjectWrapper):
             return Table(j_table=self.j_table.slice(start, stop))
         except Exception as e:
             raise DHError(e, "table slice operation failed.") from e
+
+    def rollup(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
+               include_constituents: bool = False) -> RollupTable:
+        """Creates a rollup table.
+
+         A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
+         using one less aggregation column on each level. The column that is no longer part of the aggregation key is
+         replaced with null on each level.
+
+         Note some aggregations can not be used in creating a rollup tables, these include: group, partition, median,
+         pct, weighted_avg
+
+        Args:
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            include_constituents (bool): whether to include the constituent rows at the leaf level, default is False
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            with auto_locking_ctx(self):
+                if not by:
+                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
+                                       include_constituents=include_constituents, by=by)
+                else:
+                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
+                                       aggs=aggs,
+                                       include_constituents=include_constituents, by=by)
+        except Exception as e:
+            raise DHError(e, "table rollup operation failed.") from e
+
+    def tree(self, id_col: str, parent_col: str, promote_orphans: bool = False) -> TreeTable:
+        """Creates a hierarchical tree table.
+
+        The structure of the table is encoded by an "id" and a "parent" column. The id column should represent a unique
+        identifier for a given row, and the parent column indicates which row is the parent for a given row. Rows that
+        have a None parent are part of the "root" table.
+
+        It is possible for rows to be "orphaned" if their parent is non-None and does not exist in the table. These
+        rows will not be present in the resulting tree. If this is not desirable, they could be promoted to become
+        children of the root table by setting 'promote_orphans' argument to True.
+
+        Args:
+            id_col (str): the name of a column containing a unique identifier for a particular row in the table
+            parent_col (str): the name of a column containing the parent's identifier, {@code null} for rows that are
+                part of the root table
+            promote_orphans (bool): whether to promote node tables whose parents don't exist to be children of the
+                root node, default is False
+
+        Returns:
+            a new TreeTable organized according to the parent-child relationships expressed by id_col and parent_col
+
+        Raises:
+            DHError
+        """
+        try:
+            if promote_orphans:
+                with auto_locking_ctx(self):
+                    j_table = _JTreeTable.promoteOrphans(self.j_table, id_col, parent_col)
+            else:
+                j_table = self.j_table
+
+            with auto_locking_ctx(self):
+                return TreeTable(j_tree_table=j_table.tree(id_col, parent_col), id_col=id_col,
+                                 parent_col=parent_col)
+        except Exception as e:
+            raise DHError(e, "table tree operation failed.") from e
 
 
 class PartitionedTable(JObjectWrapper):

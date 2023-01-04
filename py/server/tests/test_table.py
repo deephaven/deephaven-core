@@ -1,13 +1,9 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-import random
-import time
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
-
-import deephaven
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
@@ -19,27 +15,46 @@ from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
 
+# for scoping dependent table operation tests
+def global_fn() -> str:
+    return "global str"
+
+
+global_int = 1001
+a_number = 10001
+
+
+class EmptyCls:
+    ...
+
+
+foo = EmptyCls()
+foo.name = "GOOG"
+foo.price = 1000
+
+
 class TableTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
-        self.aggs = [
-            group(["aggGroup=var"]),
+        self.aggs_for_rollup = [
             avg(["aggAvg=var"]),
             count_("aggCount"),
-            partition("aggPartition"),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),
-            median(["aggMed=var"]),
             min_(["aggMin=var"]),
-            pct(0.20, ["aggPct=var"]),
             std(["aggStd=var"]),
             sum_(["aggSum=var"]),
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
-            weighted_avg("var", ["weights"]),
         ]
+        self.aggs = self.aggs_for_rollup + [group(["aggGroup=var"]),
+                                            partition("aggPartition"),
+                                            median(["aggMed=var"]),
+                                            pct(0.20, ["aggPct=var"]),
+                                            weighted_avg("var", ["weights"]),
+                                            ]
 
     def tearDown(self) -> None:
         self.test_table = None
@@ -809,22 +824,38 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             rt = t.slice(3, 2)
 
+    def test_rollup(self):
+        test_table = empty_table(100)
+        test_table = test_table.update(
+            ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
+        )
+        with self.assertRaises(DHError) as cm:
+            rollup_table = test_table.rollup(aggs=self.aggs)
+        self.assertRegex(str(cm.exception), r".+ is not supported for rollup")
 
-def global_fn() -> str:
-    return "global str"
+        rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, by='grp_id')
+        self.assertIsNotNone(rollup_table)
 
+        rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, include_constituents=True)
+        self.assertIsNotNone(rollup_table)
 
-global_int = 1001
-a_number = 10001
+    def test_tree(self):
+        # column 'a' contains duplicate values
+        with self.assertRaises(DHError) as cm:
+            tree_table = self.test_table.tree(id_col='a', parent_col='c')
+        self.assertRegex(str(cm.exception), r".+IllegalStateException")
 
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c')
+        self.assertIsNotNone(tree_table)
+        self.assertEqual(tree_table.id_col, 'a')
+        self.assertEqual(tree_table.parent_col, 'c')
 
-class EmptyCls:
-    ...
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='a')
+        self.assertIsNotNone(tree_table)
 
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c', promote_orphans=True)
+        self.assertIsNotNone(tree_table)
 
-foo = EmptyCls()
-foo.name = "GOOG"
-foo.price = 1000
 
 if __name__ == "__main__":
     unittest.main()
