@@ -245,7 +245,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
          */
         private void beginSnapshotAttempt(final boolean usePrev) {
             this.usePrev = usePrev;
-            currentDepth = -1;
+            currentDepth = 0; // We always start at the root depth, which is zero by convention
             expandingAll = false;
             visitedSize = 0;
             includedSize = 0;

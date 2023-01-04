@@ -32,12 +32,16 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
     static final Object ROOT_NODE_KEY = new Object();
 
     /**
-     * The root's "parent" doesn't really exist, but we pretend that it does, at depth -1.
+     * The root node exists at depth 0, but by definition its always visited as an expanded node or not at all. For
+     * all other nodes, the node key width is (depth - 1).
      */
-    static final int ROOT_PARENT_NODE_DEPTH = -1;
+    static final int ROOT_NODE_DEPTH = 0;
 
     private final ColumnSource<Integer> depthSource;
     private final ColumnSource<?>[] groupByValueSources;
+
+    private final int maxMaxKeyWidth;
+    private final int maxDepth;
 
     /**
      * Construct a new RollupNodeKeySource backed by the supplied column sources.
@@ -52,6 +56,8 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         this.depthSource = depthSource;
         this.groupByValueSources = Stream.of(groupByValueSources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
+        maxMaxKeyWidth = groupByValueSources.length;
+        maxDepth = maxMaxKeyWidth + 1;
     }
 
     @Override
@@ -87,7 +93,7 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         final IntChunk<? extends Values> depths = usePrev
                 ? depthSource.getPrevChunk(fc.depthContext, rowSequence).asIntChunk()
                 : depthSource.getChunk(fc.depthContext, rowSequence).asIntChunk();
-        final int maxKeyWidth = getMaxKeyWidth(depths, groupByValueSources.length);
+        final int maxKeyWidth = getMaxKeyWidth(depths, maxMaxKeyWidth);
         final ObjectChunk<?, ? extends Values>[] groupByValues =
                 getGroupByValuesChunks(fc, rowSequence, usePrev, maxKeyWidth);
         fillFromGroupByValues(rowSequence, depths, groupByValues, destination.asWritableObjectChunk());
@@ -97,9 +103,9 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         final int size = depths.size();
         int maxKeyWidth = 0;
         for (int kwi = 0; kwi < size; ++kwi) {
-            // No need to special case the root's parent depth, since it's less than 0. For all other node keys, parent
-            // depth is key width.
-            final int keyWidth = depths.get(kwi);
+            // Key width is (depth - 1). No need to special case the root, since the implied key width of -1 is less
+            // than 0.
+            final int keyWidth = depths.get(kwi) - 1;
             if (keyWidth >= maxMaxKeyWidth) {
                 return maxMaxKeyWidth;
             }
@@ -134,30 +140,31 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         final int size = rowSequence.intSize();
         destination.setSize(size);
         for (int ri = 0; ri < size; ++ri) {
-            final int parentDepth = depths.get(ri);
-            if (parentDepth < ROOT_PARENT_NODE_DEPTH || parentDepth > groupByValueSources.length) {
-                final int usableDepth = Math.min(groupByValueSources.length, parentDepth);
+            final int depth = depths.get(ri);
+            if (depth < ROOT_NODE_DEPTH || depth > maxDepth) {
+                final int usableKeyWidth = Math.min(maxMaxKeyWidth, depth - 1);
                 final int fri = ri;
                 throw new IllegalArgumentException(String.format(
                         "Invalid depth %d, maximum for this rollup is %d, partial node key is [%s]",
-                        parentDepth, groupByValueSources.length,
-                        IntStream.range(0, usableDepth)
+                        depth, maxDepth,
+                        IntStream.range(0, usableKeyWidth)
                                 .mapToObj(ci -> Objects.toString(groupByValues[ci].get(fri)))
                                 .collect(Collectors.joining())));
             }
-            switch (parentDepth) {
-                case ROOT_PARENT_NODE_DEPTH: // Root node
+            switch (depth) {
+                case ROOT_NODE_DEPTH: // Root node
                     destination.set(ri, ROOT_NODE_KEY);
                     break;
-                case 0: // Key width 0 (empty Object[])
+                case 1: // Key width 0 (empty Object[])
                     destination.set(ri, EMPTY_KEY);
                     break;
-                case 1: // Key width 1 (single Object)
+                case 2: // Key width 1 (single Object)
                     destination.set(ri, groupByValues[0].get(ri));
                     break;
                 default: // Key width > 1 (Object[] of key column values)
-                    final Object[] columnValues = new Object[parentDepth];
-                    for (int ci = 0; ci < parentDepth; ++ci) {
+                    final int keyWidth = depth - 1;
+                    final Object[] columnValues = new Object[keyWidth];
+                    for (int ci = 0; ci < keyWidth; ++ci) {
                         columnValues[ci] = groupByValues[ci].get(ri);
                     }
                     destination.set(ri, columnValues);
