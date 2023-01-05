@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.agg.AggregationPairs;
@@ -160,9 +161,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     public String getDescription() {
-        return "RollupTable(" + source.getDescription()
-                + ", [" + groupByColumns.stream().map(ColumnName::name).collect(Collectors.joining())
-                + "])";
+        return String.format("RollupTable(%s, %s)", source.getDescription(), Strings.of(groupByColumns));
     }
 
     @Override

@@ -13,6 +13,11 @@ import java.util.stream.Collectors;
 /**
  * The options for creating a snapshotting table with respect to the {@code base} and {@code trigger} tables of
  * {@link io.deephaven.api.TableOperations#snapshotWhen(Object, SnapshotWhenOptions)}.
+ *
+ * <p>
+ * When {@code trigger} updates, a snapshot of {@code base} and the "stamp key" from {@code trigger} form the resulting
+ * table. The "stamp key" is the last row of the {@code trigger} table, limited by the {@link #stampColumns() stamp
+ * columns}. If {@code trigger} is empty, the "stamp key" will be represented by {@code null} values.
  */
 @Immutable
 @BuildableStyle
@@ -20,15 +25,18 @@ public abstract class SnapshotWhenOptions {
 
     public enum Flag {
         /**
-         * Whether to take an initial snapshot upon construction.
+         * Whether to take an initial snapshot upon construction. When not specified, the resulting table will remain
+         * empty until {@code trigger} first updates.
          */
         INITIAL,
         /**
-         * Whether the snapshot should be incremental.
+         * Whether the resulting table should be incremental. When incremental, only the rows of {@code base} that have
+         * been added or updated will have the latest "stamp key".
          */
         INCREMENTAL,
         /**
-         * Whether the snapshot should keep history.
+         * Whether the resulting table should keep history. A history table appends a full snapshot of {@code base} and
+         * the "stamp key" as opposed to updating existing rows.
          *
          * <p>
          * Note: this flag is currently incompatible with {@link #INITIAL}, {@link #INCREMENTAL}, or non-empty
@@ -57,7 +65,7 @@ public abstract class SnapshotWhenOptions {
     }
 
     /**
-     * Creates an options with the flags and columns.
+     * Creates an options with the flags and {@code stampColumns}..
      *
      * @param initial for {@link Flag#INITIAL}
      * @param incremental for {@link Flag#INCREMENTAL}
@@ -105,13 +113,9 @@ public abstract class SnapshotWhenOptions {
     public abstract Set<Flag> flags();
 
     /**
-     * The columns from the {@code trigger} table that should be added to the resulting table. An empty list means add
-     * all columns.
+     * The {@code trigger} table stamp columns. If empty, it represents all columns from the {@code trigger} table.
      */
     public abstract List<ColumnName> stampColumns();
-
-    // Note: should there be a feature to specify that empty means NO stamp columns?
-    // Engine doesn't currently support it, but it's a legitimate operation.
 
     /**
      * Check if the {@code flag} is set.

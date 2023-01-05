@@ -91,7 +91,6 @@ public final class SnapshotWhenTableGrpcImpl extends GrpcTableOperation<Snapshot
         }
     }
 
-
     private SafeCloseable lock(Table base, Table trigger) {
         return base.isRefreshing() || trigger.isRefreshing() ? updateGraphProcessor.sharedLock().lockCloseable() : null;
     }

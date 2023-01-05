@@ -27,7 +27,7 @@ public class Strings {
         return columnName.name();
     }
 
-    public static String of(Collection<ColumnName> columnNames) {
+    public static String of(Collection<? extends ColumnName> columnNames) {
         return columnNames.stream().map(ColumnName::name).collect(Collectors.joining(",", "[", "]"));
     }
 
