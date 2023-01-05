@@ -3,7 +3,6 @@
  */
 package io.deephaven.python.server;
 
-import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
@@ -12,8 +11,7 @@ import io.deephaven.internal.log.Bootstrap;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
-import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.auth.CommunityAuthorizationProvider;
+import io.deephaven.server.auth.CommunityAuthorizationModule;
 import io.deephaven.server.console.SessionToExecutionStateModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
@@ -21,13 +19,13 @@ import io.deephaven.server.console.python.PythonGlobalScopeModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyConfig.Builder;
+import io.deephaven.server.jetty.JettyServerComponent;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
 import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
-import io.deephaven.server.runner.DeephavenApiServerComponent;
 import io.deephaven.server.runner.DeephavenApiServerModule;
-import io.deephaven.server.runner.Main;
+import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.util.Scheduler;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
@@ -41,6 +39,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 
 public class EmbeddedServer {
+
     @Singleton
     @Component(modules = {
             DeephavenApiServerModule.class,
@@ -54,17 +53,11 @@ public class EmbeddedServer {
             PythonConsoleSessionModule.class,
             GroovyConsoleSessionModule.class,
             SessionToExecutionStateModule.class,
+            CommunityAuthorizationModule.class,
     })
-    public interface PythonServerComponent extends DeephavenApiServerComponent {
+    public interface PythonServerComponent extends JettyServerComponent {
         @Component.Builder
-        interface Builder extends DeephavenApiServerComponent.Builder<PythonServerComponent.Builder> {
-            @BindsInstance
-            Builder withJettyConfig(JettyConfig config);
-
-            @BindsInstance
-            Builder withAuthorizationProvider(AuthorizationProvider authorizationProvider);
-
-            PythonServerComponent build();
+        interface Builder extends JettyServerComponent.Builder<Builder, PythonServerComponent> {
         }
 
         void injectFields(EmbeddedServer instance);
@@ -90,7 +83,7 @@ public class EmbeddedServer {
         System.setOut(new PrintStream(new PyLogOutputStream(() -> sys.getAttribute("stdout"))));
         System.setErr(new PrintStream(new PyLogOutputStream(() -> sys.getAttribute("stderr"))));
 
-        final Configuration config = Main.init(new String[0], EmbeddedServer.class);
+        final Configuration config = MainHelper.init(new String[0], EmbeddedServer.class);
         final Builder builder = JettyConfig.buildFromConfig(config);
         if (host != null) {
             builder.host(host);
@@ -101,7 +94,6 @@ public class EmbeddedServer {
         DaggerEmbeddedServer_PythonServerComponent
                 .builder()
                 .withJettyConfig(builder.build())
-                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(null)
                 .withErr(null)
                 .build()
