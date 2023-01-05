@@ -2131,6 +2131,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
+        if (!trigger.isRefreshing()) {
+            throw new IllegalArgumentException("trigger table should be refreshing for snapshotWhen");
+        }
         // todo: throw exception if trigger is static?
         final boolean initial = options.has(Flag.INITIAL);
         final boolean incremental = options.has(Flag.INCREMENTAL);
