@@ -23,13 +23,10 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.bar
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Hierarchicaltable_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableApplyRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewKeyTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupDescriptorDetails;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.hierarchicaltabledescriptor.DetailsCase;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.*;
@@ -236,11 +233,11 @@ public class JsTreeTable extends HasEventHandling {
     private final Map<String, Column> columnsByName = new HashMap<>();
     private final int rowFormatColumn;
     private final Map<String, Column> sourceColumns = new HashMap<>();
-    private final JsArray<Column> keyColumns;
+    private final JsArray<Column> keyColumns = new JsArray<>();
     private Column rowDepthCol;
     private Column rowExpandedCol;
     private final Column actionCol;
-    private final JsArray<Column> groupedColumns;
+    private final JsArray<Column> groupedColumns = new JsArray<>();
 
     // The source JsTable behind the original HierarchicalTable, lazily built at this time
     private final JsLazy<Promise<JsTable>> sourceTable;
@@ -279,13 +276,16 @@ public class JsTreeTable extends HasEventHandling {
         this.widget = widget;
         this.treeDescriptor = HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
 
-        Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotDefinitionSchema_asU8();
+        Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
         Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
         this.tableDefinition = WebBarrageUtils.readTableDefinition(schema);
         Column[] columns = new Column[0];
         Map<Boolean, Map<String, ColumnDefinition>> columnDefsByName = tableDefinition.getColumnsByName();
         int rowFormatColumn = -1;
+
+        // This is handy to avoid certain lookups that we'll only do anyway if this is a rollup. This is naturally always false if this is a tree.
+        boolean hasConstituentColumns = !columnDefsByName.get(true).isEmpty();
 
         for (ColumnDefinition definition : tableDefinition.getColumns()) {
             Column column = definition.makeJsColumn(columns.length, columnDefsByName);
@@ -295,12 +295,26 @@ public class JsTreeTable extends HasEventHandling {
                 continue;
             }
 
-            if (definition.getName().equals(treeDescriptor.getRowDepthColumn())) {
+            if (definition.isHierarchicalRowDepthColumn()) {
                 rowDepthCol = column;
-            } else if (definition.getName().equals(treeDescriptor.getRowExpandedColumn())) {
+            } else if (definition.isHierarchicalRowExpandedColumn()) {
                 rowExpandedCol = column;
-            } else if (definition.isVisible()) {
+            } else if (definition.isHierarchicalExpandByColumn()) {
+                // technically this may be set for the above two cases, but at this time we send them regardless
+                keyColumns.push(column);
+            }
+            if (definition.isVisible()) {
                 columns[columns.length] = column;
+            }
+            if (definition.isRollupGroupByColumn()) {
+                groupedColumns.push(column);
+
+                if (hasConstituentColumns) {
+                    column.setConstituentType(columnDefsByName.get(true).get(definition.getName()).getType());
+                }
+            }
+            if (hasConstituentColumns && definition.isRollupAggregatedNodeColumn()) {
+                column.setConstituentType(columnDefsByName.get(true).get(definition.getRollupAggregationInputColumn()).getType());
             }
         }
         this.rowFormatColumn = rowFormatColumn;
@@ -309,44 +323,35 @@ public class JsTreeTable extends HasEventHandling {
             Column column = visibleColumns[i];
             columnsByName.put(column.getName(), column);
         }
-        keyColumns = treeDescriptor.getExpandByColumnsList().map((p0, p1, p2) -> columnsByName.get(p0));
+
+        //TODO populate sourceColumns at this point
+
+
+
         keyTableData = new Object[keyColumns.length + 2][0];
         actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false);
-
-        if (treeDescriptor.getDetailsCase() == DetailsCase.ROLLUP) {
-            RollupDescriptorDetails rollupDef = treeDescriptor.getRollup();
-
-            final Set<String> presentNames = new HashSet<>();
-            rollupDef.getOutputInputColumnPairsList().forEach((pair, index, arr) -> {
-                String[] split = pair.split("=");
-                String rollupColName = split[0];
-                presentNames.add(rollupColName);
-                String sourceColName = split[1];
-                if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()
-                        && !isTableAggregationColumn(sourceColName)) {
-                    Column sourceColumn = findColumn(sourceColName);
-                    String sourceType = sourceColumn.getType();
-                    findColumn(rollupColName).setConstituentType(sourceType);
-                    this.sourceColumns.put(rollupColName, sourceColumn);
-                }
-
-                return null;
-            });
-            groupedColumns = JsObject
-                    .freeze(getColumns()
-                            .filter((column, index, array) -> !presentNames.contains(column.getName())));
-            if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()) {
-                groupedColumns.forEach((column, index, array) -> {
-                    column.setConstituentType(null);
-                    return null;
-                });
-            }
-
-        } else {
-            assert treeDescriptor.getDetailsCase() == DetailsCase.TREE
-                    : "Unexpected type " + treeDescriptor.getDetailsCase();
-            groupedColumns = null;
-        }
+//
+//        if (treeDescriptor.getDetailsCase() == DetailsCase.ROLLUP) {
+//            RollupDescriptorDetails rollupDef = treeDescriptor.getRollup();
+//
+//            final Set<String> presentNames = new HashSet<>();
+//            rollupDef.getOutputInputColumnPairsList().forEach((pair, index, arr) -> {
+//                String[] split = pair.split("=");
+//                String rollupColName = split[0];
+//                presentNames.add(rollupColName);
+//                String sourceColName = split[1];
+//                if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()
+//                        && !isTableAggregationColumn(sourceColName)) {
+//                    Column sourceColumn = findColumn(sourceColName);
+//                    String sourceType = sourceColumn.getType();
+//                    findColumn(rollupColName).setConstituentType(sourceType);
+//                    this.sourceColumns.put(rollupColName, sourceColumn);
+//                }
+//
+//                return null;
+//            });
+//
+//        }
 
         sourceTable = JsLazy.of(() -> {
             throw new UnsupportedOperationException("source table isn't yet supported");
@@ -849,10 +854,7 @@ public class JsTreeTable extends HasEventHandling {
 
     @JsProperty
     public boolean isIncludeConstituents() {
-        if (treeDescriptor.hasRollup()) {
-            return treeDescriptor.getRollup().getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT();
-        }
-        return false;
+        return Arrays.stream(tableDefinition.getColumns()).anyMatch(ColumnDefinition::isRollupConstituentNodeColumn);
     }
 
     @JsProperty

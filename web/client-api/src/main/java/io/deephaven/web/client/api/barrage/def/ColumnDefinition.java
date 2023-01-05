@@ -19,7 +19,14 @@ public class ColumnDefinition {
     private boolean isFormatColumn;
     private boolean isNumberFormatColumn;
     private boolean isPartitionColumn;
-    private boolean isConstituentColumn;
+//    private boolean isHierarchicalStructuralColumn;
+    private boolean isHierarchicalExpandByColumn;
+    private boolean isHierarchicalRowDepthColumn;
+    private boolean isHierarchicalRowExpandedColumn;
+    private boolean isRollupAggregatedNodeColumn;
+    private boolean isRollupConstituentNodeColumn;
+    private boolean isRollupGroupByColumn;
+    private String rollupAggregationInputColumn;
 
     // Indicates that this is a style column for the row
     private boolean forRow;
@@ -91,7 +98,7 @@ public class ColumnDefinition {
     }
 
     public boolean isVisible() {
-        return !isStyleColumn() && !isFormatColumn() && !isConstituentColumn();
+        return !isStyleColumn() && !isFormatColumn() && !isRollupConstituentNodeColumn() && !isHierarchicalRowDepthColumn() && !isHierarchicalRowExpandedColumn();
     }
 
     public boolean isForRow() {
@@ -138,7 +145,7 @@ public class ColumnDefinition {
         if (isForRow()) {
             return makeColumn(-1, this, null, null, false, null, null, false);
         }
-        Map<String, ColumnDefinition> byNameMap = map.get(isConstituentColumn());
+        Map<String, ColumnDefinition> byNameMap = map.get(isRollupConstituentNodeColumn());
         ColumnDefinition format = byNameMap.get(getFormatColumnName());
         ColumnDefinition style = byNameMap.get(getStyleColumnName());
 
@@ -159,11 +166,67 @@ public class ColumnDefinition {
                 definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn);
     }
 
-    public boolean isConstituentColumn() {
-        return isConstituentColumn;
+//    public boolean isHierarchicalStructuralColumn() {
+//        return isHierarchicalStructuralColumn;
+//    }
+//
+//    public void setHierarchicalStructuralColumn(boolean hierarchicalStructuralColumn) {
+//        isHierarchicalStructuralColumn = hierarchicalStructuralColumn;
+//    }
+
+    public boolean isHierarchicalExpandByColumn() {
+        return isHierarchicalExpandByColumn;
     }
 
-    public void setConstituentColumn(boolean constituentColumn) {
-        isConstituentColumn = constituentColumn;
+    public void setHierarchicalExpandByColumn(boolean hierarchicalExpandByColumn) {
+        isHierarchicalExpandByColumn = hierarchicalExpandByColumn;
+    }
+
+    public boolean isHierarchicalRowDepthColumn() {
+        return isHierarchicalRowDepthColumn;
+    }
+
+    public void setHierarchicalRowDepthColumn(boolean hierarchicalRowDepthColumn) {
+        isHierarchicalRowDepthColumn = hierarchicalRowDepthColumn;
+    }
+
+    public boolean isHierarchicalRowExpandedColumn() {
+        return isHierarchicalRowExpandedColumn;
+    }
+
+    public void setHierarchicalRowExpandedColumn(boolean hierarchicalRowExpandedColumn) {
+        isHierarchicalRowExpandedColumn = hierarchicalRowExpandedColumn;
+    }
+
+    public boolean isRollupAggregatedNodeColumn() {
+        return isRollupAggregatedNodeColumn;
+    }
+
+    public void setRollupAggregatedNodeColumn(boolean rollupAggregatedNodeColumn) {
+        isRollupAggregatedNodeColumn = rollupAggregatedNodeColumn;
+    }
+
+    public boolean isRollupConstituentNodeColumn() {
+        return isRollupConstituentNodeColumn;
+    }
+
+    public void setRollupConstituentNodeColumn(boolean rollupConstituentNodeColumn) {
+        isRollupConstituentNodeColumn = rollupConstituentNodeColumn;
+    }
+
+    public boolean isRollupGroupByColumn() {
+        return isRollupGroupByColumn;
+    }
+
+    public void setRollupGroupByColumn(boolean rollupGroupByColumn) {
+        isRollupGroupByColumn = rollupGroupByColumn;
+    }
+
+    public String getRollupAggregationInputColumn() {
+        return rollupAggregationInputColumn;
+    }
+
+    public void setRollupAggregationInputColumn(String rollupAggregationInputColumn) {
+        this.rollupAggregationInputColumn = rollupAggregationInputColumn;
     }
 }

@@ -41,7 +41,7 @@ public class InitialTableDefinition {
 
     public Map<Boolean, Map<String, ColumnDefinition>> getColumnsByName() {
         return Arrays.stream(columns)
-                .collect(Collectors.partitioningBy(ColumnDefinition::isConstituentColumn, columnCollector(false)));
+                .collect(Collectors.partitioningBy(ColumnDefinition::isRollupConstituentNodeColumn, columnCollector(false)));
     }
 
     private static Collector<? super ColumnDefinition, ?, Map<String, ColumnDefinition>> columnCollector(
