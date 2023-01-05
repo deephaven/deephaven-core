@@ -2314,25 +2314,26 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "genericGetValue(myParameterizedHashMap)";
         resultExpression = "genericGetValue(myParameterizedHashMap)";
         check(expression, resultExpression, Double.class, new String[] {"myParameterizedHashMap"});
+
+        expression = "genericArray(myVector)";
+        resultExpression = "genericArray(myVector)";
+        check(expression, resultExpression, new Double[0].getClass(), new String[] {"myVector"});
     }
 
     public void testVectorUnboxing() throws Exception {
         String expression = "genericArrayToSingle(myVector)";
         String resultExpression = "genericArrayToSingle(VectorConversions.nullSafeVectorToArray(myVector))";
-        // TODO: when reparsing result, VectorConversions.nullSafeVectorToArray(myVector) is seen as a java.lang.Double
-        check(expression, resultExpression, Double.class, new String[] {"myVector"}, false);
+        check(expression, resultExpression, Double.class, new String[] {"myVector"});
 
         expression = "genericArraysToSingle(myVector, myIntegerObjArray)";
         resultExpression =
                 "genericArraysToSingle(VectorConversions.nullSafeVectorToArray(myVector), myIntegerObjArray)";
-        // TODO: when reparsing result, VectorConversions.nullSafeVectorToArray(myVector) is seen as a java.lang.Double
-        check(expression, resultExpression, Integer.class, new String[] {"myVector", "myIntegerObjArray"}, false);
+        check(expression, resultExpression, Integer.class, new String[] {"myVector", "myIntegerObjArray"});
 
         expression = "genericArraysToSingle(myIntegerObjArray, myVector)";
         resultExpression =
                 "genericArraysToSingle(myIntegerObjArray, VectorConversions.nullSafeVectorToArray(myVector))";
-        // TODO: when reparsing result, VectorConversions.nullSafeVectorToArray(myVector) is seen as a java.lang.Double
-        check(expression, resultExpression, Double.class, new String[] {"myVector", "myIntegerObjArray"}, false);
+        check(expression, resultExpression, Double.class, new String[] {"myVector", "myIntegerObjArray"});
 
         expression = "genericVector(myVector)";
         resultExpression = "genericVector(myVector)";
@@ -3229,6 +3230,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     }
 
     public static <T> T genericVector(ObjectVector<T> vector) {
+        return null;
+    }
+
+    public static <T> T[] genericArray(ObjectVector<T> vector) {
         return null;
     }
 

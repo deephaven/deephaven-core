@@ -61,7 +61,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     private final Map<String, Class<?>> testOverrideClassLookups;
 
     private final Map<String, Class<?>> variables;
-    private final Map<String, Class<?>[]> variableParameterizedTypes;
+    private final Map<String, Class<?>[]> variableTypeArguments;
 
     private final HashSet<String> variablesUsed = new HashSet<>();
 
@@ -87,7 +87,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
      *        imported.
      * @param variables A map of the names of scope variables to their types
-     * @param variableParameterizedTypes A map of the names of scope variables to their parameterized types
+     * @param variableTypeArguments A map of the names of scope variables to their type arguments
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public QueryLanguageParser(String expression,
@@ -95,9 +95,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Collection<Class<?>> classImports,
             Collection<Class<?>> staticImports,
             Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
+            Map<String, Class<?>[]> variableTypeArguments) throws QueryLanguageParseException {
         this(expression, packageImports, classImports, staticImports, variables,
-                variableParameterizedTypes, true);
+                variableTypeArguments, true);
     }
 
     /**
@@ -111,7 +111,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
      *        imported.
      * @param variables A map of the names of scope variables to their types
-     * @param variableParameterizedTypes A map of the names of scope variables to their parameterized types
+     * @param variableTypeArguments A map of the names of scope variables to their type arguments
      * @param unboxArguments If true it will unbox the query scope arguments
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
@@ -120,7 +120,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Collection<Class<?>> classImports,
             Collection<Class<?>> staticImports,
             Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
+            Map<String, Class<?>[]> variableTypeArguments, boolean unboxArguments)
             throws QueryLanguageParseException {
         this(
                 expression,
@@ -129,7 +129,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 staticImports,
                 null,
                 variables,
-                variableParameterizedTypes,
+                variableTypeArguments,
                 unboxArguments,
                 false);
     }
@@ -141,7 +141,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final Collection<Class<?>> staticImports,
             final Map<String, Class<?>> testOverrideClassLookups,
             final Map<String, Class<?>> variables,
-            final Map<String, Class<?>[]> variableParameterizedTypes,
+            final Map<String, Class<?>[]> variableTypeArguments,
             final boolean unboxArguments,
             final boolean verifyIdempotence)
             throws QueryLanguageParseException {
@@ -153,8 +153,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 : Collections.unmodifiableCollection(Require.notContainsNull(staticImports, "staticImports"));
         this.testOverrideClassLookups = testOverrideClassLookups;
         this.variables = variables == null ? Collections.emptyMap() : Collections.unmodifiableMap(variables);
-        this.variableParameterizedTypes = variableParameterizedTypes == null ? Collections.emptyMap()
-                : Collections.unmodifiableMap(variableParameterizedTypes);
+        this.variableTypeArguments = variableTypeArguments == null ? Collections.emptyMap()
+                : Collections.unmodifiableMap(variableTypeArguments);
         this.unboxArguments = unboxArguments;
 
         // Convert backticks *before* converting single equals!
@@ -200,7 +200,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     // make sure the parser has no problem reparsing its own output and makes no changes to it.
                     final QueryLanguageParser validationQueryLanguageParser = new QueryLanguageParser(printedSource,
                             packageImports, classImports, staticImports, testOverrideClassLookups, variables,
-                            variableParameterizedTypes, false, false);
+                            variableTypeArguments, false, false);
 
                     final String reparsedSource = validationQueryLanguageParser.result.source;
                     Assert.equals(
@@ -476,14 +476,14 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     private Method getMethod(final Class<?> scope, final String methodName, final Class<?>[] paramTypes,
-            final Class<?>[][] parameterizedTypes) {
+            final Class<?>[][] typeArguments) {
         final ArrayList<Method> acceptableMethods = new ArrayList<>();
 
         if (scope == null) {
             for (final Class<?> classImport : staticImports) {
                 for (Method method : classImport.getDeclaredMethods()) {
                     if (Modifier.isStatic(method.getModifiers())) {
-                        possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
+                        possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, typeArguments);
                     }
                 }
             }
@@ -496,7 +496,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 final Class<?> methodClass = variables.get(methodName);
                 if (methodClass != null && isPotentialImplicitCall(methodClass)) {
                     for (Method method : methodClass.getMethods()) {
-                        possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
+                        possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, typeArguments);
                     }
                 }
                 if (acceptableMethods.size() > 0) {
@@ -506,19 +506,19 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         } else {
             // Add the actual methods for the object (including PyObject's methods)
             for (final Method method : scope.getMethods()) {
-                possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
+                possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, typeArguments);
             }
 
             if (acceptableMethods.isEmpty() && scope.equals(org.jpy.PyObject.class)) {
                 // This is a Python method call; just assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
                 for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
-                    possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
+                    possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, typeArguments);
                 }
             } else {
                 // If 'scope' is an interface, we must explicitly consider the methods in Object
                 if (scope.isInterface()) {
                     for (final Method method : Object.class.getMethods()) {
-                        possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
+                        possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, typeArguments);
                     }
                 }
             }
@@ -544,16 +544,16 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     private Class<?> getMethodReturnType(Class<?> scope, String methodName, Class<?>[] paramTypes,
-            Class<?>[][] parameterizedTypes) {
-        return getMethod(scope, methodName, paramTypes, parameterizedTypes).getReturnType();
+            Class<?>[][] typeArguments) {
+        return getMethod(scope, methodName, paramTypes, typeArguments).getReturnType();
     }
 
     private Class<?> calculateMethodReturnTypeUsingGenerics(
             final Class<?> scope,
             final Expression scopeExpr,
             final Method method,
-            final Class<?>[] paramTypes,
-            final Class<?>[][] parameterizedTypes) {
+            final Class<?>[] argumentTypes,
+            final Class<?>[][] typeArgumentsForMethodArguments) {
         Type methodReturnType = method.getGenericReturnType();
 
         int arrayDimensions = 0;
@@ -572,7 +572,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // if the method is being invoked on a variable (i.e. NameExpr) of a parameterized type, and we have
         // type arguments for that variable, then check whether the return type is one of the scope's type parameters.
         if (scopeExpr instanceof NameExpr) {
-            Class<?>[] typeArguments = variableParameterizedTypes.get(((NameExpr) scopeExpr).getNameAsString());
+            Class<?>[] typeArguments = variableTypeArguments.get(((NameExpr) scopeExpr).getNameAsString());
             if (typeArguments != null) {
                 final TypeVariable<? extends Class<?>>[] scopeTypeParameters = scope.getTypeParameters();
                 for (int i = 0; i < scopeTypeParameters.length; i++) {
@@ -603,30 +603,40 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         for (int i = 0; i < genericParameterTypes.length; i++) {
             Type genericParamType = genericParameterTypes[i];
-            Class<?> paramType = paramTypes[i];
+            Class<?> argType = argumentTypes[i];
 
             while (genericParamType instanceof GenericArrayType) {
                 genericParamType = ((GenericArrayType) genericParamType).getGenericComponentType();
             }
 
-            while (paramType.isArray()) {
-                paramType = paramType.getComponentType();
+            while (argType.isArray()) {
+                argType = argType.getComponentType();
             }
 
+            // Check whether the return type can be captured from a method argument.
+            // e.g. calling `T someMethod(T myArg)` with `someMethod("my string")` should return String.class.
             if (genericReturnType.equals(genericParamType)) {
                 for (; arrayDimensions > 0; arrayDimensions--) {
-                    paramType = Array.newInstance(paramType, 0).getClass();
+                    argType = Array.newInstance(argType, 0).getClass();
                 }
 
-                return paramType;
+                return argType;
             }
 
-            if ((genericParamType instanceof ParameterizedType) && (parameterizedTypes[i] != null)) {
+            // Check whether the return type can be inferred from a type argument of a method argument.
+            // e.g. calling `<T> T getSomeItem(Set<T> arg)` with `getSomeItem(Collections.singleton("my string"))`
+            // should return String.class.
+            if ((genericParamType instanceof ParameterizedType) && (typeArgumentsForMethodArguments[i] != null)) {
                 Type[] methodParameterizedTypes = ((ParameterizedType) genericParamType).getActualTypeArguments();
 
                 for (int j = 0; j < methodParameterizedTypes.length; j++) {
                     if (genericReturnType.equals(methodParameterizedTypes[j])) {
-                        return parameterizedTypes[i][j];
+                        Class<?> returnType = typeArgumentsForMethodArguments[i][j];
+                        for (; arrayDimensions > 0; arrayDimensions--) {
+                            returnType = Array.newInstance(returnType, 0).getClass();
+                        }
+
+                        return returnType;
                     }
                 }
             }
@@ -720,7 +730,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final List<EXECUTABLE_TYPE> accepted,
             final EXECUTABLE_TYPE candidate,
             final String name, final Class<?>[] paramTypes,
-            final Class<?>[][] parameterizedTypes) {
+            final Class<?>[][] typeArguments) {
         if (!candidate.getName().equals(name)) {
             return;
         }
@@ -737,7 +747,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Class<?> paramType = paramTypes[i];
 
             if (isTypedVector(paramType) && candidateParamTypes[i].isArray()) {
-                paramType = convertVector(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
+                paramType = convertVector(paramType, typeArguments[i] == null ? null : typeArguments[i][0]);
             }
 
             if (!canAssignType(candidateParamTypes[i], paramType)) {
@@ -753,8 +763,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Assert.eqTrue(candidateParamType.isArray(), "candidateParamType.isArray()");
 
             if (isTypedVector(paramType)) {
-                paramType = convertVector(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
-                        : parameterizedTypes[candidateParamTypes.length - 1][0]);
+                paramType = convertVector(paramType, typeArguments[candidateParamTypes.length - 1] == null ? null
+                        : typeArguments[candidateParamTypes.length - 1][0]);
             }
 
             boolean canAssignVarArgs = candidateParamTypes.length == paramTypes.length && paramType.isArray()
@@ -768,7 +778,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
                 if (isTypedVector(paramType) && lastClass.isArray()) {
                     paramType = convertVector(paramType,
-                            parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
+                            typeArguments[i] == null ? null : typeArguments[i][0]);
                 }
 
                 if (!canAssignType(lastClass, paramType)) {
@@ -890,21 +900,34 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
     }
 
-    private Class<?>[][] getParameterizedTypes(Expression... expressions) {
-        final Class<?>[][] parameterizedTypes = new Class[expressions.length][];
+    /**
+     * Gets the type arguments corresponding to the {@code expressions}, if ther are any declared.
+     *
+     * @param expressions The expressions to check type arguments for.
+     * @return An array with the same length as {@code expressions},
+     */
+    private Class<?>[][] getTypeArguments(Expression... expressions) {
+        final Class<?>[][] typeArgs = new Class[expressions.length][];
 
         for (int i = 0; i < expressions.length; i++) {
             if ((expressions[i] instanceof NameExpr)) {
-                parameterizedTypes[i] = variableParameterizedTypes.get(((NameExpr) expressions[i]).getNameAsString());
+                typeArgs[i] = variableTypeArguments.get(((NameExpr) expressions[i]).getNameAsString());
             }
         }
 
-        return parameterizedTypes;
+        return typeArgs;
     }
 
-    private static Class<?> convertVector(Class<?> type, Class<?> parameterizedType) {
+    /**
+     * Returns the array type corresponding to a vector.
+     *
+     * @param type The original vector type.
+     * @param typeArgument The type argument (for ObjectVectors, when applicable), otherwise {code null}
+     * @return An appropriate array type corresponding to the vector type.
+     */
+    private static Class<?> convertVector(Class<?> type, Class<?> typeArgument) {
         if (ObjectVector.class.isAssignableFrom(type)) {
-            return Array.newInstance(parameterizedType == null ? Object.class : parameterizedType, 0).getClass();
+            return Array.newInstance(typeArgument == null ? Object.class : typeArgument, 0).getClass();
         }
         if (IntVector.class.isAssignableFrom(type)) {
             return int[].class;
@@ -1025,14 +1048,14 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @param executable The executable (method) to be called
      * @param argumentTypes The argument types of {@code executable}
      * @param expressionTypes The types of the {@code expressions} to be passed as arguments
-     * @param parameterizedTypes The actual type arguments corresponding to the expressions
+     * @param typeArguments The actual type arguments corresponding to the expressions
      * @param expressions The actual expressions
      * @return An array of new expressions that maintain the 'meaning' of the input {@code expressions} but are
      *         appropriate to pass to {@code executable}
      */
     private Expression[] convertParameters(final Executable executable,
             final Class<?>[] argumentTypes, final Class<?>[] expressionTypes,
-            final Class<?>[][] parameterizedTypes, Expression[] expressions) {
+            final Class<?>[][] typeArguments, Expression[] expressions) {
         final int nArgs = argumentTypes.length; // Number of declared arguments
         for (int ai = 0; ai < (executable.isVarArgs() ? nArgs - 1 : nArgs); ai++) {
             if (argumentTypes[ai] != expressionTypes[ai] && argumentTypes[ai].isPrimitive()
@@ -1056,7 +1079,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 expressions[ai] = new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                         new NodeList<>(expressions[ai]));
                 expressionTypes[ai] = convertVector(expressionTypes[ai],
-                        parameterizedTypes[ai] == null ? null : parameterizedTypes[ai][0]);
+                        typeArguments[ai] == null ? null : typeArguments[ai][0]);
             }
         }
 
@@ -1079,7 +1102,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                                 new NodeList<>(expressions[lastArgIndex]));
                 expressionTypes[lastArgIndex] = convertVector(expressionTypes[lastArgIndex],
-                        parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);
+                        typeArguments[lastArgIndex] == null ? null : typeArguments[lastArgIndex][0]);
                 allExpressionTypesArePrimitive = false;
             } else if (nArgExpressions == nArgs
                     && dhqlIsAssignableFrom(argumentTypes[lastArgIndex], expressionTypes[lastArgIndex])) {
@@ -1375,7 +1398,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         return getMethodReturnType(null, methodName, new Class[] {lhType, rhType},
-                getParameterizedTypes(n.getLeft(), n.getRight()));
+                getTypeArguments(n.getLeft(), n.getRight()));
     }
 
     /**
@@ -2072,10 +2095,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         Class<?>[] expressionTypes = printArguments(argExpressions, VisitArgs.WITHOUT_STRING_BUILDER);
 
-        final Class<?>[][] parameterizedTypes = getParameterizedTypes(argExpressions);
+        final Class<?>[][] typeArguments = getTypeArguments(argExpressions);
 
         final String methodName = n.getNameAsString();
-        final Method method = getMethod(scopeType, methodName, expressionTypes, parameterizedTypes);
+        final Method method = getMethod(scopeType, methodName, expressionTypes, typeArguments);
 
 
         // TODO: we can swap out method calls for better ones here, e.g. python functions to Java ones, or
@@ -2090,7 +2113,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // now do some parameter conversions...
         if (n.getComment().orElse(null) != QueryLanguageParserComment.NO_PARAMETER_REWRITING_FLAG) {
             convertedArgExpressions =
-                    convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, argExpressions);
+                    convertParameters(method, argumentTypes, expressionTypes, typeArguments, argExpressions);
         } else {
             convertedArgExpressions = argExpressions;
         }
@@ -2178,7 +2201,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         return calculateMethodReturnTypeUsingGenerics(scopeType, n.getScope().orElse(null), method, expressionTypes,
-                parameterizedTypes);
+                typeArguments);
     }
 
     @NotNull
@@ -2349,15 +2372,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         final Class<?>[] expressionTypes = printArguments(expressions, VisitArgs.WITHOUT_STRING_BUILDER);
 
-        final Class<?>[][] parameterizedTypes = getParameterizedTypes(expressions);
+        final Class<?>[][] typeArguments = getTypeArguments(expressions);
 
-        final Constructor<?> constructor = getConstructor(ret, expressionTypes, parameterizedTypes);
+        final Constructor<?> constructor = getConstructor(ret, expressionTypes, typeArguments);
 
         final Class<?>[] argumentTypes = constructor.getParameterTypes();
 
         // now do some parameter conversions...
 
-        expressions = convertParameters(constructor, argumentTypes, expressionTypes, parameterizedTypes, expressions);
+        expressions = convertParameters(constructor, argumentTypes, expressionTypes, typeArguments, expressions);
         n.setArguments(NodeList.nodeList(expressions));
 
         if (printer.hasStringBuilder()) {
