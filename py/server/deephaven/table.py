@@ -1706,7 +1706,7 @@ class Table(JObjectWrapper):
         """Creates a rollup table.
 
          A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
-         using one less aggregation column on each level. The column that is no longer part of the aggregation key is
+         using one less by column on each level. The column that is no longer part of the aggregation key is
          replaced with null on each level.
 
          Note some aggregations can not be used in creating a rollup tables, these include: group, partition, median,
@@ -1727,14 +1727,12 @@ class Table(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            with auto_locking_ctx(self):
-                if not by:
-                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
-                                       include_constituents=include_constituents, by=by)
-                else:
-                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
-                                       aggs=aggs,
-                                       include_constituents=include_constituents, by=by)
+            if not by:
+                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
+                                   include_constituents=include_constituents, by=by)
+            else:
+                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
+                                   aggs=aggs, include_constituents=include_constituents, by=by)
         except Exception as e:
             raise DHError(e, "table rollup operation failed.") from e
 
@@ -1769,9 +1767,7 @@ class Table(JObjectWrapper):
             else:
                 j_table = self.j_table
 
-            with auto_locking_ctx(self):
-                return TreeTable(j_tree_table=j_table.tree(id_col, parent_col), id_col=id_col,
-                                 parent_col=parent_col)
+            return TreeTable(j_tree_table=j_table.tree(id_col, parent_col), id_col=id_col, parent_col=parent_col)
         except Exception as e:
             raise DHError(e, "table tree operation failed.") from e
 
