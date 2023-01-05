@@ -17,7 +17,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.ssl.config.Identity;
 import io.deephaven.ssl.config.IdentityPrivateKey;
 import io.deephaven.ssl.config.SSLConfig;
-import io.deephaven.ssl.config.SSLConfig.Builder;
 import io.deephaven.ssl.config.SSLConfig.ClientAuth;
 import io.deephaven.ssl.config.Trust;
 import io.deephaven.ssl.config.TrustCertificates;
@@ -33,7 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class Main {
+public class MainHelper {
 
     public static final String SSL_IDENTITY_TYPE = "ssl.identity.type";
     public static final String SSL_IDENTITY_CERT_CHAIN_PATH = "ssl.identity.certChainPath";
@@ -65,7 +64,7 @@ public class Main {
 
     private static void bootstrapProjectDirectories() throws IOException {
         final String applicationName =
-                applicationProperty().or(Main::applicationEnvironmentVariable).orElse("deephaven");
+                applicationProperty().or(MainHelper::applicationEnvironmentVariable).orElse("deephaven");
 
         // Default directories based on the underlying OS conventions
         final dev.dirs.ProjectDirectories defaultDirectories =
@@ -160,7 +159,7 @@ public class Main {
         if (needsIdentity && identity.isEmpty()) {
             return Optional.empty();
         }
-        final Builder builder = SSLConfig.builder();
+        final SSLConfig.Builder builder = SSLConfig.builder();
         identity.ifPresent(builder::identity);
         parseTrustConfig(prefix, config).ifPresent(builder::trust);
         parseClientAuth(prefix, config).ifPresent(builder::clientAuthentication);

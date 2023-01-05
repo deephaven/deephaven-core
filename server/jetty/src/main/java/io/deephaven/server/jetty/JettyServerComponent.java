@@ -4,44 +4,14 @@
 package io.deephaven.server.jetty;
 
 import dagger.BindsInstance;
-import dagger.Component;
-import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.console.SessionToExecutionStateModule;
-import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
-import io.deephaven.server.console.python.PythonConsoleSessionModule;
-import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
-import io.deephaven.server.healthcheck.HealthCheckModule;
-import io.deephaven.server.log.LogModule;
-import io.deephaven.server.plugin.python.PythonPluginsRegistration;
-import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
-import io.deephaven.server.runner.DeephavenApiServerModule;
 
-import javax.inject.Singleton;
-
-@Singleton
-@Component(modules = {
-        DeephavenApiServerModule.class,
-        LogModule.class,
-        DeephavenApiConfigModule.class,
-        PythonGlobalScopeCopyModule.class,
-        HealthCheckModule.class,
-        PythonPluginsRegistration.Module.class,
-        JettyServerModule.class,
-        HealthCheckModule.class,
-        PythonConsoleSessionModule.class,
-        GroovyConsoleSessionModule.class,
-        SessionToExecutionStateModule.class,
-})
 public interface JettyServerComponent extends DeephavenApiServerComponent {
-    @Component.Builder
-    interface Builder extends DeephavenApiServerComponent.Builder<Builder> {
-        @BindsInstance
-        Builder withJettyConfig(JettyConfig config);
+
+    interface Builder<Self extends Builder<Self, Component>, Component extends JettyServerComponent>
+            extends DeephavenApiServerComponent.Builder<Self, Component> {
 
         @BindsInstance
-        Builder withAuthorizationProvider(AuthorizationProvider authorizationProvider);
-
-        JettyServerComponent build();
+        Self withJettyConfig(JettyConfig config);
     }
 }
