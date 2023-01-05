@@ -1684,7 +1684,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     // String expression = "myPyCallable()";
     // String resultExpression = "myPyCallable.call()";
     //
-    // // TODO: need to figure out how to mock PyCallableWrapper (or some new parent interface?)
+    // // TODO: #3267 need to figure out how to mock PyCallableWrapper (or some new parent interface?)
     // // PyCallableWrapper's static init tries to load python modules, which fails in normal tests.
     // final PyCallableWrapper mockPyCallable = mock(PyCallableWrapper.class);
     // final ExecutionContext executionContext = ExecutionContext.createForUnitTests();
