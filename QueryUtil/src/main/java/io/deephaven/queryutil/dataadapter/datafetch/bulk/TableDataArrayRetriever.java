@@ -2,10 +2,6 @@ package io.deephaven.queryutil.dataadapter.datafetch.bulk;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.queryutil.dataadapter.datafetch.bulk.gen.AbstractGeneratedTableDataArrayRetriever;
-import io.deephaven.queryutil.dataadapter.datafetch.bulk.gen.TableDataRetrieverGenerator;
-import io.deephaven.queryutil.dataadapter.datafetch.bulk.simple.SimpleTableDataArrayRetriever;
-import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
 import java.util.List;
@@ -61,25 +57,6 @@ public interface TableDataArrayRetriever {
     void fillDataArrays(boolean usePrev, RowSet tableIndex, Object[] dataArrs, LongConsumer keyConsumer);
 
     static TableDataArrayRetriever makeDefault(final ColumnSource<?>... columnSources) {
-        final boolean useGeneratedTDAR = true;
-        if (useGeneratedTDAR) {
-            return makeGenerated(columnSources);
-        } else {
-            return makeSimple(columnSources);
-        }
-    }
-
-    @NotNull
-    static SimpleTableDataArrayRetriever makeSimple(ColumnSource<?>[] columnSources) {
-        try {
-            return new SimpleTableDataArrayRetriever(columnSources);
-        } catch (Exception ex) {
-            throw new RuntimeException("Could not create table data retriever", ex);
-        }
-    }
-
-    @NotNull
-    static AbstractGeneratedTableDataArrayRetriever makeGenerated(ColumnSource<?>[] columnSources) {
         try {
             final TableDataRetrieverGenerator tableDataRetrieverGenerator =
                     new TableDataRetrieverGenerator(columnSources);

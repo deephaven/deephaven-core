@@ -3,7 +3,6 @@ package io.deephaven.queryutil.dataadapter.datafetch.bulk;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.queryutil.dataadapter.datafetch.bulk.gen.ExampleGeneratedMultiRowDataArrayRetriever;
 import io.deephaven.queryutil.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterGenerator;

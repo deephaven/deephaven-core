@@ -1,4 +1,4 @@
-package io.deephaven.queryutil.dataadapter.datafetch.bulk.gen;
+package io.deephaven.queryutil.dataadapter.datafetch.bulk;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
  * <p>
  * Created by rbasralian on 3/7/22
  */
-public class TableDataRetrieverGenerator {
+class TableDataRetrieverGenerator {
 
     private static final String COMPILED_CLASS_NAME = "TableDataArrayRetriever";
     private final String[] colTypeNames;

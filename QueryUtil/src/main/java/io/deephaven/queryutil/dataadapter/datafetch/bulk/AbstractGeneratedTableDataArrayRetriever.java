@@ -1,10 +1,8 @@
-package io.deephaven.queryutil.dataadapter.datafetch.bulk.gen;
+package io.deephaven.queryutil.dataadapter.datafetch.bulk;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.queryutil.dataadapter.ContextHolder;
-import io.deephaven.queryutil.dataadapter.datafetch.bulk.AbstractTableDataArrayRetriever;
-import io.deephaven.queryutil.dataadapter.datafetch.bulk.TableDataArrayRetriever;
 
 /**
  * Superclass of generated {@link TableDataArrayRetriever TableDataRetrievers}.

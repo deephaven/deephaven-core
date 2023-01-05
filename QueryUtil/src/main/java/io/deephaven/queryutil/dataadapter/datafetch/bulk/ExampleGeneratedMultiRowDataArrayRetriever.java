@@ -1,4 +1,4 @@
-package io.deephaven.queryutil.dataadapter.datafetch.bulk.gen;
+package io.deephaven.queryutil.dataadapter.datafetch.bulk;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
@@ -13,7 +13,7 @@ import io.deephaven.time.DateTime;
  * <p>
  * Created by rbasralian on 3/7/22
  */
-public class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGeneratedTableDataArrayRetriever {
+class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGeneratedTableDataArrayRetriever {
 
     public ExampleGeneratedMultiRowDataArrayRetriever(ColumnSource<?>[] colSources) {
         super(colSources);
