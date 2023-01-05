@@ -126,11 +126,11 @@ public class ShortReinterpretedBooleanDoubleColumnTupleSource extends AbstractTu
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ShortByteDoubleTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ShortChunk<Values> chunk1 = chunks[0].asShortChunk();
-        ByteChunk<Values> chunk2 = chunks[1].asByteChunk();
-        DoubleChunk<Values> chunk3 = chunks[2].asDoubleChunk();
+        ShortChunk<? extends Values> chunk1 = chunks[0].asShortChunk();
+        ByteChunk<? extends Values> chunk2 = chunks[1].asByteChunk();
+        DoubleChunk<? extends Values> chunk3 = chunks[2].asDoubleChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ShortByteDoubleTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

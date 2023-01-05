@@ -324,6 +324,22 @@ public abstract class ArrayBackedColumnSource<T>
      *        the epoch
      * @return an in-memory column source with the requested data
      */
+    public static ArrayBackedColumnSource<DateTime> getDateTimeMemoryColumnSource(LongChunk<Values> data) {
+        final ArrayBackedColumnSource<DateTime> result = new DateTimeArraySource();
+        result.ensureCapacity(data.size());
+        for (int ii = 0; ii < data.size(); ++ii) {
+            result.set(ii, data.get(ii));
+        }
+        return result;
+    }
+
+    /**
+     * Produces an DateTimeArraySource with the given data.
+     *
+     * @param data an array containing the data to insert into the ColumnSource, represented as long nanoseconds since
+     *        the epoch
+     * @return an in-memory column source with the requested data
+     */
     public static ArrayBackedColumnSource<DateTime> getDateTimeMemoryColumnSource(@NotNull final long[] data) {
         final ArrayBackedColumnSource<DateTime> result = new DateTimeArraySource();
         result.ensureCapacity(data.length);

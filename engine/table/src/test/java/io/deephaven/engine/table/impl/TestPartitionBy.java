@@ -30,10 +30,10 @@ import static io.deephaven.engine.util.TableTools.*;
 @Category(OutOfBandTest.class)
 public class TestPartitionBy extends QueryTableTestBase {
 
-    class PartitionedTableNugget implements EvalNuggetInterface {
+    private static class PartitionedTableNugget implements EvalNuggetInterface {
         Table originalTable;
         private final String[] groupByColumns;
-        private final ColumnSource[] groupByColumnSources;
+        private final ColumnSource<?>[] groupByColumnSources;
         PartitionedTable splitTable;
 
         PartitionedTableNugget(Table originalTable, String... groupByColumns) {
@@ -97,7 +97,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         final Random random = new Random(0);
         final int size = 50;
 
-        final ColumnInfo[] columnInfo = new ColumnInfo[3];
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[3];
         columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
                 ColumnInfo.ColAttributes.Immutable);
         columnInfo[1] = new ColumnInfo<>(new IntGenerator(10, 20), "intCol",
@@ -118,10 +118,9 @@ public class TestPartitionBy extends QueryTableTestBase {
     }
 
     public void testErrorPropagation() {
-        try (final ErrorExpectation ee = new ErrorExpectation()) {
-            final QueryTable table =
-                    TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                            col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                    col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
 
             final PartitionedTable byKey = table.partitionBy("Key");
 
@@ -456,7 +455,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         if (refreshing) {
             table.setRefreshing(true);
         }
-        final PartitionedTable pt = table.partitionedAggBy(List.of(), true, testTable(c("USym", "SPY")), "USym");
+        final PartitionedTable pt = table.partitionedAggBy(List.of(), true, testTable(col("USym", "SPY")), "USym");
         final String keyColumnName = pt.keyColumnNames().stream().findFirst().get();
         final String[] keys = (String[]) pt.table().getColumn(keyColumnName).getDirect();
         System.out.println(Arrays.toString(keys));
@@ -475,7 +474,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         final Random random = new Random(seed);
         final int size = 10;
 
-        final ColumnInfo[] columnInfo = new ColumnInfo[3];
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[3];
         columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
                 ColumnInfo.ColAttributes.Immutable);
         columnInfo[1] = new ColumnInfo<>(new IntGenerator(10, 20), "intCol",

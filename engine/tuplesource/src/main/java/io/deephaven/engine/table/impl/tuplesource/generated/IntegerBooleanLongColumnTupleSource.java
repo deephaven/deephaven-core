@@ -126,11 +126,11 @@ public class IntegerBooleanLongColumnTupleSource extends AbstractTupleSource<Int
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<IntByteLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        IntChunk<Values> chunk1 = chunks[0].asIntChunk();
-        ObjectChunk<Boolean, Values> chunk2 = chunks[1].asObjectChunk();
-        LongChunk<Values> chunk3 = chunks[2].asLongChunk();
+        IntChunk<? extends Values> chunk1 = chunks[0].asIntChunk();
+        ObjectChunk<Boolean, ? extends Values> chunk2 = chunks[1].asObjectChunk();
+        LongChunk<? extends Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new IntByteLongTuple(chunk1.get(ii), BooleanUtils.booleanAsByte(chunk2.get(ii)), chunk3.get(ii)));
         }

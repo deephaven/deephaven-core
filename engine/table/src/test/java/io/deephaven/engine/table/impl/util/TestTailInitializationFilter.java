@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.sources.DateTimeTreeMapSource;
+import io.deephaven.engine.testutil.sources.DateTimeTestSource;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
@@ -51,7 +51,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
             data2[1] = DateTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
             final RowSet newRowSet = RowSetFactory.fromKeys(100, 101, 1100, 1101);
             input.getRowSet().writableCast().insert(newRowSet);
-            ((DateTimeTreeMapSource) input.<DateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
+            ((DateTimeTestSource) input.<DateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
             input.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
         });
 
@@ -61,6 +61,5 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final Table expected2 = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                 () -> TableTools.merge(slice0_100_filtered, slice100_102, slice102_202_filtered, slice202_204));
         assertEquals("", TableTools.diff(filtered, expected2, 10));
-
     }
 }

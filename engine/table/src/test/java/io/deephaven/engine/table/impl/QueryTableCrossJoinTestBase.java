@@ -28,6 +28,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.*;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.testutil.TstUtils.*;
 
@@ -50,7 +51,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     public void testZeroKeyJoinBitExpansionOnAdd() {
         // Looking to force our row set space to need more keys.
-        final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
+        final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
 
@@ -84,7 +85,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     public void testZeroKeyJoinBitExpansionOnBoundaryShift() {
         // Looking to force our row set space to need more keys.
-        final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
+        final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
 
@@ -125,7 +126,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     public void testZeroKeyJoinBitExpansionWithInnerShift() {
         // Looking to force our row set space to need more keys.
-        final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
+        final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
 
@@ -163,7 +164,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     public void testZeroKeyJoinCompoundShift() {
         // rightTable shift, leftTable shift, and bit expansion
-        final QueryTable lTable = testRefreshingTable(c("X", "a", "b", "c", "d"));
+        final QueryTable lTable = testRefreshingTable(col("X", "a", "b", "c", "d"));
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
 
         addToTable(rTable, i(1, 128, (1 << 16) - 1), longCol("Y", 1, 2, 3));
@@ -176,7 +177,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             // left table
             removeRows(lTable, i(0, 1, 2, 3));
-            addToTable(lTable, i(2, 4, 5, 7), c("X", "a", "b", "c", "d"));
+            addToTable(lTable, i(2, 4, 5, 7), col("X", "a", "b", "c", "d"));
             final TableUpdateImpl lUpdate = new TableUpdateImpl();
             lUpdate.added = i();
             lUpdate.removed = i();
@@ -329,22 +330,22 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable left;
         if (leftTicking) {
             left = TstUtils.testRefreshingTable(RowSetFactory.flat(nextLeftRow).toTracking(),
-                    c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    c("leftData", leftData.toArray(new Long[] {})));
+                    col("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                    col("leftData", leftData.toArray(new Long[] {})));
         } else {
             left = TstUtils.testTable(RowSetFactory.flat(nextLeftRow).toTracking(),
-                    c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    c("leftData", leftData.toArray(new Long[] {})));
+                    col("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                    col("leftData", leftData.toArray(new Long[] {})));
         }
         final QueryTable right;
         if (rightTicking) {
             right = TstUtils.testRefreshingTable(RowSetFactory.flat(nextRightRow).toTracking(),
-                    c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    c("rightData", rightData.toArray(new Long[] {})));
+                    col("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                    col("rightData", rightData.toArray(new Long[] {})));
         } else {
             right = TstUtils.testTable(RowSetFactory.flat(nextRightRow).toTracking(),
-                    c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    c("rightData", rightData.toArray(new Long[] {})));
+                    col("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                    col("rightData", rightData.toArray(new Long[] {})));
         }
 
         final Table chunkedCrossJoin = left.join(right, "sharedKey", numRightBitsToReserve);
@@ -505,10 +506,13 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             TableTools.showWithRowSet(rightTicking);
         }
 
-        final GenerateTableUpdates.SimulationProfile shiftingProfile = new GenerateTableUpdates.SimulationProfile();
-        shiftingProfile.SHIFT_10_PERCENT_POS_SPACE = 5;
-        shiftingProfile.SHIFT_10_PERCENT_KEY_SPACE = 5;
-        shiftingProfile.SHIFT_AGGRESSIVELY = 85;
+        final GenerateTableUpdates.SimulationProfile shiftingProfile = new GenerateTableUpdates.SimulationProfile() {
+            {
+                SHIFT_10_PERCENT_POS_SPACE = 5;
+                SHIFT_10_PERCENT_KEY_SPACE = 5;
+                SHIFT_AGGRESSIVELY = 85;
+            }
+        };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

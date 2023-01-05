@@ -106,10 +106,10 @@ public class DoubleFloatColumnTupleSource extends AbstractTupleSource<DoubleFloa
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<DoubleFloatTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        DoubleChunk<Values> chunk1 = chunks[0].asDoubleChunk();
-        FloatChunk<Values> chunk2 = chunks[1].asFloatChunk();
+        DoubleChunk<? extends Values> chunk1 = chunks[0].asDoubleChunk();
+        FloatChunk<? extends Values> chunk2 = chunks[1].asFloatChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new DoubleFloatTuple(chunk1.get(ii), chunk2.get(ii)));
         }

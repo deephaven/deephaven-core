@@ -78,7 +78,7 @@ public class QueryTableSelectUpdateTest {
         assertTableEquals(TableTools.newTable(intCol("x", 0, 3, 6), stringCol("y", "2", "4", "6")), table1);
 
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
+                col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
 
         TableTools.showWithRowSet(table);
         QueryTable table2 = (QueryTable) table.select("x = x * 2", "z = y");
@@ -95,7 +95,7 @@ public class QueryTableSelectUpdateTest {
         table2.addUpdateListener(table2Listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
+            addToTable(table, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
         TableTools.showWithRowSet(table);
@@ -112,7 +112,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(), base.modified);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
+            addToTable(table, i(7, 9), col("x", 3, 10), col("y", 'e', 'd'));
             table.notifyListeners(i(), i(), i(7, 9));
         });
 
@@ -141,7 +141,7 @@ public class QueryTableSelectUpdateTest {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(9));
-            addToTable(table, i(2, 4, 6), c("x", 1, 22, 3), c("y", 'a', 'x', 'c'));
+            addToTable(table, i(2, 4, 6), col("x", 1, 22, 3), col("y", 'a', 'x', 'c'));
             table.notifyListeners(i(2, 6), i(9), i(4));
         });
         TestCase.assertEquals(3, table2.size());
@@ -163,7 +163,7 @@ public class QueryTableSelectUpdateTest {
 
 
         final QueryTable table6 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
+                col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
         final Table table7 = table6.update("z = x", "x = z + 1", "t = x - 3");
         assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4), charCol("y", 'a', 'b', 'c'), intCol("z", 1, 2, 3),
                 intCol("t", -1, 0, 1)), table7);
@@ -172,7 +172,7 @@ public class QueryTableSelectUpdateTest {
         table7.addUpdateListener(table7Listener2);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table6, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
+            addToTable(table6, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table6.notifyListeners(i(7, 9), i(), i());
         });
 
@@ -180,7 +180,7 @@ public class QueryTableSelectUpdateTest {
                 intCol("z", 1, 2, 3, 4, 5), intCol("t", -1, 0, 1, 2, 3)), table7);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table6, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
+            addToTable(table6, i(7, 9), col("x", 3, 10), col("y", 'e', 'd'));
             table6.notifyListeners(i(), i(), i(7, 9));
         });
 
@@ -204,7 +204,7 @@ public class QueryTableSelectUpdateTest {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table6, i(9));
-            addToTable(table6, i(2, 4, 6), c("x", 1, 22, 3), c("y", 'a', 'x', 'c'));
+            addToTable(table6, i(2, 4, 6), col("x", 1, 22, 3), col("y", 'a', 'x', 'c'));
             table6.notifyListeners(i(2, 6), i(9), i(4));
         });
 
@@ -233,7 +233,7 @@ public class QueryTableSelectUpdateTest {
 
         ExecutionContext.getContext().getQueryLibrary().importStatic(QueryTableSelectUpdateTest.class);
 
-        QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), c("A", 1, 2, 3));
+        QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), col("A", 1, 2, 3));
         table = (QueryTable) table
                 .lazyUpdate("B=" + QueryTableSelectUpdateTest.class.getCanonicalName() + ".callCounter(A)");
         TestCase.assertEquals(3, table.size());
@@ -247,7 +247,7 @@ public class QueryTableSelectUpdateTest {
 
         callCount = 0;
         QueryTable table2 = TstUtils.testRefreshingTable(i(2, 4, 6, 8, 10, 12).toTracking(),
-                c("A", 1, 2, 3, 2, 3, 1));
+                col("A", 1, 2, 3, 2, 3, 1));
         table2 = (QueryTable) table2
                 .lazyUpdate("B=" + QueryTableSelectUpdateTest.class.getCanonicalName() + ".callCounter(A)");
         TestCase.assertEquals(6, table2.size());

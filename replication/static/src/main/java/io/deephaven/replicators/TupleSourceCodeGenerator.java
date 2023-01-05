@@ -144,9 +144,9 @@ public class TupleSourceCodeGenerator {
 
         String getValuesChunkTypeString() {
             if (isPrimitive) {
-                return chunkClassName + "<Values>";
+                return chunkClassName + "<? extends Values>";
             }
-            return chunkClassName + '<' + getElementClassSimpleName() + ", Values>";
+            return chunkClassName + '<' + getElementClassSimpleName() + ", ? extends Values>";
         }
 
         ColumnSourceType getReinterpretAsType() {
@@ -434,7 +434,7 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append(
-                "protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {")
+                "protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {")
                 .append(NEW_LINE);
         code.append(indenter.increaseLevel()).append("WritableObjectChunk<").append(tupleClassName)
                 .append(", ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();")
@@ -728,7 +728,7 @@ public class TupleSourceCodeGenerator {
 
         code.append(indenter).append("@Override").append((NEW_LINE));
         code.append(indenter).append(
-                "protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {")
+                "protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {")
                 .append(NEW_LINE);
         code.append(indenter.increaseLevel()).append("WritableObjectChunk<").append(tupleClassName)
                 .append(", ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();")

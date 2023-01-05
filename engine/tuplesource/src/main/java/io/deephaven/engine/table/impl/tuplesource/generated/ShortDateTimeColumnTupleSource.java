@@ -108,10 +108,10 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ShortLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ShortChunk<Values> chunk1 = chunks[0].asShortChunk();
-        ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
+        ShortChunk<? extends Values> chunk1 = chunks[0].asShortChunk();
+        ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ShortLongTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii))));
         }

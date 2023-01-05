@@ -1,9 +1,6 @@
 package io.deephaven.engine.testutil.generator;
 
-import io.deephaven.engine.testutil.generator.AbstractGenerator;
-
 import java.util.Random;
-import java.util.TreeMap;
 
 public class BooleanGenerator extends AbstractGenerator<Boolean> {
 
@@ -24,7 +21,7 @@ public class BooleanGenerator extends AbstractGenerator<Boolean> {
     }
 
     @Override
-    public Boolean nextValue(TreeMap<Long, Boolean> values, long key, Random random) {
+    public Boolean nextValue(Random random) {
         if (nullFraction > 0) {
             if (random.nextDouble() < nullFraction) {
                 return null;
