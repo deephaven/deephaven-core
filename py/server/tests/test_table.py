@@ -503,11 +503,11 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(self.test_table.size, snapshot.size)
 
         with self.subTest("cols=\"X\""):
-            snapshot = self.test_table.snapshot_when(t, cols="X")
+            snapshot = self.test_table.snapshot_when(t, stamp_cols="X")
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
 
         with self.subTest("cols=[\"X\", \"Y\"]"):
-            snapshot = self.test_table.snapshot_when(t, cols=["X", "Y"])
+            snapshot = self.test_table.snapshot_when(t, stamp_cols=["X", "Y"])
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
     def test_snapshot_when_with_history(self):

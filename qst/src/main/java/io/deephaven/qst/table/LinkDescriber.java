@@ -81,7 +81,7 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(SingleSnapshotTable snapshotTable) {
+    public void visit(SnapshotTable snapshotTable) {
         consumer.link(snapshotTable.base(), "base");
     }
 

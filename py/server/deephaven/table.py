@@ -310,9 +310,9 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(message="failed to create a snapshot.") from e
 
-    def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, cols: Union[str, List[str]] = None) -> Table:
+    def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, stamp_cols: Union[str, List[str]] = None) -> Table:
         try:
-            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(cols))
+            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
             with auto_locking_ctx(self, trigger_table):
                 return Table(j_table=self.j_table.snapshotWhen(trigger_table.j_table, options))
         except Exception as e:
@@ -2079,9 +2079,9 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
 
-    def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
+    def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, stamp_cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
         try:
-            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(cols))
+            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
             with auto_locking_ctx(self, trigger_table):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshotWhen(trigger_table.j_object, options))
         except Exception as e:

@@ -8,7 +8,7 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
-import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.context.ExecutionContext;
@@ -404,12 +404,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, Feature... features) {
+    public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, Flag... features) {
         return complexTransform(trigger, (base, tr) -> base.snapshotWhen(tr, features), null);
     }
 
     @Override
-    public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, Collection<Feature> features,
+    public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, Collection<Flag> features,
             String... stampColumns) {
         return complexTransform(trigger, (base, tr) -> base.snapshotWhen(tr, features, stampColumns), null);
     }

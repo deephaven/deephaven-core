@@ -16,7 +16,7 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
-import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.qst.TableCreationLogic;
@@ -56,17 +56,17 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final SingleSnapshotTable snapshot() {
-        return SingleSnapshotTable.of(this);
+    public final SnapshotTable snapshot() {
+        return SnapshotTable.of(this);
     }
 
     @Override
-    public final SnapshotWhenTable snapshotWhen(TableSpec trigger, Feature... features) {
+    public final SnapshotWhenTable snapshotWhen(TableSpec trigger, Flag... features) {
         return SnapshotWhenTable.of(this, trigger, SnapshotWhenOptions.of(features));
     }
 
     @Override
-    public final SnapshotWhenTable snapshotWhen(TableSpec trigger, Collection<Feature> features,
+    public final SnapshotWhenTable snapshotWhen(TableSpec trigger, Collection<Flag> features,
             String... stampColumns) {
         return SnapshotWhenTable.of(this, trigger, SnapshotWhenOptions.of(features, stampColumns));
     }

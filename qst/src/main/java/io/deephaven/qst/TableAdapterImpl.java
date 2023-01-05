@@ -25,7 +25,7 @@ import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
-import io.deephaven.qst.table.SingleSnapshotTable;
+import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
 import io.deephaven.qst.table.TableSpec;
@@ -154,7 +154,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(SingleSnapshotTable snapshotTable) {
+    public void visit(SnapshotTable snapshotTable) {
         final TOPS base = ops(snapshotTable.base());
         addOp(snapshotTable, base.snapshot());
     }

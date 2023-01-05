@@ -13,9 +13,9 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @NodeStyle
-public abstract class SingleSnapshotTable extends TableBase implements SingleParentTable {
-    public static SingleSnapshotTable of(TableSpec base) {
-        return ImmutableSingleSnapshotTable.of(base);
+public abstract class SnapshotTable extends TableBase implements SingleParentTable {
+    public static SnapshotTable of(TableSpec base) {
+        return ImmutableSnapshotTable.of(base);
     }
 
     @Parameter

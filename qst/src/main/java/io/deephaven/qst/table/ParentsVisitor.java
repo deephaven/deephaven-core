@@ -178,7 +178,7 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(SingleSnapshotTable snapshotTable) {
+    public void visit(SnapshotTable snapshotTable) {
         out = single(snapshotTable);
     }
 

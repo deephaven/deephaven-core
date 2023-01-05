@@ -3,22 +3,17 @@
  */
 package io.deephaven.qst.table;
 
+import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.TableOperations;
-import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
-import org.immutables.value.Value.Style.ImplementationVisibility;
 
 /**
  * @see TableOperations#tail(long)
  */
 @Immutable
-@Value.Style(visibility = ImplementationVisibility.PACKAGE,
-        defaults = @Value.Immutable(builder = false, prehash = true, intern = true),
-        strictBuilder = true,
-        weakInterning = true,
-        includeHashCode = "getClass().hashCode()")
+@NodeStyle
 public abstract class TailTable extends TableBase implements SingleParentTable {
 
     public static TailTable of(TableSpec parent, long size) {

@@ -2,10 +2,10 @@ package io.deephaven.api.snapshot;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Strings;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @BuildableStyle
 public abstract class SnapshotWhenOptions {
 
-    public enum Feature {
+    public enum Flag {
         /**
          * Whether to take an initial snapshot upon construction.
          */
@@ -29,6 +29,12 @@ public abstract class SnapshotWhenOptions {
         INCREMENTAL,
         /**
          * Whether the snapshot should keep history.
+         *
+         * <p>
+         * Note: this flag is currently incompatible with {@link #INITIAL}, {@link #INCREMENTAL}, or non-empty
+         * {@link #stampColumns()}}.
+         *
+         * @see <a href="https://github.com/deephaven/deephaven-core/issues/3260">deephaven-core#3260</a>
          */
         HISTORY
     }
@@ -38,24 +44,24 @@ public abstract class SnapshotWhenOptions {
     }
 
     /**
-     * Creates an options with the {@code features}.
+     * Creates an options with the {@code flags}.
      *
      * <p>
-     * Equivalent to {@code builder().addFlags(features).build()}.
+     * Equivalent to {@code builder().addFlags(flags).build()}.
      *
-     * @param features the features
+     * @param flags the flags
      * @return the snapshot control
      */
-    public static SnapshotWhenOptions of(Feature... features) {
-        return builder().addFlags(features).build();
+    public static SnapshotWhenOptions of(Flag... flags) {
+        return builder().addFlags(flags).build();
     }
 
     /**
-     * Creates an options with the features and columns.
+     * Creates an options with the flags and columns.
      *
-     * @param initial for {@link Feature#INITIAL}
-     * @param incremental for {@link Feature#INCREMENTAL}
-     * @param history for {@link Feature#HISTORY}
+     * @param initial for {@link Flag#INITIAL}
+     * @param incremental for {@link Flag#INCREMENTAL}
+     * @param history for {@link Flag#HISTORY}
      * @param stampColumns the stamp columns
      * @return the options
      */
@@ -63,13 +69,13 @@ public abstract class SnapshotWhenOptions {
             String... stampColumns) {
         final Builder builder = builder();
         if (initial) {
-            builder.addFlags(Feature.INITIAL);
+            builder.addFlags(Flag.INITIAL);
         }
         if (incremental) {
-            builder.addFlags(Feature.INCREMENTAL);
+            builder.addFlags(Flag.INCREMENTAL);
         }
         if (history) {
-            builder.addFlags(Feature.HISTORY);
+            builder.addFlags(Flag.HISTORY);
         }
         for (String stampColumn : stampColumns) {
             builder.addStampColumns(ColumnName.of(stampColumn));
@@ -78,15 +84,15 @@ public abstract class SnapshotWhenOptions {
     }
 
     /**
-     * Creates an options containing the {@code features} and {@code stampColumns}.
+     * Creates an options containing the {@code flags} and {@code stampColumns}.
      *
-     * @param features the features
+     * @param flags the flags
      * @param stampColumns the stamp columns
      * @return the snapshot control
      * @see ColumnName#of(String)
      */
-    public static SnapshotWhenOptions of(Iterable<Feature> features, String... stampColumns) {
-        final Builder builder = builder().addAllFlags(features);
+    public static SnapshotWhenOptions of(Iterable<Flag> flags, String... stampColumns) {
+        final Builder builder = builder().addAllFlags(flags);
         for (String stampColumn : stampColumns) {
             builder.addStampColumns(ColumnName.of(stampColumn));
         }
@@ -96,10 +102,11 @@ public abstract class SnapshotWhenOptions {
     /**
      * The feature flags.
      */
-    public abstract Set<Feature> flags();
+    public abstract Set<Flag> flags();
 
     /**
-     * The columns to stamp from the {@code trigger} table. An empty list means stamp all.
+     * The columns from the {@code trigger} table that should be added to the resulting table. An empty list means add
+     * all columns.
      */
     public abstract List<ColumnName> stampColumns();
 
@@ -107,16 +114,16 @@ public abstract class SnapshotWhenOptions {
     // Engine doesn't currently support it, but it's a legitimate operation.
 
     /**
-     * Check if the {@code feature} is set.
+     * Check if the {@code flag} is set.
      *
      * <p>
-     * Equivalent to {@code flags().contains(feature)}.
+     * Equivalent to {@code flags().contains(flag)}.
      *
-     * @param feature the feature
-     * @return true if {@code this} has {@code feature}
+     * @param flag the flag
+     * @return true if {@code this} has {@code flag}
      */
-    public final boolean has(Feature feature) {
-        return flags().contains(feature);
+    public final boolean has(Flag flag) {
+        return flags().contains(flag);
     }
 
     /**
@@ -126,24 +133,32 @@ public abstract class SnapshotWhenOptions {
      */
     public final String description() {
         return String.format("initial=%b,incremental=%b,history=%b,stampColumns=%s",
-                has(Feature.INITIAL),
-                has(Feature.INCREMENTAL),
-                has(Feature.HISTORY),
-                stampColumns().stream().map(ColumnName::name).collect(Collectors.joining(",", "[", "]")));
+                has(Flag.INITIAL),
+                has(Flag.INCREMENTAL),
+                has(Flag.HISTORY),
+                Strings.of(stampColumns()));
+    }
+
+    @Check
+    final void checkHistory() {
+        if (has(Flag.HISTORY) && (has(Flag.INCREMENTAL) || has(Flag.INITIAL) || !stampColumns().isEmpty())) {
+            throw new UnsupportedOperationException(
+                    "snapshotWhen with history does not currently support incremental, initial, nor non-empty stamp columns. See https://github.com/deephaven/deephaven-core/issues/3260.");
+        }
     }
 
     public interface Builder {
-        Builder addStampColumns(ColumnName element);
+        Builder addStampColumns(ColumnName stampColumn);
 
-        Builder addStampColumns(ColumnName... elements);
+        Builder addStampColumns(ColumnName... stampColumns);
 
-        Builder addAllStampColumns(Iterable<? extends ColumnName> elements);
+        Builder addAllStampColumns(Iterable<? extends ColumnName> stampColumns);
 
-        Builder addFlags(Feature element);
+        Builder addFlags(Flag flag);
 
-        Builder addFlags(Feature... elements);
+        Builder addFlags(Flag... flags);
 
-        Builder addAllFlags(Iterable<Feature> elements);
+        Builder addAllFlags(Iterable<Flag> flags);
 
         SnapshotWhenOptions build();
     }

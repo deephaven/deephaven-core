@@ -7,7 +7,7 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
-import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.util.ConcurrentMethod;
@@ -55,9 +55,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param features the snapshot features
      * @return the snapshotting table
      * @see #snapshotWhen(Object, SnapshotWhenOptions)
-     * @see SnapshotWhenOptions#of(Feature...)
+     * @see SnapshotWhenOptions#of(Flag...)
      */
-    TOPS snapshotWhen(TABLE trigger, Feature... features);
+    TOPS snapshotWhen(TABLE trigger, Flag... features);
 
     /**
      * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} ticks.
@@ -72,7 +72,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @see #snapshotWhen(Object, SnapshotWhenOptions)
      * @see SnapshotWhenOptions#of(Iterable, String...)
      */
-    TOPS snapshotWhen(TABLE trigger, Collection<Feature> features, String... stampColumns);
+    TOPS snapshotWhen(TABLE trigger, Collection<Flag> features, String... stampColumns);
 
     /**
      * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} ticks.

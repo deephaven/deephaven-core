@@ -12,8 +12,7 @@ public class SnapshotWhenHistoryGrpcTest extends SnapshotWhenGrpcTestBase {
 
     private static void checkUnimplemented(StatusRuntimeException e) {
         assertThat(e.getStatus().getCode()).isEqualTo(Code.UNIMPLEMENTED);
-        assertThat(e).hasMessageContaining(
-                "io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest with history (6) == true does not support initial (4), incremental (5), nor non-empty stamp_columns (7)");
+        assertThat(e).hasMessageContaining("snapshotWhen with history does not currently support");
     }
 
     @Override

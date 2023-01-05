@@ -9,7 +9,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
@@ -1205,14 +1205,14 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable trigger1 = testRefreshingTable(c("T", 1));
         final Table expected = base.naturalJoin(trigger1, "", "T");
         TableTools.showWithRowSet(expected);
-        final Table actual = base.snapshotWhen(trigger1, Feature.INITIAL);
+        final Table actual = base.snapshotWhen(trigger1, Flag.INITIAL);
         validateUpdates(actual);
         assertTableEquals(expected, actual);
 
         assertTableEquals(base.head(0).updateView("T=1"), base.snapshotWhen(trigger1));
 
         final QueryTable trigger2 = testRefreshingTable(c("T", 1, 2));
-        final Table snapshot = base.snapshotWhen(trigger2, Feature.INITIAL);
+        final Table snapshot = base.snapshotWhen(trigger2, Flag.INITIAL);
         validateUpdates(snapshot);
 
         final Table expect1 = newTable(c("A", 3, 1, 2), c("B", "c", "a", "b"), c("T", 2, 2, 2));
@@ -1261,7 +1261,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final Table expected = base.naturalJoin(leftBy, "", "T");
         TableTools.showWithRowSet(expected);
-        final Table actual = base.snapshotWhen(leftBy, Feature.INITIAL);
+        final Table actual = base.snapshotWhen(leftBy, Flag.INITIAL);
         validateUpdates(actual);
         assertTableEquals(expected, actual);
 
@@ -1288,7 +1288,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "a", "b")}), intCol("T", 1));
         TableTools.showWithRowSet(ex1);
 
-        final Table actual = rightBy.snapshotWhen(trigger1, Feature.INITIAL);
+        final Table actual = rightBy.snapshotWhen(trigger1, Flag.INITIAL);
         validateUpdates(actual);
         assertTableEquals(ex1, actual);
 
@@ -1326,12 +1326,12 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
         final QueryTable trigger1 = testRefreshingTable(c("T", 1));
-        show(base.snapshotWhen(trigger1, Feature.HISTORY));
-        assertEquals("", diff(base.snapshotWhen(trigger1, Feature.HISTORY),
+        show(base.snapshotWhen(trigger1, Flag.HISTORY));
+        assertEquals("", diff(base.snapshotWhen(trigger1, Flag.HISTORY),
                 testRefreshingTable(c("T", 1, 1, 1), c("A", 3, 1, 2), c("B", "c", "a", "b")), 10));
 
         final QueryTable trigger2 = testRefreshingTable(c("T", 1, 2));
-        final Table snapshot = base.snapshotWhen(trigger2, Feature.HISTORY);
+        final Table snapshot = base.snapshotWhen(trigger2, Flag.HISTORY);
         show(snapshot);
         assertEquals("", diff(snapshot, testRefreshingTable(c("T", 1, 1, 1, 2, 2, 2), c("A", 3, 1, 2, 3, 1, 2),
                 c("B", "c", "a", "b", "c", "a", "b")), 10));
@@ -1402,10 +1402,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
         QueryScope.addParam("testSnapshotDependenciesCounter", new AtomicInteger());
 
-        final Table snappedFirst = base.snapshotWhen(trigger, Feature.INITIAL);
+        final Table snappedFirst = base.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snappedFirst);
         final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
-        final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Feature.INITIAL);
+        final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snappedOfSnap);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1463,7 +1463,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable base = testRefreshingTable(i(10).toTracking(), c("A", 1));
         final QueryTable trigger = testRefreshingTable(c("T", 1));
 
-        final Table snapshot = base.snapshotWhen(trigger, Feature.INITIAL);
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1479,7 +1479,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable base = testRefreshingTable(i(10, 20).toTracking(), c("A", 1, 2));
         final QueryTable trigger = testRefreshingTable(c("T", 1));
 
-        final Table snapshot = base.snapshotWhen(trigger, Feature.INITIAL);
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1495,7 +1495,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable base = testRefreshingTable(i(10).toTracking(), c("A", 1));
         final QueryTable trigger = testRefreshingTable(c("T", 1));
 
-        final Table snapshot = base.snapshotWhen(trigger, Feature.INITIAL);
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snapshot);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1513,9 +1513,9 @@ public class QueryTableTest extends QueryTableTestBase {
 
         QueryScope.addParam("testSnapshotDependenciesCounter", new AtomicInteger());
 
-        final Table snappedFirst = base.snapshotWhen(trigger, Feature.INCREMENTAL);
+        final Table snappedFirst = base.snapshotWhen(trigger, Flag.INCREMENTAL);
         final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
-        final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Feature.INCREMENTAL);
+        final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Flag.INCREMENTAL);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             System.out.println("Checking everything is satisfied with no updates.");
@@ -1868,12 +1868,12 @@ public class QueryTableTest extends QueryTableTestBase {
         QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
         QueryTable trigger = testRefreshingTable(c("T", 1));
-        Table empty = base.snapshotWhen(trigger, Feature.INCREMENTAL);
+        Table empty = base.snapshotWhen(trigger, Flag.INCREMENTAL);
         assertEquals("", diff(empty, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
 
         final QueryTable trigger2 = testRefreshingTable(c("T", 1, 2));
 
-        final Table snapshot = base.snapshotWhen(trigger2, Feature.INCREMENTAL);
+        final Table snapshot = base.snapshotWhen(trigger2, Flag.INCREMENTAL);
         System.out.println("Initial table:");
         show(snapshot);
         System.out.println("Initial prev:");
@@ -1940,11 +1940,11 @@ public class QueryTableTest extends QueryTableTestBase {
         final int size = 1000000;
         final Table base = emptyTable(size).update("X=Long.toString(ii)", "I=ii");
         final QueryTable trigger = testRefreshingTable(c("T", 1));
-        final Table result = base.snapshotWhen(trigger, Feature.INCREMENTAL, Feature.INITIAL);
+        final Table result = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
         final Table expected = emptyTable(size).updateView("X=Long.toString(ii)", "I=ii", "T=1");
         assertTableEquals(expected, result);
 
-        final Table result2 = base.snapshotWhen(trigger, Feature.INCREMENTAL);
+        final Table result2 = base.snapshotWhen(trigger, Flag.INCREMENTAL);
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(trigger, i(1), c("T", 2));
             trigger.notifyListeners(i(1), i(), i());
@@ -1958,7 +1958,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
         final QueryTable trigger = testRefreshingTable(c("T", 1, 2));
 
-        final Table snapshot = base.snapshotWhen(trigger, Feature.INCREMENTAL, Feature.INITIAL);
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
         validateUpdates(snapshot);
 
         System.out.println("Initial table:");
@@ -2066,7 +2066,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 100)));
 
-        final QueryTable snapshot = (QueryTable) base.snapshotWhen(stampTable, Feature.INCREMENTAL);
+        final QueryTable snapshot = (QueryTable) base.snapshotWhen(stampTable, Flag.INCREMENTAL);
 
         final SimpleShiftObliviousListener simpleListener = new SimpleShiftObliviousListener(snapshot);
         snapshot.addUpdateListener(simpleListener);

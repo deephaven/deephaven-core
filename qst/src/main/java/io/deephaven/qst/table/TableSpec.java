@@ -116,7 +116,7 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(SortTable sortTable);
 
-        void visit(SingleSnapshotTable snapshotTable);
+        void visit(SnapshotTable snapshotTable);
 
         void visit(SnapshotWhenTable snapshotWhenTable);
 

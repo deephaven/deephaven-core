@@ -4,7 +4,6 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.snapshot.SnapshotWhenOptions;
 
 import java.io.Serializable;
 
@@ -13,7 +12,6 @@ import java.io.Serializable;
  *
  * @see ColumnAggregation
  * @see ColumnAggregations
- * @see SnapshotWhenOptions
  */
 public interface Pair extends Serializable {
 

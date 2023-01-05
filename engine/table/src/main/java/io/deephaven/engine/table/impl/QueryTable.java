@@ -14,7 +14,7 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
-import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
@@ -44,7 +44,6 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllTable;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -1824,46 +1823,47 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     /**
-     * The leftColumns are the column sources for the snapshot-triggering table. The rightColumns are the column sources
-     * for the table being snapshotted. The leftRowSet refers to snapshots that we want to take. Typically this rowSet
-     * is expected to have size 1, but in some cases it could be larger. The rightRowSet refers to the rowSet of the
-     * current table. Therefore we want to take leftRowSet.size() snapshots, each of which being rightRowSet.size() in
-     * size.
+     * The triggerColumns are the column sources for the snapshot-triggering table. The baseColumns are the column
+     * sources for the table being snapshotted. The triggerRowSet refers to snapshots that we want to take. Typically
+     * this rowSet is expected to have size 1, but in some cases it could be larger. The baseRowSet refers to the rowSet
+     * of the current table. Therefore we want to take triggerRowSet.size() snapshots, each of which being
+     * baseRowSet.size() in size.
      *
-     * @param leftColumns Columns making up the triggering data
-     * @param leftRowSet The currently triggering rows
-     * @param rightColumns Columns making up the data being snapshotted
-     * @param rightRowSet The data to snapshot
-     * @param dest The ColumnSources in which to store the data. The keys are drawn from leftColumns.keys() and\
-     *        rightColumns.keys()
+     * @param triggerColumns Columns making up the triggering data
+     * @param triggerRowSet The currently triggering rows
+     * @param baseColumns Columns making up the data being snapshotted
+     * @param baseRowSet The data to snapshot
+     * @param dest The ColumnSources in which to store the data. The keys are drawn from triggerColumns.keys() and
+     *        baseColumns.keys()
      * @param destOffset The offset in the 'dest' ColumnSources at which to write data
-     * @return The new dest ColumnSource size, calculated as {@code destOffset + leftRowSet.size() * rightRowSet.size()}
+     * @return The new dest ColumnSource size, calculated as
+     *         {@code destOffset + triggerRowSet.size() * baseRowSet.size()}
      */
     private static long snapshotHistoryInternal(
-            @NotNull Map<String, ? extends ColumnSource<?>> leftColumns, @NotNull RowSet leftRowSet,
-            @NotNull Map<String, ChunkSource.WithPrev<? extends Values>> rightColumns, @NotNull RowSet rightRowSet,
+            @NotNull Map<String, ? extends ColumnSource<?>> triggerColumns, @NotNull RowSet triggerRowSet,
+            @NotNull Map<String, ChunkSource.WithPrev<? extends Values>> baseColumns, @NotNull RowSet baseRowSet,
             @NotNull Map<String, ? extends WritableColumnSource<?>> dest, long destOffset) {
-        assert leftColumns.size() + rightColumns.size() == dest.size();
-        if (leftRowSet.isEmpty() || rightRowSet.isEmpty()) {
+        assert triggerColumns.size() + baseColumns.size() == dest.size();
+        if (triggerRowSet.isEmpty() || baseRowSet.isEmpty()) {
             // Nothing to do.
             return destOffset;
         }
 
-        final long newCapacity = destOffset + leftRowSet.size() * rightRowSet.size();
+        final long newCapacity = destOffset + triggerRowSet.size() * baseRowSet.size();
         // Ensure all the capacities
         for (WritableColumnSource<?> ws : dest.values()) {
             ws.ensureCapacity(newCapacity);
         }
 
-        final int rightSize = rightRowSet.intSize();
+        final int baseSize = baseRowSet.intSize();
         long[] destOffsetHolder = new long[] {destOffset};
         // For each key on the snapshotting side
-        leftRowSet.forAllRowKeys(snapshotKey -> {
+        triggerRowSet.forAllRowKeys(snapshotKey -> {
             final long doff = destOffsetHolder[0];
-            destOffsetHolder[0] += rightSize;
-            try (final RowSet destRowSet = RowSetFactory.fromRange(doff, doff + rightSize - 1)) {
-                SnapshotUtils.copyStampColumns(leftColumns, snapshotKey, dest, destRowSet);
-                SnapshotUtils.copyDataColumns(rightColumns, rightRowSet, dest, destRowSet, false);
+            destOffsetHolder[0] += baseSize;
+            try (final RowSet destRowSet = RowSetFactory.fromRange(doff, doff + baseSize - 1)) {
+                SnapshotUtils.copyStampColumns(triggerColumns, snapshotKey, dest, destRowSet);
+                SnapshotUtils.copyDataColumns(baseColumns, baseRowSet, dest, destRowSet, false);
             }
         });
         return newCapacity;
@@ -1873,20 +1873,20 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
             checkInitiateOperation();
 
-            // resultColumns initially contains the left columns, then we insert the right columns into it
+            // resultColumns initially contains the trigger columns, then we insert the base columns into it
             final Map<String, ArrayBackedColumnSource<?>> resultColumns = SnapshotUtils
                     .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
-            final Map<String, ArrayBackedColumnSource<?>> rightColumns = SnapshotUtils.createColumnSourceMap(
+            final Map<String, ArrayBackedColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
                     baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
-            resultColumns.putAll(rightColumns);
+            resultColumns.putAll(baseColumns);
 
             // BTW, we don't track prev because these items are never modified or removed.
-            final Table leftTable = this; // For readability.
+            final Table triggerTable = this; // For readability.
             final Map<String, ? extends ColumnSource<?>> triggerStampColumns =
-                    SnapshotUtils.generateTriggerStampColumns(leftTable);
+                    SnapshotUtils.generateTriggerStampColumns(triggerTable);
             final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
                     SnapshotUtils.generateSnapshotDataColumns(baseTable);
-            final long initialSize = snapshotHistoryInternal(triggerStampColumns, leftTable.getRowSet(),
+            final long initialSize = snapshotHistoryInternal(triggerStampColumns, triggerTable.getRowSet(),
                     snapshotDataColumns, baseTable.getRowSet(), resultColumns, 0);
             final TrackingWritableRowSet resultRowSet = RowSetFactory.flat(initialSize).toTracking();
             final QueryTable result = new QueryTable(resultRowSet, resultColumns);
@@ -1940,7 +1940,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         });
     }
 
-    private Table snapshotInternal(Table tableToSnapshot, boolean doInitialSnapshot, String... stampColumns) {
+    private Table snapshotInternal(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
         // TODO: we would like to make this operation UGP safe, instead of requiring the lock here; there are two tables
         // but we do only need to listen to one of them; however we are dependent on two of them
         checkInitiateOperation();
@@ -1952,50 +1952,50 @@ public class QueryTable extends BaseTable<QueryTable> {
         // to run the table only immediately before the snapshot occurs. Because we know that we are uninterested
         // in things like previous values, it can save a significant amount of CPU to only run the table when
         // needed.
-        final boolean lazySnapshot = tableToSnapshot instanceof LazySnapshotTableProvider;
+        final boolean lazySnapshot = baseTable instanceof LazySnapshotTableProvider;
         if (lazySnapshot) {
-            tableToSnapshot = ((LazySnapshotTableProvider) tableToSnapshot).getLazySnapshotTable();
-        } else if (tableToSnapshot instanceof UncoalescedTable) {
+            baseTable = ((LazySnapshotTableProvider) baseTable).getLazySnapshotTable();
+        } else if (baseTable instanceof UncoalescedTable) {
             // something that needs coalescing I guess
-            tableToSnapshot = tableToSnapshot.coalesce();
+            baseTable = baseTable.coalesce();
         }
 
         if (isRefreshing()) {
-            checkInitiateOperation(tableToSnapshot);
+            checkInitiateOperation(baseTable);
         }
 
-        // Establish the "right" columns using the same names and types as the table being snapshotted
-        final Map<String, ArrayBackedColumnSource<?>> resultRightColumns =
-                SnapshotUtils.createColumnSourceMap(tableToSnapshot.getColumnSourceMap(),
+        // Establish the "base" columns using the same names and types as the table being snapshotted
+        final Map<String, ArrayBackedColumnSource<?>> baseColumns =
+                SnapshotUtils.createColumnSourceMap(baseTable.getColumnSourceMap(),
                         ArrayBackedColumnSource::getMemoryColumnSource);
 
-        // Now make the "left" columns (namely, the "snapshot key" columns). Because this flavor of "snapshot" only
+        // Now make the "trigger" columns (namely, the "snapshot key" columns). Because this flavor of "snapshot" only
         // keeps a single snapshot, each snapshot key column will have the same value in every row. So for efficiency we
         // use a SingleValueColumnSource for these columns.
-        final Map<String, SingleValueColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
+        final Map<String, SingleValueColumnSource<?>> triggerColumns = new LinkedHashMap<>();
         for (String stampColumn : stampColumns) {
             final Class<?> stampColumnType = getColumnSource(stampColumn).getType();
-            resultLeftColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(stampColumnType));
+            triggerColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(stampColumnType));
         }
 
         // make our result table
-        final Map<String, ColumnSource<?>> allColumns = new LinkedHashMap<>(resultRightColumns);
-        allColumns.putAll(resultLeftColumns);
-        if (allColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
-            throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
+        final Map<String, ColumnSource<?>> allColumns = new LinkedHashMap<>(baseColumns);
+        allColumns.putAll(triggerColumns);
+        if (allColumns.size() != triggerColumns.size() + baseColumns.size()) {
+            throwColumnConflictMessage(triggerColumns.keySet(), baseColumns.keySet());
         }
 
         final QueryTable result =
                 new QueryTable(RowSetFactory.empty().toTracking(), allColumns);
-        final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, tableToSnapshot,
-                result, resultLeftColumns, resultRightColumns, result.getRowSet().writableCast());
+        final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, baseTable,
+                result, triggerColumns, baseColumns, result.getRowSet().writableCast());
 
         if (doInitialSnapshot) {
-            if (!isRefreshing() && tableToSnapshot.isRefreshing() && !lazySnapshot) {
+            if (!isRefreshing() && baseTable.isRefreshing() && !lazySnapshot) {
                 // if we are making a static copy of the table, we must ensure that it does not change out from under us
                 ConstructSnapshot.callDataSnapshotFunction("snapshotInternal",
-                        ConstructSnapshot.makeSnapshotControl(false, tableToSnapshot.isRefreshing(),
-                                (NotificationStepSource) tableToSnapshot),
+                        ConstructSnapshot.makeSnapshotControl(false, baseTable.isRefreshing(),
+                                (NotificationStepSource) baseTable),
                         (usePrev, beforeClockUnused) -> {
                             listener.doSnapshot(false, usePrev);
                             result.getRowSet().writableCast().initializePreviousValue();
@@ -2017,29 +2017,27 @@ public class QueryTable extends BaseTable<QueryTable> {
         return result;
     }
 
-    private Table snapshotIncremental(final String nuggetName, final Table baseTable, final boolean doInitialSnapshot,
+    private Table snapshotIncremental(final String nuggetName, final Table base, final boolean doInitialSnapshot,
             final String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
+        return QueryPerformanceRecorder.withNugget(nuggetName, base.sizeForInstrumentation(), () -> {
             checkInitiateOperation();
 
-            final QueryTable rightTable =
-                    (QueryTable) (baseTable instanceof UncoalescedTable ? baseTable.coalesce()
-                            : baseTable);
-            rightTable.checkInitiateOperation();
+            final QueryTable baseTable = (QueryTable) (base instanceof UncoalescedTable ? base.coalesce() : base);
+            baseTable.checkInitiateOperation();
 
             // Use the given columns (if specified); otherwise an empty array means all of my columns
             final String[] useStampColumns = stampColumns.length == 0
                     ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
                     : stampColumns;
 
-            final Map<String, ColumnSource<?>> leftColumns = new LinkedHashMap<>();
+            final Map<String, ColumnSource<?>> triggerColumns = new LinkedHashMap<>();
             for (String stampColumn : useStampColumns) {
-                leftColumns.put(stampColumn,
+                triggerColumns.put(stampColumn,
                         SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
             }
 
-            final Map<String, SparseArrayColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
-            for (Map.Entry<String, ColumnSource<?>> entry : leftColumns.entrySet()) {
+            final Map<String, SparseArrayColumnSource<?>> resultTriggerColumns = new LinkedHashMap<>();
+            for (Map.Entry<String, ColumnSource<?>> entry : triggerColumns.entrySet()) {
                 final String name = entry.getKey();
                 final ColumnSource<?> cs = entry.getValue();
                 final Class<?> type = cs.getType();
@@ -2047,48 +2045,43 @@ public class QueryTable extends BaseTable<QueryTable> {
                         ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
                         : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
 
-                resultLeftColumns.put(name, stampDest);
+                resultTriggerColumns.put(name, stampDest);
             }
 
-            final Map<String, SparseArrayColumnSource<?>> resultRightColumns =
-                    SnapshotUtils.createColumnSourceMap(rightTable.getColumnSourceMap(),
-                            SparseArrayColumnSource::getSparseMemoryColumnSource);
-
-            final Map<String, SparseArrayColumnSource<?>> resultColumns =
-                    new LinkedHashMap<>(resultRightColumns);
-            resultColumns.putAll(resultLeftColumns);
-            if (resultColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
-                throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
+            final Map<String, SparseArrayColumnSource<?>> resultBaseColumns = SnapshotUtils.createColumnSourceMap(
+                    baseTable.getColumnSourceMap(), SparseArrayColumnSource::getSparseMemoryColumnSource);
+            final Map<String, SparseArrayColumnSource<?>> resultColumns = new LinkedHashMap<>(resultBaseColumns);
+            resultColumns.putAll(resultTriggerColumns);
+            if (resultColumns.size() != resultTriggerColumns.size() + resultBaseColumns.size()) {
+                throwColumnConflictMessage(resultTriggerColumns.keySet(), resultBaseColumns.keySet());
             }
 
-            final QueryTable resultTable =
-                    new QueryTable(RowSetFactory.empty().toTracking(),
-                            resultColumns);
+            final QueryTable resultTable = new QueryTable(RowSetFactory.empty().toTracking(), resultColumns);
 
-            if (isRefreshing() && rightTable.isRefreshing()) {
+            if (isRefreshing() && baseTable.isRefreshing()) {
 
-                // What's happening here: the left table gets "listener" (some complicated logic that has access
-                // to the coalescer) whereas the right table (above) gets the one-liner above (but which also
-                // has access to the same coalescer). So when the right table sees updates they are simply fed
+                // What's happening here: the trigger table gets "listener" (some complicated logic that has access
+                // to the coalescer) whereas the base table (above) gets the one-liner above (but which also
+                // has access to the same coalescer). So when the base table sees updates they are simply fed
                 // to the coalescer.
-                // The coalescer's job is just to remember what rows have changed. When the *left* table gets
+                // The coalescer's job is just to remember what rows have changed. When the *trigger* table gets
                 // updates, then the SnapshotIncrementalListener gets called, which does all the snapshotting
                 // work.
 
-                final ListenerRecorder rightListenerRecorder =
-                        new ListenerRecorder("snapshotIncremental (rightTable)", rightTable, resultTable);
-                rightTable.addUpdateListener(rightListenerRecorder);
+                final ListenerRecorder baseListenerRecorder =
+                        new ListenerRecorder("snapshotIncremental (baseTable)", baseTable, resultTable);
+                baseTable.addUpdateListener(baseListenerRecorder);
 
-                final ListenerRecorder leftListenerRecorder =
-                        new ListenerRecorder("snapshotIncremental (leftTable)", this, resultTable);
-                addUpdateListener(leftListenerRecorder);
+                final ListenerRecorder triggerListenerRecorder =
+                        new ListenerRecorder("snapshotIncremental (triggerTable)", this, resultTable);
+                addUpdateListener(triggerListenerRecorder);
 
                 final SnapshotIncrementalListener listener =
                         new SnapshotIncrementalListener(this, resultTable, resultColumns,
-                                rightListenerRecorder, leftListenerRecorder, rightTable, leftColumns);
+                                baseListenerRecorder, triggerListenerRecorder, baseTable, triggerColumns);
 
-                rightListenerRecorder.setMergedListener(listener);
-                leftListenerRecorder.setMergedListener(listener);
+                baseListenerRecorder.setMergedListener(listener);
+                triggerListenerRecorder.setMergedListener(listener);
                 resultTable.addParentReference(listener);
 
                 if (doInitialSnapshot) {
@@ -2098,23 +2091,22 @@ public class QueryTable extends BaseTable<QueryTable> {
                 startTrackingPrev(resultColumns.values());
                 resultTable.getRowSet().writableCast().initializePreviousValue();
             } else if (doInitialSnapshot) {
-                SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this,
-                        SnapshotUtils.generateSnapshotDataColumns(rightTable),
-                        leftColumns, resultColumns);
-                resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
+                SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(), this,
+                        SnapshotUtils.generateSnapshotDataColumns(baseTable),
+                        triggerColumns, resultColumns);
+                resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
                 resultTable.getRowSet().writableCast().initializePreviousValue();
             } else if (isRefreshing()) {
-                // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our
-                // (static)
-                // right table on the very first tick of the leftTable
+                // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our (static)
+                // base table on the very first tick of the triggerTable
                 addUpdateListener(
-                        new ListenerImpl("snapshotIncremental (leftTable)", this, resultTable) {
+                        new ListenerImpl("snapshotIncremental (triggerTable)", this, resultTable) {
                             @Override
                             public void onUpdate(TableUpdate upstream) {
-                                SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
-                                        QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(rightTable),
-                                        leftColumns, resultColumns);
-                                resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
+                                SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(),
+                                        QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(baseTable),
+                                        triggerColumns, resultColumns);
+                                resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
                                 resultTable.notifyListeners(resultTable.getRowSet().copy(),
                                         RowSetFactory.empty(),
                                         RowSetFactory.empty());
@@ -2139,9 +2131,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
-        final boolean initial = options.has(Feature.INITIAL);
-        final boolean incremental = options.has(Feature.INCREMENTAL);
-        final boolean history = options.has(Feature.HISTORY);
+        // todo: throw exception if trigger is static?
+        final boolean initial = options.has(Flag.INITIAL);
+        final boolean incremental = options.has(Flag.INCREMENTAL);
+        final boolean history = options.has(Flag.HISTORY);
         final String[] stampColumns = options.stampColumns().stream().map(ColumnName::name).toArray(String[]::new);
         final String description = options.description();
         if (history) {

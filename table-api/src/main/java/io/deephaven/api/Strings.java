@@ -14,6 +14,7 @@ import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,10 @@ public class Strings {
 
     public static String of(ColumnName columnName) {
         return columnName.name();
+    }
+
+    public static String of(Collection<ColumnName> columnNames) {
+        return columnNames.stream().map(ColumnName::name).collect(Collectors.joining(",", "[", "]"));
     }
 
     public static String of(RawString rawString) {

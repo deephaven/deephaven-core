@@ -3,8 +3,8 @@ package io.deephaven.client;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Builder;
-import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
-import io.deephaven.qst.table.SingleSnapshotTable;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
+import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
@@ -23,7 +23,7 @@ public abstract class SnapshotWhenSessionTestBase extends TableSpecTestBase {
                 snapshotTickingStampDoInitial(builder.get()));
     }
 
-    static SingleSnapshotTable snapshot() {
+    static SnapshotTable snapshot() {
         return TimeTable.of(Duration.ofSeconds(1)).snapshot();
     }
 
@@ -46,22 +46,11 @@ public abstract class SnapshotWhenSessionTestBase extends TableSpecTestBase {
     static SnapshotWhenTable snapshotTickingStampDoInitial(Builder builder) {
         final SnapshotWhenOptions control = builder
                 .addStampColumns(ColumnName.of("Timestamp"))
-                .addFlags(Feature.INITIAL)
+                .addFlags(Flag.INITIAL)
                 .build();
         return TimeTable.of(Duration.ofSeconds(1)).view("Id=ii")
                 .snapshotWhen(TimeTable.of(Duration.ofSeconds(2)).updateView("Id=ii"), control);
     }
-
-    // TODO: missing dropColumns
-    /*
-     * private static SnapshotTable snapshotTickingNoStamps() { return builder
-     * .base(TimeTable.of(Duration.ofSeconds(1))) .trigger(TimeTable.of(Duration.ofSeconds(2)).dropColumns("Timestamp"))
-     * .build(); }
-     * 
-     * private static SnapshotTable snapshotTickingNoStampsDoInitial() { return builder
-     * .base(TimeTable.of(Duration.ofSeconds(1))) .trigger(TimeTable.of(Duration.ofSeconds(2)).dropColumns("Timestamp"))
-     * .doInitialSnapshot(true) .build(); }
-     */
 
     public SnapshotWhenSessionTestBase(TableSpec table) {
         super(table);

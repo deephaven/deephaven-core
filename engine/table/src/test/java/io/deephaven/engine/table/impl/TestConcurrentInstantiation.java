@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.snapshot.SnapshotWhenOptions.Feature;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.Pair;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
@@ -1580,7 +1580,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             base = TstUtils.testRefreshingTable(i(0).toTracking(), c("x", 1));
             trigger = TstUtils.testRefreshingTable(i().toTracking());
-            snap = (QueryTable) base.snapshotWhen(trigger, Feature.INITIAL);
+            snap = (QueryTable) base.snapshotWhen(trigger, Flag.INITIAL);
             snap.retainReference();
         }
 
