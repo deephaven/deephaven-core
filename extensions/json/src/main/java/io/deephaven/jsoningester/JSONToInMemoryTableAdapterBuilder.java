@@ -1,6 +1,7 @@
 package io.deephaven.jsoningester;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.DynamicTableWriter;
@@ -111,13 +112,24 @@ public class JSONToInMemoryTableAdapterBuilder {
     }
 
     private void addCol(final String colName, final Class<?> colType) {
-        colNames.add(colName);
+        colNames.add(NameValidator.validateColumnName(colName));
         colTypes.add(colType);
     }
 
-    private void addCols(final List<String> colName, final List<Class<?>> colType) {
-        colNames.addAll(colName);
-        colTypes.addAll(colType);
+    private void addCols(final List<String> colNames, final List<Class<?>> colTypes) {
+        Require.equals(
+                colNames.size(), "colNames.size()",
+                colTypes.size(), "colTypes.size()");
+        for (String colName : colNames) {
+            NameValidator.validateColumnName(colName);
+        }
+        this.colNames.addAll(colNames);
+        this.colTypes.addAll(colTypes);
+    }
+
+    public JSONToInMemoryTableAdapterBuilder addColumnFromField(final String field,
+            final Class<?> type) {
+        return addColumnFromField(field, field, type);
     }
 
     public JSONToInMemoryTableAdapterBuilder addColumnFromField(final String column, final String field,
