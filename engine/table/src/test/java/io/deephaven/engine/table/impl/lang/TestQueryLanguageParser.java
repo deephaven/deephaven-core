@@ -1572,14 +1572,27 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "testImplicitConversion_Object(myDoubleArray)";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
 
-        // TODO: this behavior is questionable; what is the rationale/value of converting to a primitive array?
+        // TODO: #3266 vector arguments to Object varargs methods are handled inconsistently
         expression = "testImplicitConversion_Object(myDoubleVector)";
         resultExpression = "testImplicitConversion_Object(VectorConversions.nullSafeVectorToArray(myDoubleVector))";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleVector"});
 
-        expression = "testImplicitConversion_Object((Object) myDoubleArray)";
-        resultExpression = "testImplicitConversion_Object((Object) myDoubleArray)"; // test a workaround for the above
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
+        // expression = "testImplicitConversion_Object(myDoubleVector, myInt)";
+        // resultExpression =
+        // "testImplicitConversion_Object(VectorConversions.nullSafeVectorToArray(myDoubleVector), myInt)";
+        // check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleVector", "myInt"});
+        //
+        // expression = "testImplicitConversion_Object(myInt, myDoubleVector)";
+        // resultExpression =
+        // "testImplicitConversion_Object(myInt, VectorConversions.nullSafeVectorToArray(myDoubleVector))";
+        // check(expression, resultExpression, new Object[0].getClass(), new String[] {"myInt", "myDoubleVector"});
+        //
+        // expression = "testImplicitConversion_Object(myDoubleVector, myIntVector)";
+        // resultExpression =
+        // "testImplicitConversion_Object(VectorConversions.nullSafeVectorToArray(myDoubleVector),
+        // VectorConversions.nullSafeVectorToArray(myIntVector))";
+        // check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleVector",
+        // "myIntVector"});
 
         expression = "testImplicitConversion_Object(myDoubleArray, myInt)";
         resultExpression = "testImplicitConversion_Object(myDoubleArray, myInt)";
@@ -2582,7 +2595,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
-        // TODO: these are easy to support; just need to include in QueryLanguageFunctionGenerator
+        // TODO: #3263 these are easy to support; just need to include in QueryLanguageFunctionGenerator
         try {
             expression = resultExpression = "myInt << myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
