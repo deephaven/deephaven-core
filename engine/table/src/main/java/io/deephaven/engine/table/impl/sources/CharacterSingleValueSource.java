@@ -66,6 +66,13 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        // region null set
+        set(NULL_CHAR);
+        // endregion null set
+    }
+
+    @Override
     public final void set(long key, char value) {
         set(value);
     }

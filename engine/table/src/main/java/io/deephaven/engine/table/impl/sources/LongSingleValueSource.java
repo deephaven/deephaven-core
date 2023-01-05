@@ -71,6 +71,13 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        // region null set
+        set(NULL_LONG);
+        // endregion null set
+    }
+
+    @Override
     public final void set(long key, long value) {
         set(value);
     }
