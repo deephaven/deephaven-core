@@ -173,10 +173,13 @@ public class TestTypeUtils extends TestCase {
     public void testBoxing() {
         byte[] testBytes = {0, QueryConstants.MAX_BYTE, QueryConstants.MIN_BYTE, QueryConstants.NULL_BYTE};
         char[] testChars = {0, QueryConstants.MAX_CHAR, QueryConstants.MIN_CHAR, QueryConstants.NULL_CHAR, 'A'};
-        double[] testDoubles = {0, QueryConstants.MAX_DOUBLE, QueryConstants.MIN_DOUBLE, QueryConstants.NULL_DOUBLE, -1, 1, 0.5, QueryConstants.POS_INFINITY_DOUBLE, QueryConstants.NEG_INFINITY_DOUBLE, Double.NaN};
-        float[] testFloats = {0, QueryConstants.MAX_FLOAT, QueryConstants.MIN_FLOAT, QueryConstants.NULL_FLOAT, -1, 1, 0.5f, QueryConstants.POS_INFINITY_FLOAT, QueryConstants.NEG_INFINITY_FLOAT, Float.NaN};
+        double[] testDoubles = {0, QueryConstants.MAX_DOUBLE, QueryConstants.MIN_DOUBLE, QueryConstants.NULL_DOUBLE, -1,
+                1, 0.5, QueryConstants.POS_INFINITY_DOUBLE, QueryConstants.NEG_INFINITY_DOUBLE, Double.NaN};
+        float[] testFloats = {0, QueryConstants.MAX_FLOAT, QueryConstants.MIN_FLOAT, QueryConstants.NULL_FLOAT, -1, 1,
+                0.5f, QueryConstants.POS_INFINITY_FLOAT, QueryConstants.NEG_INFINITY_FLOAT, Float.NaN};
         int[] testInts = {0, QueryConstants.MAX_INT, QueryConstants.MIN_INT, QueryConstants.NULL_INT, -1, 1};
-        long[] testLongs = {0, QueryConstants.MAX_LONG, QueryConstants.MIN_LONG, QueryConstants.NULL_LONG, -1, 1, -10_000_000_000L, 10_000_000_000L};
+        long[] testLongs = {0, QueryConstants.MAX_LONG, QueryConstants.MIN_LONG, QueryConstants.NULL_LONG, -1, 1,
+                -10_000_000_000L, 10_000_000_000L};
         short[] testShorts = {0, QueryConstants.MAX_SHORT, QueryConstants.MIN_SHORT, QueryConstants.NULL_SHORT};
 
         assertArrayEquals(testBytes, unbox(box(testBytes)));

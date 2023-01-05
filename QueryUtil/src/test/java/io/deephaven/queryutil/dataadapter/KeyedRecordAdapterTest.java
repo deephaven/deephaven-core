@@ -2,7 +2,8 @@ package io.deephaven.queryutil.dataadapter;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.queryutil.dataadapter.rec.RecordUpdaters;
@@ -13,10 +14,10 @@ import io.deephaven.util.QueryConstants;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
-import static io.deephaven.engine.table.impl.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.i;
 
 
-public class KeyedRecordAdapterTest extends io.deephaven.engine.table.impl.RefreshingTableTestCase {
+public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
 
     /**
      * Test a KeyedRecordAdapter that just converts rows into HashMaps

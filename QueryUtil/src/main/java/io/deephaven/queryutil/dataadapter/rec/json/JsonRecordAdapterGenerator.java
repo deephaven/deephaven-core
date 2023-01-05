@@ -1,23 +1,18 @@
 package io.deephaven.queryutil.dataadapter.rec.json;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.engine.context.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
-import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
-
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 
 import static io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterUtil.CONVERTIBLE_TO_STRING_CLASSES;
 
@@ -71,10 +66,8 @@ public class JsonRecordAdapterGenerator {
         try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance()
                 .getNugget(JsonRecordAdapterGenerator.class.getName() + "Compile: " + desc)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () -> CompilerTools
-                    .compile(COMPILED_CLASS_NAME, classBody, CompilerTools.FORMULA_PREFIX));
-        } catch (PrivilegedActionException pae) {
-            throw new UncheckedDeephavenException("Compilation error for: " + desc, pae.getException());
+            return ExecutionContext.getContext().getQueryCompiler().compile(COMPILED_CLASS_NAME, classBody,
+                    QueryCompiler.FORMULA_PREFIX);
         }
     }
 

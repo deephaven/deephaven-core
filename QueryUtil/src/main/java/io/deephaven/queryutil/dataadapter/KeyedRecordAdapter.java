@@ -140,7 +140,7 @@ public class KeyedRecordAdapter<K, T> {
                 // no value providers (value type is Void; listener is only used for tracking keys)
                 null,
                 null);
-        sourceTable.listenForUpdates(toMapListener);
+        sourceTable.addUpdateListener(toMapListener);
 
         // TODO: should this be the the listener instead of the sourceTable? probably? bit confusing with
         // ToMapListener's baselineMap/currentMap stuff.

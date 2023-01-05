@@ -2,16 +2,17 @@ package io.deephaven.queryutil.dataadapter;
 
 import gnu.trove.map.TLongIntMap;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 import java.util.Collections;
 
-import static io.deephaven.engine.table.impl.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.i;
 
 
-public class PyKeyedRecordAdapterTest extends io.deephaven.engine.table.impl.RefreshingTableTestCase {
+public class PyKeyedRecordAdapterTest extends RefreshingTableTestCase {
 
     /**
      * Test a KeyedRecordAdapter that just converts rows into HashMaps

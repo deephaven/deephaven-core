@@ -2,17 +2,12 @@ package io.deephaven.queryutil.dataadapter.datafetch.bulk.gen;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.engine.context.CompilerTools;
-import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.UncheckedDeephavenException;
-
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 
 /**
  * Generates a class that efficiently retrieves data from column sources.
@@ -58,10 +53,8 @@ public class TableDataRetrieverGenerator {
         try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance()
                 .getNugget(TableDataRetrieverGenerator.class.getName() + "Compile: " + desc)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () -> CompilerTools
-                    .compile(COMPILED_CLASS_NAME, classBody, CompilerTools.FORMULA_PREFIX));
-        } catch (PrivilegedActionException pae) {
-            throw new UncheckedDeephavenException("Compilation error for: " + desc, pae.getException());
+            return ExecutionContext.getContext().getQueryCompiler().compile(COMPILED_CLASS_NAME, classBody,
+                    QueryCompiler.FORMULA_PREFIX);
         }
     }
 

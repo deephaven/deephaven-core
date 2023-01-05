@@ -2,8 +2,8 @@ package io.deephaven.queryutil.dataadapter;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterUtil;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static io.deephaven.engine.table.impl.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.i;
 
 public class TableToRecordListenerTest extends RefreshingTableTestCase {
 

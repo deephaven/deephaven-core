@@ -588,11 +588,11 @@ public class TypeUtils {
      * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
      * be decoded from base64. Returns null if the String fails to parse.
      *
-     * @param string     the String to parse
+     * @param string the String to parse
      * @param typeString the Canonical Name of the class type
      * @return an object parsed from the String
      * @throws RuntimeException if the string fails to parse
-     * @throws IOException      if an IO error occurs during conversion
+     * @throws IOException if an IO error occurs during conversion
      */
     public static Optional<Object> fromString(String string, String typeString) throws IOException {
         final Class<?> type;
@@ -610,10 +610,10 @@ public class TypeUtils {
      * be decoded from base64. Returns null if the String fails to parse.
      *
      * @param string the String to parse
-     * @param type   the type of the object
+     * @param type the type of the object
      * @return an object parsed from the String
      * @throws RuntimeException if the string fails to parse
-     * @throws IOException      if an IO error occurs during conversion
+     * @throws IOException if an IO error occurs during conversion
      */
     public static Object fromString(String string, Class<?> type) throws IOException {
         final Class<?> boxedType = getBoxedType(type);
@@ -662,7 +662,7 @@ public class TypeUtils {
      */
     public static String encode64Serializable(Serializable serializable) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream os = new ObjectOutputStream(bos)) {
+                ObjectOutputStream os = new ObjectOutputStream(bos)) {
             os.writeObject(serializable);
             return Base64.getEncoder().encodeToString(bos.toByteArray());
         }
@@ -673,12 +673,12 @@ public class TypeUtils {
      *
      * @param string the base64 encoded String
      * @return the encoded Object
-     * @throws IOException            if the string cannot be decoded
+     * @throws IOException if the string cannot be decoded
      * @throws ClassNotFoundException if the Object type is unknown
      */
     public static Object decode64Serializable(String string) throws IOException, ClassNotFoundException {
         try (ObjectInputStream is =
-                     new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
+                new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
             return is.readObject();
         }
     }
@@ -691,7 +691,7 @@ public class TypeUtils {
             return (Class<?>) paramType;
         } else if (paramType instanceof ParameterizedType) {
             return (Class<?>) // We are asking the parameterized type for it's raw type, which is always Class
-                    ((ParameterizedType) paramType).getRawType();
+            ((ParameterizedType) paramType).getRawType();
         } else if (paramType instanceof WildcardType) {
             final Type[] upper = ((WildcardType) paramType).getUpperBounds();
             return getErasedType(upper[0]);

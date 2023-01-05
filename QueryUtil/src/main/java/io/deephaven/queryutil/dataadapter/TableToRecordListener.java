@@ -157,7 +157,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListener {
             processUpdateRecords(UpdateType.ADDED_UPDATED, tableSize, dataArraysInitialData);
         }
 
-        table.listenForUpdates(this);
+        table.addUpdateListener(this);
     }
 
     private void notifyUpdatesProcessed(int nUpdates) {
