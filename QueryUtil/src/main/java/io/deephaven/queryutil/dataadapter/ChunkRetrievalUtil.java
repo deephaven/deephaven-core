@@ -9,10 +9,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-public class ChunkRetrievalUtil {
+class ChunkRetrievalUtil {
 
     @NotNull
-    public static <T> ObjectChunk<T, ?> getObjChunkForKeys(
+    static <T> ObjectChunk<T, ?> getObjChunkForKeys(
             final ColumnSource<T> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -25,7 +25,7 @@ public class ChunkRetrievalUtil {
     }
 
     @NotNull
-    public static CharChunk<? extends Values> getCharChunkForKeys(
+    static CharChunk<? extends Values> getCharChunkForKeys(
             final ColumnSource<Character> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -38,7 +38,7 @@ public class ChunkRetrievalUtil {
     }
 
     @NotNull
-    public static ByteChunk<? extends Values> getByteChunkForKeys(
+    static ByteChunk<? extends Values> getByteChunkForKeys(
             final ColumnSource<Byte> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -51,7 +51,7 @@ public class ChunkRetrievalUtil {
     }
 
     @NotNull
-    public static ShortChunk<? extends Values> getShortChunkForKeys(
+    static ShortChunk<? extends Values> getShortChunkForKeys(
             final ColumnSource<Short> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -64,7 +64,7 @@ public class ChunkRetrievalUtil {
     }
 
     @NotNull
-    public static IntChunk<? extends Values> getIntChunkForKeys(
+    static IntChunk<? extends Values> getIntChunkForKeys(
             final ColumnSource<Integer> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -77,7 +77,7 @@ public class ChunkRetrievalUtil {
     }
 
     @NotNull
-    public static FloatChunk<? extends Values> getFloatChunkForKeys(
+    static FloatChunk<? extends Values> getFloatChunkForKeys(
             final ColumnSource<Float> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -90,7 +90,7 @@ public class ChunkRetrievalUtil {
     }
 
     @NotNull
-    public static LongChunk<? extends Values> getLongChunkForKeys(
+    static LongChunk<? extends Values> getLongChunkForKeys(
             final ColumnSource<Long> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -103,7 +103,7 @@ public class ChunkRetrievalUtil {
     }
 
     @NotNull
-    public static DoubleChunk<? extends Values> getDoubleChunkForKeys(
+    static DoubleChunk<? extends Values> getDoubleChunkForKeys(
             final ColumnSource<Double> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -116,7 +116,7 @@ public class ChunkRetrievalUtil {
     }
 
     @NotNull
-    public static BooleanChunk<? extends Values> getBooleanChunkForKeys(
+    static BooleanChunk<? extends Values> getBooleanChunkForKeys(
             final ColumnSource<Boolean> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context,
@@ -130,7 +130,7 @@ public class ChunkRetrievalUtil {
 
 
     @NotNull
-    public static <T> Chunk<? extends Values> getChunkForKeys(
+    static <T> Chunk<? extends Values> getChunkForKeys(
             final ColumnSource<T> columnSource,
             final RowSequence rowSequence,
             final ChunkSource.GetContext context, boolean usePrev) {

@@ -5,7 +5,7 @@ import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 /**
  * Interface for updating a record of type T with data from the give index of an array (or other object).
  */
-public interface ArrayToRecordsAdapter<T> {
+interface ArrayToRecordsAdapter<T> {
 
     @SuppressWarnings("unchecked")
     static <R, C> ArrayToRecordsAdapter<R> getArrayToRecordAdapter(final RecordUpdater<R, C> recordUpdater) {

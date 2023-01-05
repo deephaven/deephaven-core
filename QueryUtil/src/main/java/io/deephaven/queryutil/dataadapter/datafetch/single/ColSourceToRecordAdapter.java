@@ -6,7 +6,7 @@ import io.deephaven.queryutil.dataadapter.rec.RecordUpdater;
 /**
  * Interface for updating a record of type {@code T} with data from the given index of a ColumnSource.
  */
-public interface ColSourceToRecordAdapter<T, C> {
+interface ColSourceToRecordAdapter<T, C> {
 
     @SuppressWarnings("unchecked")
     static <R, C> ColSourceToRecordAdapter<R, C> getColSourceToRecordAdapter(final RecordUpdater<R, C> recordUpdater) {
