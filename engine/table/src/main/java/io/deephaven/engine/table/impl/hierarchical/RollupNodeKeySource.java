@@ -32,8 +32,8 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
     static final Object ROOT_NODE_KEY = new Object();
 
     /**
-     * The root node exists at depth 0, but by definition its always visited as an expanded node or not at all. For
-     * all other nodes, the node key width is (depth - 1).
+     * The root node exists at depth 0, but by definition its always visited as an expanded node or not at all. For all
+     * other nodes, the node key width is (depth - 1).
      */
     static final int ROOT_NODE_DEPTH = 0;
 
