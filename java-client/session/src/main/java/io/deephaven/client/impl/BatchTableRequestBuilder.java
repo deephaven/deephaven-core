@@ -272,8 +272,8 @@ class BatchTableRequestBuilder {
                     .setInitial(options.has(Flag.INITIAL))
                     .setIncremental(options.has(Flag.INCREMENTAL))
                     .setHistory(options.has(Flag.HISTORY));
-            for (ColumnName stampColumn : options.stampColumns()) {
-                builder.addStampColumns(stampColumn.name());
+            for (JoinAddition stampColumn : options.stampColumns()) {
+                builder.addStampColumns(Strings.of(stampColumn));
             }
             out = op(Builder::setSnapshotWhen, builder.build());
         }

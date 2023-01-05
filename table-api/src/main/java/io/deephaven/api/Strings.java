@@ -27,10 +27,6 @@ public class Strings {
         return columnName.name();
     }
 
-    public static String of(Collection<? extends ColumnName> columnNames) {
-        return columnNames.stream().map(ColumnName::name).collect(Collectors.joining(",", "[", "]"));
-    }
-
     public static String of(RawString rawString) {
         return rawString.value();
     }
@@ -98,6 +94,10 @@ public class Strings {
             return of(addition.newColumn());
         }
         return String.format("%s=%s", of(addition.newColumn()), of(addition.existingColumn()));
+    }
+
+    public static String of(Collection<? extends JoinAddition> additions) {
+        return additions.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
     }
 
     public static String of(Selectable selectable) {

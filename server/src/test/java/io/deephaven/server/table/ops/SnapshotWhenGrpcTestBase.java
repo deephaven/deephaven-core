@@ -77,6 +77,25 @@ public abstract class SnapshotWhenGrpcTestBase extends GrpcTableOperationTestBas
     }
 
     @Test
+    public void snapshotTickingStampRename() {
+        final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01"));
+        final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02"));
+        final SnapshotWhenTableRequest request = builder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setBaseId(timeTable1)
+                .setTriggerId(timeTable2)
+                .addStampColumns("StampTimestamp=Timestamp")
+                .build();
+        final ExportedTableCreationResponse response = send(request);
+        try {
+            assertThat(response.getSuccess()).isTrue();
+            assertThat(response.getIsStatic()).isFalse();
+        } finally {
+            release(response);
+        }
+    }
+
+    @Test
     public void snapshotTickingStampDoInitial() {
         final TableReference timeTable1 = ref(TableTools.timeTable("00:00:01").view("Id=ii"));
         final TableReference timeTable2 = ref(TableTools.timeTable("00:00:02").updateView("Id=ii"));

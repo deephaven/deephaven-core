@@ -32,17 +32,6 @@ public class SnapshotWhenHistoryGrpcTest extends SnapshotWhenGrpcTestBase {
     }
 
     @Override
-    public void snapshotTickingStamp() {
-        try {
-            super.snapshotTickingStamp();
-        } catch (StatusRuntimeException e) {
-            checkUnimplemented(e);
-            return;
-        }
-        failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
-    }
-
-    @Override
     public void snapshotTickingStampDoInitial() {
         try {
             super.snapshotTickingStampDoInitial();

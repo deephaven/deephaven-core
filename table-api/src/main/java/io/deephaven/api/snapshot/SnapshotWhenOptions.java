@@ -2,6 +2,7 @@ package io.deephaven.api.snapshot;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.Strings;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
@@ -39,8 +40,7 @@ public abstract class SnapshotWhenOptions {
          * the "stamp key" as opposed to updating existing rows.
          *
          * <p>
-         * Note: this flag is currently incompatible with {@link #INITIAL}, {@link #INCREMENTAL}, or non-empty
-         * {@link #stampColumns()}}.
+         * Note: this flag is currently incompatible with {@link #INITIAL} and {@link #INCREMENTAL}.
          *
          * @see <a href="https://github.com/deephaven/deephaven-core/issues/3260">deephaven-core#3260</a>
          */
@@ -86,7 +86,7 @@ public abstract class SnapshotWhenOptions {
             builder.addFlags(Flag.HISTORY);
         }
         for (String stampColumn : stampColumns) {
-            builder.addStampColumns(ColumnName.of(stampColumn));
+            builder.addStampColumns(JoinAddition.parse(stampColumn));
         }
         return builder.build();
     }
@@ -102,7 +102,7 @@ public abstract class SnapshotWhenOptions {
     public static SnapshotWhenOptions of(Iterable<Flag> flags, String... stampColumns) {
         final Builder builder = builder().addAllFlags(flags);
         for (String stampColumn : stampColumns) {
-            builder.addStampColumns(ColumnName.of(stampColumn));
+            builder.addStampColumns(JoinAddition.parse(stampColumn));
         }
         return builder.build();
     }
@@ -115,7 +115,7 @@ public abstract class SnapshotWhenOptions {
     /**
      * The {@code trigger} table stamp columns. If empty, it represents all columns from the {@code trigger} table.
      */
-    public abstract List<ColumnName> stampColumns();
+    public abstract List<JoinAddition> stampColumns();
 
     /**
      * Check if the {@code flag} is set.
@@ -145,18 +145,18 @@ public abstract class SnapshotWhenOptions {
 
     @Check
     final void checkHistory() {
-        if (has(Flag.HISTORY) && (has(Flag.INCREMENTAL) || has(Flag.INITIAL) || !stampColumns().isEmpty())) {
+        if (has(Flag.HISTORY) && (has(Flag.INCREMENTAL) || has(Flag.INITIAL))) {
             throw new UnsupportedOperationException(
-                    "snapshotWhen with history does not currently support incremental, initial, nor non-empty stamp columns. See https://github.com/deephaven/deephaven-core/issues/3260.");
+                    "snapshotWhen with history does not currently support incremental nor initial. See https://github.com/deephaven/deephaven-core/issues/3260.");
         }
     }
 
     public interface Builder {
-        Builder addStampColumns(ColumnName stampColumn);
+        Builder addStampColumns(JoinAddition stampColumn);
 
-        Builder addStampColumns(ColumnName... stampColumns);
+        Builder addStampColumns(JoinAddition... stampColumns);
 
-        Builder addAllStampColumns(Iterable<? extends ColumnName> stampColumns);
+        Builder addAllStampColumns(Iterable<? extends JoinAddition> stampColumns);
 
         Builder addFlags(Flag flag);
 

@@ -4,7 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
-import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Builder;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -45,7 +45,7 @@ public final class SnapshotWhenTableGrpcImpl extends GrpcTableOperation<Snapshot
             builder.addFlags(Flag.HISTORY);
         }
         for (String stampColumn : request.getStampColumnsList()) {
-            builder.addStampColumns(ColumnName.of(stampColumn));
+            builder.addStampColumns(JoinAddition.parse(stampColumn));
         }
         return builder.build();
     }

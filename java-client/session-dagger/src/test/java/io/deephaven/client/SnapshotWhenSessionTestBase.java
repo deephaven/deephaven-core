@@ -1,6 +1,7 @@
 package io.deephaven.client;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Builder;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -20,6 +21,7 @@ public abstract class SnapshotWhenSessionTestBase extends TableSpecTestBase {
                 snapshotTicking(builder.get()),
                 snapshotTickingDoInitial(builder.get()),
                 snapshotTickingStamp(builder.get()),
+                snapshotTickingStampRename(builder.get()),
                 snapshotTickingStampDoInitial(builder.get()));
     }
 
@@ -41,6 +43,13 @@ public abstract class SnapshotWhenSessionTestBase extends TableSpecTestBase {
         final SnapshotWhenOptions control = builder.addStampColumns(ColumnName.of("Timestamp")).build();
         return TimeTable.of(Duration.ofSeconds(1)).view("Id=ii")
                 .snapshotWhen(TimeTable.of(Duration.ofSeconds(2)).updateView("Id=ii"), control);
+    }
+
+    static SnapshotWhenTable snapshotTickingStampRename(Builder builder) {
+        final SnapshotWhenOptions control =
+                builder.addStampColumns(JoinAddition.parse("SnapshotTimestamp=Timestamp")).build();
+        return TimeTable.of(Duration.ofSeconds(1))
+                .snapshotWhen(TimeTable.of(Duration.ofSeconds(2)), control);
     }
 
     static SnapshotWhenTable snapshotTickingStampDoInitial(Builder builder) {
