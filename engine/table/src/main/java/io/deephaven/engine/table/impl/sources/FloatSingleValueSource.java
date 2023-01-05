@@ -71,6 +71,13 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        // region null set
+        set(NULL_FLOAT);
+        // endregion null set
+    }
+
+    @Override
     public final void set(long key, float value) {
         set(value);
     }

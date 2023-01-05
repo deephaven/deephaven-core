@@ -91,6 +91,10 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
         throw new UnsupportedOperationException();
     }
 
+    public void setNull() {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public final void ensureCapacity(long capacity, boolean nullFilled) {
         // Do nothing
