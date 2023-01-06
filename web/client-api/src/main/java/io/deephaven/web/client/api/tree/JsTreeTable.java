@@ -113,7 +113,7 @@ public class JsTreeTable extends HasEventHandling {
             depthColumn = Js.uncheckedCast(
                     ViewportData.cleanData(dataColumns[rowDepthCol.getIndex()].getData(), rowDepthCol));
 
-            int constituentDepth = keyColumns.length + 1;
+            int constituentDepth = keyColumns.length + 2;
             for (int i = 0; i < columns.length; i++) {
                 Column c = columns[i];
                 int index = c.getIndex();
@@ -603,6 +603,12 @@ public class JsTreeTable extends HasEventHandling {
         // Build the bitset for the columns that are needed to get the data, style, and maintain structure
         BitSet columnsBitset = new BitSet(tableDefinition.getColumns().length);
         Arrays.stream(columns).flatMapToInt(Column::getRequiredColumns).forEach(columnsBitset::set);
+        Arrays.stream(columns)
+                .map(Column::getName)
+                .map(sourceColumns::get)
+                .filter(Objects::nonNull)
+                .flatMapToInt(Column::getRequiredColumns)
+                .forEach(columnsBitset::set);
         for (ColumnDefinition column : tableDefinition.getColumns()) {
             if (column.isForRow()) {
                 columnsBitset.set(column.getColumnIndex());
