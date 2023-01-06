@@ -526,7 +526,7 @@ message SnapshotWhenTableRequest {
   // Whether the results should keep history.
   bool history = 6;
 
-  // Which columns to stamp from the trigger table. If empty, all columns from the trigger table are stamped.
+  // Which columns to stamp from the trigger table. If empty, all columns from the trigger table are stamped. Allows renaming columns.
   repeated string stamp_columns = 7;
 }
 

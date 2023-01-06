@@ -303,7 +303,7 @@ class Table(JObjectWrapper):
         return Table(j_table=self.j_table.coalesce())
 
     def snapshot(self) -> Table:
-        """ Returns a static snapshot table."""
+        """Returns a static snapshot table."""
         try:
             with auto_locking_ctx(self):
                 return Table(j_table=self.j_table.snapshot())
@@ -311,6 +311,29 @@ class Table(JObjectWrapper):
             raise DHError(message="failed to create a snapshot.") from e
 
     def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, stamp_cols: Union[str, List[str]] = None) -> Table:
+        """Returns a table that captures a snapshot of this whenever trigger_table updates.
+
+        When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
+        table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If {@code trigger}
+        is empty, the "stamp key" will be represented by {@code null} values.
+
+        Args:
+            trigger_table (Table): the trigger table
+            initial (bool): Whether to take an initial snapshot upon construction. When not specified, the resulting
+                table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental. When incremental, only the rows of
+                this table that have been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history. A history table appends a full snapshot of
+                this table and the "stamp key" as opposed to updating existing rows. Note: this flag is currently
+                incompatible with initial and incremental.
+            stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
         try:
             options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
             with auto_locking_ctx(self, trigger_table):
@@ -2073,13 +2096,47 @@ class PartitionedTableProxy(JObjectWrapper):
             raise DHError(e, "reverse operation on the PartitionedTableProxy failed.") from e
 
     def snapshot(self) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
         try:
             with auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot())
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
 
-    def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, stamp_cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
+    def snapshot_when(self, trigger_table: Union[Table, PartitionedTableProxy], initial: bool = False, incremental: bool = False, history: bool = False, stamp_cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.snapshot_when` table operation to all constituent tables of the underlying
+        partitioned table with the provided trigger table or PartitionedTableProxy, and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the trigger table being another PartitionedTableProxy, the :meth:`~Table.snapshot_when` table
+        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Args:
+            trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
+            initial (bool): Whether to take an initial snapshot upon construction. When not specified, the resulting
+                table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental. When incremental, only the rows of
+                this table that have been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history. A history table appends a full snapshot of
+                this table and the "stamp key" as opposed to updating existing rows. Note: this flag is currently
+                incompatible with initial and incremental.
+            stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
+
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
         try:
             options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
             with auto_locking_ctx(self, trigger_table):
