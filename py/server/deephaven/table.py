@@ -221,7 +221,7 @@ def _td_to_columns(table_definition):
 class RollupTable(JObjectWrapper):
     """ A RollupTable is generated as a result of applying the :meth:`~Table.rollup` method on a Table.
 
-    Note: It should not be instantiated directly by user code.
+    Note: RollupTable should not be instantiated directly by user code.
     """
     j_object_type = _JRollupTable
 
@@ -240,7 +240,7 @@ class RollupTable(JObjectWrapper):
 class TreeTable(JObjectWrapper):
     """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a Table.
 
-    Note: It should not be instantiated directly by user code.
+    Note: TreeTable should not be instantiated directly by user code.
     """
     j_object_type = _JTreeTable
 
