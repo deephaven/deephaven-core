@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -35,14 +36,14 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
 public class UpdateByOperatorFactory {
     private final TableDefaults source;
     private final MatchPair[] groupByColumns;
-    @NotNull
+    @Nullable
     private final WritableRowRedirection rowRedirection;
     @NotNull
     private final UpdateByControl control;
 
     public UpdateByOperatorFactory(@NotNull final TableDefaults source,
             @NotNull final MatchPair[] groupByColumns,
-            @NotNull final WritableRowRedirection rowRedirection,
+            @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
         this.source = source;
         this.groupByColumns = groupByColumns;

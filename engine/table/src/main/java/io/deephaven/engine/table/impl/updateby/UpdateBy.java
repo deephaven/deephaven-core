@@ -11,7 +11,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -150,12 +149,11 @@ public abstract class UpdateBy {
             RowSetBuilderRandom builder = RowSetFactory.builderRandom();
             final int chunkSize = Math.min(outerKeys.intSize(), REDIRECTION_CHUNK_SIZE);
             try (final RowSequence.Iterator it = outerKeys.getRowSequenceIterator();
-                    ChunkSource.FillContext fillContext = rowRedirection.makeFillContext(chunkSize, null);
-                    WritableLongChunk<? extends RowKeys> chunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
+                    ChunkSource.GetContext getContext = rowRedirection.makeGetContext(chunkSize)) {
                 while (it.hasMore()) {
                     final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
-                    rowRedirection.fillChunk(fillContext, chunk, rs);
-                    builder.addRowKeysChunk(chunk);
+                    Chunk<? extends RowKeys> chunk = rowRedirection.getChunk(getContext, rs);
+                    builder.addRowKeysChunk(chunk.asLongChunk());
                 }
             }
             return builder.build();
@@ -471,9 +469,7 @@ public abstract class UpdateBy {
                                 count += PARALLEL_CACHE_CHUNK_SIZE;
                             }
                         }
-                    }, () -> {
-                        resumeAction.run();
-                    },
+                    }, resumeAction::run,
                     this::onError);
         }
 

@@ -572,22 +572,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @ConcurrentMethod
-    default PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
-        return partitionBy(dropKeys, ColumnName.from(keyColumnNames));
-    }
-
-    @Override
-    @ConcurrentMethod
     @FinalDefault
     default PartitionedTable partitionBy(String... keyColumnNames) {
         return partitionBy(false, keyColumnNames);
-    }
-
-    @Override
-    @ConcurrentMethod
-    default PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
-            final boolean preserveEmpty, @Nullable final Table initialGroups, String... keyColumnNames) {
-        return partitionedAggBy(aggregations, preserveEmpty, initialGroups, ColumnName.from(keyColumnNames));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

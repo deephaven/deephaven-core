@@ -61,6 +61,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
 
+        String[] byColumnNames = ColumnName.names(byColumns).toArray(new String[0]);
+
         final PartitionedTable pt;
         if (source.isRefreshing()) {
             // this is a refreshing source, we will need a listener
@@ -74,12 +76,12 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                 op.createInputModifiedColumnSet(source);
                 op.createOutputModifiedColumnSet(result);
             }
-            pt = source.partitionedAggBy(List.of(), true, null, byColumns);
+            pt = source.partitionedAggBy(List.of(), true, null, byColumnNames);
 
             // make the source->result transformer
             transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
         } else {
-            pt = source.partitionedAggBy(List.of(), true, null, byColumns);
+            pt = source.partitionedAggBy(List.of(), true, null, byColumnNames);
         }
 
         final PartitionedTable transformed = pt.transform(t -> {

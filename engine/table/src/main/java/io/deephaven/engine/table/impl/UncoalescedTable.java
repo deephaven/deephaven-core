@@ -370,15 +370,15 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public PartitionedTable partitionBy(boolean dropKeys, @NotNull Collection<? extends ColumnName> columns) {
-        return coalesce().partitionBy(dropKeys, columns);
+    public PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
+        return coalesce().partitionBy(dropKeys, keyColumnNames);
     }
 
     @Override
     @ConcurrentMethod
     public PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-            Table initialGroups, @NotNull Collection<? extends ColumnName> columns) {
-        return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, columns);
+                                             Table initialGroups, String... keyColumnNames) {
+        return coalesce().partitionedAggBy(aggregations, preserveEmpty, initialGroups, keyColumnNames);
     }
 
     @Override

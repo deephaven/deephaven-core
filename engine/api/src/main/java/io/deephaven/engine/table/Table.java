@@ -815,19 +815,6 @@ public interface Table extends
     PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames);
 
     /**
-     * Create a {@link PartitionedTable} from this table, partitioned according to the specified key columns.
-     * <p>
-     * The underlying partitioned table backing the result contains each row in {@code this} table in exactly one of the
-     * result's constituent tables.
-     *
-     * @param dropKeys Whether to drop key columns in the output constituent tables
-     * @param keyColumnNames The names of the key columns to partition by
-     * @return A {@link PartitionedTable} keyed by {@code keyColumnNames}
-     */
-    @ConcurrentMethod
-    PartitionedTable partitionBy(boolean dropKeys, @NotNull Collection<? extends ColumnName> keyColumnNames);
-
-    /**
      * Equivalent to {@code partitionBy(false, keyColumnNames)}
      * <p>
      * Create a {@link PartitionedTable} from this table, partitioned according to the specified key columns. Key
@@ -841,29 +828,6 @@ public interface Table extends
      */
     @ConcurrentMethod
     PartitionedTable partitionBy(String... keyColumnNames);
-
-    /**
-     * Convenience method that performs an {@link #aggBy(Collection, boolean, Table, Collection)} and wraps the result
-     * in a {@link PartitionedTable}. If {@code aggregations} does not include a {@link io.deephaven.api.agg.Partition
-     * partition}, one will be added automatically with the default constituent column name and behavior used in
-     * {@link #partitionBy(String...)}.
-     *
-     * @param aggregations The {@link Aggregation aggregations} to apply
-     * @param preserveEmpty Whether to keep result rows for groups that are initially empty or become empty as a result
-     *        of updates. Each aggregation operator defines its own value for empty groups.
-     * @param initialGroups A table whose distinct combinations of values for the {@code groupByColumns} should be used
-     *        to create an initial set of aggregation groups. All other columns are ignored. This is useful in
-     *        combination with {@code preserveEmpty == true} to ensure that particular groups appear in the result
-     *        table, or with {@code preserveEmpty == false} to control the encounter order for a collection of groups
-     *        and thus their relative order in the result. Changes to {@code initialGroups} are not expected or handled;
-     *        if {@code initialGroups} is a refreshing table, only its contents at instantiation time will be used. If
-     *        {@code initialGroups == null}, the result will be the same as if a table with no rows was supplied.
-     * @param keyColumnNames The names of the key columns to aggregate by
-     * @return A {@link PartitionedTable} keyed by {@code keyColumnNames}
-     */
-    @ConcurrentMethod
-    PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-            Table initialGroups, @NotNull Collection<? extends ColumnName> keyColumnNames);
 
     /**
      * Convenience method that performs an {@link #aggBy} and wraps the result in a {@link PartitionedTable}. If
