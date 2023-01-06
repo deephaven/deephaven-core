@@ -87,19 +87,6 @@ public class JsTreeTable extends HasEventHandling {
     public static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
     public static final double ACTION_COLLAPSE = 0b100;
 
-    private static boolean isTableAggregationColumn(String columnName) {
-        if (!columnName.startsWith(TABLE_AGGREGATION_COLUMN_PREFIX)) {
-            return false;
-        }
-        String suffix = columnName.substring(TABLE_AGGREGATION_COLUMN_PREFIX.length());
-        for (int i = 0; i < TABLE_AGGREGATIONS.length; i++) {
-            if (TABLE_AGGREGATIONS[i].equals(suffix)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     class TreeViewportData {
         private final Boolean[] expandedColumn;
         private final int[] depthColumn;
