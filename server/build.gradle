@@ -15,6 +15,7 @@ dependencies {
     implementation project(':Integrations')
     implementation project(':FishUtil')
     implementation depCommonsLang3
+    implementation depHttpClient
     Classpaths.inheritCommonsText(project, 'implementation')
 
     Classpaths.inheritJavaParser(project, 'implementation')
