@@ -49,12 +49,13 @@ class TableTestCase(BaseTestCase):
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
         ]
-        self.aggs = self.aggs_for_rollup + [group(["aggGroup=var"]),
-                                            partition("aggPartition"),
-                                            median(["aggMed=var"]),
-                                            pct(0.20, ["aggPct=var"]),
-                                            weighted_avg("var", ["weights"]),
-                                            ]
+        self.aggs_not_for_rollup = [group(["aggGroup=var"]),
+                                    partition("aggPartition"),
+                                    median(["aggMed=var"]),
+                                    pct(0.20, ["aggPct=var"]),
+                                    weighted_avg("var", ["weights"]),
+                                    ]
+        self.aggs = self.aggs_for_rollup + self.aggs_not_for_rollup
 
     def tearDown(self) -> None:
         self.test_table = None
@@ -829,9 +830,10 @@ class TableTestCase(BaseTestCase):
         test_table = test_table.update(
             ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
         )
-        with self.assertRaises(DHError) as cm:
-            rollup_table = test_table.rollup(aggs=self.aggs)
-        self.assertRegex(str(cm.exception), r".+ is not supported for rollup")
+        for agg in self.aggs_not_for_rollup:
+            with self.assertRaises(DHError) as cm:
+                rollup_table = test_table.rollup(aggs=[agg])
+            self.assertRegex(str(cm.exception), r".+ is not supported for rollup")
 
         rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, by='grp_id')
         self.assertIsNotNone(rollup_table)
