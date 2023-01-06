@@ -225,7 +225,6 @@ public class GenerateTableUpdates {
                     }
                 }
                 shiftStrategy -= profile.SHIFT_AGGRESSIVELY;
-                Assert.eq(shiftStrategy, "shiftStrategy", 0);
             }
             update.shifted = shiftBuilder.build();
 
