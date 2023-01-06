@@ -614,6 +614,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             final boolean usePrev,
             @NotNull final MutableObject<Object> parentNodeKeyHolder) {
         final int nodeDepth = nodeDepth(childNodeKey);
+        if (nodeDepth > numLevels) {
+            throw new IllegalArgumentException("Invalid node key " + Arrays.toString((Object[]) childNodeKey)
+                    + ": deeper than maximum " + numLevels);
+        }
         switch (nodeDepth) {
             case ROOT_NODE_DEPTH:
                 return null;
@@ -623,11 +627,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             case 2:
                 parentNodeKeyHolder.setValue(EMPTY_KEY);
                 return true;
+            case 3:
+                // noinspection ConstantConditions (null falls under "case 2")
+                parentNodeKeyHolder.setValue(((Object[]) childNodeKey)[0]);
+                return true;
             default:
-                if (nodeDepth > numLevels) {
-                    throw new IllegalArgumentException("Invalid node key " + Arrays.toString((Object[]) childNodeKey)
-                            + ": deeper than maximum " + numLevels);
-                }
                 // noinspection ConstantConditions (null falls under "case 2")
                 parentNodeKeyHolder.setValue(Arrays.copyOf(((Object[]) childNodeKey), nodeDepth - 2));
                 return true;
