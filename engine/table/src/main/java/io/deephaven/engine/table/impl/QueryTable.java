@@ -2134,10 +2134,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table snapshot() {
-        // TODO: should we just return this if static? or select()? (see
-        // io.deephaven.engine.table.impl.util.BaseArrayBackedMutableTable.ArrayBackedMutableInputTable.doSnap(io.deephaven.engine.table.Table))
-        // TODO: improve with more targeted io.deephaven.engine.table.impl.remote.ConstructSnapshot construction (and
-        // can be concurrent?)
+        // TODO(deephaven-core#3271): Make snapshot() concurrent
         return QueryPerformanceRecorder.withNugget("snapshot()", sizeForInstrumentation(),
                 () -> ((QueryTable) TableTools.emptyTable(1)).snapshotInternal(this, true));
     }
