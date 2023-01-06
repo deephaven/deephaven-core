@@ -69,6 +69,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private final Collection<? extends ColumnName> groupByColumns;
 
     private final int numLevels;
+    private final int constituentDepth;
     private final QueryTable[] levelTables;
     private final AggregationRowLookup[] levelRowLookups;
     private final ColumnSource<Table>[] levelNodeTableSources;
@@ -104,6 +105,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         // Note that we don't count the "root" as a level in this accounting; the root is levelTables[0], and its
         // children (depth 1, at level 0), are found in levelNodeTableSources[0].
         numLevels = groupByColumns.size() + 1;
+        constituentDepth = numLevels + 1;
         Require.eq(numLevels, "level count", levelTables.length, "levelTables.length");
         this.levelTables = levelTables;
         Require.eq(numLevels, "level count", levelRowLookups.length, "levelRowLookups.length");
@@ -736,7 +738,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     LevelExpandable levelExpandable(@NotNull final SnapshotStateImpl snapshotState) {
         final int levelDepth = snapshotState.getCurrentDepth();
 
-        Assert.leq(levelDepth, "levelDepth", numLevels, "numLevels");
+        Assert.leq(levelDepth, "levelDepth",
+                includesConstituents ? constituentDepth : numLevels,
+                "includesConstituents ? constituentDepth : numLevels");
 
         return levelDepth < numLevels || (levelDepth == numLevels && includesConstituents)
                 ? All
@@ -751,7 +755,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             final boolean sorted) {
         final int levelDepth = snapshotState.getCurrentDepth();
 
-        Assert.leq(levelDepth, "levelDepth", numLevels, "numLevels");
+        Assert.leq(levelDepth, "levelDepth",
+                includesConstituents ? constituentDepth : numLevels,
+                "includesConstituents ? constituentDepth : numLevels");
 
         if (levelDepth < numLevels || (levelDepth == numLevels && includesConstituents)) {
             final RowRedirection sortRedirection = sorted ? SortOperation.getRowRedirection(nodeTableToExpand) : null;
