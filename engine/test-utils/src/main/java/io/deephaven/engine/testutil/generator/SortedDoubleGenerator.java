@@ -160,9 +160,8 @@ public class SortedDoubleGenerator implements TestDataGenerator<Double, Double> 
                 shifted.reverseIterator()
                         .forEachRemaining((long kk) -> currentValues.put(kk + delta, currentValues.remove(kk)));
             }
-            shifted.shift(delta);
             currentRowSet.removeRange(start, end);
-            currentRowSet.insert(shifted);
+            currentRowSet.insertWithShift(delta, shifted);
         }
     }
 

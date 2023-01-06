@@ -35,6 +35,7 @@ public abstract class AbstractSortedGenerator<T extends Comparable<? super T>> i
 
         final SortedMap<Long, T> result = GeneratorCollectionFactory.makeSortedMapForType(getType());
 
+        final RowSet orig = currentRowSet.copy();
         toAdd.forAllRowKeys(currentValues::remove);
         currentRowSet.remove(toAdd);
 
@@ -162,9 +163,8 @@ public abstract class AbstractSortedGenerator<T extends Comparable<? super T>> i
                 shifted.reverseIterator()
                         .forEachRemaining((long kk) -> currentValues.put(kk + delta, currentValues.remove(kk)));
             }
-            shifted.shift(delta);
             currentRowSet.removeRange(start, end);
-            currentRowSet.insert(shifted);
+            currentRowSet.insertWithShift(delta, shifted);
         }
     }
 }

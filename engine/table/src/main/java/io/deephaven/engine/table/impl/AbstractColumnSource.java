@@ -139,8 +139,8 @@ public abstract class AbstractColumnSource<T> implements
             RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
 
             if (caseInsensitive && (type == String.class)) {
-                KeyedObjectHashSet<String, String> keySet = new KeyedObjectHashSet<>(new CIStringKey());
-                Collections.addAll(keySet, (String[]) keys);
+                KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
+                Collections.addAll(keySet, keys);
 
                 for (Map.Entry<T, RowSet> ent : groupToRange.entrySet()) {
                     if (keySet.containsKey(ent.getKey())) {

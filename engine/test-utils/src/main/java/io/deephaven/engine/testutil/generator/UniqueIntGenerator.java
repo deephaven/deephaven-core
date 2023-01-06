@@ -89,9 +89,8 @@ public class UniqueIntGenerator implements UniqueTestDataGenerator<Integer, Inte
             }
         }
         try (final RowSet toShift = currentRowSet.subSetByKeyRange(start, end)) {
-            toShift.shift(delta);
             currentRowSet.removeRange(start, end);
-            currentRowSet.insert(toShift);
+            currentRowSet.insertWithShift(delta, toShift);
         }
     }
 

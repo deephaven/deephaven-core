@@ -26,8 +26,8 @@ import java.util.function.LongConsumer;
 /**
  * A test column source that ignores additions, only removing values.
  * <p>
- * It uses a fastutil open addressed hash map from long RowSet keys to double values. If an uninitialized key is
- * accessed; then an IllegalStateException is thrown. If the test framework attempts to remove or shift values, then an
+ * It uses a fastutil open addressed hash map from long RowSet keys to double values. If an uninitialized key is accessed;
+ * then an IllegalStateException is thrown. If the test framework attempts to remove or shift values, then an
  * UnsupportedOperationException is thrown.
  */
 public class ImmutableDoubleTestSource extends AbstractColumnSource<Double>
