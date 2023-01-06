@@ -440,7 +440,9 @@ public class JsTreeTable extends HasEventHandling {
                 .then(this::prepareSort)
                 .then(this::makeView)
                 .then(ticket -> {
-                    TreeTableRequest query = buildQuery();
+                    BitSet columnsBitset = makeColumnSubscriptionBitset();
+                    RangeSet range = RangeSet.ofRange((long) (double) firstRow, (long) (double) lastRow);
+
                     Column[] queryColumns = this.columns;
 
                     boolean alwaysFireEvent = this.alwaysFireNextEvent;
@@ -448,7 +450,8 @@ public class JsTreeTable extends HasEventHandling {
 
                     JsLog.debug("Sending tree table request", this,
                             LazyString.of(() -> widget.getTicket().getTicket_asB64()),
-                            query,
+                            columnsBitset,
+                            range,
                             alwaysFireEvent);
                     BiDiStream<FlightData, FlightData> doExchange =
                             connection.<FlightData, FlightData>streamFactory().create(
@@ -463,11 +466,11 @@ public class JsTreeTable extends HasEventHandling {
                     FlightData subscriptionRequestWrapper = new FlightData();
                     Builder doGetRequest = new Builder(1024);
                     double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
-                            makeUint8ArrayFromBitset(query.getColumns()));
+                            makeUint8ArrayFromBitset(columnsBitset));
                     double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest,
                             serializeRanges(
                                     Collections.singleton(
-                                            RangeSet.ofRange(query.getViewportStart(), query.getViewportEnd()))));
+                                            range)));
                     double serializationOptionsOffset = BarrageSubscriptionOptions
                             .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true,
                                     updateInterval, 0, 0);
@@ -518,7 +521,7 @@ public class JsTreeTable extends HasEventHandling {
                                 columnTypes);
 
                         final RangeSet includedRows = snapshot.getIncludedRows();
-                        double offset = query.getViewportStart();
+                        double offset = firstRow;
                         assert includedRows.isEmpty() || Js.asInt(offset) == includedRows.getFirstRow();
                         TreeViewportData vd = new TreeViewportData(
                                 offset,
@@ -566,23 +569,7 @@ public class JsTreeTable extends HasEventHandling {
         }
     }
 
-    /**
-     * Creates a request object based on the current state of request info. We don't presently build this ahead of time
-     * and maintain it as things change, but instead read from the rest of the tree's state to decide what to build.
-     *
-     * Sort is always assigned, since a node could be expanded, might now have children (and the server needs to know
-     * how to sort it), etc - the server will only sort individual "children" tables lazily, so this must always be
-     * provided.
-     *
-     * Filters are sent when the filter changes, or when something else changes that will result in rebuilding one or
-     * more children trees - the two cases that exist today are changing the sort, or reconnecting to the server. When
-     * filters are changed, the bookkeeping is done automatically, but for other purposes the releaseAllNodes helper
-     * method should be used to both release nodes and indicate that when refetched the filter may need to be applied
-     * again as well.
-     */
-    private TreeTableRequest buildQuery() {
-        TreeTableRequest request = new TreeTableRequest();
-
+    private BitSet makeColumnSubscriptionBitset() {
         // Build the bitset for the columns that are needed to get the data, style, and maintain structure
         BitSet columnsBitset = new BitSet(tableDefinition.getColumns().length);
         Arrays.stream(columns).flatMapToInt(Column::getRequiredColumns).forEach(columnsBitset::set);
@@ -603,12 +590,7 @@ public class JsTreeTable extends HasEventHandling {
             columnsBitset.set(p0.getIndex());
             return null;
         });
-
-        request.setColumns(columnsBitset);
-        request.setViewportEnd((long) (double) lastRow);
-        request.setViewportStart((long) (double) firstRow);
-
-        return request;
+        return columnsBitset;
     }
 
     @JsMethod
