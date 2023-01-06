@@ -127,10 +127,12 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     private void processUpdateForSsa(TableUpdate upstream) {
         final boolean stampModified = upstream.modifiedColumnSet().containsAny(timestampColumnSet);
 
-        try (final RowSet restampAdditions =
-                stampModified ? upstream.added().union(upstream.modified()) : upstream.added().copy();
-                final RowSet restampRemovals = stampModified ? upstream.removed().union(upstream.getModifiedPreShift())
-                        : upstream.removed().copy()) {
+        try (final RowSet addedAndModified = stampModified ? upstream.added().union(upstream.modified()) : null;
+                final RowSet removedAndModifiedPreShift =
+                        stampModified ? upstream.removed().union(upstream.getModifiedPreShift()) : null) {
+            final RowSet restampAdditions = stampModified ? addedAndModified : upstream.added();
+            final RowSet restampRemovals = stampModified ? removedAndModifiedPreShift : upstream.removed();
+
             // removes
             if (restampRemovals.isNonempty()) {
                 final int size = (int) Math.min(restampRemovals.size(), 4096);
@@ -222,14 +224,18 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         // add only non-null timestamps to this Ssa
         for (int i = 0; i < valuesChunk.size(); i++) {
             long ts = valuesChunk.get(i);
+            if (ts == NULL_LONG) {
+                // null timestamps will not cause problems
+                continue;
+            }
             if (ts < lastTimestamp.longValue()) {
                 throw (new IllegalStateException(
                         "updateBy time-based operators require non-descending timestamp values"));
             }
-            if (ts != NULL_LONG) {
-                ssaValues.add(ts);
-                ssaKeys.add(keysChunk.get(i));
-            }
+
+            ssaValues.add(ts);
+            ssaKeys.add(keysChunk.get(i));
+
             // store the current ts for comparison
             lastTimestamp.setValue(ts);
         }

@@ -55,9 +55,7 @@ public class ShortRingBuffer implements Serializable {
      * Create a ring buffer of short primitives
      *
      * @param capacity minimum capacity of ring buffer
-     * @param growable whether to allow growth when the buffer is full. If this is {@code false} and {@code add()} is
-     *        called, an {@link UnsupportedOperationException} will be thrown
-     *
+     * @param growable whether to allow growth when the buffer is full.
      */
     public ShortRingBuffer(int capacity, boolean growable) {
         this.growable = growable;
@@ -86,11 +84,12 @@ public class ShortRingBuffer implements Serializable {
     }
 
     /**
-     * Adds an entry to the ring buffer, will throw an {@link UnsupportedOperationException} if buffer is full. For a
-     * graceful failure, use {@link #offer(short)}
+     * Adds an entry to the ring buffer, will throw an exception if buffer is full. For a graceful failure, use
+     * {@link #offer(short)}
      *
      * @param e the short to be added to the buffer
-     * @return true if the short was added successfully
+     * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
+     * @return {@code true} if the short was added successfully
      */
     public boolean add(short e) {
         if (isFull()) {

@@ -55,9 +55,7 @@ public class LongRingBuffer implements Serializable {
      * Create a ring buffer of long primitives
      *
      * @param capacity minimum capacity of ring buffer
-     * @param growable whether to allow growth when the buffer is full. If this is {@code false} and {@code add()} is
-     *        called, an {@link UnsupportedOperationException} will be thrown
-     *
+     * @param growable whether to allow growth when the buffer is full.
      */
     public LongRingBuffer(int capacity, boolean growable) {
         this.growable = growable;
@@ -86,11 +84,12 @@ public class LongRingBuffer implements Serializable {
     }
 
     /**
-     * Adds an entry to the ring buffer, will throw an {@link UnsupportedOperationException} if buffer is full. For a
-     * graceful failure, use {@link #offer(long)}
+     * Adds an entry to the ring buffer, will throw an exception if buffer is full. For a graceful failure, use
+     * {@link #offer(long)}
      *
      * @param e the long to be added to the buffer
-     * @return true if the long was added successfully
+     * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
+     * @return {@code true} if the long was added successfully
      */
     public boolean add(long e) {
         if (isFull()) {

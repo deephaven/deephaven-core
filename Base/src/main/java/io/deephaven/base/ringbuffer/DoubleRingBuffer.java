@@ -55,9 +55,7 @@ public class DoubleRingBuffer implements Serializable {
      * Create a ring buffer of double primitives
      *
      * @param capacity minimum capacity of ring buffer
-     * @param growable whether to allow growth when the buffer is full. If this is {@code false} and {@code add()} is
-     *        called, an {@link UnsupportedOperationException} will be thrown
-     *
+     * @param growable whether to allow growth when the buffer is full.
      */
     public DoubleRingBuffer(int capacity, boolean growable) {
         this.growable = growable;
@@ -86,11 +84,12 @@ public class DoubleRingBuffer implements Serializable {
     }
 
     /**
-     * Adds an entry to the ring buffer, will throw an {@link UnsupportedOperationException} if buffer is full. For a
-     * graceful failure, use {@link #offer(double)}
+     * Adds an entry to the ring buffer, will throw an exception if buffer is full. For a graceful failure, use
+     * {@link #offer(double)}
      *
      * @param e the double to be added to the buffer
-     * @return true if the double was added successfully
+     * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
+     * @return {@code true} if the double was added successfully
      */
     public boolean add(double e) {
         if (isFull()) {

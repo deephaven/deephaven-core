@@ -50,9 +50,7 @@ public class CharRingBuffer implements Serializable {
      * Create a ring buffer of char primitives
      *
      * @param capacity minimum capacity of ring buffer
-     * @param growable whether to allow growth when the buffer is full. If this is {@code false} and {@code add()} is
-     *        called, an {@link UnsupportedOperationException} will be thrown
-     *
+     * @param growable whether to allow growth when the buffer is full.
      */
     public CharRingBuffer(int capacity, boolean growable) {
         this.growable = growable;
@@ -81,11 +79,12 @@ public class CharRingBuffer implements Serializable {
     }
 
     /**
-     * Adds an entry to the ring buffer, will throw an {@link UnsupportedOperationException} if buffer is full. For a
-     * graceful failure, use {@link #offer(char)}
+     * Adds an entry to the ring buffer, will throw an exception if buffer is full. For a graceful failure, use
+     * {@link #offer(char)}
      *
      * @param e the char to be added to the buffer
-     * @return true if the char was added successfully
+     * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
+     * @return {@code true} if the char was added successfully
      */
     public boolean add(char e) {
         if (isFull()) {
