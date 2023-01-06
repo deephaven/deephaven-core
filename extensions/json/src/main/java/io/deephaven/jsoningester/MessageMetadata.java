@@ -3,7 +3,8 @@ package io.deephaven.jsoningester;
 import io.deephaven.time.DateTime;
 
 /**
- * Interface for providers of message metadata (e.g. timestamps, a {@link #getMsgNo() sequence number}, and a {@link #getMessageId() message ID}).
+ * Interface for providers of message metadata (e.g. timestamps, a {@link #getMsgNo() sequence number}, and a
+ * {@link #getMessageId() message ID}).
  */
 public interface MessageMetadata {
 
@@ -36,7 +37,8 @@ public interface MessageMetadata {
     String getMessageId();
 
     /**
-     * Gets the monotonically-increasing sequential number indicating the sequence this message was received in by the ingester. The message number is used to ensure that
+     * Gets the monotonically-increasing sequential number indicating the sequence this message was received in by the
+     * ingester. The message number is used to ensure that
      *
      * @return the sequential number indicating the sequence this message was received in by the ingester.
      */
