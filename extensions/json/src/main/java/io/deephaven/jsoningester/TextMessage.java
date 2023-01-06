@@ -16,7 +16,7 @@ public class TextMessage extends BaseMessageMetadata {
     /**
      * Create a new instance of this class.
      * 
-     * @param sentTime The time (if available) when this message was sent
+     * @param sentTime The time (if available) when this message was sent.
      * @param receiveTime The time (reported by subscriber) when this message was received.
      * @param ingestTime The time when this message was finished processing by its ingester and was ready to be flushed.
      * @param messageId The unique, monotonically-increasing ID for this message.

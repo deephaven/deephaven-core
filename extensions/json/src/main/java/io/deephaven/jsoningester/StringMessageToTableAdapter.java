@@ -95,7 +95,9 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
 
         if (sendTimeSetter != null) {
             final long sendTimeMicros = messageToSendTimeMicros.applyAsLong(msg);
-            if (sendTimeMicros != 0) {
+            // Ignore non-positive timestamps. In practice, NULL_LONG or 0 may occur here to indicate "nothing".
+            // Any other negative value is nonsense.
+            if (sendTimeMicros > 0) {
                 sentTime = new DateTime(sendTimeMicros * 1000L);
             }
             // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
@@ -103,7 +105,9 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
         }
         if (receiveTimeSetter != null) {
             final long recvTimeMicros = messageToRecvTimeMicros.applyAsLong(msg);
-            if (recvTimeMicros != 0) {
+            // Ignore non-positive timestamps. In practice, NULL_LONG or 0 may occur here to indicate "nothing".
+            // Any other negative value is nonsense.
+            if (recvTimeMicros > 0) {
                 receiveTime = new DateTime(recvTimeMicros * 1000L);
             }
             // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple

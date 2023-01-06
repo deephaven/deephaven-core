@@ -16,6 +16,7 @@ import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import org.junit.*;
 
 import java.io.IOException;
@@ -134,7 +135,7 @@ public class SimpleStringAdapterTest {
         final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
-        final StringMessageHolder msg = new StringMessageHolder(input);
+        final StringMessageHolder msg = new StringMessageHolder(QueryConstants.NULL_LONG, input);
         adapter.consumeMessage("id", msg);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
