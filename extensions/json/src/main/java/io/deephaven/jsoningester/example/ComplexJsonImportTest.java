@@ -44,14 +44,12 @@ public class ComplexJsonImportTest {
 
 
         JSONToInMemoryTableAdapterBuilder mainBuilder = new JSONToInMemoryTableAdapterBuilder();
-        mainBuilder.autoValueMapping(false);
         mainBuilder.addColumnFromField("Id", "id", String.class);
         mainBuilder.addColumnFromField("Type", "type", String.class);
 
         // builder for 'properties', which has all the actual observations
         JSONToInMemoryTableAdapterBuilder propertiesBuilder = new JSONToInMemoryTableAdapterBuilder();
 
-        propertiesBuilder.autoValueMapping(false);
         propertiesBuilder.addColumnFromField("Station", "station", String.class);
         propertiesBuilder.addColumnFromFunction("Timestamp", DateTime.class, value -> DateTimeUtils.instantToTime(
                 Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value.get("timestamp").textValue()))));
@@ -79,11 +77,9 @@ public class ComplexJsonImportTest {
 
 
         final JSONToInMemoryTableAdapterBuilder cloudLayersBuilder = new JSONToInMemoryTableAdapterBuilder();
-        cloudLayersBuilder.autoValueMapping(false);
         cloudLayersBuilder.processArrays(true);
 
         final JSONToInMemoryTableAdapterBuilder cloudLayersBaseBuilder = new JSONToInMemoryTableAdapterBuilder();
-        cloudLayersBaseBuilder.autoValueMapping(false);
         cloudLayersBaseBuilder.addColumnFromField("base_unitCode", "unitCode", String.class);
         cloudLayersBaseBuilder.addColumnFromField("base", "value", int.class);
 
@@ -138,7 +134,6 @@ public class ComplexJsonImportTest {
         nestedBuilder.addColumnFromField(observationName + '_' + "qualityControl", "qualityControl", type);
         nestedBuilder.allowMissingKeys(true);
         nestedBuilder.allowNullValues(true);
-        nestedBuilder.autoValueMapping(false);
 
         ColumnHeader<?> firstColHeader;
 

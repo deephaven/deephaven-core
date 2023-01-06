@@ -24,7 +24,8 @@ public class JSONToInMemoryTableAdapterBuilder {
 
     private final String mainResultTableName;
 
-    private final JSONToTableWriterAdapterBuilder jsonAdpaterBuilder = new JSONToTableWriterAdapterBuilder();
+    private final JSONToTableWriterAdapterBuilder jsonAdpaterBuilder = new JSONToTableWriterAdapterBuilder()
+            .autoValueMapping(false);
 
     private final Map<String, JSONToInMemoryTableAdapterBuilder> subtableFieldsToBuilders = new LinkedHashMap<>();
 
@@ -232,11 +233,6 @@ public class JSONToInMemoryTableAdapterBuilder {
 
     public JSONToInMemoryTableAdapterBuilder processArrays(final boolean processArrays) {
         jsonAdpaterBuilder.processArrays(processArrays);
-        return this;
-    }
-
-    public JSONToInMemoryTableAdapterBuilder autoValueMapping(boolean autoValueMapping) {
-        jsonAdpaterBuilder.autoValueMapping(autoValueMapping);
         return this;
     }
 
