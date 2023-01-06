@@ -295,7 +295,7 @@ public class TimeTable extends QueryTable implements Runnable {
                 FillUnordered<Values> {
 
             SyntheticDateTimeAsLongSource() {
-                super(Long.class);
+                super(long.class);
             }
 
             @Override

@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -46,6 +47,7 @@ import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.
 import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.LevelExpandable.None;
 import static io.deephaven.engine.table.impl.hierarchical.RollupNodeKeySource.ROOT_NODE_KEY;
 import static io.deephaven.engine.table.impl.hierarchical.RollupNodeKeySource.ROOT_NODE_DEPTH;
+import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.maybeConvertToPrimitive;
 
 /**
  * {@link RollupTable} implementation.
@@ -722,12 +724,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                         aggregatedNodeDefinition.getColumns().get(ci - FIRST_AGGREGATED_COLUMN_INDEX);
                 result[ci] = isBaseLevel
                         ? NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType())
-                        : nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
+                        : maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType()));
             } else {
                 final ColumnDefinition<?> cd =
                         constituentNodeDefinition.getColumns().get(ci - firstConstituentColumnIndex);
                 result[ci] = isBaseLevel
-                        ? nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType())
+                        ? maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType()))
                         : NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
             }
         }

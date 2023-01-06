@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
 import static io.deephaven.engine.table.impl.hierarchical.HierarchicalTableImpl.LevelExpandable.Undetermined;
+import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.maybeConvertToPrimitive;
 
 /**
  * {@link RollupTable} implementation.
@@ -255,7 +256,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     ChunkSource.WithPrev<? extends Values> makeNodeKeySource(@NotNull final Table nodeKeyTable) {
-        return ReinterpretUtils.maybeConvertToPrimitive(
+        return maybeConvertToPrimitive(
                 nodeKeyTable.getColumnSource(identifierColumn.name(),
                         getRoot().getColumnSource(identifierColumn.name()).getType()));
     }
@@ -367,7 +368,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 result[ci] = getDepthSource(snapshotState.getCurrentDepth());
             } else if (result[ci] == null && ci != ROW_EXPANDED_COLUMN_INDEX) {
                 final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - EXTRA_COLUMN_COUNT);
-                result[ci] = nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
+                result[ci] = maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType()));
             }
         }
         return result;
