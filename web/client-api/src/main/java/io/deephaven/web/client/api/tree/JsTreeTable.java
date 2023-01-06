@@ -53,6 +53,8 @@ import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
@@ -232,7 +234,7 @@ public class JsTreeTable extends HasEventHandling {
     private final Column[] visibleColumns;
     private final Map<String, Column> columnsByName = new HashMap<>();
     private final int rowFormatColumn;
-    private final Map<String, Column> sourceColumns = new HashMap<>();
+    private final Map<String, Column> sourceColumns;
     private final JsArray<Column> keyColumns = new JsArray<>();
     private Column rowDepthCol;
     private Column rowExpandedCol;
@@ -287,6 +289,8 @@ public class JsTreeTable extends HasEventHandling {
         // This is handy to avoid certain lookups that we'll only do anyway if this is a rollup. This is naturally always false if this is a tree.
         boolean hasConstituentColumns = !columnDefsByName.get(true).isEmpty();
 
+        Map<String, Column> constituentColumns = new HashMap<>();
+
         for (ColumnDefinition definition : tableDefinition.getColumns()) {
             Column column = definition.makeJsColumn(columns.length, columnDefsByName);
             if (definition.isForRow()) {
@@ -303,6 +307,9 @@ public class JsTreeTable extends HasEventHandling {
                 // technically this may be set for the above two cases, but at this time we send them regardless
                 keyColumns.push(column);
             }
+            if (definition.isRollupConstituentNodeColumn()) {
+                constituentColumns.put(column.getName(), column);
+            }
             if (definition.isVisible()) {
                 columns[columns.length] = column;
             }
@@ -313,7 +320,7 @@ public class JsTreeTable extends HasEventHandling {
                     column.setConstituentType(columnDefsByName.get(true).get(definition.getName()).getType());
                 }
             }
-            if (hasConstituentColumns && definition.isRollupAggregatedNodeColumn()) {
+            if (hasConstituentColumns && definition.getRollupAggregationInputColumn() != null && !definition.getRollupAggregationInputColumn().isEmpty()) {
                 column.setConstituentType(columnDefsByName.get(true).get(definition.getRollupAggregationInputColumn()).getType());
             }
         }
@@ -325,7 +332,27 @@ public class JsTreeTable extends HasEventHandling {
         }
 
         //TODO populate sourceColumns at this point
-
+        sourceColumns = columnDefsByName.get(false).values().stream()
+                .map(c -> {
+                    if (c.getRollupAggregationInputColumn() != null && !c.getRollupAggregationInputColumn().isEmpty()) {
+                        // Use the specified input column
+                        return constituentColumns.remove(c.getRollupAggregationInputColumn());
+                    }
+                    if (c.isRollupGroupByColumn()) {
+                        // use the groupby column's own name
+                        return constituentColumns.remove(c.getName());
+                    }
+                    // filter out the rest
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        Column::getName,
+                        Function.identity()
+                ));
+        // add the rest of the constituent columns as themselves, they will only show up in constituent rows
+        sourceColumns.putAll(constituentColumns);
+        //TODO offer those as plain columns too
 
 
         keyTableData = new Object[keyColumns.length + 2][0];

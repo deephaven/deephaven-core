@@ -19,24 +19,18 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggs
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecLast;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMax;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMin;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecSorted;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecStd;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecSum;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecUnique;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecVar;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.comboaggregaterequest.Aggregate;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import io.deephaven.web.client.fu.JsLog;
-import io.deephaven.web.shared.fu.JsArrays;
-import io.deephaven.web.shared.requests.RollupTableRequest;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
-
-import java.util.ArrayList;
 
 @JsType(name = "RollupConfig", namespace = "dh")
 public class JsRollupConfig {
