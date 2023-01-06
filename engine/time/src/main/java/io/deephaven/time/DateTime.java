@@ -151,6 +151,11 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return nanos / 1_000_000;
     }
 
+    /**
+     * Get this time represented as seconds since the epoch
+     *
+     * @return the number of seconds since the epoch
+     */
     public long getSeconds() {
         return nanos / 1_000_000_000;
     }
