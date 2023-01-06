@@ -65,23 +65,23 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
      * This version of `prepareForParallelPopulation` will internally call {@link #ensureCapacity(long, boolean)} to
      * make sure there is room for the incoming values.
      *
-     * @param changedIndices indices in the dense table
+     * @param changedRows row set in the dense table
      */
     @Override
-    public void prepareForParallelPopulation(RowSet changedIndices) {
+    public void prepareForParallelPopulation(RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
         ensurePreviousClockCycle = currentStep;
 
-        if (changedIndices.isEmpty()) {
+        if (changedRows.isEmpty()) {
             return;
         }
 
         // ensure that this source will have sufficient capacity to store these indices, does not need to be
         // null-filled as the values will be immediately written
-        ensureCapacity(changedIndices.lastRowKey() + 1, false);
+        ensureCapacity(changedRows.lastRowKey() + 1, false);
 
         if (prevFlusher != null) {
             prevFlusher.maybeActivate();
@@ -90,7 +90,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
             return;
         }
 
-        try (final RowSequence.Iterator it = changedIndices.getRowSequenceIterator()) {
+        try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
             do {
                 final long firstKey = it.peekNextKey();
 
@@ -305,14 +305,14 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
-        if (indices.size() == 0) {
+    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence rows) {
+        if (rows.size() == 0) {
             destGeneric.setSize(0);
             return;
         }
         final WritableByteChunk<? super Values> dest = destGeneric.asWritableByteChunk();
         final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllRowKeys((final long v) -> {
+        rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -324,21 +324,21 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
-        final long sz = indices.size();
+    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence rpws) {
+        final long sz = rpws.size();
         if (sz == 0) {
             destGeneric.setSize(0);
             return;
         }
 
         if (prevFlusher == null) {
-            fillSparseChunk(destGeneric, indices);
+            fillSparseChunk(destGeneric, rpws);
             return;
         }
 
         final WritableByteChunk<? super Values> dest = destGeneric.asWritableByteChunk();
         final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllRowKeys((final long v) -> {
+        rpws.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -357,11 +357,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
+    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> rows) {
         final WritableByteChunk<? super Values> dest = destGeneric.asWritableByteChunk();
-        final int sz = indices.size();
+        final int sz = rows.size();
         for (int ii = 0; ii < sz; ++ii) {
-            final long fromIndex = indices.get(ii);
+            final long fromIndex = rows.get(ii);
             if (fromIndex == RowSequence.NULL_ROW_KEY) {
                 dest.set(ii, NULL_BYTE);
                 continue;
@@ -378,11 +378,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
+    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> rows) {
         final WritableByteChunk<? super Values> dest = destGeneric.asWritableByteChunk();
-        final int sz = indices.size();
+        final int sz = rows.size();
         for (int ii = 0; ii < sz; ++ii) {
-            final long fromIndex = indices.get(ii);
+            final long fromIndex = rows.get(ii);
             if (fromIndex == RowSequence.NULL_ROW_KEY) {
                 dest.set(ii, NULL_BYTE);
                 continue;
