@@ -37,7 +37,9 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.experimental.categories.Category;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -306,12 +308,10 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final PartitionedTable partitionedTable = queryTable.partitionBy("Sym");
 
         for (Table table : partitionedTable.constituents()) {
-            table.setAttribute("quux", "baz");
+            ((QueryTable) table).setAttribute("quux", "baz");
         }
 
-        final PartitionedTable.Proxy proxy = partitionedTable.proxy(true, true);
-
-        Table merged = proxy.target().merge();
+        Table merged = partitionedTable.merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
             TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
                     Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
@@ -323,13 +323,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                     merged.getAttributes());
         }
 
-        int tableCounter = 1;
-        for (Table table : partitionedTable.constituents()) {
-            table.setAttribute("differing", tableCounter++);
-        }
+        final AtomicInteger tableCounter = new AtomicInteger(1);
+        final PartitionedTable transformed = partitionedTable.transform(
+                t -> t.withAttributes(Map.of("differing", tableCounter.getAndIncrement())));
 
         // the merged table just takes the set that is consistent
-        merged = proxy.target().merge();
+        merged = transformed.merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
             TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
                     Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,

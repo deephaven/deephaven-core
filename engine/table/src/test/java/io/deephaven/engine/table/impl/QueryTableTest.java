@@ -3135,17 +3135,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final TrackingWritableRowSet parentRowSet = RowSetFactory.empty().toTracking();
         final Supplier<QueryTable> supplier = () -> testRefreshingTable(parentRowSet);
 
-        final UncoalescedTable table = new UncoalescedTable(
-                supplier.get().getDefinition(),
-                "mock un-coalesced table") {
-
-            @Override
-            protected Table doCoalesce() {
-                final Table table = supplier.get();
-                copyAttributes(table, CopyAttributeOperation.Coalesce);
-                return table;
-            }
-        };
+        final UncoalescedTable table = new MockUncoalescedTable(supplier);
         table.setRefreshing(true);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -3337,5 +3327,27 @@ public class QueryTableTest extends QueryTableTestBase {
                     }
                 };
         validatorTable.addUpdateListener(validatorTableListener);
+    }
+
+    private static class MockUncoalescedTable extends UncoalescedTable<MockUncoalescedTable> {
+
+        private final Supplier<QueryTable> supplier;
+
+        public MockUncoalescedTable(Supplier<QueryTable> supplier) {
+            super(supplier.get().getDefinition(), "mock un-coalesced table");
+            this.supplier = supplier;
+        }
+
+        @Override
+        protected Table doCoalesce() {
+            final QueryTable table = supplier.get();
+            copyAttributes(table, CopyAttributeOperation.Coalesce);
+            return table;
+        }
+
+        @Override
+        protected MockUncoalescedTable copy() {
+            return new MockUncoalescedTable(supplier);
+        }
     }
 }

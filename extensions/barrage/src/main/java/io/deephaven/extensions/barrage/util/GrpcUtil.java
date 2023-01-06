@@ -137,7 +137,7 @@ public class GrpcUtil {
         try {
             runner.run();
         } catch (final Exception err) {
-            log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
+            log.error().append("Unanticipated gRPC Error: ").append(err).endl();
         }
     }
 
@@ -154,7 +154,7 @@ public class GrpcUtil {
                 runner.run();
             }
         } catch (final Exception err) {
-            log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
+            log.error().append("Unanticipated gRPC Error: ").append(err).endl();
         }
     }
 

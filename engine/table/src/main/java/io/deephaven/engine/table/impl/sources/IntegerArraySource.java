@@ -113,7 +113,7 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
                 it.getNextRowSequenceThrough(maxKeyInCurrentBlock).forAllRowKeys(key -> {
                     final int nextIndexWithinBlock = (int) (key & INDEX_MASK);
                     final int nextIndexWithinInUse = nextIndexWithinBlock >> LOG_INUSE_BITSET_SIZE;
-                    final long nextMaskWithinInUse = 1L << (nextIndexWithinBlock & IN_USE_MASK);
+                    final long nextMaskWithinInUse = 1L << nextIndexWithinBlock;
                     prevBlocks[block][nextIndexWithinBlock] = blocks[block][nextIndexWithinBlock];
                     inUse[nextIndexWithinInUse] |= nextMaskWithinInUse;
                 });

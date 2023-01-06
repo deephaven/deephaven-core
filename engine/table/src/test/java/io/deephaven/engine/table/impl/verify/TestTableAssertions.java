@@ -37,8 +37,10 @@ public class TestTableAssertions {
                 intCol("Int", 9, 3, 2, 1),
                 doubleCol("D1", QueryConstants.NULL_DOUBLE, Math.E, Math.PI, Double.NEGATIVE_INFINITY));
 
-        TestCase.assertSame(test, TableAssertions.assertSorted("test", test, "Plant", SortingOrder.Ascending));
-        TestCase.assertSame(test, TableAssertions.assertSorted(test, "Int", SortingOrder.Descending));
+        final Table withSortedPlant = TableAssertions.assertSorted("test", test, "Plant", SortingOrder.Ascending);
+        TestCase.assertSame(test.getRowSet(), withSortedPlant.getRowSet());
+        final Table withSortedInt = TableAssertions.assertSorted(withSortedPlant, "Int", SortingOrder.Descending);
+        TestCase.assertSame(test.getRowSet(), withSortedInt.getRowSet());
         try {
             TableAssertions.assertSorted("test", test, "D1", SortingOrder.Ascending);
             TestCase.fail("Table is not actually sorted by D1");
@@ -49,10 +51,10 @@ public class TestTableAssertions {
         }
 
         TestCase.assertEquals(SortingOrder.Ascending,
-                SortedColumnsAttribute.getOrderForColumn(test, "Plant").orElse(null));
+                SortedColumnsAttribute.getOrderForColumn(withSortedPlant, "Plant").orElse(null));
         TestCase.assertEquals(SortingOrder.Descending,
-                SortedColumnsAttribute.getOrderForColumn(test, "Int").orElse(null));
-        TestCase.assertEquals(Optional.empty(), SortedColumnsAttribute.getOrderForColumn(test, "D1"));
+                SortedColumnsAttribute.getOrderForColumn(withSortedInt, "Int").orElse(null));
+        TestCase.assertEquals(Optional.empty(), SortedColumnsAttribute.getOrderForColumn(withSortedInt, "D1"));
     }
 
     @Test

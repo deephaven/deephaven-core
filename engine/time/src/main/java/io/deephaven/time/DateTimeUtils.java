@@ -3,7 +3,6 @@
  */
 package io.deephaven.time;
 
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.TimeConstants;
 import io.deephaven.base.clock.TimeZones;
@@ -578,14 +577,21 @@ public class DateTimeUtils {
             buf.append(days).append('T');
         }
 
-        buf.append(hours).append(':').append(StringUtils.pad(String.valueOf(minutes), 2, '0')).append(':')
-                .append(StringUtils.pad(String.valueOf(seconds), 2, '0'));
+        buf.append(hours).append(':').append(pad(String.valueOf(minutes), 2)).append(':')
+                .append(pad(String.valueOf(seconds), 2));
 
         if (nanos != 0) {
-            buf.append('.').append(StringUtils.pad(String.valueOf(nanos), 9, '0'));
+            buf.append('.').append(pad(String.valueOf(nanos), 9));
         }
 
         return buf.toString();
+    }
+
+    static String pad(@NotNull final String str, final int length) {
+        if (length <= str.length()) {
+            return str;
+        }
+        return "0".repeat(length - str.length()) + str;
     }
 
     /**

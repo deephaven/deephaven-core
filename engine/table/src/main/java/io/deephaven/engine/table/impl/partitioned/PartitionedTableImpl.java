@@ -58,7 +58,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private final TableDefinition constituentDefinition;
     private final boolean constituentChangesPermitted;
 
-    private volatile WeakReference<Table> memoizedMerge;
+    private volatile WeakReference<QueryTable> memoizedMerge;
 
     /**
      * @see PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean) Factory method that
@@ -139,8 +139,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @Override
     public Table merge() {
-        Table merged;
-        WeakReference<Table> localMemoizedMerge;
+        QueryTable merged;
+        WeakReference<QueryTable> localMemoizedMerge;
         if ((localMemoizedMerge = memoizedMerge) != null
                 && Liveness.verifyCachedObjectForReuse(merged = localMemoizedMerge.get())) {
             return merged;
@@ -335,38 +335,26 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         for (int kci = 0; kci < numKeys; ++kci) {
             filters.add(new MatchFilter(keyColumnNames[kci], keyColumnValues[kci]));
         }
-        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        return LivenessScopeStack.computeEnclosed(() -> {
             final Table[] matchingConstituents = filter(filters).snapshotConstituents();
-            if (matchingConstituents.length > 1) {
+            final int matchingCount = matchingConstituents.length;
+            if (matchingCount > 1) {
                 throw new UnsupportedOperationException(
-                        "Result size mismatch: expected 0 or 1 results, instead found "
-                                + matchingConstituents.length);
+                        "Result size mismatch: expected 0 or 1 results, instead found " + matchingCount);
             }
-            if (matchingConstituents.length == 1) {
-                final Table constituent = matchingConstituents[0];
-                if (constituent.isRefreshing()) {
-                    enclosingLivenessManager.manage(constituent);
-                }
-                return constituent;
-            }
-            return null;
-        }
+            return matchingCount == 1 ? matchingConstituents[0] : null;
+        },
+                table::isRefreshing,
+                constituent -> constituent != null && constituent.isRefreshing());
     }
 
     @ConcurrentMethod
     @Override
     public Table[] constituents() {
-        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Table[] constituents = snapshotConstituents();
-            Arrays.stream(constituents).forEach((final Table constituent) -> {
-                if (constituent.isRefreshing()) {
-                    enclosingLivenessManager.manage(constituent);
-                }
-            });
-            return constituents;
-        }
+        return LivenessScopeStack.computeArrayEnclosed(
+                this::snapshotConstituents,
+                table::isRefreshing,
+                constituent -> constituent != null && constituent.isRefreshing());
     }
 
     private Table[] snapshotConstituents() {

@@ -237,24 +237,22 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         resultTable.sealTable(() -> {
             completed = true;
-            if (completedCondition != null) {
-                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
-            } else {
-                synchronized (BarrageSnapshotImpl.this) {
-                    BarrageSnapshotImpl.this.notifyAll();
-                }
-            }
+            signalCompletion();
         }, () -> {
             exceptionWhileCompleting = new Exception();
-            if (completedCondition != null) {
-                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
-            } else {
-                synchronized (BarrageSnapshotImpl.this) {
-                    BarrageSnapshotImpl.this.notifyAll();
-                }
-            }
+            signalCompletion();
         });
         cleanup();
+    }
+
+    private void signalCompletion() {
+        if (completedCondition != null) {
+            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+        } else {
+            synchronized (BarrageSnapshotImpl.this) {
+                BarrageSnapshotImpl.this.notifyAll();
+            }
+        }
     }
 
     @Override

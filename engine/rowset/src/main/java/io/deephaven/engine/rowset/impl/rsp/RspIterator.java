@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.rowset.impl.rsp;
 
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
@@ -22,7 +22,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
 
         int copyTo(long[] vs, int offset, int maxCount);
 
-        int copyTo(WritableLongChunk<? extends RowKeys> chunk, int offset, int maxCount);
+        int copyTo(WritableLongChunk<? super OrderedRowKeys> chunk, int offset, int maxCount);
 
         long nextLong();
 
@@ -99,7 +99,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
         return c;
     }
 
-    public int copyTo(final WritableLongChunk<? extends RowKeys> chunk, final int offset, final int max) {
+    public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset, final int max) {
         int c = 0;
         while (hasNext) {
             if (!sit.hasNext()) {
@@ -161,7 +161,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 }
 
                 @Override
-                public int copyTo(final WritableLongChunk<? extends RowKeys> chunk, final int offset,
+                public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset,
                         final int max) {
                     if (max <= 0 || v == -1) {
                         return 0;
@@ -213,7 +213,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 }
 
                 @Override
-                public int copyTo(final WritableLongChunk<? extends RowKeys> chunk, final int offset,
+                public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset,
                         final int max) {
                     int c = 0;
                     final long last = Math.min(curr + max - 1, end);
@@ -286,7 +286,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
             }
 
             @Override
-            public int copyTo(final WritableLongChunk<? extends RowKeys> chunk, final int offset, final int max) {
+            public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset, final int max) {
                 int c = 0;
                 if (buf == null) {
                     // Lazy initialize to avoid the allocation in the cases it might never be used

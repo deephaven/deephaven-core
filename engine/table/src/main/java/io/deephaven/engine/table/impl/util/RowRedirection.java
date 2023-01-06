@@ -3,20 +3,22 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.impl.DefaultChunkSource;
+import io.deephaven.engine.table.impl.sources.FillUnordered;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Data structure for mapping one "outer" row key space to another "inner" row key space. Query engine components use
  * this when a {@link RowSet} must be flattened or re-ordered.
  */
-public interface RowRedirection {
+public interface RowRedirection extends DefaultChunkSource.WithPrev<RowKeys>, FillUnordered<RowKeys> {
 
     /**
      * Simple redirected lookup.
@@ -34,47 +36,31 @@ public interface RowRedirection {
      */
     long getPrev(long outerRowKey);
 
-    /**
-     * A basic, empty, singleton default FillContext instance.
-     */
-    ChunkSource.FillContext DEFAULT_FILL_INSTANCE = new ChunkSource.FillContext() {
-        @Override
-        public boolean supportsUnboundedFill() {
-            return true;
-        }
-    };
+    @Override
+    default ChunkType getChunkType() {
+        return ChunkType.Long;
+    }
 
-    /**
-     * Make a FillContext for this RowRedirection. The default implementation supplied {@link #DEFAULT_FILL_INSTANCE},
-     * suitable for use with the default implementation of
-     * {@link #fillChunk(ChunkSource.FillContext, WritableLongChunk, RowSequence)},
-     * {@link #fillChunkUnordered(ChunkSource.FillContext, WritableLongChunk, LongChunk)}, and
-     * {@link #fillPrevChunk(ChunkSource.FillContext, WritableLongChunk, RowSequence)}.
-     *
-     * @param chunkCapacity The maximum number of mappings that will be retrieved in one operation
-     * @param sharedContext A {@link SharedContext} for use when the same RowRedirection will be used with the same
-     *        {@code keysToMap} by multiple consumers
-     * @return The FillContext to use
-     */
-    default ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return DEFAULT_FILL_INSTANCE;
+    @Override
+    default boolean providesFillUnordered() {
+        return true;
     }
 
     /**
      * Lookup each element in a {@link RowSequence} and write the result to a {@link WritableLongChunk}.
      *
-     * @param fillContext The FillContext
-     * @param innerRowKeys The result chunk
+     * @param fillContext The {@link io.deephaven.engine.table.ChunkSource.FillContext fill context}
+     * @param innerRowKeys The result {@link WritableLongChunk}
      * @param outerRowKeys The row keys to lookup in this RowRedirection
      */
+    @Override
     default void fillChunk(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        innerRowKeys.setSize(0);
-        outerRowKeys.forAllRowKeys((final long outerRowKey) -> {
-            innerRowKeys.add(get(outerRowKey));
-        });
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        innerRowKeysTyped.setSize(0);
+        outerRowKeys.forAllRowKeys((final long outerRowKey) -> innerRowKeysTyped.add(get(outerRowKey)));
     }
 
     /**
@@ -84,32 +70,56 @@ public interface RowRedirection {
      * @param innerRowKeys The result chunk
      * @param outerRowKeys The row keys to lookup in this RowRedirection
      */
+    @Override
     default void fillChunkUnordered(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
-            @NotNull final LongChunk<RowKeys> outerRowKeys) {
-        innerRowKeys.setSize(0);
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> outerRowKeys) {
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        innerRowKeysTyped.setSize(0);
         for (int oki = 0; oki < outerRowKeys.size(); ++oki) {
-            innerRowKeys.add(get(outerRowKeys.get(oki)));
+            innerRowKeysTyped.add(get(outerRowKeys.get(oki)));
         }
     }
 
     /**
-     * Lookup each element in a {@link RowSequence} and write the result to a {@link WritableLongChunk}, using previous
-     * values.
+     * Lookup each element in a {@link RowSequence} using <em>previous</em> values and write the result to a
+     * {@link WritableLongChunk}.
+     *
+     * @param fillContext The {@link io.deephaven.engine.table.ChunkSource.FillContext fill context}
+     * @param innerRowKeys The result {@link WritableLongChunk}
+     * @param outerRowKeys The row keys to lookup in this RowRedirection
+     */
+    @Override
+    default void fillPrevChunk(
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        innerRowKeysTyped.setSize(0);
+        outerRowKeys.forAllRowKeys((final long outerRowKey) -> innerRowKeysTyped.add(getPrev(outerRowKey)));
+    }
+
+
+
+    /**
+     * Lookup each element in a {@link LongChunk} using <em>previous</em> values and write the result to a
+     * {@link WritableLongChunk}.
      *
      * @param fillContext The FillContext
      * @param innerRowKeys The result chunk
      * @param outerRowKeys The row keys to lookup in this RowRedirection
      */
-    default void fillPrevChunk(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
-            @NotNull final RowSequence outerRowKeys) {
-        innerRowKeys.setSize(0);
-        outerRowKeys.forAllRowKeys((final long outerRowKey) -> {
-            innerRowKeys.add(getPrev(outerRowKey));
-        });
+    @Override
+    default void fillPrevChunkUnordered(
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> outerRowKeys) {
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        innerRowKeysTyped.setSize(0);
+        for (int oki = 0; oki < outerRowKeys.size(); ++oki) {
+            innerRowKeysTyped.add(getPrev(outerRowKeys.get(oki)));
+        }
     }
 
     /**

@@ -7,10 +7,9 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableAdapterResults.Output;
-import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.qst.table.AggregationTable;
+import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -239,25 +238,28 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
-        final AggSpec spec = aggAllByTable.spec();
-        if (aggAllByTable.groupByColumns().isEmpty()) {
-            addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec));
+    public void visit(AggregateAllTable aggregateAllTable) {
+        final AggSpec spec = aggregateAllTable.spec();
+        if (aggregateAllTable.groupByColumns().isEmpty()) {
+            addOp(aggregateAllTable, parentOps(aggregateAllTable).aggAllBy(spec));
         } else {
-            final ColumnName[] groupByColumns = aggAllByTable.groupByColumns().toArray(new ColumnName[0]);
-            addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
+            final ColumnName[] groupByColumns = aggregateAllTable.groupByColumns().toArray(new ColumnName[0]);
+            addOp(aggregateAllTable, parentOps(aggregateAllTable).aggAllBy(spec, groupByColumns));
         }
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
-        if (aggregationTable.groupByColumns().isEmpty()) {
-            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
-                    aggregationTable.preserveEmpty()));
+    public void visit(AggregateTable aggregateTable) {
+        if (aggregateTable.groupByColumns().isEmpty()) {
+            addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
+                    aggregateTable.aggregations(),
+                    aggregateTable.preserveEmpty()));
         } else {
-            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
-                    aggregationTable.preserveEmpty(), aggregationTable.initialGroups().map(this::table).orElse(null),
-                    aggregationTable.groupByColumns()));
+            addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
+                    aggregateTable.aggregations(),
+                    aggregateTable.preserveEmpty(),
+                    aggregateTable.initialGroups().map(this::table).orElse(null),
+                    aggregateTable.groupByColumns()));
         }
     }
 
@@ -278,16 +280,6 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         } else {
             addOp(selectDistinctTable,
                     parentOps(selectDistinctTable).selectDistinct(selectDistinctTable.columns()));
-        }
-    }
-
-    @Override
-    public void visit(CountByTable countByTable) {
-        if (countByTable.groupByColumns().isEmpty()) {
-            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name()));
-        } else {
-            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name(),
-                    countByTable.groupByColumns().toArray(new ColumnName[0])));
         }
     }
 

@@ -27,7 +27,9 @@ dependencies {
     runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server'
 
 //    implementation 'io.grpc:grpc-servlet-jakarta'
-    implementation project(':grpc-java:grpc-servlet-jakarta')
+    api(project(':grpc-java:grpc-servlet-jakarta')) {
+        because 'downstream dagger compile'
+    }
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
     implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server'
 

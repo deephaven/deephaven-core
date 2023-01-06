@@ -35,8 +35,8 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -90,7 +90,7 @@ public class QueryTableAggregationTest {
     private static AggregationContextFactory makeGroupByACF(
             @NotNull final Table table, @NotNull final String... groupByColumns) {
         return AggregationProcessor.forAggregation(List.of(
-                AggregateAllByTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
+                AggregateAllTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
                         table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                                 .map(ColumnName::of).collect(Collectors.toList()))
                         .orElseThrow()));
@@ -810,7 +810,7 @@ public class QueryTableAggregationTest {
         assertTableEquals(expectedLast, lastBy);
 
         final Table expectedFirstComposite =
-                table.update("First=skSet.add(new io.deephaven.datastructures.util.SmartKey(Sym, intCol))")
+                table.update("First=skSet.add(new io.deephaven.tuple.ArrayTuple(Sym, intCol))")
                         .where("First").dropColumns("First").moveColumnsUp("Sym", "intCol");
         final Table firstByComposite = table.firstBy("Sym", "intCol");
         assertTableEquals(expectedFirstComposite, firstByComposite);
@@ -818,7 +818,7 @@ public class QueryTableAggregationTest {
         skSet.clear();
         final Table lastByComposite = table.lastBy("Sym", "intCol").sort("Sym", "intCol");
         final Table expectedLastComposite =
-                table.reverse().update("First=skSet.add(new io.deephaven.datastructures.util.SmartKey(Sym, intCol))")
+                table.reverse().update("First=skSet.add(new io.deephaven.tuple.ArrayTuple(Sym, intCol))")
                         .where("First").dropColumns("First").sort("Sym", "intCol").moveColumnsUp("Sym", "intCol");
         assertTableEquals(expectedLastComposite, lastByComposite);
     }
@@ -1625,10 +1625,9 @@ public class QueryTableAggregationTest {
         final ColumnInfo[] columnInfo;
         final List<ColumnInfo.ColAttributes> ea = Collections.emptyList();
         final List<ColumnInfo.ColAttributes> ga = Collections.singletonList(ColumnInfo.ColAttributes.Grouped);
-        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Sym",
-                "charCol",
-                "byteCol", "shortCol", "intCol", "longCol", "bigI", "bigD", "doubleCol", "doubleNanCol", "boolCol"
-        },
+        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
+                new String[] {"Sym", "charCol", "byteCol", "shortCol", "intCol", "longCol", "bigI", "bigD",
+                        "doubleCol", "doubleNanCol", "boolCol"},
                 Arrays.asList(grouped ? ga : ea, ea, ea, ea, ea, ea, ea, ea, ea, ea, ea),
                 lotsOfStrings ? new StringGenerator(1000000) : new SetGenerator<>("a", "b", "c", "d"),
                 new CharGenerator('a', 'z'),
@@ -2369,8 +2368,8 @@ public class QueryTableAggregationTest {
     }
 
     private static <T extends Table> T setAddOnly(@NotNull final T table) {
-        table.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-        return table;
+        // noinspection unchecked
+        return (T) table.withAttributes(Map.of(Table.ADD_ONLY_TABLE_ATTRIBUTE, true));
     }
 
     private void testMinMaxByAppend(int size) {
@@ -3405,10 +3404,11 @@ public class QueryTableAggregationTest {
 
         Table result = table.lastBy("Sym");
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(2, result.getAttributes().size());
+            TestCase.assertEquals(3, result.getAttributes().size());
             TestCase.assertEquals(
-                    new LinkedHashSet<>(
-                            Arrays.asList(Table.SYSTEMIC_TABLE_ATTRIBUTE, Table.COLUMN_DESCRIPTIONS_ATTRIBUTE)),
+                    Set.of(Table.SYSTEMIC_TABLE_ATTRIBUTE,
+                            Table.COLUMN_DESCRIPTIONS_ATTRIBUTE,
+                            Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE),
                     result.getAttributes().keySet());
         } else {
             TestCase.assertEquals(1, result.getAttributes().size());
@@ -3417,10 +3417,11 @@ public class QueryTableAggregationTest {
 
         result = table.firstBy("Sym");
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(2, result.getAttributes().size());
+            TestCase.assertEquals(3, result.getAttributes().size());
             TestCase.assertEquals(
-                    new LinkedHashSet<>(
-                            Arrays.asList(Table.SYSTEMIC_TABLE_ATTRIBUTE, Table.COLUMN_DESCRIPTIONS_ATTRIBUTE)),
+                    Set.of(Table.SYSTEMIC_TABLE_ATTRIBUTE,
+                            Table.COLUMN_DESCRIPTIONS_ATTRIBUTE,
+                            Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE),
                     result.getAttributes().keySet());
         } else {
             TestCase.assertEquals(1, result.getAttributes().size());

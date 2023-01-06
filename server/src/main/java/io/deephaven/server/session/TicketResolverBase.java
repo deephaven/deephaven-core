@@ -18,7 +18,7 @@ public abstract class TicketResolverBase implements TicketResolver {
          *
          * @apiNote Types typically encountered are {@link Table} and {@link PartitionedTable}. Perform an identity
          *          mapping for any types that you do not wish to transform. This method should not error.
-         * @apiNote Implementations may wish to query {@link ExecutionContext#getAuthContext()} to apply user-specific
+         *          Implementations may wish to query {@link ExecutionContext#getAuthContext()} to apply user-specific
          *          transformations to requested resources.
          *
          * @param source the object to transform (such as by applying ACLs)

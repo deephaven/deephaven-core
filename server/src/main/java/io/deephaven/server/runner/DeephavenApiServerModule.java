@@ -13,8 +13,8 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.appmode.ApplicationsModule;
 import io.deephaven.server.config.ConfigServiceModule;
+import io.deephaven.server.hierarchicaltable.HierarchicalTableServiceModule;
 import io.deephaven.server.notebook.FilesystemStorageServiceModule;
-import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.object.ObjectServiceModule;
 import io.deephaven.server.partitionedtable.PartitionedTableServiceModule;
 import io.deephaven.server.plugin.PluginsModule;
@@ -62,6 +62,7 @@ import java.util.concurrent.TimeUnit;
         ObjectServiceModule.class,
         PluginsModule.class,
         PartitionedTableServiceModule.class,
+        HierarchicalTableServiceModule.class,
         FilesystemStorageServiceModule.class,
         ConfigServiceModule.class,
 })

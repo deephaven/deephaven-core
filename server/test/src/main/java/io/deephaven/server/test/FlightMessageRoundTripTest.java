@@ -615,6 +615,26 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
+    public void testBoolCol() throws Exception {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("B = true"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("B = new boolean[] {true, false}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10)
+                .update("B = new boolean[][] {new boolean[] {false, true}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("B = (Boolean)true"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("B = new Boolean[] {true, false}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10)
+                .update("B = new Boolean[] {null, true, false}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10)
+                .update("B = io.deephaven.util.QueryConstants.NULL_BOOLEAN"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10)
+                .update("B = new Boolean[] {true, false, io.deephaven.util.QueryConstants.NULL_BOOLEAN}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10)
+                .update("B = new Boolean[][] {new Boolean[] {false, true}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10)
+                .update("B = new Boolean[][] {null, new Boolean[] {false, null, true}}"));
+    }
+
+    @Test
     public void testFlightInfo() {
         final String staticTableName = "flightInfoTest";
         final String tickingTableName = "flightInfoTestTicking";

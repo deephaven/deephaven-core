@@ -71,7 +71,7 @@ import java.util.Collection;
  */
 public abstract class SparseArrayColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
+        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
         WritableSourceWithPrepareForParallelPopulation {
     public static final SparseArrayColumnSource<?>[] ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY =
             new SparseArrayColumnSource[0];
@@ -429,11 +429,9 @@ public abstract class SparseArrayColumnSource<T>
     abstract void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keyIndices);
 
-    private static final FillFromContext FILL_FROM_CONTEXT_INSTANCE = new FillFromContext() {};
-
     @Override
     public FillFromContext makeFillFromContext(int chunkCapacity) {
-        return FILL_FROM_CONTEXT_INSTANCE;
+        return DEFAULT_FILL_FROM_INSTANCE;
     }
 
     @Override

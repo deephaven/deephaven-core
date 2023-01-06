@@ -63,25 +63,25 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
 
     /**
      * This version of `prepareForParallelPopulation` will internally call {@link #ensureCapacity(long, boolean)} to
-     * create room for incoming values.
+     * make sure there is room for the incoming values.
      *
-     * @param changedRows indices in the dense table
+     * @param changedIndices indices in the dense table
      */
     @Override
-    public void prepareForParallelPopulation(RowSet changedRows) {
+    public void prepareForParallelPopulation(RowSet changedIndices) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
         ensurePreviousClockCycle = currentStep;
 
-        if (changedRows.isEmpty()) {
+        if (changedIndices.isEmpty()) {
             return;
         }
 
-        // ensure that this source will have sufficient capacity to store these rows, does not need to be
-        // null-filled as the values will be immediately overwritten
-        ensureCapacity(changedRows.lastRowKey() + 1, false);
+        // ensure that this source will have sufficient capacity to store these indices, does not need to be
+        // null-filled as the values will be immediately written
+        ensureCapacity(changedIndices.lastRowKey() + 1, false);
 
         if (prevFlusher != null) {
             prevFlusher.maybeActivate();
@@ -90,7 +90,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
             return;
         }
 
-        try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
+        try (final RowSequence.Iterator it = changedIndices.getRowSequenceIterator()) {
             do {
                 final long firstKey = it.peekNextKey();
 
@@ -113,7 +113,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
                 it.getNextRowSequenceThrough(maxKeyInCurrentBlock).forAllRowKeys(key -> {
                     final int nextIndexWithinBlock = (int) (key & INDEX_MASK);
                     final int nextIndexWithinInUse = nextIndexWithinBlock >> LOG_INUSE_BITSET_SIZE;
-                    final long nextMaskWithinInUse = 1L << (nextIndexWithinBlock & IN_USE_MASK);
+                    final long nextMaskWithinInUse = 1L << nextIndexWithinBlock;
                     prevBlocks[block][nextIndexWithinBlock] = blocks[block][nextIndexWithinBlock];
                     inUse[nextIndexWithinInUse] |= nextMaskWithinInUse;
                 });

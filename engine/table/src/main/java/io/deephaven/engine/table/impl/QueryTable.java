@@ -26,6 +26,10 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
+import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
@@ -37,10 +41,12 @@ import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
+import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.qst.table.AggregateAllByTable;
+import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -89,7 +95,7 @@ import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreator
 /**
  * Primary coalesced table implementation.
  */
-public class QueryTable extends BaseTable {
+public class QueryTable extends BaseTable<QueryTable> {
 
     public interface Operation<T extends DynamicNode & NotificationStepReceiver> {
 
@@ -246,7 +252,7 @@ public class QueryTable extends BaseTable {
     private volatile Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations = EMPTY_CACHED_OPERATIONS;
 
     /**
-     * Creates a new abstract table, inferring a definition but creating a new column source map.
+     * Creates a new table, inferring a definition but creating a new column source map.
      *
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
@@ -259,7 +265,7 @@ public class QueryTable extends BaseTable {
     }
 
     /**
-     * Creates a new abstract table, reusing a definition but creating a new column source map.
+     * Creates a new table, reusing a definition but creating a new column source map.
      *
      * @param definition The definition to use for this table, which will be re-ordered to match the same order as
      *        {@code columns} if it does not match
@@ -275,15 +281,15 @@ public class QueryTable extends BaseTable {
     }
 
     /**
-     * Creates a new abstract table, reusing a definition and column source map.
+     * Creates a new table, reusing a definition and column source map.
      *
-     * @param definition The definition to use for this table
+     * @param definition The definition to use for this table, which will not be validated or re-ordered.
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which is not copied.
      * @param modifiedColumnSet Optional {@link ModifiedColumnSet} that should be re-used if supplied
-     * @param attributes Optional value to use for {@link #attributes}
+     * @param attributes Optional value to use for initial attributes
      */
-    private QueryTable(
+    public QueryTable(
             @NotNull final TableDefinition definition,
             @NotNull final TrackingRowSet rowSet,
             @NotNull final LinkedHashMap<String, ColumnSource<?>> columns,
@@ -348,7 +354,8 @@ public class QueryTable extends BaseTable {
 
     private Map<String, IndexedDataColumn<?>> ensureIndexedDataColumns() {
         // noinspection unchecked
-        return ensureField(INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS, ConcurrentHashMap::new);
+        return FieldUtils.ensureField(this, INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS,
+                ConcurrentHashMap::new);
     }
 
     /**
@@ -360,7 +367,7 @@ public class QueryTable extends BaseTable {
      * @return the modified column set for this table
      */
     public ModifiedColumnSet getModifiedColumnSetForUpdates() {
-        return ensureField(MODIFIED_COLUMN_SET_UPDATER, null, () -> new ModifiedColumnSet(columns));
+        return FieldUtils.ensureField(this, MODIFIED_COLUMN_SET_UPDATER, null, () -> new ModifiedColumnSet(columns));
     }
 
     /**
@@ -513,72 +520,22 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            ColumnName... groupByColumns) {
-        throw new UnsupportedOperationException("rollup is not yet implemented in community");
-        // TODO https://github.com/deephaven/deephaven-core/issues/65): Implement rollups based on PartitionedTable
-        /*
-         * if (isStream() && includeConstituents) { throw streamUnsupported("rollup with included constituents"); }
-         * final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns); final MemoizedOperationKey rollupKey =
-         * MemoizedOperationKey.rollup(aggregations, gbsColumns, includeConstituents); return memoizeResult(rollupKey,
-         * () -> { final QueryTable baseLevel = aggNoMemo( AggregationProcessor.forRollupBase(aggregations,
-         * includeConstituents), gbsColumns);
-         *
-         * final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns)); final
-         * Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length); QueryTable lastLevel = baseLevel;
-         * while (!gbsColumnsToReaggregate.isEmpty()) {
-         * nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName()); final TableDefinition
-         * lastLevelDefinition = lastLevel.getDefinition(); final Map<String, Class<?>> nullColumns =
-         * nullColumnNames.stream().collect(Collectors.toMap( Function.identity(), ncn ->
-         * lastLevelDefinition.getColumn(ncn).getDataType(), Assert::neverInvoked, LinkedHashMap::new)); lastLevel =
-         * lastLevel.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
-         * gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)); }
-         *
-         * final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
-         * .map(ColumnDefinition::getName) .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
-         * final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop); final Object
-         * reverseLookup = Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE),
-         * "REVERSE_LOOKUP_ATTRIBUTE"); finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-         *
-         * final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, gbsColumns,
-         * includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
-         * result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this); copyAttributes(result,
-         * CopyAttributeOperation.Rollup); maybeUpdateSortableColumns(result);
-         *
-         * return result; });
-         */
+    public RollupTable rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
+            final Collection<? extends ColumnName> groupByColumns) {
+        if (isStream() && includeConstituents) {
+            throw streamUnsupported("rollup with included constituents");
+        }
+        return memoizeResult(MemoizedOperationKey.rollup(aggregations, groupByColumns, includeConstituents),
+                () -> RollupTableImpl.makeRollup(this, aggregations, includeConstituents, groupByColumns));
     }
 
     @Override
-    public Table treeTable(String idColumn, String parentColumn) {
-        throw new UnsupportedOperationException("treeTable is not yet implemented in community");
-        // TODO https://github.com/deephaven/deephaven-core/issues/64): Implement treeTable based on PartitionedTable
-        /*
-         * if (isStream()) { throw streamUnsupported("treeTable"); } return
-         * memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> { // TODO
-         * (https://github.com/deephaven/deephaven-core/issues/64): // Need key initialization and preserve-empty
-         * support to be able to get the root reliably for // initially-empty parents. final PartitionedTable
-         * partitionedTable = partitionBy(false, parentColumn); final QueryTable rootTable = (QueryTable)
-         * partitionedTable.table().where(new MatchFilter(parentColumn, (Object) null)); final Table result =
-         * HierarchicalTable.createFrom((QueryTable) rootTable.copy(), new TreeTableInfo(idColumn, parentColumn));
-         *
-         * // If the parent table has an RLL attached to it, we can re-use it. final ReverseLookup reverseLookup; if
-         * (hasAttribute(PREPARED_RLL_ATTRIBUTE)) { reverseLookup = (ReverseLookup)
-         * getAttribute(PREPARED_RLL_ATTRIBUTE); final String[] listenerCols = reverseLookup.getKeyColumns();
-         *
-         * if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) { final String listenerColError =
-         * StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", "); throw new
-         * IllegalStateException( "Table was prepared for Tree table with a different Id column. Expected `" + idColumn
-         * + "`, Actual " + listenerColError); } } else { reverseLookup =
-         * ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn); }
-         *
-         * result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionedTable);
-         * result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
-         * result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup); copyAttributes(result,
-         * CopyAttributeOperation.Treetable); maybeUpdateSortableColumns(result);
-         *
-         * return result; });
-         */
+    public TreeTable tree(String idColumn, String parentColumn) {
+        if (isStream()) {
+            throw streamUnsupported("tree");
+        }
+        return memoizeResult(MemoizedOperationKey.tree(idColumn, parentColumn),
+                () -> TreeTableImpl.makeTree(this, ColumnName.of(idColumn), ColumnName.of(parentColumn)));
     }
 
     @Override
@@ -633,7 +590,7 @@ public class QueryTable extends BaseTable {
         }
         final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
         final List<ColumnName> tableColumns = definition.getTypedColumnNames();
-        final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
+        final Optional<Aggregation> agg = AggregateAllTable.singleAggregation(spec, groupByList, tableColumns);
         if (agg.isEmpty()) {
             throw new IllegalArgumentException(
                     "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns=" + toString(groupByList));
@@ -666,8 +623,8 @@ public class QueryTable extends BaseTable {
         final Table aggregationTable = memoizeResult(aggKey, () -> aggNoMemo(
                 AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
 
-        final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
-        final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
+        final List<ColumnName> optimizedOrder = AggregationOutputs.of(optimized).collect(Collectors.toList());
+        final List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
         if (userOrder.equals(optimizedOrder)) {
             return aggregationTable;
         }
@@ -678,7 +635,7 @@ public class QueryTable extends BaseTable {
         return aggregationTable.view(resultOrder);
     }
 
-    private QueryTable aggNoMemo(
+    public QueryTable aggNoMemo(
             @NotNull final AggregationContextFactory aggregationContextFactory,
             final boolean preserveEmpty,
             @Nullable final Table initialGroups,
@@ -778,28 +735,6 @@ public class QueryTable extends BaseTable {
         } else {
             return dataType.getName();
         }
-    }
-
-    @Override
-    public Table formatColumns(String... columnFormats) {
-        final SelectColumn[] selectColumns = SelectColumnFactory.getFormatExpressions(columnFormats);
-
-        final Set<String> existingColumns = getDefinition().getColumnNames()
-                .stream()
-                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
-                .collect(Collectors.toSet());
-
-        final String[] unknownColumns = Arrays.stream(selectColumns)
-                .map(SelectColumnFactory::getFormatBaseColumn)
-                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
-                .toArray(String[]::new);
-
-        if (unknownColumns.length > 0) {
-            throw new RuntimeException(
-                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
-        }
-
-        return viewOrUpdateView(Flavor.UpdateView, selectColumns);
     }
 
     @Override
@@ -1074,10 +1009,10 @@ public class QueryTable extends BaseTable {
                                     }
 
                                     final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                            Stream.of(filters)
+                                            Arrays.stream(filters)
                                                     .filter(f -> f instanceof NotificationQueue.Dependency)
                                                     .map(f -> (NotificationQueue.Dependency) f),
-                                            Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider)
+                                            Arrays.stream(filters).filter(f -> f instanceof DependencyStreamProvider)
                                                     .flatMap(f -> ((DependencyStreamProvider) f)
                                                             .getDependencyStream()))
                                             .collect(Collectors.toList());
@@ -1342,7 +1277,7 @@ public class QueryTable extends BaseTable {
                         }
                     }
                     propagateFlatness(resultTable);
-                    maybeUpdateSortableColumns(resultTable, selectColumns);
+                    copySortableColumns(resultTable, selectColumns);
                     if (publishTheseSources) {
                         maybeCopyColumnDescriptions(resultTable, selectColumns);
                     } else {
@@ -1455,7 +1390,7 @@ public class QueryTable extends BaseTable {
                                 copyAttributes(queryTable,
                                         flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView
                                                 : CopyAttributeOperation.View);
-                                maybeUpdateSortableColumns(queryTable, viewColumns);
+                                copySortableColumns(queryTable, viewColumns);
                                 if (publishTheseSources) {
                                     maybeCopyColumnDescriptions(queryTable, viewColumns);
                                 } else {
@@ -1528,7 +1463,7 @@ public class QueryTable extends BaseTable {
                     }
                     propagateFlatness(result);
                     copyAttributes(result, CopyAttributeOperation.UpdateView);
-                    maybeUpdateSortableColumns(result, selectColumns);
+                    copySortableColumns(result, selectColumns);
                     maybeCopyColumnDescriptions(result, selectColumns);
 
                     return result;
@@ -1561,7 +1496,7 @@ public class QueryTable extends BaseTable {
                         propagateFlatness(resultTable);
 
                         copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
-                        maybeUpdateSortableColumns(resultTable);
+                        copySortableColumns(resultTable, resultTable.getDefinition().getColumnNameMap()::containsKey);
                         maybeCopyColumnDescriptions(resultTable);
 
                         if (swapListener != null) {
@@ -1664,7 +1599,7 @@ public class QueryTable extends BaseTable {
                     }
                     propagateFlatness(queryTable);
 
-                    maybeUpdateSortableColumns(queryTable, pairs);
+                    copySortableColumns(queryTable, pairs);
                     maybeCopyColumnDescriptions(queryTable, pairs);
 
                     return queryTable;
@@ -1881,7 +1816,7 @@ public class QueryTable extends BaseTable {
                             .view(columnsToAddSelectColumns.values());
                     final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
-                    final Table ungroupedResult = naturalJoinResult
+                    final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
                             .ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
                     maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
@@ -2924,6 +2859,24 @@ public class QueryTable extends BaseTable {
     }
 
     /**
+     * <p>
+     * If this table is flat, then set the result table flat.
+     * </p>
+     *
+     * <p>
+     * This function is for use when the result table shares a RowSet; such that if this table is flat, the result table
+     * must also be flat.
+     * </p>
+     *
+     * @param result the table derived from this table
+     */
+    public void propagateFlatness(QueryTable result) {
+        if (isFlat()) {
+            result.setFlat();
+        }
+    }
+
+    /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
      *
@@ -2959,7 +2912,7 @@ public class QueryTable extends BaseTable {
      * @param rowSet The result's {@link #getRowSet() row set}
      * @param resultModifiedColumnSet The result's {@link #getModifiedColumnSetForUpdates() modified column set}, or
      *        {@code null} for default initialization
-     * @param attributes The result's {@link #attributes}, * or {@code null} for default initialization
+     * @param attributes The result's {@link #getAttributes() attributes}, or {@code null} for default initialization
      * @param parents Parent references for the result table
      * @return A new table sharing this table's column sources with the specified row set
      */
@@ -2984,11 +2937,11 @@ public class QueryTable extends BaseTable {
      * @return an identical table; but with a new set of attributes
      */
     @Override
-    public Table copy() {
+    public QueryTable copy() {
         return copy(StandardOptions.COPY_ALL);
     }
 
-    public Table copy(Predicate<String> shouldCopy) {
+    public QueryTable copy(Predicate<String> shouldCopy) {
         return copy(definition, shouldCopy);
     }
 
@@ -3007,9 +2960,9 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    public Table copy(TableDefinition definition, Predicate<String> shouldCopy) {
+    public QueryTable copy(TableDefinition definition, Predicate<String> shouldCopy) {
         return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
-            final Mutable<Table> result = new MutableObject<>();
+            final Mutable<QueryTable> result = new MutableObject<>();
 
             final SwapListener swapListener = createSwapListenerIfRefreshing(SwapListener::new);
             initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
@@ -3052,11 +3005,11 @@ public class QueryTable extends BaseTable {
                 return operation.get();
             }
 
-            final boolean attributesCompatible = memoKey.attributesCompatible(parent.attributes, attributes);
+            final boolean attributesCompatible = memoKey.attributesCompatible(parent.getAttributes(), getAttributes());
             final Supplier<R> computeCachedOperation = attributesCompatible ? () -> {
                 final R parentResult = parent.memoizeResult(memoKey, operation);
                 if (parentResult instanceof QueryTable) {
-                    final Table myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
+                    final QueryTable myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
                     copyAttributes((QueryTable) parentResult, myResult, memoKey.getParentCopyType());
                     copyAttributes(myResult, memoKey.copyType());
                     // noinspection unchecked
@@ -3116,7 +3069,7 @@ public class QueryTable extends BaseTable {
 
     private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {
         // noinspection unchecked
-        return ensureField(CACHED_OPERATIONS_UPDATER, EMPTY_CACHED_OPERATIONS, ConcurrentHashMap::new);
+        return FieldUtils.ensureField(this, CACHED_OPERATIONS_UPDATER, EMPTY_CACHED_OPERATIONS, ConcurrentHashMap::new);
     }
 
     @NotNull
@@ -3132,15 +3085,13 @@ public class QueryTable extends BaseTable {
         R getOrCompute(Supplier<R> operation) {
             final R cachedResult = getIfValid();
             if (cachedResult != null) {
-                maybeMarkSystemic(cachedResult);
-                return cachedResult;
+                return maybeMarkSystemic(cachedResult);
             }
 
             synchronized (this) {
                 final R cachedResultLocked = getIfValid();
                 if (cachedResultLocked != null) {
-                    maybeMarkSystemic(cachedResultLocked);
-                    return cachedResultLocked;
+                    return maybeMarkSystemic(cachedResultLocked);
                 }
 
                 final R result;
@@ -3152,24 +3103,32 @@ public class QueryTable extends BaseTable {
             }
         }
 
-        private void maybeMarkSystemic(R cachedResult) {
+        private R maybeMarkSystemic(R cachedResult) {
             if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                ((SystemicObject) cachedResult).markSystemic();
+                // noinspection unchecked
+                return (R) ((SystemicObject) cachedResult).markSystemic();
             }
+            return cachedResult;
         }
 
         R getIfValid() {
             if (reference != null) {
                 final R cachedResult = reference.get();
-                if (!isFailedTable(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
+                if (!isFailed(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
                     return cachedResult;
                 }
             }
             return null;
         }
 
-        private boolean isFailedTable(R cachedResult) {
-            return cachedResult instanceof Table && ((Table) cachedResult).isFailed();
+        private boolean isFailed(R cachedResult) {
+            if (cachedResult instanceof Table) {
+                return ((Table) cachedResult).isFailed();
+            }
+            if (cachedResult instanceof PartitionedTable) {
+                return ((PartitionedTable) cachedResult).table().isFailed();
+            }
+            return false;
         }
     }
 
@@ -3342,5 +3301,4 @@ public class QueryTable extends BaseTable {
     public Table wouldMatch(WouldMatchPair... matchers) {
         return getResult(new WouldMatchOperation(this, matchers));
     }
-
 }

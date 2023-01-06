@@ -3,26 +3,19 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.api.updateby.UpdateByOperation;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Simple source table with no partitioning support.
  */
-public class SimpleSourceTable extends SourceTable {
+public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
 
     /**
      * @param tableDefinition A TableDefinition
@@ -46,6 +39,14 @@ public class SimpleSourceTable extends SourceTable {
             UpdateSourceRegistrar updateSourceRegistrar) {
         return new SimpleSourceTable(tableDefinition, description, componentFactory, locationProvider,
                 updateSourceRegistrar);
+    }
+
+    @Override
+    protected SimpleSourceTable copy() {
+        final SimpleSourceTable result = newInstance(definition, description, componentFactory, locationProvider,
+                updateSourceRegistrar);
+        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        return result;
     }
 
     @Override

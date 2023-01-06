@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
  * current, and current becomes the new fork of the map.
  * </ol>
  */
-public interface WritableRowRedirection extends RowRedirection {
+public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKeys> {
 
     /**
      * Initiate previous value tracking.
@@ -90,36 +90,21 @@ public interface WritableRowRedirection extends RowRedirection {
     }
 
     /**
-     * A basic, empty, singleton default {@link ChunkSink.FillFromContext} instance.
-     */
-    ChunkSink.FillFromContext DEFAULT_FILL_FROM_INSTANCE = new ChunkSink.FillFromContext() {};
-
-    /**
-     * Make a {@link ChunkSink.FillFromContext } for this WritableRowRedirection. The default implementation supplies
-     * {@link #DEFAULT_FILL_FROM_INSTANCE}, suitable for use with the default implementation of
-     * {@link #fillFromChunk(ChunkSink.FillFromContext , Chunk, RowSequence)}.
-     *
-     * @param chunkCapacity The maximum number of mappings that will be supplied in one operation
-     * @return The {@link ChunkSink.FillFromContext } to use
-     */
-    default ChunkSink.FillFromContext makeFillFromContext(final int chunkCapacity) {
-        return DEFAULT_FILL_FROM_INSTANCE;
-    }
-
-    /**
      * Insert mappings from each element in a {@link RowSequence} to the parallel element in a {@link LongChunk}. h
      * 
      * @param fillFromContext THe FillFromContext
      * @param innerRowKeys The inner row keys to map to
      * @param outerRowKeys The outer row keys to map from
      */
-    default void fillFromChunk(@NotNull final ChunkSink.FillFromContext fillFromContext,
+    @Override
+    default void fillFromChunk(
+            @NotNull final ChunkSink.FillFromContext fillFromContext,
             @NotNull final Chunk<? extends RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
         final MutableInt offset = new MutableInt();
-        final LongChunk<? extends RowKeys> innerRowKeysLongChunk = innerRowKeys.asLongChunk();
+        final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
         outerRowKeys.forAllRowKeys(outerRowKey -> {
-            final long innerRowKey = innerRowKeysLongChunk.get(offset.intValue());
+            final long innerRowKey = innerRowKeysTyped.get(offset.intValue());
             if (innerRowKey == RowSequence.NULL_ROW_KEY) {
                 removeVoid(outerRowKey);
             } else {
@@ -127,6 +112,24 @@ public interface WritableRowRedirection extends RowRedirection {
             }
             offset.increment();
         });
+    }
+
+    @Override
+    default void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends RowKeys> innerRowKeys,
+            @NotNull final LongChunk<RowKeys> outerRowKeys) {
+        final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
+        final int size = innerRowKeysTyped.size();
+        for (int ki = 0; ki < size; ++ki) {
+            final long outerRowKey = outerRowKeys.get(ki);
+            final long innerRowKey = innerRowKeysTyped.get(ki);
+            if (innerRowKey == RowSequence.NULL_ROW_KEY) {
+                removeVoid(outerRowKey);
+            } else {
+                putVoid(outerRowKey, innerRowKey);
+            }
+        }
     }
 
     /**
