@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -124,10 +125,9 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         // noinspection unchecked
         final ObjectChunk<?, ? extends Values>[] groupByValuesChunks = new ObjectChunk[maxKeyWidth];
         for (int ci = 0; ci < maxKeyWidth; ++ci) {
-            groupByValuesChunks[ci] = (usePrev
+            groupByValuesChunks[ci] = fillContext.groupByValueBoxers[ci].box(usePrev
                     ? groupByValueSources[ci].getPrevChunk(fillContext.groupByValueContexts[ci], rowSequence)
-                    : groupByValueSources[ci].getChunk(fillContext.groupByValueContexts[ci], rowSequence))
-                            .asObjectChunk();
+                    : groupByValueSources[ci].getChunk(fillContext.groupByValueContexts[ci], rowSequence));
         }
         return groupByValuesChunks;
     }
@@ -176,6 +176,7 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
 
         private final ChunkSource.GetContext depthContext;
         private final ChunkSource.GetContext[] groupByValueContexts;
+        private final ChunkBoxer.BoxerKernel[] groupByValueBoxers;
 
         private FillContext(
                 final int chunkCapacity,
@@ -186,12 +187,16 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
             groupByValueContexts = Stream.of(groupByValueSources)
                     .map(cs -> cs.makeGetContext(chunkCapacity, sharedContext))
                     .toArray(ChunkSource.GetContext[]::new);
+            groupByValueBoxers = Stream.of(groupByValueSources)
+                    .map(cs -> ChunkBoxer.getBoxer(cs.getChunkType(), chunkCapacity))
+                    .toArray(ChunkBoxer.BoxerKernel[]::new);
         }
 
         @Override
         public void close() {
             depthContext.close();
             SafeCloseable.closeArray(groupByValueContexts);
+            SafeCloseable.closeArray(groupByValueBoxers);
         }
     }
 
