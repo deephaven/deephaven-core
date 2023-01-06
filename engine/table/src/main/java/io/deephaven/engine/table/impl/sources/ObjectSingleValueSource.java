@@ -60,9 +60,7 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
 
     @Override
     public final void setNull() {
-        // region null set
         set(null);
-        // endregion null set
     }
 
     @Override

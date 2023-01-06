@@ -72,9 +72,7 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
 
     @Override
     public final void setNull() {
-        // region null set
         set(NULL_BYTE);
-        // endregion null set
     }
 
     @Override

@@ -72,9 +72,7 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
 
     @Override
     public final void setNull() {
-        // region null set
         set(NULL_FLOAT);
-        // endregion null set
     }
 
     @Override

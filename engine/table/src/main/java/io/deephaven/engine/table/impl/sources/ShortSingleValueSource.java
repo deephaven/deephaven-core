@@ -72,9 +72,7 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
 
     @Override
     public final void setNull() {
-        // region null set
         set(NULL_SHORT);
-        // endregion null set
     }
 
     @Override

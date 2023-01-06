@@ -72,9 +72,7 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
 
     @Override
     public final void setNull() {
-        // region null set
         set(NULL_DOUBLE);
-        // endregion null set
     }
 
     @Override

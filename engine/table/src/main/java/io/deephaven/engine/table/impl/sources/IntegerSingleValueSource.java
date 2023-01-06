@@ -72,9 +72,7 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
 
     @Override
     public final void setNull() {
-        // region null set
         set(NULL_INT);
-        // endregion null set
     }
 
     @Override

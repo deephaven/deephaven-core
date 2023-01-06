@@ -67,9 +67,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
 
     @Override
     public final void setNull() {
-        // region null set
         set(NULL_CHAR);
-        // endregion null set
     }
 
     @Override

@@ -72,9 +72,7 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
 
     @Override
     public final void setNull() {
-        // region null set
         set(NULL_LONG);
-        // endregion null set
     }
 
     @Override
