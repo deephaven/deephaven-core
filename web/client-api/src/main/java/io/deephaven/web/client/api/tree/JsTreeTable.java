@@ -25,6 +25,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.bar
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableApplyRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewKeyTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
@@ -216,7 +217,6 @@ public class JsTreeTable extends HasEventHandling {
 
     // This group of fields represent the underlying state of the original HierarchicalTable
     private final JsWidget widget;
-    private final HierarchicalTableDescriptor treeDescriptor;
     private final InitialTableDefinition tableDefinition;
     private final Column[] visibleColumns;
     private final Map<String, Column> columnsByName = new HashMap<>();
@@ -237,7 +237,7 @@ public class JsTreeTable extends HasEventHandling {
     private Promise<Ticket> filteredTable;
     private Promise<Ticket> sortedTable;
 
-    private Object[][] keyTableData;
+    private final Object[][] keyTableData;
     private Promise<JsTable> keyTable;
 
     private Promise<Ticket> viewTicket;
@@ -263,7 +263,7 @@ public class JsTreeTable extends HasEventHandling {
     public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
         this.widget = widget;
-        this.treeDescriptor = HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
+        HierarchicalTableDescriptor treeDescriptor = HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
 
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
         Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
@@ -318,7 +318,6 @@ public class JsTreeTable extends HasEventHandling {
             columnsByName.put(column.getName(), column);
         }
 
-        //TODO populate sourceColumns at this point
         sourceColumns = columnDefsByName.get(false).values().stream()
                 .map(c -> {
                     if (c.getRollupAggregationInputColumn() != null && !c.getRollupAggregationInputColumn().isEmpty()) {
@@ -344,32 +343,15 @@ public class JsTreeTable extends HasEventHandling {
 
         keyTableData = new Object[keyColumns.length + 2][0];
         actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false);
-//
-//        if (treeDescriptor.getDetailsCase() == DetailsCase.ROLLUP) {
-//            RollupDescriptorDetails rollupDef = treeDescriptor.getRollup();
-//
-//            final Set<String> presentNames = new HashSet<>();
-//            rollupDef.getOutputInputColumnPairsList().forEach((pair, index, arr) -> {
-//                String[] split = pair.split("=");
-//                String rollupColName = split[0];
-//                presentNames.add(rollupColName);
-//                String sourceColName = split[1];
-//                if (rollupDef.getLeafNodeType() == Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT()
-//                        && !isTableAggregationColumn(sourceColName)) {
-//                    Column sourceColumn = findColumn(sourceColName);
-//                    String sourceType = sourceColumn.getType();
-//                    findColumn(rollupColName).setConstituentType(sourceType);
-//                    this.sourceColumns.put(rollupColName, sourceColumn);
-//                }
-//
-//                return null;
-//            });
-//
-//        }
 
-        sourceTable = JsLazy.of(() -> {
-            throw new UnsupportedOperationException("source table isn't yet supported");
-        });
+        sourceTable = JsLazy.of(() -> workerConnection
+                .newState(this, (c, newState, metadata) -> {
+                    HierarchicalTableSourceExportRequest exportRequest = new HierarchicalTableSourceExportRequest();
+                    exportRequest.setResultTableId(newState.getHandle().makeTicket());
+                    exportRequest.setHierarchicalTableId(widget.getTicket());
+                    connection.hierarchicalTableServiceClient().exportSource(exportRequest, connection.metadata(), c::apply);
+                }, "source for hierarchical table")
+                .then(cts -> Promise.resolve(new JsTable(connection, cts))));
     }
 
     private Promise<Ticket> prepareFilter() {
@@ -508,6 +490,7 @@ public class JsTreeTable extends HasEventHandling {
                     String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
                             .map(ColumnDefinition::getType)
                             .toArray(String[]::new);
+                    //TODO handle errors
                     doExchange.onData(flightData -> {
                         Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
                         if (message.headerType() == MessageHeader.Schema) {
