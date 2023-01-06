@@ -713,7 +713,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 continue;
             }
             if (ci == ROW_DEPTH_COLUMN_INDEX) {
-                result[ci] = getDepthSource(nodeDepth);
+                // Depth is the depth for the child rows to be filled from, not actually this node
+                result[ci] = getDepthSource(nodeDepth + 1);
             } else if (ci < firstConstituentColumnIndex) {
                 final ColumnDefinition<?> cd =
                         aggregatedNodeDefinition.getColumns().get(ci - FIRST_AGGREGATED_COLUMN_INDEX);

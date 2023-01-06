@@ -364,7 +364,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci + 1)) {
             if (ci == ROW_DEPTH_COLUMN_INDEX) {
                 // Tree nodes can change depth, so update regardless of existing result
-                result[ci] = getDepthSource(snapshotState.getCurrentDepth() + 1);
+                result[ci] = getDepthSource(snapshotState.getCurrentDepth());
             } else if (result[ci] == null && ci != ROW_EXPANDED_COLUMN_INDEX) {
                 final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - EXTRA_COLUMN_COUNT);
                 result[ci] = nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType());
