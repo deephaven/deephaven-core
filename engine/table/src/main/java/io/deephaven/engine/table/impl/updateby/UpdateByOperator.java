@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
@@ -11,7 +11,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,10 +26,9 @@ import java.util.Map;
  * <ol>
  * <li>{@link UpdateByCumulativeOperator#initializeUpdate(UpdateContext, long, long)} for cumulative operators or
  * {@link UpdateByWindowedOperator#initializeUpdate(UpdateContext)} for windowed operators</li>
- * <li>{@link io.deephaven.engine.table.impl.UpdateByCumulativeOperator.Context#accumulate(RowSequence, Chunk[], LongChunk, int)}
- * for cumulative operators or
- * {@link UpdateByWindowedOperator.Context#accumulate(RowSequence, Chunk[], IntChunk, IntChunk, int)} for windowed
- * operators</li>
+ * <li>{@link UpdateByCumulativeOperator.Context#accumulate(RowSequence, Chunk[], LongChunk, int)} for cumulative
+ * operators or {@link UpdateByWindowedOperator.Context#accumulate(RowSequence, Chunk[], IntChunk, IntChunk, int)} for
+ * windowed operators</li>
  * <li>{@link #finishUpdate(UpdateContext)}</li>
  * </ol>
  */
@@ -37,7 +37,7 @@ public abstract class UpdateByOperator {
 
     protected final MatchPair pair;
     protected final String[] affectingColumns;
-    protected final WritableRowRedirection rowRedirection;
+    protected final RowRedirection rowRedirection;
 
     // these will be used by the timestamp-aware operators (EMA for example)
     protected final OperationControl control;
@@ -103,7 +103,7 @@ public abstract class UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseTimeScaleUnits,
             final long forwardTimeScaleUnits,
-            @Nullable final WritableRowRedirection rowRedirection) {
+            @Nullable final RowRedirection rowRedirection) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
         this.rowRedirection = rowRedirection;
@@ -234,5 +234,10 @@ public abstract class UpdateByOperator {
     public ModifiedColumnSet getOutputModifiedColumnSet() {
         return outputModifiedColumnSet;
     }
+
+    /**
+     * Clear the output rows by setting value to NULL. Dense sources will apply removes to the inner source.
+     */
+    public abstract void clearOutputRows(RowSet toClear);
 
 }

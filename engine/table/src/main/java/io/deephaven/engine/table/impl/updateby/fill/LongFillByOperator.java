@@ -16,9 +16,8 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +50,7 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     }
 
     public LongFillByOperator(@NotNull final MatchPair fillPair,
-                              @Nullable final WritableRowRedirection rowRedirection
+                              @Nullable final RowRedirection rowRedirection
                               // region extra-constructor-args
                               ,@NotNull final Class<?> type
                               // endregion extra-constructor-args

@@ -9,13 +9,13 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public class ByteCumProdOperator extends BaseLongUpdateByOperator {
     // region extra-fields
@@ -47,7 +47,7 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
     }
 
     public ByteCumProdOperator(@NotNull final MatchPair pair,
-                               @Nullable final WritableRowRedirection rowRedirection
+                               @Nullable final RowRedirection rowRedirection
                                // region extra-constructor-args
                                // endregion extra-constructor-args
     ) {

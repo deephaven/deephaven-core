@@ -1,9 +1,8 @@
 package io.deephaven.engine.table.impl.updateby.minmax;
 
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectBinaryOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,7 +12,7 @@ public final class ComparableCumMinMaxOperator<T extends Comparable<T>> extends 
     public ComparableCumMinMaxOperator(final Class<T> colType,
             @NotNull final MatchPair inputPair,
             final boolean isMax,
-            @Nullable final WritableRowRedirection rowRedirection) {
+            @Nullable final RowRedirection rowRedirection) {
         super(colType, inputPair, new String[] {inputPair.rightColumn}, rowRedirection);
         this.isMax = isMax;
     }

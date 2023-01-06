@@ -14,8 +14,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -138,7 +137,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
                             @NotNull final OperationControl control,
                             @Nullable final String timestampColumnName,
                             final long timeScaleUnits,
-                            @Nullable final WritableRowRedirection rowRedirection,
+                            @Nullable final RowRedirection rowRedirection,
                             final ColumnSource<?> valueSource
                             // region extra-constructor-args
                             // endregion extra-constructor-args

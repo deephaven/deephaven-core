@@ -8,38 +8,39 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.UpdateByOperator;
-import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public abstract class UpdateByWindow {
     @Nullable
     protected final String timestampColumnName;
 
-    // store the operators for this window
+    /** The operators for this window */
     protected final UpdateByOperator[] operators;
 
-    // store the index in the {@link UpdateBy.inputSources}
+    /** The indices in the UpdateBy input source collection for each operator input slots */
     protected final int[][] operatorInputSourceSlots;
 
     protected int[] uniqueInputSourceIndices;
 
     /** This context will store the necessary info to process a single window for a single bucket */
-    public abstract class UpdateByWindowContext implements SafeCloseable {
-        /** store a reference to the source rowset */
+    public abstract class UpdateByWindowBucketContext implements SafeCloseable {
+        /** A reference to the source rowset */
         protected final TrackingRowSet sourceRowSet;
-        /** the column source providing the timestamp data for this window */
+        /** The column source providing the timestamp data for this window */
         @Nullable
         protected final ColumnSource<?> timestampColumnSource;
-        /** the timestamp SSA providing fast lookup for time windows */
+        /** The timestamp SSA providing fast lookup for time windows */
         @Nullable
         protected final LongSegmentedSortedArray timestampSsa;
         /** An array of context objects for each underlying operator */
         protected final UpdateByOperator.UpdateContext[] opContext;
-        /** Whether this is the creation phase of this operator */
+        /** Whether this is the creation phase of this window */
         protected final boolean initialStep;
 
         /** An array of ColumnSources for each underlying operator */
@@ -63,9 +64,11 @@ public abstract class UpdateByWindow {
         /** Indicates which sources are needed to process this window context */
         protected int[] dirtySourceIndices;
 
-        public UpdateByWindowContext(final TrackingRowSet sourceRowSet,
+        public UpdateByWindowBucketContext(final TrackingRowSet sourceRowSet,
                 @Nullable final ColumnSource<?> timestampColumnSource,
-                @Nullable final LongSegmentedSortedArray timestampSsa, final int chunkSize, final boolean initialStep) {
+                @Nullable final LongSegmentedSortedArray timestampSsa,
+                final int chunkSize,
+                final boolean initialStep) {
             this.sourceRowSet = sourceRowSet;
             this.timestampColumnSource = timestampColumnSource;
             this.timestampSsa = timestampSsa;
@@ -74,7 +77,6 @@ public abstract class UpdateByWindow {
 
             this.workingChunkSize = chunkSize;
             this.initialStep = initialStep;
-            this.isDirty = false;
         }
 
         @Override
@@ -102,7 +104,8 @@ public abstract class UpdateByWindow {
         }
     }
 
-    public abstract UpdateByWindowContext makeWindowContext(final TrackingRowSet sourceRowSet,
+
+    abstract UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
@@ -169,13 +172,6 @@ public abstract class UpdateByWindow {
         return operators;
     }
 
-    /**
-     * Returns the mapping from operator indices to input source indices
-     */
-    public int[][] getOperatorInputSourceSlots() {
-        return operatorInputSourceSlots;
-    }
-
     public int[] getUniqueSourceIndices() {
         if (uniqueInputSourceIndices == null) {
             final TIntHashSet set = new TIntHashSet();
@@ -205,9 +201,9 @@ public abstract class UpdateByWindow {
     }
 
     /**
-     * Pre-create all the modified/new rows in the output source so they can be updated in parallel tasks
+     * Pre-create all the modified/new rows in the output source for parallel update
      *
-     * @param changes the rowset indicating which rows will be modifed or added this cycle
+     * @param changes the rowset indicating which rows will be modified or added this cycle
      */
     public void prepareForParallelPopulation(final RowSet changes) {
         for (UpdateByOperator operator : operators) {
@@ -224,15 +220,8 @@ public abstract class UpdateByWindow {
      * @param context the window context that will store the results.
      * @param upstream the update that indicates incoming changes to the data.
      */
-    public abstract void computeAffectedRowsAndOperators(final UpdateByWindowContext context,
+    public abstract void computeAffectedRowsAndOperators(final UpdateByWindowBucketContext context,
             @NotNull final TableUpdate upstream);
-
-    /**
-     * Generate the contexts used by the operators for this bucket.
-     *
-     * @param context the window context that will store the results.
-     */
-    protected abstract void makeOperatorContexts(final UpdateByWindowContext context);
 
     /**
      * Accepts and stores the input source array that will be used for future computation. This call allows use of
@@ -241,11 +230,10 @@ public abstract class UpdateByWindow {
      * @param context the window context that will store these sources.
      * @param inputSources the (potentially cached) input sources to use for processing.
      */
-    public void assignInputSources(final UpdateByWindowContext context, final ColumnSource<?>[] inputSources) {
+    public void assignInputSources(final UpdateByWindowBucketContext context, final ColumnSource<?>[] inputSources) {
         context.inputSources = inputSources;
         context.inputSourceChunkPopulated = new boolean[inputSources.length];
         context.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
-        // noinspection unchecked
         context.inputSourceChunks = new WritableChunk[inputSources.length];
 
         for (int srcIdx : context.dirtySourceIndices) {
@@ -261,7 +249,7 @@ public abstract class UpdateByWindow {
      * @param srcIdx the index of the input source.
      * @param rs the rows to retrieve.
      */
-    protected void prepareValuesChunkForSource(final UpdateByWindowContext context, final int srcIdx,
+    protected void prepareValuesChunkForSource(final UpdateByWindowBucketContext context, final int srcIdx,
             final RowSequence rs) {
         if (!context.inputSourceChunkPopulated[srcIdx]) {
             context.inputSourceChunks[srcIdx] =
@@ -276,33 +264,24 @@ public abstract class UpdateByWindow {
      * @param context the window context that will manage the results.
      * @param initialStep whether this is the creation step of the table.
      */
-    public abstract void processRows(final UpdateByWindowContext context, final boolean initialStep);
+    public abstract void processRows(final UpdateByWindowBucketContext context, final boolean initialStep);
 
     /**
      * Returns `true` if the window for this bucket needs to be processed this cycle.
      *
      * @param context the window context that will manage the results.
      */
-    public boolean isWindowDirty(final UpdateByWindowContext context) {
+    public boolean isWindowDirty(final UpdateByWindowBucketContext context) {
         return context.isDirty;
     }
 
     /**
-     * Returns `true` if the window for this bucket needs to be processed this cycle.
+     * Returns the list of `dirty` operators that need to be processed this cycle.
      *
      * @param context the window context that will manage the results.
      */
-    public int[] getDirtyOperators(final UpdateByWindowContext context) {
+    public int[] getDirtyOperators(final UpdateByWindowBucketContext context) {
         return context.dirtyOperatorIndices;
-    }
-
-    /**
-     * Returns the list of input sources that will be needed to process the `dirty` operators for this bucket
-     *
-     * @param context the window context that will manage the results.
-     */
-    public int[] getDirtySources(final UpdateByWindowContext context) {
-        return context.dirtySourceIndices;
     }
 
     /**
@@ -310,7 +289,7 @@ public abstract class UpdateByWindow {
      *
      * @param context the window context that will manage the results.
      */
-    public RowSet getAffectedRows(final UpdateByWindowContext context) {
+    public RowSet getAffectedRows(final UpdateByWindowBucketContext context) {
         return context.affectedRows;
     }
 
@@ -319,7 +298,7 @@ public abstract class UpdateByWindow {
      *
      * @param context the window context that will manage the results.
      */
-    public RowSet getInfluencerRows(final UpdateByWindowContext context) {
+    public RowSet getInfluencerRows(final UpdateByWindowBucketContext context) {
         return context.influencerRows;
     }
 
@@ -338,14 +317,15 @@ public abstract class UpdateByWindow {
             hash = 31 * hash + s.hashCode();
         }
 
+        hash = 31 * hash + Boolean.hashCode(true);
+
         // treat all cumulative ops with the same input columns as identical, even if they rely on timestamps
         if (!windowed) {
-            return 31 * hash + Boolean.hashCode(false);
+            return hash;
         }
 
         // windowed ops are unique per type (ticks/time-based) and window dimensions
-        hash = 31 * hash + Boolean.hashCode(true);
-        hash = 31 * hash + Boolean.hashCode(timestampColumnName != null);
+        hash = 31 * hash + Objects.hashCode(timestampColumnName);
         hash = 31 * hash + Long.hashCode(prevUnits);
         hash = 31 * hash + Long.hashCode(fwdUnits);
         return hash;
@@ -366,17 +346,9 @@ public abstract class UpdateByWindow {
      * Returns `true` if two operators are compatible and can be executed as part of the same window
      */
     public static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
-        // verify input columns match
-        String[] opAInput = opA.getInputColumnNames();
-        String[] opBInput = opB.getInputColumnNames();
-
-        if (opAInput.length != opBInput.length) {
+        // verify input columns are identical
+        if (!Arrays.equals(opA.getInputColumnNames(), opB.getInputColumnNames())) {
             return false;
-        }
-        for (int ii = 0; ii < opAInput.length; ii++) {
-            if (!opAInput[ii].equals(opBInput[ii])) {
-                return false;
-            }
         }
 
         final boolean aWindowed = opA instanceof UpdateByWindowedOperator;
@@ -385,9 +357,7 @@ public abstract class UpdateByWindow {
         // equivalent if both are cumulative, not equivalent if only one is cumulative
         if (!aWindowed && !bWindowed) {
             return true;
-        } else if (!aWindowed) {
-            return false;
-        } else if (!bWindowed) {
+        } else if (aWindowed != bWindowed) {
             return false;
         }
 

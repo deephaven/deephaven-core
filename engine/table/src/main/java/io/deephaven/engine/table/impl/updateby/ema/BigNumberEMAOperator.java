@@ -8,10 +8,9 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,7 +72,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @Nullable final WritableRowRedirection rowRedirection,
+            @Nullable final RowRedirection rowRedirection,
             final ColumnSource<?> valueSource) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits, BigDecimal.class);
 
@@ -87,7 +86,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     @Override
     public void initializeUpdate(@NotNull final UpdateContext updateContext,
-            @NotNull final long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp) {
         super.initializeUpdate(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
 
         final Context ctx = (Context) updateContext;

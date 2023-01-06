@@ -276,6 +276,7 @@ public class ReplicateUpdateBy {
         final File objectFile = new File(objectResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = fixupChunkAttributes(lines);
+        lines = ReplicationUtils.addImport(lines, "import io.deephaven.engine.table.impl.util.ChunkUtils;");
         try {
             lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
         } catch (Exception e) {
@@ -303,6 +304,19 @@ public class ReplicateUpdateBy {
         }
         lines = ReplicationUtils.replaceRegion(lines, "extra-constructor-args",
                 Collections.singletonList("                                      , final Class<T> colType"));
+        lines = ReplicationUtils.replaceRegion(lines, "clear-output",
+                Collections.singletonList(
+                        "    @Override\n" +
+                                "    public void clearOutputRows(final RowSet toClear) {\n" +
+                                "        // if we are redirected, clear the inner source\n" +
+                                "        if (rowRedirection != null) {\n" +
+                                "            ChunkUtils.fillWithNullValue(maybeInnerSource, toClear);\n" +
+                                "        } else {\n" +
+                                "            ChunkUtils.fillWithNullValue(outputSource, toClear);\n" +
+                                "        }\n" +
+                                "    }"));
+
+
         if (augmentConstructorAndFields) {
             lines = ReplicationUtils.replaceRegion(lines, "extra-fields",
                     Collections.singletonList("    private final Class<T> colType;"));

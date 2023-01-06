@@ -5,10 +5,9 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +58,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long timeScaleUnits,
-            @Nullable final WritableRowRedirection rowRedirection) {
+            @Nullable final RowRedirection rowRedirection) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits);
         this.control = control;
 
@@ -70,7 +69,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
     @Override
     public void initializeUpdate(@NotNull final UpdateContext updateContext,
-            @NotNull final long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp) {
         super.initializeUpdate(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
 
         final Context ctx = (Context) updateContext;

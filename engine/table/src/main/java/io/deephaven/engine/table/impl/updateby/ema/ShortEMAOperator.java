@@ -8,8 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,15 +108,15 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
      * @param control        defines how to handle {@code null} input values.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
-     *                       in ticks, otherwise it is measured in nanoseconds
+     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *                       measured in ticks, otherwise it is measured in nanoseconds
      */
     public ShortEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
                             @NotNull final OperationControl control,
                             @Nullable final String timestampColumnName,
                             final long timeScaleUnits,
-                            @Nullable final WritableRowRedirection rowRedirection,
+                            @Nullable final RowRedirection rowRedirection,
                             final ColumnSource<?> valueSource
                             // region extra-constructor-args
                             // endregion extra-constructor-args

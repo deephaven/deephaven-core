@@ -1,16 +1,22 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -25,19 +31,19 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * bucket of rows.
  */
 class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucketHelper> {
-    public static final int SSA_LEAF_SIZE = 4096;
+    private static final int SSA_LEAF_SIZE = 4096;
     protected final ColumnSource<?>[] inputSources;
     // some columns will have multiple inputs, such as time-based and Weighted computations
     final int[][] operatorInputSourceSlots;
     final UpdateByOperator[] operators;
     final UpdateByWindow[] windows;
     final QueryTable source;
-    final WritableRowRedirection rowRedirection;
+    final RowRedirection rowRedirection;
     final UpdateByControl control;
     final QueryTable result;
 
-    /** An array of {@link UpdateByWindow.UpdateByWindowContext}s for each window */
-    final UpdateByWindow.UpdateByWindowContext[] windowContexts;
+    /** An array of {@link UpdateByWindow.UpdateByWindowBucketContext}s for each window */
+    final UpdateByWindow.UpdateByWindowBucketContext[] windowContexts;
 
     /** store timestamp data in an SSA (if needed) */
     final String timestampColumnName;
@@ -70,7 +76,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
-            @Nullable final WritableRowRedirection rowRedirection,
+            @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
 
         this.source = source;
@@ -96,7 +102,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             this.timestampColumnSet = null;
         }
 
-        this.windowContexts = new UpdateByWindow.UpdateByWindowContext[windows.length];
+        this.windowContexts = new UpdateByWindow.UpdateByWindowBucketContext[windows.length];
 
         // make a fake update with the initial rows of the table
         final TableUpdateImpl initialUpdate = new TableUpdateImpl(source.getRowSet(),
@@ -231,8 +237,8 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
     /**
      * Calling this function will prepare this bucket for computation, including making a
-     * {@link UpdateByWindow.UpdateByWindowContext} for each window and computing the affected and influencer rowsets
-     * for each window
+     * {@link UpdateByWindow.UpdateByWindowBucketContext} for each window and computing the affected and influencer
+     * rowsets for each window
      *
      * @param upstream The incoming update for which to prepare
      * @param initialStep Whether this update is part of the initial creation of the bucket

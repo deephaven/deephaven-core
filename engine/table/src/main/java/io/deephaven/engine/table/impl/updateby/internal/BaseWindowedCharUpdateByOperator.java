@@ -6,12 +6,12 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.updateby.UpdateByWindowedOperator;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,7 +109,7 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
                                             @Nullable final String timestampColumnName,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
-                                            @Nullable final WritableRowRedirection rowRedirection
+                                            @Nullable final RowRedirection rowRedirection
                                             // region extra-constructor-args
                                             // endregion extra-constructor-args
                                     ) {
@@ -118,7 +118,7 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
             // region create-dense
             this.maybeInnerSource = new CharacterArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource<>(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -141,6 +141,7 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
         if (rowRedirection != null) {
+            assert maybeInnerSource != null;
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -155,6 +156,7 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
     @Override
     public void prepareForParallelPopulation(final RowSet changedRows) {
         if (rowRedirection != null) {
+            assert maybeInnerSource != null;
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
@@ -166,4 +168,11 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
     public Map<String, ColumnSource<?>> getOutputColumns() {
         return Collections.singletonMap(pair.leftColumn, outputSource);
     }
+
+    // region clear-output
+    @Override
+    public void clearOutputRows(final RowSet toClear) {
+        // NOP for primitive types
+    }
+    // endregion clear-output
 }

@@ -6,9 +6,9 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +16,7 @@ import java.math.BigInteger;
 
 public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdateByOperator<BigInteger> {
 
-    public static final int RING_BUFFER_INITIAL_CAPACITY = 512;
+    private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
 
     protected class Context extends BaseWindowedObjectUpdateByOperator<BigInteger>.Context {
         protected ObjectChunk<BigInteger, ? extends Values> objectInfluencerValuesChunk;
@@ -90,7 +90,7 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
                                         @Nullable final String timestampColumnName,
                                         final long reverseTimeScaleUnits,
                                         final long forwardTimeScaleUnits,
-                                        @Nullable final WritableRowRedirection rowRedirection
+                                        @Nullable final RowRedirection rowRedirection
                                         // region extra-constructor-args
                                         // endregion extra-constructor-args
                                         ) {

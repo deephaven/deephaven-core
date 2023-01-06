@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedFloatUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.PairwiseFloatRingBuffer;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +18,7 @@ import java.util.Map;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
-    public static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
+    private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
     // region extra-fields
     // endregion extra-fields
 
@@ -90,7 +90,7 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
                                    @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @Nullable final WritableRowRedirection rowRedirection
+                                   @Nullable final RowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {

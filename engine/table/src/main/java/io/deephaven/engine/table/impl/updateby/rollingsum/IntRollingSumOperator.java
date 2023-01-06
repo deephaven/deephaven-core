@@ -12,15 +12,14 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.*;
 
 public class IntRollingSumOperator extends BaseWindowedLongUpdateByOperator {
-    public static final int RING_BUFFER_INITIAL_CAPACITY = 512;
+    private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
     // region extra-fields
     // endregion extra-fields
 
@@ -97,7 +96,7 @@ public class IntRollingSumOperator extends BaseWindowedLongUpdateByOperator {
                                    @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @Nullable final WritableRowRedirection rowRedirection
+                                   @Nullable final RowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {

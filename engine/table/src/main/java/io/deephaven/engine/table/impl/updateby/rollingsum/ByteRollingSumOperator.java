@@ -12,15 +12,14 @@ import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.*;
 
 public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
-    public static final int RING_BUFFER_INITIAL_CAPACITY = 512;
+    private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
     // region extra-fields
     final byte nullValue;
     // endregion extra-fields
@@ -98,7 +97,7 @@ public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
                                    @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @Nullable final WritableRowRedirection rowRedirection
+                                   @Nullable final RowRedirection rowRedirection
                                    // region extra-constructor-args
                                ,final byte nullValue
                                    // endregion extra-constructor-args

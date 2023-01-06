@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
@@ -9,6 +9,7 @@ import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
@@ -208,7 +209,6 @@ public class UpdateByOperatorFactory {
             return null;
         }
 
-        @SuppressWarnings("unchecked")
         private UpdateByOperator makeEmaOperator(@NotNull final MatchPair pair,
                 @NotNull final TableDefaults source,
                 @NotNull final EmaSpec ema) {
@@ -295,7 +295,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleCumMinMaxOperator(fc, isMax, rowRedirection);
             } else if (Comparable.class.isAssignableFrom(csType)) {
-                // noinspection unchecked,rawtypes
+                // noinspection rawtypes
                 return new ComparableCumMinMaxOperator(csType, fc, isMax, rowRedirection);
             }
 

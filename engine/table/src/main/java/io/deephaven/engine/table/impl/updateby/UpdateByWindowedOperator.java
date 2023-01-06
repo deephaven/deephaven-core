@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
@@ -6,7 +6,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +42,7 @@ public abstract class UpdateByWindowedOperator extends UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseTimeScaleUnits,
             final long forwardTimeScaleUnits,
-            @Nullable final WritableRowRedirection rowRedirection) {
+            @Nullable final RowRedirection rowRedirection) {
         super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits,
                 rowRedirection);
     }

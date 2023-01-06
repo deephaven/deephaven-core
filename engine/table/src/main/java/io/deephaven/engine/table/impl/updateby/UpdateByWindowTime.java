@@ -13,8 +13,6 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.UpdateByOperator;
-import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
@@ -31,11 +29,11 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * a buffer of `influencer` values to add to the rolling window as the current row changes.
  */
 public class UpdateByWindowTime extends UpdateByWindow {
-    public static final int WINDOW_TIMESTAMP_BUFFER_INITIAL_CAPACITY = 512;
+    private static final int WINDOW_TIMESTAMP_BUFFER_INITIAL_CAPACITY = 512;
     protected final long prevUnits;
     protected final long fwdUnits;
 
-    public class UpdateByWindowTimeContext extends UpdateByWindowContext {
+    public class UpdateByWindowBucketTimeContext extends UpdateByWindowBucketContext {
         private static final int WINDOW_CHUNK_SIZE = 4096;
 
         protected final ChunkSource.GetContext influencerTimestampContext;
@@ -51,7 +49,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
         protected long influencerTimestampChunkSize;
         protected int currentGetContextSize;
 
-        public UpdateByWindowTimeContext(final TrackingRowSet sourceRowSet,
+        public UpdateByWindowBucketTimeContext(final TrackingRowSet sourceRowSet,
                 @NotNull final ColumnSource<?> timestampColumnSource,
                 @Nullable final LongSegmentedSortedArray timestampSsa, final int chunkSize, final boolean initialStep) {
             super(sourceRowSet, timestampColumnSource, timestampSsa, chunkSize, initialStep);
@@ -78,11 +76,10 @@ public class UpdateByWindowTime extends UpdateByWindow {
         this.fwdUnits = fwdUnits;
     }
 
-    @Override
-    protected void makeOperatorContexts(UpdateByWindowContext context) {
-        UpdateByWindowTimeContext ctx = (UpdateByWindowTimeContext) context;
+    protected void makeOperatorContexts(UpdateByWindowBucketContext context) {
+        UpdateByWindowBucketTimeContext ctx = (UpdateByWindowBucketTimeContext) context;
 
-        ctx.workingChunkSize = UpdateByWindowTimeContext.WINDOW_CHUNK_SIZE;
+        ctx.workingChunkSize = UpdateByWindowBucketTimeContext.WINDOW_CHUNK_SIZE;
         ctx.currentGetContextSize = ctx.workingChunkSize;
 
         // create contexts for the affected operators
@@ -91,12 +88,12 @@ public class UpdateByWindowTime extends UpdateByWindow {
         }
     }
 
-    public UpdateByWindowContext makeWindowContext(final TrackingRowSet sourceRowSet,
+    public UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
             final boolean isInitializeStep) {
-        return new UpdateByWindowTimeContext(sourceRowSet, timestampColumnSource, timestampSsa, chunkSize,
+        return new UpdateByWindowBucketTimeContext(sourceRowSet, timestampColumnSource, timestampSsa, chunkSize,
                 isInitializeStep);
     }
 
@@ -172,7 +169,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
         }
     }
 
-    private void ensureGetContextSize(UpdateByWindowTimeContext ctx, long newSize) {
+    private void ensureGetContextSize(UpdateByWindowBucketTimeContext ctx, long newSize) {
         if (ctx.currentGetContextSize < newSize) {
             long size = ctx.currentGetContextSize;
             while (size < newSize) {
@@ -206,7 +203,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
      * This function takes care of loading/preparing the next set of influencer data, in this case we load the next
      * chunk of key and position data and reset the index
      */
-    private void loadNextInfluencerChunks(UpdateByWindowTimeContext ctx) {
+    private void loadNextInfluencerChunks(UpdateByWindowBucketTimeContext ctx) {
         if (!ctx.influencerIt.hasMore()) {
             ctx.nextInfluencerTimestamp = Long.MAX_VALUE;
             ctx.nextInfluencerKey = Long.MAX_VALUE;
@@ -214,7 +211,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
         }
 
         final RowSequence influencerRs =
-                ctx.influencerIt.getNextRowSequenceWithLength(UpdateByWindowTimeContext.WINDOW_CHUNK_SIZE);
+                ctx.influencerIt.getNextRowSequenceWithLength(UpdateByWindowBucketTimeContext.WINDOW_CHUNK_SIZE);
         ctx.influencerKeyChunk = influencerRs.asRowKeyChunk();
         ctx.influencerTimestampChunk =
                 ctx.timestampColumnSource.getChunk(ctx.influencerTimestampContext, influencerRs).asLongChunk();
@@ -231,8 +228,8 @@ public class UpdateByWindowTime extends UpdateByWindow {
     // the rows that are affected by deletions (if any). After the affected rows have been identified,
     // determine which rows will be needed to compute new values for the affected rows (influencer rows)
     @Override
-    public void computeAffectedRowsAndOperators(UpdateByWindowContext context, @NotNull TableUpdate upstream) {
-        UpdateByWindowTimeContext ctx = (UpdateByWindowTimeContext) context;
+    public void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
+        UpdateByWindowBucketTimeContext ctx = (UpdateByWindowBucketTimeContext) context;
 
         // all rows are affected on the initial step
         if (ctx.initialStep) {
@@ -244,7 +241,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
             context.dirtySourceIndices = getUniqueSourceIndices();
 
             makeOperatorContexts(ctx);
-            ctx.isDirty = !upstream.empty();;
+            ctx.isDirty = !upstream.empty();
             return;
         }
 
@@ -294,7 +291,7 @@ public class UpdateByWindowTime extends UpdateByWindow {
                                     ctx.timestampColumnSource, ctx.timestampSsa, true);
                     final WritableRowSet affectedByModifies =
                             computeAffectedRowsTime(prev, upstream.getModifiedPreShift(), prevUnits, fwdUnits,
-                                    ctx.timestampColumnSource, ctx.timestampSsa, true);) {
+                                    ctx.timestampColumnSource, ctx.timestampSsa, true)) {
                 // we used the SSA (post-shift) to get these keys, no need to shift
                 // retain only the rows that still exist in the sourceRowSet
                 affectedByRemoves.retain(ctx.sourceRowSet);
@@ -324,8 +321,8 @@ public class UpdateByWindowTime extends UpdateByWindow {
      * calls do not provide the popped data
      */
     @Override
-    public void processRows(UpdateByWindowContext context, boolean initialStep) {
-        UpdateByWindowTimeContext ctx = (UpdateByWindowTimeContext) context;
+    public void processRows(UpdateByWindowBucketContext context, boolean initialStep) {
+        UpdateByWindowBucketTimeContext ctx = (UpdateByWindowBucketTimeContext) context;
 
         for (int opIdx : context.dirtyOperatorIndices) {
             UpdateByWindowedOperator winOp = (UpdateByWindowedOperator) operators[opIdx];

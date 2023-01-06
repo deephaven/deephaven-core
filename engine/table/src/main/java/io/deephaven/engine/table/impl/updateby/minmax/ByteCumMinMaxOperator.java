@@ -9,13 +9,12 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     private final boolean isMax;
@@ -53,7 +52,7 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
 
     public ByteCumMinMaxOperator(@NotNull final MatchPair pair,
                                   final boolean isMax,
-                                  @Nullable final WritableRowRedirection rowRedirection
+                                  @Nullable final RowRedirection rowRedirection
                                 // region extra-constructor-args
                                 // endregion extra-constructor-args
     ) {

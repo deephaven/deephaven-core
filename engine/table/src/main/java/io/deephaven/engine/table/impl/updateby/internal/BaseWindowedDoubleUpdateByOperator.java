@@ -6,16 +6,19 @@
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.updateby.UpdateByWindowedOperator;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +48,7 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
 
         @Override
         public void accumulate(RowSequence inputKeys,
-                               Chunk<? extends Values> influencerValueChunkArr[],
+                               Chunk<? extends Values>[] influencerValueChunkArr,
                                IntChunk<? extends Values> pushChunk,
                                IntChunk<? extends Values> popChunk,
                                int len) {
@@ -113,7 +116,7 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
                                             @Nullable final String timestampColumnName,
                                             final long reverseTimeScaleUnits,
                                             final long forwardTimeScaleUnits,
-                                            @Nullable final WritableRowRedirection rowRedirection
+                                            @Nullable final RowRedirection rowRedirection
                                             // region extra-constructor-args
                                             // endregion extra-constructor-args
     ) {
@@ -122,7 +125,7 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
             // region create-dense
             this.maybeInnerSource = new DoubleArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource<>(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -145,6 +148,7 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
         if (rowRedirection != null) {
+            assert maybeInnerSource != null;
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -159,6 +163,7 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
     @Override
     public void prepareForParallelPopulation(final RowSet changedRows) {
         if (rowRedirection != null) {
+            assert maybeInnerSource != null;
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
@@ -170,4 +175,11 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
     public Map<String, ColumnSource<?>> getOutputColumns() {
         return Collections.singletonMap(pair.leftColumn, outputSource);
     }
+
+    // region clear-output
+    @Override
+    public void clearOutputRows(final RowSet toClear) {
+        // NOP for primitive types
+    }
+    // endregion clear-output
 }

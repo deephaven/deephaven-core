@@ -16,6 +16,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;

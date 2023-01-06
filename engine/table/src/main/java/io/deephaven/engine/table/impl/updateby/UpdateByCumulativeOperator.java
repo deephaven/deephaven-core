@@ -1,11 +1,11 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,11 +45,11 @@ public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this operation
-     * @param redirHelper the row redirection context to use for the operation
+     * @param rowRedirection the row redirection context to use for the operation
      */
     public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final WritableRowRedirection rowRedirection) {
+            @Nullable final RowRedirection rowRedirection) {
         super(pair, affectingColumns, null, null, 0L, 0L, rowRedirection);
     }
 
@@ -59,13 +59,13 @@ public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this operation
-     * @param redirHelper the row redirection context to use for the operation
+     * @param rowRedirection the row redirection context to use for the operation
      */
     public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final WritableRowRedirection rowRedirection,
+            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
-            @NotNull final long reverseTimeScaleUnits) {
+            final long reverseTimeScaleUnits) {
         super(pair, affectingColumns, null, timestampColumnName, reverseTimeScaleUnits, 0L, rowRedirection);
     }
 

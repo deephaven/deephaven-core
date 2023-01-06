@@ -7,15 +7,14 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
     public class Context extends BigNumberEMAOperator<BigInteger>.Context {
@@ -113,7 +112,7 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                                  @NotNull final OperationControl control,
                                  @Nullable final String timestampColumnName,
                                  final long timeScaleUnits,
-                                 @Nullable final WritableRowRedirection rowRedirection,
+                                 @Nullable final RowRedirection rowRedirection,
                                  final ColumnSource<?> valueSource) {
         super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, rowRedirection, valueSource);
     }

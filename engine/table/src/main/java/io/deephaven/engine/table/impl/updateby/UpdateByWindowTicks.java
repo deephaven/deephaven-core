@@ -12,8 +12,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.UpdateByOperator;
-import io.deephaven.engine.table.impl.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -29,11 +27,11 @@ import java.util.stream.IntStream;
  * of `influencer` values to add to the rolling window as the current row changes.
  */
 public class UpdateByWindowTicks extends UpdateByWindow {
-    public static final int WINDOW_POS_BUFFER_INITIAL_CAPACITY = 512;
+    private static final int WINDOW_POS_BUFFER_INITIAL_CAPACITY = 512;
     protected final long prevUnits;
     protected final long fwdUnits;
 
-    public class UpdateByWindowTicksContext extends UpdateByWindow.UpdateByWindowContext {
+    public class UpdateByWindowBucketTicksContext extends UpdateByWindowBucketContext {
         private static final int WINDOW_CHUNK_SIZE = 4096;
 
         protected final IntRingBuffer currentWindowPositions;
@@ -52,7 +50,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         protected long influencerPosChunkSize;
         protected int currentGetContextSize;
 
-        public UpdateByWindowTicksContext(final TrackingRowSet sourceRowSet,
+        public UpdateByWindowBucketTicksContext(final TrackingRowSet sourceRowSet,
                 @Nullable final ColumnSource<?> timestampColumnSource,
                 @Nullable final LongSegmentedSortedArray timestampSsa, final int chunkSize, final boolean initialStep) {
             super(sourceRowSet, null, null, chunkSize, initialStep);
@@ -81,11 +79,10 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         this.fwdUnits = fwdUnits;
     }
 
-    @Override
-    protected void makeOperatorContexts(UpdateByWindowContext context) {
-        UpdateByWindowTicksContext ctx = (UpdateByWindowTicksContext) context;
+    protected void makeOperatorContexts(UpdateByWindowBucketContext context) {
+        UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
-        ctx.workingChunkSize = UpdateByWindowTicksContext.WINDOW_CHUNK_SIZE;
+        ctx.workingChunkSize = UpdateByWindowBucketTicksContext.WINDOW_CHUNK_SIZE;
         ctx.currentGetContextSize = ctx.workingChunkSize;
 
         // create contexts for the affected operators
@@ -94,12 +91,12 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         }
     }
 
-    public UpdateByWindowContext makeWindowContext(final TrackingRowSet sourceRowSet,
+    public UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
             final boolean isInitializeStep) {
-        return new UpdateByWindowTicksContext(sourceRowSet, timestampColumnSource, timestampSsa,
+        return new UpdateByWindowBucketTicksContext(sourceRowSet, timestampColumnSource, timestampSsa,
                 chunkSize,
                 isInitializeStep);
     }
@@ -133,7 +130,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         }
     }
 
-    private void ensureGetContextSize(UpdateByWindowTicksContext ctx, long newSize) {
+    private void ensureGetContextSize(UpdateByWindowBucketTicksContext ctx, long newSize) {
         if (ctx.currentGetContextSize < newSize) {
             long size = ctx.currentGetContextSize;
             while (size < newSize) {
@@ -167,7 +164,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
      * This function takes care of loading/preparing the next set of influencer data, in this case we load the next
      * chunk of key and position data and reset the index
      */
-    private void loadNextInfluencerChunks(UpdateByWindowTicksContext ctx) {
+    private void loadNextInfluencerChunks(UpdateByWindowBucketTicksContext ctx) {
         if (!ctx.influencerIt.hasMore()) {
             ctx.nextInfluencerPos = Integer.MAX_VALUE;
             ctx.nextInfluencerKey = Long.MAX_VALUE;
@@ -175,11 +172,11 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         }
 
         final RowSequence influencerRs =
-                ctx.influencerIt.getNextRowSequenceWithLength(UpdateByWindowTicksContext.WINDOW_CHUNK_SIZE);
+                ctx.influencerIt.getNextRowSequenceWithLength(UpdateByWindowBucketTicksContext.WINDOW_CHUNK_SIZE);
         ctx.influencerKeyChunk = influencerRs.asRowKeyChunk();
 
         final RowSequence influencePosRs =
-                ctx.influencerPosIt.getNextRowSequenceWithLength(UpdateByWindowTicksContext.WINDOW_CHUNK_SIZE);
+                ctx.influencerPosIt.getNextRowSequenceWithLength(UpdateByWindowBucketTicksContext.WINDOW_CHUNK_SIZE);
         ctx.influencerPosChunk = influencePosRs.asRowKeyChunk();
 
         Assert.eqTrue(influencePosRs.lastRowKey() < Integer.MAX_VALUE,
@@ -201,9 +198,9 @@ public class UpdateByWindowTicks extends UpdateByWindow {
      * these values (i.e. that fall within the window and will `influence` this computation).
      */
     @Override
-    public void computeAffectedRowsAndOperators(UpdateByWindowContext context, @NotNull TableUpdate upstream) {
+    public void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
 
-        UpdateByWindowTicksContext ctx = (UpdateByWindowTicksContext) context;
+        UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
         // all rows are affected on the initial step
         if (ctx.initialStep) {
@@ -295,8 +292,8 @@ public class UpdateByWindowTicks extends UpdateByWindow {
     }
 
     @Override
-    public void processRows(UpdateByWindowContext context, boolean initialStep) {
-        UpdateByWindowTicksContext ctx = (UpdateByWindowTicksContext) context;
+    public void processRows(UpdateByWindowBucketContext context, boolean initialStep) {
+        UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 

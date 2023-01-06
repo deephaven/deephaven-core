@@ -1,14 +1,16 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedList;
 import java.util.Map;
 
 public class ZeroKeyUpdateByManager extends UpdateBy {
@@ -63,8 +65,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
             // create an updateby bucket instance directly from the source table
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    operatorInputSourceSlots, resultSources, timestampColumnName, redirHelper.getRowRedirection(),
-                    control);
+                    operatorInputSourceSlots, resultSources, timestampColumnName, rowRedirection, control);
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
@@ -74,8 +75,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             result.addParentReference(zeroKeyUpdateBy);
         } else {
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    operatorInputSourceSlots, resultSources, timestampColumnName, redirHelper.getRowRedirection(),
-                    control);
+                    operatorInputSourceSlots, resultSources, timestampColumnName, rowRedirection, control);
             result = zeroKeyUpdateBy.result;
             buckets.offer(zeroKeyUpdateBy);
         }

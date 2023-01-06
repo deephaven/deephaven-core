@@ -1,16 +1,22 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.base.Pair;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.updateby.UpdateByWindow;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An implementation of {@link UpdateBy} dedicated to bucketed computation.
@@ -34,7 +40,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
      * @param resultSources the result sources
      * @param byColumns the columns to use for the bucket keys
      * @param timestampColumnName the column to use for all time-aware operators
-     * @param redirHelper the row redirection helper for dense output sources
+     * @param rowRedirection the row redirection for dense output sources
      * @param control the control object.
      */
     protected BucketedPartitionedUpdateByManager(
@@ -86,7 +92,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                     operatorInputSourceSlots,
                     resultSources,
                     timestampColumnName,
-                    redirHelper.getRowRedirection(),
+                    rowRedirection,
                     control);
 
             // add this to the bucket list

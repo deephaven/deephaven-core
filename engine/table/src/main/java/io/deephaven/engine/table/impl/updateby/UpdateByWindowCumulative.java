@@ -10,8 +10,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
-import io.deephaven.engine.table.impl.UpdateByOperator;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,8 +31,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
         super(operators, operatorSourceSlots, timestampColumnName);
     }
 
-    @Override
-    protected void makeOperatorContexts(UpdateByWindowContext context) {
+    protected void makeOperatorContexts(UpdateByWindowBucketContext context) {
         // working chunk size need not be larger than affectedRows.size()
         context.workingChunkSize = Math.min(context.workingChunkSize, context.affectedRows.intSize());
 
@@ -44,18 +41,18 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
         }
     }
 
-    public UpdateByWindowContext makeWindowContext(final TrackingRowSet sourceRowSet,
+    public UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
             final boolean isInitializeStep) {
-        return new UpdateByWindowContext(sourceRowSet, timestampColumnSource, timestampSsa,
+        return new UpdateByWindowBucketContext(sourceRowSet, timestampColumnSource, timestampSsa,
                 chunkSize,
                 isInitializeStep) {};
     }
 
     @Override
-    public void computeAffectedRowsAndOperators(UpdateByWindowContext context, @NotNull TableUpdate upstream) {
+    public void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
 
         // all rows are affected on the initial step
         if (context.initialStep) {
@@ -114,7 +111,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    public void processRows(UpdateByWindowContext context, final boolean initialStep) {
+    public void processRows(UpdateByWindowBucketContext context, final boolean initialStep) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
         // find the key before the first affected row

@@ -13,7 +13,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.PairwiseDoubleRingBuffer;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +23,7 @@ import java.util.Map;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator {
-    public static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
+    private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
     // region extra-fields
     // endregion extra-fields
 
@@ -95,7 +95,7 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
                                    @Nullable final String timestampColumnName,
                                    final long reverseTimeScaleUnits,
                                    final long forwardTimeScaleUnits,
-                                   @Nullable final WritableRowRedirection rowRedirection
+                                   @Nullable final RowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {

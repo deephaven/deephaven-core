@@ -9,13 +9,12 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.UpdateBy;
 import io.deephaven.engine.table.impl.updateby.internal.BaseIntUpdateByOperator;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 
 public class IntCumMinMaxOperator extends BaseIntUpdateByOperator {
     private final boolean isMax;
@@ -53,7 +52,7 @@ public class IntCumMinMaxOperator extends BaseIntUpdateByOperator {
 
     public IntCumMinMaxOperator(@NotNull final MatchPair pair,
                                   final boolean isMax,
-                                  @Nullable final WritableRowRedirection rowRedirection
+                                  @Nullable final RowRedirection rowRedirection
                                 // region extra-constructor-args
                                 // endregion extra-constructor-args
     ) {

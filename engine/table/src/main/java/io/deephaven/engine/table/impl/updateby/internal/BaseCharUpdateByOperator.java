@@ -7,10 +7,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.updateby.UpdateByCumulativeOperator;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -93,11 +92,11 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link WritableRowRedirection} for the output column
+     * @param rowRedirection the {@link RowRedirection} for the output column
      */
     public BaseCharUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @Nullable final WritableRowRedirection rowRedirection
+                                    @Nullable final RowRedirection rowRedirection
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
     ) {
@@ -110,7 +109,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link WritableRowRedirection} for the output column
+     * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
      * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
@@ -118,7 +117,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
      */
     public BaseCharUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @Nullable final WritableRowRedirection rowRedirection,
+                                    @Nullable final RowRedirection rowRedirection,
                                     @Nullable final String timestampColumnName,
                                     final long timeScaleUnits
                                     // region extra-constructor-args
@@ -129,7 +128,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
             // region create-dense
             this.maybeInnerSource = new CharacterArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = new WritableRedirectedColumnSource<>(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -159,6 +158,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
         if (rowRedirection != null) {
+            assert maybeInnerSource != null;
             maybeInnerSource.startTrackingPrevValues();
         }
     }
@@ -173,6 +173,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
     @Override
     public void prepareForParallelPopulation(final RowSet changedRows) {
         if (rowRedirection != null) {
+            assert maybeInnerSource != null;
             ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
@@ -184,4 +185,11 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
     public Map<String, ColumnSource<?>> getOutputColumns() {
         return Collections.singletonMap(pair.leftColumn, outputSource);
     }
+
+    // region clear-output
+    @Override
+    public void clearOutputRows(final RowSet toClear) {
+        // NOP for primitive types
+    }
+    // endregion clear-output
 }
