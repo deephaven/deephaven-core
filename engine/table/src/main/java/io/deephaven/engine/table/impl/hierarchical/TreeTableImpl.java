@@ -398,6 +398,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             return false;
         }
         final SnapshotStateImpl.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
+        if (nodeTableState == null) {
+            return false;
+        }
         nodeTableState.ensurePreparedForTraversal();
         final Table traversalTable = nodeTableState.getTraversalTable();
         return (snapshotState.usePrev() ? traversalTable.getRowSet().sizePrev() : traversalTable.size()) > 0;

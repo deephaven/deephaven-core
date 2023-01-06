@@ -146,8 +146,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         private final KeyedLongObjectHashMap<NodeTableState> nodeTableStates =
                 new KeyedLongObjectHashMap<>(new NodeTableStateIdKey());
-        private final KeyedLongObjectHash.ValueFactory<NodeTableState> nodeTableStateFactory =
-                new NodeTableStateIdFactory();
 
         private final TIntObjectMap<ChunkSource.FillContext[]> perLevelFillContextArrays = new TIntObjectHashMap<>();
         private final TIntObjectMap<SharedContext> perLevelSharedContexts = new TIntObjectHashMap<>();
@@ -181,8 +179,19 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             }
         }
 
+        @Nullable
         NodeTableState getNodeTableState(final long nodeId) {
-            return nodeTableStates.putIfAbsent(nodeId, nodeTableStateFactory);
+            final NodeTableState existing = nodeTableStates.get(nodeId);
+            if (existing != null) {
+                return existing;
+            }
+            final Table base = nodeIdToNodeBaseTable(nodeId);
+            if (base == null) {
+                return null;
+            }
+            final NodeTableState created = new NodeTableState(nodeId, base);
+            nodeTableStates.put(nodeId, created);
+            return created;
         }
 
         @NotNull
@@ -399,14 +408,6 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             }
         }
 
-        private final class NodeTableStateIdFactory extends KeyedLongObjectHash.ValueFactory.Strict<NodeTableState> {
-
-            @Override
-            public NodeTableState newValue(final long nodeId) {
-                return new NodeTableState(nodeId);
-            }
-        }
-
         /**
          * State tracking for node tables in this HierarchicalTableImpl.
          */
@@ -453,9 +454,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
              */
             private int visitedSnapshotClock;
 
-            private NodeTableState(final long nodeId) {
+            private NodeTableState(final long nodeId, @NotNull final Table base) {
                 this.id = nodeId;
-                this.base = nodeIdToNodeBaseTable(nodeId);
+                this.base = base;
                 // NB: No current implementation requires NodeTableState to ensure liveness for its base. If that
                 // changes, we'll need to add liveness retention for base here.
             }
@@ -1128,6 +1129,13 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         try {
             // Get our node-table state, and the correct table instance to expand.
             final SnapshotStateImpl.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
+            if (nodeTableState == null) {
+                if (snapshotState.expandingAll) {
+                    return;
+                }
+                failIfConcurrentAttemptInconsistent();
+                return;
+            }
             final boolean filling = snapshotState.filling();
             final Table forExpansion = nodeTableState.prepareAndGetTableForExpansion(filling);
             if (forExpansion.isEmpty()) {
