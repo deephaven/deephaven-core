@@ -163,9 +163,9 @@ public class HierarchicalTableSchemaUtil {
         return new Schema(fields, schemaMetadata).getSchema(builder);
     }
 
-    private static Stream<Field> getStructuralFields(@NotNull HierarchicalTable hierarchicalTable) {
-        return tableDefinitionToFields(Collections.emptyMap(), null,
-                hierarchicalTable.getStructuralDefinition(),
+    private static Stream<Field> getStructuralFields(@NotNull HierarchicalTable<?> hierarchicalTable) {
+        return columnDefinitionsToFields(Collections.emptyMap(), null,
+                hierarchicalTable.getStructuralColumnDefinitions(),
                 columnName -> {
                     final Map<String, String> metadata = new HashMap<>();
                     putMetadata(metadata, HIERARCHICAL_TABLE_IS_STRUCTURAL_COLUMN, TRUE_STRING);
@@ -188,8 +188,8 @@ public class HierarchicalTableSchemaUtil {
                 AggregationPairs.of(rollupTable.getAggregations())
                         .collect(Collectors.toMap(cnp -> cnp.output().name(), cnp -> cnp.input().name()));
         final Map<String, String> aggregatedNodeDescriptions = getColumnDescriptions(rollupTable.getAttributes());
-        return tableDefinitionToFields(aggregatedNodeDescriptions, null,
-                rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated),
+        return columnDefinitionsToFields(aggregatedNodeDescriptions, null,
+                rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated).getColumns(),
                 columnName -> {
                     final Map<String, String> metadata = new HashMap<>();
                     putMetadata(metadata, ROLLUP_TABLE_IS_AGGREGATED_NODE_COLUMN, TRUE_STRING);
@@ -212,8 +212,8 @@ public class HierarchicalTableSchemaUtil {
         }
         final Map<String, Object> sourceAttributes = rollupTable.getSource().getAttributes();
         final Map<String, String> constituentNodeDescriptions = getColumnDescriptions(sourceAttributes);
-        return tableDefinitionToFields(constituentNodeDescriptions, null,
-                rollupTable.getNodeDefinition(RollupTable.NodeType.Constituent),
+        return columnDefinitionsToFields(constituentNodeDescriptions, null,
+                rollupTable.getNodeDefinition(RollupTable.NodeType.Constituent).getColumns(),
                 columnName -> {
                     final Map<String, String> metadata = new HashMap<>();
                     putMetadata(metadata, ROLLUP_TABLE_IS_CONSTITUENT_NODE_COLUMN, TRUE_STRING);
@@ -226,8 +226,8 @@ public class HierarchicalTableSchemaUtil {
 
     private static Stream<Field> getTreeNodeFields(@NotNull TreeTable treeTable) {
         final Map<String, String> treeNodeDescriptions = getColumnDescriptions(treeTable.getAttributes());
-        return tableDefinitionToFields(treeNodeDescriptions, null,
-                treeTable.getNodeDefinition(),
+        return columnDefinitionsToFields(treeNodeDescriptions, null,
+                treeTable.getNodeDefinition().getColumns(),
                 columnName -> {
                     final Map<String, String> metadata = new HashMap<>();
                     putMetadata(metadata, TREE_TABLE_IS_NODE_COLUMN, TRUE_STRING);

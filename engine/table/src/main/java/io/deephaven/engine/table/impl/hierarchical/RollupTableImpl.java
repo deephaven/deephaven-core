@@ -77,6 +77,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private final RollupNodeOperationsRecorder aggregatedNodeOperations;
     private final TableDefinition constituentNodeDefinition;
     private final RollupNodeOperationsRecorder constituentNodeOperations;
+    private final List<ColumnDefinition<?>> availableColumnDefinitions;
 
     private RollupTableImpl(
             @NotNull final Map<String, Object> initialAttributes,
@@ -90,7 +91,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @Nullable final TableDefinition aggregatedNodeDefinition,
             @Nullable final RollupNodeOperationsRecorder aggregatedNodeOperations,
             @Nullable final TableDefinition constituentNodeDefinition,
-            @Nullable final RollupNodeOperationsRecorder constituentNodeOperations) {
+            @Nullable final RollupNodeOperationsRecorder constituentNodeOperations,
+            @Nullable final List<ColumnDefinition<?>> availableColumnDefinitions) {
         super(initialAttributes, source, levelTables[0]);
 
         this.aggregations = aggregations;
@@ -124,6 +126,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             Assert.eqNull(constituentNodeOperations, "constituentNodeOperations");
             this.constituentNodeOperations = null;
         }
+        this.availableColumnDefinitions = availableColumnDefinitions == null
+                ? computeAvailableColumnDefinitions(this.aggregatedNodeDefinition, this.constituentNodeDefinition)
+                : availableColumnDefinitions;
 
         if (source.isRefreshing()) {
             final Table root = getRoot(); // This is our 0th level aggregation result
@@ -184,6 +189,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         }
     }
 
+    @Override
+    public List<ColumnDefinition<?>> getAvailableColumnDefinitions() {
+        return availableColumnDefinitions;
+    }
+
     private static TableDefinition computeAggregatedNodeDefinition(
             @NotNull final Table root,
             @Nullable final RollupNodeOperationsRecorder operations) {
@@ -199,6 +209,19 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return operations == null
                 ? source.getDefinition()
                 : operations.getResultDefinition();
+    }
+
+    private static List<ColumnDefinition<?>> computeAvailableColumnDefinitions(
+            @NotNull final TableDefinition aggregatedNodeDefinition,
+            @Nullable final TableDefinition constituentNodeDefinition) {
+        return Stream.of(
+                STRUCTURAL_COLUMN_DEFINITIONS.stream(),
+                aggregatedNodeDefinition.getColumnStream(),
+                constituentNodeDefinition == null
+                        ? Stream.<ColumnDefinition<?>>empty()
+                        : constituentNodeDefinition.getColumnStream())
+                .flatMap(Function.identity())
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -227,7 +250,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
-                constituentNodeDefinition, constituentNodeOperations);
+                constituentNodeDefinition, constituentNodeOperations,
+                availableColumnDefinitions);
     }
 
     private WhereFilter[] initializeAndValidateFilters(@NotNull final Collection<? extends Filter> filters) {
@@ -281,7 +305,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         }
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
-                null, newAggregatedNodeOperations, null, newConstituentNodeOperations);
+                null, newAggregatedNodeOperations, null, newConstituentNodeOperations, availableColumnDefinitions);
     }
 
     @Override
@@ -399,7 +423,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
-                constituentNodeDefinition, constituentNodeOperations);
+                constituentNodeDefinition, constituentNodeOperations,
+                availableColumnDefinitions);
     }
 
     public static RollupTable makeRollup(
@@ -419,7 +444,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final RollupTableImpl result = new RollupTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Rollup)),
                 source, aggregations, includeConstituents, groupByColumns,
-                levelTables, levelRowLookups, levelNodeTableSources, null, null, null, null);
+                levelTables, levelRowLookups, levelNodeTableSources, null, null, null, null, null);
         source.copySortableColumns(result, baseLevel.getDefinition().getColumnNameMap()::containsKey);
         result.setColumnDescriptions(AggregationDescriptions.of(aggregations));
         return result;

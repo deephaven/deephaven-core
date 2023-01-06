@@ -62,8 +62,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     static final int ROW_EXPANDED_COLUMN_INDEX = 1;
     private static final ColumnDefinition<Boolean> ROW_EXPANDED_COLUMN_DEFINITION =
             ColumnDefinition.ofBoolean(ROW_EXPANDED_COLUMN.name());
-    private static final TableDefinition STRUCTURAL_TABLE_DEFINITION =
-            TableDefinition.of(ROW_DEPTH_COLUMN_DEFINITION, ROW_EXPANDED_COLUMN_DEFINITION);
+    static final List<ColumnDefinition<?>> STRUCTURAL_COLUMN_DEFINITIONS =
+            List.of(ROW_DEPTH_COLUMN_DEFINITION, ROW_EXPANDED_COLUMN_DEFINITION);
 
     private static final int CHUNK_SIZE = 512;
 
@@ -111,8 +111,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     @Override
-    public TableDefinition getStructuralDefinition() {
-        return STRUCTURAL_TABLE_DEFINITION;
+    public List<ColumnDefinition<?>> getStructuralColumnDefinitions() {
+        return STRUCTURAL_COLUMN_DEFINITIONS;
     }
 
     @Override

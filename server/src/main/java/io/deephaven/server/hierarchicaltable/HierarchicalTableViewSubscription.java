@@ -139,7 +139,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         propagationJob = this::process;
 
         columns = new BitSet();
-        columns.set(0, view.getHierarchicalTable().getStructuralDefinition().numColumns());
+        columns.set(0, view.getHierarchicalTable().getAvailableColumnDefinitions().size());
         rows = RowSetFactory.empty();
 
         listener.onNext(streamGeneratorFactory.getSchemaView(
@@ -295,7 +295,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             final long lastExpandedSize) {
         // 1. Grab some schema and snapshot information
         final List<ColumnDefinition<?>> columnDefinitions =
-                view.getHierarchicalTable().getStructuralDefinition().getColumns();
+                view.getHierarchicalTable().getAvailableColumnDefinitions();
         final int numAvailableColumns = columnDefinitions.size();
         final int numRows = rows.intSize();
 
@@ -368,10 +368,11 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         }
 
         if (viewportColumns != null) {
-            if (viewportColumns.length() > view.getHierarchicalTable().getStructuralDefinition().numColumns()) {
+            if (viewportColumns.length() > view.getHierarchicalTable().getAvailableColumnDefinitions().size()) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "Requested columns out of range: length=%d, available length=%d",
-                        viewportColumns.length(), view.getHierarchicalTable().getStructuralDefinition().numColumns()));
+                        viewportColumns.length(),
+                        view.getHierarchicalTable().getAvailableColumnDefinitions().size()));
             }
         }
         if (viewportRows != null) {

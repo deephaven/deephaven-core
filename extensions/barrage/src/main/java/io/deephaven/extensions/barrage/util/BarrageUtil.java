@@ -142,8 +142,9 @@ public class BarrageUtil {
 
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
-        final List<Field> fields = tableDefinitionToFields(
-                descriptions, inputTable, tableDefinition, ignored -> new HashMap<>()).collect(Collectors.toList());
+        final List<Field> fields = columnDefinitionsToFields(
+                descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>())
+                        .collect(Collectors.toList());
 
         return new Schema(fields, schemaMetadata).getSchema(builder);
     }
@@ -169,19 +170,19 @@ public class BarrageUtil {
         return metadata;
     }
 
-    public static Stream<Field> tableDefinitionToFields(
+    public static Stream<Field> columnDefinitionsToFields(
             @NotNull final Map<String, String> columnDescriptions,
             @Nullable final MutableInputTable inputTable,
-            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory) {
         // Find the format columns
         final Set<String> formatColumns = new HashSet<>();
-        tableDefinition.getColumnNames().stream()
+        columnDefinitions.stream().map(ColumnDefinition::getName)
                 .filter(ColumnFormatting::isFormattingColumn)
                 .forEach(formatColumns::add);
 
         // Build metadata for columns and add the fields
-        return tableDefinition.getColumnStream().map((final ColumnDefinition<?> column) -> {
+        return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
             final String name = column.getName();
             final Class<?> dataType = column.getDataType();
             final Class<?> componentType = column.getComponentType();
