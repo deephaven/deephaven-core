@@ -3,9 +3,6 @@
  */
 package io.deephaven.web.client.api.barrage.def;
 
-import io.deephaven.web.shared.data.RollupDefinition;
-
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 

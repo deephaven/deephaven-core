@@ -37,7 +37,7 @@ import static io.deephaven.web.client.api.barrage.WebBarrageUtils.keyValuePairs;
 import static io.deephaven.web.client.fu.JsItr.iterate;
 
 /**
- * Container for state information pertaining to a given {@link TableHandle}.
+ * Container for state information pertaining to a given {@link TableTicket}.
  *
  * Where JsTable is a mutable object which can point to any given ClientTableState, each ClientTableState represents an
  * immutable table configuration / handle which can have zero or more JsTable objects bound to it.
