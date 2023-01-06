@@ -2161,12 +2161,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private QueryTable maybeViewForSnapshot(Collection<? extends JoinAddition> stampColumns) {
-        if (stampColumns.isEmpty()) {
-            // When stampColumns is empty, we'll just use this table (instead of invoking view w/ empty list)
-            return this;
-        }
-        final SourceColumn[] columns = stampColumns.stream().map(SourceColumn::of).toArray(SourceColumn[]::new);
-        return (QueryTable) viewOrUpdateView(Flavor.View, columns);
+        // When stampColumns is empty, we'll just use this table (instead of invoking view w/ empty list)
+        return stampColumns.isEmpty() ? this
+                : (QueryTable) viewOrUpdateView(Flavor.View, SourceColumn.from(stampColumns));
     }
 
     private static void throwColumnConflictMessage(Set<String> left, Set<String> right) {

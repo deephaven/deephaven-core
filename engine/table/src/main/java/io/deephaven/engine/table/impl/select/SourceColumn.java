@@ -14,6 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,10 @@ public class SourceColumn implements SelectColumn {
     public static SourceColumn of(JoinAddition joinAddition) {
         // We know ColumnName already does validation
         return new SourceColumn(joinAddition.existingColumn().name(), joinAddition.newColumn().name(), true);
+    }
+
+    public static SourceColumn[] from(Collection<? extends JoinAddition> joinAdditions) {
+        return joinAdditions.stream().map(SourceColumn::of).toArray(SourceColumn[]::new);
     }
 
     @NotNull
