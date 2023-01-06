@@ -89,7 +89,7 @@ case "`uname`" in
     ;;
 esac
 
-CLASSPATH=/apps/libs/*:$classpath
+CLASSPATH=$classpath
 <% if ( mainClassName.startsWith('--module ') ) { %>MODULE_PATH=$modulePath<% } %>
 
 # Determine the Java command to use to start the JVM.
