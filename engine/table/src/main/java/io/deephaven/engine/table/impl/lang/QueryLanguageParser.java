@@ -3,43 +3,136 @@
  */
 package io.deephaven.engine.table.impl.lang;
 
+import com.github.javaparser.ast.ArrayCreationLevel;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.PackageDeclaration;
+import com.github.javaparser.ast.body.AnnotationDeclaration;
+import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.body.EnumConstantDeclaration;
+import com.github.javaparser.ast.body.EnumDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.InitializerDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.comments.BlockComment;
+import com.github.javaparser.ast.comments.JavadocComment;
+import com.github.javaparser.ast.comments.LineComment;
+import com.github.javaparser.ast.expr.ArrayAccessExpr;
+import com.github.javaparser.ast.expr.ArrayCreationExpr;
+import com.github.javaparser.ast.expr.ArrayInitializerExpr;
+import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.BooleanLiteralExpr;
+import com.github.javaparser.ast.expr.CastExpr;
+import com.github.javaparser.ast.expr.CharLiteralExpr;
+import com.github.javaparser.ast.expr.ClassExpr;
+import com.github.javaparser.ast.expr.ConditionalExpr;
+import com.github.javaparser.ast.expr.DoubleLiteralExpr;
+import com.github.javaparser.ast.expr.EnclosedExpr;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.InstanceOfExpr;
+import com.github.javaparser.ast.expr.IntegerLiteralExpr;
+import com.github.javaparser.ast.expr.LambdaExpr;
+import com.github.javaparser.ast.expr.LiteralExpr;
+import com.github.javaparser.ast.expr.LongLiteralExpr;
+import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
+import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.MethodReferenceExpr;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.expr.NullLiteralExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
+import com.github.javaparser.ast.expr.SuperExpr;
+import com.github.javaparser.ast.expr.ThisExpr;
+import com.github.javaparser.ast.expr.TypeExpr;
+import com.github.javaparser.ast.expr.UnaryExpr;
+import com.github.javaparser.ast.expr.VariableDeclarationExpr;
+import com.github.javaparser.ast.stmt.AssertStmt;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.BreakStmt;
+import com.github.javaparser.ast.stmt.CatchClause;
+import com.github.javaparser.ast.stmt.ContinueStmt;
+import com.github.javaparser.ast.stmt.DoStmt;
+import com.github.javaparser.ast.stmt.EmptyStmt;
+import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
+import com.github.javaparser.ast.stmt.ForStmt;
+import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.stmt.LabeledStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.SwitchStmt;
+import com.github.javaparser.ast.stmt.SynchronizedStmt;
+import com.github.javaparser.ast.stmt.ThrowStmt;
+import com.github.javaparser.ast.stmt.TryStmt;
+import com.github.javaparser.ast.stmt.WhileStmt;
+import com.github.javaparser.ast.type.ArrayType;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.PrimitiveType;
+import com.github.javaparser.ast.type.TypeParameter;
+import com.github.javaparser.ast.type.VoidType;
+import com.github.javaparser.ast.type.WildcardType;
+import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
+import io.deephaven.DeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.vector.*;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.vector.Vector;
+import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapper;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
-import com.github.javaparser.ast.*;
-import com.github.javaparser.ast.body.*;
-// Java 8 needs this import due to a conflict in java.lang.reflect, don't remove it
-import com.github.javaparser.ast.body.Parameter;
-import com.github.javaparser.ast.comments.BlockComment;
-import com.github.javaparser.ast.comments.JavadocComment;
-import com.github.javaparser.ast.comments.LineComment;
-import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.stmt.*;
-import com.github.javaparser.ast.type.*;
-import com.github.javaparser.ast.type.WildcardType;
-import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
-import io.deephaven.DeephavenException;
+import io.deephaven.vector.BooleanVector;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ShortVector;
+import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jpy.PyObject;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.util.PythonScopeJpyImpl.*;
 
 public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, QueryLanguageParser.VisitArgs> {
-
+    private static final Logger log = LoggerFactory.getLogger(QueryLanguageParser.class);
     private final Collection<Package> packageImports;
     private final Collection<Class<?>> classImports;
     private final Collection<Class<?>> staticImports;
@@ -391,7 +484,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         } else {
             if (scope == org.jpy.PyObject.class) {
                 // This is a Python method call, assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
-                for (Method method : CallableWrapper.class.getDeclaredMethods()) {
+                for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
                     possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
                 }
             } else {
@@ -423,7 +516,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     private static boolean isPotentialImplicitCall(Class<?> methodClass) {
-        return CallableWrapper.class.isAssignableFrom(methodClass) || methodClass == groovy.lang.Closure.class;
+        return PyCallableWrapper.class.isAssignableFrom(methodClass) || methodClass == groovy.lang.Closure.class;
     }
 
     private Class<?> getMethodReturnType(Class<?> scope, String methodName, Class<?>[] paramTypes,
@@ -1686,12 +1779,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         Class<?>[] argumentTypes = method.getParameterTypes();
 
         // now do some parameter conversions...
-
-        Class<?> methodClass = variables.get(n.getNameAsString());
-        if (methodClass == NumbaCallableWrapper.class) {
-            checkPyNumbaVectorizedFunc(n, expressions, expressionTypes);
-        }
-
         expressions = convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, expressions);
 
         if (isPotentialImplicitCall(method.getDeclaringClass())) {
@@ -1718,7 +1805,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 if (!n.getNameAsString().equals("call")) {
                     // to be backwards compatible with the syntax func.call(...)
                     innerPrinter.append("getAttribute(\"" + n.getName() + "\")");
-                    printer.append("(new io.deephaven.engine.util.PythonScopeJpyImpl.CallableWrapper(");
+                    printer.append("(new io.deephaven.engine.util.PyCallableWrapper(");
                     printer.append(innerPrinter);
                     printer.append(")).");
                 } else {
@@ -1731,47 +1818,148 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             printer.append(n.getNameAsString());
         }
 
-        if (printer.hasStringBuilder()) {
-            printArguments(expressions, printer);
+        Class<?>[] argTypes = printArguments(expressions, printer);
+
+        // Python function call vectorization
+        Class<?> methodClass = variables.get(n.getNameAsString());
+        if (methodClass == PyCallableWrapper.class) {
+            vectorizePythonCallable(n, expressions, argTypes);
         }
 
         return calculateMethodReturnTypeUsingGenerics(scope, method, expressionTypes, parameterizedTypes);
     }
 
-    private void checkPyNumbaVectorizedFunc(MethodCallExpr n, Expression[] expressions, Class<?>[] expressionTypes) {
-        // numba vectorized functions return arrays of primitive types. This will break the generated expression
-        // evaluation code that expects singular values. This check makes sure that numba vectorized functions must be
-        // used alone (or with cast only) as the entire expression.
-        n.getParentNode().ifPresent(parent -> {
-            if (parent.getClass() != CastExpr.class || parent.getParentNode().isPresent()) {
-                throw new RuntimeException("Numba vectorized function can't be used in an expression.");
+    private void vectorizePythonCallable(MethodCallExpr n, Expression[] expressions, Class<?>[] argTypes) {
+        final String methodName = n.getNameAsString();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Object paramValueRaw = queryScope.readParamValue(methodName, null);
+        if (paramValueRaw == null) {
+            throw new IllegalStateException("Resolved Python function name " + methodName + " not found");
+        }
+        if (!(paramValueRaw instanceof PyCallableWrapper)) {
+            throw new IllegalStateException("Resolved Python function name " + methodName + " not callable");
+        }
+        final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) paramValueRaw;
+
+        prepareVectorization(n, expressions, pyCallableWrapper);
+        if (pyCallableWrapper.isVectorizable()) {
+            prepareVectorizationArgs(n, queryScope, expressions, argTypes, pyCallableWrapper);
+        }
+    }
+
+    private void prepareVectorization(MethodCallExpr n, Expression[] expressions, PyCallableWrapper pyCallableWrapper) {
+        try {
+            checkVectorizability(n, expressions, pyCallableWrapper);
+            pyCallableWrapper.setVectorizable(true);
+            if (!pyCallableWrapper.isVectorized() && log.isDebugEnabled()) {
+                log.debug().append("Python function call ").append(n.toString()).append(" is auto-vectorizable")
+                        .endl();
             }
+        } catch (RuntimeException ex) {
+            // if the Callable is already vectorized (decorated with numba.vectorized or dh_vectorized),
+            // then the exception is fatal, otherwise it is an un-vectorized Callable and will remain as such
+            if (pyCallableWrapper.isVectorized()) {
+                throw ex;
+            }
+            pyCallableWrapper.setVectorizable(false);
+            if (log.isDebugEnabled()) {
+                log.debug().append("Python function call ").append(n.toString()).append(" is not auto-vectorizable:")
+                        .append(ex.getMessage()).endl();
+            }
+        }
+    }
+
+    private void checkVectorizability(MethodCallExpr n, Expression[] expressions, PyCallableWrapper pyCallableWrapper) {
+
+        pyCallableWrapper.parseSignature();
+
+        // Python vectorized functions(numba, DH) return arrays of primitive/Object types. This will break the generated
+        // expression evaluation code that expects singular values. This check makes sure that numba/dh vectorized
+        // functions must be used alone as the entire expression.
+        n.getParentNode().ifPresent(parent -> {
+            if (parent.getClass() == CastExpr.class) {
+                throw new RuntimeException(
+                        "The return values of Python vectorized function can't be cast: " + parent);
+            }
+            throw new RuntimeException("Python vectorized function can't be used in another expression: " + parent);
         });
 
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
-            if (param.getName().equals(n.getNameAsString())) {
-                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
-                List<Class<?>> params = numbaCallableWrapper.getParamTypes();
-                if (params.size() != expressions.length) {
-                    throw new RuntimeException("Numba vectorized function argument count mismatch: " + params.size()
-                            + " vs." + expressions.length);
-                }
-                for (int i = 0; i < expressions.length; i++) {
-                    if (!(expressions[i] instanceof NameExpr)) {
-                        throw new RuntimeException("Numba vectorized function arguments can only be columns.");
-                    }
-                    if (!isSafelyCoerceable(expressionTypes[i], params.get(i))) {
-                        throw new RuntimeException("Numba vectorized function argument type mismatch: "
-                                + expressionTypes[i].getSimpleName() + " -> " + params.get(i).getSimpleName());
-                    }
-                }
+        for (int i = 0; i < expressions.length; i++) {
+            if (!(expressions[i] instanceof NameExpr) && !(expressions[i] instanceof LiteralExpr)) {
+                throw new RuntimeException(
+                        "Python vectorized function arguments can only be columns, variables, and constants: "
+                                + expressions[i]);
             }
+        }
+    }
+
+    private void prepareVectorizationArgs(MethodCallExpr n, QueryScope queryScope, Expression[] expressions,
+            Class<?>[] argTypes,
+            PyCallableWrapper pyCallableWrapper) {
+        List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
+        if (paramTypes.size() != expressions.length) {
+            throw new RuntimeException("Python function argument count mismatch: " + n + " " + paramTypes.size()
+                    + " vs. " + expressions.length);
+        }
+
+        pyCallableWrapper.initializeChunkArguments();
+        for (int i = 0; i < expressions.length; i++) {
+            if (expressions[i] instanceof LiteralExpr) {
+                addLiteralArg(expressions[i], argTypes[i], pyCallableWrapper);
+            } else if (expressions[i] instanceof NameExpr) {
+                String name = expressions[i].asNameExpr().getNameAsString();
+                try {
+                    Object param = queryScope.readParamValue(name);
+                    pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(param, argTypes[i]));
+                } catch (QueryScope.MissingVariableException ex) {
+                    // A column name or one of the special variables
+                    pyCallableWrapper.addChunkArgument(new ColumnChunkArgument(name, argTypes[i]));
+                }
+            } else {
+                throw new IllegalStateException("Vectorizability check failed: " + n);
+            }
+
+            if (!isSafelyCoerceable(argTypes[i], paramTypes.get(i))) {
+                throw new RuntimeException("Python vectorized function argument type mismatch: " + n + " "
+                        + argTypes[i].getSimpleName() + " -> " + paramTypes.get(i).getSimpleName());
+            }
+        }
+    }
+
+    private void addLiteralArg(Expression expression, Class<?> argType, PyCallableWrapper pyCallableWrapper) {
+        if (argType == long.class) {
+            pyCallableWrapper
+                    .addChunkArgument(new ConstantChunkArgument(((LongLiteralExpr) expression).asNumber().longValue(),
+                            long.class));
+        } else if (argType == int.class) {
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument(((IntegerLiteralExpr) expression).asNumber().intValue(), int.class));
+        } else if (argType == boolean.class) {
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument(((BooleanLiteralExpr) expression).getValue(), boolean.class));
+        } else if (argType == String.class) {
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument(((StringLiteralExpr) expression).getValue(), String.class));
+        } else if (argType == float.class) {
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument((Float.parseFloat(((DoubleLiteralExpr) expression).getValue())),
+                            float.class));
+        } else if (argType == double.class) {
+            pyCallableWrapper.addChunkArgument(
+                    new ConstantChunkArgument(((DoubleLiteralExpr) expression).asDouble(), double.class));
+        } else if (argType == NULL_CLASS) {
+            pyCallableWrapper.addChunkArgument(new ConstantChunkArgument(null, NULL_CLASS));
+        } else if (argType == char.class) {
+            pyCallableWrapper
+                    .addChunkArgument(new ConstantChunkArgument(((CharLiteralExpr) expression).getValue(), char.class));
+        } else {
+            throw new IllegalStateException("Unrecognized literal expression type: " + argType);
         }
     }
 
     private static boolean isSafelyCoerceable(Class<?> expressionType, Class<?> aClass) {
         // TODO (core#709): numba does appear to check for type coercing at runtime, though no explicit rules exist
+        // also the dh_vectorize is type-blind for now and simply calls the wrapped function with the provided data.
         return true;
     }
 

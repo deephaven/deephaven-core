@@ -6,11 +6,11 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
@@ -46,7 +46,7 @@ public class TestSort extends BaseArrayTestCase {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         lastMemoize = QueryTable.setMemoizeResults(false);
         oldQueryCompilerLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @Override
@@ -96,11 +96,11 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     public void testRestrictedSortingwhere() {
-        final QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
+        QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 
         // All columns should be sortable
         source.assertSortable(source.getDefinition().getColumnNamesArray());
-        source.restrictSortTo("Column1", "Column3");
+        source = (QueryTable) source.restrictSortTo("Column1", "Column3");
 
         assertException(source, (t) -> t.assertSortable(t.getDefinition().getColumnNamesArray()),
                 "Columns 1 and 3 should not be sortable.", NotSortableException.class);
@@ -119,7 +119,7 @@ public class TestSort extends BaseArrayTestCase {
         assertException(temp, (t) -> t.sortDescending("Column2"), "Should not be able to sort by Column2",
                 NotSortableException.class);
 
-        temp.clearSortingRestrictions();
+        temp = (QueryTable) temp.clearSortingRestrictions();
         temp.assertSortable(temp.getDefinition().getColumnNamesArray());
         temp.sort(temp.getDefinition().getColumnNamesArray());
 
@@ -131,11 +131,11 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     public void testRestrictedSortingSelect() {
-        final QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(10));
+        QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(10));
 
         // All columns should be sortable
         source.assertSortable(source.getDefinition().getColumnNamesArray());
-        source.restrictSortTo("Column1", "Column3");
+        source = (QueryTable) source.restrictSortTo("Column1", "Column3");
 
         // Check Select
         QueryTable temp = (QueryTable) source.select();
@@ -150,11 +150,11 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     private void testRestrictedSortingViewSelect(BiFunction<Table, String[], QueryTable> func) {
-        final QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
+        QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 
         // All columns should be sortable
         source.assertSortable(source.getDefinition().getColumnNamesArray());
-        source.restrictSortTo("Column1", "Column3");
+        source = (QueryTable) source.restrictSortTo("Column1", "Column3");
 
         QueryTable temp = func.apply(source, new String[] {"Column1a=Column1", "Column0=Column3", "Column2=Column2",
                 "Column5=Column3", "Column5=Column1"});
@@ -206,11 +206,11 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     private void testRestrictedSortingUpdateUpdateView(BiFunction<Table, String[], QueryTable> func) {
-        final QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
+        QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 
         // All columns should be sortable
         source.assertSortable(source.getDefinition().getColumnNamesArray());
-        source.restrictSortTo("Column1", "Column3");
+        source = (QueryTable) source.restrictSortTo("Column1", "Column3");
 
         QueryTable temp = func.apply(source, new String[] {"Column1a=Column1", "Column0=Column3", "Column2=Column2",
                 "Column5=Column3", "Column5=Column1"});
@@ -255,11 +255,11 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     public void testRestrictedSortingDropColumns() {
-        final QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
+        QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 
         // All columns should be sortable
         source.assertSortable(source.getDefinition().getColumnNamesArray());
-        source.restrictSortTo("Column1", "Column3");
+        source = (QueryTable) source.restrictSortTo("Column1", "Column3");
 
         QueryTable temp = (QueryTable) source.dropColumns("Column3");
         temp.sort("Column1");
@@ -279,11 +279,11 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     public void testRestrictedSortingRenameColumns() {
-        final QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
+        QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 
         // All columns should be sortable
         source.assertSortable(source.getDefinition().getColumnNamesArray());
-        source.restrictSortTo("Column1", "Column3");
+        source = (QueryTable) source.restrictSortTo("Column1", "Column3");
         source.sort("Column1");
         source.sort("Column3");
         assertException(source, (t) -> t.sortDescending("Column0"), "Should not be able to sort by Column0",

@@ -58,6 +58,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 
@@ -155,7 +156,7 @@ public class SessionState {
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
         this.authContext = authContext;
-        this.executionContext = executionContextProvider.get();
+        this.executionContext = executionContextProvider.get().withAuthContext(authContext);
         log.info().append(logPrefix).append("session initialized").endl();
     }
 
@@ -176,7 +177,7 @@ public class SessionState {
 
         log.info().append(logPrefix)
                 .append("token initialized to '").append(expiration.token.toString())
-                .append("' which expires at ").append(expiration.deadline.toString())
+                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
                 .append(".").endl();
     }
 
@@ -205,7 +206,7 @@ public class SessionState {
 
         log.info().append(logPrefix)
                 .append("token rotating to '").append(expiration.token.toString())
-                .append("' which expires at ").append(expiration.deadline.toString())
+                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
                 .append(".").endl();
     }
 
@@ -224,7 +225,7 @@ public class SessionState {
      */
     public boolean isExpired() {
         final SessionService.TokenExpiration currToken = expiration;
-        return currToken == null || currToken.deadline.compareTo(scheduler.currentTime()) <= 0;
+        return currToken == null || currToken.deadlineMillis <= scheduler.currentTimeMillis();
     }
 
     /**
@@ -501,8 +502,7 @@ public class SessionState {
      * @param <T> Is context sensitive depending on the export.
      *
      * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
-     *          itself.
-     * @apiNote Non-exports do not publish state changes.
+     *          itself. Non-exports do not publish state changes.
      */
     public final static class ExportObject<T> extends LivenessArtifact {
         private final int exportId;
@@ -818,7 +818,10 @@ public class SessionState {
 
                         assignErrorId();
                         dependentHandle = parent.logIdentity;
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
+                        if (!(caughtException instanceof StatusRuntimeException)) {
+                            log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails)
+                                    .endl();
+                        }
                     }
 
                     setState(terminalState);
@@ -885,7 +888,9 @@ public class SessionState {
                 synchronized (this) {
                     if (!isExportStateTerminal(state)) {
                         assignErrorId();
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                        if (!(caughtException instanceof StatusRuntimeException)) {
+                            log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                        }
                         setState(ExportNotification.State.FAILED);
                     }
                 }

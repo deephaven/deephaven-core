@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link long} to {@code DateTime} values.
  */
-public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> implements MutableColumnSourceGetDefaults.ForObject<DateTime>, FillUnordered {
+public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> implements MutableColumnSourceGetDefaults.ForObject<DateTime>, FillUnordered<Values> {
 
     private final ColumnSource<Long> alternateColumnSource;
 
@@ -112,7 +112,8 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
             throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
         }
         toDateTimeFillContext.longChunk.setSize(keys.size());
-        ((FillUnordered) alternateColumnSource).fillChunkUnordered(toDateTimeFillContext.alternateFillContext, toDateTimeFillContext.longChunk, keys);
+        //noinspection unchecked
+        ((FillUnordered<Values>) alternateColumnSource).fillChunkUnordered(toDateTimeFillContext.alternateFillContext, toDateTimeFillContext.longChunk, keys);
         convertToDateTime(dest, toDateTimeFillContext.longChunk);
     }
 
@@ -123,7 +124,8 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
             throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
         }
         toDateTimeFillContext.longChunk.setSize(keys.size());
-        ((FillUnordered) alternateColumnSource).fillPrevChunkUnordered(toDateTimeFillContext.alternateFillContext, toDateTimeFillContext.longChunk, keys);
+        //noinspection unchecked
+        ((FillUnordered<Values>) alternateColumnSource).fillPrevChunkUnordered(toDateTimeFillContext.alternateFillContext, toDateTimeFillContext.longChunk, keys);
         convertToDateTime(dest, toDateTimeFillContext.longChunk);
     }
 

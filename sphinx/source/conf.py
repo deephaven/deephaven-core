@@ -82,7 +82,7 @@ workspace = os.environ.get('DEEPHAVEN_WORKSPACE', '.')
 propfile = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
 jvm_properties = {
             'Configuration.rootFile': propfile,
-            'workspace': os.path.realpath(workspace),
+            'deephaven.dataDir': os.path.realpath(workspace),
         }
 
 from deephaven_internal import jvm

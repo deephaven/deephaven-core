@@ -5,20 +5,18 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.TestTableTools;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.junit.*;
@@ -28,14 +26,17 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
 import static io.deephaven.engine.util.TableTools.*;
 
 /**
@@ -46,9 +47,8 @@ public class TestParquetTools {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    private final static String testRoot =
-            Configuration.getInstance().getWorkspacePath() + File.separator + "TestParquetTools";
-    private final static File testRootFile = new File(testRoot);
+    private String testRoot;
+    private File testRootFile;
 
     private static Table table1;
     private static Table emptyTable;
@@ -78,11 +78,12 @@ public class TestParquetTools {
     }
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
 
-        testRootFile.mkdirs();
+        testRootFile = Files.createTempDirectory(TestParquetTools.class.getName()).toFile();
+        testRoot = testRootFile.toString();
     }
 
     @After
@@ -134,7 +135,7 @@ public class TestParquetTools {
         Table result = ParquetTools.readTable(new File(path));
         TableTools.show(result);
         TableTools.show(table1);
-        TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
+        tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
 
         ExecutionContext.getContext().getQueryLibrary().importClass(TestEnum.class);
@@ -212,7 +213,7 @@ public class TestParquetTools {
         final File dest = new File(testRoot + File.separator + "Empty.parquet");
         ParquetTools.writeTable(emptyTable, dest);
         Table result = ParquetTools.readTable(dest);
-        TestTableTools.tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
+        tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
         result.close();
     }
 
@@ -304,7 +305,7 @@ public class TestParquetTools {
         File dest = new File(testRoot + File.separator + "Table1.parquet");
         ParquetTools.writeTable(table1, dest);
         Table result = ParquetTools.readTable(dest);
-        TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
+        tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
         ParquetTools.deleteTable(dest);
         TestCase.assertFalse(dest.exists());
@@ -335,7 +336,7 @@ public class TestParquetTools {
         TableTools.show(readBackTable);
         TableTools.show(table);
         final long sz = table.size();
-        TestTableTools.tableRangesAreEqual(table, readBackTable, 0, 0, sz);
+        tableRangesAreEqual(table, readBackTable, 0, 0, sz);
         readBackTable.close();
     }
 
@@ -389,6 +390,55 @@ public class TestParquetTools {
 
         final Table readBack = ParquetTools.readTable(f2w);
         assertTableEquals(stuff, readBack);
+    }
+
+    @Test
+    public void testColumnSwapping() {
+        testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
+                t -> t.updateView("T = X", "X = Y", "Y = T"));
+    }
+
+    @Test
+    public void testColumnRedefineArrayDep() {
+        testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
+                t -> t.view("T = X_[i-1]"));
+    }
+
+    @Test
+    public void testMultipleIdenticalRenames() {
+        testWriteRead(emptyTable(10).update("X = `` + ii"),
+                t -> t.updateView("A = X", "B = X").where("(A + B).length() > 0"));
+        testWriteRead(emptyTable(10).update("X = `` + ii"),
+                t -> t.updateView("A = X", "B = X").where("(A_[ii] + B_[ii]).length() > 0"));
+    }
+
+    @Test
+    public void testChangedThenRenamed() {
+        testWriteRead(emptyTable(10).update("X = ii", "Y = ii"),
+                t -> t.updateView("Y = ii * 2", "X = Y").where("X % 2 == 0"));
+        testWriteRead(emptyTable(10).update("X = ii", "Y = ii"),
+                t -> t.updateView("Y = ii * 2", "X = Y").where("X_[ii] % 2 == 0"));
+    }
+
+    @Test
+    public void testOverloadAsRename() {
+        testWriteRead(emptyTable(10).update("X = ii"),
+                t -> t.updateView("Y = X").where("(X + Y) % 2 == 0"));
+        testWriteRead(emptyTable(10).update("X = ii"),
+                t -> t.updateView("Y = X").where("(X_[ii] + Y_[ii]) % 2 == 0"));
+    }
+
+    @Test
+    public void testMultipleRenamesWithSameOuterName() {
+        testWriteRead(emptyTable(10).update("X = ii", "Y = ii", "Z = ii % 3"),
+                t -> t.updateView("Y = Z", "Y = X").where("Y % 2 == 0"));
+    }
+
+    private void testWriteRead(Table source, Function<Table, Table> transform) {
+        final File f2w = new File(testRoot, "testWriteRead.parquet");
+        ParquetTools.writeTable(source, f2w);
+        final Table readBack = ParquetTools.readTable(f2w);
+        assertTableEquals(transform.apply(source), transform.apply(readBack));
     }
 
     public static DoubleVector generateDoubles(int howMany) {

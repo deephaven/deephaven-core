@@ -1,9 +1,13 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+import random
+import time
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
+
+import deephaven
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
@@ -223,12 +227,12 @@ class TableTestCase(BaseTestCase):
 
     def test_restrict_sort_to(self):
         cols = ["b", "e"]
-        self.test_table.restrict_sort_to(cols)
-        result_table = self.test_table.sort(order_by=cols)
-        self.test_table.restrict_sort_to("b")
-        result_table = self.test_table.sort(order_by="b")
+        restricted_table = self.test_table.restrict_sort_to(cols)
+        result_table = restricted_table.sort(order_by=cols)
+        restricted_table = self.test_table.restrict_sort_to("b")
+        result_table = restricted_table.sort(order_by="b")
         with self.assertRaises(DHError) as cm:
-            self.test_table.sort(order_by=["a"])
+            restricted_table.sort(order_by=["a"])
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
     def test_sort_descending(self):
@@ -777,6 +781,33 @@ class TableTestCase(BaseTestCase):
         html_output = to_html(t2)
         self.assertIn("AAPL-GOOG", html_output)
         self.assertIn("2000", html_output)
+
+    def test_slice(self):
+        with ugp.shared_lock():
+            t = time_table("00:00:00.01")
+        rt = t.slice(0, 3)
+        self.assert_table_equals(t.head(3), rt)
+
+        self.wait_ticking_table_update(t, row_count=5, timeout=5)
+        with ugp.shared_lock():
+            rt = t.slice(t.size, -2)
+            self.assertEqual(0, rt.size)
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.assertGreaterEqual(rt.size, 1)
+
+        rt = t.slice(-3, 0)
+        self.assert_table_equals(t.tail(3), rt)
+
+        rt = t.slice(-3, -2)
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.assert_table_equals(t.tail(3).head(1), rt)
+
+        rt = t.slice(1, 3)
+        self.wait_ticking_table_update(rt, row_count=2, timeout=5)
+        self.assert_table_equals(t.head(3).tail(2), rt)
+
+        with self.assertRaises(DHError):
+            rt = t.slice(3, 2)
 
 
 def global_fn() -> str:

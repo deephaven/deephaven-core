@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
@@ -21,8 +21,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeProvider;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,28 +29,25 @@ import java.util.Map;
 
 public class TimeTableTest extends RefreshingTableTestCase {
 
-    private MutableLong now;
-    private TimeProvider timeProvider;
+    private TestClock clock;
     private UpdateSourceCombiner updateSourceCombiner;
     private QueryTable timeTable;
     private TableUpdateValidator validator;
     private ColumnSource<Long> column;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
-        now = new MutableLong(0);
-        timeProvider = () -> new DateTime(now.longValue());
+        clock = new TestClock(0);
         updateSourceCombiner = new UpdateSourceCombiner();
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         validator.deepValidation();
 
-        now = null;
-        timeProvider = null;
+        clock = null;
         updateSourceCombiner = null;
         timeTable = null;
         validator = null;
@@ -64,14 +59,14 @@ public class TimeTableTest extends RefreshingTableTestCase {
     private void build(TimeTable.Builder builder) {
         timeTable = builder
                 .registrar(updateSourceCombiner)
-                .timeProvider(timeProvider)
+                .clock(clock)
                 .build();
         column = timeTable.getColumnSource("Timestamp").reinterpret(long.class);
         validator = TableUpdateValidator.make(timeTable);
     }
 
     private void tick(long tm) {
-        now.setValue(tm);
+        clock.now = tm;
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         validator.validate();
     }
@@ -271,9 +266,11 @@ public class TimeTableTest extends RefreshingTableTestCase {
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
 
-        final FillUnordered fillDtColumn = (FillUnordered) dtColumn;
+        // noinspection unchecked
+        final FillUnordered<Values> fillDtColumn = (FillUnordered<Values>) dtColumn;
         Assert.assertTrue(fillDtColumn.providesFillUnordered());
-        final FillUnordered fillLongColumn = (FillUnordered) column;
+        // noinspection unchecked
+        final FillUnordered<Values> fillLongColumn = (FillUnordered<Values>) column;
         Assert.assertTrue(fillLongColumn.providesFillUnordered());
 
         try (final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(10)) {

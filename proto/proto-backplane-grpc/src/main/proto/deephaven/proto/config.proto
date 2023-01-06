@@ -1,0 +1,37 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/config";
+
+/**
+ * Provides simple configuration data to users. Unauthenticated users may call GetAuthenticationConstants
+ * to discover hints on how they should proceed with providing their identity, while already-authenticated
+ * clients may call GetConfigurationConstants for details on using the platform.
+ */
+service ConfigService {
+  rpc GetAuthenticationConstants(AuthenticationConstantsRequest) returns (AuthenticationConstantsResponse) {}
+  rpc GetConfigurationConstants(ConfigurationConstantsRequest) returns (ConfigurationConstantsResponse) {}
+}
+
+message AuthenticationConstantsRequest {}
+message ConfigurationConstantsRequest {}
+message AuthenticationConstantsResponse {
+  map<string, ConfigValue> config_values = 1;
+}
+message ConfigurationConstantsResponse {
+  map<string, ConfigValue> config_values = 1;
+}
+
+message ConfigValue {
+  // Using a oneof leaves room for more types. The string_value tag is used here to allow for "interop" with
+  // struct.proto.
+  oneof kind {
+    string string_value = 3;
+  }
+}

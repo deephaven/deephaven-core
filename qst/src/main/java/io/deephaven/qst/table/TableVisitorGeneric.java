@@ -63,11 +63,6 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(WhereNotInTable whereNotInTable) {
-        accept(whereNotInTable);
-    }
-
-    @Override
     public void visit(NaturalJoinTable naturalJoinTable) {
         accept(naturalJoinTable);
     }
@@ -118,13 +113,13 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
-        accept(aggAllByTable);
+    public void visit(AggregateAllTable aggregateAllTable) {
+        accept(aggregateAllTable);
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
-        accept(aggregationTable);
+    public void visit(AggregateTable aggregateTable) {
+        accept(aggregateTable);
     }
 
     @Override
@@ -140,11 +135,6 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     @Override
     public void visit(SelectDistinctTable selectDistinctTable) {
         accept(selectDistinctTable);
-    }
-
-    @Override
-    public void visit(CountByTable countByTable) {
-        accept(countByTable);
     }
 
     @Override

@@ -3,27 +3,26 @@
  */
 package io.deephaven.server.table;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.NoLanguageDeephavenSession;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthContext;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.TestControlledScheduler;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.After;
@@ -34,8 +33,8 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.UUID;
 
-import static io.deephaven.engine.table.impl.TstUtils.addToTable;
-import static io.deephaven.engine.table.impl.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.addToTable;
+import static io.deephaven.engine.testutil.TstUtils.i;
 
 public class ExportTableUpdateListenerTest {
 
@@ -341,9 +340,9 @@ public class ExportTableUpdateListenerTest {
 
     public class TestSessionState extends SessionState {
         public TestSessionState() {
-            super(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
+            super(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                    DateTimeUtils.nanosToTime(Long.MAX_VALUE), this));
+                    DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), this));
         }
     }
 

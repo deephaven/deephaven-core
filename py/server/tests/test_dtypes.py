@@ -59,7 +59,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.long.np_type, np.int64)
         self.assertEqual(dtypes.float_.np_type, np.float64)
         self.assertEqual(dtypes.double.np_type, np.float64)
-        self.assertEqual(dtypes.string.np_type, np.object_)
+        self.assertEqual(dtypes.string.np_type, np.str_)
         self.assertEqual(dtypes.BigDecimal.np_type, np.object_)
         self.assertEqual(dtypes.StringSet.np_type, np.object_)
         self.assertEqual(dtypes.DateTime.np_type, np.dtype("datetime64[ns]"))

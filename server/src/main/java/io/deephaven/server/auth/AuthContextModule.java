@@ -6,13 +6,11 @@ package io.deephaven.server.auth;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.auth.AnonymousAuthenticationHandler;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.server.barrage.BarrageStreamGenerator;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -20,10 +18,9 @@ import java.util.Map;
 
 @Module
 public class AuthContextModule {
-    private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
-    private static final String[] AUTH_HANDLERS = Configuration.getInstance()
-            .getStringArrayFromPropertyWithDefault("AuthHandlers",
-                    new String[] {AnonymousAuthenticationHandler.class.getCanonicalName()});
+    private static final Logger log = LoggerFactory.getLogger(AuthContextModule.class);
+    private static final String[] AUTH_HANDLERS =
+            Configuration.getInstance().getStringArrayFromProperty("AuthHandlers");
 
     private static Map<String, AuthenticationRequestHandler> authHandlerMap;
 

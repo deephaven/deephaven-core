@@ -193,11 +193,6 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(WhereNotInTable whereNotInTable) {
-        out = Stream.of(whereNotInTable.left(), whereNotInTable.right());
-    }
-
-    @Override
     public void visit(NaturalJoinTable naturalJoinTable) {
         out = Stream.of(naturalJoinTable.left(), naturalJoinTable.right());
     }
@@ -248,16 +243,16 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
-        out = single(aggAllByTable);
+    public void visit(AggregateAllTable aggregateAllTable) {
+        out = single(aggregateAllTable);
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
-        if (aggregationTable.initialGroups().isPresent()) {
-            out = Stream.of(aggregationTable.initialGroups().get(), aggregationTable.parent());
+    public void visit(AggregateTable aggregateTable) {
+        if (aggregateTable.initialGroups().isPresent()) {
+            out = Stream.of(aggregateTable.initialGroups().get(), aggregateTable.parent());
         } else {
-            out = Stream.of(aggregationTable.parent());
+            out = Stream.of(aggregateTable.parent());
         }
     }
 
@@ -284,11 +279,6 @@ public class ParentsVisitor implements Visitor {
     @Override
     public void visit(SelectDistinctTable selectDistinctTable) {
         out = single(selectDistinctTable);
-    }
-
-    @Override
-    public void visit(CountByTable countByTable) {
-        out = single(countByTable);
     }
 
     @Override

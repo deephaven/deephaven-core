@@ -7,6 +7,14 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.generator.DoubleGenerator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
@@ -19,7 +27,7 @@ import junit.framework.TestCase;
 import java.util.*;
 
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
     public void testStatic() {
@@ -136,19 +144,19 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
 
     private void testIncremental(int seed) {
         final Random random = new Random(0);
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final int size = 30;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "D1", "D2", "D3", "I1", "I2", "I3", "I4", "I5"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"),
-                        new TstUtils.DoubleGenerator(0, 10),
-                        new TstUtils.DoubleGenerator(10, 100),
-                        new TstUtils.DoubleGenerator(100, 1000),
-                        new TstUtils.IntGenerator(1000, 10000),
-                        new TstUtils.IntGenerator(10000, 100000),
-                        new TstUtils.IntGenerator(100000, 1000000),
-                        new TstUtils.IntGenerator(1000000, 10000000),
-                        new TstUtils.IntGenerator(10000000, 100000000)));
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new DoubleGenerator(0, 10),
+                        new DoubleGenerator(10, 100),
+                        new DoubleGenerator(100, 1000),
+                        new IntGenerator(1000, 10000),
+                        new IntGenerator(10000, 100000),
+                        new IntGenerator(100000, 1000000),
+                        new IntGenerator(1000000, 10000000),
+                        new IntGenerator(10000000, 100000000)));
 
         final Map<String, String> nameMap = new HashMap<>();
         nameMap.put("I1", "EyeOne");

@@ -18,4 +18,5 @@ dependencies {
     Classpaths.inheritAutoService(project)
 
     testImplementation project(':engine-table')
+    testImplementation project(':base-test-utils')
 }

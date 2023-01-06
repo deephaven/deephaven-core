@@ -6,16 +6,14 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -23,8 +21,8 @@ import org.junit.experimental.categories.Category;
 import java.math.BigInteger;
 import java.util.*;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 @Category(SerialTest.class)
 public class MultiColumnSortTest {
@@ -48,17 +46,17 @@ public class MultiColumnSortTest {
                 initColumnInfos(
                         new String[] {"Sym", "intCol", "doubleCol", "floatCol", "longCol", "shortCol", "byteCol",
                                 "charCol", "boolCol", "bigI", "bigD"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f", "g"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                        new TstUtils.FloatGenerator(100.0f, 2000.f),
-                        new TstUtils.LongGenerator(),
-                        new TstUtils.ShortGenerator(),
-                        new TstUtils.ByteGenerator(),
-                        new TstUtils.CharGenerator('A', 'Z'),
-                        new TstUtils.BooleanGenerator(),
-                        new TstUtils.BigIntegerGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)),
-                        new TstUtils.BigDecimalGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100))));
+                        new SetGenerator<>("a", "b", "c", "d", "e", "f", "g"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1),
+                        new FloatGenerator(100.0f, 2000.f),
+                        new LongGenerator(),
+                        new ShortGenerator(),
+                        new ByteGenerator(),
+                        new CharGenerator('A', 'Z'),
+                        new BooleanGenerator(),
+                        new BigIntegerGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)),
+                        new BigDecimalGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100))));
 
         final List<String> columnNames = new ArrayList<>(table.getColumnSourceMap().keySet());
 

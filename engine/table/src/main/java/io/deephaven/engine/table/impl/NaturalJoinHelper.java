@@ -35,15 +35,15 @@ class NaturalJoinHelper {
     @VisibleForTesting
     static Table naturalJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
-        final Table result =
+        final QueryTable result =
                 naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
         return result;
     }
 
-    private static Table naturalJoinInternal(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
-            MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+    private static QueryTable naturalJoinInternal(QueryTable leftTable, QueryTable rightTable,
+            MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
         try (final BucketingContext bucketingContext =
                 new BucketingContext("naturalJoin", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
 
@@ -275,7 +275,7 @@ class NaturalJoinHelper {
     }
 
     @NotNull
-    private static Table zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd,
+    private static QueryTable zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd,
             boolean exactMatch, String listenerDescription) {
         // we are a single value join, we do not need to do any work
         final SingleValueRowRedirection rowRedirection;
@@ -988,7 +988,7 @@ class NaturalJoinHelper {
                         // We are almost able to fix this, because we know the hash slot and the result redirection for
                         // the left modified row; which is the new value.
                         // We could get the hash slot from the removal, and compare them, but the hash slot outside of a
-                        // modified slot tracker is unstable [and we don’t want two of them].
+                        // modified slot tracker is unstable [and we don't want two of them].
                         // On removal, we could ask our modified slot tracker if, (i) our cookie is valid, and if so
                         // (ii) what the original right value was what the right value was
                         // [presuming we add that for right side point 1]. This would let us report our original

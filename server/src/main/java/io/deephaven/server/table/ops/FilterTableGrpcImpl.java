@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -17,6 +18,7 @@ import io.deephaven.server.table.ops.filter.FlipNonReferenceMatchExpression;
 import io.deephaven.server.table.ops.filter.MakeExpressionsNullSafe;
 import io.deephaven.server.table.ops.filter.MergeNestedBinaryOperations;
 import io.deephaven.server.table.ops.filter.NormalizeNots;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -27,19 +29,35 @@ import java.util.List;
 public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> {
 
     @Inject
-    public FilterTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getFilter, FilterTableRequest::getResultId, FilterTableRequest::getSourceId);
+    public FilterTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionFilter, BatchTableRequest.Operation::getFilter,
+                FilterTableRequest::getResultId, FilterTableRequest::getSourceId);
     }
 
     @Override
-    public Table create(final FilterTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final FilterTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
-        Table sourceTable = sourceTables.get(0).get();
 
+        Table sourceTable = sourceTables.get(0).get();
         List<Condition> filters = request.getFiltersList();
         if (filters.isEmpty()) {
             return sourceTable;
         }
+
+        final List<Condition> finishedConditions = finishConditions(filters);
+
+        // build WhereFilter[] to pass to the table
+        WhereFilter[] whereFilters = finishedConditions.stream()
+                .map(f -> FilterFactory.makeFilter(sourceTable.getDefinition(), f))
+                .toArray(WhereFilter[]::new);
+
+        // execute the filters
+        return sourceTable.where(whereFilters);
+    }
+
+    @NotNull
+    public static List<Condition> finishConditions(@NotNull final List<Condition> filters) {
         Condition filter;
         if (filters.size() == 1) {
             filter = filters.get(0);
@@ -85,13 +103,6 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
         // get a top array of filters to convert into SelectFilters
         // TODO (deephaven-core#733)
 
-        List<Condition> finishedConditions = Collections.singletonList(filter);
-
-        // build WhereFilter[] to pass to the table
-        WhereFilter[] whereFilters = finishedConditions.stream().map(f -> FilterFactory.makeFilter(sourceTable, f))
-                .toArray(WhereFilter[]::new);
-
-        // execute the filters
-        return sourceTable.where(whereFilters);
+        return Collections.singletonList(filter);
     }
 }

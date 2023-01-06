@@ -44,6 +44,16 @@ public class JsChart extends HasEventHandling {
     }
 
     @JsProperty
+    public int getColumn() {
+        return descriptor.getColumn();
+    }
+
+    @JsProperty
+    public int getRow() {
+        return descriptor.getRow();
+    }
+
+    @JsProperty
     public int getColspan() {
         return descriptor.getColspan();
     }

@@ -9,10 +9,22 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -22,12 +34,11 @@ import io.deephaven.time.DateTime;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.config.MutableInputTable;
-import io.deephaven.engine.table.impl.HierarchicalTableInfo;
-import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.TimeUnit;
@@ -44,10 +55,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,9 +69,23 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public class BarrageUtil {
+    public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
+            BarrageSnapshotOptions.builder().build();
+
     public static final long FLATBUFFER_MAGIC = 0x6E687064;
 
     private static final Logger log = LoggerFactory.getLogger(BarrageUtil.class);
+
+    public static final double TARGET_SNAPSHOT_PERCENTAGE =
+            Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
+                    "targetSnapshotPercentage", 0.25);
+
+    public static final long MIN_SNAPSHOT_CELL_COUNT =
+            Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
+                    "minSnapshotCellCount", 50000);
+    public static final long MAX_SNAPSHOT_CELL_COUNT =
+            Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
+                    "maxSnapshotCellCount", Long.MAX_VALUE);
 
     // year is 4 bytes, month is 1 byte, day is 1 byte
     public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);
@@ -146,35 +171,12 @@ public class BarrageUtil {
             }
         }
 
-        // copy rollup details
-        if (attributes.containsKey(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)) {
-            unsentAttributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-            final HierarchicalTableInfo hierarchicalTableInfo =
-                    (HierarchicalTableInfo) attributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-            final String hierarchicalSourceKeyPrefix =
-                    ATTR_ATTR_TAG + "." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
-            putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "hierarchicalColumnName",
-                    hierarchicalTableInfo.getHierarchicalColumnName());
-            if (hierarchicalTableInfo instanceof RollupInfo) {
-                final RollupInfo rollupInfo = (RollupInfo) hierarchicalTableInfo;
-                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "byColumns",
-                        String.join(",", rollupInfo.byColumnNames));
-                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "leafType", rollupInfo.getLeafType().name());
-
-                // mark columns to indicate their sources
-                for (final MatchPair matchPair : rollupInfo.getMatchPairs()) {
-                    putMetadata(getExtraMetadata.apply(matchPair.leftColumn()), "rollup.sourceColumn",
-                            matchPair.rightColumn());
-                }
-            }
-        }
-
         // note which attributes have a value we couldn't send
         for (String unsentAttribute : unsentAttributes) {
             putMetadata(schemaMetadata, "unsent." + ATTR_ATTR_TAG + "." + unsentAttribute, "");
         }
 
-        final Map<String, Field> fields = new LinkedHashMap<>();
+        final List<Field> fields = new ArrayList<>();
         for (final ColumnDefinition<?> column : table.getColumns()) {
             final String colName = column.getName();
             final Map<String, String> extraMetadata = getExtraMetadata.apply(colName);
@@ -191,10 +193,10 @@ public class BarrageUtil {
                 putMetadata(extraMetadata, "dateFormatColumn", colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
             }
 
-            fields.put(colName, arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
+            fields.add(arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
         }
 
-        return new Schema(new ArrayList<>(fields.values()), schemaMetadata).getSchema(builder);
+        return new Schema(fields, schemaMetadata).getSchema(builder);
     }
 
     private static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
@@ -220,8 +222,7 @@ public class BarrageUtil {
         }
     }
 
-    private static Class<?> getDefaultType(
-            final String name, final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
+    private static Class<?> getDefaultType(final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
         final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
         switch (arrowType.getTypeID()) {
             case Int:
@@ -382,7 +383,7 @@ public class BarrageUtil {
             });
 
             if (type.getValue() == null) {
-                Class<?> defaultType = getDefaultType(name, getArrowType.apply(i), result, i);
+                Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
@@ -495,7 +496,6 @@ public class BarrageUtil {
                 name.equals(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
         putMetadata(metadata, "isDateFormat", name.endsWith(ColumnFormattingValues.TABLE_DATE_FORMAT_NAME) + "");
         putMetadata(metadata, "isNumberFormat", name.endsWith(ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME) + "");
-        putMetadata(metadata, "isRollupColumn", name.equals(RollupInfo.ROLLUP_COLUMN) + "");
 
         if (description != null) {
             putMetadata(metadata, "description", description);
@@ -589,5 +589,145 @@ public class BarrageUtil {
                 "", componentType, componentType.getComponentType(), Collections.emptyMap()));
 
         return new Field(name, fieldType, children);
+    }
+
+    public static void createAndSendStaticSnapshot(
+            BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
+            BaseTable table,
+            BitSet columns,
+            RowSet viewport,
+            boolean reverseViewport,
+            BarrageSnapshotOptions snapshotRequestOptions,
+            StreamObserver<BarrageStreamGeneratorImpl.View> listener,
+            BarragePerformanceLog.SnapshotMetricsHelper metrics) {
+        // start with small value and grow
+        long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
+        double snapshotNanosPerCell = 0.0;
+
+        final long columnCount =
+                Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().size());
+
+        try (final WritableRowSet snapshotViewport = RowSetFactory.empty();
+                final WritableRowSet targetViewport = RowSetFactory.empty()) {
+            // compute the target viewport
+            if (viewport == null) {
+                targetViewport.insertRange(0, table.size() - 1);
+            } else if (!reverseViewport) {
+                targetViewport.insert(viewport);
+            } else {
+                // compute the forward version of the reverse viewport
+                try (final RowSet rowKeys = table.getRowSet().subSetForReversePositions(viewport);
+                        final RowSet inverted = table.getRowSet().invert(rowKeys)) {
+                    targetViewport.insert(inverted);
+                }
+            }
+
+            try (final RowSequence.Iterator rsIt = targetViewport.getRowSequenceIterator()) {
+                while (rsIt.hasMore()) {
+                    // compute the next range to snapshot
+                    final long cellCount =
+                            Math.max(MIN_SNAPSHOT_CELL_COUNT,
+                                    Math.min(snapshotTargetCellCount, MAX_SNAPSHOT_CELL_COUNT));
+
+                    final RowSequence snapshotPartialViewport = rsIt.getNextRowSequenceWithLength(cellCount);
+                    // add these ranges to the running total
+                    snapshotPartialViewport.forEachRowKeyRange((start, end) -> {
+                        snapshotViewport.insertRange(start, end);
+                        return true;
+                    });
+
+                    // grab the snapshot and measure elapsed time for next projections
+                    long start = System.nanoTime();
+                    final BarrageMessage msg =
+                            ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
+                                    columns, snapshotPartialViewport, null);
+                    msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data for DoGet
+                    long elapsed = System.nanoTime() - start;
+                    // accumulate snapshot time in the metrics
+                    metrics.snapshotNanos += elapsed;
+
+                    // send out the data. Note that although a `BarrageUpdateMetaData` object will
+                    // be provided with each unique snapshot, vanilla Flight clients will ignore
+                    // these and see only an incoming stream of batches
+                    try (final BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> bsg =
+                            streamGeneratorFactory.newGenerator(msg, metrics)) {
+                        if (rsIt.hasMore()) {
+                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
+                                    snapshotViewport, false,
+                                    msg.rowsIncluded, columns));
+                        } else {
+                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
+                                    viewport, reverseViewport,
+                                    msg.rowsIncluded, columns));
+                        }
+                    }
+
+                    if (msg.rowsIncluded.size() > 0) {
+                        // very simplistic logic to take the last snapshot and extrapolate max
+                        // number of rows that will not exceed the target UGP processing time
+                        // percentage
+                        long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
+                                * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis()
+                                * 1000000);
+
+                        long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
+
+                        // apply an exponential moving average to filter the data
+                        if (snapshotNanosPerCell == 0) {
+                            snapshotNanosPerCell = nanosPerCell; // initialize to first value
+                        } else {
+                            // EMA smoothing factor is 0.1 (N = 10)
+                            snapshotNanosPerCell =
+                                    (snapshotNanosPerCell * 0.9) + (nanosPerCell * 0.1);
+                        }
+
+                        snapshotTargetCellCount =
+                                (long) (targetNanos / Math.max(1, snapshotNanosPerCell));
+                    }
+                }
+            }
+        }
+    }
+
+    public static void createAndSendSnapshot(
+            BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
+            BaseTable table,
+            BitSet columns, RowSet viewport, boolean reverseViewport,
+            BarrageSnapshotOptions snapshotRequestOptions,
+            StreamObserver<BarrageStreamGeneratorImpl.View> listener,
+            BarragePerformanceLog.SnapshotMetricsHelper metrics) {
+
+        // if the table is static and a full snapshot is requested, we can make and send multiple
+        // snapshots to save memory and operate more efficiently
+        if (!table.isRefreshing()) {
+            createAndSendStaticSnapshot(streamGeneratorFactory, table, columns, viewport, reverseViewport,
+                    snapshotRequestOptions, listener, metrics);
+            return;
+        }
+
+        // otherwise snapshot the entire request and send to the client
+        final BarrageMessage msg;
+
+        final long snapshotStartTm = System.nanoTime();
+        if (reverseViewport) {
+            msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
+                    columns, null, viewport);
+        } else {
+            msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
+                    columns, viewport, null);
+        }
+        metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
+
+        msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data
+
+        // translate the viewport to keyspace and make the call
+        try (final BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> bsg =
+                streamGeneratorFactory.newGenerator(msg, metrics);
+                final RowSet keySpaceViewport = viewport != null
+                        ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
+                        : null) {
+            listener.onNext(bsg.getSnapshotView(
+                    snapshotRequestOptions, viewport, reverseViewport, keySpaceViewport, columns));
+        }
     }
 }

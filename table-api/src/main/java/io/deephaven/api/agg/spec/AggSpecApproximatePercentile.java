@@ -5,17 +5,20 @@ package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Check;
-import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
+
+import java.util.OptionalDouble;
 
 /**
  * Specifies an aggregation that outputs a percentile approximated using a T-Digest with the specified
  * {@link #compression()}.
+ *
  * <p>
  * Efficiently supports multiple output percentiles based on a single input column.
+ *
  * <p>
  * May only be used on static or add-only tables.
+ *
  * <p>
  * Only supported for numeric types.
  */
@@ -23,17 +26,39 @@ import org.immutables.value.Value.Parameter;
 @BuildableStyle
 public abstract class AggSpecApproximatePercentile extends AggSpecBase {
 
+    /**
+     * Create a new AggSpecApproximatePercentile with {@code compression} chosen by the server.
+     *
+     * @param percentile the percentile
+     * @return the agg spec
+     */
     public static AggSpecApproximatePercentile of(double percentile) {
-        return ImmutableAggSpecApproximatePercentile.builder().percentile(percentile).build();
+        return ImmutableAggSpecApproximatePercentile.builder()
+                .percentile(percentile)
+                .build();
     }
 
+    /**
+     * Create a new AggSpecApproximatePercentile.
+     *
+     * @param percentile the percentile
+     * @param compression the compression
+     * @return the agg spec
+     */
     public static AggSpecApproximatePercentile of(double percentile, double compression) {
-        return ImmutableAggSpecApproximatePercentile.builder().percentile(percentile).compression(compression).build();
+        return ImmutableAggSpecApproximatePercentile.builder()
+                .percentile(percentile)
+                .compression(compression)
+                .build();
     }
 
     @Override
     public final String description() {
-        return String.format("%.2f approximate percentile with compression %.2f", percentile(), compression());
+        if (compression().isPresent()) {
+            return String.format("%.2f approximate percentile with compression %.2f", percentile(),
+                    compression().getAsDouble());
+        }
+        return String.format("%.2f approximate percentile with default compression", percentile());
     }
 
     /**
@@ -41,19 +66,17 @@ public abstract class AggSpecApproximatePercentile extends AggSpecBase {
      *
      * @return The percentile
      */
-    @Parameter
     public abstract double percentile();
 
     /**
-     * T-Digest compression factor. Must be greater than or equal to 1. Defaults to 100. 1000 is extremely large.
-     * 
-     * @return The T-Digest compression factor
+     * T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
+     *
+     * <p>
+     * When not specified, the engine will choose a compression value.
+     *
+     * @return The T-Digest compression factor if specified
      */
-    @Default
-    @Parameter
-    public double compression() {
-        return 100.0;
-    }
+    public abstract OptionalDouble compression();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
@@ -70,7 +93,7 @@ public abstract class AggSpecApproximatePercentile extends AggSpecBase {
 
     @Check
     final void checkCompression() {
-        if (compression() < 1.0) {
+        if (compression().isPresent() && compression().getAsDouble() < 1.0) {
             throw new IllegalArgumentException("Compression must be greater than or equal to 1.0");
         }
     }

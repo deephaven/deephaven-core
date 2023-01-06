@@ -349,6 +349,25 @@ public class TestBasic extends BaseArrayTestCase {
         }
     }
 
+    public void testObjForwardFillVec() {
+        assertEquals(null, forwardFillObj((ObjectVectorDirect<Integer>)null));
+        assertEquals(null, forwardFillObj((BooleanVectorDirect)null));
+
+        assertEquals(new Integer[]{0, 0, 1, 2, 2, 3}, forwardFillObj(new ObjectVectorDirect<Integer>(new Integer[]{0, null, 1, 2, null, 3})));
+        assertEquals(new Long[]{0L, 0L, 1L, 2L, 2L, 3L}, forwardFillObj(new ObjectVectorDirect<Long>(new Long[]{0L, null, 1L, 2L, null, 3L})));
+        assertEquals(new Double[]{0.0, 0.0, 1.0, 2.0, 2.0, 3.0}, forwardFillObj(new ObjectVectorDirect<Double>(new Double[]{0.0, null, 1.0, 2.0, null, 3.0})));
+        assertEquals(new Boolean[]{true, true, false, true, true, false}, forwardFillObj(new BooleanVectorDirect(new Boolean[]{true, null, false, true, null, false})));
+    }
+
+    public void testObjForwardFillArray() {
+        assertEquals(null, forwardFillObj((Boolean[])null));
+
+        assertEquals(new Integer[]{0, 0, 1, 2, 2, 3}, forwardFillObj(new Integer[]{0, null, 1, 2, null, 3}));
+        assertEquals(new Long[]{0L, 0L, 1L, 2L, 2L, 3L}, forwardFillObj(new Long[]{0L, null, 1L, 2L, null, 3L}));
+        assertEquals(new Double[]{0.0, 0.0, 1.0, 2.0, 2.0, 3.0}, forwardFillObj(new Double[]{0.0, null, 1.0, 2.0, null, 3.0}));
+        assertEquals(new Boolean[]{true, true, false, true, true, false}, forwardFillObj(new Boolean[]{true, null, false, true, null, false}));
+    }
+
 
     //////////////////////////// boolean ////////////////////////////
 
@@ -815,6 +834,15 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(null, ifelse((Boolean[]) null, (${pt.primitive})1, (${pt.primitive})2));
     }
 
+    public void test${pt.boxed}ForwardFillVec() {
+        assertEquals(null, forwardFill((${pt.dbArrayDirect})null));
+        assertEquals(new ${pt.primitive}[]{0, 0, 1, 2, 2, 3}, forwardFill(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{0, ${pt.null}, 1, 2, ${pt.null}, 3})));
+    }
+
+    public void test${pt.boxed}ForwardFillArray() {
+        assertEquals(null, forwardFill((${pt.primitive}[])null));
+        assertEquals(new ${pt.primitive}[]{0, 0, 1, 2, 2, 3}, forwardFill(new ${pt.primitive}[]{0, ${pt.null}, 1, 2, ${pt.null}, 3}));
+    }
     </#if>
     </#list>
 }

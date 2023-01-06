@@ -160,6 +160,16 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.AggregateAll = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/AggregateAll',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
+        self.Aggregate = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/Aggregate',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.Snapshot = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/Snapshot',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
@@ -178,6 +188,11 @@ class TableServiceStub(object):
         self.CreateInputTable = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
+        self.WhereIn = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/WhereIn',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.WhereInRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
         self.Batch = channel.unary_stream(
@@ -423,6 +438,27 @@ class TableServiceServicer(object):
     def ComboAggregate(self, request, context):
         """
         Returns the result of an aggregate table operation.
+
+        Deprecated: Please use AggregateAll or Aggregate instead
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AggregateAll(self, request, context):
+        """
+        Aggregates all non-grouping columns against a single aggregation specification.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Aggregate(self, request, context):
+        """
+        Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
+        aggregations to each resulting group of rows. The result table will have one row per group, ordered by
+        the encounter order within the source_id table, thereby ensuring that the row key for a given group never
+        changes.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -461,6 +497,17 @@ class TableServiceServicer(object):
         """*
         Creates a new Table based on the provided configuration. This can be used as a regular table from the other methods
         in this interface, or can be interacted with via the InputTableService to modify its contents.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def WhereIn(self, request, context):
+        """*
+        Filters the left table based on the set of values in the right table.
+
+        Note that when the right table ticks, all of the rows in the left table are going to be re-evaluated,
+        thus the intention is that the right table is fairly slow moving compared with the left table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -636,6 +683,16 @@ def add_TableServiceServicer_to_server(servicer, server):
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
+            'AggregateAll': grpc.unary_unary_rpc_method_handler(
+                    servicer.AggregateAll,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'Aggregate': grpc.unary_unary_rpc_method_handler(
+                    servicer.Aggregate,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
             'Snapshot': grpc.unary_unary_rpc_method_handler(
                     servicer.Snapshot,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.FromString,
@@ -654,6 +711,11 @@ def add_TableServiceServicer_to_server(servicer, server):
             'CreateInputTable': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateInputTable,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'WhereIn': grpc.unary_unary_rpc_method_handler(
+                    servicer.WhereIn,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.WhereInRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'Batch': grpc.unary_stream_rpc_method_handler(
@@ -1170,6 +1232,40 @@ class TableService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def AggregateAll(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AggregateAll',
+            deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Aggregate(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Aggregate',
+            deephaven_dot_proto_dot_table__pb2.AggregateRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def Snapshot(request,
             target,
             options=(),
@@ -1233,6 +1329,23 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable',
             deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def WhereIn(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/WhereIn',
+            deephaven_dot_proto_dot_table__pb2.WhereInRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

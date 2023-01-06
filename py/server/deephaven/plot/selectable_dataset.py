@@ -14,7 +14,6 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table, PartitionedTable
 
 _JSelectableDataSet = jpy.get_type("io.deephaven.plot.filters.SelectableDataSet")
-_JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JSelectables = jpy.get_type("io.deephaven.plot.filters.Selectables")
 
 

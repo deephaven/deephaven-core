@@ -19,17 +19,23 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
  * A merged listener has a collection of {@link ListenerRecorder}s. Each one must complete before the merged listener
  * fires its sole notification for the cycle.
- *
+ * <p>
  * You must use a MergedListener if your result table has multiple sources, otherwise it is possible for a table to
  * produce notifications more than once in a cycle; which is an error.
  */
@@ -44,10 +50,13 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     private final String logPrefix;
 
     private long notificationStep = -1;
-    private long queuedNotificationStep = -1;
-    private long lastCompletedStep;
+    private volatile long queuedNotificationStep = -1;
+    private volatile long lastCompletedStep;
     private Throwable upstreamError;
     private TableListener.Entry errorSourceEntry;
+
+    @ReferentialIntegrity
+    private Runnable delayedErrorReference;
 
     private final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
@@ -112,14 +121,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         UpdateGraphProcessor.DEFAULT.addNotification(new MergedNotification());
     }
 
-    private void propagateProcessError(Exception updateException) {
-        propagateErrorInternal(updateException, entry);
-    }
-
-    private void propagateErrorInternal(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+    private void propagateError(
+            final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
         forceReferenceCountToZero();
         recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
-        propagateErrorDownstream(error, entry);
+        propagateErrorDownstream(fromProcess, error, entry);
         try {
             if (systemicResult()) {
                 AsyncClientErrorNotifier.reportError(error);
@@ -130,11 +136,53 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     protected boolean systemicResult() {
-        return SystemicObjectTracker.isSystemic(MergedListener.this.result);
+        return SystemicObjectTracker.isSystemic(result);
     }
 
-    protected void propagateErrorDownstream(@NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
-        result.notifyListenersOnError(error, entry);
+    protected void propagateErrorDownstream(
+            final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+        if (fromProcess && result.getLastNotificationStep() == LogicalClock.DEFAULT.currentStep()) {
+            // If the result managed to send its notification, we should not send our own on this cycle.
+            if (!result.isFailed()) {
+                // If the result isn't failed, we need to mark it as such on the next cycle.
+                scheduleDelayedErrorNotifier(error, entry, List.of(result));
+            }
+        } else {
+            result.notifyListenersOnError(error, entry);
+        }
+    }
+
+    protected final void scheduleDelayedErrorNotifier(
+            @NotNull final Throwable error,
+            @Nullable final TableListener.Entry entry,
+            @NotNull final Collection<BaseTable> results) {
+        delayedErrorReference = new DelayedErrorNotifier(error, entry, results);
+    }
+
+    private static final class DelayedErrorNotifier implements Runnable {
+
+        private final Throwable error;
+        private final TableListener.Entry entry;
+        private final Collection<WeakReference<BaseTable>> targetReferences;
+
+        private DelayedErrorNotifier(
+                @NotNull final Throwable error,
+                @Nullable final TableListener.Entry entry,
+                @NotNull final Collection<BaseTable> targets) {
+            this.error = error;
+            this.entry = entry;
+            this.targetReferences = targets.stream().map(WeakReference::new).collect(Collectors.toList());
+            UpdateGraphProcessor.DEFAULT.addSource(this);
+        }
+
+        @Override
+        public void run() {
+            targetReferences.stream()
+                    .map(WeakReference::get)
+                    .filter(Objects::nonNull)
+                    .forEach(t -> t.notifyListenersOnError(error, entry));
+            UpdateGraphProcessor.DEFAULT.removeSource(this);
+        }
     }
 
     protected abstract void process();
@@ -226,7 +274,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                 }
 
                 if (upstreamError != null) {
-                    propagateErrorInternal(upstreamError, errorSourceEntry);
+                    propagateError(false, upstreamError, errorSourceEntry);
                     return;
                 }
 
@@ -264,7 +312,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             } catch (Exception updateException) {
                 log.error().append(logPrefix).append("Uncaught exception for entry= ").append(entry)
                         .append(": ").append(updateException).endl();
-                propagateProcessError(updateException);
+                propagateError(true, updateException, entry);
             } finally {
                 lastCompletedStep = currentStep;
                 releaseFromRecorders();

@@ -9,37 +9,43 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.junit.experimental.categories.Category;
-
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static java.util.Arrays.asList;
 
@@ -232,18 +238,18 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final int maxSteps = numSteps.intValue();
         final Logger log = new StreamLoggerImpl();
 
-        final TstUtils.ColumnInfo[] rightColumnInfo;
-        final TstUtils.UniqueIntGenerator rightIntGenerator =
-                new TstUtils.UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
-        final TstUtils.UniqueIntGenerator rightInt2Generator =
-                new TstUtils.UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
+        final ColumnInfo[] rightColumnInfo;
+        final UniqueIntGenerator rightIntGenerator =
+                new UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
+        final UniqueIntGenerator rightInt2Generator =
+                new UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
 
-        final TstUtils.IntGenerator duplicateGenerator = new TstUtils.IntGenerator(100000, 100010);
+        final IntGenerator duplicateGenerator = new IntGenerator(100000, 100010);
 
-        final List<TstUtils.Generator<Integer, Integer>> generatorList =
+        final List<Generator<Integer, Integer>> generatorList =
                 Arrays.asList(rightIntGenerator, duplicateGenerator);
-        final TstUtils.Generator<Integer, Integer> compositeGenerator =
-                new TstUtils.CompositeGenerator<>(generatorList, 0.9);
+        final Generator<Integer, Integer> compositeGenerator =
+                new CompositeGenerator<>(generatorList, 0.9);
 
         final QueryTable rightTable = getTable(!rightStatic, rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
@@ -1508,6 +1514,65 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             assertEquals(new int[] {101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
         });
     }
+
+    /** Test #1 for DHC issue #3202 */
+    public void testDHC3202_v1() throws IOException {
+        // flood the hashtable with large updates
+        final Random random = new Random(0x31313131);
+
+        final ColumnInfo[] leftColumnInfo;
+        final QueryTable leftTable = getTable(true, 0, random,
+                leftColumnInfo = initColumnInfos(new String[] {"idx", "LeftValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(10_000_000, 10_010_000)));
+
+        final ColumnInfo[] rightColumnInfo;
+        final QueryTable rightTable = getTable(true, 0, random,
+                rightColumnInfo = initColumnInfos(new String[] {"idx", "RightValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(20_000_000, 20_010_000)));
+
+
+        final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
+
+        for (int ii = 0; ii < 10; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> {
+                        generateAppends(10_000, random, leftTable, leftColumnInfo);
+                        generateAppends(10_000, random, rightTable, rightColumnInfo);
+                    });
+        }
+    }
+
+    /** Test #1 for DHC issue #3202 */
+    public void testDHC3202_v2() throws IOException {
+        // flood the hashtable with large updates
+        final Random random = new Random(0x31313131);
+
+        final ColumnInfo[] leftColumnInfo;
+        final QueryTable leftTable = getTable(true, 0, random,
+                leftColumnInfo = initColumnInfos(new String[] {"idx", "LeftValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(10_000_000, 10_010_000)));
+
+        final ColumnInfo[] rightColumnInfo;
+        final QueryTable rightTable = getTable(true, 0, random,
+                rightColumnInfo = initColumnInfos(new String[] {"idx", "RightValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(20_000_000, 20_010_000)));
+
+
+        final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
+
+        for (int ii = 0; ii < 10; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> {
+                        generateAppends(100_000, random, leftTable, leftColumnInfo);
+                        generateAppends(100_000, random, rightTable, rightColumnInfo);
+                    });
+        }
+    }
+
 
     private void diskBackedTestHarness(BiConsumer<Table, Table> testFunction) throws IOException {
         final File leftDirectory = Files.createTempDirectory("QueryTableJoinTest-Left").toFile();

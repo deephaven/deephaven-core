@@ -104,9 +104,16 @@ class Figure(JObjectWrapper):
 
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
-    def __init__(self, j_figure: jpy.JType = None):
+    def __init__(self, rows: int = 1, cols: int = 1, j_figure: jpy.JType = None):
+        """ Initializes a Figure object that is used for displaying plots
+
+        Args:
+            rows (int, optional): Number of rows in the figure. Defaults to 1.
+            cols (int, optional): Number of columns in the figure. Defaults to 1.
+            j_figure (jpy.JType, internal): Internal use only.
+        """
         if not j_figure:
-            self.j_figure = _JPlottingConvenience.figure()
+            self.j_figure = _JPlottingConvenience.figure(rows, cols)
         else:
             self.j_figure = j_figure
 
@@ -176,7 +183,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def axis(
         self,
@@ -355,7 +362,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def chart(
         self,
@@ -499,7 +506,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def chart_legend(
         self,
@@ -553,7 +560,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def chart_title(
         self,
@@ -652,7 +659,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def figure(
         self,
@@ -721,7 +728,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def figure_title(
         self,
@@ -775,7 +782,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def func(
         self,
@@ -829,7 +836,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def line(
         self,
@@ -903,7 +910,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def new_axes(
         self,
@@ -932,13 +939,13 @@ class Figure(JObjectWrapper):
             dim = _convert_j("dim", dim, [int])
 
         if not non_null_args:
-            return Figure(self.j_figure.newAxes())
+            return Figure(j_figure=self.j_figure.newAxes())
         elif non_null_args == {"dim"}:
-            return Figure(self.j_figure.newAxes(dim))
+            return Figure(j_figure=self.j_figure.newAxes(dim))
         elif non_null_args == {"name"}:
-            return Figure(self.j_figure.newAxes(name))
+            return Figure(j_figure=self.j_figure.newAxes(name))
         elif non_null_args == {"name", "dim"}:
-            return Figure(self.j_figure.newAxes(name, dim))
+            return Figure(j_figure=self.j_figure.newAxes(name, dim))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -974,11 +981,11 @@ class Figure(JObjectWrapper):
             col = _convert_j("col", col, [int])
 
         if not non_null_args:
-            return Figure(self.j_figure.newChart())
+            return Figure(j_figure=self.j_figure.newChart())
         elif non_null_args == {"index"}:
-            return Figure(self.j_figure.newChart(index))
+            return Figure(j_figure=self.j_figure.newChart(index))
         elif non_null_args == {"row", "col"}:
-            return Figure(self.j_figure.newChart(row, col))
+            return Figure(j_figure=self.j_figure.newChart(row, col))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1036,17 +1043,17 @@ class Figure(JObjectWrapper):
             by = _no_convert_j("by", by, [List[str]])
 
         if non_null_args == {"series_name", "category", "y"}:
-            return Figure(self.j_figure.catPlot(series_name, category, y))
+            return Figure(j_figure=self.j_figure.catPlot(series_name, category, y))
         elif non_null_args == {"series_name", "t", "category", "y"}:
-            return Figure(self.j_figure.catPlot(series_name, t, category, y))
+            return Figure(j_figure=self.j_figure.catPlot(series_name, t, category, y))
         elif non_null_args == {"series_name", "t", "category", "y", "by"}:
-            return Figure(self.j_figure.catPlotBy(series_name, t, category, y, by))
+            return Figure(j_figure=self.j_figure.catPlotBy(series_name, t, category, y, by))
         elif non_null_args == {"series_name", "category", "y", "y_low", "y_high"}:
-            return Figure(self.j_figure.catErrorBar(series_name, category, y, y_low, y_high))
+            return Figure(j_figure=self.j_figure.catErrorBar(series_name, category, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "category", "y", "y_low", "y_high"}:
-            return Figure(self.j_figure.catErrorBar(series_name, t, category, y, y_low, y_high))
+            return Figure(j_figure=self.j_figure.catErrorBar(series_name, t, category, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "category", "y", "y_low", "y_high", "by"}:
-            return Figure(self.j_figure.catErrorBarBy(series_name, t, category, y, y_low, y_high, by))
+            return Figure(j_figure=self.j_figure.catErrorBarBy(series_name, t, category, y, y_low, y_high, by))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1084,9 +1091,9 @@ class Figure(JObjectWrapper):
             category = _convert_j("category", category, [str, List[str], List[int], List[float]])
 
         if non_null_args == {"series_name", "category"}:
-            return Figure(self.j_figure.catHistPlot(series_name, category))
+            return Figure(j_figure=self.j_figure.catHistPlot(series_name, category))
         elif non_null_args == {"series_name", "t", "category"}:
-            return Figure(self.j_figure.catHistPlot(series_name, t, category))
+            return Figure(j_figure=self.j_figure.catHistPlot(series_name, t, category))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1149,11 +1156,11 @@ class Figure(JObjectWrapper):
             by = _no_convert_j("by", by, [List[str]])
 
         if non_null_args == {"series_name", "x", "open", "high", "low", "close"}:
-            return Figure(self.j_figure.ohlcPlot(series_name, x, open, high, low, close))
+            return Figure(j_figure=self.j_figure.ohlcPlot(series_name, x, open, high, low, close))
         elif non_null_args == {"series_name", "t", "x", "open", "high", "low", "close"}:
-            return Figure(self.j_figure.ohlcPlot(series_name, t, x, open, high, low, close))
+            return Figure(j_figure=self.j_figure.ohlcPlot(series_name, t, x, open, high, low, close))
         elif non_null_args == {"series_name", "t", "x", "open", "high", "low", "close", "by"}:
-            return Figure(self.j_figure.ohlcPlotBy(series_name, t, x, open, high, low, close, by))
+            return Figure(j_figure=self.j_figure.ohlcPlotBy(series_name, t, x, open, high, low, close, by))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1196,9 +1203,9 @@ class Figure(JObjectWrapper):
             y = _convert_j("y", y, [str, List[int], List[float], List[DateTime]])
 
         if non_null_args == {"series_name", "category", "y"}:
-            return Figure(self.j_figure.piePlot(series_name, category, y))
+            return Figure(j_figure=self.j_figure.piePlot(series_name, category, y))
         elif non_null_args == {"series_name", "t", "category", "y"}:
-            return Figure(self.j_figure.piePlot(series_name, t, category, y))
+            return Figure(j_figure=self.j_figure.piePlot(series_name, t, category, y))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1267,7 +1274,7 @@ class Figure(JObjectWrapper):
             color = _convert_j("color", color, [str])
 
         if set({"series_name", "t", "id", "parent"}).issubset(non_null_args):
-            return Figure(self.j_figure.treemapPlot(series_name, t, id, parent, value, label, hover_text, color))
+            return Figure(j_figure=self.j_figure.treemapPlot(series_name, t, id, parent, value, label, hover_text, color))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1350,33 +1357,33 @@ class Figure(JObjectWrapper):
             y_time_axis = _convert_j("y_time_axis", y_time_axis, [bool])
 
         if non_null_args == {"series_name", "function"}:
-            return Figure(self.j_figure.plot(series_name, function))
+            return Figure(j_figure=self.j_figure.plot(series_name, function))
         elif non_null_args == {"series_name", "x", "y"}:
-            return Figure(self.j_figure.plot(series_name, x, y))
+            return Figure(j_figure=self.j_figure.plot(series_name, x, y))
         elif non_null_args == {"series_name", "t", "x", "y"}:
-            return Figure(self.j_figure.plot(series_name, t, x, y))
+            return Figure(j_figure=self.j_figure.plot(series_name, t, x, y))
         elif non_null_args == {"series_name", "x", "y", "x_time_axis", "y_time_axis"}:
-            return Figure(self.j_figure.plot(series_name, x, y, x_time_axis, y_time_axis))
+            return Figure(j_figure=self.j_figure.plot(series_name, x, y, x_time_axis, y_time_axis))
         elif non_null_args == {"series_name", "t", "x", "y", "by"}:
-            return Figure(self.j_figure.plotBy(series_name, t, x, y, by))
+            return Figure(j_figure=self.j_figure.plotBy(series_name, t, x, y, by))
         elif non_null_args == {"series_name", "x", "x_low", "x_high", "y"}:
-            return Figure(self.j_figure.errorBarX(series_name, x, x_low, x_high, y))
+            return Figure(j_figure=self.j_figure.errorBarX(series_name, x, x_low, x_high, y))
         elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y"}:
-            return Figure(self.j_figure.errorBarX(series_name, t, x, x_low, x_high, y))
+            return Figure(j_figure=self.j_figure.errorBarX(series_name, t, x, x_low, x_high, y))
         elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "by"}:
-            return Figure(self.j_figure.errorBarXBy(series_name, t, x, x_low, x_high, y, by))
+            return Figure(j_figure=self.j_figure.errorBarXBy(series_name, t, x, x_low, x_high, y, by))
         elif non_null_args == {"series_name", "x", "y", "y_low", "y_high"}:
-            return Figure(self.j_figure.errorBarY(series_name, x, y, y_low, y_high))
+            return Figure(j_figure=self.j_figure.errorBarY(series_name, x, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "x", "y", "y_low", "y_high"}:
-            return Figure(self.j_figure.errorBarY(series_name, t, x, y, y_low, y_high))
+            return Figure(j_figure=self.j_figure.errorBarY(series_name, t, x, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "x", "y", "y_low", "y_high", "by"}:
-            return Figure(self.j_figure.errorBarYBy(series_name, t, x, y, y_low, y_high, by))
+            return Figure(j_figure=self.j_figure.errorBarYBy(series_name, t, x, y, y_low, y_high, by))
         elif non_null_args == {"series_name", "x", "x_low", "x_high", "y", "y_low", "y_high"}:
-            return Figure(self.j_figure.errorBarXY(series_name, x, x_low, x_high, y, y_low, y_high))
+            return Figure(j_figure=self.j_figure.errorBarXY(series_name, x, x_low, x_high, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "y_low", "y_high"}:
-            return Figure(self.j_figure.errorBarXY(series_name, t, x, x_low, x_high, y, y_low, y_high))
+            return Figure(j_figure=self.j_figure.errorBarXY(series_name, t, x, x_low, x_high, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "y_low", "y_high", "by"}:
-            return Figure(self.j_figure.errorBarXYBy(series_name, t, x, x_low, x_high, y, y_low, y_high, by))
+            return Figure(j_figure=self.j_figure.errorBarXYBy(series_name, t, x, x_low, x_high, y, y_low, y_high, by))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1429,15 +1436,15 @@ class Figure(JObjectWrapper):
             nbins = _convert_j("nbins", nbins, [int])
 
         if non_null_args == {"series_name", "t"}:
-            return Figure(self.j_figure.histPlot(series_name, t))
+            return Figure(j_figure=self.j_figure.histPlot(series_name, t))
         elif non_null_args == {"series_name", "x", "nbins"}:
-            return Figure(self.j_figure.histPlot(series_name, x, nbins))
+            return Figure(j_figure=self.j_figure.histPlot(series_name, x, nbins))
         elif non_null_args == {"series_name", "t", "x", "nbins"}:
-            return Figure(self.j_figure.histPlot(series_name, t, x, nbins))
+            return Figure(j_figure=self.j_figure.histPlot(series_name, t, x, nbins))
         elif non_null_args == {"series_name", "x", "xmin", "xmax", "nbins"}:
-            return Figure(self.j_figure.histPlot(series_name, x, xmin, xmax, nbins))
+            return Figure(j_figure=self.j_figure.histPlot(series_name, x, xmin, xmax, nbins))
         elif non_null_args == {"series_name", "t", "x", "xmin", "xmax", "nbins"}:
-            return Figure(self.j_figure.histPlot(series_name, t, x, xmin, xmax, nbins))
+            return Figure(j_figure=self.j_figure.histPlot(series_name, t, x, xmin, xmax, nbins))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1688,7 +1695,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
 
     def save(
@@ -1735,13 +1742,13 @@ class Figure(JObjectWrapper):
             timeout_seconds = _convert_j("timeout_seconds", timeout_seconds, [int])
 
         if non_null_args == {"path"}:
-            return Figure(self.j_figure.save(path))
+            return Figure(j_figure=self.j_figure.save(path))
         elif non_null_args == {"path", "wait", "timeout_seconds"}:
-            return Figure(self.j_figure.save(path, wait, timeout_seconds))
+            return Figure(j_figure=self.j_figure.save(path, wait, timeout_seconds))
         elif non_null_args == {"path", "width", "height"}:
-            return Figure(self.j_figure.save(path, width, height))
+            return Figure(j_figure=self.j_figure.save(path, width, height))
         elif non_null_args == {"path", "width", "height", "wait", "timeout_seconds"}:
-            return Figure(self.j_figure.save(path, width, height, wait, timeout_seconds))
+            return Figure(j_figure=self.j_figure.save(path, width, height, wait, timeout_seconds))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1907,7 +1914,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def show(
         self,
@@ -1925,7 +1932,7 @@ class Figure(JObjectWrapper):
         non_null_args = set()
 
         if not non_null_args:
-            return Figure(self.j_figure.show())
+            return Figure(j_figure=self.j_figure.show())
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -2001,7 +2008,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def ticks_minor(
         self,
@@ -2045,7 +2052,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def twin(
         self,
@@ -2074,13 +2081,13 @@ class Figure(JObjectWrapper):
             dim = _convert_j("dim", dim, [int])
 
         if not non_null_args:
-            return Figure(self.j_figure.twin())
+            return Figure(j_figure=self.j_figure.twin())
         elif non_null_args == {"dim"}:
-            return Figure(self.j_figure.twin(dim))
+            return Figure(j_figure=self.j_figure.twin(dim))
         elif non_null_args == {"name"}:
-            return Figure(self.j_figure.twin(name))
+            return Figure(j_figure=self.j_figure.twin(name))
         elif non_null_args == {"name", "dim"}:
-            return Figure(self.j_figure.twin(name, dim))
+            return Figure(j_figure=self.j_figure.twin(name, dim))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -2256,7 +2263,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def x_ticks(
         self,
@@ -2330,7 +2337,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def x_ticks_minor(
         self,
@@ -2374,7 +2381,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def x_twin(
         self,
@@ -2398,9 +2405,9 @@ class Figure(JObjectWrapper):
             name = _convert_j("name", name, [str])
 
         if not non_null_args:
-            return Figure(self.j_figure.twinX())
+            return Figure(j_figure=self.j_figure.twinX())
         elif non_null_args == {"name"}:
-            return Figure(self.j_figure.twinX(name))
+            return Figure(j_figure=self.j_figure.twinX(name))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -2576,7 +2583,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def y_ticks(
         self,
@@ -2650,7 +2657,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def y_ticks_minor(
         self,
@@ -2694,7 +2701,7 @@ class Figure(JObjectWrapper):
         if not f_called or non_null_args:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
-        return Figure(j_figure)
+        return Figure(j_figure=j_figure)
 
     def y_twin(
         self,
@@ -2718,8 +2725,8 @@ class Figure(JObjectWrapper):
             name = _convert_j("name", name, [str])
 
         if not non_null_args:
-            return Figure(self.j_figure.twinY())
+            return Figure(j_figure=self.j_figure.twinY())
         elif non_null_args == {"name"}:
-            return Figure(self.j_figure.twinY(name))
+            return Figure(j_figure=self.j_figure.twinY(name))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")

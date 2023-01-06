@@ -13,11 +13,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * An uncoalesced table that may be redefined without triggering a {@link #coalesce()}.
  */
-public abstract class RedefinableTable extends UncoalescedTable {
+public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_TYPE>>
+        extends UncoalescedTable<IMPL_TYPE> {
 
     protected RedefinableTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         super(definition, description);
@@ -25,17 +27,32 @@ public abstract class RedefinableTable extends UncoalescedTable {
 
     @Override
     public Table view(Collection<? extends Selectable> selectables) {
+        return viewInternal(selectables, false);
+    }
+
+    @Override
+    public Table updateView(Collection<? extends Selectable> selectables) {
+        return viewInternal(selectables, true);
+    }
+
+    private Table viewInternal(Collection<? extends Selectable> selectables, boolean isUpdate) {
         if (selectables == null || selectables.isEmpty()) {
             return this;
         }
-        final SelectColumn[] columns = SelectColumn.from(selectables);
-        Set<ColumnDefinition<?>> resultColumnsInternal = new HashSet<>();
-        Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
-        Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
-        Map<String, Set<String>> columnDependency = new HashMap<>();
+
+        final SelectColumn[] columns = Stream.concat(
+                isUpdate ? definition.getColumnStream().map(cd -> new SourceColumn(cd.getName())) : Stream.empty(),
+                selectables.stream().map(SelectColumn::of))
+                .toArray(SelectColumn[]::new);
+
+        final Set<ColumnDefinition<?>> resultColumnsInternal = new HashSet<>();
+        final Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
+        final Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
+        final Map<String, Set<String>> columnDependency = new HashMap<>();
         boolean simpleRetain = true;
-        for (SelectColumn selectColumn : columns) {
+        for (final SelectColumn selectColumn : columns) {
             List<String> usedColumnNames = selectColumn.initDef(allColumns);
+            usedColumnNames.addAll(selectColumn.getColumnArrays());
             columnDependency.put(selectColumn.getName(), new HashSet<>(usedColumnNames));
             resultColumnsInternal.addAll(usedColumnNames.stream()
                     .filter(usedColumnName -> !resultColumnsExternal.containsKey(usedColumnName))
@@ -60,23 +77,8 @@ public abstract class RedefinableTable extends UncoalescedTable {
         TableDefinition newDefInternal =
                 TableDefinition.of(
                         resultColumnsInternal.toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY));
-        return redefine(newDefExternal, newDefInternal, columns, columnDependency);
-    }
 
-    @Override
-    public Table updateView(Collection<? extends Selectable> selectables) {
-        if (selectables == null || selectables.isEmpty()) {
-            return this;
-        }
-        final SelectColumn[] columns = SelectColumn.from(selectables);
-        LinkedHashMap<String, SelectColumn> viewColumns = new LinkedHashMap<>();
-        for (ColumnDefinition<?> cDef : definition.getColumns()) {
-            viewColumns.put(cDef.getName(), new SourceColumn(cDef.getName()));
-        }
-        for (SelectColumn updateColumn : columns) {
-            viewColumns.put(updateColumn.getName(), updateColumn);
-        }
-        return view(viewColumns.values().toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+        return redefine(newDefExternal, newDefInternal, columns, columnDependency);
     }
 
     @Override

@@ -13,6 +13,7 @@ from enum import Enum, auto
 from typing import Union, Sequence, List, Any, Optional, Callable
 
 import jpy
+import numpy as np
 
 from deephaven import DHError, dtypes
 from deephaven._jpy import strict_cast
@@ -51,6 +52,10 @@ _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext"
 _JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
 
+# For unittest vectorization
+_test_vectorization = False
+_vectorized_count = 0
+
 
 def _j_py_script_session() -> _JPythonScriptSession:
     j_execution_context = _JExecutionContext.getContext()
@@ -60,6 +65,88 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return strict_cast(j_script_session_query_scope.scriptSession(), _JPythonScriptSession)
     except DHError:
         return None
+
+
+_numpy_type_codes = ["i", "l", "h", "f", "d", "b", "?", "U", "O"]
+
+
+def _encode_signature(fn: Callable) -> str:
+    """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
+    type to numpy dtype chars (i,l,h,f,d,b,?,U,O), and pack them into a string with parameter type chars first,
+    in their original order, followed by the delimiter string '->', then the return type_char.
+
+    If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
+    """
+    sig = inspect.signature(fn)
+
+    parameter_types = []
+    for n, p in sig.parameters.items():
+        try:
+            np_dtype = np.dtype(p.annotation if p.annotation else "object")
+            parameter_types.append(np_dtype)
+        except TypeError:
+            parameter_types.append(np.dtype("object"))
+
+    try:
+        return_type = np.dtype(sig.return_annotation if sig.return_annotation else "object")
+    except TypeError:
+        return_type = np.dtype("object")
+
+    np_type_codes = [np.dtype(p).char for p in parameter_types]
+    np_type_codes = [c if c in _numpy_type_codes else "O" for c in np_type_codes]
+    return_type_code = np.dtype(return_type).char
+    return_type_code = return_type_code if return_type_code in _numpy_type_codes else "O"
+
+    np_type_codes.extend(["-", ">", return_type_code])
+    return "".join(np_type_codes)
+
+
+def dh_vectorize(fn):
+    """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
+
+    If this annotation is not used on a query function, the Deephaven query engine will make an effort to vectorize
+    the function. If vectorization is not possible, the query engine will use the original, non-vectorized function.
+    If this annotation is used on a function, the Deephaven query engine will use the vectorized function in a query,
+    or an error will result if the function can not be vectorized.
+
+    When this decorator is used on a function, the number and type of input and output arguments are changed.
+    These changes are only intended for use by the Deephaven query engine. Users are discouraged from using
+    vectorized functions in non-query code, since the function signature may change in future versions.
+    
+    The current vectorized function signature includes (1) the size of the input arrays, (2) the output array,
+    and (3) the input arrays.
+    """
+    signature = _encode_signature(fn)
+
+    def wrapper(*args):
+        if len(args) != len(signature) - len("->?") + 2:
+            raise ValueError(
+                f"The number of arguments doesn't match the function signature. {len(args) - 2}, {signature}")
+        if args[0] <= 0:
+            raise ValueError(f"The chunk size argument must be a positive integer. {args[0]}")
+
+        chunk_size = args[0]
+        chunk_result = args[1]
+        if args[2:]:
+            vectorized_args = zip(*args[2:])
+            for i in range(chunk_size):
+                scalar_args = next(vectorized_args)
+                chunk_result[i] = fn(*scalar_args)
+        else:
+            for i in range(chunk_size):
+                chunk_result[i] = fn()
+
+        return chunk_result
+
+    wrapper.callable = fn
+    wrapper.signature = signature
+    wrapper.dh_vectorized = True
+
+    if _test_vectorization:
+        global _vectorized_count
+        _vectorized_count += 1
+
+    return wrapper
 
 
 @contextlib.contextmanager
@@ -650,18 +737,22 @@ class Table(JObjectWrapper):
     #
     # region Sort
     def restrict_sort_to(self, cols: Union[str, Sequence[str]]):
-        """The restrict_sort_to method only allows sorting on specified table columns. This can be useful to prevent
-        users from accidentally performing expensive sort operations as they interact with tables in the UI.
+        """The restrict_sort_to method adjusts the input table to produce an output table that only allows sorting on
+        specified table columns. This can be useful to prevent users from accidentally performing expensive sort
+        operations as they interact with tables in the UI.
 
         Args:
             cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            a new table
 
         Raises:
             DHError
         """
         try:
             cols = to_sequence(cols)
-            return self.j_table.restrictSortTo(*cols)
+            return Table(self.j_table.restrictSortTo(*cols))
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
@@ -1537,6 +1628,38 @@ class Table(JObjectWrapper):
             return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "table update-by operation failed.") from e
+
+    def slice(self, start: int, stop: int) -> Table:
+        """Extracts a subset of a table by row positions into a new Table.
+
+          If both the start and the stop are positive, then both are counted from the beginning of the table.
+          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head(N)`
+          The start must be less than or equal to the stop.
+
+          If the start is positive and the stop is negative, then the start is counted from the beginning of the
+          table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+          rows but the first and last. If the stop is before the start, the result is an empty table.
+
+          If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail(N)`.
+
+          If the start is negative and the stop is negative, they are both counted from the end of the
+          table. For example, slice(-2, -1) returns the second to last row of the table.
+
+        Args:
+            start (int): the first row position to include in the result
+            stop (int): the last row position to include in the result
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.slice(start, stop))
+        except Exception as e:
+            raise DHError(e, "table slice operation failed.") from e
 
 
 class PartitionedTable(JObjectWrapper):

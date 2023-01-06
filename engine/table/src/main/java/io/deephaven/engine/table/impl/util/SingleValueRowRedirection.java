@@ -3,10 +3,9 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.chunk.WritableLongChunk;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,18 +36,18 @@ public class SingleValueRowRedirection implements RowRedirection {
 
     @Override
     public void fillChunk(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
         final int sz = outerRowKeys.intSize();
         innerRowKeys.setSize(sz);
-        innerRowKeys.fillWithValue(0, sz, value);
+        innerRowKeys.asWritableLongChunk().fillWithValue(0, sz, value);
     }
 
     @Override
     public void fillPrevChunk(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
         // no prev
         fillChunk(fillContext, innerRowKeys, outerRowKeys);

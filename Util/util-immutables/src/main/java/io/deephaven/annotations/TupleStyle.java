@@ -20,8 +20,11 @@ import java.lang.annotation.Target;
 @Value.Style(visibility = ImplementationVisibility.PACKAGE,
         allParameters = true,
         typeImmutable = "*Tuple",
-        defaults = @Value.Immutable(builder = false, copy = false), strictBuilder = true,
-        weakInterning = true, jdkOnly = true)
+        defaults = @Value.Immutable(builder = false, copy = false),
+        strictBuilder = true,
+        weakInterning = true,
+        jdkOnly = true,
+        includeHashCode = "getClass().hashCode()")
 public @interface TupleStyle {
     // Note: this produces XTuple.of() methods for the implementation classes
 }

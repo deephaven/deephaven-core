@@ -5,6 +5,7 @@ package io.deephaven.engine.rowset.impl;
 
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.testutil.rowset.PerfStats;
 
 import java.util.Map;
 import java.util.TreeMap;

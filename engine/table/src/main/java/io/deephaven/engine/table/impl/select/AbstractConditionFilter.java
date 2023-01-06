@@ -3,36 +3,43 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
+import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
-import static io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
 
 public abstract class AbstractConditionFilter extends WhereFilterImpl {
     private static final Logger log = LoggerFactory.getLogger(AbstractConditionFilter.class);
     final Map<String, String> outerToInnerNames;
-    final Map<String, String> innerToOuterNames;
     @NotNull
     protected final String formula;
     List<String> usedColumns;
@@ -49,27 +56,28 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         this.formula = formula;
         this.unboxArguments = unboxArguments;
         this.outerToInnerNames = Collections.emptyMap();
-        this.innerToOuterNames = Collections.emptyMap();
     }
 
     protected AbstractConditionFilter(@NotNull String formula, Map<String, String> renames, boolean unboxArguments) {
         this.formula = formula;
         this.outerToInnerNames = renames;
         this.unboxArguments = unboxArguments;
-        this.innerToOuterNames = new HashMap<>();
-        for (Map.Entry<String, String> outerInnerEntry : outerToInnerNames.entrySet()) {
-            innerToOuterNames.put(outerInnerEntry.getValue(), outerInnerEntry.getKey());
-        }
     }
 
     @Override
     public List<String> getColumns() {
-        return usedColumns;
+        return usedColumns.stream()
+                .map(name -> outerToInnerNames.getOrDefault(name, name))
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<String> getColumnArrays() {
-        return usedColumnArrays;
+        return usedColumnArrays.stream()
+                .map(name -> outerToInnerNames.getOrDefault(name, name))
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -101,15 +109,13 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 }
             }
 
-            Class<?> compType;
-            for (ColumnDefinition<?> column : tableDefinition.getColumns()) {
+            final BiConsumer<String, ColumnDefinition<?>> createColumnMappings = (columnName, column) -> {
                 final Class<?> vectorType = DhFormulaColumn.getVectorType(column.getDataType());
-                final String columnName = innerToOuterNames.getOrDefault(column.getName(), column.getName());
 
                 possibleVariables.put(columnName, column.getDataType());
                 possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType);
 
-                compType = column.getComponentType();
+                final Class<?> compType = column.getComponentType();
                 if (compType != null && !compType.isPrimitive()) {
                     possibleVariableParameterizedTypes.put(columnName, new Class[] {compType});
                 }
@@ -117,6 +123,17 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                     possibleVariableParameterizedTypes.put(columnName + COLUMN_SUFFIX,
                             new Class[] {column.getDataType()});
                 }
+            };
+
+            // By default all columns are available to the formula
+            for (final ColumnDefinition<?> column : tableDefinition.getColumns()) {
+                createColumnMappings.accept(column.getName(), column);
+            }
+            // Overwrite any existing column mapping using the provided renames.
+            for (final Map.Entry<String, String> entry : outerToInnerNames.entrySet()) {
+                final String columnName = entry.getKey();
+                final ColumnDefinition<?> column = tableDefinition.getColumn(entry.getValue());
+                createColumnMappings.accept(columnName, column);
             }
 
             log.debug("Expression (before) : " + formula);
@@ -143,11 +160,13 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             for (String variable : result.getVariablesUsed()) {
                 final String columnToFind = outerToInnerNames.getOrDefault(variable, variable);
                 final String arrayColumnToFind;
+                final String arrayColumnOuterName;
                 if (variable.endsWith(COLUMN_SUFFIX)) {
-                    final String originalName = variable.substring(0, variable.length() - COLUMN_SUFFIX.length());
-                    arrayColumnToFind = outerToInnerNames.getOrDefault(originalName, originalName);
+                    arrayColumnOuterName = variable.substring(0, variable.length() - COLUMN_SUFFIX.length());
+                    arrayColumnToFind = outerToInnerNames.getOrDefault(arrayColumnOuterName, arrayColumnOuterName);
                 } else {
                     arrayColumnToFind = null;
+                    arrayColumnOuterName = null;
                 }
 
                 if (variable.equals("i")) {
@@ -157,48 +176,62 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 } else if (variable.equals("k")) {
                     usesK = true;
                 } else if (tableDefinition.getColumn(columnToFind) != null) {
-                    usedColumns.add(columnToFind);
+                    usedColumns.add(variable);
                 } else if (arrayColumnToFind != null && tableDefinition.getColumn(arrayColumnToFind) != null) {
-                    usedColumnArrays.add(arrayColumnToFind);
+                    usedColumnArrays.add(arrayColumnOuterName);
                 } else if (possibleParams.containsKey(variable)) {
                     paramsList.add(possibleParams.get(variable));
                 }
             }
             params = paramsList.toArray(QueryScopeParam.ZERO_LENGTH_PARAM_ARRAY);
 
-            // check if this is a filter that uses a numba vectorized function
-            Optional<QueryScopeParam<?>> paramOptional =
-                    Arrays.stream(params).filter(p -> p.getValue() instanceof NumbaCallableWrapper).findFirst();
-            if (paramOptional.isPresent()) {
-                /*
-                 * numba vectorized function must be used alone as an entire expression, and that should have been
-                 * checked in the QueryLanguageParser already, this is a sanity check
-                 */
-                if (params.length != 1) {
-                    throw new UncheckedDeephavenException(
-                            "internal error - misuse of numba vectorized functions wasn't detected.");
-                }
+            checkAndInitializeVectorization(result, paramsList);
+            if (!initialized) {
+                final Class<?> resultType = result.getType();
+                checkReturnType(result, resultType);
 
-                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) paramOptional.get().getValue();
-                DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
-                        numbaCallableWrapper.getReturnType(), usedColumns.toArray(new String[0]),
-                        true);
-                checkReturnType(result, dcf.getReturnedType());
-                setFilter(new ConditionFilter.ChunkFilter(
-                        dcf.toFilterKernel(),
-                        dcf.getColumnNames().toArray(new String[0]),
-                        ConditionFilter.CHUNK_SIZE));
+                generateFilterCode(tableDefinition, timeConversionResult, result);
                 initialized = true;
-                return;
             }
-
-            final Class<?> resultType = result.getType();
-            checkReturnType(result, resultType);
-
-            generateFilterCode(tableDefinition, timeConversionResult, result);
-            initialized = true;
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + formula, e);
+        }
+    }
+
+    private void checkAndInitializeVectorization(QueryLanguageParser.Result result,
+            List<QueryScopeParam<?>> paramsList) {
+
+        PyCallableWrapper[] cws = paramsList.stream().filter(p -> p.getValue() instanceof PyCallableWrapper)
+                .map(p -> p.getValue()).toArray(PyCallableWrapper[]::new);
+        if (cws.length != 1) {
+            return;
+        }
+        PyCallableWrapper pyCallableWrapper = cws[0];
+
+        if (pyCallableWrapper.isVectorizable()) {
+            checkReturnType(result, pyCallableWrapper.getReturnType());
+
+            for (String variable : result.getVariablesUsed()) {
+                if (variable.equals("i")) {
+                    usesI = true;
+                    usedColumns.add("i");
+                } else if (variable.equals("ii")) {
+                    usesII = true;
+                    usedColumns.add("ii");
+                } else if (variable.equals("k")) {
+                    usesK = true;
+                    usedColumns.add("k");
+                }
+            }
+            ArgumentsChunked argumentsChunked = pyCallableWrapper.buildArgumentsChunked(usedColumns);
+            PyObject vectorized = pyCallableWrapper.vectorizedCallable();
+            DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(vectorized,
+                    pyCallableWrapper.getReturnType(), usedColumns.toArray(new String[0]), argumentsChunked, true);
+            setFilter(new ConditionFilter.ChunkFilter(
+                    dcf.toFilterKernel(),
+                    dcf.getColumnNames().toArray(new String[0]),
+                    ConditionFilter.CHUNK_SIZE));
+            initialized = true;
         }
     }
 

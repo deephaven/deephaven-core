@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
@@ -19,12 +21,12 @@ import java.util.Set;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TestSyncTableFilter extends RefreshingTableTestCase {
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         setExpectError(false);
     }
@@ -303,8 +305,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table fa = result.get("a");
         final Table fb = result.get("b");
 
-        fa.setAttribute("NAME", "a");
-        fb.setAttribute("NAME", "b");
+        ((QueryTable) fa).setAttribute("NAME", "a");
+        ((QueryTable) fb).setAttribute("NAME", "b");
 
         final ErrorListener la = new ErrorListener("fa", fa);
         final ErrorListener lb = new ErrorListener("fb", fb);
@@ -341,8 +343,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table fa = result.get("a");
         final Table fb = result.get("b");
 
-        fa.setAttribute("NAME", "a");
-        fb.setAttribute("NAME", "b");
+        ((QueryTable) fa).setAttribute("NAME", "a");
+        ((QueryTable) fb).setAttribute("NAME", "b");
 
 
         final Table fau =
@@ -357,24 +359,24 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         showWithRowSet(sentSum);
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        assertTrue(((BaseTable) sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(sentSum.satisfied(LogicalClock.DEFAULT.currentStep()));
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(a, i(1), longCol("ID", 1), intCol("Sentinel", 102), col("Key", "b"));
         a.notifyListeners(i(1), i(), i());
-        assertFalse(((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep()));
-        assertFalse(((BaseTable) fb).satisfied(LogicalClock.DEFAULT.currentStep()));
-        assertFalse(((BaseTable) sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(fa.satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(fb.satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(sentSum.satisfied(LogicalClock.DEFAULT.currentStep()));
 
-        while (!((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep())) {
+        while (!fa.satisfied(LogicalClock.DEFAULT.currentStep())) {
             UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
         }
-        assertTrue(((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(fa.satisfied(LogicalClock.DEFAULT.currentStep()));
         UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-        assertTrue(((BaseTable) fb).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(fb.satisfied(LogicalClock.DEFAULT.currentStep()));
 
-        assertFalse(((BaseTable) joined).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(joined.satisfied(LogicalClock.DEFAULT.currentStep()));
 
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 

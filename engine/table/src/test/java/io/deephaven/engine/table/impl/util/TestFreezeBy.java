@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
@@ -16,7 +18,7 @@ import junit.framework.TestCase;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 
 public class TestFreezeBy extends RefreshingTableTestCase {

@@ -71,6 +71,7 @@ public class TypedAsOfJoinFactory {
     public static void rightIncrementalMoveMainFull(CodeBlock.Builder builder) {
         builder.addStatement("destLeftSource[destinationTableLocation] = oldLeftSource[sourceBucket]");
         builder.addStatement("destRightSource[destinationTableLocation] = oldRightSource[sourceBucket]");
+        builder.addStatement("hashSlots.set(oldModifiedCookie[sourceBucket], destinationTableLocation)");
         builder.addStatement("destModifiedCookie[destinationTableLocation] = oldModifiedCookie[sourceBucket]");
     }
 
@@ -83,7 +84,7 @@ public class TypedAsOfJoinFactory {
         builder.addStatement("alternateRightRowSetSource.set(locationToMigrate, null)");
 
         builder.addStatement("final long cookie  = alternateCookieSource.getUnsafe(locationToMigrate)");
-        builder.addStatement("migrateCookie(cookie, destinationTableLocation, hashSlots)");
+        builder.addStatement("migrateCookie(cookie, destinationTableLocation)");
     }
 
     public static void rightIncrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,

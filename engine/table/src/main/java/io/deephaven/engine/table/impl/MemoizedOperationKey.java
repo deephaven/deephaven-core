@@ -95,8 +95,8 @@ public abstract class MemoizedOperationKey {
         return Reverse.REVERSE_INSTANCE;
     }
 
-    public static MemoizedOperationKey treeTable(String idColumn, String parentColumn) {
-        return new TreeTable(idColumn, parentColumn);
+    public static MemoizedOperationKey tree(String idColumn, String parentColumn) {
+        return new Tree(idColumn, parentColumn);
     }
 
     public static MemoizedOperationKey aggBy(
@@ -308,12 +308,12 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class TreeTable extends MemoizedOperationKey {
+    private static class Tree extends MemoizedOperationKey {
         private final String idColumn;
         private final String parentColumn;
 
 
-        private TreeTable(String idColumn, String parentColumn) {
+        private Tree(String idColumn, String parentColumn) {
             this.idColumn = idColumn;
             this.parentColumn = parentColumn;
         }
@@ -324,14 +324,24 @@ public abstract class MemoizedOperationKey {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            final TreeTable treeTable = (TreeTable) o;
-            return Objects.equals(idColumn, treeTable.idColumn) &&
-                    Objects.equals(parentColumn, treeTable.parentColumn);
+            final Tree tree = (Tree) o;
+            return Objects.equals(idColumn, tree.idColumn) &&
+                    Objects.equals(parentColumn, tree.parentColumn);
         }
 
         @Override
         public int hashCode() {
             return Objects.hash(idColumn, parentColumn);
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.Tree;
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation getParentCopyType() {
+            return BaseTable.CopyAttributeOperation.TreeCopy;
         }
     }
 
@@ -572,7 +582,7 @@ public abstract class MemoizedOperationKey {
         return new CrossJoin(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve);
     }
 
-    private static boolean equalWeakRefsByReferentIdentity(final WeakReference<?> r1, final WeakReference<?> r2) {
+    protected static boolean equalWeakRefsByReferentIdentity(final WeakReference<?> r1, final WeakReference<?> r2) {
         if (r1 == r2) {
             return true;
         }

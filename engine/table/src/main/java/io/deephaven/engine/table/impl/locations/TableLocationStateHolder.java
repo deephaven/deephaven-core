@@ -37,7 +37,7 @@ public class TableLocationStateHolder implements TableLocationState {
 
     @Override
     public final synchronized RowSet getRowSet() {
-        return rowSet.copy();
+        return rowSet == null ? null : rowSet.copy();
     }
 
     @Override

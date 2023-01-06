@@ -13,6 +13,8 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
@@ -36,7 +38,7 @@ import java.util.function.LongUnaryOperator;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableSortTest extends QueryTableTestBase {
@@ -780,8 +782,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
     public void testAlreadySorted() {
         final Table t = emptyTable(10000).update("Key=i");
         final Table s = t.sort("Key");
-        assertSame(t, s);
+        assertSame(t.getRowSet(), s.getRowSet());
         final Table sd = t.sortDescending("Key");
-        assertNotSame(t, sd);
+        assertNotSame(t.getRowSet(), sd.getRowSet());
     }
 }

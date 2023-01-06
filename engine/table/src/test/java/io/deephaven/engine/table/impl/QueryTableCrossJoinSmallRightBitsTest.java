@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -16,10 +18,10 @@ import java.util.Arrays;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.table.impl.TstUtils.c;
-import static io.deephaven.engine.table.impl.TstUtils.i;
-import static io.deephaven.engine.table.impl.TstUtils.testRefreshingTable;
-import static io.deephaven.engine.table.impl.TstUtils.testTable;
+import static io.deephaven.engine.testutil.TstUtils.c;
+import static io.deephaven.engine.testutil.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.testRefreshingTable;
+import static io.deephaven.engine.testutil.TstUtils.testTable;
 
 @Category(OutOfBandTest.class)
 public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTestBase {

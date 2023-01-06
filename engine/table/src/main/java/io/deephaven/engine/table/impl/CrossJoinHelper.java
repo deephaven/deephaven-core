@@ -50,13 +50,13 @@ public class CrossJoinHelper {
 
     static Table join(final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch,
             final MatchPair[] columnsToAdd, final int numReserveRightBits, final JoinControl control) {
-        final Table result =
+        final QueryTable result =
                 internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         return result;
     }
 
-    private static Table internalJoin(final QueryTable leftTable, final QueryTable rightTable,
+    private static QueryTable internalJoin(final QueryTable leftTable, final QueryTable rightTable,
             final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, int numRightBitsToReserve,
             final JoinControl control) {
         QueryTable.checkInitiateOperation(leftTable);
@@ -88,14 +88,18 @@ public class CrossJoinHelper {
                     jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-                    // We can only build from right, because the left hand side does not permit us to nicely rehash as
-                    // we only have the row redirection when building left and no way to reverse the lookup.
-                    final TrackingWritableRowSet resultRowSet = jsm.buildFromRight(leftTable,
-                            bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
-                            .toTracking();
+                    final WritableRowSet resultRowSet = control.buildLeft(leftTable, rightTable)
+                            ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable,
+                                    bucketingContext.rightSources)
+                            : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable,
+                                    bucketingContext.rightSources);
 
-                    return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                            cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
+                    final StaticChunkedCrossJoinStateManager.ResultOnlyCrossJoinStateManager resultStateManager =
+                            jsm.getResultOnlyStateManager();
+
+                    return makeResult(leftTable, rightTable, columnsToAdd, resultStateManager,
+                            resultRowSet.toTracking(),
+                            cs -> new CrossJoinRightColumnSource<>(resultStateManager, cs, rightTable.isRefreshing()));
                 }
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
@@ -866,7 +870,7 @@ public class CrossJoinHelper {
     }
 
     @NotNull
-    private static Table zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd,
+    private static QueryTable zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd,
             int numRightBitsToReserve, String listenerDescription) {
         // we are a single value join, we do not need to do any hash-related work
         validateZeroKeyIndexSpace(leftTable, rightTable, numRightBitsToReserve);

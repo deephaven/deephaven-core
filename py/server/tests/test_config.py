@@ -5,16 +5,12 @@
 import os.path
 import unittest
 
-from deephaven.config import get_server_timezone, get_log_dir
+from deephaven.config import get_server_timezone
 from deephaven.time import TimeZone
 from tests.testbase import BaseTestCase
 
 
 class ConfigTestCase(BaseTestCase):
-
-    def test_get_log_dir(self):
-        log_dir = get_log_dir()
-        self.assertTrue(os.path.exists(log_dir))
 
     def test_get_server_timezone(self):
         tz = get_server_timezone()

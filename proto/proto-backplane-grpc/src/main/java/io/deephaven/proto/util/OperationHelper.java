@@ -64,6 +64,12 @@ public class OperationHelper {
                 return Stream.of(op.getAsOfJoin().getLeftId(), op.getAsOfJoin().getRightId());
             case COMBO_AGGREGATE:
                 return Stream.of(op.getComboAggregate().getSourceId());
+            case AGGREGATE_ALL:
+                return Stream.of(op.getAggregateAll().getSourceId());
+            case AGGREGATE:
+                return op.getAggregate().hasInitialGroupsId()
+                        ? Stream.of(op.getAggregate().getSourceId(), op.getAggregate().getInitialGroupsId())
+                        : Stream.of(op.getAggregate().getSourceId());
             case SNAPSHOT:
                 return Stream.of(op.getSnapshot().getLeftId(), op.getSnapshot().getRightId());
             case FLATTEN:
@@ -82,6 +88,8 @@ public class OperationHelper {
                         : Stream.empty();
             case UPDATE_BY:
                 return Stream.of(op.getUpdateBy().getSourceId());
+            case WHERE_IN:
+                return Stream.of(op.getWhereIn().getLeftId(), op.getWhereIn().getRightId());
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

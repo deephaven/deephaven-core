@@ -5,28 +5,21 @@ package io.deephaven.engine.util;
 
 import org.jpy.PyDictWrapper;
 import org.jpy.PyLib;
-import org.jpy.PyModule;
 import org.jpy.PyObject;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
 
     private static final ThreadLocal<Deque<PyDictWrapper>> threadScopeStack = new ThreadLocal<>();
-    private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
-
-    // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
-    // false assumption, then we'll need to make this initialization code 'python restart' proof.
-    private static PyObject getNumbaVectorizedFuncType() {
-        try {
-            return PyModule.importModule("numba.np.ufunc.dufunc").getAttribute("DUFunc");
-        } catch (Exception e) {
-            return null;
-        }
-    }
+    private static final ThreadLocal<Deque<Map<PyObject, Object>>> threadConvertedMapStack = new ThreadLocal<>();
 
     public static PythonScopeJpyImpl ofMainGlobals() {
         return new PythonScopeJpyImpl(PyLib.getMainGlobals().asDict());
@@ -84,102 +77,23 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         return convert(value);
     }
 
-    /**
-     * When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call()
-     * varargs method, so that we can call it using __call__ without all of the JPy nastiness.
-     */
-    public static class CallableWrapper {
-        private final PyObject pyObject;
-
-        public CallableWrapper(PyObject pyObject) {
-            this.pyObject = pyObject;
+    private static Deque<Map<PyObject, Object>> ensureConvertedMap() {
+        Deque<Map<PyObject, Object>> convertedMapStack = threadConvertedMapStack.get();
+        if (convertedMapStack == null) {
+            convertedMapStack = new ArrayDeque<>();
+            threadConvertedMapStack.set(convertedMapStack);
         }
-
-        public Object call(Object... args) {
-            return convert(pyObject.callMethod("__call__", args));
+        // the current thread doesn't have a default map for the default main scope yet
+        if (convertedMapStack.isEmpty()) {
+            HashMap<PyObject, Object> convertedMap = new HashMap<>();
+            convertedMapStack.push(convertedMap);
         }
-
-        public PyObject getPyObject() {
-            return pyObject;
-        }
+        return convertedMapStack;
     }
 
-    public static final class NumbaCallableWrapper extends CallableWrapper {
-        private final List<Class<?>> paramTypes;
-        private final Class<?> returnType;
-
-        public NumbaCallableWrapper(PyObject pyObject, Class<?> returnType, List<Class<?>> paramTypes) {
-            super(pyObject);
-            this.returnType = returnType;
-            this.paramTypes = paramTypes;
-        }
-
-        public Class<?> getReturnType() {
-            return returnType;
-        }
-
-        public List<Class<?>> getParamTypes() {
-            return paramTypes;
-        }
-    }
-
-    private static CallableWrapper wrapCallable(PyObject pyObject) {
-        // check if this is a numba vectorized function
-        if (pyObject.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE)) {
-            List<PyObject> params = pyObject.getAttribute("types").asList();
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("numba vectorized function must have an explicit signature.");
-            }
-            // numba allows a vectorized function to have multiple signatures, only the first one
-            // will be accepted by DH
-            String numbaFuncTypes = params.get(0).getStringValue();
-            return parseNumbaVectorized(pyObject, numbaFuncTypes);
-        } else {
-            return new CallableWrapper(pyObject);
-        }
-    }
-
-    private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
-    static {
-        numpyType2JavaClass.put('i', int.class);
-        numpyType2JavaClass.put('l', long.class);
-        numpyType2JavaClass.put('h', short.class);
-        numpyType2JavaClass.put('f', float.class);
-        numpyType2JavaClass.put('d', double.class);
-        numpyType2JavaClass.put('b', byte.class);
-        numpyType2JavaClass.put('?', boolean.class);
-    }
-
-    private static CallableWrapper parseNumbaVectorized(PyObject pyObject, String numbaFuncTypes) {
-        // the 'types' field of a numba vectorized function takes the form of
-        // '[parameter-type-char*]->[return-type-char]',
-        // eg. [ll->d] defines two int64 (long) arguments and a double return type.
-
-        char numpyTypeCode = numbaFuncTypes.charAt(numbaFuncTypes.length() - 1);
-        Class<?> returnType = numpyType2JavaClass.get(numpyTypeCode);
-        if (returnType == null) {
-            throw new IllegalArgumentException(
-                    "numba vectorized functions must have an integral, floating point, or boolean return type.");
-        }
-
-        List<Class<?>> paramTypes = new ArrayList<>();
-        for (char numpyTypeChar : numbaFuncTypes.toCharArray()) {
-            if (numpyTypeChar != '-') {
-                Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
-                if (paramType == null) {
-                    throw new IllegalArgumentException(
-                            "parameters of numba vectorized functions must be of integral, floating point, or boolean type.");
-                }
-                paramTypes.add(numpyType2JavaClass.get(numpyTypeChar));
-            } else {
-                break;
-            }
-        }
-
-        if (paramTypes.size() == 0) {
-            throw new IllegalArgumentException("numba vectorized functions must have at least one argument.");
-        }
-        return new NumbaCallableWrapper(pyObject, returnType, paramTypes);
+    private static Map<PyObject, Object> currentConvertedMap() {
+        Deque<Map<PyObject, Object>> convertedMapStack = ensureConvertedMap();
+        return convertedMapStack.peek();
     }
 
     /**
@@ -195,12 +109,17 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
      * @return a Java object representing the underlying JPy object.
      */
     public static Object convert(PyObject pyObject) {
+        Map<PyObject, Object> convertedMap = currentConvertedMap();
+        return convertedMap.computeIfAbsent(pyObject, PythonScopeJpyImpl::convertInternal);
+    }
+
+    private static Object convertInternal(PyObject pyObject) {
         if (pyObject.isList()) {
             return pyObject.asList();
         } else if (pyObject.isDict()) {
             return pyObject.asDict();
         } else if (pyObject.isCallable()) {
-            return wrapCallable(pyObject);
+            return new PyCallableWrapper(pyObject);
         } else if (pyObject.isConvertible()) {
             return pyObject.getObjectValue();
         } else {
@@ -220,16 +139,25 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             threadScopeStack.set(scopeStack);
         }
         scopeStack.push(pydict.asDict());
+
+        Deque<Map<PyObject, Object>> convertedMapStack = ensureConvertedMap();
+        HashMap<PyObject, Object> convertedMap = new HashMap<>();
+        convertedMapStack.push(convertedMap);
     }
 
     @Override
     public void popScope() {
         Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
-        if (scopeStack != null) {
-            PyDictWrapper pydict = scopeStack.pop();
-            pydict.close();
-        } else {
+        if (scopeStack == null) {
             throw new IllegalStateException("The thread scope stack is empty.");
         }
+        PyDictWrapper pydict = scopeStack.pop();
+        pydict.close();
+
+        Deque<Map<PyObject, Object>> convertedMapStack = threadConvertedMapStack.get();
+        if (convertedMapStack == null) {
+            throw new IllegalStateException("The thread converted-map stack is empty.");
+        }
+        convertedMapStack.pop();
     }
 }

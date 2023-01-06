@@ -44,6 +44,10 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             case Char:
                 return new CharChunkInputStreamGenerator(chunk.asCharChunk(), Character.BYTES, rowOffset);
             case Byte:
+                if (type == Boolean.class || type == boolean.class) {
+                    // internally we represent booleans as bytes, but the wire format respects arrow's specification
+                    return new BooleanChunkInputStreamGenerator(chunk.asByteChunk(), rowOffset);
+                }
                 return new ByteChunkInputStreamGenerator(chunk.asByteChunk(), Byte.BYTES, rowOffset);
             case Short:
                 return new ShortChunkInputStreamGenerator(chunk.asShortChunk(), Short.BYTES, rowOffset);
@@ -96,6 +100,9 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                         ((PoolableChunk) chunk).close();
                     }
                     return new LongChunkInputStreamGenerator(outChunk, Long.BYTES, rowOffset);
+                }
+                if (type == Boolean.class) {
+                    return BooleanChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == Byte.class) {
                     return ByteChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
@@ -153,6 +160,10 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 return CharChunkInputStreamGenerator.extractChunkFromInputStream(
                         Character.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Byte:
+                if (type == Boolean.class || type == boolean.class) {
+                    return BooleanChunkInputStreamGenerator.extractChunkFromInputStream(
+                            options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                }
                 return ByteChunkInputStreamGenerator.extractChunkFromInputStream(
                         Byte.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Short:

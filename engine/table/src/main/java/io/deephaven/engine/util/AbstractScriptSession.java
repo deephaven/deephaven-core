@@ -7,6 +7,7 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
+import io.deephaven.configuration.CacheDir;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -16,6 +17,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
@@ -30,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
 
 /**
@@ -202,10 +203,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             if (table.hasAttribute(NON_DISPLAY_TABLE)) {
                 return Optional.empty();
             }
-            if (table.hasAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)) {
-                return Optional.of("TreeTable");
-            }
             return Optional.of("Table");
+        }
+        if (object instanceof HierarchicalTable) {
+            return Optional.of("HierarchicalTable");
         }
         if (object instanceof PartitionedTable) {
             return Optional.of("PartitionedTable");

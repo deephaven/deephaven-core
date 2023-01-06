@@ -11,8 +11,10 @@ import jsinterop.annotations.JsType;
         name = "dhinternal.io.deephaven.proto.table_pb.BatchTableRequest.Operation.OpCase",
         namespace = JsPackage.GLOBAL)
 public class OpCase {
-    public static int AS_OF_JOIN,
+    public static int AGGREGATION,
+            AGG_ALL_BY,
             APPLY_PREVIEW_COLUMNS,
+            AS_OF_JOIN,
             COMBO_AGGREGATE,
             CREATE_INPUT_TABLE,
             CROSS_JOIN,
@@ -42,5 +44,6 @@ public class OpCase {
             UNSTRUCTURED_FILTER,
             UPDATE,
             UPDATE_VIEW,
-            VIEW;
+            VIEW,
+            WHERE_IN;
 }

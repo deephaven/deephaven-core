@@ -5,6 +5,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -15,7 +16,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.time.TimeZone;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -44,7 +44,6 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.TableDefaults.ZERO_LENGTH_TABLE_ARRAY;
 
@@ -729,14 +728,14 @@ public class TableTools {
     public static Table newTable(ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
         WritableRowSet rowSet = getRowSet(columnHolders);
-        Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
+        Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(rowSet.toTracking(), columns);
     }
 
     public static Table newTable(TableDefinition definition, ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
         WritableRowSet rowSet = getRowSet(columnHolders);
-        Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
+        Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(definition, rowSet.toTracking(), columns);
     }
 
@@ -845,7 +844,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(long periodNanos, ReplayerInterface replayer) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(replayer),
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer),
                 null, periodNanos, false);
     }
 
@@ -857,7 +856,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(null),
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, DateTimeUtils.currentClock(),
                 startTime, periodNanos, false);
     }
 
@@ -870,7 +869,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos, ReplayerInterface replayer) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(replayer),
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer),
                 startTime, periodNanos, false);
     }
 
@@ -900,13 +899,13 @@ public class TableTools {
     /**
      * Creates a table that adds a new row on a regular interval.
      *
-     * @param timeProvider the time provider
+     * @param clock the clock
      * @param startTime start time for adding new rows
      * @param periodNanos time interval between new row additions in nanoseconds.
      * @return time table
      */
-    public static Table timeTable(TimeProvider timeProvider, DateTime startTime, long periodNanos) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, timeProvider, startTime, periodNanos, false);
+    public static Table timeTable(Clock clock, DateTime startTime, long periodNanos) {
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, clock, startTime, periodNanos, false);
     }
 
     /**

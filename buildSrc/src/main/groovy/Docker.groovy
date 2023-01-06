@@ -586,15 +586,16 @@ class Docker {
             inspect.imageId.set imageName
             inspect.mustRunAfter pullImage
             inspect.onNext { InspectImageResponse message ->
-                if (message.repoDigests.isEmpty()) {
+                def m = (InspectImageResponse) message
+                if (m.repoDigests.isEmpty()) {
                     throw new RuntimeException("Image '${imageName}' from the (local) repository does not have a repo digest. " +
                             "This is an unexpected situation, unless you are manually building the image.")
                 }
-                if (message.repoDigests.size() > 1) {
-                    throw new RuntimeException("Unable to bump the imageId for '${imageName}' since there are mulitple digests: '${message.repoDigests}'.\n" +
+                if (m.repoDigests.size() > 1) {
+                    throw new RuntimeException("Unable to bump the imageId for '${imageName}' since there are mulitple digests: '${m.repoDigests}'.\n" +
                             "Please update the property `deephaven.registry.imageId` in the file '${project.projectDir}/gradle.properties' manually.")
                 }
-                def repoDigest = message.repoDigests.get(0)
+                def repoDigest = m.repoDigests.get(0)
 
                 if (repoDigest != imageId) {
                     new File(project.projectDir, 'gradle.properties').text =
@@ -614,13 +615,14 @@ class Docker {
             inspect.imageId.set imageName
             inspect.mustRunAfter pullImage
             inspect.onNext { InspectImageResponse message ->
-                if (message.repoDigests.isEmpty()) {
+                def m = (InspectImageResponse) message
+                if (m.repoDigests.isEmpty()) {
                     throw new RuntimeException("Image '${imageName}' from the (local) repository does not have a repo digest. " +
                             "This is an unexpected situation, unless you are manually building the image.")
                 }
-                if (!(imageId in message.repoDigests)) {
+                if (!(imageId in m.repoDigests)) {
                     String text = "The imageId for '${imageName}' appears to be out-of-sync with the (local) repository. " +
-                            "Possible repo digests are '${message.repoDigests}'.\n" +
+                            "Possible repo digests are '${m.repoDigests}'.\n" +
                             "Consider running one of the following, and retrying the compare, to see if the issue persists:\n" +
                             "\t`./gradlew ${project.name}:${pullImage.get().name}`, or\n" +
                             "\t`docker pull ${imageName}`\n\n" +
