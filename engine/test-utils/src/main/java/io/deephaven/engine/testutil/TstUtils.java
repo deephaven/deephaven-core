@@ -732,7 +732,7 @@ public class TstUtils {
                 }
                 cols.add(new ColumnHolder<>(name, false, shortArray));
             } else {
-                //noinspection unchecked
+                // noinspection unchecked
                 cols.add(new ColumnHolder(name, columnSource.getType(), columnSource.getComponentType(), false,
                         data.toArray((Object[]) Array.newInstance(columnSource.getType(), data.size()))));
             }

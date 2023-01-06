@@ -239,22 +239,22 @@ public class ReplicateSourceAndChunkTests {
                         +
                         "        }",
                 (isImmutable ? "" : "\n        maybeInitializePrevForStep();\n"),
-                        "        final ObjectChunk<T, Values> vcs = vs.asObjectChunk();",
-                        "        rowSet.forAllRowKeys(new LongConsumer() {",
-                        "            private final MutableInt ii = new MutableInt(0);",
-                        "",
-                        "            @Override",
-                        "            public void accept(final long v) {",
+                "        final ObjectChunk<T, Values> vcs = vs.asObjectChunk();",
+                "        rowSet.forAllRowKeys(new LongConsumer() {",
+                "            private final MutableInt ii = new MutableInt(0);",
+                "",
+                "            @Override",
+                "            public void accept(final long v) {",
                 (isImmutable
                         ? "                // the unit test framework will ask us to add things, we need to conveniently ignore it\n"
                         : "") +
                         (isImmutable ? "                if (!data.containsKey(v)) {\n" : "") +
-                (isImmutable ? "    " : "") + "                data.put(v, vcs.get(ii.intValue()));",
+                        (isImmutable ? "    " : "") + "                data.put(v, vcs.get(ii.intValue()));",
                 (isImmutable ? "                }\n" : "") +
-                "                ii.increment();",
-                        "            }",
-                        "        });",
-                        "    }"));
+                        "                ii.increment();",
+                "            }",
+                "        });",
+                "    }"));
         FileUtils.writeLines(objectFile, lines);
     }
 
