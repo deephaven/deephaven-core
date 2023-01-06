@@ -110,35 +110,35 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // TstUtils.addToTable(source, i(10), col("Sentinel", 11),
         // col("Parent", 2));
         // final Table table2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+        // assertTableEquals(rawSorted, table2);
         //
         // source.notifyListeners(i(10), i(), i());
         //
         // final Future<Table> future3 = pool.submit(callable);
-        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
+        // assertTableEquals(rawSorted, table2);
         //
         // UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         // final Table table3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         //
-        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        // assertEquals(TableTools.diff(table2, table3, 20), "");
+        // assertTableEquals(rawSorted, table2);
+        // assertTableEquals(table2, table3);
         //
         // UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         // TstUtils.addToTable(source, i(11), col("Sentinel", 12), col("Parent", 10));
         //
         // final Table table4 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        // assertEquals(TableTools.diff(table2, table3, 20), "");
-        // assertEquals(TableTools.diff(table3, table4, 20), "");
+        // assertTableEquals(rawSorted, table2);
+        // assertTableEquals(table2, table3);
+        // assertTableEquals(table3, table4);
         //
         // source.notifyListeners(i(11), i(), i());
         // UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         //
         // assertTrue(Arrays.equals(new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
         // (int[]) rawSorted.getColumn("Sentinel").getDirect()));
-        // assertEquals(TableTools.diff(rawSorted, table2, 20), "");
-        // assertEquals(TableTools.diff(table2, table3, 20), "");
-        // assertEquals(TableTools.diff(table3, table4, 20), "");
+        // assertTableEquals(rawSorted, table2);
+        // assertTableEquals(table2, table3);
+        // assertTableEquals(table3, table4);
     }
 
 
@@ -152,8 +152,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table flat = pool.submit(table::flatten).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(flat, table, 10), "");
-        TestCase.assertEquals(TableTools.diff(flat, tableStart, 10), "");
+        assertTableEquals(flat, table);
+        assertTableEquals(flat, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"));
 
@@ -191,7 +191,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table updateView1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(updateView1, tableStart, 10), "");
+        assertTableEquals(updateView1, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"));
 
@@ -228,7 +228,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table updateView1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(updateView1, tableStart, 10), "");
+        assertTableEquals(updateView1, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"));
 
@@ -266,7 +266,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table dropColumns1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(dropColumns1, tableStart, 10), "");
+        assertTableEquals(dropColumns1, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"), col("z", 16));
 
@@ -302,7 +302,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table filter1 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(filter1, tableStart, 10), "");
+        assertTableEquals(filter1, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"), col("z", true));
 
@@ -337,7 +337,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table filter1 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(filter1, tableStart, 10), "");
+        assertTableEquals(filter1, tableStart);
 
         TstUtils.addToTable(table, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
 
@@ -412,7 +412,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table sort1 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(sort1, tableStart, 10), "");
+        assertTableEquals(sort1, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"));
 
@@ -451,7 +451,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table reverse1 = pool.submit(table::reverse).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(reverse1, tableStart, 10), "");
+        assertTableEquals(reverse1, tableStart);
 
         TstUtils.addToTable(table, i(8), col("x", 4), col("y", "d"));
 
@@ -544,7 +544,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table chain1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(chain1, tableStart, 10), "");
+        assertTableEquals(chain1, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"), col("z", true));
 
@@ -1553,7 +1553,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table snap1 = pool.submit(() -> emptyTable.snapshot(table)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
-        TestCase.assertEquals(TableTools.diff(snap1, tableStart, 10), "");
+        assertTableEquals(snap1, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"), col("z", true));
 

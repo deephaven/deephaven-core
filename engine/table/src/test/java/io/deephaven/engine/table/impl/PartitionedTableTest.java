@@ -77,7 +77,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             TableTools.show(mergedByK);
         }
 
-        assertEquals("", TableTools.diff(mergedByK, withK, 10));
+        assertTableEquals(mergedByK, withK);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 9), col("Sym", "cc", "cc"), col("intCol", 30, 90), col("doubleCol", 2.3, 2.9));
@@ -90,7 +90,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             TableTools.show(mergedByK);
         }
 
-        assertEquals("", TableTools.diff(mergedByK, withK, 10));
+        assertTableEquals(mergedByK, withK);
     }
 
     public void testMergePopulate() {
@@ -111,7 +111,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             TableTools.show(mergedByK);
         }
 
-        assertEquals("", TableTools.diff(mergedByK, withK, 10));
+        assertTableEquals(mergedByK, withK);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 9), col("Sym", "cc", "cc"), col("intCol", 30, 90), col("doubleCol", 2.3, 2.9));
@@ -123,7 +123,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             TableTools.show(mergedByK);
         }
 
-        assertEquals("", TableTools.diff(mergedByK, withK, 10));
+        assertTableEquals(mergedByK, withK);
     }
 
     public void testMergeIncremental() {

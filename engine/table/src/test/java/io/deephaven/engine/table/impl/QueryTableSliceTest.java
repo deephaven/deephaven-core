@@ -25,7 +25,6 @@ import java.util.Random;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.col;
-import static io.deephaven.engine.util.TableTools.diff;
 import static io.deephaven.engine.util.TableTools.emptyTable;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
@@ -436,15 +435,14 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
 
-        assertEquals("", diff(table.headPct(0.5),
-                TstUtils.testRefreshingTable(i(2, 4).toTracking(), col("x", 1, 2), col("y", 'a', 'b')), 10));
-        assertEquals("", diff(table.tailPct(0.5),
-                TstUtils.testRefreshingTable(i(4, 6).toTracking(), col("x", 2, 3), col("y", 'b', 'c')), 10));
-        assertEquals("", diff(table.headPct(0.1),
-                TstUtils.testRefreshingTable(i(2).toTracking(), col("x", 1), col("y", 'a')), 10));
-        assertEquals("", diff(table.tailPct(0.1),
-                TstUtils.testRefreshingTable(i(6).toTracking(), col("x", 3), col("y", 'c')), 10));
-
+        assertTableEquals(table.headPct(0.5),
+                TstUtils.testRefreshingTable(i(2, 4).toTracking(), col("x", 1, 2), col("y", 'a', 'b')));
+        assertTableEquals(table.tailPct(0.5),
+                TstUtils.testRefreshingTable(i(4, 6).toTracking(), col("x", 2, 3), col("y", 'b', 'c')));
+        assertTableEquals(table.headPct(0.1),
+                TstUtils.testRefreshingTable(i(2).toTracking(), col("x", 1), col("y", 'a')));
+        assertTableEquals(table.tailPct(0.1),
+                TstUtils.testRefreshingTable(i(6).toTracking(), col("x", 3), col("y", 'c')));
     }
 
     public void testHeadTailPctIncremental() {

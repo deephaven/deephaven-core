@@ -50,8 +50,7 @@ public class TestDownsampledWhereFilter {
         TableTools.showWithRowSet(downsampled);
         TableTools.showWithRowSet(standardWay);
 
-        String diff = TableTools.diff(downsampled, standardWay, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(downsampled, standardWay);
     }
 
     @Test
@@ -72,7 +71,6 @@ public class TestDownsampledWhereFilter {
         TableTools.showWithRowSet(downsampled);
         TableTools.showWithRowSet(standardWay);
 
-        String diff = TableTools.diff(downsampled, standardWay, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(downsampled, standardWay);
     }
 }

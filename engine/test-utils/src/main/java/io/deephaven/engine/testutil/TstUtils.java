@@ -925,8 +925,7 @@ public class TstUtils {
     }
 
     public static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {
-        org.junit.Assert.assertEquals("",
-                TableTools.diff(table1.tail(table1.size() - from1).head(size),
-                        table2.tail(table2.size() - from2).head(size), 10));
+        assertTableEquals(table1.tail(table1.size() - from1).head(size),
+                table2.tail(table2.size() - from2).head(size));
     }
 }

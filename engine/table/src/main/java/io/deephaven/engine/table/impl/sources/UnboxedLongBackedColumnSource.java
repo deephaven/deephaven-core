@@ -36,14 +36,22 @@ public class UnboxedLongBackedColumnSource<T> extends AbstractColumnSource<Long>
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == alternateColumnSource.getType();
+        if (alternateDataType == alternateColumnSource.getType()) {
+            // this is a trivial return conversion
+            return true;
+        }
+        return alternateColumnSource.allowsReinterpret(alternateDataType);
     }
 
     @Override
     public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
-        //noinspection unchecked
-        return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
+        if (alternateDataType == alternateColumnSource.getType()) {
+            // this is a trivial return conversion
+            //noinspection unchecked
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
+        }
+        return alternateColumnSource.reinterpret(alternateDataType);
     }
 }
 

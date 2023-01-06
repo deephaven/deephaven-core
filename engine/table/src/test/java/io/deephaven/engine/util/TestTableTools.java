@@ -831,8 +831,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         Table standardWay = TableTools.merge(table1, table2).sort("Key");
 
-        String diff = TableTools.diff(merged, standardWay, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(merged, standardWay);
     }
 
     public void testMergeSorted2() {
@@ -853,8 +852,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         Table standardWay = TableTools.merge(tables).sort("Key");
 
-        String diff = TableTools.diff(merged, standardWay, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(merged, standardWay);
     }
 
     public void testMergeGetChunk() {

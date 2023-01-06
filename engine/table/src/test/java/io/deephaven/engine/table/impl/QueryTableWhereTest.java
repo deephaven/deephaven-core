@@ -73,32 +73,32 @@ public class QueryTableWhereTest {
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
 
-        assertEquals("", diff(table.where(Filter.from("k%2 == 0")), table, 10));
-        assertEquals("", diff(table.where(filter.apply("k%2 == 0")), table, 10));
+        assertTableEquals(table.where(Filter.from("k%2 == 0")), table);
+        assertTableEquals(table.where(filter.apply("k%2 == 0")), table);
 
-        assertEquals("", diff(table.where(Filter.from("i%2 == 0")),
-                testRefreshingTable(i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')), 10));
-        assertEquals("", diff(table.where(filter.apply("i%2 == 0")), testRefreshingTable(i(2, 6).toTracking(),
-                col("x", 1, 3), col("y", 'a', 'c')), 10));
+        assertTableEquals(table.where(Filter.from("i%2 == 0")),
+                testRefreshingTable(i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
+        assertTableEquals(table.where(filter.apply("i%2 == 0")), testRefreshingTable(
+                i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
 
-        assertEquals("", diff(table.where((Filter.from("(y-'a') = 2"))),
-                testRefreshingTable(i(2).toTracking(), col("x", 3), col("y", 'c')), 10));
-        assertEquals("", diff(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(i(2).toTracking(),
-                col("x", 3), col("y", 'c')), 10));
+        assertTableEquals(table.where((Filter.from("(y-'a') = 2"))), testRefreshingTable(
+                i(2).toTracking(), col("x", 3), col("y", 'c')));
+        assertTableEquals(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(
+                i(2).toTracking(), col("x", 3), col("y", 'c')));
 
         final QueryTable whereResult = (QueryTable) table.where(filter.apply("x%2 == 1"));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.addUpdateListener(whereResultListener);
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
 
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 9).toTracking(), col("x", 1, 3, 5), col("y", 'a', 'c', 'e')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 9).toTracking(), col("x", 1, 3, 5), col("y", 'a', 'c', 'e')));
         assertEquals(base.added, i(9));
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
@@ -108,8 +108,8 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(), i(), i(7, 9));
         });
 
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 7).toTracking(), col("x", 1, 3, 3), col("y", 'a', 'c', 'e')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 7).toTracking(), col("x", 1, 3, 3), col("y", 'a', 'c', 'e')));
 
         assertEquals(base.added, i(7));
         assertEquals(base.removed, i(9));
@@ -132,8 +132,8 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(2, 6), i(9), i(4));
         });
 
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 4, 6).toTracking(), col("x", 1, 21, 3), col("y", 'a', 'x', 'c')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 4, 6).toTracking(), col("x", 1, 21, 3), col("y", 'a', 'x', 'c')));
 
         assertEquals(base.added, i(2, 4, 6));
         assertEquals(base.removed, i());
@@ -167,17 +167,18 @@ public class QueryTableWhereTest {
         final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1", "y=='f'")));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.addUpdateListener(whereResultListener);
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 8).toTracking(), col("x", 1, 3, 4), col("y", 'a', 'c', 'f')), 10));
-
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 8).toTracking(), col("x", 1, 3, 4), col("y", 'a', 'c', 'f')));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 6, 8, 9).toTracking(),
-                col("x", 1, 3, 4, 5), col("y", 'a', 'c', 'f', 'e')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 8, 9).toTracking(),
+                col("x", 1, 3, 4, 5),
+                col("y", 'a', 'c', 'f', 'e')));
         assertEquals(base.added, i(9));
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
@@ -187,8 +188,10 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(), i(), i(7, 9));
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 6, 7, 8).toTracking(),
-                col("x", 1, 3, 3, 4), col("y", 'a', 'c', 'e', 'f')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 7, 8).toTracking(),
+                col("x", 1, 3, 3, 4),
+                col("y", 'a', 'c', 'e', 'f')));
 
         assertEquals(base.added, i(7));
         assertEquals(base.removed, i(9));
@@ -199,7 +202,7 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(8).toTracking(), col("x", 4), col("y", 'f')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(i(8).toTracking(), col("x", 4), col("y", 'f')));
 
         assertEquals(base.added, i());
         assertEquals(base.removed, i(2, 6, 7));
@@ -211,8 +214,8 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(2, 6), i(9), i(4));
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 4, 6, 8).toTracking(),
-                col("x", 1, 21, 3, 4), col("y", 'a', 'x', 'c', 'f')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 4, 6, 8).toTracking(), col("x", 1, 21, 3, 4), col("y", 'a', 'x', 'c', 'f')));
 
         assertEquals(base.added, i(2, 4, 6));
         assertEquals(base.removed, i());
@@ -220,8 +223,8 @@ public class QueryTableWhereTest {
 
         showWithRowSet(table);
         final Table usingStringArray = table.where(FilterOr.of(Filter.from("x%3 == 0", "y=='f'")));
-        assertEquals("", diff(usingStringArray, testRefreshingTable(i(4, 6, 8).toTracking(),
-                col("x", 21, 3, 4), col("y", 'x', 'c', 'f')), 10));
+        assertTableEquals(usingStringArray, testRefreshingTable(
+                i(4, 6, 8).toTracking(), col("x", 21, 3, 4), col("y", 'x', 'c', 'f')));
     }
 
     @Test
@@ -323,7 +326,7 @@ public class QueryTableWhereTest {
         final Table expected =
                 TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
 
-        TestCase.assertEquals("", TableTools.diff(composed, expected, 10));
+        assertTableEquals(composed, expected);
     }
 
     @Test

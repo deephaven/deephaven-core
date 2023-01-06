@@ -256,10 +256,10 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         final QueryTable sorted = (QueryTable) table.sort("boolCol");
         show(sorted);
-        assertEquals("", diff(sorted, testRefreshingTable(col("boolCol", null, false, false, true, true)), 10));
+        assertTableEquals(sorted, testRefreshingTable(col("boolCol", null, false, false, true, true)));
         final QueryTable descending = (QueryTable) table.sort(List.of(SortColumn.desc(ColumnName.of("boolCol"))));
         show(descending);
-        assertEquals("", diff(descending, testRefreshingTable(col("boolCol", true, true, false, false, null)), 10));
+        assertTableEquals(descending, testRefreshingTable(col("boolCol", true, true, false, false, null)));
     }
 
     public void testSortIncremental2() {

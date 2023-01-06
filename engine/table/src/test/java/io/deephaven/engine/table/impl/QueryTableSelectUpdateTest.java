@@ -1005,9 +1005,9 @@ public class QueryTableSelectUpdateTest {
         TableTools.showWithRowSet(z);
         TableTools.showWithRowSet(w);
 
-        TestCase.assertEquals("", TableTools.diff(x, y, 10));
-        TestCase.assertEquals("", TableTools.diff(x, z, 10));
-        TestCase.assertEquals("", TableTools.diff(x, w, 10));
+        assertTableEquals(x, y);
+        assertTableEquals(x, z);
+        assertTableEquals(x, w);
     }
 
     @Test
