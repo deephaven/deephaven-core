@@ -501,8 +501,10 @@ public class TreeTableFilter {
         public void onUpdate(@NotNull final TableUpdate upstream) {
             final TableUpdateImpl downstream = new TableUpdateImpl();
 
-            // Our swap listener guarantees that we are on the same step for the source row lookup and source.
-            Assert.eq(sourceRowLookup.getLastNotificationStep(), "sourceRowLookup.getLastNotificationStep()",
+            // Our swap listener guarantees that we are on the same step for the source row lookup and source initially,
+            // but the sourceRowLookup may not report notifications on every cycle that the source does, if there are
+            // no structural changes.
+            Assert.leq(sourceRowLookup.getLastNotificationStep(), "sourceRowLookup.getLastNotificationStep()",
                     source.getLastNotificationStep(), "source.getLastNotificationStep()");
 
             // We can ignore modified while updating if columns we care about were not touched.
