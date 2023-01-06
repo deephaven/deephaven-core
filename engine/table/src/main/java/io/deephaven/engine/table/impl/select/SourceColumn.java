@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.JoinAddition;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
@@ -19,6 +20,11 @@ import java.util.Map;
 
 public class SourceColumn implements SelectColumn {
 
+    public static SourceColumn of(JoinAddition joinAddition) {
+        // We know ColumnName already does validation
+        return new SourceColumn(joinAddition.existingColumn().name(), joinAddition.newColumn().name(), true);
+    }
+
     @NotNull
     private final String sourceName;
     @NotNull
@@ -31,8 +37,12 @@ public class SourceColumn implements SelectColumn {
     }
 
     public SourceColumn(String sourceName, String destName) {
-        this.sourceName = NameValidator.validateColumnName(sourceName);
-        this.destName = NameValidator.validateColumnName(destName);
+        this(NameValidator.validateColumnName(sourceName), NameValidator.validateColumnName(destName), true);
+    }
+
+    private SourceColumn(String sourceName, String destName, boolean unused) {
+        this.sourceName = sourceName;
+        this.destName = destName;
     }
 
     @Override

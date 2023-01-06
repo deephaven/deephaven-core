@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
@@ -1869,13 +1870,10 @@ public class QueryTable extends BaseTable<QueryTable> {
         return newCapacity;
     }
 
-    private Table snapshotHistory(final String nuggetName, final Table baseTable, String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
-            // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty,
-            // we get a view containing all of the columns (in that case, basically we get this table back).
-            QueryTable viewTable = (QueryTable) view(stampColumns);
-            return viewTable.snapshotHistoryInternal(baseTable);
-        });
+    private Table snapshotHistory(final String nuggetName, final Table baseTable,
+            Collection<? extends JoinAddition> stampColumns) {
+        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(),
+                () -> maybeViewForSnapshot(stampColumns).snapshotHistoryInternal(baseTable));
     }
 
     private Table snapshotHistoryInternal(final Table baseTable) {
@@ -1935,11 +1933,10 @@ public class QueryTable extends BaseTable<QueryTable> {
         return new QueryTable(getRowSet(), getColumnSourceMap());
     }
 
-    private Table snapshot(String nuggetName, Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
+    private Table snapshot(String nuggetName, Table baseTable, boolean doInitialSnapshot,
+            Collection<? extends JoinAddition> stampColumns) {
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
-            // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty,
-            // we get a view containing all of the columns (in that case, basically we get this table back).
-            QueryTable viewTable = (QueryTable) view(stampColumns);
+            QueryTable viewTable = maybeViewForSnapshot(stampColumns);
             // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
             // Whatever viewTable came back from the above, we do the snapshot
             return viewTable.snapshotInternal(baseTable, doInitialSnapshot,
@@ -2025,11 +2022,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private Table snapshotIncremental(String nuggetName, Table baseTable, boolean doInitialSnapshot,
-            String... stampColumns) {
+            Collection<? extends JoinAddition> stampColumns) {
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
-            // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty,
-            // we get a view containing all of the columns (in that case, basically we get this table back).
-            QueryTable viewTable = (QueryTable) view(stampColumns);
+            QueryTable viewTable = maybeViewForSnapshot(stampColumns);
             // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
             // Whatever viewTable came back from the above, we do the snapshot
             return viewTable.snapshotIncrementalInternal(baseTable, doInitialSnapshot,
@@ -2149,11 +2144,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
-        // todo: throw exception if trigger is static?
         final boolean initial = options.has(Flag.INITIAL);
         final boolean incremental = options.has(Flag.INCREMENTAL);
         final boolean history = options.has(Flag.HISTORY);
-        final String[] stampColumns = options.stampColumns().stream().map(Strings::of).toArray(String[]::new);
         final String description = options.description();
         if (history) {
             if (initial || incremental) {
@@ -2162,12 +2155,21 @@ public class QueryTable extends BaseTable<QueryTable> {
                         "SnapshotWhenOptions should disallow history with initial or incremental");
                 return null;
             }
-            return ((QueryTable) trigger).snapshotHistory(description, this, stampColumns);
+            return ((QueryTable) trigger).snapshotHistory(description, this, options.stampColumns());
         }
         if (incremental) {
-            return ((QueryTable) trigger).snapshotIncremental(description, this, initial, stampColumns);
+            return ((QueryTable) trigger).snapshotIncremental(description, this, initial, options.stampColumns());
         }
-        return ((QueryTable) trigger).snapshot(description, this, initial, stampColumns);
+        return ((QueryTable) trigger).snapshot(description, this, initial, options.stampColumns());
+    }
+
+    private QueryTable maybeViewForSnapshot(Collection<? extends JoinAddition> stampColumns) {
+        if (stampColumns.isEmpty()) {
+            // When stampColumns is empty, we'll just use this table (instead of invoking view w/ empty list)
+            return this;
+        }
+        final SourceColumn[] columns = stampColumns.stream().map(SourceColumn::of).toArray(SourceColumn[]::new);
+        return (QueryTable) viewOrUpdateView(Flavor.View, columns);
     }
 
     private static void throwColumnConflictMessage(Set<String> left, Set<String> right) {
