@@ -635,6 +635,7 @@ public class JsTreeTable extends HasEventHandling {
         if (stream != null) {
             stream.then(stream -> {
                 stream.end();
+                stream.cancel();
                 return null;
             });
             stream = null;
@@ -666,6 +667,7 @@ public class JsTreeTable extends HasEventHandling {
         if (stream != null) {
             stream.then(stream -> {
                 stream.end();
+                stream.cancel();
                 return null;
             });
             stream = null;
@@ -719,6 +721,7 @@ public class JsTreeTable extends HasEventHandling {
         if (stream != null) {
             stream.then(stream -> {
                 stream.end();
+                stream.cancel();
                 return null;
             });
             stream = null;
@@ -751,6 +754,7 @@ public class JsTreeTable extends HasEventHandling {
         if (stream != null) {
             stream.then(stream -> {
                 stream.end();
+                stream.cancel();
                 return null;
             });
             stream = null;
@@ -789,6 +793,7 @@ public class JsTreeTable extends HasEventHandling {
         if (stream != null) {
             stream.then(stream -> {
                 stream.end();
+                stream.cancel();
                 return null;
             });
             stream = null;
