@@ -291,6 +291,10 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 case Linkage:
                     Assert.assertion(expandingAll, "expanding all",
                             "visited a linkage node when not expanding all");
+                    if (expandingAll) {
+                        // If we're at a leaf, be sure to not try to expand children
+                        expandingAll = levelExpandable;
+                    }
                     break;
                 case Contract:
                     // noinspection ThrowableNotThrown
