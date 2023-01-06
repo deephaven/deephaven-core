@@ -23,8 +23,8 @@ public class InverseWrappedRowSetWritableRowRedirection implements WritableRowRe
 
     /**
      * This class accepts a {@link RowSet} and attempts to cast to a {@link TrackingRowSet} if {@link #getPrev(long)} or
-     * {@link #fillPrevChunk(ChunkSource.FillContext, WritableChunk, RowSequence)} is called. Calling these
-     * functions on a non-tracking RowSet will result in a {@link ClassCastException}.
+     * {@link #fillPrevChunk(FillContext, WritableChunk, RowSequence)} is called. Calling these functions on
+     * a non-tracking RowSet will result in a {@link ClassCastException}.
      *
      * @param wrappedRowSet the RowSet (or TrackingRowSet) to use as the redirection source
      */

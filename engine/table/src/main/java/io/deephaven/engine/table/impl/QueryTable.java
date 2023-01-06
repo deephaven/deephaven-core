@@ -491,7 +491,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
-                                             final boolean preserveEmpty, @Nullable final Table initialGroups, final String... keyColumnNames) {
+            final boolean preserveEmpty, @Nullable final Table initialGroups, final String... keyColumnNames) {
         if (isStream()) {
             throw streamUnsupported("partitionedAggBy");
         }
