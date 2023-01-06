@@ -700,7 +700,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 maybeAllocateResultChunkSourceArray(existingChunkSources, numColumns);
 
         final int nodeDepth = nodeDepth(nodeId);
-        Assert.eq(nodeDepth, "nodeDepth", snapshotState.getCurrentDepth(), "current snapshot traversal depth");
+        Assert.eq(nodeDepth + 1, "nodeDepth + 1", snapshotState.getCurrentDepth(), "current snapshot traversal depth");
         final boolean isBaseLevel = nodeDepth == numLevels;
         if (isBaseLevel) {
             Assert.assertion(includesConstituents, "includesConstituents",
