@@ -29,7 +29,7 @@ public abstract class UpdateByWindow {
     protected int[] uniqueInputSourceIndices;
 
     /** This context will store the necessary info to process a single window for a single bucket */
-    public abstract class UpdateByWindowBucketContext implements SafeCloseable {
+    public class UpdateByWindowBucketContext implements SafeCloseable {
         /** A reference to the source rowset */
         protected final TrackingRowSet sourceRowSet;
         /** The column source providing the timestamp data for this window */
@@ -317,7 +317,7 @@ public abstract class UpdateByWindow {
             hash = 31 * hash + s.hashCode();
         }
 
-        hash = 31 * hash + Boolean.hashCode(true);
+        hash = 31 * hash + Boolean.hashCode(windowed);
 
         // treat all cumulative ops with the same input columns as identical, even if they rely on timestamps
         if (!windowed) {

@@ -604,11 +604,9 @@ public abstract class UpdateBy {
             }
 
             // clear the sparse output columns for rows that no longer exist
-            if (!initialStep && !redirHelper.isRedirected()) {
-                if (!toClear.isEmpty()) {
-                    for (UpdateByOperator op : operators) {
-                        op.clearOutputRows(toClear);
-                    }
+            if (!initialStep && !redirHelper.isRedirected() && !toClear.isEmpty()) {
+                for (UpdateByOperator op : operators) {
+                    op.clearOutputRows(toClear);
                 }
             }
 
@@ -697,11 +695,10 @@ public abstract class UpdateBy {
                 toClear = redirHelper.getRowsToClear();
 
                 // clear them now and let them set their own prev states
-                if (!initialStep) {
-                    if (!toClear.isEmpty()) {
-                        for (UpdateByOperator op : operators) {
-                            op.clearOutputRows(toClear);
-                        }
+                if (!initialStep &&!toClear.isEmpty()) {
+                    for (UpdateByOperator op : operators) {
+                        op.clearOutputRows(toClear);
+
                     }
                 }
             } else {

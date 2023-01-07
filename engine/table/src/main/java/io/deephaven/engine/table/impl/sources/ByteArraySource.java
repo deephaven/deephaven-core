@@ -324,21 +324,21 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence rpws) {
-        final long sz = rpws.size();
+    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence rows) {
+        final long sz = rows.size();
         if (sz == 0) {
             destGeneric.setSize(0);
             return;
         }
 
         if (prevFlusher == null) {
-            fillSparseChunk(destGeneric, rpws);
+            fillSparseChunk(destGeneric, rows);
             return;
         }
 
         final WritableByteChunk<? super Values> dest = destGeneric.asWritableByteChunk();
         final FillSparseChunkContext<byte[]> ctx = new FillSparseChunkContext<>();
-        rpws.forAllRowKeys((final long v) -> {
+        rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;

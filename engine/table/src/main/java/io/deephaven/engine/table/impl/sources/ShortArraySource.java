@@ -324,21 +324,21 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence rpws) {
-        final long sz = rpws.size();
+    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence rows) {
+        final long sz = rows.size();
         if (sz == 0) {
             destGeneric.setSize(0);
             return;
         }
 
         if (prevFlusher == null) {
-            fillSparseChunk(destGeneric, rpws);
+            fillSparseChunk(destGeneric, rows);
             return;
         }
 
         final WritableShortChunk<? super Values> dest = destGeneric.asWritableShortChunk();
         final FillSparseChunkContext<short[]> ctx = new FillSparseChunkContext<>();
-        rpws.forAllRowKeys((final long v) -> {
+        rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;

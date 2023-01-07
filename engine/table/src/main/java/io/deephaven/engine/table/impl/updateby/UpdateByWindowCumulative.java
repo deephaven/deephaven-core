@@ -48,7 +48,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
             final boolean isInitializeStep) {
         return new UpdateByWindowBucketContext(sourceRowSet, timestampColumnSource, timestampSsa,
                 chunkSize,
-                isInitializeStep) {};
+                isInitializeStep);
     }
 
     @Override
@@ -212,7 +212,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
             @NotNull final RowSet modified,
             @NotNull final RowSet removed,
             @NotNull final RowSetShiftData shifted,
-            @NotNull final RowSet affectedIndex) {
+            @NotNull final RowSet affectedRowSet) {
 
         long smallestModifiedKey = Long.MAX_VALUE;
         if (removed.isNonempty()) {
@@ -229,9 +229,9 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
 
         if (shifted.nonempty()) {
             final long firstModKey = modified.isEmpty() ? Long.MAX_VALUE : modified.firstRowKey();
-            boolean modShiftFound = !modified.isEmpty();
+            boolean modShiftFound = modified.isNonempty();
             boolean affectedFound = false;
-            try (final RowSequence.Iterator it = affectedIndex.getRowSequenceIterator()) {
+            try (final RowSequence.Iterator it = affectedRowSet.getRowSequenceIterator()) {
                 for (int shiftIdx = 0; shiftIdx < shifted.size()
                         && (!modShiftFound || !affectedFound); shiftIdx++) {
                     final long shiftStart = shifted.getBeginRange(shiftIdx);
