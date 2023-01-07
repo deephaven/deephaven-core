@@ -1220,6 +1220,62 @@ public class JsonAdapterTest {
         Assert.assertEquals("", diff(result, expected, 10));
     }
 
+
+    @Test
+    public void testTopLevelSimpleArrayWithSubtable() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factorySubtableX = new JSONToTableWriterAdapterBuilder()
+                .allowMissingKeys(true)
+                .addColumnFromField("X", "x");
+
+        final DynamicTableWriter subtableWriter = new DynamicTableWriter(
+                new String[] {"X", "SubtableRecordId"},
+                Type.fromClasses(int.class, long.class));
+        final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
+
+
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+                        .addColumnFromField("A", "a")
+                        .addColumnFromField("B", "b")
+                        .addFieldToSubTableMapping("subtable", factorySubtableX)
+                        .autoValueMapping(false)
+                        .processArrays(true)
+                        .nConsumerThreads(0));
+
+        final String[] names = new String[] {"A", "B", "subtable_id"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class, double.class, long.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable resultMain = writer.getTable();
+
+        //noinspection RedundantTypeArguments
+        adapter = factory.apply(writer, Map.<String, TableWriter<?>>of("subtable", subtableWriter));
+
+        injectJson("[{\"a\": \"test\", \"b\": 42.2, \"subtable\": [{ \"x\": 42 }] }, {\"a\": \"test2\", \"b\": 21.1, \"subtable\": [{ \"x\": 43 }] }]", "id", resultMain, resultSubtable);
+
+        {
+            // Check the main table:
+            TableTools.show(resultMain);
+            Assert.assertEquals(2, resultMain.intSize());
+            final Table expectedMain = newTable(
+                    col("A", "test", "test2"),
+                    doubleCol("B", 42.2, 21.1),
+                    // the subtable row IDs
+                    longCol("subtable_id", 0, 1));
+            Assert.assertEquals("", diff(resultMain, expectedMain, 10));
+
+            // Check the subtable:
+            TableTools.show(resultSubtable);
+            Assert.assertEquals(2, resultSubtable.intSize());
+            final Table expectedSubtable = newTable(
+                    intCol("X", 42, 43),
+                    // the nested parallel fields
+                    longCol("SubtableRecordId", 0, 1));
+            Assert.assertEquals("", diff(resultSubtable, expectedSubtable, 10));
+        };
+    }
+
     @Test
     public void testMixedTopLevel() throws IOException, InterruptedException, TimeoutException {
         final JSONToTableWriterAdapterBuilder factoryNestedGh = new JSONToTableWriterAdapterBuilder()
