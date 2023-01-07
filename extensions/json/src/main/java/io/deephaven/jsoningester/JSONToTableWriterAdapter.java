@@ -188,6 +188,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             @NotNull final Map<String, JSONToTableWriterAdapterBuilder> parallelNestedFieldBuilders,
             @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
             @NotNull final Map<String, JSONToTableWriterAdapterBuilder> fieldToSubtableBuilders,
+            @NotNull final Map<String, RoutedAdapterInfo> fieldToRoutedTableBuilders,
             @NotNull final Set<String> columnsUnmapped,
             final boolean autoValueMapping,
             final boolean createHolders,
@@ -204,6 +205,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 parallelNestedFieldBuilders,
                 fieldToSubtableWriters,
                 fieldToSubtableBuilders,
+                fieldToRoutedTableBuilders,
                 columnsUnmapped,
                 autoValueMapping,
                 createHolders,
@@ -252,6 +254,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             @NotNull final Map<String, JSONToTableWriterAdapterBuilder> parallelNestedFieldBuilders,
             @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
             @NotNull final Map<String, JSONToTableWriterAdapterBuilder> fieldToSubtableBuilders,
+            @NotNull final Map<String, RoutedAdapterInfo> routedTableIdsToBuilders,
             @NotNull final Set<String> allowedUnmappedColumns,
             final boolean autoValueMapping,
             final boolean createHolders,
@@ -278,9 +281,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         // The subtable row ID columns are implicitly defined for every field that's mapped to a subtable.
-        final Set<String> subtableRowIdColumns = fieldToSubtableBuilders
-                .keySet()
-                .stream()
+        final Set<String> subtableRowIdColumns = Stream.concat(
+                fieldToSubtableBuilders.keySet().stream(),
+                routedTableIdsToBuilders.keySet().stream())
                 .map(JSONToTableWriterAdapter::getSubtableRowIdColName)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
@@ -338,21 +341,50 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             outputColumnNames.remove(getSubtableRowIdColName(fieldName));
 
             final JSONToTableWriterAdapterBuilder adapterBuilder = subtableEntry.getValue();
-            outputColumnNames.removeAll(adapterBuilder.getDefinedColumns());
+            // outputColumnNames.removeAll(adapterBuilder.getDefinedColumns());
 
             try {
                 final TableWriter<?> subtableWriter =
                         Require.neqNull(fieldToSubtableWriters.get(fieldName), "subtableWriter");
                 makeSubtableFieldProcessor(
                         fieldName,
+                        false,
                         adapterBuilder,
                         subtableWriter,
                         fieldToSubtableWriters,
                         allowMissingKeys,
-                        allowNullValues);
+                        allowNullValues,
+                        null);
             } catch (RuntimeException ex) {
                 throw new JSONIngesterException(
                         "Failed creating field processor for subtable field \"" + fieldName + '"', ex);
+            }
+        }
+
+        for (Map.Entry<String, RoutedAdapterInfo> routedAdapterEntry : routedTableIdsToBuilders
+                .entrySet()) {
+            final String routedTableIdentifier = routedAdapterEntry.getKey();
+            outputColumnNames.remove(getSubtableRowIdColName(routedTableIdentifier));
+
+            final RoutedAdapterInfo routedAdapterInfo = routedAdapterEntry.getValue();
+            final JSONToTableWriterAdapterBuilder adapterBuilder = routedAdapterInfo.adapterBuilder;
+            final Predicate<JsonNode> routedTablePredicate = routedAdapterInfo.predicate;
+            // outputColumnNames.removeAll(adapterBuilder.getDefinedColumns());
+
+            try {
+                final TableWriter<?> subtableWriter =
+                        Require.neqNull(fieldToSubtableWriters.get(routedTableIdentifier), "subtableWriter");
+                makeSubtableFieldProcessor(
+                        routedTableIdentifier,
+                        true,
+                        adapterBuilder,
+                        subtableWriter,
+                        fieldToSubtableWriters,
+                        allowMissingKeys,
+                        allowNullValues, routedTablePredicate);
+            } catch (RuntimeException ex) {
+                throw new JSONIngesterException(
+                        "Failed creating field processor for routed table \"" + routedTableIdentifier + '"', ex);
             }
         }
 
@@ -608,22 +640,30 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     /**
      * This is like {@link #makeCompositeFieldProcessor} except it processes fields into a different table.
      *
-     * @param fieldName The name of the JSON field containing an ArrayNode of subtable data
+     * @param fieldName The name of the JSON field containing an ArrayNode of subtable data, or {@code null}
+     * @param isRoutedTable If {@code true}, the original JSON node is passed to the subtable adapter, instead of the
+     *        JsonNode extracted from {@code fieldName}. This is helpful for routing messages to different adapters
+     *        (i.e. different tables), typically in conjunction with a {@code subtablePredicate}).
      * @param subtableBuilder The subtable JSON adapter builder
      * @param subtableWriter The subtable's TableWriter
-     * @param subtableKeyAllowedMissing Whether the subtable's key ({@code fieldName}) is allowed to be missing
-     * @param subtableKeyAllowedNull Whether {@code fieldName} is allowed to have a null value
+     * @param subtableKeyAllowedMissing Whether the subtable's key ({@code fieldName}) is allowed to be missing. Ignored
+     *        when {@code isRoutedTable} is {@code true}.
+     * @param subtableKeyAllowedNull Whether {@code fieldName} is allowed to have a null value. Ignored when
+     *        {@code isRoutedTable} is {@code true}.
+     * @param subtablePredicate A predicate to evaluate for the node, to determine whether the node should be processed.
      */
     private void makeSubtableFieldProcessor(
-            @NotNull String fieldName,
-            @NotNull JSONToTableWriterAdapterBuilder subtableBuilder,
-            @NotNull TableWriter<?> subtableWriter,
-            @NotNull Map<String, TableWriter<?>> allSubtableWriters,
-            boolean subtableKeyAllowedMissing,
-            boolean subtableKeyAllowedNull) {
+            @NotNull final String fieldName,
+            final boolean isRoutedTable,
+            @NotNull final JSONToTableWriterAdapterBuilder subtableBuilder,
+            @NotNull final TableWriter<?> subtableWriter,
+            @NotNull final Map<String, TableWriter<?>> allSubtableWriters,
+            final boolean subtableKeyAllowedMissing,
+            final boolean subtableKeyAllowedNull,
+            final Predicate<JsonNode> subtablePredicate) {
 
         // Subtable record counter, mapping each row of the parent table to the corresponding rows of the subtable.
-        // TODO: it would be better to use a unique parent message ID if available
+        // TODO: it would be better to use a unique parent message ID if available. (Pull it out of the holder?)
         final AtomicLong subtableRecordIdCounter = new AtomicLong(0);
 
         // ThreadLocal to store the record counter value. The subtable record ID is captured into the
@@ -649,6 +689,15 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         // The ID above is displayed in tables and ideally would be unique even if persisted/reread.
         final AtomicLong subtableMessageCounter = new AtomicLong(0);
 
+        final SubtableProcessingParameters subtableProcessingParameters = new SubtableProcessingParameters(
+                fieldName,
+                subtableAdapter,
+                subtablePredicate,
+                subtableMessageCounter,
+                subtableKeyAllowedMissing,
+                subtableKeyAllowedNull,
+                !isRoutedTable);
+
         // Field name in the *parent* Table giving the corresponding ID of the row(s) in the subtable
         final String subtableRowIdFieldName = getSubtableRowIdColName(fieldName);
 
@@ -660,31 +709,32 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         final MutableInt position = new MutableInt();
         fieldProcessor = (JsonNode record, int holderNumber) -> {
             // index of the next record being processed into the subtable
+            // TODO: holders[holderNumber].getMessageNumber() should be fine
             final long subtableRecordIdxVal = subtableRecordIdCounter.getAndIncrement();
 
             // store it in a ThreadLocal that is read by the subtable field processor. (It is processed for the subtable
             // synchronously, later in processOneRecordTopLevel).
             subtableRecordIdThreadLocal.get().setValue(subtableRecordIdxVal);
 
+            final JsonNode subtableFieldValue;
+            if (isRoutedTable) {
+                subtableFieldValue = record;
+            } else {
+                subtableFieldValue = JsonNodeUtil.getNode(record, fieldName, allowMissingKeys, allowNullValues);
+            }
+
             // store the idx in the rowSetter (later, the fieldSetter will add it to the table)
             // note that this will only work correctly when single-threaded
             final InMemoryRowHolder.SingleRowSetter rowSetter =
                     getSingleRowSetterAndCapturePosition(subtableRowIdFieldName, setterType, position, holderNumber);
-            rowSetter.setLong(subtableRecordIdxVal);
 
-            final JsonNode subtableFieldValue =
-                    JsonNodeUtil.getNode(record, fieldName, allowMissingKeys, allowNullValues);
-
-            // Enqueue the subtable node to be processed by the subtable adapter (this happens after all the main
-            // fieldProcessors have been processed)
-            final Queue<SubtableData> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
-            subtableProcessingQueue
-                    .add(new SubtableData(fieldName,
-                            subtableAdapter,
-                            subtableFieldValue,
-                            subtableMessageCounter,
-                            subtableKeyAllowedMissing,
-                            subtableKeyAllowedNull));
+            if (subtablePredicate == null || subtablePredicate.test(subtableFieldValue)) {
+                rowSetter.setLong(subtableRecordIdxVal);
+                // Enqueue the subtable node to be processed by the subtable adapter (this happens after all the main
+                // fieldProcessors have been processed)
+                final Queue<SubtableData> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
+                subtableProcessingQueue.add(new SubtableData(subtableProcessingParameters, subtableFieldValue));
+            }
         };
 
         fieldProcessors.add(fieldProcessor);
@@ -1388,7 +1438,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param msg The message.
      */
     private void processSingleMessage(final int holder, final JsonMessage msg) {
-        holders[holder].setMessageNumber(msg.getMsgNo());
+        final long messageNumber = msg.getMsgNo();
+        holders[holder].setMessageNumber(messageNumber);
         // The JSON parsing is time-consuming, so we can multi-thread that.
         final JsonNode record;
         try {
@@ -1404,7 +1455,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 addEmptyHolder(holder);
             } else {
                 for (int ii = 0; ii < arraySize; ++ii) {
-                    holders[holder].setMessageNumber(msg.getMsgNo());
+                    holders[holder].setMessageNumber(messageNumber);
                     processOneRecordTopLevel(holder, msg, record.get(ii), ii == 0, ii == arraySize - 1);
                 }
             }
@@ -1451,10 +1502,11 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         for (SubtableData subtableFieldToProcess =
                 subtableProcessingQueue.poll(); subtableFieldToProcess != null; subtableFieldToProcess =
                         subtableProcessingQueue.poll()) {
-            final String subtableFieldName = subtableFieldToProcess.fieldName;
-            final JSONToTableWriterAdapter subtableAdapter = subtableFieldToProcess.subtableAdapter;
+            final SubtableProcessingParameters subtableParameters = subtableFieldToProcess.subtableParameters;
             final JsonNode fieldValue = subtableFieldToProcess.subtableNode;
-            final AtomicLong subtableMessageCounter = subtableFieldToProcess.subtableMessageCounter;
+            final String subtableFieldName = subtableParameters.fieldName;
+            final JSONToTableWriterAdapter subtableAdapter = subtableParameters.subtableAdapter;
+            final AtomicLong subtableMessageCounter = subtableParameters.subtableMessageCounter;
 
             // holder is always 0 (multithreading in subtable adapter not currently supported, as it
             // is more work to ensure the subtable rows appear in the same order as the parent table
@@ -1464,7 +1516,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
 
             if (fieldValue == null || fieldValue.isMissingNode()) {
-                if (subtableFieldToProcess.subtableKeyAllowedMissing) {
+                if (subtableParameters.subtableKeyAllowedMissing) {
                     continue;
                 } else {
                     throw new JSONIngesterException(
@@ -1473,7 +1525,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             }
 
             if (fieldValue.isNull()) {
-                if (subtableFieldToProcess.subtableKeyAllowedNull) {
+                if (subtableParameters.subtableKeyAllowedNull) {
                     continue;
                 } else {
                     throw new JSONIngesterException(
@@ -1481,55 +1533,44 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 }
             }
 
-            if (!(fieldValue instanceof ArrayNode)) {
-                final String fieldType = fieldValue.getClass().getName();
-                throw new JSONIngesterException(
-                        "Expected array node for subtable field \"" + subtableFieldName + "\" but was " + fieldType);
-            }
-            final ArrayNode subtableArrNode = ((ArrayNode) fieldValue);
-
-            final int nNodes = subtableArrNode.size();
-            if (nNodes == 0) {
-                // TODO: add empty holders?
-                continue;
-            }
-
-            // A holder must be processed for each value of 'thisSubtableMsgNo'! Gaps are not allowed
-            // TODO ^^ why is that true? and do we need to add empty holders?
-            final long thisSubtableMsgNo = subtableMessageCounter.getAndIncrement();
-            for (int nodeIdx = 0; nodeIdx < nNodes; nodeIdx++) {
-                try {
-                    JsonNode subtableRecord = subtableArrNode.get(nodeIdx);
-
-                    final boolean isSubtableFirst = nodeIdx == 0;
-                    final boolean isSubtableLast = nodeIdx == nNodes - 1;
-
-
-                    subtableAdapter.holders[subtableHolderIdx].setMessageNumber(thisSubtableMsgNo);
-
-                    if (isSubtableFirst && isSubtableLast) {
-                        subtableAdapter.holders[subtableHolderIdx].singleRow();
-                    } else if (isSubtableFirst) {
-                        subtableAdapter.holders[subtableHolderIdx].startTransaction();
-                    } else if (isSubtableLast) {
-                        subtableAdapter.holders[subtableHolderIdx].endTransaction();
-                    } else {
-                        subtableAdapter.holders[subtableHolderIdx].inTransaction();
-                    }
-
-                    // process the record (and reset the holder at holders[holderIdx])
-                    // the MessageMetadata can be null because subtables don't process it anyway.
-                    final MessageMetadata subtableMsgMetadata = null;
-                    subtableAdapter.processOneRecordTopLevel(
-                            subtableHolderIdx,
-                            subtableMsgMetadata,
-                            subtableRecord,
-                            isSubtableFirst,
-                            isSubtableLast);
-                } catch (Exception ex) {
-                    throw new JSONIngesterException("Failed processing subtable field \"" + subtableFieldName + '"',
-                            ex);
+            if (subtableParameters.isArrayNodeExpected) {
+                /* nested subtable (passing one field to another adapter) -- subtable node should be an array node */
+                if (!(fieldValue.isArray())) {
+                    final String fieldType = fieldValue.getClass().getName();
+                    throw new JSONIngesterException(
+                            "Expected array node for subtable field \"" + subtableFieldName + "\" but was "
+                                    + fieldType);
                 }
+                final ArrayNode subtableArrNode = ((ArrayNode) fieldValue);
+
+                final int nNodes = subtableArrNode.size();
+                if (nNodes == 0) {
+                    // TODO: add empty holders?
+                    continue;
+                }
+
+                // A holder must be processed for each value of 'thisSubtableMsgNo'! Gaps are not allowed
+                // TODO ^^ why is that true? and do we need to add empty holders?
+
+                // TODO: use holders[holder].getMessageNumber() instead of the counter
+                final long thisSubtableMsgNo = subtableMessageCounter.getAndIncrement();
+
+                final Iterator<JsonNode> iterator = subtableArrNode.iterator();
+                boolean isSubtableFirst = true;
+                boolean isSubtableLast = !iterator.hasNext();
+                while (!isSubtableLast) {
+                    final JsonNode subtableRecord = iterator.next();
+                    isSubtableLast = !iterator.hasNext();
+                    processSingleSubtableRecord(subtableAdapter, subtableFieldName, subtableHolderIdx,
+                            thisSubtableMsgNo, subtableRecord, isSubtableFirst, isSubtableLast);
+                    isSubtableFirst = false;
+                }
+            } else {
+                /* routed subtable (passint original node to another adapter) -- can be any kind of node */
+                // TODO: use holders[holder].getMessageNumber() instead of the counter
+                final long thisSubtableMsgNo = subtableMessageCounter.getAndIncrement();
+                processSingleSubtableRecord(subtableAdapter, subtableFieldName, subtableHolderIdx, thisSubtableMsgNo,
+                        fieldValue, true, true);
             }
         }
 
@@ -1633,6 +1674,36 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         }
     }
 
+    private static void processSingleSubtableRecord(JSONToTableWriterAdapter subtableAdapter, String subtableFieldName,
+            int subtableHolderIdx, long thisSubtableMsgNo, JsonNode subtableRecord, boolean isSubtableFirst,
+            boolean isSubtableLast) {
+        try {
+            subtableAdapter.holders[subtableHolderIdx].setMessageNumber(thisSubtableMsgNo);
+
+            if (isSubtableFirst && isSubtableLast) {
+                subtableAdapter.holders[subtableHolderIdx].singleRow();
+            } else if (isSubtableFirst) {
+                subtableAdapter.holders[subtableHolderIdx].startTransaction();
+            } else if (isSubtableLast) {
+                subtableAdapter.holders[subtableHolderIdx].endTransaction();
+            } else {
+                subtableAdapter.holders[subtableHolderIdx].inTransaction();
+            }
+
+            // process the record (and reset the holder at holders[holderIdx])
+            // the MessageMetadata can be null because subtables don't process it anyway.
+            final MessageMetadata subtableMsgMetadata = null;
+            subtableAdapter.processOneRecordTopLevel(
+                    subtableHolderIdx,
+                    subtableMsgMetadata,
+                    subtableRecord,
+                    isSubtableFirst,
+                    isSubtableLast);
+        } catch (Exception ex) {
+            throw new JSONIngesterException("Failed processing subtable field \"" + subtableFieldName + '"', ex);
+        }
+    }
+
     /**
      * Handle an empty array of inbound messages.
      *
@@ -1729,13 +1800,30 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * Wrapper for a {@link JsonNode} to process into a subtable as well as parameters to be used during parsing &
      * processing.
      */
-    protected static class SubtableData {
+    static class SubtableData {
         @NotNull
+        private final SubtableProcessingParameters subtableParameters;
+
+        @Nullable
+        private final JsonNode subtableNode;
+
+        private SubtableData(@NotNull SubtableProcessingParameters subtableParameters,
+                @Nullable JsonNode subtableNode) {
+            this.subtableParameters = subtableParameters;
+            this.subtableNode = subtableNode;
+        }
+
+    }
+
+    static class SubtableProcessingParameters {
+        @Nullable
         private final String fieldName;
         @NotNull
         private final JSONToTableWriterAdapter subtableAdapter;
+
         @Nullable
-        private final JsonNode subtableNode;
+        private final Predicate<JsonNode> subtablePredicate;
+
         @NotNull
         private final AtomicLong subtableMessageCounter;
 
@@ -1743,19 +1831,40 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
         private final boolean subtableKeyAllowedNull;
 
-        public SubtableData(
-                @NotNull String fieldName,
+        /**
+         * Whether the subtable node is expected to be an ArrayNode (as opposed to an ObjectNode). This should be
+         * {@code true} for 'routed' subtables (where we just send the original node to the subtable adapter) and
+         * {@code false} for regular (nested) subtables (where many rows are expected).
+         */
+        private final boolean isArrayNodeExpected;
+
+        private SubtableProcessingParameters(
+                @Nullable String fieldName,
                 @NotNull JSONToTableWriterAdapter subtableAdapter,
-                @Nullable JsonNode subtableNode,
+                @Nullable Predicate<JsonNode> subtablePredicate,
                 @NotNull AtomicLong subtableMessageCounter,
                 boolean subtableKeyAllowedMissing,
-                boolean subtableKeyAllowedNull) {
+                boolean subtableKeyAllowedNull, boolean isArrayNodeExpected) {
             this.fieldName = fieldName;
             this.subtableAdapter = subtableAdapter;
-            this.subtableNode = subtableNode;
+            this.subtablePredicate = subtablePredicate;
             this.subtableMessageCounter = subtableMessageCounter;
             this.subtableKeyAllowedMissing = subtableKeyAllowedMissing;
             this.subtableKeyAllowedNull = subtableKeyAllowedNull;
+            this.isArrayNodeExpected = isArrayNodeExpected;
+        }
+    }
+
+    static class RoutedAdapterInfo {
+        @NotNull
+        private final JSONToTableWriterAdapterBuilder adapterBuilder;
+        @Nullable
+        private final Predicate<JsonNode> predicate;
+
+        RoutedAdapterInfo(@NotNull JSONToTableWriterAdapterBuilder adapterBuilder,
+                @Nullable Predicate<JsonNode> predicate) {
+            this.adapterBuilder = adapterBuilder;
+            this.predicate = predicate;
         }
     }
 }

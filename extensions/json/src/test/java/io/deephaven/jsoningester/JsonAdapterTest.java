@@ -1000,6 +1000,101 @@ public class JsonAdapterTest {
     }
 
     @Test
+    public void testRoutedTables() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factorySubtable_msgType1 = new JSONToTableWriterAdapterBuilder()
+                .allowMissingKeys(false)
+                .allowNullValues(false)
+                .addColumnFromField("A", "a")
+                .addColumnFromField("B", "b")
+                .addColumnFromField("C", "c")
+                .autoValueMapping(false);
+
+        final JSONToTableWriterAdapterBuilder factorySubtable_msgType2 = new JSONToTableWriterAdapterBuilder()
+                .allowMissingKeys(false)
+                .allowNullValues(false)
+                .addColumnFromField("A", "a")
+                .addColumnFromField("D", "d")
+                .addColumnFromField("E", "e")
+                .autoValueMapping(false);
+
+        final DynamicTableWriter msgType1writer = new DynamicTableWriter(
+                new String[] {"A", "B", "C", "SubtableRecordId"},
+                Type.fromClasses(String.class, double.class, int.class, long.class));
+
+        final DynamicTableWriter msgType2writer = new DynamicTableWriter(
+                new String[] {"A", "D", "E", "SubtableRecordId"},
+                Type.fromClasses(String.class, String.class, int.class, long.class));
+
+        final UpdateSourceQueryTable resultMsgType1 = msgType1writer.getTable();
+        final UpdateSourceQueryTable resultMsgType2 = msgType2writer.getTable();
+
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+                        .addColumnFromField("A", "a")
+                        .addRoutedTableAdapter("msgType1", node -> node.get("MsgType").intValue() == 1,
+                                factorySubtable_msgType1)
+                        .addRoutedTableAdapter("msgType2", node -> node.get("MsgType").intValue() == 2,
+                                factorySubtable_msgType2)
+                        .autoValueMapping(false)
+                        .nConsumerThreads(0));
+
+        final String[] names = new String[] {"A", "msgType1_id", "msgType2_id"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class, long.class, long.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable resultMain = writer.getTable();
+
+        // noinspection RedundantTypeArguments (there's an unchecked assignment warning if the type args are removed)
+        adapter = factory.apply(writer,
+                Map.<String, TableWriter<?>>of("msgType1", msgType1writer, "msgType2", msgType2writer));
+
+        injectJson(
+                "{\"MsgType\": 0, \"a\": \"test\"}",
+                "msg0", resultMain, resultMsgType1, resultMsgType2);
+        injectJson(
+                "{\"MsgType\": 1, \"a\": \"test\", \"b\": 1.1, \"c\": 11}",
+                "msg1", resultMain, resultMsgType1, resultMsgType2);
+        injectJson(
+                "{\"MsgType\": 2, \"a\": \"test\", \"b\": -1, \"d\": \"table2_row1\", \"e\": 21}",
+                "msg2", resultMain, resultMsgType1, resultMsgType2);
+
+        {
+            // Check the main table:
+            TableTools.show(resultMain);
+            Assert.assertEquals(3, resultMain.intSize());
+            final Table expectedMain = newTable(
+                    col("A", "test", "test", "test"),
+                    // the subtable row IDs
+                    longCol("msgType1_id", NULL_LONG, 1, NULL_LONG),
+                    longCol("msgType2_id", NULL_LONG, NULL_LONG, 2));
+            Assert.assertEquals("", diff(resultMain, expectedMain, 10));
+
+            // Check the subtable for message type 1:
+            TableTools.show(resultMsgType1);
+            Assert.assertEquals(1, resultMsgType1.intSize());
+            final Table expectedSubtableMsgType1 = newTable(
+                    col("A", "test"),
+                    doubleCol("B", 1.1),
+                    intCol("C", 11),
+                    // the nested parallel fields
+                    longCol("SubtableRecordId", 1));
+            Assert.assertEquals("", diff(resultMsgType1, expectedSubtableMsgType1, 10));
+
+            // Check the subtable for message type 2:
+            TableTools.show(resultMsgType2);
+            Assert.assertEquals(1, resultMsgType2.intSize());
+            final Table expectedSubtableMsgType2 = newTable(
+                    col("A", "test"),
+                    intCol("D", -1),
+                    stringCol("E", "table2_row1"),
+                    // the nested parallel fields
+                    longCol("SubtableRecordId", 2));
+            Assert.assertEquals("", diff(resultMsgType2, expectedSubtableMsgType2, 10));
+        }
+    }
+
+    @Test
     public void testDoubleNestedRecord() throws IOException, InterruptedException, TimeoutException {
         final JSONToTableWriterAdapterBuilder factoryNestedGh = new JSONToTableWriterAdapterBuilder()
                 .addColumnFromField("G", "g")

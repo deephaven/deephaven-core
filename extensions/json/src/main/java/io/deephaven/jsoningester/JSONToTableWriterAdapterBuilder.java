@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.Stream;
 
 import static io.deephaven.jsoningester.JSONToTableWriterAdapter.SUBTABLE_RECORD_ID_COL;
 
@@ -27,6 +28,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
     private final Map<String, ToDoubleFunction<JsonNode>> columnToDoubleFunction = new HashMap<>();
 
     private final Map<String, JSONToTableWriterAdapterBuilder> fieldToSubtableBuilders = new HashMap<>();
+    private final Map<String, JSONToTableWriterAdapter.RoutedAdapterInfo> routedTableIdsToBuilders = new HashMap<>();
     private final Map<String, Pair<Class<?>, Function<JsonNode, ?>>> columnToObjectFunction = new HashMap<>();
     private final Set<String> allowedUnmappedColumns = new HashSet<>();
     private final Set<String> nestedColumns = new HashSet<>();
@@ -164,6 +166,17 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
             final JSONToTableWriterAdapterBuilder subtableBuilder) {
         checkSubtableBuilder(subtableBuilder, field);
         fieldToSubtableBuilders.put(field, subtableBuilder);
+        return this;
+    }
+
+    @ScriptApi
+    public JSONToTableWriterAdapterBuilder addRoutedTableAdapter(
+            final String routedTableIdentifier,
+            final Predicate<JsonNode> routingPredicate,
+            final JSONToTableWriterAdapterBuilder subtableBuilder) {
+        checkSubtableBuilder(subtableBuilder, routedTableIdentifier);
+        routedTableIdsToBuilders.put(routedTableIdentifier,
+                new JSONToTableWriterAdapter.RoutedAdapterInfo(subtableBuilder, routingPredicate));
         return this;
     }
 
@@ -345,7 +358,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         definedColumns.addAll(columnToObjectFunction.keySet());
         definedColumns.addAll(columnToParallelField.keySet());
         definedColumns.addAll(nestedColumns);
-        fieldToSubtableBuilders.keySet().stream().map(JSONToTableWriterAdapter::getSubtableRowIdColName)
+        Stream.concat(fieldToSubtableBuilders.keySet().stream(), routedTableIdsToBuilders.keySet().stream())
+                .map(JSONToTableWriterAdapter::getSubtableRowIdColName)
                 .forEach(definedColumns::add);
         return Collections.unmodifiableList(definedColumns);
     }
@@ -448,6 +462,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 parallelNestedFieldBuilders,
                 subtableFieldToTableWriters,
                 fieldToSubtableBuilders,
+                routedTableIdsToBuilders,
                 allUnmapped,
                 autoValueMapping,
                 createHolders,
@@ -465,7 +480,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
      * @return An adapter that provides field processors for nested fields within a JSON message
      */
     @NotNull
-    protected JSONToTableWriterAdapter makeNestedAdapter(@NotNull final Logger log,
+    JSONToTableWriterAdapter makeNestedAdapter(@NotNull final Logger log,
             @NotNull final TableWriter<?> tw,
             @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
             final Set<String> allUnmapped,
@@ -497,6 +512,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 parallelNestedFieldBuilders,
                 fieldToSubtableWriters,
                 fieldToSubtableBuilders,
+                routedTableIdsToBuilders,
                 allUnmapped,
                 autoValueMapping,
                 createHolders,
@@ -517,7 +533,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
      * @return An adapter that logs records to a separate table
      */
     @NotNull
-    protected JSONToTableWriterAdapter makeSubtableAdapter(@NotNull final Logger log,
+    JSONToTableWriterAdapter makeSubtableAdapter(@NotNull final Logger log,
             @NotNull final TableWriter<?> tw,
             @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
             final Set<String> allUnmapped,
@@ -548,6 +564,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 parallelNestedFieldBuilders,
                 fieldToSubtableWriters,
                 fieldToSubtableBuilders,
+                routedTableIdsToBuilders,
                 Collections.emptySet(),
                 autoValueMapping,
                 createHolders,

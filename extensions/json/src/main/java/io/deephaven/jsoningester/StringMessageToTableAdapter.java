@@ -270,10 +270,10 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
 
     public static BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> buildFactoryWithSubtables(
             Logger log, JSONToTableWriterAdapterBuilder adapterBuilder) {
-        return (tablewriter, subtableWriters) -> {
+        return (tablewriter, subtableWritersMap) -> {
             // create the string-to-tablewriter adapter
             final StringToTableWriterAdapter stringToTableWriterAdapter =
-                    adapterBuilder.makeAdapter(log, tablewriter, subtableWriters);
+                    adapterBuilder.makeAdapter(log, tablewriter, subtableWritersMap);
 
             // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
             // adapter
