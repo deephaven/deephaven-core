@@ -1379,7 +1379,7 @@ public class QueryTableTest extends QueryTableTestBase {
             right.notifyListeners(i(), rowsToRemove, i());
         });
         show(snapshot, 50);
-        assertEquals(snapshot, testRefreshingTable(
+        assertTableEquals(snapshot, testRefreshingTable(
                 col("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
                 col("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
                 col("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")));
@@ -1389,7 +1389,7 @@ public class QueryTableTest extends QueryTableTestBase {
             left2.notifyListeners(i(6), i(), i());
         });
         show(snapshot, 50);
-        assertEquals(snapshot, testRefreshingTable(
+        assertTableEquals(snapshot, testRefreshingTable(
                 col("T", 1, 1, 1, 2, 2, 2, 5, 5, 5, 5, 5, 7, 7, 8, 8),
                 col("A", 3, 1, 2, 3, 1, 2, 3, 30, 1, 2, 50, 11, 50, 11, 50),
                 col("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")));
@@ -2782,7 +2782,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 charCol("CCol", io.deephaven.util.QueryConstants.NULL_CHAR, 'b',
                         io.deephaven.util.QueryConstants.NULL_CHAR, io.deephaven.util.QueryConstants.NULL_CHAR),
                 col("BoCol", null, false, null, null),
-                col("OCol", null, (Pair<Integer, Integer>[]) new Pair[] {new Pair<>(2, 3), null, null}));
+                col("OCol", (Pair<Integer, Integer>[]) new Pair[] {null, new Pair<>(2, 3), null, null}));
 
         assertTableEquals(expected, ungrouped);
 
