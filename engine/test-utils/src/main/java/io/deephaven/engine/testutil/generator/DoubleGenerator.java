@@ -1,10 +1,17 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatGenerator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.testutil.generator;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 
 import java.util.Random;
-import java.util.TreeMap;
 
 public class DoubleGenerator extends AbstractGenerator<Double> {
 
@@ -43,12 +50,16 @@ public class DoubleGenerator extends AbstractGenerator<Double> {
     }
 
     @Override
-    public Double nextValue(TreeMap<Long, Double> values, long key, Random random) {
+    public Double nextValue(Random random) {
+        return generateDouble(random);
+    }
+
+    private double generateDouble(Random random) {
         if (nullFraction > 0 || nanFraction > 0 || negInfFraction > 0 || posInfFraction > 0) {
             final double frac = random.nextDouble();
 
             if (nullFraction > 0 && frac < nullFraction) {
-                return null;
+                return QueryConstants.NULL_DOUBLE;
             }
 
             if (nanFraction > 0 && frac < (nullFraction + nanFraction)) {
@@ -64,6 +75,15 @@ public class DoubleGenerator extends AbstractGenerator<Double> {
             }
         }
         return from + (random.nextDouble() * to - from);
+    }
+
+    @Override
+    public DoubleChunk<Values> populateChunk(RowSet toAdd, Random random) {
+        final double[] result = new double[toAdd.intSize()];
+        for (int ii = 0; ii < result.length; ++ii) {
+            result[ii] = generateDouble(random);
+        }
+        return DoubleChunk.chunkWrap(result);
     }
 
     @Override

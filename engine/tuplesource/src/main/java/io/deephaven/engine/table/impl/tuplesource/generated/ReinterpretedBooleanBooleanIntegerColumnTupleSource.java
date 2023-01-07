@@ -126,11 +126,11 @@ public class ReinterpretedBooleanBooleanIntegerColumnTupleSource extends Abstrac
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ByteByteIntTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ByteChunk<Values> chunk1 = chunks[0].asByteChunk();
-        ObjectChunk<Boolean, Values> chunk2 = chunks[1].asObjectChunk();
-        IntChunk<Values> chunk3 = chunks[2].asIntChunk();
+        ByteChunk<? extends Values> chunk1 = chunks[0].asByteChunk();
+        ObjectChunk<Boolean, ? extends Values> chunk2 = chunks[1].asObjectChunk();
+        IntChunk<? extends Values> chunk3 = chunks[2].asIntChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ByteByteIntTuple(chunk1.get(ii), BooleanUtils.booleanAsByte(chunk2.get(ii)), chunk3.get(ii)));
         }

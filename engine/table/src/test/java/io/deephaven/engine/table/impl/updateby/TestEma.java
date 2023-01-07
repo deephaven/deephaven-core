@@ -11,7 +11,7 @@ import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.testutil.generator.Generator;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
@@ -44,7 +44,7 @@ public class TestEma extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -78,7 +78,7 @@ public class TestEma extends BaseUpdateByTest {
 
     private void doTestStaticBucketed(boolean grouped) {
         final TableDefaults t = createTestTable(100000, true, grouped, false, 0x31313131,
-                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -376,7 +376,7 @@ public class TestEma extends BaseUpdateByTest {
     private void doTestTicking(boolean bucketed, boolean appendOnly) {
         final CreateResult tickResult = createTestTable(10000, bucketed, false, true, 0x31313131);
         final CreateResult timeResult = createTestTable(10000, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
 

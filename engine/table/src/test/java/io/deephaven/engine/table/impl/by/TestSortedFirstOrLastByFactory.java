@@ -54,7 +54,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
     private void incrementalTest(int seed, int size, final String... sortColumns) {
         final Random random = new Random(seed);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
                 colNames,
                 new SetGenerator<>("a", "b", "c", "d"),

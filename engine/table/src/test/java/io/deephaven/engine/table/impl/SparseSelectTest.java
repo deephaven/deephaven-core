@@ -155,8 +155,7 @@ public class SparseSelectTest {
         final QueryTable table = TstUtils.testRefreshingTable(builder.build().toTracking(),
                 TableTools.intCol("Value", intVals));
         final Table selected = SparseSelect.sparseSelect(table);
-        final String diff = TableTools.diff(selected, table, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(selected, table);
     }
 
     @Test
@@ -185,26 +184,19 @@ public class SparseSelectTest {
 
 
         final Table selected = SparseSelect.sparseSelect(table);
-        final String diff = TableTools.diff(selected, table, 10);
-        TestCase.assertEquals("", diff);
-
-        final String diffPrev = TableTools.diff(TstUtils.prevTable(selected), TstUtils.prevTable(table), 10);
-        TestCase.assertEquals("", diffPrev);
+        assertTableEquals(selected, table);
+        assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), TableTools.longCol("Value", 3));
             table.notifyListeners(i(2), i(), i());
         });
 
-        final String diff2 = TableTools.diff(selected, table, 10);
-        TestCase.assertEquals("", diff2);
-
-        final String diffPrev2 = TableTools.diff(TstUtils.prevTable(selected), TstUtils.prevTable(table), 10);
-        TestCase.assertEquals("", diffPrev2);
+        assertTableEquals(selected, table);
+        assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
 
         TableTools.show(table);
         TableTools.show(selected);
-
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(1L << 20 + 2), TableTools.longCol("Value", 4));
@@ -214,10 +206,7 @@ public class SparseSelectTest {
         TableTools.show(table);
         TableTools.show(selected);
 
-        final String diff3 = TableTools.diff(selected, table, 10);
-        TestCase.assertEquals("", diff3);
-
-        final String diffPrev3 = TableTools.diff(TstUtils.prevTable(selected), TstUtils.prevTable(table), 10);
-        TestCase.assertEquals("", diffPrev3);
+        assertTableEquals(selected, table);
+        assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
     }
 }

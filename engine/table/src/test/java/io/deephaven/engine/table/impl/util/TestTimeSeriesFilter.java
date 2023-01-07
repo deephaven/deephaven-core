@@ -74,7 +74,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
-        ColumnInfo[] columnInfo;
+        ColumnInfo<?, ?>[] columnInfo;
         int size = 100;
         final Date startDate = format.parse("2015-03-23");
         Date endDate = format.parse("2015-03-24");
@@ -86,7 +86,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                 new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");
         final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
-        EvalNugget en[] = new EvalNugget[] {
+        EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =

@@ -5,7 +5,6 @@ import io.deephaven.base.verify.Assert;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Random;
-import java.util.TreeMap;
 
 public class BigDecimalGenerator extends AbstractGenerator<BigDecimal> {
 
@@ -45,7 +44,7 @@ public class BigDecimalGenerator extends AbstractGenerator<BigDecimal> {
     }
 
     @Override
-    public BigDecimal nextValue(TreeMap<Long, BigDecimal> values, long key, Random random) {
+    public BigDecimal nextValue(Random random) {
         if (nullFraction > 0) {
             if (random.nextDouble() < nullFraction) {
                 return null;

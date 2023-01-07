@@ -24,6 +24,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
 
 @Category(OutOfBandTest.class)
@@ -57,7 +59,7 @@ public class TestWindowCheck {
         final Random random = new Random(0);
         final Random combinedRandom = new Random(0);
 
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final int size = 100;
         final DateTime startTime = DateTimeUtils.convertDateTime("2018-02-23T09:30:00 NY");
         final DateTime endTime;
@@ -138,7 +140,7 @@ public class TestWindowCheck {
 
         final DateTime[] emptyDateTimeArray = new DateTime[0];
         final QueryTable tableToCheck = testRefreshingTable(i().toTracking(),
-                c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
+                col("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
         final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> WindowCheck.addTimeWindowInternal(clock, tableToCheck, "Timestamp",
@@ -153,6 +155,7 @@ public class TestWindowCheck {
     private static class WindowEvalNugget implements EvalNuggetInterface {
         final Pair<Table, WindowCheck.TimeWindowListener> windowed;
         private final QueryTable table;
+        @ReferentialIntegrity
         private final TableUpdateValidator validator;
         private final TestClock clock;
         private final long windowNanos;
@@ -186,7 +189,7 @@ public class TestWindowCheck {
                     WindowCheck.addTimeWindowInternal(clock, table, "Timestamp", windowNanos, "InWindow", false);
             validator = TableUpdateValidator.make((QueryTable) windowed.first);
 
-            ((QueryTable) windowed.first).addUpdateListener(windowedFailureListener);
+            windowed.first.addUpdateListener(windowedFailureListener);
             validator.getResultTable().addUpdateListener(updateFailureListener);
         }
 
