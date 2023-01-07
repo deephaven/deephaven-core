@@ -1086,8 +1086,8 @@ public class JsonAdapterTest {
             Assert.assertEquals(1, resultMsgType2.intSize());
             final Table expectedSubtableMsgType2 = newTable(
                     col("A", "test"),
-                    intCol("D", -1),
-                    stringCol("E", "table2_row1"),
+                    stringCol("D", "table2_row1"),
+                    intCol("E", 21),
                     // the nested parallel fields
                     longCol("SubtableRecordId", 2));
             Assert.assertEquals("", diff(resultMsgType2, expectedSubtableMsgType2, 10));
