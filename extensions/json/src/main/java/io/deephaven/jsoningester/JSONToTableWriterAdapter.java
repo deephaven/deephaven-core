@@ -1140,7 +1140,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         return consumeStream(json, null);
     }
 
-    public void consumeJson(final JsonMessage msg) {
+    public void consumeJson(@NotNull final JsonMessage msg) {
         if (isShutdown.get()) {
             throw new IllegalStateException("Message received after adapter shutdown!");
         }
@@ -1437,30 +1437,47 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param holder Index of the message holder into which the {@code msgData} should be processed.
      * @param msg The message.
      */
-    private void processSingleMessage(final int holder, final JsonMessage msg) {
+    private void processSingleMessage(final int holder, @NotNull final JsonMessage msg) {
         final long messageNumber = msg.getMsgNo();
-        holders[holder].setMessageNumber(messageNumber);
+
         // The JSON parsing is time-consuming, so we can multi-thread that.
         final JsonNode record;
         try {
             record = msg.getJson();
         } catch (final JsonNodeUtil.JsonStringParseException parseException) {
             // handle JSON parse exception and keep going
-            processExceptionRecord(holder, parseException, msg, msg.getOriginalText());
+            processExceptionRecord(holder, messageNumber, parseException, msg, msg.getOriginalText());
             return;
         }
-        if (processArrays && record.isArray()) {
-            final int arraySize = record.size();
-            if (arraySize == 0) {
-                addEmptyHolder(holder);
+        processMsgJsonContent(this, record, holder, msg, messageNumber);
+    }
+
+    private static void processMsgJsonContent(@NotNull final JSONToTableWriterAdapter adapter,
+            @NotNull final JsonNode msgJson,
+            final int holderIdx,
+            @Nullable final MessageMetadata msgMetadata,
+            final long messageNumber) {
+        if (adapter.processArrays && msgJson.isArray()) {
+            if (msgJson.isEmpty()) {
+                // A holder must be processed for each value of 'messageNumber'! Gaps are not allowed.
+                // This is because cleanup() will hang if it thinks there is a gap.
+                adapter.addEmptyHolder(holderIdx);
             } else {
-                for (int ii = 0; ii < arraySize; ++ii) {
-                    holders[holder].setMessageNumber(messageNumber);
-                    processOneRecordTopLevel(holder, msg, record.get(ii), ii == 0, ii == arraySize - 1);
+                final Iterator<JsonNode> iterator = msgJson.iterator();
+                boolean isFirst = true;
+                boolean isLast = !iterator.hasNext();
+                while (!isLast) {
+                    adapter.holders[holderIdx].setMessageNumber(messageNumber);
+
+                    final JsonNode nextJson = iterator.next();
+                    isLast = !iterator.hasNext();
+                    adapter.processOneRecordTopLevel(holderIdx, msgMetadata, nextJson, isFirst, isLast);
+                    isFirst = false;
                 }
             }
         } else {
-            processOneRecordTopLevel(holder, msg, record, true, true);
+            adapter.holders[holderIdx].setMessageNumber(messageNumber);
+            adapter.processOneRecordTopLevel(holderIdx, msgMetadata, msgJson, true, true);
         }
     }
 
@@ -1468,14 +1485,17 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * Handle an exception while processing a message.
      *
      * @param holder Index of the holder into which the exception should be processed
+     * @param msgNumber The message's sequence number
      * @param iae The exception the occurred while processing the message
      * @param msgData The message metadata
      * @param messageText The message text, if available
      */
     private void processExceptionRecord(final int holder,
+            final long msgNumber,
             @NotNull final IllegalArgumentException iae,
             @NotNull final MessageMetadata msgData,
             @Nullable final String messageText) {
+        holders[holder].setMessageNumber(msgNumber);
         holders[holder].setParseException(iae);
         holders[holder].setOriginalText(messageText);
         if (!isSubtableAdapter) {
@@ -1503,19 +1523,18 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 subtableProcessingQueue.poll(); subtableFieldToProcess != null; subtableFieldToProcess =
                         subtableProcessingQueue.poll()) {
             final SubtableProcessingParameters subtableParameters = subtableFieldToProcess.subtableParameters;
-            final JsonNode fieldValue = subtableFieldToProcess.subtableNode;
+            final JsonNode subtableFieldValue = subtableFieldToProcess.subtableNode;
             final String subtableFieldName = subtableParameters.fieldName;
             final JSONToTableWriterAdapter subtableAdapter = subtableParameters.subtableAdapter;
             final AtomicLong subtableMessageCounter = subtableParameters.subtableMessageCounter;
 
-            // holder is always 0 (multithreading in subtable adapter not currently supported, as it
-            // is more work to ensure the subtable rows appear in the same order as the parent table
-            // rows, which is desirable).
-            // also note that the subtable holders are distinct from the parent table holders
+            // The holder index is always 0. Subtable adapters have their own message holders, and are always
+            // single-threaded. Since there is one holder per processing thread, that means just one holder.
+            // (Multithreading in subtable adapters is not currently supported, since it would take some work to ensure
+            // the subtable rows appear in the same order as the parent table rows, which is desirable).
             final int subtableHolderIdx = 0;
 
-
-            if (fieldValue == null || fieldValue.isMissingNode()) {
+            if (subtableFieldValue == null || subtableFieldValue.isMissingNode()) {
                 if (subtableParameters.subtableKeyAllowedMissing) {
                     continue;
                 } else {
@@ -1524,7 +1543,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 }
             }
 
-            if (fieldValue.isNull()) {
+            if (subtableFieldValue.isNull()) {
                 if (subtableParameters.subtableKeyAllowedNull) {
                     continue;
                 } else {
@@ -1535,25 +1554,21 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
             if (subtableParameters.isArrayNodeExpected) {
                 /* nested subtable (passing one field to another adapter) -- subtable node should be an array node */
-                if (!(fieldValue.isArray())) {
-                    final String fieldType = fieldValue.getClass().getName();
+                if (!(subtableFieldValue.isArray())) {
+                    final String fieldType = subtableFieldValue.getClass().getName();
                     throw new JSONIngesterException(
                             "Expected array node for subtable field \"" + subtableFieldName + "\" but was "
                                     + fieldType);
                 }
-                final ArrayNode subtableArrNode = ((ArrayNode) fieldValue);
+                final ArrayNode subtableArrNode = ((ArrayNode) subtableFieldValue);
 
-                final int nNodes = subtableArrNode.size();
-                if (nNodes == 0) {
-                    // TODO: add empty holders?
+                if (subtableArrNode.isEmpty()) {
+                    // (Note that we don't need to add an empty holder if we don't increment the message counter)
                     continue;
                 }
 
-                // A holder must be processed for each value of 'thisSubtableMsgNo'! Gaps are not allowed
-                // TODO ^^ why is that true? and do we need to add empty holders?
-
-                // TODO: use holders[holder].getMessageNumber() instead of the counter
-                final long thisSubtableMsgNo = subtableMessageCounter.getAndIncrement();
+                /* The subtableMsgNo **must** be a monotonic increasing sequence number with no gaps. */
+                final long subtableMsgNo = subtableMessageCounter.getAndIncrement();
 
                 final Iterator<JsonNode> iterator = subtableArrNode.iterator();
                 boolean isSubtableFirst = true;
@@ -1562,15 +1577,14 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                     final JsonNode subtableRecord = iterator.next();
                     isSubtableLast = !iterator.hasNext();
                     processSingleSubtableRecord(subtableAdapter, subtableFieldName, subtableHolderIdx,
-                            thisSubtableMsgNo, subtableRecord, isSubtableFirst, isSubtableLast);
+                            subtableMsgNo, subtableRecord, isSubtableFirst, isSubtableLast);
                     isSubtableFirst = false;
                 }
             } else {
-                /* routed subtable (passint original node to another adapter) -- can be any kind of node */
-                // TODO: use holders[holder].getMessageNumber() instead of the counter
+                /* The subtableMsgNo **must** be a monotonic increasing sequence number with no gaps. */
                 final long thisSubtableMsgNo = subtableMessageCounter.getAndIncrement();
                 processSingleSubtableRecord(subtableAdapter, subtableFieldName, subtableHolderIdx, thisSubtableMsgNo,
-                        fieldValue, true, true);
+                        subtableFieldValue, true, true);
             }
         }
 
@@ -1705,7 +1719,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     }
 
     /**
-     * Handle an empty array of inbound messages.
+     * Handle an empty array of inbound messages. This is to prevent gaps in the sequence numbers processed by
+     * {@link #cleanup()}.
      *
      * @param holder The holder number to mark as empty.
      */
