@@ -17,7 +17,6 @@ import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 
 public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
@@ -96,65 +95,20 @@ public class GrpcUtil {
     }
 
     /**
-     * This helper allows one to propagate the onError/onComplete calls through to the delegate, while applying the
-     * provided mapping function to the original input objects. The mapper may return null to skip sending a message to
-     * the delegated stream observer.
-     *
-     * @param delegate the stream observer to ultimately receive this message
-     * @param mapper the function that maps from input objects to the objects the stream observer expects
-     * @param <T> input type
-     * @param <V> output type
-     * @return a new stream observer that maps from T to V before delivering to {@code delegate::onNext}
-     */
-    public static <T, V> StreamObserver<T> mapOnNext(final StreamObserver<V> delegate, final Function<T, V> mapper) {
-        return new StreamObserver<T>() {
-            @Override
-            public void onNext(final T value) {
-                final V mapped = mapper.apply(value);
-                if (mapped != null) {
-                    delegate.onNext(mapped);
-                }
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                delegate.onError(t);
-            }
-
-            @Override
-            public void onCompleted() {
-                delegate.onCompleted();
-            }
-        };
-    }
-
-    /**
      * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
      *
+     * @param observer the stream that will be used in the runnable
      * @param runner the runnable to execute safely
      */
-    public static void safelyExecute(final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
-        try {
-            runner.run();
-        } catch (final Exception err) {
-            log.error().append("Unanticipated gRPC Error: ").append(err).endl();
-        }
-    }
-
-    /**
-     * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
-     *
-     * @param runner the runnable to execute safely
-     */
-    private static void safelyExecuteLocked(final Object lockedObject,
+    private static void safelyExecuteLocked(final StreamObserver<?> observer,
             final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
         try {
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (lockedObject) {
+            synchronized (observer) {
                 runner.run();
             }
         } catch (final Exception err) {
-            log.error().append("Unanticipated gRPC Error: ").append(err).endl();
+            log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
         }
     }
 
@@ -171,12 +125,6 @@ public class GrpcUtil {
 
     public static void safelyComplete(StreamObserver<?> observer) {
         safelyExecuteLocked(observer, observer::onCompleted);
-    }
-
-    public static void safelyError(StreamObserver<?> observer, Throwable error) {
-        safelyExecuteLocked(observer, () -> {
-            observer.onError(error);
-        });
     }
 
     /**

@@ -1420,9 +1420,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // propagate any error notifying listeners there are no more updates incoming
         if (pendingError != null) {
+            StatusRuntimeException ex = GrpcUtil.securelyWrapError(log, pendingError);
             for (final Subscription subscription : activeSubscriptions) {
                 // TODO (core#801): effective error reporting to api clients
-                GrpcUtil.safelyError(subscription.listener, pendingError);
+                GrpcUtil.safelyError(subscription.listener, ex);
             }
         }
 

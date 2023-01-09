@@ -270,14 +270,14 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 }
             }
             if (sendError) {
-                GrpcUtil.safelyExecute(() -> listener.onError(upstreamFailure));
+                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, upstreamFailure));
                 return;
             }
             try {
                 lastExpandedSize = buildAndSendSnapshot(streamGeneratorFactory, listener, subscriptionOptions, view,
                         this::recordSnapshotNanos, this::recordWriteMetrics, columns, rows, lastExpandedSize);
             } catch (Exception e) {
-                GrpcUtil.safelyExecute(() -> listener.onError(e));
+                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, e));
                 state = State.Done;
             }
         }

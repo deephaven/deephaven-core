@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
 
 /**
  * SessionState manages all exports for a single session.
@@ -761,8 +761,11 @@ public class SessionState {
                 if (errorId == null) {
                     assignErrorId();
                 }
-                //TODO do we want logs about this?
-                safelyExecute(() -> errorHandler.onError(state, errorId, caughtException, dependentHandle));
+                try {
+                    errorHandler.onError(state, errorId, caughtException, dependentHandle);
+                } catch (final Exception err) {
+                    log.debug().append("Unexpected error while reporting state failure: ").append(err).endl();
+                }
             }
 
             if (state == ExportNotification.State.EXPORTED || isExportStateTerminal(state)) {
@@ -1310,9 +1313,7 @@ public class SessionState {
          */
         public ExportBuilder<T> onError(StreamObserver<?> streamObserver) {
             return onErrorHandler(statusRuntimeException -> {
-                synchronized (streamObserver) {
-                    streamObserver.onError(statusRuntimeException);
-                }
+                safelyError(streamObserver, statusRuntimeException);
             });
         }
 
