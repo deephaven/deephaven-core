@@ -1249,10 +1249,12 @@ public class JsonAdapterTest {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable resultMain = writer.getTable();
 
-        //noinspection RedundantTypeArguments
+        // noinspection RedundantTypeArguments
         adapter = factory.apply(writer, Map.<String, TableWriter<?>>of("subtable", subtableWriter));
 
-        injectJson("[{\"a\": \"test\", \"b\": 42.2, \"subtable\": [{ \"x\": 42 }] }, {\"a\": \"test2\", \"b\": 21.1, \"subtable\": [{ \"x\": 43 }] }]", "id", resultMain, resultSubtable);
+        injectJson(
+                "[{\"a\": \"test\", \"b\": 42.2, \"subtable\": [{ \"x\": 42 }] }, {\"a\": \"test2\", \"b\": 21.1, \"subtable\": [{ \"x\": 43 }] }]",
+                "id", resultMain, resultSubtable);
 
         {
             // Check the main table:
@@ -1273,7 +1275,7 @@ public class JsonAdapterTest {
                     // the nested parallel fields
                     longCol("SubtableRecordId", 0, 1));
             Assert.assertEquals("", diff(resultSubtable, expectedSubtable, 10));
-        };
+        }
     }
 
     @Test

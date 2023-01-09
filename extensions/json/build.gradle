@@ -36,11 +36,11 @@ dependencies {
 
     testRuntimeOnly project(path: ':test-configs')
 
-    runtimeOnly project(':log-to-slf4j'),
+    testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs')
 
 
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'runtimeOnly')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
 spotless {
