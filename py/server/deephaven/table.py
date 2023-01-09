@@ -360,7 +360,7 @@ class Table(JObjectWrapper):
         Args:
             trigger_table (Table): the trigger table
             stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
-            initial (bool): Whether to take an initial snapshot upon construction. When not specified, the resulting
+            initial (bool): Whether to take an initial snapshot upon construction, default is False, meaning the resulting
                 table will remain empty until trigger_table first updates.
             incremental (bool): Whether the resulting table should be incremental. When incremental, only the rows of
                 this table that have been added or updated will have the latest "stamp key".
