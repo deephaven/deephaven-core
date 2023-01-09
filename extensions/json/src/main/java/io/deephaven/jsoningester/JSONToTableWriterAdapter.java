@@ -64,7 +64,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
     @SuppressWarnings("FieldCanBeLocal")
     private final ThreadGroup consumerThreadGroup;
-    private final List<DataToTableWriterAdapter> allSubtableAdapters;
+    private final List<AsynchronousDataIngester> allSubtableAdapters;
 
     /**
      * The owner message adapter, which has {@link RowSetter setters} for metadata columns.
@@ -1051,12 +1051,12 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
     /**
      * Recursively build a list of subtable adapters, from the given {@code adapter} and all its children. All of these
-     * must be {@link DataToTableWriterAdapter#cleanup() cleaned up} after rows are written.
+     * must be {@link AsynchronousDataIngester#cleanup() cleaned up} after rows are written.
      *
      * @return A list of adapters for all subtables
      */
-    private static List<DataToTableWriterAdapter> getAllSubtableAdapters(JSONToTableWriterAdapter adapter) {
-        final List<DataToTableWriterAdapter> subtableAdatpers =
+    private static List<AsynchronousDataIngester> getAllSubtableAdapters(JSONToTableWriterAdapter adapter) {
+        final List<AsynchronousDataIngester> subtableAdatpers =
                 new ArrayList<>(adapter.subtableFieldsToAdapters.values());
         for (JSONToTableWriterAdapter nestedAdapter : adapter.nestedAdapters) {
             subtableAdatpers.addAll(getAllSubtableAdapters(nestedAdapter));
@@ -1221,7 +1221,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                             // Then run cleanup() for any subtable adapters before, we commit this row
                             // (The parent row has IDs referring to subtable rows, so subtable rows must be written
                             // first to ensure that anything querying the parent table can refer to the subtable data.)
-                            for (DataToTableWriterAdapter subtableAdapter : allSubtableAdapters) {
+                            for (AsynchronousDataIngester subtableAdapter : allSubtableAdapters) {
                                 subtableAdapter.cleanup();
                             }
 

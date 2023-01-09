@@ -3,7 +3,7 @@ package io.deephaven.jsoningester;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-public interface DataToTableWriterAdapter {
+public interface AsynchronousDataIngester {
 
     /**
      * Wait for all enqueued messages to finish processing. If additional messages are queued after this function is

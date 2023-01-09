@@ -10,7 +10,7 @@ import java.io.IOException;
  * String messages must be adapted to a TableWriter. The StringToTableWriterAdapter consumes a String message and writes
  * zero or more rows to a TableWriter.
  */
-public interface StringToTableWriterAdapter extends DataToTableWriterAdapter {
+public interface StringToTableWriterAdapter extends AsynchronousDataIngester {
     /**
      * Consume a generic String and write zero or more records to a TableWriter.
      *

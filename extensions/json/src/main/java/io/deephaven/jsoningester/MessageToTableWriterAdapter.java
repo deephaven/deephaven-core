@@ -14,11 +14,11 @@ import java.util.concurrent.TimeoutException;
  * <p>
  * The {@code MessagesToTableWriterAdapter} consumes a message of type {@code M} and writes zero or more rows to a
  * TableWriter. This adapter extracts an appropriate Java data type (e.g. a string or object) from the message, then
- * passes the message content and metadata (e.g. timestamps) to a {@link DataToTableWriterAdapter} to write the message
+ * passes the message content and metadata (e.g. timestamps) to a {@link AsynchronousDataIngester} to write the message
  * data to the TableWriter.
  *
  * <pre>
- *     Subscriber --[message of type 'M']--> MessageToTableWriterAdapter --[String/Object]--> DataToTableWriterAdapter --> TableWriter
+ *     Subscriber --[message of type 'M']--> MessageToTableWriterAdapter --[String/Object]--> AsynchronousDataIngester --> TableWriter
  * </pre>
  *
  * @param <M> Message object type
@@ -74,7 +74,7 @@ public interface MessageToTableWriterAdapter<M> {
     // final String lastCheckpointId);
 
     /**
-     * Shuts down the adapter, including the {@link DataToTableWriterAdapter table writer adapters}.
+     * Shuts down the adapter, including the {@link AsynchronousDataIngester table writer adapters}.
      */
     void shutdown();
 }
