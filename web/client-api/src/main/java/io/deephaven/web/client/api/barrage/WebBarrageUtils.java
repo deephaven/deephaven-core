@@ -105,12 +105,16 @@ public class WebBarrageUtils {
 
             cols[i].setDescription(fieldMetadata.get("description"));
 
-//            cols[i].setHierarchicalStructuralColumn("true".equals(fieldMetadata.get("hierarchicalTable.isStructuralColumn")));
-            cols[i].setHierarchicalExpandByColumn("true".equals(fieldMetadata.get("hierarchicalTable.isExpandByColumn")));
-            cols[i].setHierarchicalRowDepthColumn("true".equals(fieldMetadata.get("hierarchicalTable.isRowDepthColumn")));
-            cols[i].setHierarchicalRowExpandedColumn("true".equals(fieldMetadata.get("hierarchicalTable.isRowExpandedColumn")));
-            cols[i].setRollupAggregatedNodeColumn("true".equals(fieldMetadata.get("rollupTable.isAggregatedNodeColumn")));
-            cols[i].setRollupConstituentNodeColumn("true".equals(fieldMetadata.get("rollupTable.isConstituentNodeColumn")));
+            cols[i].setHierarchicalExpandByColumn(
+                    "true".equals(fieldMetadata.get("hierarchicalTable.isExpandByColumn")));
+            cols[i].setHierarchicalRowDepthColumn(
+                    "true".equals(fieldMetadata.get("hierarchicalTable.isRowDepthColumn")));
+            cols[i].setHierarchicalRowExpandedColumn(
+                    "true".equals(fieldMetadata.get("hierarchicalTable.isRowExpandedColumn")));
+            cols[i].setRollupAggregatedNodeColumn(
+                    "true".equals(fieldMetadata.get("rollupTable.isAggregatedNodeColumn")));
+            cols[i].setRollupConstituentNodeColumn(
+                    "true".equals(fieldMetadata.get("rollupTable.isConstituentNodeColumn")));
             cols[i].setRollupGroupByColumn("true".equals(fieldMetadata.get("rollupTable.isGroupByColumn")));
             cols[i].setRollupAggregationInputColumn(fieldMetadata.get("rollupTable.aggregationInputColumnName"));
 

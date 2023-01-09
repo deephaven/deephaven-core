@@ -791,7 +791,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             requestMessage.setResultTreeTableId(treeTicket);
             requestMessage.setIdentifierColumn(config.idColumn);
             requestMessage.setParentIdentifierColumn(config.parentColumn);
-            // requestMessage.setPromoteOrphansToRoot(config.promoteOrphansToRoot);
+            requestMessage.setPromoteOrphans(config.promoteOrphansToRoot);
 
             workerConnection.hierarchicalTableServiceClient().tree(requestMessage, workerConnection.metadata(),
                     c::apply);

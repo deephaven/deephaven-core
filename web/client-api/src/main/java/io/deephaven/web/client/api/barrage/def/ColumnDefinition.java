@@ -19,7 +19,6 @@ public class ColumnDefinition {
     private boolean isFormatColumn;
     private boolean isNumberFormatColumn;
     private boolean isPartitionColumn;
-//    private boolean isHierarchicalStructuralColumn;
     private boolean isHierarchicalExpandByColumn;
     private boolean isHierarchicalRowDepthColumn;
     private boolean isHierarchicalRowExpandedColumn;
@@ -98,7 +97,8 @@ public class ColumnDefinition {
     }
 
     public boolean isVisible() {
-        return !isStyleColumn() && !isFormatColumn() && !isRollupConstituentNodeColumn() && !isHierarchicalRowDepthColumn() && !isHierarchicalRowExpandedColumn();
+        return !isStyleColumn() && !isFormatColumn() && !isRollupConstituentNodeColumn()
+                && !isHierarchicalRowDepthColumn() && !isHierarchicalRowExpandedColumn();
     }
 
     public boolean isForRow() {
@@ -165,14 +165,6 @@ public class ColumnDefinition {
         return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
                 definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn);
     }
-
-//    public boolean isHierarchicalStructuralColumn() {
-//        return isHierarchicalStructuralColumn;
-//    }
-//
-//    public void setHierarchicalStructuralColumn(boolean hierarchicalStructuralColumn) {
-//        isHierarchicalStructuralColumn = hierarchicalStructuralColumn;
-//    }
 
     public boolean isHierarchicalExpandByColumn() {
         return isHierarchicalExpandByColumn;

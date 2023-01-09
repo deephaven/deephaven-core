@@ -262,7 +262,8 @@ public class JsTreeTable extends HasEventHandling {
     public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
         this.widget = widget;
-        HierarchicalTableDescriptor treeDescriptor = HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
+        HierarchicalTableDescriptor treeDescriptor =
+                HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
 
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
         Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
@@ -272,7 +273,8 @@ public class JsTreeTable extends HasEventHandling {
         Map<Boolean, Map<String, ColumnDefinition>> columnDefsByName = tableDefinition.getColumnsByName();
         int rowFormatColumn = -1;
 
-        // This is handy to avoid certain lookups that we'll only do anyway if this is a rollup. This is naturally always false if this is a tree.
+        // This is handy to avoid certain lookups that we'll only do anyway if this is a rollup. This is naturally
+        // always false if this is a tree.
         boolean hasConstituentColumns = !columnDefsByName.get(true).isEmpty();
 
         Map<String, Column> constituentColumns = new HashMap<>();
@@ -306,8 +308,10 @@ public class JsTreeTable extends HasEventHandling {
                     column.setConstituentType(columnDefsByName.get(true).get(definition.getName()).getType());
                 }
             }
-            if (hasConstituentColumns && definition.getRollupAggregationInputColumn() != null && !definition.getRollupAggregationInputColumn().isEmpty()) {
-                column.setConstituentType(columnDefsByName.get(true).get(definition.getRollupAggregationInputColumn()).getType());
+            if (hasConstituentColumns && definition.getRollupAggregationInputColumn() != null
+                    && !definition.getRollupAggregationInputColumn().isEmpty()) {
+                column.setConstituentType(
+                        columnDefsByName.get(true).get(definition.getRollupAggregationInputColumn()).getType());
             }
         }
         this.rowFormatColumn = rowFormatColumn;
@@ -333,11 +337,10 @@ public class JsTreeTable extends HasEventHandling {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(
                         Column::getName,
-                        Function.identity()
-                ));
+                        Function.identity()));
         // add the rest of the constituent columns as themselves, they will only show up in constituent rows
         sourceColumns.putAll(constituentColumns);
-        //TODO offer those as plain columns too
+        // TODO offer those as plain columns too
 
 
         keyTableData = new Object[keyColumns.length + 2][0];
@@ -348,7 +351,8 @@ public class JsTreeTable extends HasEventHandling {
                     HierarchicalTableSourceExportRequest exportRequest = new HierarchicalTableSourceExportRequest();
                     exportRequest.setResultTableId(newState.getHandle().makeTicket());
                     exportRequest.setHierarchicalTableId(widget.getTicket());
-                    connection.hierarchicalTableServiceClient().exportSource(exportRequest, connection.metadata(), c::apply);
+                    connection.hierarchicalTableServiceClient().exportSource(exportRequest, connection.metadata(),
+                            c::apply);
                 }, "source for hierarchical table")
                 .then(cts -> Promise.resolve(new JsTable(connection, cts))));
     }
@@ -492,7 +496,7 @@ public class JsTreeTable extends HasEventHandling {
                     String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
                             .map(ColumnDefinition::getType)
                             .toArray(String[]::new);
-                    //TODO handle errors
+                    // TODO handle errors
                     doExchange.onData(flightData -> {
                         Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
                         if (message.headerType() == MessageHeader.Schema) {

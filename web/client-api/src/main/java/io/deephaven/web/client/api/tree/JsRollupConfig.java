@@ -60,7 +60,7 @@ public class JsRollupConfig {
         if (source.has("includeOriginalColumns")) {
             includeOriginalColumns = source.getAsAny("includeOriginalColumns").asBoolean();
             if (!includeOriginalColumns) {
-                JsLog.warn("includeDescriptions=false will be ignored");
+                JsLog.warn("includeOriginalColumns=false will be ignored");
             }
         }
         if (source.has("includeDescriptions")) {
@@ -87,7 +87,7 @@ public class JsRollupConfig {
             switch (key) {
                 case JsAggregationOperation.COUNT: {
                     AggregationCount count = new AggregationCount();
-                    count.setColumnName("count");// TODO use this
+                    count.setColumnName(unusedColumnName(tableColumns, "count", "Count", "RollupCount"));
                     agg.setCount(count);
                     break;
                 }
@@ -203,16 +203,40 @@ public class JsRollupConfig {
                 // // TODO support this
                 // }
                 // case JsAggregationOperation.SORTED_LAST: {
-                // // TODO support this=
+                // // TODO support this
                 // }
                 // case JsAggregationOperation.WSUM: {
-                // //TODO support this
+                // // TODO support this
                 // }
-                case JsAggregationOperation.SKIP: {
-                    // TODO mark this as not getting the default applied to it
-                }
             }
         });
         return request;
+    }
+
+    private String unusedColumnName(JsArray<Column> existingColumns, String... suggestedNames) {
+        // Try to use the default column names
+        for (String suggestedName : suggestedNames) {
+            if (!existingColumns.some((p0, p1, p2) -> p0.getName().equals(suggestedName))) {
+                return suggestedName;
+            }
+        }
+
+        // Next add a suffix and use that if possible
+        for (String suggestedName : suggestedNames) {
+            if (!existingColumns.some((p0, p1, p2) -> p0.getName().equals(suggestedName + "_"))) {
+                return suggestedName + "_";
+            }
+        }
+
+        // Give up and add a timestamp suffix
+        for (String suggestedName : suggestedNames) {
+            if (!existingColumns
+                    .some((p0, p1, p2) -> p0.getName().equals(suggestedName + "_" + System.currentTimeMillis()))) {
+                return suggestedName + "_" + System.currentTimeMillis();
+            }
+        }
+
+        // Really give up so Java is happy
+        throw new IllegalStateException("Failed to generate a name");
     }
 }
