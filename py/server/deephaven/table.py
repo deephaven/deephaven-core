@@ -360,13 +360,13 @@ class Table(JObjectWrapper):
         Args:
             trigger_table (Table): the trigger table
             stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
-            initial (bool): Whether to take an initial snapshot upon construction, default is False, meaning the resulting
-                table will remain empty until trigger_table first updates.
-            incremental (bool): Whether the resulting table should be incremental. When True, only the rows of
-                this table that have been added or updated will have the latest "stamp key",  default is False.
-            history (bool): Whether the resulting table should keep history, default is False. A history table appends a full snapshot of
-                this table and the "stamp key" as opposed to updating existing rows. Note: this flag is currently
-                incompatible with initial and incremental.
+            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
+                resulting table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental, default is False. When True, only the
+                rows of this table that have been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. Note: this flag is
+                currently incompatible with initial and incremental.
 
         Returns:
             a new table
@@ -2233,13 +2233,13 @@ class PartitionedTableProxy(JObjectWrapper):
         Args:
             trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
             stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
-            initial (bool): Whether to take an initial snapshot upon construction. When not specified, the resulting
-                table will remain empty until trigger_table first updates.
-            incremental (bool): Whether the resulting table should be incremental. When incremental, only the rows of
-                this table that have been added or updated will have the latest "stamp key".
-            history (bool): Whether the resulting table should keep history. A history table appends a full snapshot of
-                this table and the "stamp key" as opposed to updating existing rows. Note: this flag is currently
-                incompatible with initial and incremental.
+            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
+                resulting table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental, default is False. When True, only the
+                rows of this table that have been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. Note: this flag is
+                currently incompatible with initial and incremental.
 
         Returns:
             a new PartitionedTableProxy
