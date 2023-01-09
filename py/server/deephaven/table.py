@@ -362,8 +362,8 @@ class Table(JObjectWrapper):
             stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
             initial (bool): Whether to take an initial snapshot upon construction, default is False, meaning the resulting
                 table will remain empty until trigger_table first updates.
-            incremental (bool): Whether the resulting table should be incremental. When incremental, only the rows of
-                this table that have been added or updated will have the latest "stamp key".
+            incremental (bool): Whether the resulting table should be incremental. When True, only the rows of
+                this table that have been added or updated will have the latest "stamp key",  default is False.
             history (bool): Whether the resulting table should keep history. A history table appends a full snapshot of
                 this table and the "stamp key" as opposed to updating existing rows. Note: this flag is currently
                 incompatible with initial and incremental.
