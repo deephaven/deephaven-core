@@ -333,7 +333,7 @@ public class FuzzerTest {
                     final QueryTable coalesced = (QueryTable) table.coalesce();
                     addValidator(hardReferences, description, coalesced);
                     return coalesced;
-                });
+                }, true);
                 hardReferences.put(k.toString(), validated);
             }
         });
