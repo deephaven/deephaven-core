@@ -62,24 +62,32 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         for ct, snapshot_ct in zip(self.pt_proxy.target.constituent_tables, snapshot_proxy.target.constituent_tables):
             self.assert_table_equals(ct, snapshot_ct)
 
+    def pt_proxy_refreshing_hack(self):
+        self.test_table = read_csv("tests/data/test_table.csv")
+        # We hack the source table as refreshing to work around
+        # TODO(deephaven-core#3276): PartitionedTable transform on a static table with refreshing results can produce liveness issues
+        self.test_table.j_table.setRefreshing(True)
+        self.test_table = self.test_table.tail(100)
+        self.partitioned_table = self.test_table.partition_by(by=["c"])
+        self.pt_proxy = self.partitioned_table.proxy()
+
     def test_snapshot_when(self):
+        self.pt_proxy_refreshing_hack()
+
         with self.subTest("snapshot_when with a Table"):
-            with ugp.shared_lock():
-                t = time_table("00:00:01")
-                pt_proxy = self.pt_proxy.snapshot_when(t)
-            print(f"self.pt_proxy.is_refreshing={self.pt_proxy.is_refreshing},pt_proxy.is_refreshing={pt_proxy.is_refreshing}")
-            self.assertEqual(6, len(pt_proxy.target.constituent_table_columns))
-            self.wait_ticking_proxy_table_update(pt_proxy, 1, 5)
-            self.assertTrue(all(ct.size > 0 for ct in pt_proxy.target.constituent_tables))
-            self.assertEqual(len(pt_proxy.target.constituent_tables), len(self.pt_proxy.target.constituent_tables))
+            trigger_proxy = time_table("00:00:01")
+            result_proxy = self.pt_proxy.snapshot_when(trigger_proxy)
+            self.assertEqual(6, len(result_proxy.target.constituent_table_columns))
+            self.wait_ticking_proxy_table_update(result_proxy, 1, 5)
+            self.assertTrue(all(ct.size > 0 for ct in result_proxy.target.constituent_tables))
+            self.assertEqual(len(result_proxy.target.constituent_tables), len(self.pt_proxy.target.constituent_tables))
 
         with self.subTest("snapshot_when with another Proxy"):
-            trigger_proxy = time_table("00:00:00.001").update_view(["c = (int)(ii % 1000)"]).partition_by("c").proxy(require_matching_keys=False)
-            snapshot_proxy = self.pt_proxy.snapshot_when(trigger_proxy)
-            self.wait_ticking_proxy_table_update(snapshot_proxy, 1, 5)
-            self.assertTrue(all(ct.size > 0 for ct in self.pt_proxy.target.constituent_tables))
-            self.assertEqual(len(snapshot_proxy.target.constituent_tables),
-                             len(self.pt_proxy.target.constituent_tables))
+            trigger_proxy = time_table("00:00:00.001").update_view(["c = (int)(ii % 1000)"]).partition_by("c", drop_keys=True).proxy()
+            lenient_proxy = self.partitioned_table.proxy(require_matching_keys=False)
+            result_proxy = lenient_proxy.snapshot_when(trigger_proxy)
+            self.wait_ticking_proxy_table_update(result_proxy, 1, 5)
+            self.assertTrue(all(ct.size > 0 for ct in result_proxy.target.constituent_tables))
 
     def test_sort(self):
         sorted_pt_proxy = self.pt_proxy.sort(order_by=["a", "b"],

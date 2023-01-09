@@ -62,7 +62,7 @@ class BaseTestCase(unittest.TestCase):
 
         Args:
             pt (PartitionedTableProxy): the proxy table
-            row_count (int): the target row count of the table
+            row_count (int): the target row count of the constituent tables
             timeout (int): the number of seconds to wait
         """
         end_ns = time.time_ns() + timeout * 10 ** 6
