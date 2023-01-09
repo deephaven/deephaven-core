@@ -112,10 +112,25 @@ public class GrpcUtil {
         }
     }
 
+    /**
+     * Sends one message to the stream, ignoring any errors that may happen during that call.
+     *
+     * @param observer the stream to complete
+     * @param message the message to send on this stream
+     * @param <T> the type of message that the stream handles
+     */
     public static <T> void safelyOnNext(StreamObserver<T> observer, T message) {
         safelyExecuteLocked(observer, () -> observer.onNext(message));
     }
 
+    /**
+     * Sends one message and then completes the stream, ignoring any errors that may happen during these calls. Useful
+     * for unary responses.
+     *
+     * @param observer the stream to complete
+     * @param message the last message to send on this stream before completing
+     * @param <T> the type of message that the stream handles
+     */
     public static <T> void safelyComplete(StreamObserver<T> observer, T message) {
         safelyExecuteLocked(observer, () -> {
             observer.onNext(message);
@@ -123,6 +138,11 @@ public class GrpcUtil {
         });
     }
 
+    /**
+     * Completes the stream, ignoring any errors that may happen during this call.
+     *
+     * @param observer the stream to complete
+     */
     public static void safelyComplete(StreamObserver<?> observer) {
         safelyExecuteLocked(observer, observer::onCompleted);
     }
