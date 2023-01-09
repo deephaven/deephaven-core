@@ -126,11 +126,11 @@ public class ShortCharacterReinterpretedBooleanColumnTupleSource extends Abstrac
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ShortCharByteTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ShortChunk<Values> chunk1 = chunks[0].asShortChunk();
-        CharChunk<Values> chunk2 = chunks[1].asCharChunk();
-        ByteChunk<Values> chunk3 = chunks[2].asByteChunk();
+        ShortChunk<? extends Values> chunk1 = chunks[0].asShortChunk();
+        CharChunk<? extends Values> chunk2 = chunks[1].asCharChunk();
+        ByteChunk<? extends Values> chunk3 = chunks[2].asByteChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ShortCharByteTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

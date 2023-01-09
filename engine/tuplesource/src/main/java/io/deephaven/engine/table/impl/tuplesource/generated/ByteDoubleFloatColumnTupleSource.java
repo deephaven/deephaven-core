@@ -125,11 +125,11 @@ public class ByteDoubleFloatColumnTupleSource extends AbstractTupleSource<ByteDo
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ByteDoubleFloatTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ByteChunk<Values> chunk1 = chunks[0].asByteChunk();
-        DoubleChunk<Values> chunk2 = chunks[1].asDoubleChunk();
-        FloatChunk<Values> chunk3 = chunks[2].asFloatChunk();
+        ByteChunk<? extends Values> chunk1 = chunks[0].asByteChunk();
+        DoubleChunk<? extends Values> chunk2 = chunks[1].asDoubleChunk();
+        FloatChunk<? extends Values> chunk3 = chunks[2].asFloatChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ByteDoubleFloatTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

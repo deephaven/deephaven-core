@@ -30,10 +30,10 @@ import static io.deephaven.engine.util.TableTools.*;
 @Category(OutOfBandTest.class)
 public class TestPartitionBy extends QueryTableTestBase {
 
-    class PartitionedTableNugget implements EvalNuggetInterface {
+    private static class PartitionedTableNugget implements EvalNuggetInterface {
         Table originalTable;
         private final String[] groupByColumns;
-        private final ColumnSource[] groupByColumnSources;
+        private final ColumnSource<?>[] groupByColumnSources;
         PartitionedTable splitTable;
 
         PartitionedTableNugget(Table originalTable, String... groupByColumns) {
@@ -97,7 +97,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         final Random random = new Random(0);
         final int size = 50;
 
-        final ColumnInfo[] columnInfo = new ColumnInfo[3];
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[3];
         columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
                 ColumnInfo.ColAttributes.Immutable);
         columnInfo[1] = new ColumnInfo<>(new IntGenerator(10, 20), "intCol",
@@ -118,26 +118,25 @@ public class TestPartitionBy extends QueryTableTestBase {
     }
 
     public void testErrorPropagation() {
-        try (final ErrorExpectation ee = new ErrorExpectation()) {
-            final QueryTable table =
-                    TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                            col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                    col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
 
             final PartitionedTable byKey = table.partitionBy("Key");
 
             final Table tableA = byKey.constituentFor("A");
             final Table tableB = byKey.constituentFor("B");
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
                 table.notifyListeners(i(8), i(), i());
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 10));
@@ -184,16 +183,16 @@ public class TestPartitionBy extends QueryTableTestBase {
                 subTableManager.manage(tableB);
             }
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
                 table.notifyListeners(i(8), i(), i());
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, wants to make new
@@ -201,8 +200,8 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(9), i(), i());
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -211,8 +210,8 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(), i(8));
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -221,8 +220,8 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(), i(8));
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -231,8 +230,8 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(), i(8));
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -241,8 +240,8 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(), i(8));
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -251,8 +250,8 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(9), i());
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -261,8 +260,8 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(8), i());
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
         }
     }
@@ -278,8 +277,8 @@ public class TestPartitionBy extends QueryTableTestBase {
             final Table tableA = byKey.constituentFor("A");
             final Table tableB = byKey.constituentFor("B");
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             assertNull(byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -287,8 +286,8 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(8), i(), i());
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
             assertNull(byKey.constituentFor("C"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -297,9 +296,9 @@ public class TestPartitionBy extends QueryTableTestBase {
             });
 
             final Table tableC = byKey.constituentFor("C");
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
+            assertTableEquals(tableC, table.where("Key=`C`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move
@@ -308,9 +307,9 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(), i(8));
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
+            assertTableEquals(tableC, table.where("Key=`C`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in new
@@ -318,9 +317,9 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(), i(8));
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
+            assertTableEquals(tableC, table.where("Key=`C`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move
@@ -329,9 +328,9 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(), i(8));
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
+            assertTableEquals(tableC, table.where("Key=`C`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in
@@ -339,27 +338,27 @@ public class TestPartitionBy extends QueryTableTestBase {
                 table.notifyListeners(i(), i(), i(8));
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
+            assertTableEquals(tableC, table.where("Key=`C`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(9)); // Removed row from a new state
                 table.notifyListeners(i(), i(9), i());
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
+            assertTableEquals(tableC, table.where("Key=`C`"));
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(8)); // Removed row from an original state
                 table.notifyListeners(i(), i(8), i());
             });
 
-            assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
-            assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
-            assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
+            assertTableEquals(tableC, table.where("Key=`C`"));
         }
     }
 
@@ -456,7 +455,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         if (refreshing) {
             table.setRefreshing(true);
         }
-        final PartitionedTable pt = table.partitionedAggBy(List.of(), true, testTable(c("USym", "SPY")), "USym");
+        final PartitionedTable pt = table.partitionedAggBy(List.of(), true, testTable(col("USym", "SPY")), "USym");
         final String keyColumnName = pt.keyColumnNames().stream().findFirst().get();
         final String[] keys = (String[]) pt.table().getColumn(keyColumnName).getDirect();
         System.out.println(Arrays.toString(keys));
@@ -475,7 +474,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         final Random random = new Random(seed);
         final int size = 10;
 
-        final ColumnInfo[] columnInfo = new ColumnInfo[3];
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[3];
         columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
                 ColumnInfo.ColAttributes.Immutable);
         columnInfo[1] = new ColumnInfo<>(new IntGenerator(10, 20), "intCol",

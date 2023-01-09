@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.testutil.TstUtils.assertIndexEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
 
 /**
  * Tests for {@link SimpleSourceTable}.
@@ -192,7 +192,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                     throw exception;
                 }
             }
-            assertIndexEquals(expectedRowSet, rowSet);
+            assertRowSetEquals(expectedRowSet, rowSet);
             assertIsSatisfied();
         }
     }

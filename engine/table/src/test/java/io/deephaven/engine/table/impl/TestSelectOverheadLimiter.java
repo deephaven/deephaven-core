@@ -128,7 +128,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         final Random random = new Random(seed);
         final int size = 10;
 
-        final ColumnInfo[] columnInfo = new ColumnInfo[3];
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[3];
         columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
                 ColumnInfo.ColAttributes.Immutable);
         columnInfo[1] = new ColumnInfo<>(new IntGenerator(10, 20), "intCol",

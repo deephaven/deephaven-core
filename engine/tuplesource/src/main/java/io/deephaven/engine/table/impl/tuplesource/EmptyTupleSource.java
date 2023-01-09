@@ -26,7 +26,7 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     INSTANCE;
 
     @Override
-    public List<ColumnSource> getColumnSources() {
+    public List<ColumnSource<?>> getColumnSources() {
         return Collections.emptyList();
     }
 
@@ -46,8 +46,8 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     }
 
     @Override
-    public void exportElement(@NotNull final EmptyTuple tuple, final int elementIndex,
-            @NotNull final WritableColumnSource writableSource, final long destinationIndexKey) {
+    public <ELEMENT_TYPE> void exportElement(@NotNull final EmptyTuple tuple, final int elementIndex,
+            @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
     }
 

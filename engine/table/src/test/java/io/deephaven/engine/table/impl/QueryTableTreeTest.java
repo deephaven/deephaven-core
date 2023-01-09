@@ -160,8 +160,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // System.out.println("ORIGINAL TREED1");
     // dumpRollup(treed1, hierarchicalColumnName);
     //
-    // TstUtils.addToTable(source, i(0, 11), c("Sentinel", 1, 11), c("Parent", NULL_INT, NULL_INT),
-    // c("Extra", "aa", "k"));
+    // TstUtils.addToTable(source, i(0, 11), col("Sentinel", 1, 11), col("Parent", NULL_INT, NULL_INT),
+    // col("Extra", "aa", "k"));
     //
     // final Table treed2 = pool.submit(doTree::get).get();
     //
@@ -239,7 +239,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // final Table treed4 = pool.submit(doTree::get).get();
     //
-    // TstUtils.addToTable(source, i(12), c("Sentinel", 12), c("Parent", 11), c("Extra", "l"));
+    // TstUtils.addToTable(source, i(12), col("Sentinel", 12), col("Parent", 11), col("Extra", "l"));
     //
     // final Table backwards2 =
     // pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
@@ -354,8 +354,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
     //
     // TstUtils.removeRows(source, i(0));
-    // TstUtils.addToTable(source, i(1, 11, 12), c("Sentinel", 2, 11, 12), c("Parent", NULL_INT, NULL_INT, 11),
-    // c("Extra", "bb", "k", "l"));
+    // TstUtils.addToTable(source, i(1, 11, 12), col("Sentinel", 2, 11, 12), col("Parent", NULL_INT, NULL_INT, 11),
+    // col("Extra", "bb", "k", "l"));
     //
     // final Table treed2a = pool.submit(() -> doSortAndTree.apply(source)).get();
     // final Table treed2b = pool.submit(() -> doTree.apply(sorted0)).get();
@@ -635,28 +635,28 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // // modify child to have parent
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(0), c("Sentinel", 0), c("Filter", 1), c("Parent", 1));
+    // TstUtils.addToTable(source, i(0), col("Sentinel", 0), col("Filter", 1), col("Parent", 1));
     // source.notifyListeners(i(), i(), i(0));
     // });
     // Assert.assertEquals(i(0, 1), en[0].originalValue.getRowSet());
     //
     // // modify parent to have grandparent
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(1), c("Sentinel", 1), c("Filter", 0), c("Parent", 2));
+    // TstUtils.addToTable(source, i(1), col("Sentinel", 1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
     //
     // // modify parent's id to orphan child
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(1), c("Sentinel", -1), c("Filter", 0), c("Parent", 2));
+    // TstUtils.addToTable(source, i(1), col("Sentinel", -1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0), en[0].originalValue.getRowSet());
     //
     // // revert parent's id and adopt child
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(1), c("Sentinel", 1), c("Filter", 0), c("Parent", 2));
+    // TstUtils.addToTable(source, i(1), col("Sentinel", 1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
@@ -664,7 +664,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // // remove child, resurrect parent
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
     // TstUtils.removeRows(source, i(0));
-    // TstUtils.addToTable(source, i(3), c("Sentinel", 3), c("Filter", 1), c("Parent", 1));
+    // TstUtils.addToTable(source, i(3), col("Sentinel", 3), col("Filter", 1), col("Parent", 1));
     // source.notifyListeners(i(), i(0), i(3));
     // });
     // Assert.assertEquals(i(1, 2, 3), en[0].originalValue.getRowSet());
@@ -696,7 +696,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     // }
     //
-    // public static class ParentChildGenerator implements TstUtils.Generator<IdParentPair, IdParentPair> {
+    // public static class ParentChildGenerator implements TestDataGenerator<IdParentPair, IdParentPair> {
     // final double rootFraction;
     // final double createAsOrphanFraction;
     //
