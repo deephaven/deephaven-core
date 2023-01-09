@@ -79,7 +79,7 @@ final class ExportStates {
         return unreferenceableTables;
     }
 
-    private Optional<TableSpec> searchunreferenceableTable(ExportsRequest request) {
+    private Optional<TableSpec> searchUnreferenceableTable(ExportsRequest request) {
         final Set<TableSpec> unreferenceableTables = unreferenceableTables();
         final Set<TableSpec> keySet = exports.keySet();
         // Note: this is *not* excluding everything that can be reached via exports.keySet(), it
@@ -88,12 +88,12 @@ final class ExportStates {
                 unreferenceableTables::contains);
     }
 
-    synchronized boolean hasunreferenceableTable(ExportsRequest request) {
-        return searchunreferenceableTable(request).isPresent();
+    synchronized boolean hasUnreferenceableTable(ExportsRequest request) {
+        return searchUnreferenceableTable(request).isPresent();
     }
 
     synchronized List<Export> export(ExportsRequest requests) {
-        ensureNounreferenceableTables(requests);
+        ensureNoUnreferenceableTables(requests);
 
         final Set<TableSpec> oldExports = new HashSet<>(exports.keySet());
 
@@ -171,8 +171,8 @@ final class ExportStates {
         return postOrderNewExcludeOld;
     }
 
-    private void ensureNounreferenceableTables(ExportsRequest requests) {
-        final Optional<TableSpec> unreferenceable = searchunreferenceableTable(requests);
+    private void ensureNoUnreferenceableTables(ExportsRequest requests) {
+        final Optional<TableSpec> unreferenceable = searchUnreferenceableTable(requests);
         if (unreferenceable.isPresent()) {
             // todo: potentially extend engine Table api and Ticket resolver to be able to take an
             // existing export and a list of parent indices to rehydrate an "unreferenceable" table?
