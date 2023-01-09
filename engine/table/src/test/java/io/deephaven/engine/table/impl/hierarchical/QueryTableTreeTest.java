@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -13,6 +13,9 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
@@ -1762,7 +1765,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 .lastBy("hpos", "hid")
                 .where("open")
                 .update("treeid=new io.deephaven.datastructures.util.SmartKey(hid, hpos)",
-                        "parent=io.deephaven.engine.table.impl.QueryTableTreeTest.getPrefix(hid, hpos)");
+                        "parent=io.deephaven.engine.table.impl.hierarchical.QueryTableTreeTest.getPrefix(hid, hpos)");
 
         final Table ordersTree = orders.tree("treeid", "parent");
         final Table ordersFiltered = TreeTableFilter.filterTree(ordersTree, "rand > 0.8");
