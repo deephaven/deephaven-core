@@ -21,17 +21,12 @@ public class JsAggregationOperation {
             STD = "Std",
             FIRST = "First",
             LAST = "Last",
-            UNIQUE = "Unique";
+            UNIQUE = "Unique",
     // Array operation isn't legal in all contexts, just omit it for now
     // ARRAY = "Array",
     // These need some other parameter to function, not supported yet
     // SORTED_FIRST="SortedFirst",
     // SORTED_LAST="SortedLast",
     // WSUM = "WeightedSum";
-
-    @JsProperty(name = "SKIP")
-    public static String getSKIP() {
-        JsLog.warn("SKIP is not supported in deephaven-core");
-        return "Skip";
-    }
+            SKIP = "Skip";
 }
