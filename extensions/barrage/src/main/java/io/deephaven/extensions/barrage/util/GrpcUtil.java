@@ -146,7 +146,7 @@ public class GrpcUtil {
      *
      * @param runner the runnable to execute safely
      */
-    public static void safelyExecuteLocked(final Object lockedObject,
+    private static void safelyExecuteLocked(final Object lockedObject,
             final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
         try {
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -156,6 +156,27 @@ public class GrpcUtil {
         } catch (final Exception err) {
             log.error().append("Unanticipated gRPC Error: ").append(err).endl();
         }
+    }
+
+    public static <T> void safelyOnNext(StreamObserver<T> observer, T message) {
+        safelyExecuteLocked(observer, () -> observer.onNext(message));
+    }
+
+    public static <T> void safelyComplete(StreamObserver<T> observer, T message) {
+        safelyExecuteLocked(observer, () -> {
+            observer.onNext(message);
+            observer.onCompleted();
+        });
+    }
+
+    public static void safelyComplete(StreamObserver<?> observer) {
+        safelyExecuteLocked(observer, observer::onCompleted);
+    }
+
+    public static void safelyError(StreamObserver<?> observer, Throwable error) {
+        safelyExecuteLocked(observer, () -> {
+            observer.onError(error);
+        });
     }
 
     /**

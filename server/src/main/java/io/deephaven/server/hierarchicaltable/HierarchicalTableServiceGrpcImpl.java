@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGrpc.HierarchicalTableServiceImplBase {
 
@@ -84,10 +84,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                 aggregations, includeConstituents, groupByColumns);
 
                         final RollupTable transformedResult = authTransformation.transform(result);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(RollupResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, RollupResponse.getDefaultInstance());
                         return transformedResult;
                     });
         });
@@ -117,10 +114,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                 identifierColumn.name(), parentIdentifierColumn.name());
 
                         final TreeTable transformedResult = authTransformation.transform(result);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(TreeResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, TreeResponse.getDefaultInstance());
                         return transformedResult;
                     });
         });
@@ -202,10 +196,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         }
 
                         final HierarchicalTable<?> transformedResult = authTransformation.transform(result);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(HierarchicalTableApplyResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, HierarchicalTableApplyResponse.getDefaultInstance());
                         return transformedResult;
                     });
         });
@@ -299,10 +290,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         }
 
                         final HierarchicalTableView transformedResult = authTransformation.transform(result);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(HierarchicalTableViewResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, HierarchicalTableViewResponse.getDefaultInstance());
                         return transformedResult;
                     });
         });
@@ -330,10 +318,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Table transformedResult = authTransformation.transform(result);
                         final ExportedTableCreationResponse response =
                                 ExportUtil.buildTableCreationResponse(request.getResultTableId(), transformedResult);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(response);
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, response);
                         return transformedResult;
                     });
         });

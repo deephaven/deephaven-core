@@ -82,13 +82,9 @@ public class BrowserStream<T> implements Closeable {
             public void onCancel() {
                 StatusRuntimeException canceled =
                         GrpcUtil.statusRuntimeException(Code.CANCELLED, "Stream canceled on the server");
-                GrpcUtil.safelyExecute(() -> {
-                    responseObserver.onError(canceled);
-                });
+                GrpcUtil.safelyError(responseObserver, canceled);
 
-                GrpcUtil.safelyExecute(() -> {
-                    requestObserver.onError(canceled);
-                });
+                GrpcUtil.safelyError(requestObserver, canceled);
             }
 
             @Override

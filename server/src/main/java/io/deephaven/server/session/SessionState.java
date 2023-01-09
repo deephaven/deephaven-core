@@ -59,8 +59,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 
 /**
  * SessionState manages all exports for a single session.
@@ -761,6 +761,7 @@ public class SessionState {
                 if (errorId == null) {
                     assignErrorId();
                 }
+                //TODO do we want logs about this?
                 safelyExecute(() -> errorHandler.onError(state, errorId, caughtException, dependentHandle));
             }
 
@@ -1159,7 +1160,7 @@ public class SessionState {
                 isClosed = true;
             }
 
-            safelyExecuteLocked(listener, listener::onCompleted);
+            safelyComplete(listener);
         }
     }
 
