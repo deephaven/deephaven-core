@@ -490,31 +490,30 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
 
     def test_snapshot_when(self):
-        t = empty_table(0).update(
-            formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
-        )
+        t = time_table("00:00:01").update_view(["X = i * i", "Y = i + i"])
         with self.subTest("with defaults"):
             snapshot = self.test_table.snapshot_when(t)
+            self.wait_ticking_table_update(snapshot, row_count=1, timeout=5)
+            self.assertEqual(self.test_table.size, snapshot.size)
             self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
-            self.assertEqual(0, snapshot.size)
 
         with self.subTest("initial=True"):
             snapshot = self.test_table.snapshot_when(t, initial=True)
             self.assertEqual(self.test_table.size, snapshot.size)
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
 
-        with self.subTest("cols=\"X\""):
+        with self.subTest("stamp_cols=\"X\""):
             snapshot = self.test_table.snapshot_when(t, stamp_cols="X")
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
 
-        with self.subTest("cols=[\"X\", \"Y\"]"):
+        with self.subTest("stamp_cols=[\"X\", \"Y\"]"):
             snapshot = self.test_table.snapshot_when(t, stamp_cols=["X", "Y"])
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
     def test_snapshot_when_with_history(self):
-        t = empty_table(1).update(
-            formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
-        )
+        t = time_table("00:00:01")
         snapshot_hist = self.test_table.snapshot_when(t, history=True)
+        self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
 

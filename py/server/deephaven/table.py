@@ -310,7 +310,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(message="failed to create a snapshot.") from e
 
-    def snapshot_when(self, trigger_table: Table, initial: bool = False, incremental: bool = False, history: bool = False, stamp_cols: Union[str, List[str]] = None) -> Table:
+    def snapshot_when(self, trigger_table: Table, stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False, history: bool = False) -> Table:
         """Returns a table that captures a snapshot of this whenever trigger_table updates.
 
         When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
@@ -319,6 +319,7 @@ class Table(JObjectWrapper):
 
         Args:
             trigger_table (Table): the trigger table
+            stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
             initial (bool): Whether to take an initial snapshot upon construction. When not specified, the resulting
                 table will remain empty until trigger_table first updates.
             incremental (bool): Whether the resulting table should be incremental. When incremental, only the rows of
@@ -326,7 +327,6 @@ class Table(JObjectWrapper):
             history (bool): Whether the resulting table should keep history. A history table appends a full snapshot of
                 this table and the "stamp key" as opposed to updating existing rows. Note: this flag is currently
                 incompatible with initial and incremental.
-            stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
 
         Returns:
             a new table
@@ -2112,7 +2112,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
 
-    def snapshot_when(self, trigger_table: Union[Table, PartitionedTableProxy], initial: bool = False, incremental: bool = False, history: bool = False, stamp_cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
+    def snapshot_when(self, trigger_table: Union[Table, PartitionedTableProxy], stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False, history: bool = False) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.snapshot_when` table operation to all constituent tables of the underlying
         partitioned table with the provided trigger table or PartitionedTableProxy, and produces a new
         PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
@@ -2122,6 +2122,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
+            stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
             initial (bool): Whether to take an initial snapshot upon construction. When not specified, the resulting
                 table will remain empty until trigger_table first updates.
             incremental (bool): Whether the resulting table should be incremental. When incremental, only the rows of
@@ -2129,7 +2130,6 @@ class PartitionedTableProxy(JObjectWrapper):
             history (bool): Whether the resulting table should keep history. A history table appends a full snapshot of
                 this table and the "stamp key" as opposed to updating existing rows. Note: this flag is currently
                 incompatible with initial and incremental.
-            stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
 
         Returns:
             a new PartitionedTableProxy

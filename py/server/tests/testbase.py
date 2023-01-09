@@ -10,7 +10,7 @@ import jpy
 from deephaven import DHError
 
 from deephaven.ugp import exclusive_lock
-from deephaven.table import Table
+from deephaven.table import Table, PartitionedTableProxy
 
 from test_helper import py_dh_session
 
@@ -56,6 +56,18 @@ class BaseTestCase(unittest.TestCase):
                 timeout -= time.time_ns() - s_time
 
             self.assertGreaterEqual(table.size, row_count)
+
+    def wait_ticking_proxy_table_update(self, pt: PartitionedTableProxy, row_count: int, timeout: int):
+        """Waits for all constituent tables to grow to the specified size or times out.
+
+        Args:
+            pt (PartitionedTableProxy): the proxy table
+            row_count (int): the target row count of the table
+            timeout (int): the number of seconds to wait
+        """
+        end_ns = time.time_ns() + timeout * 10 ** 6
+        for ct in pt.target.constituent_tables:
+            self.wait_ticking_table_update(ct, row_count, (end_ns - time.time_ns()) // 10 ** 6)
 
     def assert_table_equals(self, table_a: Table, table_b: Table):
         self.assertTrue(table_equals(table_a, table_b))

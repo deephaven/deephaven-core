@@ -1813,7 +1813,7 @@ type SnapshotWhenTableRequest struct {
 	Incremental bool `protobuf:"varint,5,opt,name=incremental,proto3" json:"incremental,omitempty"`
 	// Whether the results should keep history.
 	History bool `protobuf:"varint,6,opt,name=history,proto3" json:"history,omitempty"`
-	// Which columns to stamp from the trigger table. If empty, all columns from the trigger table are stamped.
+	// Which columns to stamp from the trigger table. If empty, all columns from the trigger table are stamped. Allows renaming columns.
 	StampColumns []string `protobuf:"bytes,7,rep,name=stamp_columns,json=stampColumns,proto3" json:"stamp_columns,omitempty"`
 }
 

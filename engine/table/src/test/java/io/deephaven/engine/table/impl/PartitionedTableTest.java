@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.PartitionedTable.Proxy;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -46,6 +47,7 @@ import java.util.stream.LongStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Category(OutOfBandTest.class)
 public class PartitionedTableTest extends RefreshingTableTestCase {
@@ -806,6 +808,24 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             mergedTable.getRowSet().writableCast().removeRange(0, 1);
             ((BaseTable) mergedTable).notifyListeners(i(), ir(0, 1), i());
         });
+    }
+
+    public void testSnapshotWhen() {
+        final Random random = new Random(0);
+        final Table testTable = newTable(
+                getRandomIntCol("a", 100, random),
+                getRandomIntCol("b", 100, random),
+                getRandomIntCol("c", 100, random),
+                getRandomIntCol("d", 100, random),
+                getRandomIntCol("e", 100, random));
+        final PartitionedTable partitionedTable = testTable.partitionBy("c");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+        final Table triggerTable = timeTable("00:00:01");
+        final Proxy ptProxy = selfPtProxy.snapshotWhen(triggerTable);
+        assertThat(ptProxy.target().constituentDefinition().numColumns()).isEqualTo(6);
+        for (Table constituent : ptProxy.target().constituents()) {
+            System.out.println(constituent);
+        }
     }
 
     private EvalNugget newExecutionContextNugget(
