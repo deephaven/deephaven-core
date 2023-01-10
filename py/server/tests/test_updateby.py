@@ -25,10 +25,7 @@ class UpdateByTestCase(BaseTestCase):
 
     def test_ema(self):
         op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
-                                   on_null_time=BadDataBehavior.POISON,
                                    on_nan=BadDataBehavior.RESET,
-                                   on_zero_deltatime=BadDataBehavior.SKIP,
-                                   on_negative_deltatime=BadDataBehavior.SKIP,
                                    big_value_context=MathContext.UNLIMITED)
 
         ema_ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
@@ -88,10 +85,7 @@ class UpdateByTestCase(BaseTestCase):
 
     def test_ema_proxy(self):
         op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
-                                   on_null_time=BadDataBehavior.POISON,
                                    on_nan=BadDataBehavior.RESET,
-                                   on_zero_deltatime=BadDataBehavior.SKIP,
-                                   on_negative_deltatime=BadDataBehavior.SKIP,
                                    big_value_context=MathContext.UNLIMITED)
 
         ema_ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
