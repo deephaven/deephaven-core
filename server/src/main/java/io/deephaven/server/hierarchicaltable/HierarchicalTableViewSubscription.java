@@ -142,8 +142,8 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         columns.set(0, view.getHierarchicalTable().getAvailableColumnDefinitions().size());
         rows = RowSetFactory.empty();
 
-        GrpcUtil.safelyExecuteLocked(listener, () -> listener.onNext(streamGeneratorFactory.getSchemaView(
-                fbb -> HierarchicalTableSchemaUtil.makeSchemaPayload(fbb, view.getHierarchicalTable()))));
+        GrpcUtil.safelyOnNext(listener, streamGeneratorFactory.getSchemaView(
+                fbb -> HierarchicalTableSchemaUtil.makeSchemaPayload(fbb, view.getHierarchicalTable())));
     }
 
     @Override
@@ -270,14 +270,14 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 }
             }
             if (sendError) {
-                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, upstreamFailure));
+                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, upstreamFailure, Code.DATA_LOSS));
                 return;
             }
             try {
                 lastExpandedSize = buildAndSendSnapshot(streamGeneratorFactory, listener, subscriptionOptions, view,
                         this::recordSnapshotNanos, this::recordWriteMetrics, columns, rows, lastExpandedSize);
             } catch (Exception e) {
-                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, e));
+                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, e, Code.DATA_LOSS));
                 state = State.Done;
             }
         }
@@ -352,8 +352,8 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         // Note that we're always specifying "isInitialSnapshot=true". This is to provoke the subscription view to
         // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
         // (2) we're relying on added rows to signal the full expanded size to the client.
-        GrpcUtil.safelyExecuteLocked(listener, () -> listener
-                .onNext(streamGenerator.getSubView(subscriptionOptions, true, rows, false, rows, columns)));
+        GrpcUtil.safelyOnNext(listener,
+                streamGenerator.getSubView(subscriptionOptions, true, rows, false, rows, columns));
 
         // 6. Let the caller know what the expanded size was
         return expandedSize;
