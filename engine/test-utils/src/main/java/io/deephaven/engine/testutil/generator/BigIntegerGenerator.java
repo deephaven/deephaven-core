@@ -1,15 +1,12 @@
 package io.deephaven.engine.testutil.generator;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.testutil.generator.AbstractGenerator;
 
 import java.math.BigInteger;
 import java.util.Random;
-import java.util.TreeMap;
 
 public class BigIntegerGenerator extends AbstractGenerator<BigInteger> {
-    private static final BigInteger DEFAULT_FROM =
-            BigInteger.valueOf(Long.MIN_VALUE).multiply(BigInteger.valueOf(2));
+    private static final BigInteger DEFAULT_FROM = BigInteger.valueOf(Long.MIN_VALUE).multiply(BigInteger.valueOf(2));
     private static final BigInteger DEFAULT_TO = BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(2));
 
     private final BigInteger to, from;
@@ -40,7 +37,7 @@ public class BigIntegerGenerator extends AbstractGenerator<BigInteger> {
     }
 
     @Override
-    public BigInteger nextValue(TreeMap<Long, BigInteger> values, long key, Random random) {
+    public BigInteger nextValue(Random random) {
         if (nullFraction > 0) {
             if (random.nextDouble() < nullFraction) {
                 return null;
@@ -54,8 +51,7 @@ public class BigIntegerGenerator extends AbstractGenerator<BigInteger> {
 
         final BigInteger result = value.add(from);
 
-        Assert.assertion(result.compareTo(from) >= 0, "result.compareTo(from) >= 0", result, "result", from,
-                "from");
+        Assert.assertion(result.compareTo(from) >= 0, "result.compareTo(from) >= 0", result, "result", from, "from");
         Assert.assertion(result.compareTo(to) <= 0, "result.compareTo(to) <= 0", result, "result", to, "to");
 
         return result;

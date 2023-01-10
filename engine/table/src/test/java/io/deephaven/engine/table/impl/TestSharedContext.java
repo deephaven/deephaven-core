@@ -8,7 +8,7 @@ import static io.deephaven.engine.testutil.TstUtils.getTable;
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.generator.Generator;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -86,7 +86,7 @@ public class TestSharedContext {
         final int size = 16 * 1024; // hopefully bigger that twice our chunk size.
         final Random random = new Random(1);
         final int nCols = 4;
-        final Generator[] gs = new Generator[nCols];
+        final TestDataGenerator[] gs = new TestDataGenerator[nCols];
         final String[] cols = new String[nCols];
         final int imin = 1;
         final int imax = 100000;
@@ -124,7 +124,7 @@ public class TestSharedContext {
         final int size = 16 * 1024; // hopefully bigger that twice our chunk size.
         final Random random = new Random(1);
         final int nCols = 4;
-        final Generator[] gs = new Generator[nCols];
+        final TestDataGenerator[] gs = new TestDataGenerator[nCols];
         final String[] cols = new String[nCols];
         final int imin = 1;
         final int imax = 100000;

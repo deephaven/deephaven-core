@@ -71,6 +71,11 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        set(NULL_DOUBLE);
+    }
+
+    @Override
     public final void set(long key, double value) {
         set(value);
     }

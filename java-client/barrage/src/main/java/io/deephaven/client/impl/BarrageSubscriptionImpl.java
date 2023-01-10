@@ -355,7 +355,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!connected) {
             return;
         }
-        GrpcUtil.safelyExecute(observer::onCompleted);
+        GrpcUtil.safelyComplete(observer);
         cleanup();
     }
 

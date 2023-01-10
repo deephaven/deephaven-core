@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static io.deephaven.engine.testutil.TstUtils.c;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.*;
 
@@ -20,9 +19,9 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
 
     private Table genTestTable() {
         return TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
-                c("Sym", "aa", "bb", "cc", "dd"),
-                c("intCol", 10, 20, 40, 60),
-                c("doubleCol", 0.1, 0.2, 0.4, 0.6));
+                col("Sym", "aa", "bb", "cc", "dd"),
+                col("intCol", 10, 20, 40, 60),
+                col("doubleCol", 0.1, 0.2, 0.4, 0.6));
     }
 
     public void testMaybeCopyColumnDescriptions() {

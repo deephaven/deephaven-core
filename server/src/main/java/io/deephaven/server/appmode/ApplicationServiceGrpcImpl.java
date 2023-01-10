@@ -251,8 +251,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
         // must be sync wrt parent
         private void notifyObserverAborted() {
-            GrpcUtil.safelyExecute(
-                    () -> observer.onError(GrpcUtil.statusRuntimeException(Code.ABORTED, "subscription cancelled")));
+            GrpcUtil.safelyError(observer, Code.ABORTED, "subscription cancelled");
         }
     }
 

@@ -1,10 +1,12 @@
 package io.deephaven.engine.testutil.generator;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 
 import java.util.Random;
-import java.util.TreeMap;
 
 public class FloatGenerator extends AbstractGenerator<Float> {
 
@@ -43,12 +45,16 @@ public class FloatGenerator extends AbstractGenerator<Float> {
     }
 
     @Override
-    public Float nextValue(TreeMap<Long, Float> values, long key, Random random) {
+    public Float nextValue(Random random) {
+        return generateFloat(random);
+    }
+
+    private float generateFloat(Random random) {
         if (nullFraction > 0 || nanFraction > 0 || negInfFraction > 0 || posInfFraction > 0) {
             final double frac = random.nextDouble();
 
             if (nullFraction > 0 && frac < nullFraction) {
-                return null;
+                return QueryConstants.NULL_FLOAT;
             }
 
             if (nanFraction > 0 && frac < (nullFraction + nanFraction)) {
@@ -64,6 +70,15 @@ public class FloatGenerator extends AbstractGenerator<Float> {
             }
         }
         return from + (random.nextFloat() * to - from);
+    }
+
+    @Override
+    public FloatChunk<Values> populateChunk(RowSet toAdd, Random random) {
+        final float[] result = new float[toAdd.intSize()];
+        for (int ii = 0; ii < result.length; ++ii) {
+            result[ii] = generateFloat(random);
+        }
+        return FloatChunk.chunkWrap(result);
     }
 
     @Override

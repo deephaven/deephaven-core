@@ -951,8 +951,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
 
                         Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
-                                .forEach(sub -> GrpcUtil.safelyExecuteLocked(sub.listener,
-                                        () -> sub.listener.onError(apiError)));
+                                .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
 
                         activeSubscriptions.clear();
                         pendingSubscriptions.clear();
@@ -1421,9 +1420,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // propagate any error notifying listeners there are no more updates incoming
         if (pendingError != null) {
+            StatusRuntimeException ex = GrpcUtil.securelyWrapError(log, pendingError);
             for (final Subscription subscription : activeSubscriptions) {
                 // TODO (core#801): effective error reporting to api clients
-                GrpcUtil.safelyExecute(() -> subscription.listener.onError(pendingError));
+                GrpcUtil.safelyError(subscription.listener, ex);
             }
         }
 
@@ -1537,7 +1537,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                                 subscription.subscribedColumns));
 
             } catch (final Exception e) {
-                GrpcUtil.safelyExecute(() -> subscription.listener.onError(GrpcUtil.securelyWrapError(log, e)));
+                GrpcUtil.safelyError(subscription.listener, GrpcUtil.securelyWrapError(log, e));
                 removeSubscription(subscription.listener);
             }
         }

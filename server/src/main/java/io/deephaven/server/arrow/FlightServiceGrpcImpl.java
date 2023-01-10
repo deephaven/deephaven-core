@@ -87,12 +87,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
             final AuthenticationRequestHandler.HandshakeResponseListener handshakeResponseListener =
                     (protocol, response) -> {
-                        GrpcUtil.safelyExecute(() -> {
-                            responseObserver.onNext(Flight.HandshakeResponse.newBuilder()
-                                    .setProtocolVersion(protocol)
-                                    .setPayload(ByteStringAccess.wrap(response))
-                                    .build());
-                        });
+                        GrpcUtil.safelyComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
+                                .setProtocolVersion(protocol)
+                                .setPayload(ByteStringAccess.wrap(response))
+                                .build());
                     };
 
             final ByteString payload = value.getPayload();

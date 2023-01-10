@@ -24,17 +24,18 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     public final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
     private static final GenerateTableUpdates.SimulationProfile NO_SHIFT_PROFILE =
-            new GenerateTableUpdates.SimulationProfile();
-    static {
-        NO_SHIFT_PROFILE.SHIFT_10_PERCENT_KEY_SPACE = 0;
-        NO_SHIFT_PROFILE.SHIFT_10_PERCENT_POS_SPACE = 0;
-        NO_SHIFT_PROFILE.SHIFT_AGGRESSIVELY = 0;
-    }
+            new GenerateTableUpdates.SimulationProfile() {
+                {
+                    SHIFT_10_PERCENT_KEY_SPACE = 0;
+                    SHIFT_10_PERCENT_POS_SPACE = 0;
+                    SHIFT_AGGRESSIVELY = 0;
+                }
+            };
 
     public final JoinIncrement leftStep = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                ColumnInfo[] leftColumnInfo, ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
             simulateShiftAwareStep(NO_SHIFT_PROFILE, toString(), leftSize, random, leftTable, leftColumnInfo, en);
         }
@@ -47,7 +48,7 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     public final JoinIncrement leftStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                ColumnInfo[] leftColumnInfo, ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
             simulateShiftAwareStep(toString(), leftSize, random, leftTable, leftColumnInfo, en);
         }
@@ -60,7 +61,7 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     protected final JoinIncrement rightStep = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                ColumnInfo[] leftColumnInfo, ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
             simulateShiftAwareStep(NO_SHIFT_PROFILE, toString(), rightSize, random, rightTable, rightColumnInfo, en);
         }
@@ -73,7 +74,7 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     public final JoinIncrement rightStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                ColumnInfo[] leftColumnInfo, ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
             simulateShiftAwareStep(toString(), rightSize, random, rightTable, rightColumnInfo, en);
         }
@@ -86,7 +87,7 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     public final JoinIncrement leftRightStep = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                ColumnInfo[] leftColumnInfo, ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
             simulateShiftAwareStep(NO_SHIFT_PROFILE, toString(), leftSize, random, leftTable, leftColumnInfo, en);
             simulateShiftAwareStep(NO_SHIFT_PROFILE, toString(), rightSize, random, rightTable, rightColumnInfo, en);
@@ -100,7 +101,7 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     public final JoinIncrement leftRightStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                ColumnInfo[] leftColumnInfo, ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
             simulateShiftAwareStep(toString(), leftSize, random, leftTable, leftColumnInfo, en);
             simulateShiftAwareStep(toString(), rightSize, random, rightTable, rightColumnInfo, en);
@@ -115,7 +116,7 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     public final JoinIncrement leftRightConcurrentStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                ColumnInfo[] leftColumnInfo, ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
@@ -141,12 +142,12 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
 
     public interface JoinIncrement {
         void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
-                ColumnInfo[] leftColumnInfo, ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
+                ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random);
     }
 
     public static class TableComparator implements EvalNuggetInterface {
-        private Table t1, t2;
+        private final Table t1, t2;
         private String t1Name, t2Name;
 
         public TableComparator(Table t1, Table t2) {

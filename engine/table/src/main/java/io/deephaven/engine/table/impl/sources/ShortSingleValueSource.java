@@ -71,6 +71,11 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        set(NULL_SHORT);
+    }
+
+    @Override
     public final void set(long key, short value) {
         set(value);
     }
