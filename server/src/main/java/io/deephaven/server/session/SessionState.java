@@ -764,7 +764,7 @@ public class SessionState {
                 try {
                     errorHandler.onError(state, errorId, caughtException, dependentHandle);
                 } catch (final Exception err) {
-                    log.debug().append("Unexpected error while reporting state failure: ").append(err).endl();
+                    log.error().append("Unexpected error while reporting state failure: ").append(err).endl();
                 }
             }
 
