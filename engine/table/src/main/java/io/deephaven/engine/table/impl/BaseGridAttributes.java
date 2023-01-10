@@ -32,12 +32,12 @@ public abstract class BaseGridAttributes<IFACE_TYPE extends GridAttributes<IFACE
                 GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE, String.join(",", allowedSortingColumns)));
     }
 
-    protected Collection<String> getSortableColumns() {
+    public Set<String> getSortableColumns() {
         final String sortingRestrictions = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
         if (sortingRestrictions == null) {
             return null;
         }
-        return Stream.of(sortingRestrictions.split(",")).collect(Collectors.toList());
+        return Stream.of(sortingRestrictions.split(",")).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     protected void setSortableColumns(@NotNull final Collection<String> allowedSortingColumns) {

@@ -11,6 +11,10 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
+import io.deephaven.engine.table.impl.BaseGridAttributes;
+import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -28,11 +32,13 @@ import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.ops.filter.FilterFactory;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.lang.Object;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName;
@@ -182,11 +188,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Collection<Condition> finishedConditions = request.getFiltersCount() == 0
                                 ? null
                                 : FilterTableGrpcImpl.finishConditions(request.getFiltersList());
-                        final Collection<SortColumn> translatedSorts = request.getSortsCount() == 0
-                                ? null
-                                : request.getSortsList().stream()
-                                        .map(HierarchicalTableServiceGrpcImpl::translateSort)
-                                        .collect(Collectors.toList());
+                        final Collection<SortColumn> translatedSorts =
+                                translateAndValidateSorts(request, (BaseGridAttributes<?, ?>) inputHierarchicalTable);
 
                         final HierarchicalTable<?> result;
                         if (inputHierarchicalTable instanceof RollupTable) {
@@ -196,9 +199,14 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                             final TableDefinition nodeDefinition =
                                     rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated);
                             if (finishedConditions != null) {
-                                rollupTable = rollupTable.withFilters(finishedConditions.stream()
-                                        .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
-                                        .collect(Collectors.toList()));
+                                final Collection<? extends WhereFilter> filters =
+                                        makeWhereFilters(finishedConditions, nodeDefinition);
+                                RollupTableImpl.initializeAndValidateFilters(
+                                        rollupTable.getSource(),
+                                        rollupTable.getGroupByColumns(),
+                                        filters,
+                                        message -> GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, message));
+                                rollupTable = rollupTable.withFilters(filters);
                             }
                             if (translatedSorts != null) {
                                 RollupTable.NodeOperationsRecorder aggregatedSorts =
@@ -217,9 +225,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                             TreeTable treeTable = (TreeTable) inputHierarchicalTable;
                             final TableDefinition nodeDefinition = treeTable.getNodeDefinition();
                             if (finishedConditions != null) {
-                                treeTable = treeTable.withFilters(finishedConditions.stream()
-                                        .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
-                                        .collect(Collectors.toList()));
+                                treeTable = treeTable.withFilters(makeWhereFilters(finishedConditions, nodeDefinition));
                             }
                             if (translatedSorts != null) {
                                 TreeTable.NodeOperationsRecorder treeSorts = treeTable.makeNodeOperationsRecorder();
@@ -245,6 +251,41 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         GrpcErrorHelper.checkHasNoUnknownFields(request);
         Common.validate(request.getResultHierarchicalTableId());
         Common.validate(request.getInputHierarchicalTableId());
+    }
+
+    @NotNull
+    private static List<WhereFilter> makeWhereFilters(
+            @NotNull final Collection<Condition> finishedConditions,
+            @NotNull final TableDefinition nodeDefinition) {
+        return finishedConditions.stream()
+                .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
+                .collect(Collectors.toList());
+    }
+
+    @Nullable
+    private static Collection<SortColumn> translateAndValidateSorts(
+            @NotNull final HierarchicalTableApplyRequest request,
+            @NotNull final BaseGridAttributes<?, ?> inputHierarchicalTable) {
+        if (request.getSortsCount() == 0) {
+            return null;
+        }
+        final Collection<SortColumn> translatedSorts = request.getSortsList().stream()
+                .map(HierarchicalTableServiceGrpcImpl::translateSort)
+                .collect(Collectors.toList());
+        final Set<String> sortableColumnNames = inputHierarchicalTable.getSortableColumns();
+        if (sortableColumnNames != null) {
+            if (sortableColumnNames.isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Sorting is not supported on this hierarchical table");
+            }
+            final String unavailableSortColumnNames = translatedSorts.stream()
+                    .map(sc -> AbsoluteSortColumnConventions.stripAbsoluteColumnName(sc.column().name()))
+                    .filter(scn -> !sortableColumnNames.contains(scn))
+                    .collect(Collectors.joining(", ", "[", "]"));
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Sorting attempted on restricted columns: " + unavailableSortColumnNames);
+        }
+        return translatedSorts;
     }
 
     private static SortColumn translateSort(@NotNull final SortDescriptor sortDescriptor) {

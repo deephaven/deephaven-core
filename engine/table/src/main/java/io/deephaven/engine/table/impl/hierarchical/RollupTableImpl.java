@@ -233,7 +233,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             return noopResult();
         }
 
-        final WhereFilter[] whereFilters = initializeAndValidateFilters(filters);
+        final WhereFilter[] whereFilters = initializeAndValidateFilters(source, groupByColumns, filters,
+                IllegalArgumentException::new);
         final QueryTable filteredBaseLevel = (QueryTable) levelTables[numLevels - 1].where(whereFilters);
         final AggregationRowLookup baseLevelRowLookup = levelRowLookups[numLevels - 1];
         final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
@@ -257,20 +258,33 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 availableColumnDefinitions);
     }
 
-    private WhereFilter[] initializeAndValidateFilters(@NotNull final Collection<? extends Filter> filters) {
+    /**
+     * Initialize and validate the supplied filters for this RollupTable.
+     *
+     * @param source The rollup {@link #getSource() source}
+     * @param groupByColumns The rollup {@link #getGroupByColumns() group-by columns}
+     * @param filters The filters to initialize and validate
+     * @param exceptionFactory A factory for creating exceptions from their messages
+     * @return The initialized and validated filters
+     */
+    public static WhereFilter[] initializeAndValidateFilters(
+            @NotNull final Table source,
+            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final Collection<? extends Filter> filters,
+            @NotNull final Function<String, ? extends RuntimeException> exceptionFactory) {
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
         for (final WhereFilter whereFilter : whereFilters) {
             whereFilter.init(source.getDefinition());
             final List<String> invalidColumnsUsed = whereFilter.getColumns().stream().map(ColumnName::of)
                     .filter(cn -> !groupByColumns.contains(cn)).map(ColumnName::name).collect(Collectors.toList());
             if (!invalidColumnsUsed.isEmpty()) {
-                throw new IllegalArgumentException(
+                throw exceptionFactory.apply(
                         "Invalid filter found: " + whereFilter + " may only use group-by columns, which are "
                                 + names(groupByColumns) + ", but has also used " + invalidColumnsUsed);
             }
             final boolean usesArrays = !whereFilter.getColumnArrays().isEmpty();
             if (usesArrays) {
-                throw new IllegalArgumentException("Invalid filter found: " + whereFilter
+                throw exceptionFactory.apply("Invalid filter found: " + whereFilter
                         + " may not use column arrays, but uses column arrays from " + whereFilter.getColumnArrays());
             }
         }
