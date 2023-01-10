@@ -31,13 +31,13 @@ _ARROW_DH_DATA_TYPE_MAPPING = {
     pa.time32('s'): '',
     pa.time32('ms'): '',
     pa.time64('us'): '',
-    pa.time64('ns'): 'io.deephaven.time.DateTime',
-    pa.timestamp('s', tz=None): '',
-    pa.timestamp('ms', tz=None): '',
-    pa.timestamp('us', tz=None): '',
-    pa.timestamp('ns', tz=None): '',
-    pa.date32(): 'java.time.LocalDate',
-    pa.date64(): 'java.time.LocalDate',
+    pa.time64('ns'): '',
+    pa.timestamp('s'): '',
+    pa.timestamp('ms'): '',
+    pa.timestamp('us'): '',
+    pa.timestamp('ns'): 'io.deephaven.time.DateTime',
+    pa.date32(): '',
+    pa.date64(): '',
     pa.duration('s'): '',
     pa.duration('ms'): '',
     pa.duration('us'): '',
@@ -65,7 +65,7 @@ def _map_arrow_type(arrow_type) -> Dict[str, str]:
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
     if not dh_type:
         # if this is a case of timestamp with tz specified
-        if isinstance(arrow_type, pa.TimestampType) and arrow_type.tz:
+        if isinstance(arrow_type, pa.TimestampType):
             dh_type = "io.deephaven.time.DateTime"
 
     if not dh_type:

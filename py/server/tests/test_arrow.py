@@ -41,13 +41,15 @@ class ArrowTestCase(BaseTestCase):
     def tearDownClass(cls) -> None:
         del cls.test_table
 
-    def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any]):
+    def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any], cast_for_round_trip: bool = False):
         fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]
         schema = pa.schema(fields)
         pa_table = pa.table(pa_data, schema=schema)
         dh_table = dharrow.to_table(pa_table)
         arrow_table = dharrow.to_arrow(dh_table)
         self.assertEqual(dh_table.size, 2)
+        if cast_for_round_trip:
+            pa_table = pa_table.cast(arrow_table.schema)
         self.assertTrue(pa_table.equals(arrow_table))
 
     def test_arrow_types_bool(self):
@@ -75,6 +77,19 @@ class ArrowTestCase(BaseTestCase):
             ]
             self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
+    def test_arrow_types_timestamp(self):
+        pa_types = [
+            pa.timestamp('ns'),
+            pa.timestamp('ns', tz='MST'),
+        ]
+        pa_data = [
+            pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
+                      pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
+            pa.array([pd.Timestamp('2017-01-01T2:01:01', tz='UTC'),
+                      pd.Timestamp('2017-01-01T1:01:01', tz='Europe/Paris')]),
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data, cast_for_round_trip=True)
+
     @unittest.skip("Not correctly widened")
     def test_arrow_types_unsigned_integers(self):
         with self.subTest("unsigned integers"):
@@ -85,12 +100,12 @@ class ArrowTestCase(BaseTestCase):
                 pa.array([2 ** 16 - 1, 0]),
             ]
 
-    @unittest.skip("Not correctly converted by DH")
+    @unittest.skip("Not correctly converted by DH, marked as unsupported now.")
     def test_arrow_types_time(self):
         pa_types = [
             pa.time64('ns'),
             pa.date32(),
-            pa.timestamp('ns', tz='Europe/Paris'),
+            pa.timestamp('ns', tz='MST'),
         ]
 
         pa_data = [
