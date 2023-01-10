@@ -1966,31 +1966,60 @@ public class BatchTableRequest {
                 }
 
                 @JsProperty
-                Object getLeftId();
-
-                @JsProperty
                 Object getResultId();
 
                 @JsProperty
-                Object getRightId();
-
-                @JsProperty
-                JsArray<String> getStampColumnsList();
-
-                @JsProperty
-                boolean isDoInitialSnapshot();
-
-                @JsProperty
-                void setDoInitialSnapshot(boolean doInitialSnapshot);
-
-                @JsProperty
-                void setLeftId(Object leftId);
+                Object getSourceId();
 
                 @JsProperty
                 void setResultId(Object resultId);
 
                 @JsProperty
-                void setRightId(Object rightId);
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface SnapshotWhenFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotWhenFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getBaseId();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                JsArray<String> getStampColumnsList();
+
+                @JsProperty
+                Object getTriggerId();
+
+                @JsProperty
+                boolean isHistory();
+
+                @JsProperty
+                boolean isIncremental();
+
+                @JsProperty
+                boolean isInitial();
+
+                @JsProperty
+                void setBaseId(Object baseId);
+
+                @JsProperty
+                void setHistory(boolean history);
+
+                @JsProperty
+                void setIncremental(boolean incremental);
+
+                @JsProperty
+                void setInitial(boolean initial);
+
+                @JsProperty
+                void setResultId(Object resultId);
 
                 @JsProperty
                 void setStampColumnsList(JsArray<String> stampColumnsList);
@@ -1999,6 +2028,9 @@ public class BatchTableRequest {
                 default void setStampColumnsList(String[] stampColumnsList) {
                     setStampColumnsList(Js.<JsArray<String>>uncheckedCast(stampColumnsList));
                 }
+
+                @JsProperty
+                void setTriggerId(Object triggerId);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2308,6 +2340,9 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotFieldType getSnapshot();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotWhenFieldType getSnapshotWhen();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType getSort();
 
             @JsProperty
@@ -2426,6 +2461,10 @@ public class BatchTableRequest {
             @JsProperty
             void setSnapshot(
                     BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotFieldType snapshot);
+
+            @JsProperty
+            void setSnapshotWhen(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotWhenFieldType snapshotWhen);
 
             @JsProperty
             void setSort(BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType sort);
@@ -4429,31 +4468,60 @@ public class BatchTableRequest {
                 }
 
                 @JsProperty
-                Object getLeftId();
-
-                @JsProperty
                 Object getResultId();
 
                 @JsProperty
-                Object getRightId();
-
-                @JsProperty
-                JsArray<String> getStampColumnsList();
-
-                @JsProperty
-                boolean isDoInitialSnapshot();
-
-                @JsProperty
-                void setDoInitialSnapshot(boolean doInitialSnapshot);
-
-                @JsProperty
-                void setLeftId(Object leftId);
+                Object getSourceId();
 
                 @JsProperty
                 void setResultId(Object resultId);
 
                 @JsProperty
-                void setRightId(Object rightId);
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface SnapshotWhenFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotWhenFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getBaseId();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                JsArray<String> getStampColumnsList();
+
+                @JsProperty
+                Object getTriggerId();
+
+                @JsProperty
+                boolean isHistory();
+
+                @JsProperty
+                boolean isIncremental();
+
+                @JsProperty
+                boolean isInitial();
+
+                @JsProperty
+                void setBaseId(Object baseId);
+
+                @JsProperty
+                void setHistory(boolean history);
+
+                @JsProperty
+                void setIncremental(boolean incremental);
+
+                @JsProperty
+                void setInitial(boolean initial);
+
+                @JsProperty
+                void setResultId(Object resultId);
 
                 @JsProperty
                 void setStampColumnsList(JsArray<String> stampColumnsList);
@@ -4462,6 +4530,9 @@ public class BatchTableRequest {
                 default void setStampColumnsList(String[] stampColumnsList) {
                     setStampColumnsList(Js.<JsArray<String>>uncheckedCast(stampColumnsList));
                 }
+
+                @JsProperty
+                void setTriggerId(Object triggerId);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -4771,6 +4842,9 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotFieldType getSnapshot();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotWhenFieldType getSnapshotWhen();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType getSort();
 
             @JsProperty
@@ -4889,6 +4963,10 @@ public class BatchTableRequest {
             @JsProperty
             void setSnapshot(
                     BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotFieldType snapshot);
+
+            @JsProperty
+            void setSnapshotWhen(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotWhenFieldType snapshotWhen);
 
             @JsProperty
             void setSort(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType sort);
