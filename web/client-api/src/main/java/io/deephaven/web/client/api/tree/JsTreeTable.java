@@ -431,6 +431,9 @@ public class JsTreeTable extends HasEventHandling {
                 }
                 connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
                 return null;// TODO actually handle error from this properly
+            }, error -> {
+                c.apply(error, null);
+                return null;
             });
         }).then(ignore -> Promise.resolve(ticket));
         return viewTicket;
@@ -496,7 +499,14 @@ public class JsTreeTable extends HasEventHandling {
                     String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
                             .map(ColumnDefinition::getType)
                             .toArray(String[]::new);
-                    // TODO handle errors
+                    doExchange.onStatus(status -> {
+                        if (!status.isOk()) {
+                            failureHandled(status.getDetails());
+                        }
+                    });
+                    doExchange.onEnd(status -> {
+                        stream = null;
+                    });
                     doExchange.onData(flightData -> {
                         Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
                         if (message.headerType() == MessageHeader.Schema) {
