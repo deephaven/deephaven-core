@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -79,19 +80,22 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
             context.isDirty = true;
         } else {
             // determine which operators are affected by this update
-            TIntArrayList dirtyOperatorList = new TIntArrayList(operators.length);
-            TIntHashSet inputSourcesSet = new TIntHashSet(getUniqueSourceIndices().length);
+            BitSet dirtyOperators = new BitSet();
+            BitSet dirtySourceIndices = new BitSet();
+
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 UpdateByOperator op = operators[opIdx];
                 if (upstream.modifiedColumnSet().nonempty() && (op.getInputModifiedColumnSet() == null
                         || upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()))) {
-                    dirtyOperatorList.add(opIdx);
-                    inputSourcesSet.addAll(operatorInputSourceSlots[opIdx]);
-                    context.isDirty = true;
+                    dirtyOperators.set(opIdx);
+                    Arrays.stream(operatorInputSourceSlots[opIdx]).forEach(srcIdx ->
+                            dirtySourceIndices.set(srcIdx)
+                    );
                 }
             }
-            context.dirtyOperatorIndices = dirtyOperatorList.toArray();
-            context.dirtySourceIndices = inputSourcesSet.toArray();
+            context.isDirty = !dirtyOperators.isEmpty();
+            context.dirtyOperatorIndices = dirtyOperators.stream().toArray();
+            context.dirtySourceIndices = dirtySourceIndices.stream().toArray();
         }
 
         if (!context.isDirty) {
