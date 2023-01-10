@@ -60,7 +60,7 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
     }
 
     RollupNodeOperationsRecorder withOperations(@NotNull final RollupNodeOperationsRecorder other) {
-        if (!definition.equals(other.definition) || nodeType != other.nodeType) {
+        if (!getResultDefinition().equals(other.definition) || nodeType != other.nodeType) {
             throw new IllegalArgumentException(
                     "Incompatible operation recorders; compatible recorders must be created from the same table, with the same node type");
         }
