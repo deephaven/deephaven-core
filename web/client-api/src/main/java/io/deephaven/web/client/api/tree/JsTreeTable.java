@@ -39,7 +39,6 @@ import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.subscription.ViewportRow;
 import io.deephaven.web.client.api.tree.JsTreeTable.TreeViewportData.TreeRow;
-import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
@@ -80,12 +79,9 @@ public class JsTreeTable extends HasEventHandling {
             EVENT_RECONNECT = "reconnect",
             EVENT_RECONNECTFAILED = "reconnectfailed";
 
-    private static final String TABLE_AGGREGATION_COLUMN_PREFIX = "Rollup_";
-
-    private static final String[] TABLE_AGGREGATIONS = new String[] {JsAggregationOperation.COUNT};
-    public static final double ACTION_EXPAND = 0b001;
-    public static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
-    public static final double ACTION_COLLAPSE = 0b100;
+    private static final double ACTION_EXPAND = 0b001;
+    private static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
+    private static final double ACTION_COLLAPSE = 0b100;
 
     /**
      * Pair of ticket and the promise that indicates it has been resolved. Tickets are
