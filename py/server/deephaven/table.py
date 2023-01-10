@@ -372,7 +372,7 @@ class Table(JObjectWrapper):
                 resulting table will remain empty until trigger_table first updates.
             incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
                 rows of this table will have the latest "stamp key". When True, only the rows of this table that have
-                been added or updated will have the latest "stamp key"; when False.
+                been added or updated will have the latest "stamp key".
             history (bool): Whether the resulting table should keep history, default is False. A history table appends a
                 full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
                 is currently incompatible with initial and incremental: when history is True, incremental and initial
@@ -2248,7 +2248,7 @@ class PartitionedTableProxy(JObjectWrapper):
                 resulting table will remain empty until trigger_table first updates.
             incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
                 rows of this table will have the latest "stamp key". When True, only the rows of this table that have
-                been added or updated will have the latest "stamp key"; when False.
+                been added or updated will have the latest "stamp key".
             history (bool): Whether the resulting table should keep history, default is False. A history table appends a
                 full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
                 is currently incompatible with initial and incremental: when history is True, incremental and initial
