@@ -62,18 +62,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         for ct, snapshot_ct in zip(self.pt_proxy.target.constituent_tables, snapshot_proxy.target.constituent_tables):
             self.assert_table_equals(ct, snapshot_ct)
 
-    def pt_proxy_refreshing_hack(self):
-        self.test_table = read_csv("tests/data/test_table.csv")
-        # We hack the source table as refreshing to work around
-        # TODO(deephaven-core#3276): PartitionedTable transform on a static table with refreshing results can produce liveness issues
-        self.test_table.j_table.setRefreshing(True)
-        self.test_table = self.test_table.tail(100)
-        self.partitioned_table = self.test_table.partition_by(by=["c"])
-        self.pt_proxy = self.partitioned_table.proxy()
-
     def test_snapshot_when(self):
-        self.pt_proxy_refreshing_hack()
-
         with self.subTest("snapshot_when with a Table"):
             trigger_proxy = time_table("00:00:01")
             result_proxy = self.pt_proxy.snapshot_when(trigger_proxy)
