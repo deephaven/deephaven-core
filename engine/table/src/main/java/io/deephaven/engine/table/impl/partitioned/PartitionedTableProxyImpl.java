@@ -152,7 +152,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     private PartitionedTable.Proxy basicTransform(
             final boolean requiresFullContext, @NotNull final UnaryOperator<Table> transformer) {
         return new PartitionedTableProxyImpl(
-                target.transform(getOrCreateExecutionContext(requiresFullContext), transformer),
+                target.transform(
+                        getOrCreateExecutionContext(requiresFullContext),
+                        transformer,
+                        target.table().isRefreshing()),
                 requireMatchingKeys,
                 sanityCheckJoins);
     }
@@ -172,17 +175,19 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final ExecutionContext context = getOrCreateExecutionContext(requiresFullContext);
         if (other instanceof Table) {
             final Table otherTable = (Table) other;
-            if ((target.table().isRefreshing() || otherTable.isRefreshing()) && joinMatches != null) {
+            final boolean refreshingResults = target.table().isRefreshing() || otherTable.isRefreshing();
+            if (refreshingResults && joinMatches != null) {
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
             }
             return new PartitionedTableProxyImpl(
-                    target.transform(context, ct -> transformer.apply(ct, otherTable)),
+                    target.transform(context, ct -> transformer.apply(ct, otherTable), refreshingResults),
                     requireMatchingKeys,
                     sanityCheckJoins);
         }
         if (other instanceof PartitionedTable.Proxy) {
             final PartitionedTable.Proxy otherProxy = (PartitionedTable.Proxy) other;
             final PartitionedTable otherTarget = otherProxy.target();
+            final boolean refreshingResults = target.table().isRefreshing() || otherTarget.table().isRefreshing();
 
             if (target.table().isRefreshing() || otherTarget.table().isRefreshing()) {
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
@@ -205,7 +210,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final PartitionedTable rhsToUse = maybeRewrap(validatedRhsTable, otherTarget);
 
             return new PartitionedTableProxyImpl(
-                    lhsToUse.partitionedTransform(rhsToUse, context, transformer),
+                    lhsToUse.partitionedTransform(rhsToUse, context, transformer, refreshingResults),
                     requireMatchingKeys,
                     sanityCheckJoins);
         }
@@ -352,8 +357,11 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         // NB: At the moment, we are assuming that constituents appear only once per partitioned table in scenarios
         // where overlapping join keys are concerning.
         final AtomicLong sequenceCounter = new AtomicLong(0);
-        final PartitionedTable stamped = input.transform(null, table -> table
-                .updateView(new LongConstantColumn(ENCLOSING_CONSTITUENT.name(), sequenceCounter.getAndIncrement())));
+        final PartitionedTable stamped = input.transform(
+                null,
+                table -> table.updateView(
+                        new LongConstantColumn(ENCLOSING_CONSTITUENT.name(), sequenceCounter.getAndIncrement())),
+                input.table().isRefreshing());
         final Table merged = stamped.merge();
         final Table mergedWithUniqueAgg = merged.aggAllBy(AggSpec.unique(), joinKeyColumnNames);
         final Table overlappingJoinKeys = mergedWithUniqueAgg.where(Filter.isNull(ENCLOSING_CONSTITUENT));

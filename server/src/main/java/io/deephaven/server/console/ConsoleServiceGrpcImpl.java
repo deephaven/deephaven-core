@@ -38,8 +38,8 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.Map;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
 
 @Singleton
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
@@ -110,12 +110,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .submit(() -> {
                         final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
 
-                        safelyExecute(() -> {
-                            responseObserver.onNext(StartConsoleResponse.newBuilder()
-                                    .setResultId(request.getResultId())
-                                    .build());
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, StartConsoleResponse.newBuilder()
+                                .setResultId(request.getResultId())
+                                .build());
 
                         return scriptSession;
                     });
@@ -257,12 +254,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
             if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
                 PyObject[] settings = new PyObject[1];
-                safelyExecute(() -> {
+                try {
                     final ScriptSession scriptSession = scriptSessionProvider.get();
                     scriptSession.evaluateScript(
                             "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
                     settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
-                });
+                } catch (Exception err) {
+                    log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
+                }
                 boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
                 log.info().append(canJedi ? "Using jedi for python autocomplete"
                         : "No jedi dependency available in python environment; disabling autocomplete.").endl();
@@ -284,13 +283,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         public void onNext(AutoCompleteRequest value) {
             // This implementation only responds to autocomplete requests with "success, nothing found"
             if (value.getRequestCase() == AutoCompleteRequest.RequestCase.GET_COMPLETION_ITEMS) {
-                safelyExecuteLocked(responseObserver, () -> {
-                    responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                            .setCompletionItems(
-                                    GetCompletionItemsResponse.newBuilder().setSuccess(true)
-                                            .setRequestId(value.getGetCompletionItems().getRequestId()))
-                            .build());
-                });
+                safelyOnNext(responseObserver, AutoCompleteResponse.newBuilder()
+                        .setCompletionItems(
+                                GetCompletionItemsResponse.newBuilder().setSuccess(true)
+                                        .setRequestId(value.getGetCompletionItems().getRequestId()))
+                        .build());
             }
         }
 
@@ -302,7 +299,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         @Override
         public void onCompleted() {
             // just hang up too, browser will reconnect if interested
-            safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
+            safelyComplete(responseObserver);
         }
     }
 

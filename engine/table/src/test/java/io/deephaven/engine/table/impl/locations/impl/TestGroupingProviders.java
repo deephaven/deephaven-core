@@ -80,7 +80,7 @@ public class TestGroupingProviders {
         final Table raw = TableTools.emptyTable(26 * 10 * 1000).update("Part=String.format(`%04d`, (long)(ii/1000))",
                 "Sym=(char)('A' + ii % 26)", "Other=ii");
         final Table[] partitions = raw.partitionBy("Part")
-                .transform(null, rp -> rp.groupBy("Sym").ungroup())
+                .transform(null, rp -> rp.groupBy("Sym").ungroup(), false)
                 .constituents();
 
         if (!missingGroups) {

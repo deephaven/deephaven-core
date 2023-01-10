@@ -264,7 +264,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                     protected Table e() {
                         return partitionedTable
                                 .transform(executionContext,
-                                        t -> t.update("K2=Key * 2").update("K3=Key + K2").update("K5 = K3 + K2"))
+                                        t -> t.update("K2=Key * 2").update("K3=Key + K2").update("K5 = K3 + K2"), true)
                                 .merge().sort("Key");
                     }
                 },
@@ -273,7 +273,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                     protected Table e() {
                         return partitionedTable
                                 .partitionedTransform(partitionedTable, executionContext,
-                                        (l, r) -> l.naturalJoin(r.lastBy("Key"), "Key", "Sentinel2=Sentinel"))
+                                        (l, r) -> l.naturalJoin(r.lastBy("Key"), "Key", "Sentinel2=Sentinel"), true)
                                 .merge().sort("Key");
                     }
                 }
@@ -473,7 +473,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 .build();
         final PartitionedTable result2 =
                 sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
-                        .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
+                        .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"), true);
 
         // pauseHelper.pause();
         pauseHelper2.pause();
@@ -559,7 +559,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 .captureQueryCompiler()
                 .build();
         final PartitionedTable result2 = sourceTable2.partitionBy("USym2")
-                .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
+                .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"), true);
 
         final PartitionedTable joined = result.partitionedTransform(result2, (l, r) -> {
             System.out.println("Doing naturalJoin");
@@ -909,7 +909,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 }
             });
             return tableOut;
-        });
+        }, true);
 
         final PartitionedTable filtered = PartitionedTableFactory.of(transformed.table().whereIn(filter, "First=Only"),
                 transformed.keyColumnNames(), transformed.uniqueKeys(), transformed.constituentColumnName(),
@@ -917,7 +917,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         // If we (incorrectly) deliver PT notifications ahead of constituent notifications, we will cause a
         // notification-on-instantiation-step error for this update.
         final PartitionedTable filteredTransformed = filtered.transform(executionContext,
-                t -> t.update("Third=22.2*Second"));
+                t -> t.update("Third=22.2*Second"), true);
 
         TestCase.assertEquals(1, filteredTransformed.table().size());
 
@@ -931,5 +931,43 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         }
 
         TestCase.assertEquals(2, filteredTransformed.table().size());
+    }
+
+    public void testTransformStaticToRefreshing() {
+        final Random random = new Random(0);
+        final Table staticInput = newTable(
+                getRandomIntCol("a", 100, random),
+                getRandomIntCol("b", 100, random),
+                getRandomIntCol("c", 100, random),
+                getRandomIntCol("d", 100, random),
+                getRandomIntCol("e", 100, random));
+        final Table refreshingInput = staticInput.withAttributes(Map.of("refreshingClone", true));
+        refreshingInput.setRefreshing(true);
+
+        final PartitionedTable partitionedTable = staticInput.partitionBy("c");
+        assertFalse(partitionedTable.table().isRefreshing());
+
+        final PartitionedTable.Proxy staticProxy = partitionedTable.proxy();
+
+        final PartitionedTable.Proxy joinedProxy = staticProxy.join(refreshingInput, "c", "c2=c");
+        assertTrue(joinedProxy.target().table().isRefreshing());
+        assertEquals(staticProxy.target().constituents().length, joinedProxy.target().constituents().length);
+
+        final PartitionedTable partitionedTransformResult = partitionedTable.partitionedTransform(partitionedTable,
+                null, (t, u) -> t.join(refreshingInput, "c", "c2=c"), true);
+        assertTrue(partitionedTransformResult.table().isRefreshing());
+        assertEquals(partitionedTable.constituents().length, partitionedTransformResult.constituents().length);
+
+        try {
+            partitionedTable.transform(t -> t.join(refreshingInput, "c", "c2=c"));
+            TestCase.fail("Expected exception");
+        } catch (IllegalStateException expected) {
+        }
+
+        try {
+            partitionedTable.partitionedTransform(partitionedTable, (t, u) -> t.join(refreshingInput, "c", "c2=c"));
+            TestCase.fail("Expected exception");
+        } catch (IllegalStateException expected) {
+        }
     }
 }

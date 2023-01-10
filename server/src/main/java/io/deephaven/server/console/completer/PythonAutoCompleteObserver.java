@@ -19,7 +19,8 @@ import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
 
 /**
  * Autocomplete handling for python that will use the jedi library, if it is installed.
@@ -107,12 +108,12 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
             if (!canJedi) {
                 log.trace().append("Ignoring completion request because jedi is disabled").endl();
                 // send back an empty, failed response...
-                safelyExecuteLocked(responseObserver,
-                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                safelyOnNext(responseObserver,
+                        AutoCompleteResponse.newBuilder()
                                 .setCompletionItems(GetCompletionItemsResponse.newBuilder()
                                         .setSuccess(false)
                                         .setRequestId(request.getRequestId()))
-                                .build()));
+                                .build());
                 return;
             }
             final VersionedTextDocumentIdentifier doc = request.getTextDocument();
@@ -171,10 +172,10 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                     .build();
 
             try {
-                safelyExecuteLocked(responseObserver,
-                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                safelyOnNext(responseObserver,
+                        AutoCompleteResponse.newBuilder()
                                 .setCompletionItems(builtItems)
-                                .build()));
+                                .build());
             } finally {
                 // let's track how long completions take, as it's known that some
                 // modules like numpy can cause slow completion, and we'll want to know what was causing them
@@ -202,12 +203,12 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
             } else {
                 log.error().append("Exception occurred during autocomplete").append(exception).endl();
             }
-            safelyExecuteLocked(responseObserver,
-                    () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+            safelyOnNext(responseObserver,
+                    AutoCompleteResponse.newBuilder()
                             .setCompletionItems(GetCompletionItemsResponse.newBuilder()
                                     .setSuccess(false)
                                     .setRequestId(request.getRequestId()))
-                            .build()));
+                            .build());
             if (exception instanceof Error) {
                 throw exception;
             }
@@ -232,6 +233,6 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
     @Override
     public void onCompleted() {
         // just hang up too, browser will reconnect if interested
-        safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
+        safelyComplete(responseObserver);
     }
 }
