@@ -343,7 +343,14 @@ class Table(JObjectWrapper):
         return Table(j_table=self.j_table.coalesce())
 
     def snapshot(self) -> Table:
-        """Returns a static snapshot table."""
+        """Returns a static snapshot table.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
         try:
             with auto_locking_ctx(self):
                 return Table(j_table=self.j_table.snapshot())
@@ -351,22 +358,25 @@ class Table(JObjectWrapper):
             raise DHError(message="failed to create a snapshot.") from e
 
     def snapshot_when(self, trigger_table: Table, stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False, history: bool = False) -> Table:
-        """Returns a table that captures a snapshot of this whenever trigger_table updates.
+        """Returns a table that captures a snapshot of this table whenever trigger_table updates.
 
         When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
-        table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If {@code trigger}
-        is empty, the "stamp key" will be represented by {@code null} values.
+        table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If trigger_table is
+        empty, the "stamp key" will be represented by NULL values.
 
         Args:
             trigger_table (Table): the trigger table
-            stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
+            stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be
+                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
-            incremental (bool): Whether the resulting table should be incremental, default is False. When True, only the
-                rows of this table that have been added or updated will have the latest "stamp key".
+            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
+                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
+                been added or updated will have the latest "stamp key"; when False.
             history (bool): Whether the resulting table should keep history, default is False. A history table appends a
-                full snapshot of this table and the "stamp key" as opposed to updating existing rows. Note: this flag is
-                currently incompatible with initial and incremental.
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
+                is currently incompatible with initial and incremental: when history is True, incremental and initial
+                must be False.
 
         Returns:
             a new table
@@ -2232,15 +2242,17 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
-            stamp_cols (Union[str, Sequence[str]): The stamp columns, may be renames.
+            stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be
+                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
-            incremental (bool): Whether the resulting table should be incremental, default is False. When True, only the
-                rows of this table that have been added or updated will have the latest "stamp key".
+            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
+                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
+                been added or updated will have the latest "stamp key"; when False.
             history (bool): Whether the resulting table should keep history, default is False. A history table appends a
-                full snapshot of this table and the "stamp key" as opposed to updating existing rows. Note: this flag is
-                currently incompatible with initial and incremental.
-
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
+                is currently incompatible with initial and incremental: when history is True, incremental and initial
+                must be False.
         Returns:
             a new PartitionedTableProxy
 
