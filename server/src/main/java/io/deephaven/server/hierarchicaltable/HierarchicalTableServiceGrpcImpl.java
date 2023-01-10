@@ -98,7 +98,6 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     private static void validate(@NotNull final RollupRequest request) {
         GrpcErrorHelper.checkHasField(request, RollupRequest.RESULT_ROLLUP_TABLE_ID_FIELD_NUMBER);
         GrpcErrorHelper.checkHasField(request, RollupRequest.SOURCE_TABLE_ID_FIELD_NUMBER);
-        GrpcErrorHelper.checkRepeatedFieldNonEmpty(request, RollupRequest.AGGREGATIONS_FIELD_NUMBER);
         GrpcErrorHelper.checkHasNoUnknownFields(request);
         Common.validate(request.getResultRollupTableId());
         Common.validate(request.getSourceTableId());
