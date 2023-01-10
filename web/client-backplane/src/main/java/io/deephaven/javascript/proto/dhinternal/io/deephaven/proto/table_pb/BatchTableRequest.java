@@ -2157,6 +2157,338 @@ public class BatchTableRequest {
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface UpdateByFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface OperationsListFieldType {
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface ColumnFieldType {
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface SpecFieldType {
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmaFieldType {
+                                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                public interface OptionsFieldType {
+                                    @JsOverlay
+                                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType create() {
+                                        return Js.uncheckedCast(JsPropertyMap.of());
+                                    }
+
+                                    @JsProperty
+                                    Object getBigValueContext();
+
+                                    @JsProperty
+                                    double getOnNanValue();
+
+                                    @JsProperty
+                                    double getOnNegativeDeltaTime();
+
+                                    @JsProperty
+                                    double getOnNullTime();
+
+                                    @JsProperty
+                                    double getOnNullValue();
+
+                                    @JsProperty
+                                    double getOnZeroDeltaTime();
+
+                                    @JsProperty
+                                    void setBigValueContext(Object bigValueContext);
+
+                                    @JsProperty
+                                    void setOnNanValue(double onNanValue);
+
+                                    @JsProperty
+                                    void setOnNegativeDeltaTime(double onNegativeDeltaTime);
+
+                                    @JsProperty
+                                    void setOnNullTime(double onNullTime);
+
+                                    @JsProperty
+                                    void setOnNullValue(double onNullValue);
+
+                                    @JsProperty
+                                    void setOnZeroDeltaTime(double onZeroDeltaTime);
+                                }
+
+                                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                public interface TimescaleFieldType {
+                                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                    public interface TicksFieldType {
+                                        @JsOverlay
+                                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType create() {
+                                            return Js.uncheckedCast(JsPropertyMap.of());
+                                        }
+
+                                        @JsProperty
+                                        String getTicks();
+
+                                        @JsProperty
+                                        void setTicks(String ticks);
+                                    }
+
+                                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                    public interface TimeFieldType {
+                                        @JsOverlay
+                                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType create() {
+                                            return Js.uncheckedCast(JsPropertyMap.of());
+                                        }
+
+                                        @JsProperty
+                                        String getColumn();
+
+                                        @JsProperty
+                                        String getPeriodNanos();
+
+                                        @JsProperty
+                                        void setColumn(String column);
+
+                                        @JsProperty
+                                        void setPeriodNanos(String periodNanos);
+                                    }
+
+                                    @JsOverlay
+                                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType create() {
+                                        return Js.uncheckedCast(JsPropertyMap.of());
+                                    }
+
+                                    @JsProperty
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType getTicks();
+
+                                    @JsProperty
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType getTime();
+
+                                    @JsProperty
+                                    void setTicks(
+                                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType ticks);
+
+                                    @JsProperty
+                                    void setTime(
+                                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType time);
+                                }
+
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType getOptions();
+
+                                @JsProperty
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType getTimescale();
+
+                                @JsProperty
+                                void setOptions(
+                                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType options);
+
+                                @JsProperty
+                                void setTimescale(
+                                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType timescale);
+                            }
+
+                            @JsOverlay
+                            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType getEma();
+
+                            @JsProperty
+                            Object getFill();
+
+                            @JsProperty
+                            Object getMax();
+
+                            @JsProperty
+                            Object getMin();
+
+                            @JsProperty
+                            Object getProduct();
+
+                            @JsProperty
+                            Object getSum();
+
+                            @JsProperty
+                            void setEma(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType ema);
+
+                            @JsProperty
+                            void setFill(Object fill);
+
+                            @JsProperty
+                            void setMax(Object max);
+
+                            @JsProperty
+                            void setMin(Object min);
+
+                            @JsProperty
+                            void setProduct(Object product);
+
+                            @JsProperty
+                            void setSum(Object sum);
+                        }
+
+                        @JsOverlay
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        JsArray<String> getMatchPairsList();
+
+                        @JsProperty
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType getSpec();
+
+                        @JsProperty
+                        void setMatchPairsList(JsArray<String> matchPairsList);
+
+                        @JsOverlay
+                        default void setMatchPairsList(String[] matchPairsList) {
+                            setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
+                        }
+
+                        @JsProperty
+                        void setSpec(
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType spec);
+                    }
+
+                    @JsOverlay
+                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType getColumn();
+
+                    @JsProperty
+                    void setColumn(
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType column);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface OptionsFieldType {
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface MathContextFieldType {
+                        @JsOverlay
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OptionsFieldType.MathContextFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        double getPrecision();
+
+                        @JsProperty
+                        double getRoundingMode();
+
+                        @JsProperty
+                        void setPrecision(double precision);
+
+                        @JsProperty
+                        void setRoundingMode(double roundingMode);
+                    }
+
+                    @JsOverlay
+                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OptionsFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getChunkCapacity();
+
+                    @JsProperty
+                    double getInitialHashTableSize();
+
+                    @JsProperty
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OptionsFieldType.MathContextFieldType getMathContext();
+
+                    @JsProperty
+                    double getMaxStaticSparseMemoryOverhead();
+
+                    @JsProperty
+                    double getMaximumLoadFactor();
+
+                    @JsProperty
+                    double getTargetLoadFactor();
+
+                    @JsProperty
+                    boolean isUseRedirection();
+
+                    @JsProperty
+                    void setChunkCapacity(double chunkCapacity);
+
+                    @JsProperty
+                    void setInitialHashTableSize(double initialHashTableSize);
+
+                    @JsProperty
+                    void setMathContext(
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OptionsFieldType.MathContextFieldType mathContext);
+
+                    @JsProperty
+                    void setMaxStaticSparseMemoryOverhead(double maxStaticSparseMemoryOverhead);
+
+                    @JsProperty
+                    void setMaximumLoadFactor(double maximumLoadFactor);
+
+                    @JsProperty
+                    void setTargetLoadFactor(double targetLoadFactor);
+
+                    @JsProperty
+                    void setUseRedirection(boolean useRedirection);
+                }
+
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getGroupByColumnsList();
+
+                @JsProperty
+                JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType> getOperationsList();
+
+                @JsProperty
+                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OptionsFieldType getOptions();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setGroupByColumnsList(JsArray<String> groupByColumnsList);
+
+                @JsOverlay
+                default void setGroupByColumnsList(String[] groupByColumnsList) {
+                    setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupByColumnsList));
+                }
+
+                @JsProperty
+                void setOperationsList(
+                        JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType> operationsList);
+
+                @JsOverlay
+                default void setOperationsList(
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType[] operationsList) {
+                    setOperationsList(
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType>>uncheckedCast(
+                                    operationsList));
+                }
+
+                @JsProperty
+                void setOptions(
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OptionsFieldType options);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface UpdateFieldType {
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateFieldType create() {
@@ -2329,6 +2661,9 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateFieldType getUpdate();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType getUpdateBy();
+
+            @JsProperty
             Object getUpdateView();
 
             @JsProperty
@@ -2450,6 +2785,10 @@ public class BatchTableRequest {
 
             @JsProperty
             void setUpdate(BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateFieldType update);
+
+            @JsProperty
+            void setUpdateBy(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType updateBy);
 
             @JsProperty
             void setUpdateView(Object updateView);
@@ -4620,6 +4959,338 @@ public class BatchTableRequest {
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface UpdateByFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface OperationsListFieldType {
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface ColumnFieldType {
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface SpecFieldType {
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmaFieldType {
+                                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                public interface OptionsFieldType {
+                                    @JsOverlay
+                                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType create() {
+                                        return Js.uncheckedCast(JsPropertyMap.of());
+                                    }
+
+                                    @JsProperty
+                                    Object getBigValueContext();
+
+                                    @JsProperty
+                                    double getOnNanValue();
+
+                                    @JsProperty
+                                    double getOnNegativeDeltaTime();
+
+                                    @JsProperty
+                                    double getOnNullTime();
+
+                                    @JsProperty
+                                    double getOnNullValue();
+
+                                    @JsProperty
+                                    double getOnZeroDeltaTime();
+
+                                    @JsProperty
+                                    void setBigValueContext(Object bigValueContext);
+
+                                    @JsProperty
+                                    void setOnNanValue(double onNanValue);
+
+                                    @JsProperty
+                                    void setOnNegativeDeltaTime(double onNegativeDeltaTime);
+
+                                    @JsProperty
+                                    void setOnNullTime(double onNullTime);
+
+                                    @JsProperty
+                                    void setOnNullValue(double onNullValue);
+
+                                    @JsProperty
+                                    void setOnZeroDeltaTime(double onZeroDeltaTime);
+                                }
+
+                                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                public interface TimescaleFieldType {
+                                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                    public interface TicksFieldType {
+                                        @JsOverlay
+                                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType create() {
+                                            return Js.uncheckedCast(JsPropertyMap.of());
+                                        }
+
+                                        @JsProperty
+                                        String getTicks();
+
+                                        @JsProperty
+                                        void setTicks(String ticks);
+                                    }
+
+                                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                    public interface TimeFieldType {
+                                        @JsOverlay
+                                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType create() {
+                                            return Js.uncheckedCast(JsPropertyMap.of());
+                                        }
+
+                                        @JsProperty
+                                        String getColumn();
+
+                                        @JsProperty
+                                        String getPeriodNanos();
+
+                                        @JsProperty
+                                        void setColumn(String column);
+
+                                        @JsProperty
+                                        void setPeriodNanos(String periodNanos);
+                                    }
+
+                                    @JsOverlay
+                                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType create() {
+                                        return Js.uncheckedCast(JsPropertyMap.of());
+                                    }
+
+                                    @JsProperty
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType getTicks();
+
+                                    @JsProperty
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType getTime();
+
+                                    @JsProperty
+                                    void setTicks(
+                                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType ticks);
+
+                                    @JsProperty
+                                    void setTime(
+                                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType time);
+                                }
+
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType getOptions();
+
+                                @JsProperty
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType getTimescale();
+
+                                @JsProperty
+                                void setOptions(
+                                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType options);
+
+                                @JsProperty
+                                void setTimescale(
+                                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType timescale);
+                            }
+
+                            @JsOverlay
+                            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType getEma();
+
+                            @JsProperty
+                            Object getFill();
+
+                            @JsProperty
+                            Object getMax();
+
+                            @JsProperty
+                            Object getMin();
+
+                            @JsProperty
+                            Object getProduct();
+
+                            @JsProperty
+                            Object getSum();
+
+                            @JsProperty
+                            void setEma(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType ema);
+
+                            @JsProperty
+                            void setFill(Object fill);
+
+                            @JsProperty
+                            void setMax(Object max);
+
+                            @JsProperty
+                            void setMin(Object min);
+
+                            @JsProperty
+                            void setProduct(Object product);
+
+                            @JsProperty
+                            void setSum(Object sum);
+                        }
+
+                        @JsOverlay
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        JsArray<String> getMatchPairsList();
+
+                        @JsProperty
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType getSpec();
+
+                        @JsProperty
+                        void setMatchPairsList(JsArray<String> matchPairsList);
+
+                        @JsOverlay
+                        default void setMatchPairsList(String[] matchPairsList) {
+                            setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
+                        }
+
+                        @JsProperty
+                        void setSpec(
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType spec);
+                    }
+
+                    @JsOverlay
+                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType getColumn();
+
+                    @JsProperty
+                    void setColumn(
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType column);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface OptionsFieldType {
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface MathContextFieldType {
+                        @JsOverlay
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OptionsFieldType.MathContextFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        double getPrecision();
+
+                        @JsProperty
+                        double getRoundingMode();
+
+                        @JsProperty
+                        void setPrecision(double precision);
+
+                        @JsProperty
+                        void setRoundingMode(double roundingMode);
+                    }
+
+                    @JsOverlay
+                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OptionsFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    double getChunkCapacity();
+
+                    @JsProperty
+                    double getInitialHashTableSize();
+
+                    @JsProperty
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OptionsFieldType.MathContextFieldType getMathContext();
+
+                    @JsProperty
+                    double getMaxStaticSparseMemoryOverhead();
+
+                    @JsProperty
+                    double getMaximumLoadFactor();
+
+                    @JsProperty
+                    double getTargetLoadFactor();
+
+                    @JsProperty
+                    boolean isUseRedirection();
+
+                    @JsProperty
+                    void setChunkCapacity(double chunkCapacity);
+
+                    @JsProperty
+                    void setInitialHashTableSize(double initialHashTableSize);
+
+                    @JsProperty
+                    void setMathContext(
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OptionsFieldType.MathContextFieldType mathContext);
+
+                    @JsProperty
+                    void setMaxStaticSparseMemoryOverhead(double maxStaticSparseMemoryOverhead);
+
+                    @JsProperty
+                    void setMaximumLoadFactor(double maximumLoadFactor);
+
+                    @JsProperty
+                    void setTargetLoadFactor(double targetLoadFactor);
+
+                    @JsProperty
+                    void setUseRedirection(boolean useRedirection);
+                }
+
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getGroupByColumnsList();
+
+                @JsProperty
+                JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType> getOperationsList();
+
+                @JsProperty
+                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OptionsFieldType getOptions();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setGroupByColumnsList(JsArray<String> groupByColumnsList);
+
+                @JsOverlay
+                default void setGroupByColumnsList(String[] groupByColumnsList) {
+                    setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupByColumnsList));
+                }
+
+                @JsProperty
+                void setOperationsList(
+                        JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType> operationsList);
+
+                @JsOverlay
+                default void setOperationsList(
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType[] operationsList) {
+                    setOperationsList(
+                            Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType>>uncheckedCast(
+                                    operationsList));
+                }
+
+                @JsProperty
+                void setOptions(
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OptionsFieldType options);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface UpdateFieldType {
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateFieldType create() {
@@ -4792,6 +5463,9 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateFieldType getUpdate();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType getUpdateBy();
+
+            @JsProperty
             Object getUpdateView();
 
             @JsProperty
@@ -4913,6 +5587,10 @@ public class BatchTableRequest {
 
             @JsProperty
             void setUpdate(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateFieldType update);
+
+            @JsProperty
+            void setUpdateBy(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType updateBy);
 
             @JsProperty
             void setUpdateView(Object updateView);
