@@ -11,8 +11,8 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.generator.Generator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
@@ -90,17 +90,9 @@ public class TestRollingSum extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKeyTimed() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
-
-        final OperationControl skipControl = OperationControl.builder()
-                .onNullValue(BadDataBehavior.SKIP)
-                .onNanValue(BadDataBehavior.SKIP).build();
-
-        final OperationControl resetControl = OperationControl.builder()
-                .onNullValue(BadDataBehavior.RESET)
-                .onNanValue(BadDataBehavior.RESET).build();
 
         Duration prevTime = Duration.ofMinutes(10);
         Duration postTime = Duration.ZERO;
@@ -126,17 +118,9 @@ public class TestRollingSum extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKeyFwdWindowTimed() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
-
-        final OperationControl skipControl = OperationControl.builder()
-                .onNullValue(BadDataBehavior.SKIP)
-                .onNanValue(BadDataBehavior.SKIP).build();
-
-        final OperationControl resetControl = OperationControl.builder()
-                .onNullValue(BadDataBehavior.RESET)
-                .onNanValue(BadDataBehavior.RESET).build();
 
         Duration prevTime = Duration.ZERO;
         Duration postTime = Duration.ofMinutes(10);
@@ -162,17 +146,9 @@ public class TestRollingSum extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKeyFwdRevWindowTimed() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
-
-        final OperationControl skipControl = OperationControl.builder()
-                .onNullValue(BadDataBehavior.SKIP)
-                .onNanValue(BadDataBehavior.SKIP).build();
-
-        final OperationControl resetControl = OperationControl.builder()
-                .onNullValue(BadDataBehavior.RESET)
-                .onNanValue(BadDataBehavior.RESET).build();
 
         Duration prevTime = Duration.ofMinutes(10);
         Duration postTime = Duration.ofMinutes(10);
@@ -200,7 +176,7 @@ public class TestRollingSum extends BaseUpdateByTest {
     // region Bucketed Tests
 
     @Test
-    public void testNullOnBucketChange() throws IOException {
+    public void testNullOnBucketChange() {
         final TableDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
@@ -275,7 +251,7 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(10000, true, grouped, false, 0xFFFABBBC,
-                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -354,7 +330,7 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     private void doTestAppendOnlyTimed(boolean bucketed) {
         final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new Generator[] {new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
         final QueryTable t = result.t;
