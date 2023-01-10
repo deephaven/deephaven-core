@@ -216,4 +216,12 @@ public class Column {
         result = 31 * result + name.hashCode();
         return result;
     }
+
+    public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
+        return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn, formatStringColumnIndex, description, isInputTableKeyColumn);
+    }
+
+    public Column withStyleColumnIndex(int styleColumnIndex) {
+        return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn, formatStringColumnIndex, description, isInputTableKeyColumn);
+    }
 }

@@ -146,6 +146,30 @@ public class JsTreeTable extends HasEventHandling {
                             if (depthColumn[rowIndex] == constituentDepth)
                                 Js.asArrayLike(data[index]).setAt(rowIndex, cleanConstituentColumn.getAt(rowIndex));
                         }
+
+                        if (sourceColumn.getStyleColumnIndex() != null) {
+                            assert c.getStyleColumnIndex() != null;
+                            ColumnData styleData = dataColumns[sourceColumn.getStyleColumnIndex()];
+                            if (styleData != null) {
+                                JsArray<Any> styleArray = Js.cast(styleData.getData());
+                                for (int rowIndex = 0; rowIndex < styleArray.length; rowIndex++) {
+                                    if (depthColumn[rowIndex] == constituentDepth)
+                                        Js.asArrayLike(data[c.getStyleColumnIndex()]).setAt(rowIndex, styleArray.getAt(rowIndex));
+                                }
+                            }
+                        }
+                        if (sourceColumn.getFormatStringColumnIndex() != null) {
+                            assert c.getFormatStringColumnIndex() != null;
+                            ColumnData formatData = dataColumns[sourceColumn.getFormatStringColumnIndex()];
+                            if (formatData != null) {
+                                JsArray<Any> formatArray = Js.cast(formatData.getData());
+                                for (int rowIndex = 0; rowIndex < formatArray.length; rowIndex++) {
+                                    if (depthColumn[rowIndex] == constituentDepth) {
+                                        Js.asArrayLike(data[c.getFormatStringColumnIndex()]).setAt(rowIndex, formatArray.getAt(rowIndex));
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -315,11 +339,6 @@ public class JsTreeTable extends HasEventHandling {
             }
         }
         this.rowFormatColumn = rowFormatColumn;
-        this.visibleColumns = JsObject.freeze(columns);
-        for (int i = 0; i < visibleColumns.length; i++) {
-            Column column = visibleColumns[i];
-            columnsByName.put(column.getName(), column);
-        }
 
         sourceColumns = columnDefsByName.get(false).values().stream()
                 .map(c -> {
@@ -341,6 +360,29 @@ public class JsTreeTable extends HasEventHandling {
         // add the rest of the constituent columns as themselves, they will only show up in constituent rows
         sourceColumns.putAll(constituentColumns);
         // TODO offer those as plain columns too
+
+        // visit each column with a source column but no format/style column - if the source column as a format column, we will reference the source column's format column data instead
+        for (int i = 0; i < columns.length; i++) {
+            Column visibleColumn = columns[i];
+            Column sourceColumn = sourceColumns.get(visibleColumn.getName());
+            if (sourceColumn == null) {
+                continue;
+            }
+
+            if (visibleColumn.getFormatStringColumnIndex() == null && sourceColumn.getFormatStringColumnIndex() != null) {
+                columns[i] = visibleColumn.withFormatStringColumnIndex(sourceColumn.getFormatStringColumnIndex());
+            }
+            if (visibleColumn.getStyleColumnIndex() == null && sourceColumn.getStyleColumnIndex() != null) {
+                columns[i] = visibleColumn.withStyleColumnIndex(sourceColumn.getStyleColumnIndex());
+            }
+        }
+
+        // track columns by name and freeze the array to avoid defensive copies
+        this.visibleColumns = JsObject.freeze(columns);
+        for (int i = 0; i < visibleColumns.length; i++) {
+            Column column = visibleColumns[i];
+            columnsByName.put(column.getName(), column);
+        }
 
 
         keyTableData = new Object[keyColumns.length + 2][0];
