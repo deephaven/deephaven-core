@@ -87,6 +87,28 @@ public class JsTreeTable extends HasEventHandling {
     public static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
     public static final double ACTION_COLLAPSE = 0b100;
 
+    /**
+     * Pair of ticket and the promise that indicates it has been resolved. Tickets are
+     * usable before they are resolved, but to ensure that all operations completed
+     * successfully, the promise should be used to handle errors.
+     */
+    private class TicketAndPromise {
+        private final Ticket ticket;
+        private final Promise<?> promise;
+
+        private TicketAndPromise(Ticket ticket, Promise<?> promise) {
+            this.ticket = ticket;
+            this.promise = promise;
+        }
+        private TicketAndPromise(Ticket ticket) {
+            this(ticket, Promise.resolve(ticket));
+        }
+
+        public void release() {
+            connection.releaseTicket(ticket);
+        }
+    }
+
     class TreeViewportData {
         private final Boolean[] expandedColumn;
         private final int[] depthColumn;
@@ -257,13 +279,13 @@ public class JsTreeTable extends HasEventHandling {
     // The current filter and sort state
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
-    private Promise<Ticket> filteredTable;
-    private Promise<Ticket> sortedTable;
+    private TicketAndPromise filteredTable;
+    private TicketAndPromise sortedTable;
 
     private final Object[][] keyTableData;
     private Promise<JsTable> keyTable;
 
-    private Promise<Ticket> viewTicket;
+    private TicketAndPromise viewTicket;
     private Promise<BiDiStream<?, ?>> stream;
 
     // the "next" set of filters/sorts that we'll use. these either are "==" to the above fields, or are scheduled
@@ -399,15 +421,15 @@ public class JsTreeTable extends HasEventHandling {
                 .then(cts -> Promise.resolve(new JsTable(connection, cts))));
     }
 
-    private Promise<Ticket> prepareFilter() {
+    private TicketAndPromise prepareFilter() {
         if (filteredTable != null) {
             return filteredTable;
         }
         if (nextFilters.isEmpty()) {
-            return Promise.resolve(widget.getTicket());
+            return new TicketAndPromise(widget.getTicket());
         }
         Ticket ticket = connection.getConfig().newTicket();
-        filteredTable = Callbacks.grpcUnaryPromise(c -> {
+        filteredTable = new TicketAndPromise(ticket, Callbacks.grpcUnaryPromise(c -> {
 
             HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
             applyFilter.setFiltersList(
@@ -415,27 +437,26 @@ public class JsTreeTable extends HasEventHandling {
             applyFilter.setInputHierarchicalTableId(widget.getTicket());
             applyFilter.setResultHierarchicalTableId(ticket);
             connection.hierarchicalTableServiceClient().apply(applyFilter, connection.metadata(), c::apply);
-        }).then(ignore -> Promise.resolve(ticket));
+        }));
         return filteredTable;
     }
 
-    private Promise<Ticket> prepareSort(Ticket prevTicket) {
+    private TicketAndPromise prepareSort(TicketAndPromise prevTicket) {
         if (sortedTable != null) {
             return sortedTable;
         }
         if (nextSort.isEmpty()) {
-            return Promise.resolve(prevTicket);
+            return prevTicket;
         }
         Ticket ticket = connection.getConfig().newTicket();
-        sortedTable = Callbacks.grpcUnaryPromise(c -> {
-
+        sortedTable = new TicketAndPromise(ticket, Callbacks.grpcUnaryPromise(c -> {
             HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
             applyFilter.setSortsList(nextSort.stream().map(Sort::makeDescriptor).toArray(
                     io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortDescriptor[]::new));
-            applyFilter.setInputHierarchicalTableId(prevTicket);
+            applyFilter.setInputHierarchicalTableId(prevTicket.ticket);
             applyFilter.setResultHierarchicalTableId(ticket);
             connection.hierarchicalTableServiceClient().apply(applyFilter, connection.metadata(), c::apply);
-        }).then(ignore -> Promise.resolve(ticket));
+        }));
         return sortedTable;
     }
 
@@ -455,39 +476,48 @@ public class JsTreeTable extends HasEventHandling {
         return keyTable;
     }
 
-    private Promise<Ticket> makeView(Ticket prevTicket) {
+    private TicketAndPromise makeView(TicketAndPromise prevTicket) {
         if (viewTicket != null) {
             return viewTicket;
         }
         Ticket ticket = connection.getConfig().newTicket();
-        viewTicket = Callbacks.grpcUnaryPromise(c -> {
+        Promise<JsTable> keyTable = makeKeyTable();
+        viewTicket = new TicketAndPromise(ticket, Callbacks.grpcUnaryPromise(c -> {
             HierarchicalTableViewRequest viewRequest = new HierarchicalTableViewRequest();
-            viewRequest.setHierarchicalTableId(prevTicket);
+            viewRequest.setHierarchicalTableId(prevTicket.ticket);
             viewRequest.setResultViewId(ticket);
-            makeKeyTable().then(keyTable -> {
+            keyTable.then(t -> {
                 if (keyTableData[0].length > 0) {
                     HierarchicalTableViewKeyTableDescriptor expansions = new HierarchicalTableViewKeyTableDescriptor();
-                    expansions.setKeyTableId(keyTable.getHandle().makeTicket());
+                    expansions.setKeyTableId(t.getHandle().makeTicket());
                     expansions.setKeyTableActionColumn(actionCol.getName());
                     viewRequest.setExpansions(expansions);
                 }
                 connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
-                return null;// TODO actually handle error from this properly
+                return null;
             }, error -> {
                 c.apply(error, null);
                 return null;
             });
-        }).then(ignore -> Promise.resolve(ticket));
+        }));
         return viewTicket;
     }
 
     private void replaceSubscription() {
         this.stream = Promise.resolve(defer())
-                .then(ignore -> makeKeyTable())// TODO we can race this instead of finishing it first
-                .then(ignore -> prepareFilter())
-                .then(this::prepareSort)
-                .then(this::makeView)
-                .then(ticket -> {
+                .then(ignore -> {
+                    makeKeyTable();
+                    TicketAndPromise filter = prepareFilter();
+                    TicketAndPromise sort = prepareSort(filter);
+                    TicketAndPromise view = makeView(sort);
+                    return Promise.all(
+                            keyTable,
+                            filter.promise,
+                            sort.promise,
+                            view.promise
+                    );
+                })
+                .then(results -> {
                     BitSet columnsBitset = makeColumnSubscriptionBitset();
                     RangeSet range = RangeSet.ofRange((long) (double) firstRow, (long) (double) lastRow);
 
@@ -523,7 +553,7 @@ public class JsTreeTable extends HasEventHandling {
                             .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true,
                                     updateInterval, 0, 0);
                     double tableTicketOffset =
-                            BarrageSubscriptionRequest.createTicketVector(doGetRequest, ticket.getTicket_asU8());
+                            BarrageSubscriptionRequest.createTicketVector(doGetRequest, viewTicket.ticket.getTicket_asU8());
                     BarrageSubscriptionRequest.startBarrageSubscriptionRequest(doGetRequest);
                     BarrageSubscriptionRequest.addTicket(doGetRequest, tableTicketOffset);
                     BarrageSubscriptionRequest.addColumns(doGetRequest, columnsOffset);
@@ -588,6 +618,10 @@ public class JsTreeTable extends HasEventHandling {
                         handleUpdate(nextSort, nextFilters, vd, alwaysFireEvent);
                     });
                     return Promise.resolve(doExchange);
+                })
+                .catch_(err -> {
+                    failureHandled(err.toString());
+                    return null;
                 });
     }
 
@@ -681,10 +715,7 @@ public class JsTreeTable extends HasEventHandling {
         }
 
         if (viewTicket != null) {
-            viewTicket.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            viewTicket.release();
             viewTicket = null;
         }
         if (stream != null) {
@@ -753,24 +784,15 @@ public class JsTreeTable extends HasEventHandling {
         // connection.releaseTicket(widget.getTicket());
 
         if (filteredTable != null) {
-            filteredTable.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            filteredTable.release();
             filteredTable = null;
         }
         if (sortedTable != null) {
-            sortedTable.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            sortedTable.release();
             sortedTable = null;
         }
         if (viewTicket != null) {
-            viewTicket.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            viewTicket.release();
             viewTicket = null;
         }
         if (stream != null) {
@@ -793,17 +815,11 @@ public class JsTreeTable extends HasEventHandling {
         }
         nextSort = Arrays.asList(sort);
         if (sortedTable != null) {
-            sortedTable.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            sortedTable.release();
             sortedTable = null;
         }
         if (viewTicket != null) {
-            viewTicket.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            viewTicket.release();
             viewTicket = null;
         }
         if (stream != null) {
@@ -825,24 +841,15 @@ public class JsTreeTable extends HasEventHandling {
     public JsArray<FilterCondition> applyFilter(FilterCondition[] filter) {
         nextFilters = Arrays.asList(filter);
         if (filteredTable != null) {
-            filteredTable.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            filteredTable.release();
             filteredTable = null;
         }
         if (sortedTable != null) {
-            sortedTable.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            sortedTable.release();
             sortedTable = null;
         }
         if (viewTicket != null) {
-            viewTicket.then(ticket -> {
-                connection.releaseTicket(ticket);
-                return null;
-            });
+            viewTicket.release();
             viewTicket = null;
         }
         if (stream != null) {
