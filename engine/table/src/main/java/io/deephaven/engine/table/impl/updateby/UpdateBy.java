@@ -152,9 +152,7 @@ public abstract class UpdateBy {
         }
 
         private RowSet getInnerKeys(final RowSet outerKeys) {
-            if (rowRedirection == null) {
-                return null;
-            }
+            assert (rowRedirection != null);
             RowSetBuilderRandom builder = RowSetFactory.builderRandom();
             final int chunkSize = Math.min(outerKeys.intSize(), REDIRECTION_CHUNK_SIZE);
             try (final RowSequence.Iterator it = outerKeys.getRowSequenceIterator();

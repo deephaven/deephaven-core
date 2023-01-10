@@ -178,15 +178,6 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         if (options.hasOnNanValue()) {
             builder.onNanValue(adaptBadDataBehavior(options.getOnNanValue()));
         }
-        if (options.hasOnNullTime()) {
-            builder.onNullTime(adaptBadDataBehavior(options.getOnNullTime()));
-        }
-        if (options.hasOnNegativeDeltaTime()) {
-            builder.onNegativeDeltaTime(adaptBadDataBehavior(options.getOnNegativeDeltaTime()));
-        }
-        if (options.hasOnZeroDeltaTime()) {
-            builder.onZeroDeltaTime(adaptBadDataBehavior(options.getOnZeroDeltaTime()));
-        }
         if (options.hasBigValueContext()) {
             builder.bigValueContext(adaptMathContext(options.getBigValueContext()));
         }
