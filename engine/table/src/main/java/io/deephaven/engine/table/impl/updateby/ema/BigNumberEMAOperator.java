@@ -101,41 +101,13 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         }
     }
 
-    void handleBadData(@NotNull final Context ctx,
-            final boolean isNull,
-            final boolean isNullTime) {
+    void handleBadData(@NotNull final Context ctx, final boolean isNull) {
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
                 throw new TableDataException("Encountered invalid data during EMA processing");
             }
             doReset = control.onNullValueOrDefault() == BadDataBehavior.RESET;
-        }
-
-        if (isNullTime) {
-            if (control.onNullTimeOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered null timestamp during EMA processing");
-            }
-            doReset = control.onNullTimeOrDefault() == BadDataBehavior.RESET;
-        }
-
-        if (doReset) {
-            ctx.reset();
-        }
-    }
-
-    void handleBadTime(@NotNull final Context ctx, final long dt) {
-        boolean doReset = false;
-        if (dt == 0) {
-            if (control.onZeroDeltaTimeOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered zero delta time during EMA processing");
-            }
-            doReset = control.onZeroDeltaTimeOrDefault() == BadDataBehavior.RESET;
-        } else if (dt < 0) {
-            if (control.onNegativeDeltaTimeOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered negative delta time during EMA processing");
-            }
-            doReset = control.onNegativeDeltaTimeOrDefault() == BadDataBehavior.RESET;
         }
 
         if (doReset) {

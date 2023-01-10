@@ -36,7 +36,7 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                     // read the value from the values chunk
                     final BigDecimal input = objectValueChunk.get(ii);
                     if (input == null) {
-                        handleBadData(this, true, false);
+                        handleBadData(this, true);
                     } else {
                         if (curVal == null) {
                             curVal = input;
@@ -56,27 +56,26 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                     final long timestamp = tsChunk.get(ii);
                     final boolean isNull = input == null;
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    if (isNull || isNullTime) {
-                        handleBadData(this, isNull, isNullTime);
+                    if (isNull) {
+                        handleBadData(this, isNull);
+                    } else if (isNullTime) {
+                        // no change to curVal and lastStamp
                     } else {
                         if (curVal == null) {
                             curVal = input;
                             lastStamp = timestamp;
+
                         } else {
                             final long dt = timestamp - lastStamp;
-                            if (dt <= 0) {
-                                handleBadTime(this, dt);
-                            } else {
-                                // alpha is dynamic, based on time
-                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseTimeScaleUnits));
-                                BigDecimal oneMinusAlpha =
-                                        BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+                            // alpha is dynamic, based on time
+                            BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseTimeScaleUnits));
+                            BigDecimal oneMinusAlpha =
+                                    BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
 
-                                curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                        .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
-                                                control.bigValueContextOrDefault());
-                                lastStamp = timestamp;
-                            }
+                            curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
+                                    .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
+                                            control.bigValueContextOrDefault());
+                            lastStamp = timestamp;
                         }
                     }
                     outputValues.set(ii, curVal);

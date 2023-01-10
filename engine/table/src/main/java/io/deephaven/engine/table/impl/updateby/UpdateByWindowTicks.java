@@ -140,20 +140,20 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                     "ensureGetContextSize exceeded Integer.MAX_VALUE",
                     size);
 
-            // use this to determine which input sources are initialized
-            Arrays.fill(ctx.inputSourceChunkPopulated, false);
+            // use this to track which contexts have already resized
+            boolean[] resized = new boolean[ctx.inputSources.length];
 
             for (int opIdx : ctx.dirtyOperatorIndices) {
                 final int[] sourceIndices = operatorInputSourceSlots[opIdx];
                 for (int sourceSlot : sourceIndices) {
-                    if (!ctx.inputSourceChunkPopulated[sourceSlot]) {
+                    if (!resized[sourceSlot]) {
                         // close the existing context
                         ctx.inputSourceGetContexts[sourceSlot].close();
 
                         // create a new context of the larger size
                         ctx.inputSourceGetContexts[sourceSlot] =
                                 ctx.inputSources[sourceSlot].makeGetContext(ctx.currentGetContextSize);
-                        ctx.inputSourceChunkPopulated[sourceSlot] = true;
+                        resized[sourceSlot] = true;
                     }
                 }
             }
@@ -386,7 +386,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                 try (final RowSet chunkInfluencerRs = chunkInfluencerBuilder.build()) {
                     ensureGetContextSize(ctx, chunkInfluencerRs.size());
 
-                    Arrays.fill(ctx.inputSourceChunkPopulated, false);
+                    Arrays.fill(ctx.inputSourceChunks, null);
                     for (int opIdx : context.dirtyOperatorIndices) {
                         // prep the chunk array needed by the accumulate call
                         final int[] srcIndices = operatorInputSourceSlots[opIdx];

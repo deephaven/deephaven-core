@@ -14,6 +14,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -229,7 +230,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                 continue;
             }
             if (ts < lastTimestamp.longValue()) {
-                throw (new IllegalStateException(
+                throw (new TableDataException(
                         "updateBy time-based operators require non-descending timestamp values"));
             }
 

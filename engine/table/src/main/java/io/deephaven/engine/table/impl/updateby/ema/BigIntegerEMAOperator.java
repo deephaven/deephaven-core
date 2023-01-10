@@ -37,7 +37,7 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                     // read the value from the values chunk
                     final BigInteger input = objectValueChunk.get(ii);
                     if (input == null) {
-                        handleBadData(this, true, false);
+                        handleBadData(this, true);
                     } else {
                         final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
                         if (curVal == null) {
@@ -58,8 +58,10 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                     final long timestamp = tsChunk.get(ii);
                     final boolean isNull = input == null;
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    if (isNull || isNullTime) {
-                        handleBadData(this, isNull, isNullTime);
+                    if (isNull) {
+                        handleBadData(this, true);
+                    } else if (isNullTime) {
+                        // no change to curVal and lastStamp
                     } else {
                         final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
                         if (curVal == null) {
@@ -67,8 +69,8 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                             lastStamp = timestamp;
                         } else {
                             final long dt = timestamp - lastStamp;
-                            if (dt <= 0) {
-                                handleBadTime(this, dt);
+                            if (dt == 0) {
+                                // preserve curVal and timestamp
                             } else {
                                 // alpha is dynamic, based on time
                                 BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double)reverseTimeScaleUnits));

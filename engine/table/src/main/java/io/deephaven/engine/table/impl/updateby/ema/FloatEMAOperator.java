@@ -43,7 +43,7 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                     final boolean isNan = Float.isNaN(input);
 
                     if (isNull || isNan) {
-                        handleBadData(this, isNull, isNan, false);
+                        handleBadData(this, isNull, isNan);
                     } else {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
@@ -63,8 +63,10 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                     final boolean isNan = Float.isNaN(input);
                     final boolean isNullTime = timestamp == NULL_LONG;
                     // Handle bad data first
-                    if (isNull || isNan || isNullTime) {
-                        handleBadData(this, isNull, isNan, isNullTime);
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
+                    } else if (isNullTime) {
+                        // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
                         // If the data looks good, and we have a null ema,  just accept the current value
                         curVal = input;
@@ -77,13 +79,9 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                             lastStamp = timestamp;
                         } else {
                             final long dt = timestamp - lastStamp;
-                            if (dt <= 0) {
-                                handleBadTime(this, dt);
-                            } else if (!currentPoisoned) {
-                                final double alpha = Math.exp(-dt / (double)reverseTimeScaleUnits);
-                                curVal = alpha * curVal + ((1 - alpha) * input);
-                                lastStamp = timestamp;
-                            }
+                            final double alpha = Math.exp(-dt / (double)reverseTimeScaleUnits);
+                            curVal = alpha * curVal + ((1 - alpha) * input);
+                            lastStamp = timestamp;
                         }
                     }
                     outputValues.set(ii, curVal);

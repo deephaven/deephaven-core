@@ -90,7 +90,8 @@ public abstract class UpdateBy {
     static class UpdateByRedirectionHelper {
         @Nullable
         private final WritableRowRedirection rowRedirection;
-        private final TrackingWritableRowSet freeRows;
+        private final WritableRowSet freeRows;
+        private WritableRowSet toClear;
         private long maxInnerRowKey;
 
         private UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
@@ -107,18 +108,22 @@ public abstract class UpdateBy {
             return maxInnerRowKey;
         }
 
-        @Nullable
-        WritableRowRedirection getRowRedirection() {
-            return rowRedirection;
-        }
-
         private void processUpdateForRedirection(@NotNull final TableUpdate upstream,
                 final TrackingRowSet sourceRowSet) {
             assert rowRedirection != null;
+
+            // take this chance to clean up last cycle's rowset
+            try (final RowSet ignored = toClear) {
+            }
+
             if (upstream.removed().isNonempty()) {
                 final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
                 upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
-                freeRows.insert(freeBuilder.build());
+                // store all freed rows as the candidate toClear set
+                toClear = freeBuilder.build();
+                freeRows.insert(toClear);
+            } else {
+                toClear = RowSetFactory.empty();
             }
 
             if (upstream.shifted().nonempty()) {
@@ -135,8 +140,12 @@ public abstract class UpdateBy {
                     rowRedirection.put(outerKey, innerKey);
                 });
                 if (freeIt.hasNext()) {
-                    freeRows.removeRange(0, freeIt.nextLong() - 1);
+                    try (final RowSet added = freeRows.subSetByKeyRange(0, freeIt.nextLong() - 1)) {
+                        toClear.remove(added);
+                        freeRows.remove(added);
+                    }
                 } else {
+                    toClear.clear();
                     freeRows.clear();
                 }
             }
@@ -162,16 +171,13 @@ public abstract class UpdateBy {
         /***
          * Compute the inner source keys that need to be cleared. These are rows that were removed this cycle and not
          * replaced by added rows. These are in the dense key-space and must only be applied to the inner sources of the
-         * redirected output sources
+         * redirected output sources.
          *
-         * @return the set of rows that should be cleared from the inner (dense) sources
+         * @return the set of rows that should be cleared from the inner (dense) sources. This {@link RowSet} should be
+         *         closed by the caller.
          */
         WritableRowSet getRowsToClear() {
-            final WritableRowSet toClear = freeRows.copy();
-            try (final RowSet prevKeys = freeRows.copyPrev()) {
-                toClear.remove(prevKeys);
-            }
-            return toClear;
+            return toClear.copy();
         }
     }
 
@@ -442,10 +448,9 @@ public abstract class UpdateBy {
             // holding this reference should protect `rowDirection` and `innerSource` from GC
             maybeCachedInputSources[srcIdx] = outputSource;
 
-            final int rowSetSize = inputRowSet.intSize();
-
             // how many batches do we need?
-            final int taskCount = (rowSetSize + PARALLEL_CACHE_BATCH_SIZE - 1) / PARALLEL_CACHE_BATCH_SIZE;
+            final int taskCount =
+                    Math.toIntExact((inputRowSet.size() + PARALLEL_CACHE_BATCH_SIZE - 1) / PARALLEL_CACHE_BATCH_SIZE);
 
             jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
                     0, taskCount,
@@ -457,16 +462,16 @@ public abstract class UpdateBy {
                                         inputSource.makeGetContext(PARALLEL_CACHE_CHUNK_SIZE)) {
                             // advance to the first key of this block
                             rsIt.advance(inputRowSet.get(idx * PARALLEL_CACHE_BATCH_SIZE));
-                            int count = 0;
-                            while (rsIt.hasMore() && count < PARALLEL_CACHE_BATCH_SIZE) {
-                                final RowSequence chunkOk =
-                                        rsIt.getNextRowSequenceWithLength(PARALLEL_CACHE_CHUNK_SIZE);
+                            int remaining = PARALLEL_CACHE_BATCH_SIZE;
+                            while (rsIt.hasMore() && remaining > 0) {
+                                final RowSequence chunkOk = rsIt
+                                        .getNextRowSequenceWithLength(Math.min(remaining, PARALLEL_CACHE_CHUNK_SIZE));
                                 final Chunk<? extends Values> values = inputSource.getChunk(gc, chunkOk);
                                 outputSource.fillFromChunk(ffc, values, chunkOk);
 
-                                // increment by the attempted stride, if this is the last block the iterator will
+                                // reduce by the attempted stride, if this is the final block the iterator will
                                 // be exhausted and hasMore() will return false
-                                count += PARALLEL_CACHE_CHUNK_SIZE;
+                                remaining -= PARALLEL_CACHE_CHUNK_SIZE;
                             }
                         }
                     }, resumeAction::run,
@@ -493,8 +498,8 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Divide the buckets for {@code windows[winIdx]} into sets and process each set in parallel. Calls
-         * {@code resumeAction} when the work is complete
+         * Process each bucket in {@code windows[winIdx]} in parallel. Calls {@code resumeAction} when the work is
+         * complete
          */
         private void processWindowBuckets(int winIdx, final Runnable resumeAction) {
             if (jobScheduler.threadCount() > 1 && dirtyBuckets.length > 1) {
@@ -544,10 +549,12 @@ public abstract class UpdateBy {
                                             windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
                                         }
                                     }
-                                    try (final RowSet changedRows = redirHelper.isRedirected()
+                                    try (final RowSet windowChangedRows = redirHelper.isRedirected()
                                             ? redirHelper.getInnerKeys(windowRowSet)
-                                            : windowRowSet.copy()) {
-                                        win.prepareForParallelPopulation(changedRows);
+                                            : null) {
+                                        final RowSet rowsToUse =
+                                                windowChangedRows == null ? windowRowSet : windowChangedRows;
+                                        win.prepareForParallelPopulation(rowsToUse);
                                     }
                                 }
                             }
@@ -695,7 +702,7 @@ public abstract class UpdateBy {
                 toClear = redirHelper.getRowsToClear();
 
                 // clear them now and let them set their own prev states
-                if (!initialStep &&!toClear.isEmpty()) {
+                if (!initialStep && !toClear.isEmpty()) {
                     for (UpdateByOperator op : operators) {
                         op.clearOutputRows(toClear);
 

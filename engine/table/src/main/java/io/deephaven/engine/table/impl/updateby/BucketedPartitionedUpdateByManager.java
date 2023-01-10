@@ -61,7 +61,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
 
-        String[] byColumnNames = ColumnName.names(byColumns).toArray(new String[0]);
+        String[] byColumnNames = byColumns.stream().map(ColumnName::name).toArray(String[]::new);
 
         final PartitionedTable pt;
         if (source.isRefreshing()) {

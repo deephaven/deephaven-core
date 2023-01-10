@@ -49,8 +49,6 @@ public abstract class UpdateByWindow {
         protected ChunkSource.GetContext[] inputSourceGetContexts;
         /** A set of chunks used to store working values */
         protected Chunk<? extends Values>[] inputSourceChunks;
-        /** An indicator of if each slot has been populated with data or not for this phase. */
-        protected boolean[] inputSourceChunkPopulated;
         /** The rows affected by this update */
         protected RowSet affectedRows;
         /** The rows that will be needed to re-compute `affectedRows` */
@@ -232,7 +230,6 @@ public abstract class UpdateByWindow {
      */
     public void assignInputSources(final UpdateByWindowBucketContext context, final ColumnSource<?>[] inputSources) {
         context.inputSources = inputSources;
-        context.inputSourceChunkPopulated = new boolean[inputSources.length];
         context.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
         context.inputSourceChunks = new WritableChunk[inputSources.length];
 
@@ -251,10 +248,9 @@ public abstract class UpdateByWindow {
      */
     protected void prepareValuesChunkForSource(final UpdateByWindowBucketContext context, final int srcIdx,
             final RowSequence rs) {
-        if (!context.inputSourceChunkPopulated[srcIdx]) {
+        if (context.inputSourceChunks[srcIdx] == null) {
             context.inputSourceChunks[srcIdx] =
                     context.inputSources[srcIdx].getChunk(context.inputSourceGetContexts[srcIdx], rs);
-            context.inputSourceChunkPopulated[srcIdx] = true;
         }
     }
 

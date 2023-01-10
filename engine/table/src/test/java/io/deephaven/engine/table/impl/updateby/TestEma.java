@@ -228,71 +228,88 @@ public class TestEma extends BaseUpdateByTest {
                 () -> table.updateBy(UpdateByOperation.Ema(
                         OperationControl.builder().build(), "ts", 100)),
                 "Encountered negative delta time during EMA processing");
-
-        assertThrows(TableDataException.class,
-                () -> table.updateBy(UpdateByOperation.Ema(
-                        OperationControl.builder()
-                                .onNegativeDeltaTime(BadDataBehavior.SKIP)
-                                .onZeroDeltaTime(BadDataBehavior.THROW).build(),
-                        "ts", 100)),
-                "Encountered zero delta time during EMA processing");
-
-        assertThrows(TableDataException.class,
-                () -> table.updateBy(UpdateByOperation.Ema(
-                        OperationControl.builder()
-                                .onNegativeDeltaTime(BadDataBehavior.SKIP)
-                                .onNullTime(BadDataBehavior.THROW).build(),
-                        "ts", 100)),
-                "Encountered null timestamp during EMA processing");
     }
 
     @Test
     public void testResetBehavior() {
+        // Value reset
+        final OperationControl dataResetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .build();
+
         final ColumnHolder ts = col("ts",
                 convertDateTime("2022-03-11T09:30:00.000 NY"),
-                convertDateTime("2022-03-11T09:29:00.000 NY"),
-                convertDateTime("2022-03-11T09:31:00.000 NY"),
                 convertDateTime("2022-03-11T09:31:00.000 NY"),
                 convertDateTime("2022-03-11T09:32:00.000 NY"),
-                null);
+                convertDateTime("2022-03-11T09:33:00.000 NY"),
+                convertDateTime("2022-03-11T09:34:00.000 NY"),
+                convertDateTime("2022-03-11T09:35:00.000 NY"));
 
         Table expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 doubleCol("col", 0, NULL_DOUBLE, 2, NULL_DOUBLE, 4, NULL_DOUBLE));
 
-        testResetBehaviorInternal(expected, ts,
-                byteCol("col", (byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5));
-        testResetBehaviorInternal(expected, ts,
-                shortCol("col", (short) 0, (short) 1, (short) 2, (short) 3, (short) 4, (short) 5));
-        testResetBehaviorInternal(expected, ts, intCol("col", 0, 1, 2, 3, 4, 5));
-        testResetBehaviorInternal(expected, ts, longCol("col", 0, 1, 2, 3, 4, 5));
-        testResetBehaviorInternal(expected, ts, floatCol("col", 0, 1, 2, 3, 4, 5));
-        testResetBehaviorInternal(expected, ts, doubleCol("col", 0, 1, 2, 3, 4, 5));
+        TableDefaults input = testTable(RowSetFactory.flat(6).toTracking(), ts,
+                byteCol("col", (byte) 0, NULL_BYTE, (byte) 2, NULL_BYTE, (byte) 4, NULL_BYTE));
+        Table result = input.updateBy(UpdateByOperation.Ema(dataResetControl, "ts", 1_000_000_000));
+        assertTableEquals(expected, result);
+
+        input = testTable(RowSetFactory.flat(6).toTracking(), ts,
+                shortCol("col", (short) 0, NULL_SHORT, (short) 2, NULL_SHORT, (short) 4, NULL_SHORT));
+        result = input.updateBy(UpdateByOperation.Ema(dataResetControl, "ts", 1_000_000_000));
+        assertTableEquals(expected, result);
+
+        input = testTable(RowSetFactory.flat(6).toTracking(), ts,
+                intCol("col", 0, NULL_INT, 2, NULL_INT, 4, NULL_INT));
+        result = input.updateBy(UpdateByOperation.Ema(dataResetControl, "ts", 1_000_000_000));
+        assertTableEquals(expected, result);
+
+        input = testTable(RowSetFactory.flat(6).toTracking(), ts,
+                longCol("col", 0, NULL_LONG, 2, NULL_LONG, 4, NULL_LONG));
+        result = input.updateBy(UpdateByOperation.Ema(dataResetControl, "ts", 1_000_000_000));
+        assertTableEquals(expected, result);
+
+        input = testTable(RowSetFactory.flat(6).toTracking(), ts,
+                floatCol("col", 0, NULL_FLOAT, 2, NULL_FLOAT, 4, NULL_FLOAT));
+        result = input.updateBy(UpdateByOperation.Ema(dataResetControl, "ts", 1_000_000_000));
+        assertTableEquals(expected, result);
+
+        input = testTable(RowSetFactory.flat(6).toTracking(), ts,
+                doubleCol("col", 0, NULL_DOUBLE, 2, NULL_DOUBLE, 4, NULL_DOUBLE));
+        result = input.updateBy(UpdateByOperation.Ema(dataResetControl, "ts", 1_000_000_000));
+        assertTableEquals(expected, result);
+
+        // BigInteger/BigDecimal
 
         expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 col("col", BigDecimal.valueOf(0), null, BigDecimal.valueOf(2), null, BigDecimal.valueOf(4), null));
 
-        testResetBehaviorInternal(expected, ts, col("col", BigInteger.valueOf(0),
-                BigInteger.valueOf(1),
-                BigInteger.valueOf(2),
-                BigInteger.valueOf(3),
-                BigInteger.valueOf(4),
-                BigInteger.valueOf(5)));
+        input = testTable(RowSetFactory.flat(6).toTracking(), ts,
+                col("col", BigInteger.valueOf(0),
+                        null,
+                        BigInteger.valueOf(2),
+                        null,
+                        BigInteger.valueOf(4),
+                        null));
+        result = input.updateBy(UpdateByOperation.Ema(dataResetControl, "ts", 1_000_000_000));
+        assertTableEquals(expected, result);
 
-        testResetBehaviorInternal(expected, ts,
+        input = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 col("col", BigDecimal.valueOf(0),
-                        BigDecimal.valueOf(1),
+                        null,
                         BigDecimal.valueOf(2),
-                        BigDecimal.valueOf(3),
+                        null,
                         BigDecimal.valueOf(4),
-                        BigDecimal.valueOf(5)));
+                        null));
+        result = input.updateBy(UpdateByOperation.Ema(dataResetControl, "ts", 1_000_000_000));
+        assertTableEquals(expected, result);
 
         // Test reset for NaN values
         final OperationControl resetControl = OperationControl.builder()
                 .onNanValue(BadDataBehavior.RESET)
                 .build();
 
-        TableDefaults input = testTable(RowSetFactory.flat(3).toTracking(), doubleCol("col", 0, Double.NaN, 1));
-        Table result = input.updateBy(UpdateByOperation.Ema(resetControl, 100));
+        input = testTable(RowSetFactory.flat(3).toTracking(), doubleCol("col", 0, Double.NaN, 1));
+        result = input.updateBy(UpdateByOperation.Ema(resetControl, 100));
         expected = testTable(RowSetFactory.flat(3).toTracking(), doubleCol("col", 0, NULL_DOUBLE, 1));
         assertTableEquals(expected, result);
 
@@ -302,23 +319,10 @@ public class TestEma extends BaseUpdateByTest {
         assertTableEquals(expected, result);
     }
 
-    private void testResetBehaviorInternal(Table expected, final ColumnHolder ts, final ColumnHolder col) {
-        final OperationControl resetControl = OperationControl.builder().onNegativeDeltaTime(BadDataBehavior.RESET)
-                .onNullTime(BadDataBehavior.RESET)
-                .onZeroDeltaTime(BadDataBehavior.RESET)
-                .build();
-
-        TableDefaults input = testTable(RowSetFactory.flat(6).toTracking(), ts, col);
-        final Table result = input.updateBy(UpdateByOperation.Ema(resetControl, "ts", 1_000_000_000));
-        assertTableEquals(expected, result);
-    }
-
     @Test
     public void testPoison() {
         final OperationControl nanCtl = OperationControl.builder().onNanValue(BadDataBehavior.POISON)
                 .onNullValue(BadDataBehavior.RESET)
-                .onNullTime(BadDataBehavior.RESET)
-                .onNegativeDeltaTime(BadDataBehavior.RESET)
                 .build();
 
         Table expected = testTable(RowSetFactory.flat(5).toTracking(),
@@ -335,10 +339,10 @@ public class TestEma extends BaseUpdateByTest {
                 null,
                 convertDateTime("2022-03-11T09:33:00.000 NY"),
                 convertDateTime("2022-03-11T09:34:00.000 NY"),
-                convertDateTime("2022-03-11T09:33:00.000 NY"));
+                null);
 
         expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
-                doubleCol("col", 0, Double.NaN, NULL_DOUBLE, Double.NaN, Double.NaN, NULL_DOUBLE));
+                doubleCol("col", 0, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN));
         input = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 doubleCol("col", 0, Double.NaN, 2, Double.NaN, 4, 5));
         Table result = input.updateBy(UpdateByOperation.Ema(nanCtl, "ts", 10));

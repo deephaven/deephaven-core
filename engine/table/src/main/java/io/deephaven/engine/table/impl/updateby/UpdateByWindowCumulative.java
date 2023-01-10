@@ -33,7 +33,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
 
     protected void makeOperatorContexts(UpdateByWindowBucketContext context) {
         // working chunk size need not be larger than affectedRows.size()
-        context.workingChunkSize = Math.min(context.workingChunkSize, context.affectedRows.intSize());
+        context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
 
         // create contexts for the affected operators
         for (int opIdx : context.dirtyOperatorIndices) {
@@ -53,7 +53,6 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
 
     @Override
     public void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
-
         // all rows are affected on the initial step
         if (context.initialStep) {
             context.affectedRows = context.sourceRowSet.copy();
@@ -99,8 +98,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
             return;
         }
 
-        long smallestModifiedKey = smallestAffectedKey(upstream.added(), upstream.modified(), upstream.removed(),
-                upstream.shifted(), context.sourceRowSet);
+        long smallestModifiedKey = smallestAffectedKey(upstream, context.sourceRowSet);
 
         context.affectedRows = smallestModifiedKey == Long.MAX_VALUE
                 ? RowSetFactory.empty()
@@ -114,46 +112,47 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
     public void processRows(UpdateByWindowBucketContext context, final boolean initialStep) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
-        // find the key before the first affected row
-        final long keyBefore;
-        try (final RowSet.SearchIterator rIt = context.sourceRowSet.reverseIterator()) {
-            rIt.advance(context.affectedRows.firstRowKey());
-            if (rIt.hasNext()) {
-                keyBefore = rIt.nextLong();
-            } else {
-                keyBefore = NULL_ROW_KEY;
+        if (initialStep) {
+            // always at the beginning of the RowSet at creation phase
+            for (int opIdx : context.dirtyOperatorIndices) {
+                UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
+                cumOp.initializeUpdate(context.opContext[opIdx], NULL_ROW_KEY, NULL_LONG);
             }
-        }
+        } else {
+            // find the key before the first affected row
+            final long pos = context.sourceRowSet.find(context.affectedRows.firstRowKey());
+            final long keyBefore = pos == 0 ? NULL_ROW_KEY : context.sourceRowSet.get(pos - 1);
 
-        // and preload that data for these operators
-        for (int opIdx : context.dirtyOperatorIndices) {
-            UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
-            if (cumOp.getTimestampColumnName() == null || keyBefore == NULL_ROW_KEY) {
-                // this operator doesn't care about timestamps or we know we are at the beginning of the rowset
-                cumOp.initializeUpdate(context.opContext[opIdx], keyBefore, NULL_LONG);
-            } else {
-                // this operator cares about timestamps, so make sure it is starting from a valid value and
-                // valid timestamp by moving backward until the conditions are met
-                UpdateByCumulativeOperator.Context cumOpContext =
-                        (UpdateByCumulativeOperator.Context) context.opContext[opIdx];
-                long potentialResetTimestamp = context.timestampColumnSource.getLong(keyBefore);
+            // and preload that data for these operators
+            for (int opIdx : context.dirtyOperatorIndices) {
+                UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
+                if (cumOp.getTimestampColumnName() == null || keyBefore == NULL_ROW_KEY) {
+                    // this operator doesn't care about timestamps or we know we are at the beginning of the rowset
+                    cumOp.initializeUpdate(context.opContext[opIdx], keyBefore, NULL_LONG);
+                } else {
+                    // this operator cares about timestamps, so make sure it is starting from a valid value and
+                    // valid timestamp by looking backward until the conditions are met
+                    UpdateByCumulativeOperator.Context cumOpContext =
+                            (UpdateByCumulativeOperator.Context) context.opContext[opIdx];
+                    long potentialResetTimestamp = context.timestampColumnSource.getLong(keyBefore);
 
-                if (potentialResetTimestamp == NULL_LONG || !cumOpContext.isValueValid(keyBefore)) {
-                    try (final RowSet.SearchIterator rIt = context.sourceRowSet.reverseIterator()) {
-                        if (rIt.advance(keyBefore)) {
-                            while (rIt.hasNext()) {
-                                final long nextKey = rIt.nextLong();
-                                potentialResetTimestamp = context.timestampColumnSource.getLong(nextKey);
-                                if (potentialResetTimestamp != NULL_LONG &&
-                                        cumOpContext.isValueValid(nextKey)) {
-                                    break;
+                    if (potentialResetTimestamp == NULL_LONG || !cumOpContext.isValueValid(keyBefore)) {
+                        try (final RowSet.SearchIterator rIt = context.sourceRowSet.reverseIterator()) {
+                            if (rIt.advance(keyBefore)) {
+                                while (rIt.hasNext()) {
+                                    final long nextKey = rIt.nextLong();
+                                    potentialResetTimestamp = context.timestampColumnSource.getLong(nextKey);
+                                    if (potentialResetTimestamp != NULL_LONG &&
+                                            cumOpContext.isValueValid(nextKey)) {
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
+                    // call the specialized version of `intializeUpdate()` for these operators
+                    cumOp.initializeUpdate(context.opContext[opIdx], keyBefore, potentialResetTimestamp);
                 }
-                // call the specialized version of `intializeUpdate()` for these operators
-                cumOp.initializeUpdate(context.opContext[opIdx], keyBefore, potentialResetTimestamp);
             }
         }
 
@@ -164,7 +163,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
             while (it.hasMore()) {
                 final RowSequence rs = it.getNextRowSequenceWithLength(context.workingChunkSize);
                 final int size = rs.intSize();
-                Arrays.fill(context.inputSourceChunkPopulated, false);
+                Arrays.fill(context.inputSourceChunks, null);
 
                 // create the timestamp chunk if needed
                 LongChunk<? extends Values> tsChunk = context.timestampColumnSource == null ? null
@@ -201,72 +200,48 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
     /**
      * Find the smallest valued key that participated in the upstream {@link TableUpdate}.
      *
-     * @param added the added rows
-     * @param modified the modified rows
-     * @param removed the removed rows
-     * @param shifted the shifted rows
+     * @param upstream the {@link TableUpdate update} from upstream
+     * @param affectedRowSet the {@link TrackingRowSet rowset} for the current bucket
      *
-     * @return the smallest key that participated in any part of the update.
+     * @return the smallest key that participated in any part of the update. This will be the minimum of the first key
+     *         of each of added, modified and removed (post-shift) rows.
      */
-    private static long smallestAffectedKey(@NotNull final RowSet added,
-            @NotNull final RowSet modified,
-            @NotNull final RowSet removed,
-            @NotNull final RowSetShiftData shifted,
-            @NotNull final RowSet affectedRowSet) {
+    private static long smallestAffectedKey(@NotNull TableUpdate upstream, @NotNull TrackingRowSet affectedRowSet) {
 
         long smallestModifiedKey = Long.MAX_VALUE;
-        if (removed.isNonempty()) {
-            smallestModifiedKey = removed.firstRowKey();
-        }
+        if (upstream.removed().isNonempty()) {
+            // removed rows aren't represented in the shift data, so choose the row immediately preceding the first
+            // removed as the removed candidate for smallestAffectedKey
+            final long pos = affectedRowSet.findPrev(upstream.removed().firstRowKey());
+            if (pos == 0) {
+                // the first row was removed, recompute everything
+                return affectedRowSet.firstRowKey();
+            }
 
-        if (added.isNonempty()) {
-            smallestModifiedKey = Math.min(smallestModifiedKey, added.firstRowKey());
-        }
-
-        if (modified.isNonempty()) {
-            smallestModifiedKey = Math.min(smallestModifiedKey, modified.firstRowKey());
-        }
-
-        if (shifted.nonempty()) {
-            final long firstModKey = modified.isEmpty() ? Long.MAX_VALUE : modified.firstRowKey();
-            boolean modShiftFound = modified.isNonempty();
-            boolean affectedFound = false;
-            try (final RowSequence.Iterator it = affectedRowSet.getRowSequenceIterator()) {
-                for (int shiftIdx = 0; shiftIdx < shifted.size()
-                        && (!modShiftFound || !affectedFound); shiftIdx++) {
-                    final long shiftStart = shifted.getBeginRange(shiftIdx);
-                    final long shiftEnd = shifted.getEndRange(shiftIdx);
-                    final long shiftDelta = shifted.getShiftDelta(shiftIdx);
-
-                    if (!affectedFound) {
-                        if (it.advance(shiftStart + shiftDelta)) {
-                            final long maybeAffectedKey = it.peekNextKey();
-                            if (maybeAffectedKey <= shiftEnd + shiftDelta) {
-                                affectedFound = true;
-                                final long keyToCompare =
-                                        shiftDelta > 0 ? maybeAffectedKey - shiftDelta : maybeAffectedKey;
-                                smallestModifiedKey = Math.min(smallestModifiedKey, keyToCompare);
-                            }
-                        } else {
-                            affectedFound = true;
-                        }
-                    }
-
-                    if (!modShiftFound) {
-                        if (firstModKey <= (shiftEnd + shiftDelta)) {
-                            modShiftFound = true;
-                            // If the first modified key is in the range we should include it
-                            if (firstModKey >= (shiftStart + shiftDelta)) {
-                                smallestModifiedKey = Math.min(smallestModifiedKey, firstModKey - shiftDelta);
-                            } else {
-                                // Otherwise it's not included in any shifts, and since shifts can't reorder rows
-                                // it is the smallest possible value and we've already accounted for it above.
-                                break;
-                            }
-                        }
+            // get the key previous to this one and shift to post-space (if needed)
+            smallestModifiedKey = affectedRowSet.getPrev(pos - 1);
+            if (upstream.shifted().nonempty()) {
+                final RowSetShiftData shifted = upstream.shifted();
+                for (int shiftIdx = 0; shiftIdx < shifted.size(); shiftIdx++) {
+                    if (shifted.getBeginRange(shiftIdx) > smallestModifiedKey) {
+                        // no shift applies so we are already in post-shift space
+                        break;
+                    } else if (shifted.getEndRange(shiftIdx) >= smallestModifiedKey) {
+                        // this shift applies, add the delta to get post-shift
+                        smallestModifiedKey += shifted.getShiftDelta(shiftIdx);
+                        break;
                     }
                 }
             }
+
+        }
+
+        if (upstream.added().isNonempty()) {
+            smallestModifiedKey = Math.min(smallestModifiedKey, upstream.added().firstRowKey());
+        }
+
+        if (upstream.modified().isNonempty()) {
+            smallestModifiedKey = Math.min(smallestModifiedKey, upstream.modified().firstRowKey());
         }
 
         return smallestModifiedKey;

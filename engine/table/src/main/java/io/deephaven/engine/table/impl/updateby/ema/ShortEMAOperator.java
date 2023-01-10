@@ -41,7 +41,7 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                     final short input = shortValueChunk.get(ii);
 
                     if(input == NULL_SHORT) {
-                        handleBadData(this, true, false, false);
+                        handleBadData(this, true, false);
                     } else {
                         if(curVal == NULL_DOUBLE) {
                             curVal = input;
@@ -60,22 +60,20 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                     //noinspection ConstantConditions
                     final boolean isNull = input == NULL_SHORT;
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    if(isNull || isNullTime) {
-                        handleBadData(this, isNull, false, isNullTime);
+                    if(isNull) {
+                        handleBadData(this, true, false);
+                    } else if (isNullTime) {
+                        // no change to curVal and lastStamp
                     } else {
                         if(curVal == NULL_DOUBLE) {
                             curVal = input;
                             lastStamp = timestamp;
                         } else {
                             final long dt = timestamp - lastStamp;
-                            if(dt <= 0) {
-                                handleBadTime(this, dt);
-                            } else {
-                                // alpha is dynamic, based on time
-                                final double alpha = Math.exp(-dt / (double)reverseTimeScaleUnits);
-                                curVal = alpha * curVal + ((1 - alpha) * input);
-                                lastStamp = timestamp;
-                            }
+                            // alpha is dynamic, based on time
+                            final double alpha = Math.exp(-dt / (double)reverseTimeScaleUnits);
+                            curVal = alpha * curVal + ((1 - alpha) * input);
+                            lastStamp = timestamp;
                         }
                     }
                     outputValues.set(ii, curVal);
