@@ -86,7 +86,7 @@ public class SelectColumnFactory {
         final Matcher numberMatcher = numberFormatPattern.matcher(topMatcher.group(2));
         final Matcher dateMatcher = dateFormatPattern.matcher(topMatcher.group(2));
 
-        String columnName = topMatcher.group(1);
+        final String columnName = topMatcher.group(1);
         if (numberMatcher.matches()) {
             return FormulaColumn.createFormulaColumn(ColumnFormatting.getNumberFormatColumn(columnName),
                     numberMatcher.group(1),
@@ -95,12 +95,7 @@ public class SelectColumnFactory {
             return FormulaColumn.createFormulaColumn(ColumnFormatting.getDateFormatColumn(columnName),
                     dateMatcher.group(1), FormulaParserConfiguration.Deephaven);
         } else {
-            if (columnName.equals("*")) {
-                columnName = ColumnFormatting.getRowStyleFormatColumn();
-            } else {
-                columnName = ColumnFormatting.getStyleFormatColumn(columnName);
-            }
-            return FormulaColumn.createFormulaColumn(columnName,
+            return FormulaColumn.createFormulaColumn(ColumnFormatting.getStyleFormatColumn(columnName),
                     "io.deephaven.engine.util.ColorUtil.toLong("
                             + (colorMatcher.matches() ? colorMatcher.group(1) : topMatcher.group(2)) + ")",
                     FormulaParserConfiguration.Deephaven);

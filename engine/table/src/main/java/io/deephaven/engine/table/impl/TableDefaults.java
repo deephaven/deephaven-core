@@ -307,7 +307,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     @FinalDefault
     default Table formatRowWhere(String condition, String formula) {
-        return formatColumnWhere("*", condition, formula);
+        return formatColumnWhere(ColumnFormatting.Constants.ROW_FORMAT_WILDCARD, condition, formula);
     }
 
     @Override
@@ -332,7 +332,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
         final String[] unknownColumns = Arrays.stream(selectColumns)
                 .map(sc -> ColumnFormatting.getFormatBaseColumn(sc.getName()))
-                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
+                .filter(column -> (column != null
+                        && !column.equals(ColumnFormatting.Constants.ROW_FORMAT_WILDCARD)
+                        && !existingColumns.contains(column)))
                 .toArray(String[]::new);
 
         if (unknownColumns.length > 0) {

@@ -15,6 +15,7 @@ public interface ColumnFormatting {
         private static final String TABLE_NUMBER_FORMAT_SUFFIX = "__TABLE_NUMBER_FORMAT";
         private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
         private static final String ROW_FORMAT_NAME = "__ROW";
+        public static final String ROW_FORMAT_WILDCARD = "*";
         private static final String ROW_STYLE_FORMAT_COLUMN = ROW_FORMAT_NAME + TABLE_STYLE_FORMAT_SUFFIX;
     }
 
@@ -46,11 +47,13 @@ public interface ColumnFormatting {
     }
 
     /**
-     * @param baseColumn the column name
+     * @param baseColumn the column name, or the wildcard name for row formats
      * @return The name of the style formatting column for the specified base column.
      */
     static String getStyleFormatColumn(String baseColumn) {
-        return baseColumn + Constants.TABLE_STYLE_FORMAT_SUFFIX;
+        return baseColumn.equals(Constants.ROW_FORMAT_WILDCARD)
+                ? getRowStyleFormatColumn()
+                : baseColumn + Constants.TABLE_STYLE_FORMAT_SUFFIX;
     }
 
     /**
@@ -108,7 +111,7 @@ public interface ColumnFormatting {
     static String getFormatBaseColumn(@NotNull final String columnName) {
 
         if (columnName.startsWith(Constants.ROW_FORMAT_NAME)) {
-            return "*";
+            return Constants.ROW_FORMAT_WILDCARD;
         }
 
         int index;
