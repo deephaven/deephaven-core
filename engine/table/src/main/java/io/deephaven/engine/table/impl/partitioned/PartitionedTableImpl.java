@@ -32,6 +32,7 @@ import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
@@ -240,17 +241,22 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @ConcurrentMethod
     @Override
-    public PartitionedTableImpl transform(final ExecutionContext executionContext,
-            @NotNull final UnaryOperator<Table> transformer) {
+    public PartitionedTableImpl transform(
+            @Nullable final ExecutionContext executionContext,
+            @NotNull final UnaryOperator<Table> transformer,
+            final boolean expectRefreshingResults) {
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
         try (final SafeCloseable ignored1 = executionContext == null ? null : executionContext.open();
                 final SafeCloseable ignored2 = LivenessScopeStack.open()) {
 
+            final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(table, expectRefreshingResults);
+
             // Perform the transformation
-            resultTable = table.update(new TableTransformationColumn(
-                    constituentColumnName, executionContext, transformer));
+            resultTable = asRefreshingIfNeeded.update(new TableTransformationColumn(
+                    constituentColumnName, executionContext,
+                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer)));
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
@@ -273,8 +279,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @Override
     public PartitionedTableImpl partitionedTransform(
             @NotNull final PartitionedTable other,
-            final ExecutionContext executionContext,
-            @NotNull final BinaryOperator<Table> transformer) {
+            @Nullable final ExecutionContext executionContext,
+            @NotNull final BinaryOperator<Table> transformer,
+            final boolean expectRefreshingResults) {
         // Check safety before doing any extra work
         if (table.isRefreshing() || other.table().isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
@@ -295,9 +302,12 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     ? table.naturalJoin(other.table(), joinPairs, joinAdditions)
                             .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
                     : table.join(other.table(), joinPairs, joinAdditions);
-            resultTable = joined
-                    .update(new BiTableTransformationColumn(
-                            constituentColumnName, RHS_CONSTITUENT, executionContext, transformer))
+
+            final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(joined, expectRefreshingResults);
+
+            resultTable = asRefreshingIfNeeded
+                    .update(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, executionContext,
+                            asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer)))
                     .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 
@@ -317,6 +327,37 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 resultConstituentDefinition,
                 constituentChangesPermitted || other.constituentChangesPermitted(),
                 true);
+    }
+
+    private Table maybeCopyAsRefreshing(Table table, boolean expectRefreshingResults) {
+        if (!expectRefreshingResults || table.isRefreshing()) {
+            return table;
+        }
+        final Table copied = ((QueryTable) table.coalesce()).copy();
+        copied.setRefreshing(true);
+        return copied;
+    }
+
+    private static UnaryOperator<Table> assertResultsStatic(@NotNull final UnaryOperator<Table> wrapped) {
+        return (final Table table) -> {
+            final Table result = wrapped.apply(table);
+            if (result != null && result.isRefreshing()) {
+                throw new IllegalStateException("Static partitioned tables cannot contain refreshing constituents. "
+                        + "Did you mean to specify expectRefreshingResults=true for this transform?");
+            }
+            return result;
+        };
+    }
+
+    private static BinaryOperator<Table> assertResultsStatic(@NotNull final BinaryOperator<Table> wrapped) {
+        return (final Table table1, final Table table2) -> {
+            final Table result = wrapped.apply(table1, table2);
+            if (result != null && result.isRefreshing()) {
+                throw new IllegalStateException("Static partitioned tables cannot contain refreshing constituents. "
+                        + "Did you mean to specify expectRefreshingResults=true for this transform?");
+            }
+            return result;
+        };
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/2368): Consider adding transformWithKeys support
