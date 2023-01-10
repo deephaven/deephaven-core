@@ -145,6 +145,7 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
             referenceForSource.swapDelegate(initialDelegate, eventualListener instanceof LegacyListenerAdapter
                     ? (LegacyListenerAdapter) eventualListener
                     : new WeakSimpleReference<>(eventualListener));
+            forceReferenceCountToZero();
         }
 
         return success;
