@@ -609,7 +609,7 @@ public class ArrowFlightUtil {
                     return;
                 }
 
-                log.info().append(myPrefix).append("processing initial subscription").endl();
+                log.debug().append(myPrefix).append("processing initial subscription").endl();
 
                 final boolean hasColumns = subscriptionRequest.columnsVector() != null;
                 final BitSet columns =
