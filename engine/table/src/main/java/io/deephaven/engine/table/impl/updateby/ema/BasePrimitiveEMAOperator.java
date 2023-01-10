@@ -85,8 +85,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     void handleBadData(@NotNull final Context ctx,
-                       final boolean isNull,
-                       final boolean isNan) {
+            final boolean isNull,
+            final boolean isNan) {
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
