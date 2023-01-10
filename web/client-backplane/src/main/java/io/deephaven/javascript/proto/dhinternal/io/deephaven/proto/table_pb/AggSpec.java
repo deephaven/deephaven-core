@@ -23,7 +23,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggs
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecUnique;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecVar;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecWeighted;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.TypeCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -934,7 +933,7 @@ public class AggSpec {
 
     public native AggSpecTDigest getTDigest();
 
-    public native TypeCase getTypeCase();
+    public native int getTypeCase();
 
     public native AggSpecUnique getUnique();
 
