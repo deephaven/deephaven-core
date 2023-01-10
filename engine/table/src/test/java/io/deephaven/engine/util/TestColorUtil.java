@@ -290,7 +290,7 @@ public class TestColorUtil extends BaseArrayTestCase {
 
     private void testRowFormatWhere(final Table colorTable, final Color color) {
         final long[] colorTableCol =
-                colorTable.getColumn(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME)
+                colorTable.getColumn(ColumnFormatting.getRowStyleFormatColumn())
                         .getLongs(0, size);
 
         for (int i = 0; i < 6; i++) {
@@ -303,7 +303,7 @@ public class TestColorUtil extends BaseArrayTestCase {
 
     private void testFormatColumns(final Table colorTable, final Color color) {
         final long[] colorTableCol =
-                colorTable.getColumn("X" + ColumnFormattingValues.TABLE_FORMAT_NAME).getLongs(0, size);
+                colorTable.getColumn(ColumnFormatting.getStyleFormatColumn("X")).getLongs(0, size);
         for (long aColorTableCol : colorTableCol) {
             assertEquals(ColorUtil.toLong(color), aColorTableCol);
         }

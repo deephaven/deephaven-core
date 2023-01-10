@@ -38,8 +38,6 @@ import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableViewSubscription;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -90,7 +88,9 @@ public class ArrowFlightUtil {
                             ArrowModule.provideListenerAdapter().adapt(observer);
 
                     // push the schema to the listener
-                    listener.onNext(streamGeneratorFactory.getSchemaView(table.getDefinition(), table.getAttributes()));
+                    listener.onNext(streamGeneratorFactory.getSchemaView(
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                                    table.getDefinition(), table.getAttributes())));
 
                     // shared code between `DoGet` and `BarrageSnapshotRequest`
                     BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
@@ -399,17 +399,7 @@ public class ArrowFlightUtil {
 
         @Override
         public void onError(final Throwable t) {
-            boolean doLog = true;
-            if (t instanceof StatusRuntimeException) {
-                final Status status = ((StatusRuntimeException) t).getStatus();
-                if (status.getCode() == Status.Code.CANCELLED || status.getCode() == Status.Code.ABORTED) {
-                    doLog = false;
-                }
-            }
-            if (doLog) {
-                log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ")
-                        .append(t).endl();
-            }
+            GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, t));
             tryClose();
         }
 
@@ -485,7 +475,8 @@ public class ArrowFlightUtil {
 
                                 // push the schema to the listener
                                 listener.onNext(streamGeneratorFactory.getSchemaView(
-                                        table.getDefinition(), table.getAttributes()));
+                                        fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                                                table.getDefinition(), table.getAttributes())));
 
                                 // collect the viewport and columnsets (if provided)
                                 final boolean hasColumns = snapshotRequest.columnsVector() != null;
@@ -574,7 +565,7 @@ public class ArrowFlightUtil {
 
                     onExportResolvedContinuation = session.nonExport()
                             .require(parent)
-                            .onError(listener)
+                            .onErrorHandler(DoExchangeMarshaller.this::onError)
                             .submit(() -> onExportResolved(parent));
                 }
             }
@@ -618,7 +609,7 @@ public class ArrowFlightUtil {
                     return;
                 }
 
-                log.info().append(myPrefix).append("processing initial subscription").endl();
+                log.debug().append(myPrefix).append("processing initial subscription").endl();
 
                 final boolean hasColumns = subscriptionRequest.columnsVector() != null;
                 final BitSet columns =

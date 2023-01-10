@@ -18,6 +18,7 @@ import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.TypeCase;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -28,7 +29,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static io.deephaven.server.table.ops.GrpcErrorHelper.extractField;
+import static io.deephaven.server.grpc.GrpcErrorHelper.extractField;
 
 public class AggregationAdapter {
 
