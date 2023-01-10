@@ -162,6 +162,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
     public void completed() {
         state = State.Done;
+        GrpcUtil.safelyComplete(listener);
         forceReferenceCountToZero();
     }
 

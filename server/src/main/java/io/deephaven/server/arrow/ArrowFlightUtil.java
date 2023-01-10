@@ -38,8 +38,6 @@ import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableViewSubscription;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -401,17 +399,7 @@ public class ArrowFlightUtil {
 
         @Override
         public void onError(final Throwable t) {
-            boolean doLog = true;
-            if (t instanceof StatusRuntimeException) {
-                final Status status = ((StatusRuntimeException) t).getStatus();
-                if (status.getCode() == Status.Code.CANCELLED || status.getCode() == Status.Code.ABORTED) {
-                    doLog = false;
-                }
-            }
-            if (doLog) {
-                log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ")
-                        .append(t).endl();
-            }
+            GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, t));
             tryClose();
         }
 
@@ -577,7 +565,7 @@ public class ArrowFlightUtil {
 
                     onExportResolvedContinuation = session.nonExport()
                             .require(parent)
-                            .onError(listener)
+                            .onErrorHandler(DoExchangeMarshaller.this::onError)
                             .submit(() -> onExportResolved(parent));
                 }
             }
