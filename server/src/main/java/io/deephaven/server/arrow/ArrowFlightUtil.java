@@ -174,7 +174,7 @@ public class ArrowFlightUtil {
                 resultTable.handleBarrageMessage(msg);
 
                 // no app_metadata to report; but ack the processing
-                GrpcUtil.safelyExecuteLocked(observer, () -> observer.onNext(Flight.PutResult.getDefaultInstance()));
+                GrpcUtil.safelyOnNext(observer, Flight.PutResult.getDefaultInstance());
             });
         }
 
@@ -242,7 +242,7 @@ public class ArrowFlightUtil {
 
                 // no more changes allowed; this is officially static content
                 localResultTable.sealTable(() -> localExportBuilder.submit(() -> {
-                    GrpcUtil.safelyExecuteLocked(observer, observer::onCompleted);
+                    GrpcUtil.safelyComplete(observer);
                     session.removeOnCloseCallback(this);
                     return localResultTable;
                 }), () -> {
@@ -693,7 +693,7 @@ public class ArrowFlightUtil {
                     htvs.completed();
                     htvs = null;
                 } else {
-                    GrpcUtil.safelyExecuteLocked(listener, listener::onCompleted);
+                    GrpcUtil.safelyComplete(listener);
                 }
 
                 if (preExportSubscriptions != null) {

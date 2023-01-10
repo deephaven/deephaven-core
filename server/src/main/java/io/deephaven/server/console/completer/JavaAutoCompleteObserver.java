@@ -23,10 +23,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
 
 /**
  * Autocomplete handling for JVM languages, that directly can interact with Java instances without any name mangling,
@@ -117,12 +117,12 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
                 if (log.isTraceEnabled()) {
                     log.trace().append("Completion canceled").append(exception).endl();
                 }
-                safelyExecuteLocked(responseObserver,
-                        () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                safelyOnNext(responseObserver,
+                        AutoCompleteResponse.newBuilder()
                                 .setCompletionItems(GetCompletionItemsResponse.newBuilder()
                                         .setSuccess(false)
                                         .setRequestId(request.getRequestId()))
-                                .build()));
+                                .build());
                 return;
             }
 
@@ -141,10 +141,10 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
                                     .collect(Collectors.toSet()))
                             .build();
 
-            safelyExecuteLocked(responseObserver,
-                    () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+            safelyOnNext(responseObserver,
+                    AutoCompleteResponse.newBuilder()
                             .setCompletionItems(mangledResults)
-                            .build()));
+                            .build());
         } catch (Exception exception) {
             if (ConsoleServiceGrpcImpl.QUIET_AUTOCOMPLETE_ERRORS) {
                 if (log.isTraceEnabled()) {
@@ -153,12 +153,12 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
             } else {
                 log.error().append("Exception occurred during autocomplete").append(exception).endl();
             }
-            safelyExecuteLocked(responseObserver,
-                    () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+            safelyOnNext(responseObserver,
+                    AutoCompleteResponse.newBuilder()
                             .setCompletionItems(GetCompletionItemsResponse.newBuilder()
                                     .setSuccess(false)
                                     .setRequestId(request.getRequestId()))
-                            .build()));
+                            .build());
         }
     }
 
@@ -170,6 +170,6 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
     @Override
     public void onCompleted() {
         // just hang up too, browser will reconnect if interested, and we'll maintain state if the session isn't gc'd
-        safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
+        safelyComplete(responseObserver);
     }
 }
