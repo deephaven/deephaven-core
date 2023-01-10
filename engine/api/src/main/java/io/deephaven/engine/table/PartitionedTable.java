@@ -212,6 +212,8 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * @param transformer The {@link UnaryOperator} to apply to all constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
+     * @throws IllegalStateException On instantiation or update if {@code !table().isRefreshing()} and
+     *         {@code transformer} produces a refreshing result for any constituent
      */
     default PartitionedTable transform(@NotNull UnaryOperator<Table> transformer) {
         return transform(ExecutionContext.getContextToRecord(), transformer, table().isRefreshing());
@@ -229,8 +231,13 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @param transformer The {@link UnaryOperator} to apply to all constituent {@link Table tables}
      * @param expectRefreshingResults Whether to expect that the results of applying {@code transformer} <em>may</em> be
      *        {@link Table#isRefreshing() refreshing}. If {@code true}, the resulting PartitionedTable will always be
-     *        backed by a refreshing {@link #table() table}.
+     *        backed by a refreshing {@link #table() table}. This hint is important for transforms to static inputs that
+     *        might produce refreshing output, in order to ensure correct liveness management; incorrectly specifying
+     *        {@code false} will result in exceptions.
      * @return The new PartitionedTable containing the resulting constituents
+     * @throws IllegalStateException On instantiation or update if
+     *         {@code !table().isRefreshing() && !expectRefreshingResults} and {@code transformer} produces a refreshing
+     *         result for any constituent
      */
     PartitionedTable transform(
             @Nullable ExecutionContext executionContext,
@@ -265,6 +272,9 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @param other The other PartitionedTable to find constituents in
      * @param transformer The {@link BinaryOperator} to apply to all pairs of constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
+     * @throws IllegalStateException On instantiation or update if
+     *         {@code !table().isRefreshing() && !other.table().isRefreshing()} and {@code transformer} produces a
+     *         refreshing result for any constituent
      */
     default PartitionedTable partitionedTransform(
             @NotNull PartitionedTable other,
@@ -299,8 +309,13 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @param transformer The {@link BinaryOperator} to apply to all pairs of constituent {@link Table tables}
      * @param expectRefreshingResults Whether to expect that the results of applying {@code transformer} <em>may</em> be
      *        {@link Table#isRefreshing() refreshing}. If {@code true}, the resulting PartitionedTable will always be
-     *        backed by a refreshing {@link #table() table}.
+     *        backed by a refreshing {@link #table() table}. This hint is important for transforms to static inputs that
+     *        might produce refreshing output, in order to ensure correct liveness management; incorrectly specifying
+     *        {@code false} will result in exceptions.
      * @return The new PartitionedTable containing the resulting constituents
+     * @throws IllegalStateException On instantiation or update if
+     *         {@code !table().isRefreshing() && !other.table().isRefreshing() && !expectRefreshingResults} and
+     *         {@code transformer} produces a refreshing result for any constituent
      */
     PartitionedTable partitionedTransform(
             @NotNull PartitionedTable other,
