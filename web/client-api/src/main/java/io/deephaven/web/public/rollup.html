@@ -177,7 +177,10 @@ remoteTable = empty_table(100).update("I=i", "J = \`\` + (int)(i/10)")
                 aggregations: {}
             };
             var operation = document.getElementById('operation').value;
-            config.aggregations[operation] = getAllValues(aggColumns);
+            let aggColumnNames = getAllValues(aggColumns);
+            if (aggColumnNames.length > 0) {
+                config.aggregations[operation] = aggColumnNames;
+            }
             config.groupingColumns = getAllValues(treeColumns);
             config.includeConstituents = document.getElementById('includeConstituents').checked;
 

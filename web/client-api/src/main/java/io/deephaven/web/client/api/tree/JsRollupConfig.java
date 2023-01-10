@@ -210,6 +210,10 @@ public class JsRollupConfig {
                 // }
             }
         });
+        if (aggregations.length != 0) {
+            request.setAggregationsList(aggregations);
+        }
+
         return request;
     }
 
