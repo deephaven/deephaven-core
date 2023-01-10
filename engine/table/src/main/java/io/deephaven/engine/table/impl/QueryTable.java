@@ -1872,11 +1872,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Table snapshotHistory(final String nuggetName, final Table baseTable,
             Collection<? extends JoinAddition> stampColumns) {
+        Assert.eqTrue(isRefreshing(), "isRefreshing()");
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(),
                 () -> maybeViewForSnapshot(stampColumns).snapshotHistoryInternal(baseTable));
     }
 
     private Table snapshotHistoryInternal(final Table baseTable) {
+        Assert.eqTrue(isRefreshing(), "isRefreshing()");
         checkInitiateOperation();
 
         // resultColumns initially contains the trigger columns, then we insert the base columns into it
@@ -1935,6 +1937,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Table snapshot(String nuggetName, Table baseTable, boolean doInitialSnapshot,
             Collection<? extends JoinAddition> stampColumns) {
+        Assert.eqTrue(isRefreshing(), "isRefreshing()");
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
             QueryTable viewTable = maybeViewForSnapshot(stampColumns);
             // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
@@ -2023,6 +2026,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Table snapshotIncremental(String nuggetName, Table baseTable, boolean doInitialSnapshot,
             Collection<? extends JoinAddition> stampColumns) {
+        Assert.eqTrue(isRefreshing(), "isRefreshing()");
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
             QueryTable viewTable = maybeViewForSnapshot(stampColumns);
             // Due to the above logic, we need to pull the actual set of column names back from the viewTable.

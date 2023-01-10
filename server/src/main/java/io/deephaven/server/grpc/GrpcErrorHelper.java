@@ -1,4 +1,4 @@
-package io.deephaven.server.table.ops;
+package io.deephaven.server.grpc;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-class GrpcErrorHelper {
-    static void checkHasField(Message message, int fieldNumber) throws StatusRuntimeException {
+public class GrpcErrorHelper {
+    public static void checkHasField(Message message, int fieldNumber) throws StatusRuntimeException {
         final Descriptor descriptor = message.getDescriptorForType();
         final FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(fieldNumber);
         if (!message.hasField(fieldDescriptor)) {
@@ -25,16 +25,7 @@ class GrpcErrorHelper {
         }
     }
 
-    static void checkNotHasField(Message message, int fieldNumber) throws StatusRuntimeException {
-        final Descriptor descriptor = message.getDescriptorForType();
-        final FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(fieldNumber);
-        if (message.hasField(fieldDescriptor)) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format("%s must not have field %s (%d)",
-                    descriptor.getFullName(), fieldDescriptor.getName(), fieldNumber));
-        }
-    }
-
-    static void checkRepeatedFieldNonEmpty(Message message, int fieldNumber) throws StatusRuntimeException {
+    public static void checkRepeatedFieldNonEmpty(Message message, int fieldNumber) throws StatusRuntimeException {
         final Descriptor descriptor = message.getDescriptorForType();
         final FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(fieldNumber);
         if (!fieldDescriptor.isRepeated()) {
@@ -49,21 +40,7 @@ class GrpcErrorHelper {
         }
     }
 
-    static void checkRepeatedFieldEmpty(Message message, int fieldNumber) throws StatusRuntimeException {
-        final Descriptor descriptor = message.getDescriptorForType();
-        final FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(fieldNumber);
-        if (!fieldDescriptor.isRepeated()) {
-            throw new IllegalStateException(
-                    String.format("Should only be calling checkRepeatedFieldEmpty against a repeated field. %s %s (%d)",
-                            descriptor.getFullName(), fieldDescriptor.getName(), fieldNumber));
-        }
-        if (message.getRepeatedFieldCount(fieldDescriptor) != 0) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format("%s must have zero of %s (%d)",
-                    descriptor.getFullName(), fieldDescriptor.getName(), fieldNumber));
-        }
-    }
-
-    static void checkHasOneOf(Message message, String oneOfName) throws StatusRuntimeException {
+    public static void checkHasOneOf(Message message, String oneOfName) throws StatusRuntimeException {
         final Descriptor descriptor = message.getDescriptorForType();
         final OneofDescriptor oneofDescriptor =
                 descriptor.getOneofs().stream().filter(o -> oneOfName.equals(o.getName())).findFirst().orElseThrow();
@@ -74,14 +51,14 @@ class GrpcErrorHelper {
         }
     }
 
-    static void checkHasNoUnknownFields(Message message) {
+    public static void checkHasNoUnknownFields(Message message) {
         if (!message.getUnknownFields().asMap().isEmpty()) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                     String.format("%s has unknown field(s)", message.getDescriptorForType().getFullName()));
         }
     }
 
-    static void checkHasNoUnknownFieldsRecursive(Message message) {
+    public static void checkHasNoUnknownFieldsRecursive(Message message) {
         checkHasNoUnknownFields(message);
         for (Entry<FieldDescriptor, Object> e : message.getAllFields().entrySet()) {
             if (e instanceof Message) {
@@ -90,7 +67,7 @@ class GrpcErrorHelper {
         }
     }
 
-    static FieldDescriptor extractField(Descriptor desc, int fieldNumber, Class<? extends Message> clazz)
+    public static FieldDescriptor extractField(Descriptor desc, int fieldNumber, Class<? extends Message> clazz)
             throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         final FieldDescriptor field = desc.findFieldByNumber(fieldNumber);
         final Descriptor messageType = field.getMessageType();

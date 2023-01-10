@@ -94,9 +94,6 @@ BarrageMessageProducer.minSnapshotCellCount=50
 BarrageMessageProducer.maxSnapshotCellCount=50
 BarrageStreamGenerator.batchSize=4
 
-#BarrageTable.debug=true
-#BarrageMessageProducer.debug=true
-
 AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 authentication.client.configuration.list=
 client.version.list=

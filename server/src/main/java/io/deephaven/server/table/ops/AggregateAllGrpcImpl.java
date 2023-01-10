@@ -7,6 +7,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.server.grpc.Common;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.grpc.StatusRuntimeException;
 

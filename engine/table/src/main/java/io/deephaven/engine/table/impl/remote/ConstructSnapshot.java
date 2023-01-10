@@ -1090,12 +1090,14 @@ public class ConstructSnapshot {
                     // TODO: Optimization. If this exception is only used for cases when we can't use previous values,
                     // then we could simply wait for the source to become satisfied on this cycle, rather than
                     // waiting for the UGP lock. Likely requires work for all code that uses this pattern.
-                    log.debug().append(logPrefix).append(" Disallowed UGP-less Snapshot Function took ")
-                            .append(System.currentTimeMillis() - attemptStart).append("ms")
-                            .append(", beforeClockValue=").append(beforeClockValue)
-                            .append(", afterClockValue=").append(LogicalClock.DEFAULT.currentValue())
-                            .append(", usePrev=").append(usePrev)
-                            .endl();
+                    if (log.isDebugEnabled()) {
+                        log.debug().append(logPrefix).append(" Disallowed UGP-less Snapshot Function took ")
+                                .append(System.currentTimeMillis() - attemptStart).append("ms")
+                                .append(", beforeClockValue=").append(beforeClockValue)
+                                .append(", afterClockValue=").append(LogicalClock.DEFAULT.currentValue())
+                                .append(", usePrev=").append(usePrev)
+                                .endl();
+                    }
                     break;
                 } catch (Exception e) {
                     functionSuccessful = false;
@@ -1114,20 +1116,22 @@ public class ConstructSnapshot {
                         functionSuccessful = false;
                         caughtException = e;
                         snapshotSuccessful = true;
-                    } else {
-                        log.debug().append(logPrefix).append(" Suppressed exception from snapshot success function: ")
-                                .append(e).endl();
+                    } else if (log.isDebugEnabled()) {
+                        log.debug().append(logPrefix)
+                                .append(" Suppressed exception from snapshot success function: ").append(e).endl();
                     }
                 }
                 attemptDurationMillis = System.currentTimeMillis() - attemptStart;
-                log.debug().append(logPrefix).append(" UGP-less Snapshot Function took ")
-                        .append(attemptDurationMillis).append("ms")
-                        .append(", snapshotSuccessful=").append(snapshotSuccessful)
-                        .append(", functionSuccessful=").append(functionSuccessful)
-                        .append(", beforeClockValue=").append(beforeClockValue)
-                        .append(", afterClockValue=").append(afterClockValue)
-                        .append(", usePrev=").append(usePrev)
-                        .endl();
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix).append(" UGP-less Snapshot Function took ")
+                            .append(attemptDurationMillis).append("ms")
+                            .append(", snapshotSuccessful=").append(snapshotSuccessful)
+                            .append(", functionSuccessful=").append(functionSuccessful)
+                            .append(", beforeClockValue=").append(beforeClockValue)
+                            .append(", afterClockValue=").append(afterClockValue)
+                            .append(", usePrev=").append(usePrev)
+                            .endl();
+                }
                 if (snapshotSuccessful) {
                     if (functionSuccessful) {
                         step = usePrev ? LogicalClock.getStep(beforeClockValue) - 1
@@ -1138,9 +1142,11 @@ public class ConstructSnapshot {
                 }
             }
             if (attemptDurationMillis > MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS) {
-                log.info().append(logPrefix).append(" Failed concurrent execution exceeded maximum duration (")
-                        .append(attemptDurationMillis).append(" ms > ")
-                        .append(MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS).append(" ms)").endl();
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix).append(" Failed concurrent execution exceeded maximum duration (")
+                            .append(attemptDurationMillis).append(" ms > ")
+                            .append(MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS).append(" ms)").endl();
+                }
                 break;
             } else {
                 try {
@@ -1164,13 +1170,14 @@ public class ConstructSnapshot {
                 }
             }
         } else {
-            if (numConcurrentAttempts == 0) {
-                log.info().append(logPrefix).append(" Already held lock, proceeding to locked snapshot").endl();
-            } else {
-                log.info().append(logPrefix)
-                        .append(" Failed to obtain clean execution without blocking run processing").endl();
+            if (log.isDebugEnabled()) {
+                if (numConcurrentAttempts == 0) {
+                    log.debug().append(logPrefix).append(" Already held lock, proceeding to locked snapshot").endl();
+                } else {
+                    log.debug().append(logPrefix)
+                            .append(" Failed to obtain clean execution without blocking run processing").endl();
+                }
             }
-
             state.startLockedSnapshot();
             try {
                 final long beforeClockValue = LogicalClock.DEFAULT.currentValue();
@@ -1196,18 +1203,17 @@ public class ConstructSnapshot {
                             "Consistent snapshot not generated despite blocking run processing!");
                 }
 
-                log.info().append(logPrefix).append(" non-concurrent Snapshot Function took ")
-                        .append(System.currentTimeMillis() - attemptStart).append("ms").endl();
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix).append(" non-concurrent Snapshot Function took ")
+                            .append(System.currentTimeMillis() - attemptStart).append("ms").endl();
+                }
                 step = LogicalClock.getStep(afterClockValue);
             } finally {
                 state.endLockedSnapshot();
             }
         }
-        final long duration = System.currentTimeMillis() - overallStart;
-        if (duration > 10) {
-            log.info().append(logPrefix).append(" Snapshot Function elapsed time ").append(duration).append(" ms")
-                    .append(", step=").append(step).endl();
-        } else {
+        if (log.isDebugEnabled()) {
+            final long duration = System.currentTimeMillis() - overallStart;
             log.debug().append(logPrefix).append(" Snapshot Function elapsed time ").append(duration).append(" ms")
                     .append(", step=").append(step).endl();
         }
@@ -1259,10 +1265,12 @@ public class ConstructSnapshot {
                 }
 
                 if (concurrentAttemptInconsistent()) {
-                    final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))
-                            .append(" Bad snapshot before column ").append(ii);
-                    appendConcurrentAttemptClockInfo(logEntry);
-                    logEntry.endl();
+                    if (log.isDebugEnabled()) {
+                        final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                                .append(" Bad snapshot before column ").append(ii);
+                        appendConcurrentAttemptClockInfo(logEntry);
+                        logEntry.endl();
+                    }
                     return false;
                 }
 
@@ -1271,14 +1279,16 @@ public class ConstructSnapshot {
             }
         }
 
-        log.info().append(System.identityHashCode(logIdentityObject))
-                .append(": Snapshot candidate step=")
-                .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
-                .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
-                .append(", cols=").append(FormatBitSet.arrayToLog(snapshot.dataColumns)).append("/")
-                .append((columnsToSerialize != null) ? FormatBitSet.formatBitSet(columnsToSerialize)
-                        : FormatBitSet.arrayToLog(snapshot.dataColumns))
-                .append(", usePrev=").append(usePrev).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append(System.identityHashCode(logIdentityObject))
+                    .append(": Snapshot candidate step=")
+                    .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
+                    .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
+                    .append(", cols=").append(FormatBitSet.arrayToLog(snapshot.dataColumns)).append("/")
+                    .append((columnsToSerialize != null) ? FormatBitSet.formatBitSet(columnsToSerialize)
+                            : FormatBitSet.arrayToLog(snapshot.dataColumns))
+                    .append(", usePrev=").append(usePrev).endl();
+        }
         return true;
     }
 
@@ -1325,10 +1335,12 @@ public class ConstructSnapshot {
                 (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
             for (int ii = 0; ii < columnSources.length; ++ii) {
                 if (concurrentAttemptInconsistent()) {
-                    final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))
-                            .append(" Bad snapshot before column ").append(ii);
-                    appendConcurrentAttemptClockInfo(logEntry);
-                    logEntry.endl();
+                    if (log.isDebugEnabled()) {
+                        final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                                .append(" Bad snapshot before column ").append(ii);
+                        appendConcurrentAttemptClockInfo(logEntry);
+                        logEntry.endl();
+                    }
                     return false;
                 }
 
@@ -1356,17 +1368,19 @@ public class ConstructSnapshot {
             }
         }
 
-        final LogEntry infoEntry = log.info().append(System.identityHashCode(logIdentityObject))
-                .append(": Snapshot candidate step=")
-                .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
-                .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
-                .append(", cols=");
-        if (columnsToSerialize == null) {
-            infoEntry.append("ALL");
-        } else {
-            infoEntry.append(FormatBitSet.formatBitSet(columnsToSerialize));
+        if (log.isDebugEnabled()) {
+            final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                    .append(": Snapshot candidate step=")
+                    .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
+                    .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
+                    .append(", cols=");
+            if (columnsToSerialize == null) {
+                logEntry.append("ALL");
+            } else {
+                logEntry.append(FormatBitSet.formatBitSet(columnsToSerialize));
+            }
+            logEntry.append(", usePrev=").append(usePrev).endl();
         }
-        infoEntry.append(", usePrev=").append(usePrev).endl();
 
         return true;
     }

@@ -16,6 +16,8 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.server.grpc.Common;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;

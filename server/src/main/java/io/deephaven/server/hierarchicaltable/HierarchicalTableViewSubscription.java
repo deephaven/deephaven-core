@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.*;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.HierarchicalTableSchemaUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.util.Scheduler;
@@ -138,12 +139,11 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         propagationJob = this::process;
 
         columns = new BitSet();
-        columns.set(0, view.getHierarchicalTable().getSnapshotDefinition().numColumns());
+        columns.set(0, view.getHierarchicalTable().getAvailableColumnDefinitions().size());
         rows = RowSetFactory.empty();
 
-        listener.onNext(streamGeneratorFactory.getSchemaView(
-                view.getHierarchicalTable().getSnapshotDefinition(),
-                view.getHierarchicalTable().getAttributes()));
+        GrpcUtil.safelyOnNext(listener, streamGeneratorFactory.getSchemaView(
+                fbb -> HierarchicalTableSchemaUtil.makeSchemaPayload(fbb, view.getHierarchicalTable())));
     }
 
     @Override
@@ -162,6 +162,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
     public void completed() {
         state = State.Done;
+        GrpcUtil.safelyComplete(listener);
         forceReferenceCountToZero();
     }
 
@@ -270,14 +271,14 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 }
             }
             if (sendError) {
-                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, upstreamFailure));
+                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, upstreamFailure, Code.DATA_LOSS));
                 return;
             }
             try {
                 lastExpandedSize = buildAndSendSnapshot(streamGeneratorFactory, listener, subscriptionOptions, view,
                         this::recordSnapshotNanos, this::recordWriteMetrics, columns, rows, lastExpandedSize);
             } catch (Exception e) {
-                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, e));
+                GrpcUtil.safelyError(listener, GrpcUtil.securelyWrapError(log, e, Code.DATA_LOSS));
                 state = State.Done;
             }
         }
@@ -295,7 +296,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             final long lastExpandedSize) {
         // 1. Grab some schema and snapshot information
         final List<ColumnDefinition<?>> columnDefinitions =
-                view.getHierarchicalTable().getSnapshotDefinition().getColumns();
+                view.getHierarchicalTable().getAvailableColumnDefinitions();
         final int numAvailableColumns = columnDefinitions.size();
         final int numRows = rows.intSize();
 
@@ -352,7 +353,8 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         // Note that we're always specifying "isInitialSnapshot=true". This is to provoke the subscription view to
         // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
         // (2) we're relying on added rows to signal the full expanded size to the client.
-        listener.onNext(streamGenerator.getSubView(subscriptionOptions, true, rows, false, rows, columns));
+        GrpcUtil.safelyOnNext(listener,
+                streamGenerator.getSubView(subscriptionOptions, true, rows, false, rows, columns));
 
         // 6. Let the caller know what the expanded size was
         return expandedSize;
@@ -368,10 +370,11 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         }
 
         if (viewportColumns != null) {
-            if (viewportColumns.length() > view.getHierarchicalTable().getSnapshotDefinition().numColumns()) {
+            if (viewportColumns.length() > view.getHierarchicalTable().getAvailableColumnDefinitions().size()) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "Requested columns out of range: length=%d, available length=%d",
-                        viewportColumns.length(), view.getHierarchicalTable().getSnapshotDefinition().numColumns()));
+                        viewportColumns.length(),
+                        view.getHierarchicalTable().getAvailableColumnDefinitions().size()));
             }
         }
         if (viewportRows != null) {
