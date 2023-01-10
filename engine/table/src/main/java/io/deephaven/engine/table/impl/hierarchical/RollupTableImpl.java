@@ -287,6 +287,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         if (Stream.of(nodeOperations).allMatch(no -> no == null || no.isEmpty())) {
             return noopResult();
         }
+        List<ColumnDefinition<?>> newAvailableColumnDefinitions = availableColumnDefinitions;
         RollupNodeOperationsRecorder newAggregatedNodeOperations = aggregatedNodeOperations;
         RollupNodeOperationsRecorder newConstituentNodeOperations = constituentNodeOperations;
         for (final NodeOperationsRecorder recorder : nodeOperations) {
@@ -294,6 +295,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 continue;
             }
             final RollupNodeOperationsRecorder recorderTyped = (RollupNodeOperationsRecorder) recorder;
+            if (!recorderTyped.getRecordedFormats().isEmpty()) {
+                newAvailableColumnDefinitions = null;
+            }
             switch (recorderTyped.getNodeType()) {
                 case Aggregated:
                     newAggregatedNodeOperations = accumulateOperations(newAggregatedNodeOperations, recorderTyped);
@@ -308,7 +312,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         }
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
-                null, newAggregatedNodeOperations, null, newConstituentNodeOperations, availableColumnDefinitions);
+                null, newAggregatedNodeOperations, null, newConstituentNodeOperations, newAvailableColumnDefinitions);
     }
 
     @Override

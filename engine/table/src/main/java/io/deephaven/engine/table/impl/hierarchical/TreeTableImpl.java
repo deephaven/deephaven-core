@@ -196,7 +196,9 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         }
         return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, accumulateOperations(this.nodeOperations, nodeOperations),
-                availableColumnDefinitions);
+                ((TreeNodeOperationsRecorder) nodeOperations).getRecordedFormats().isEmpty()
+                        ? availableColumnDefinitions
+                        : null);
     }
 
     private static TreeNodeOperationsRecorder accumulateOperations(
