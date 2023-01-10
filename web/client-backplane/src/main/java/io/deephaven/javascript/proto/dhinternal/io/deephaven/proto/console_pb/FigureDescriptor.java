@@ -744,6 +744,9 @@ public class FigureDescriptor {
             double getColspan();
 
             @JsProperty
+            double getColumn();
+
+            @JsProperty
             String getLegendColor();
 
             @JsProperty
@@ -751,6 +754,9 @@ public class FigureDescriptor {
 
             @JsProperty
             JsArray<FigureDescriptor.ToObjectReturnType.ChartsListFieldType.MultiSeriesListFieldType> getMultiSeriesList();
+
+            @JsProperty
+            double getRow();
 
             @JsProperty
             double getRowspan();
@@ -792,6 +798,9 @@ public class FigureDescriptor {
             void setColspan(double colspan);
 
             @JsProperty
+            void setColumn(double column);
+
+            @JsProperty
             void setIs3d(boolean is3d);
 
             @JsProperty
@@ -811,6 +820,9 @@ public class FigureDescriptor {
                         Js.<JsArray<FigureDescriptor.ToObjectReturnType.ChartsListFieldType.MultiSeriesListFieldType>>uncheckedCast(
                                 multiSeriesList));
             }
+
+            @JsProperty
+            void setRow(double row);
 
             @JsProperty
             void setRowspan(double rowspan);
@@ -1631,6 +1643,9 @@ public class FigureDescriptor {
             double getColspan();
 
             @JsProperty
+            double getColumn();
+
+            @JsProperty
             String getLegendColor();
 
             @JsProperty
@@ -1638,6 +1653,9 @@ public class FigureDescriptor {
 
             @JsProperty
             JsArray<FigureDescriptor.ToObjectReturnType0.ChartsListFieldType.MultiSeriesListFieldType> getMultiSeriesList();
+
+            @JsProperty
+            double getRow();
 
             @JsProperty
             double getRowspan();
@@ -1679,6 +1697,9 @@ public class FigureDescriptor {
             void setColspan(double colspan);
 
             @JsProperty
+            void setColumn(double column);
+
+            @JsProperty
             void setIs3d(boolean is3d);
 
             @JsProperty
@@ -1698,6 +1719,9 @@ public class FigureDescriptor {
                         Js.<JsArray<FigureDescriptor.ToObjectReturnType0.ChartsListFieldType.MultiSeriesListFieldType>>uncheckedCast(
                                 multiSeriesList));
             }
+
+            @JsProperty
+            void setRow(double row);
 
             @JsProperty
             void setRowspan(double rowspan);
