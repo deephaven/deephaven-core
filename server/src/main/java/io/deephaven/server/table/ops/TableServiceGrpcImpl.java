@@ -39,6 +39,7 @@ import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
@@ -208,6 +209,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     public void snapshot(final SnapshotTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT, request, responseObserver);
+    }
+
+    @Override
+    public void snapshotWhen(final SnapshotWhenTableRequest request,
+            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT_WHEN, request, responseObserver);
     }
 
     @Override

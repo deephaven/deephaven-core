@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.Pair;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
@@ -1542,8 +1543,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testStaticSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
-        final Table emptyTable = TableTools.emptyTable(0);
-
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
         final Table tableStart =
@@ -1554,20 +1553,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        final Table snap1 = pool.submit(() -> emptyTable.snapshot(table)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table snap1 = pool.submit(() -> table.snapshot()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTableEquals(snap1, tableStart);
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"), col("z", true));
 
-        final Table snap2 = pool.submit(() -> emptyTable.snapshot(table)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table snap2 = pool.submit(() -> table.snapshot()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(snap1));
         TstUtils.assertTableEquals(tableStart, prevTable(snap2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table snap3 = pool.submit(() -> emptyTable.snapshot(table)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table snap3 = pool.submit(() -> table.snapshot()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(snap1));
         TstUtils.assertTableEquals(tableStart, prevTable(snap2));
@@ -1580,36 +1579,36 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testSnapshotLiveness() {
-        final QueryTable left, right, snap;
+        final QueryTable trigger, base, snap;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            right = TstUtils.testRefreshingTable(i(0).toTracking(), col("x", 1));
-            left = TstUtils.testRefreshingTable(i().toTracking());
-            snap = (QueryTable) left.snapshot(right);
+            base = TstUtils.testRefreshingTable(i(0).toTracking(), col("x", 1));
+            trigger = TstUtils.testRefreshingTable(i().toTracking());
+            snap = (QueryTable) base.snapshotWhen(trigger, Flag.INITIAL);
             snap.retainReference();
         }
 
         // assert each table is still alive w.r.t. Liveness
-        for (final QueryTable t : new QueryTable[] {left, right, snap}) {
+        for (final QueryTable t : new QueryTable[] {trigger, base, snap}) {
             t.retainReference();
             t.dropReference();
         }
 
-        TstUtils.assertTableEquals(snap, right);
+        TstUtils.assertTableEquals(snap, base);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final TableUpdate downstream = new TableUpdateImpl(i(1), i(), i(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-            TstUtils.addToTable(right, downstream.added(), col("x", 2));
-            right.notifyListeners(downstream);
+            TstUtils.addToTable(base, downstream.added(), col("x", 2));
+            base.notifyListeners(downstream);
         });
-        TstUtils.assertTableEquals(snap, prevTable(right));
+        TstUtils.assertTableEquals(snap, prevTable(base));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final TableUpdate downstream = new TableUpdateImpl(i(1), i(), i(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-            TstUtils.addToTable(left, downstream.added());
-            left.notifyListeners(downstream);
+            TstUtils.addToTable(trigger, downstream.added());
+            trigger.notifyListeners(downstream);
         });
-        TstUtils.assertTableEquals(snap, right);
+        TstUtils.assertTableEquals(snap, base);
     }
 }

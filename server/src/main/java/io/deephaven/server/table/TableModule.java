@@ -30,6 +30,7 @@ import io.deephaven.server.table.ops.MergeTablesGrpcImpl;
 import io.deephaven.server.table.ops.RunChartDownsampleGrpcImpl;
 import io.deephaven.server.table.ops.SelectDistinctGrpcImpl;
 import io.deephaven.server.table.ops.SnapshotTableGrpcImpl;
+import io.deephaven.server.table.ops.SnapshotWhenTableGrpcImpl;
 import io.deephaven.server.table.ops.SortTableGrpcImpl;
 import io.deephaven.server.table.ops.TableServiceGrpcImpl;
 import io.deephaven.server.table.ops.TimeTableGrpcImpl;
@@ -176,6 +177,11 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.SNAPSHOT)
     GrpcTableOperation<?> bindOperationSnapshotTable(SnapshotTableGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.SNAPSHOT_WHEN)
+    GrpcTableOperation<?> bindOperationSnapshotWhenTable(SnapshotWhenTableGrpcImpl op);
 
     @Binds
     @IntoMap

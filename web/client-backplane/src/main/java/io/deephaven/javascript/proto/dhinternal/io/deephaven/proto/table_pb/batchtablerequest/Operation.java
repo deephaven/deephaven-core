@@ -28,6 +28,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunC
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.UngroupRequest;
@@ -1989,31 +1990,60 @@ public class Operation {
             }
 
             @JsProperty
-            Object getLeftId();
-
-            @JsProperty
             Object getResultId();
 
             @JsProperty
-            Object getRightId();
-
-            @JsProperty
-            JsArray<String> getStampColumnsList();
-
-            @JsProperty
-            boolean isDoInitialSnapshot();
-
-            @JsProperty
-            void setDoInitialSnapshot(boolean doInitialSnapshot);
-
-            @JsProperty
-            void setLeftId(Object leftId);
+            Object getSourceId();
 
             @JsProperty
             void setResultId(Object resultId);
 
             @JsProperty
-            void setRightId(Object rightId);
+            void setSourceId(Object sourceId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SnapshotWhenFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType.SnapshotWhenFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getBaseId();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            JsArray<String> getStampColumnsList();
+
+            @JsProperty
+            Object getTriggerId();
+
+            @JsProperty
+            boolean isHistory();
+
+            @JsProperty
+            boolean isIncremental();
+
+            @JsProperty
+            boolean isInitial();
+
+            @JsProperty
+            void setBaseId(Object baseId);
+
+            @JsProperty
+            void setHistory(boolean history);
+
+            @JsProperty
+            void setIncremental(boolean incremental);
+
+            @JsProperty
+            void setInitial(boolean initial);
+
+            @JsProperty
+            void setResultId(Object resultId);
 
             @JsProperty
             void setStampColumnsList(JsArray<String> stampColumnsList);
@@ -2022,6 +2052,9 @@ public class Operation {
             default void setStampColumnsList(String[] stampColumnsList) {
                 setStampColumnsList(Js.<JsArray<String>>uncheckedCast(stampColumnsList));
             }
+
+            @JsProperty
+            void setTriggerId(Object triggerId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2662,6 +2695,9 @@ public class Operation {
         Operation.ToObjectReturnType.SnapshotFieldType getSnapshot();
 
         @JsProperty
+        Operation.ToObjectReturnType.SnapshotWhenFieldType getSnapshotWhen();
+
+        @JsProperty
         Operation.ToObjectReturnType.SortFieldType getSort();
 
         @JsProperty
@@ -2769,6 +2805,9 @@ public class Operation {
 
         @JsProperty
         void setSnapshot(Operation.ToObjectReturnType.SnapshotFieldType snapshot);
+
+        @JsProperty
+        void setSnapshotWhen(Operation.ToObjectReturnType.SnapshotWhenFieldType snapshotWhen);
 
         @JsProperty
         void setSort(Operation.ToObjectReturnType.SortFieldType sort);
@@ -4749,31 +4788,60 @@ public class Operation {
             }
 
             @JsProperty
-            Object getLeftId();
-
-            @JsProperty
             Object getResultId();
 
             @JsProperty
-            Object getRightId();
-
-            @JsProperty
-            JsArray<String> getStampColumnsList();
-
-            @JsProperty
-            boolean isDoInitialSnapshot();
-
-            @JsProperty
-            void setDoInitialSnapshot(boolean doInitialSnapshot);
-
-            @JsProperty
-            void setLeftId(Object leftId);
+            Object getSourceId();
 
             @JsProperty
             void setResultId(Object resultId);
 
             @JsProperty
-            void setRightId(Object rightId);
+            void setSourceId(Object sourceId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SnapshotWhenFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType0.SnapshotWhenFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getBaseId();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            JsArray<String> getStampColumnsList();
+
+            @JsProperty
+            Object getTriggerId();
+
+            @JsProperty
+            boolean isHistory();
+
+            @JsProperty
+            boolean isIncremental();
+
+            @JsProperty
+            boolean isInitial();
+
+            @JsProperty
+            void setBaseId(Object baseId);
+
+            @JsProperty
+            void setHistory(boolean history);
+
+            @JsProperty
+            void setIncremental(boolean incremental);
+
+            @JsProperty
+            void setInitial(boolean initial);
+
+            @JsProperty
+            void setResultId(Object resultId);
 
             @JsProperty
             void setStampColumnsList(JsArray<String> stampColumnsList);
@@ -4782,6 +4850,9 @@ public class Operation {
             default void setStampColumnsList(String[] stampColumnsList) {
                 setStampColumnsList(Js.<JsArray<String>>uncheckedCast(stampColumnsList));
             }
+
+            @JsProperty
+            void setTriggerId(Object triggerId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -5422,6 +5493,9 @@ public class Operation {
         Operation.ToObjectReturnType0.SnapshotFieldType getSnapshot();
 
         @JsProperty
+        Operation.ToObjectReturnType0.SnapshotWhenFieldType getSnapshotWhen();
+
+        @JsProperty
         Operation.ToObjectReturnType0.SortFieldType getSort();
 
         @JsProperty
@@ -5531,6 +5605,9 @@ public class Operation {
         void setSnapshot(Operation.ToObjectReturnType0.SnapshotFieldType snapshot);
 
         @JsProperty
+        void setSnapshotWhen(Operation.ToObjectReturnType0.SnapshotWhenFieldType snapshotWhen);
+
+        @JsProperty
         void setSort(Operation.ToObjectReturnType0.SortFieldType sort);
 
         @JsProperty
@@ -5622,6 +5699,8 @@ public class Operation {
 
     public native void clearSnapshot();
 
+    public native void clearSnapshotWhen();
+
     public native void clearSort();
 
     public native void clearTail();
@@ -5694,6 +5773,8 @@ public class Operation {
 
     public native SnapshotTableRequest getSnapshot();
 
+    public native SnapshotWhenTableRequest getSnapshotWhen();
+
     public native SortTableRequest getSort();
 
     public native HeadOrTailRequest getTail();
@@ -5763,6 +5844,8 @@ public class Operation {
     public native boolean hasSelectDistinct();
 
     public native boolean hasSnapshot();
+
+    public native boolean hasSnapshotWhen();
 
     public native boolean hasSort();
 
@@ -5883,6 +5966,10 @@ public class Operation {
     public native void setSnapshot();
 
     public native void setSnapshot(SnapshotTableRequest value);
+
+    public native void setSnapshotWhen();
+
+    public native void setSnapshotWhen(SnapshotWhenTableRequest value);
 
     public native void setSort();
 

@@ -13,7 +13,7 @@ import pandas as pd
 from deephaven import DHError, new_table, dtypes
 from deephaven.column import Column
 from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_BOOLEAN
-from deephaven.numpy import column_to_numpy_array, freeze_table, _make_input_column
+from deephaven.numpy import column_to_numpy_array, _make_input_column
 from deephaven.table import Table
 
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
@@ -62,7 +62,7 @@ def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
     """
     try:
         if table.is_refreshing:
-            table = freeze_table(table)
+            table = table.snapshot()
 
         col_def_dict = {col.name: col for col in table.columns}
         if not cols:
