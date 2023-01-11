@@ -1,7 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
@@ -24,8 +22,11 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -52,8 +53,6 @@ public abstract class UpdateBy {
 
     /** Input sources may be reused by multiple operators, only store and cache unique ones (post-reinterpret) */
     protected final ColumnSource<?>[] inputSources;
-    /** Map operators to input sources, note some operators need more than one input, WAvg e.g. */
-    protected final int[][] operatorInputSourceSlots;
     /** All the operators for this UpdateBy manager */
     protected final UpdateByOperator[] operators;
     /** All the windows for this UpdateBy manager */
@@ -184,7 +183,6 @@ public abstract class UpdateBy {
             @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
-            @NotNull final int[][] operatorInputSourceSlots,
             @Nullable String timestampColumnName,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
@@ -197,7 +195,6 @@ public abstract class UpdateBy {
         this.operators = operators;
         this.windows = windows;
         this.inputSources = inputSources;
-        this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.timestampColumnName = timestampColumnName;
         this.redirHelper = new UpdateByRedirectionHelper(rowRedirection);
         this.control = control;
@@ -890,79 +887,88 @@ public abstract class UpdateBy {
                     }
                 }
             }
-
         }
 
-        // the next bit is complicated but the goal is simple. We don't want to have duplicate input column sources, so
-        // we will store each one only once in inputSources and setup some mapping from the opIdx to the input column.
-        final ArrayList<ColumnSource<?>> inputSourceList = new ArrayList<>();
-        final int[][] operatorInputSourceSlotArr = new int[opArr.length][];
-        final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
+        // We will divide the operators into similar windows for efficient processing. It will be more useful to store
+        // indices into the operator in oppArr rather than operator objects.
+        final KeyedObjectHashMap<UpdateByOperator, List<Integer>> windowMap =
+                new KeyedObjectHashMap<>(new KeyedObjectKey<>() {
+                    @Override
+                    public UpdateByOperator getKey(List<Integer> updateByOperators) {
+                        return opArr[updateByOperators.get(0)];
+                    }
 
+                    @Override
+                    public int hashKey(UpdateByOperator updateByOperator) {
+                        return UpdateByWindow.hashCodeFromOperator(updateByOperator);
+                    }
+
+                    @Override
+                    public boolean equalKey(UpdateByOperator updateByOperator,
+                            List<Integer> updateByOperators) {
+                        return UpdateByWindow.isEquivalentWindow(updateByOperator, opArr[updateByOperators.get(0)]);
+                    }
+                });
         for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
-            final String[] inputColumnNames = opArr[opIdx].getInputColumnNames();
-            // add a new entry for this operator
-            operatorInputSourceSlotArr[opIdx] = new int[inputColumnNames.length];
-            for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
-                final ColumnSource<?> input = source.getColumnSource(inputColumnNames[colIdx]);
-                final int maybeExistingSlot = sourceToSlotMap.get(input);
-                if (maybeExistingSlot == sourceToSlotMap.getNoEntryValue()) {
-                    int srcIdx = inputSourceList.size();
-                    // create a new input source and map the operator to it
-                    inputSourceList.add(ReinterpretUtils.maybeConvertToPrimitive(input));
-                    sourceToSlotMap.put(input, srcIdx);
-                    operatorInputSourceSlotArr[opIdx][colIdx] = srcIdx;
-                } else {
-                    operatorInputSourceSlotArr[opIdx][colIdx] = maybeExistingSlot;
-                }
+            final MutableBoolean created = new MutableBoolean(false);
+            int finalOpIdx = opIdx;
+            final List<Integer> opList = windowMap.putIfAbsent(opArr[opIdx],
+                    (newOpListOp) -> {
+                        final List<Integer> newOpList = new ArrayList<>();
+                        newOpList.add(finalOpIdx);
+                        created.setTrue();
+                        return newOpList;
+                    });
+            if (!created.booleanValue()) {
+                opList.add(finalOpIdx);
             }
         }
-        final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
-        // now we want to divide the operators into similar windows for efficient processing
-        TIntObjectHashMap<TIntArrayList> windowHashToOperatorIndicesMap = new TIntObjectHashMap<>();
+        // make the windows and create unique input sources for all the window operators
+        final UpdateByWindow[] windowArr = new UpdateByWindow[windowMap.size()];
+        final MutableInt winIdx = new MutableInt(0);
 
-        for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
-            int hash = UpdateByWindow.hashCodeFromOperator(opArr[opIdx]);
-            boolean added = false;
+        final ArrayList<ColumnSource<?>> inputSourceList = new ArrayList<>();
+        final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
 
-            // rudimentary collision detection and handling
-            while (!added) {
-                if (!windowHashToOperatorIndicesMap.containsKey(hash)) {
-                    // does not exist, can add immediately
-                    windowHashToOperatorIndicesMap.put(hash, new TIntArrayList());
-                    windowHashToOperatorIndicesMap.get(hash).add(opIdx);
-                    added = true;
-                } else {
-                    final int existingOpIdx = windowHashToOperatorIndicesMap.get(hash).get(0);
-                    if (UpdateByWindow.isEquivalentWindow(opArr[existingOpIdx], opArr[opIdx])) {
-                        // no collision, can add immediately
-                        windowHashToOperatorIndicesMap.get(hash).add(opIdx);
-                        added = true;
+        windowMap.forEach((ignored, opList) -> {
+            // build an array from the operator indices
+            UpdateByOperator[] windowOps = new UpdateByOperator[opList.size()];
+            // local map of operators indices to input source indices
+            final int[][] windowOpSourceSlots = new int[opList.size()][];
+
+            // do the mapping from operator input sources to unique input sources
+            for (int idx = 0; idx < opList.size(); idx++) {
+                final int opIdx = opList.get(idx);
+                final UpdateByOperator localOp = opArr[opIdx];
+                // store this operator into an array for window creation
+                windowOps[idx] = localOp;
+                // iterate over each input column and map this operator to unique source
+                final String[] inputColumnNames = localOp.getInputColumnNames();
+                windowOpSourceSlots[idx] = new int[inputColumnNames.length];
+                for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
+                    final ColumnSource<?> input = source.getColumnSource(inputColumnNames[colIdx]);
+                    final int maybeExistingSlot = sourceToSlotMap.get(input);
+                    if (maybeExistingSlot == sourceToSlotMap.getNoEntryValue()) {
+                        // create a new input source
+                        int srcIdx = inputSourceList.size();
+                        inputSourceList.add(ReinterpretUtils.maybeConvertToPrimitive(input));
+                        sourceToSlotMap.put(input, srcIdx);
+                        // map the window operator indices to this new source
+                        windowOpSourceSlots[idx][colIdx] = srcIdx;
                     } else {
-                        // there is a collision, increment hash and try again
-                        hash++;
+                        // map the window indices to this existing source
+                        windowOpSourceSlots[idx][colIdx] = maybeExistingSlot;
                     }
                 }
             }
-        }
-        // store the operators into the windows
-        final UpdateByWindow[] windowArr = new UpdateByWindow[windowHashToOperatorIndicesMap.size()];
-        final MutableInt winIdx = new MutableInt(0);
 
-        windowHashToOperatorIndicesMap.forEachEntry((final int hash, final TIntArrayList opIndices) -> {
-            final UpdateByOperator[] windowOperators = new UpdateByOperator[opIndices.size()];
-            final int[][] windowOperatorSourceSlots = new int[opIndices.size()][];
-
-            for (int ii = 0; ii < opIndices.size(); ii++) {
-                final int opIdx = opIndices.get(ii);
-                windowOperators[ii] = opArr[opIdx];
-                windowOperatorSourceSlots[ii] = operatorInputSourceSlotArr[opIdx];
-            }
+            // create and store the window for these operators
             windowArr[winIdx.getAndIncrement()] =
-                    UpdateByWindow.createFromOperatorArray(windowOperators, windowOperatorSourceSlots);
-            return true;
+                    UpdateByWindow.createFromOperatorArray(windowOps, windowOpSourceSlots);
         });
+
+        final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
         resultSources.putAll(opResultSources);
@@ -974,7 +980,6 @@ public abstract class UpdateBy {
                     opArr,
                     windowArr,
                     inputSourceArr,
-                    operatorInputSourceSlotArr,
                     source,
                     resultSources,
                     timestampColumnName,
@@ -1009,7 +1014,6 @@ public abstract class UpdateBy {
                 opArr,
                 windowArr,
                 inputSourceArr,
-                operatorInputSourceSlotArr,
                 source,
                 resultSources,
                 byColumns,

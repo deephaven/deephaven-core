@@ -7,6 +7,7 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.process.ProcessEnvironment;
 
 import java.util.function.Consumer;
@@ -35,7 +36,8 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
                 } catch (Exception e) {
                     onError.accept(e);
                 } catch (Error e) {
-                    ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
+                    final String logMessage = new LogOutputStringImpl().append(description).append(" Error").toString();
+                    ProcessEnvironment.getGlobalFatalErrorReporter().report(logMessage, e);
                     throw e;
                 } finally {
                     baseEntry.onBaseEntryEnd();

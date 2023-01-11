@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
 
@@ -22,7 +23,8 @@ public class ImmediateJobScheduler implements JobScheduler {
         } catch (Exception e) {
             onError.accept(e);
         } catch (Error e) {
-            ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
+            final String logMessage = new LogOutputStringImpl().append(description).append(" Error").toString();
+            ProcessEnvironment.getGlobalFatalErrorReporter().report(logMessage, e);
             throw e;
         }
     }

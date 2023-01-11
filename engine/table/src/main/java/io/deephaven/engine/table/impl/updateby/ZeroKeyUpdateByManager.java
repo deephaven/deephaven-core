@@ -27,7 +27,6 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
      * @param operators the operations to perform
      * @param windows the unique windows for this UpdateBy
      * @param inputSources the primitive input sources
-     * @param operatorInputSourceSlots maps the operators to source indices
      * @param source the source table
      * @param resultSources the result sources
      * @param timestampColumnName the column to use for all time-aware operators
@@ -39,14 +38,12 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             @NotNull UpdateByOperator[] operators,
             @NotNull UpdateByWindow[] windows,
             @NotNull ColumnSource<?>[] inputSources,
-            @NotNull int[][] operatorInputSourceSlots,
             @NotNull QueryTable source,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
             @Nullable WritableRowRedirection rowRedirection,
             @NotNull UpdateByControl control) {
-        super(source, operators, windows, inputSources, operatorInputSourceSlots, timestampColumnName, rowRedirection,
-                control);
+        super(source, operators, windows, inputSources, timestampColumnName, rowRedirection, control);
 
         if (source.isRefreshing()) {
             result = new QueryTable(source.getRowSet(), resultSources);
@@ -65,7 +62,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
             // create an updateby bucket instance directly from the source table
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    operatorInputSourceSlots, resultSources, timestampColumnName, rowRedirection, control);
+                    resultSources, timestampColumnName, rowRedirection, control);
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
@@ -75,7 +72,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             result.addParentReference(zeroKeyUpdateBy);
         } else {
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    operatorInputSourceSlots, resultSources, timestampColumnName, rowRedirection, control);
+                    resultSources, timestampColumnName, rowRedirection, control);
             result = zeroKeyUpdateBy.result;
             buckets.offer(zeroKeyUpdateBy);
         }

@@ -35,7 +35,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     private static final int SSA_LEAF_SIZE = 4096;
     protected final ColumnSource<?>[] inputSources;
     // some columns will have multiple inputs, such as time-based and Weighted computations
-    final int[][] operatorInputSourceSlots;
     final UpdateByOperator[] operators;
     final UpdateByWindow[] windows;
     final QueryTable source;
@@ -62,7 +61,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * @param source the source table
      * @param operators, the operations to perform
      * @param inputSources the source input sources
-     * @param operatorInputSourceSlots the mapping from operator index to needed input source indices
      * @param resultSources the result sources
      * @param timestampColumnName the timestamp column used for time-based operations
      * @param rowRedirection the row redirection for operator output columns
@@ -74,7 +72,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
-            @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
             @Nullable final RowRedirection rowRedirection,
@@ -84,7 +81,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         this.operators = operators;
         this.windows = windows;
         this.inputSources = inputSources;
-        this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.rowRedirection = rowRedirection;
         this.control = control;
 

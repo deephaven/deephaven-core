@@ -4,9 +4,10 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.referencecounting.ReferenceCounted;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -52,7 +53,7 @@ public interface JobScheduler {
     }
 
     /**
-     * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a functional interface
+     * Helper interface for {@link #iterateSerial} and {@link #iterateParallel}. This provides a functional interface
      * with {@code index} indicating which iteration to perform and {@link Runnable resume} providing a mechanism to
      * inform the scheduler that the current task is complete. When {@code resume} is called, the scheduler will
      * automatically schedule the next iteration.
@@ -63,6 +64,77 @@ public interface JobScheduler {
     @FunctionalInterface
     interface IterateResumeAction {
         void run(int index, Runnable resume);
+    }
+
+    class ErrorAccounter extends ReferenceCounted implements Consumer<Exception>, Runnable {
+        private final AtomicReference<Exception> exception = new AtomicReference<>();
+        private final Consumer<Exception> finalErrorConsumer;
+        private final IterateResumeAction action;
+        private final Runnable completeAction;
+        private final Runnable resumeAction;
+        private final AtomicInteger nextIndex;
+        private final AtomicInteger remaining;
+        private final int start;
+        private final int count;
+
+        ErrorAccounter(final int start, final int count, final Consumer<Exception> finalErrorConsumer,
+                final IterateResumeAction action, final Runnable completeAction) {
+            this.start = start;
+            this.count = count;
+            this.finalErrorConsumer = finalErrorConsumer;
+            this.action = action;
+            this.completeAction = completeAction;
+
+            nextIndex = new AtomicInteger(start);
+            remaining = new AtomicInteger(count);
+
+            resumeAction = () -> {
+                // check for completion
+                if (remaining.decrementAndGet() == 0) {
+                    completeAction.run();
+                }
+            };
+            // pre-increment this once so we maintain >=1 under normal conditions
+            incrementReferenceCount();
+        }
+
+        @Override
+        protected void onReferenceCountAtZero() {
+            final Exception localException = exception.get();
+            if (localException != null) {
+                finalErrorConsumer.accept(localException);
+            }
+        }
+
+        @Override
+        public void accept(Exception e) {
+            exception.compareAndSet(null, e);
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    if (exception.get() != null) {
+
+                        incrementReferenceCount();
+                        return;
+                    }
+                    int idx = nextIndex.getAndIncrement();
+                    if (idx < start + count) {
+                        // do the work
+                        action.run(idx, resumeAction);
+                        incrementReferenceCount();
+                    } else {
+                        // no more work to do
+                        incrementReferenceCount();
+                        return;
+                    }
+                } finally {
+                    decrementReferenceCount();
+                }
+            }
+        }
     }
 
     /**
@@ -78,7 +150,7 @@ public interface JobScheduler {
      */
     @FinalDefault
     default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
-            int count, IterateAction action, Runnable completeAction, final Consumer<Exception> onError) {
+            int count, IterateAction action, Runnable completeAction, Consumer<Exception> onError) {
         iterateParallel(executionContext, description, start, count,
                 (final int idx, final Runnable resume) -> {
                     action.run(idx);
@@ -110,48 +182,39 @@ public interface JobScheduler {
             completeAction.run();
         }
 
-        final AtomicInteger nextIndex = new AtomicInteger(start);
-        final AtomicInteger remaining = new AtomicInteger(count);
+        final ErrorAccounter ea = new ErrorAccounter(start, count, onError, action, completeAction);
 
-        final AtomicBoolean cancelRemainingExecution = new AtomicBoolean(false);
+        // final AtomicBoolean cancelRemainingExecution = new AtomicBoolean(false);
 
-        final Consumer<Exception> localError = exception -> {
-            // signal only on the first error
-            if (cancelRemainingExecution.compareAndSet(false, true)) {
-                onError.accept(exception);
-            }
-        };
+        // final Consumer<Exception> localError = exception -> {
+        // // signal only on the first error
+        // if (cancelRemainingExecution.compareAndSet(false, true)) {
+        // onError.accept(exception);
+        // }
+        // };
 
-        final Runnable resumeAction = () -> {
-            // check for completion
-            if (remaining.decrementAndGet() == 0) {
-                completeAction.run();
-            }
-        };
+        // final Runnable resumeAction = () -> {
+        // // check for completion
+        // if (remaining.decrementAndGet() == 0) {
+        // completeAction.run();
+        // }
+        // };
 
-        final Runnable task = () -> {
-            // this will run until all tasks have started
-            while (true) {
-                if (cancelRemainingExecution.get()) {
-                    return;
-                }
-                int idx = nextIndex.getAndIncrement();
-                if (idx < start + count) {
-                    // do the work
-                    action.run(idx, resumeAction);
-                } else {
-                    // no more work to do
-                    return;
-                }
-            }
-        };
+        // final Runnable task = () -> {
+        // // this will run until all tasks have started
+        // while (true) {
+        // if (cancelRemainingExecution.get()) {
+        // return;
+        // }
+        // }
+        // };
 
         // create multiple tasks but not more than one per scheduler thread
         for (int i = 0; i < Math.min(count, threadCount()); i++) {
             submit(executionContext,
-                    task,
+                    ea,
                     description,
-                    localError);
+                    ea);
         }
     }
 

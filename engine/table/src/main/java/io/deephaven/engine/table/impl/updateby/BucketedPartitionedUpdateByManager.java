@@ -35,7 +35,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
      * @param operators the operations to perform
      * @param windows the unique windows for this UpdateBy
      * @param inputSources the primitive input sources
-     * @param operatorInputSourceSlots maps the operators to source indices
      * @param source the source table
      * @param resultSources the result sources
      * @param byColumns the columns to use for the bucket keys
@@ -48,15 +47,13 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
-            @NotNull final int[][] operatorInputSourceSlots,
             @NotNull final QueryTable source,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
             @Nullable final String timestampColumnName,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
-        super(source, operators, windows, inputSources, operatorInputSourceSlots, timestampColumnName,
-                rowRedirection, control);
+        super(source, operators, windows, inputSources, timestampColumnName, rowRedirection, control);
 
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
@@ -91,7 +88,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                     operators,
                     windows,
                     inputSources,
-                    operatorInputSourceSlots,
                     resultSources,
                     timestampColumnName,
                     rowRedirection,

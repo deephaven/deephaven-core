@@ -88,9 +88,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
                 if (upstream.modifiedColumnSet().nonempty() && (op.getInputModifiedColumnSet() == null
                         || upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()))) {
                     dirtyOperators.set(opIdx);
-                    Arrays.stream(operatorInputSourceSlots[opIdx]).forEach(srcIdx ->
-                            dirtySourceIndices.set(srcIdx)
-                    );
+                    Arrays.stream(operatorInputSourceSlots[opIdx]).forEach(srcIdx -> dirtySourceIndices.set(srcIdx));
                 }
             }
             context.isDirty = !dirtyOperators.isEmpty();
