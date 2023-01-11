@@ -118,7 +118,7 @@ public class HierarchicalTableSchemaUtil {
      */
     public static int makeSchemaPayload(
             @NotNull final FlatBufferBuilder builder,
-            @NotNull final HierarchicalTable hierarchicalTable) {
+            @NotNull final HierarchicalTable<?> hierarchicalTable) {
         if (hierarchicalTable instanceof RollupTable) {
             final RollupTable rollupTable = (RollupTable) hierarchicalTable;
             return makeRollupTableSchemaPayload(builder, rollupTable);
@@ -163,7 +163,7 @@ public class HierarchicalTableSchemaUtil {
         return new Schema(fields, schemaMetadata).getSchema(builder);
     }
 
-    private static Stream<Field> getStructuralFields(@NotNull HierarchicalTable<?> hierarchicalTable) {
+    private static Stream<Field> getStructuralFields(@NotNull final HierarchicalTable<?> hierarchicalTable) {
         return columnDefinitionsToFields(Collections.emptyMap(), null,
                 hierarchicalTable.getStructuralColumnDefinitions(),
                 columnName -> {
@@ -182,7 +182,7 @@ public class HierarchicalTableSchemaUtil {
     }
 
     private static Stream<Field> getRollupAggregatedNodeFields(
-            @NotNull RollupTable rollupTable,
+            @NotNull final RollupTable rollupTable,
             @NotNull final Set<String> groupByColumns) {
         final Map<String, String> aggregationColumnToInputColumnName =
                 AggregationPairs.of(rollupTable.getAggregations())
@@ -205,7 +205,7 @@ public class HierarchicalTableSchemaUtil {
     }
 
     private static Stream<Field> getRollupConstituentNodeFields(
-            @NotNull RollupTable rollupTable,
+            @NotNull final RollupTable rollupTable,
             @NotNull final Set<String> groupByColumns) {
         if (!rollupTable.includesConstituents()) {
             return Stream.empty();
@@ -224,7 +224,7 @@ public class HierarchicalTableSchemaUtil {
                 });
     }
 
-    private static Stream<Field> getTreeNodeFields(@NotNull TreeTable treeTable) {
+    private static Stream<Field> getTreeNodeFields(@NotNull final TreeTable treeTable) {
         final Map<String, String> treeNodeDescriptions = getColumnDescriptions(treeTable.getAttributes());
         return columnDefinitionsToFields(treeNodeDescriptions, null,
                 treeTable.getNodeDefinition().getColumns(),
