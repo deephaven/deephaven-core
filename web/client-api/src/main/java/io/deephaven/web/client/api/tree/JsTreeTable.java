@@ -84,9 +84,8 @@ public class JsTreeTable extends HasEventHandling {
     private static final double ACTION_COLLAPSE = 0b100;
 
     /**
-     * Pair of ticket and the promise that indicates it has been resolved. Tickets are
-     * usable before they are resolved, but to ensure that all operations completed
-     * successfully, the promise should be used to handle errors.
+     * Pair of ticket and the promise that indicates it has been resolved. Tickets are usable before they are resolved,
+     * but to ensure that all operations completed successfully, the promise should be used to handle errors.
      */
     private class TicketAndPromise {
         private final Ticket ticket;
@@ -96,6 +95,7 @@ public class JsTreeTable extends HasEventHandling {
             this.ticket = ticket;
             this.promise = promise;
         }
+
         private TicketAndPromise(Ticket ticket) {
             this(ticket, Promise.resolve(ticket));
         }
@@ -172,7 +172,8 @@ public class JsTreeTable extends HasEventHandling {
                                 JsArray<Any> styleArray = Js.cast(styleData.getData());
                                 for (int rowIndex = 0; rowIndex < styleArray.length; rowIndex++) {
                                     if (depthColumn[rowIndex] == constituentDepth)
-                                        Js.asArrayLike(data[c.getStyleColumnIndex()]).setAt(rowIndex, styleArray.getAt(rowIndex));
+                                        Js.asArrayLike(data[c.getStyleColumnIndex()]).setAt(rowIndex,
+                                                styleArray.getAt(rowIndex));
                                 }
                             }
                         }
@@ -183,7 +184,8 @@ public class JsTreeTable extends HasEventHandling {
                                 JsArray<Any> formatArray = Js.cast(formatData.getData());
                                 for (int rowIndex = 0; rowIndex < formatArray.length; rowIndex++) {
                                     if (depthColumn[rowIndex] == constituentDepth) {
-                                        Js.asArrayLike(data[c.getFormatStringColumnIndex()]).setAt(rowIndex, formatArray.getAt(rowIndex));
+                                        Js.asArrayLike(data[c.getFormatStringColumnIndex()]).setAt(rowIndex,
+                                                formatArray.getAt(rowIndex));
                                     }
                                 }
                             }
@@ -379,7 +381,8 @@ public class JsTreeTable extends HasEventHandling {
         sourceColumns.putAll(constituentColumns);
         // TODO offer those as plain columns too
 
-        // visit each column with a source column but no format/style column - if the source column as a format column, we will reference the source column's format column data instead
+        // visit each column with a source column but no format/style column - if the source column as a format column,
+        // we will reference the source column's format column data instead
         for (int i = 0; i < columns.length; i++) {
             Column visibleColumn = columns[i];
             Column sourceColumn = sourceColumns.get(visibleColumn.getName());
@@ -387,7 +390,8 @@ public class JsTreeTable extends HasEventHandling {
                 continue;
             }
 
-            if (visibleColumn.getFormatStringColumnIndex() == null && sourceColumn.getFormatStringColumnIndex() != null) {
+            if (visibleColumn.getFormatStringColumnIndex() == null
+                    && sourceColumn.getFormatStringColumnIndex() != null) {
                 columns[i] = visibleColumn.withFormatStringColumnIndex(sourceColumn.getFormatStringColumnIndex());
             }
             if (visibleColumn.getStyleColumnIndex() == null && sourceColumn.getStyleColumnIndex() != null) {
@@ -510,8 +514,7 @@ public class JsTreeTable extends HasEventHandling {
                             keyTable,
                             filter.promise,
                             sort.promise,
-                            view.promise
-                    );
+                            view.promise);
                 })
                 .then(results -> {
                     BitSet columnsBitset = makeColumnSubscriptionBitset();
@@ -549,7 +552,8 @@ public class JsTreeTable extends HasEventHandling {
                             .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true,
                                     updateInterval, 0, 0);
                     double tableTicketOffset =
-                            BarrageSubscriptionRequest.createTicketVector(doGetRequest, viewTicket.ticket.getTicket_asU8());
+                            BarrageSubscriptionRequest.createTicketVector(doGetRequest,
+                                    viewTicket.ticket.getTicket_asU8());
                     BarrageSubscriptionRequest.startBarrageSubscriptionRequest(doGetRequest);
                     BarrageSubscriptionRequest.addTicket(doGetRequest, tableTicketOffset);
                     BarrageSubscriptionRequest.addColumns(doGetRequest, columnsOffset);
