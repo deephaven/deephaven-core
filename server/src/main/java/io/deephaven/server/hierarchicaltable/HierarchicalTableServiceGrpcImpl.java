@@ -278,12 +278,17 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Sorting is not supported on this hierarchical table");
             }
-            final String unavailableSortColumnNames = translatedSorts.stream()
+            final Collection<String> unavailableSortColumnNames = translatedSorts.stream()
                     .map(sc -> AbsoluteSortColumnConventions.stripAbsoluteColumnName(sc.column().name()))
                     .filter(scn -> !sortableColumnNames.contains(scn))
-                    .collect(Collectors.joining(", ", "[", "]"));
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    "Sorting attempted on restricted columns: " + unavailableSortColumnNames);
+                    .collect(Collectors.toList());
+            if (!unavailableSortColumnNames.isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Sorting attempted on restricted column(s): "
+                                + unavailableSortColumnNames.stream().collect(Collectors.joining(", ", "[", "]"))
+                                + ", available column(s) for sorting are: "
+                                + sortableColumnNames.stream().collect(Collectors.joining(", ", "[", "]")));
+            }
         }
         return translatedSorts;
     }
