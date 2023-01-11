@@ -310,7 +310,7 @@ public class FigureWidgetTranslator {
                             // with the x and y we have so far mapped to this
 
                             if (s instanceof AbstractXYDataSeries) {
-                                // TODO: Individual point shapes/sizes/labels
+                                // TODO #3293: Individual point shapes/sizes/labels
                                 // Right now just gets one set for the whole series
                                 AbstractXYDataSeries abstractSeries = (AbstractXYDataSeries) s;
                                 assignOptionalStringField(abstractSeries.getPointShape(0), clientSeries::setShape,
@@ -355,7 +355,7 @@ public class FigureWidgetTranslator {
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }
                             } else if (s instanceof AbstractCategoryDataSeries) {
-                                // TODO: Individual point shapes/sizes/labels
+                                // TODO #3293: Individual point shapes/sizes/labels
                                 // Right now just gets one set for the whole series
                                 AbstractCategoryDataSeries abstractSeries = (AbstractCategoryDataSeries) s;
                                 assignOptionalStringField(abstractSeries.getPointShape(0), clientSeries::setShape,
