@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.updateby;
 
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.hash.TIntHashSet;
-import io.deephaven.base.ringbuffer.IntRingBuffer;
+import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -13,10 +13,10 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -27,48 +27,26 @@ import java.util.stream.IntStream;
  * of `influencer` values to add to the rolling window as the current row changes.
  */
 public class UpdateByWindowTicks extends UpdateByWindow {
-    private static final int WINDOW_POS_BUFFER_INITIAL_CAPACITY = 512;
-    protected final long prevUnits;
-    protected final long fwdUnits;
+    private final long prevUnits;
+    private final long fwdUnits;
 
-    public class UpdateByWindowBucketTicksContext extends UpdateByWindowBucketContext {
+    class UpdateByWindowBucketTicksContext extends UpdateByWindowBucketContext {
         private static final int WINDOW_CHUNK_SIZE = 4096;
-
-        protected final IntRingBuffer currentWindowPositions;
-
-        protected RowSet affectedRowPositions;
-        protected RowSet influencerPositions;
-
-        protected int nextInfluencerIndex;
-        protected int nextInfluencerPos;
-        protected long nextInfluencerKey;
-
-        protected RowSequence.Iterator influencerIt;
-        protected RowSequence.Iterator influencerPosIt;
-        protected LongChunk<OrderedRowKeys> influencerPosChunk;
-        protected LongChunk<OrderedRowKeys> influencerKeyChunk;
-        protected long influencerPosChunkSize;
-        protected int currentGetContextSize;
+        private RowSet affectedRowPositions;
+        private RowSet influencerPositions;
+        private int currentGetContextSize;
 
         public UpdateByWindowBucketTicksContext(final TrackingRowSet sourceRowSet,
-                @Nullable final ColumnSource<?> timestampColumnSource,
-                @Nullable final LongSegmentedSortedArray timestampSsa, final int chunkSize, final boolean initialStep) {
+                final int chunkSize, final boolean initialStep) {
             super(sourceRowSet, null, null, chunkSize, initialStep);
-
-            currentWindowPositions = new IntRingBuffer(WINDOW_POS_BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
         public void close() {
             super.close();
-            // these might be identical, don't close both!
-            if (influencerPositions != null && influencerPositions != affectedRowPositions) {
-                influencerPositions.close();
-            }
-            try (final RowSet ignoredRs1 = affectedRowPositions;
-                    final RowSequence.Iterator ignoreIt1 = influencerIt;
-                    final RowSequence.Iterator ignoreIt2 = influencerPosIt) {
-                // leveraging try with resources to auto-close
+            try (final SafeCloseable ignoredRs1 = affectedRowPositions;
+                    final SafeCloseable ignoredRs2 =
+                            influencerPositions == affectedRowPositions ? null : influencerPositions) {
             }
         }
     }
@@ -79,7 +57,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         this.fwdUnits = fwdUnits;
     }
 
-    protected void makeOperatorContexts(UpdateByWindowBucketContext context) {
+    private void makeOperatorContexts(UpdateByWindowBucketContext context) {
         UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
         ctx.workingChunkSize = UpdateByWindowBucketTicksContext.WINDOW_CHUNK_SIZE;
@@ -91,20 +69,28 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         }
     }
 
+    @Override
     public UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
             final boolean isInitializeStep) {
-        return new UpdateByWindowBucketTicksContext(sourceRowSet, timestampColumnSource, timestampSsa,
-                chunkSize,
-                isInitializeStep);
+        return new UpdateByWindowBucketTicksContext(sourceRowSet, chunkSize, isInitializeStep);
     }
 
     private static WritableRowSet computeAffectedRowsTicks(final RowSet sourceSet, final RowSet subset,
             final RowSet invertedSubSet, long revTicks, long fwdTicks) {
-        // swap fwd/rev to get the influencer windows
-        return computeInfluencerRowsTicks(sourceSet, subset, invertedSubSet, fwdTicks, revTicks);
+        // adjust fwd/rev to get the affected windows
+
+        // Potential cases and reasoning:
+        // 1) rev 1, fwd 0 - this row only influences, affected should also be 1, 0
+        // 2) rev 2, fwd 0 - this row and previous influences, affected should be 1, 1
+        // 3) rev 10, fwd 0 - this row and previous 9 influeces, affected should be 1, 9
+        // 4) rev 0, fwd 10 - next 10 influences, affected should be 11, -1 (looks weird but that is how we would
+        // exclude the current row)
+        // 5) rev 10, fwd 50 - affected should be 51, 9
+
+        return computeInfluencerRowsTicks(sourceSet, subset, invertedSubSet, fwdTicks + 1, revTicks - 1);
     }
 
     private static WritableRowSet computeInfluencerRowsTicks(final RowSet sourceSet, final RowSet subset,
@@ -119,7 +105,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         final MutableLong minPos = new MutableLong(0L);
 
         invertedSubSet.forAllRowKeyRanges((s, e) -> {
-            long sPos = Math.max(s - revTicks, minPos.longValue());
+            long sPos = Math.max(s - revTicks + 1, minPos.longValue());
             long ePos = Math.min(e + fwdTicks, maxPos);
             builder.appendRange(sPos, ePos);
             minPos.setValue(ePos + 1);
@@ -141,7 +127,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                     size);
 
             // use this to track which contexts have already resized
-            boolean[] resized = new boolean[ctx.inputSources.length];
+            final boolean[] resized = new boolean[ctx.inputSources.length];
 
             for (int opIdx : ctx.dirtyOperatorIndices) {
                 final int[] sourceIndices = operatorInputSourceSlots[opIdx];
@@ -160,37 +146,6 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         }
     }
 
-    /***
-     * This function takes care of loading/preparing the next set of influencer data, in this case we load the next
-     * chunk of key and position data and reset the index
-     */
-    private void loadNextInfluencerChunks(UpdateByWindowBucketTicksContext ctx) {
-        if (!ctx.influencerIt.hasMore()) {
-            ctx.nextInfluencerPos = Integer.MAX_VALUE;
-            ctx.nextInfluencerKey = Long.MAX_VALUE;
-            return;
-        }
-
-        final RowSequence influencerRs =
-                ctx.influencerIt.getNextRowSequenceWithLength(UpdateByWindowBucketTicksContext.WINDOW_CHUNK_SIZE);
-        ctx.influencerKeyChunk = influencerRs.asRowKeyChunk();
-
-        final RowSequence influencePosRs =
-                ctx.influencerPosIt.getNextRowSequenceWithLength(UpdateByWindowBucketTicksContext.WINDOW_CHUNK_SIZE);
-        ctx.influencerPosChunk = influencePosRs.asRowKeyChunk();
-
-        Assert.eqTrue(influencePosRs.lastRowKey() < Integer.MAX_VALUE,
-                "updateBy window positions exceeded maximum size");
-
-        ctx.influencerPosChunkSize = ctx.influencerPosChunk.size();
-
-        ctx.nextInfluencerIndex = 0;
-        ctx.nextInfluencerPos = LongSizedDataStructure.intSize(
-                "updateBy window positions exceeded maximum size",
-                ctx.influencerPosChunk.get(ctx.nextInfluencerIndex));
-        ctx.nextInfluencerKey = ctx.influencerKeyChunk.get(ctx.nextInfluencerIndex);
-    }
-
     /**
      * Finding the `affected` and `influencer` rowsets for a windowed operation is complex. We must identify modified
      * rows (including added rows) and deleted rows and determine which rows are `affected` by the change given the
@@ -202,28 +157,43 @@ public class UpdateByWindowTicks extends UpdateByWindow {
 
         UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
+        if (upstream.empty()) {
+            return;
+        }
+
         // all rows are affected on the initial step
         if (ctx.initialStep) {
-            ctx.affectedRows = ctx.sourceRowSet.copy();
-            ctx.influencerRows = ctx.affectedRows;
-
+            ctx.affectedRows = ctx.sourceRowSet;
             // no need to invert, just create a flat rowset
             ctx.affectedRowPositions = RowSetFactory.flat(ctx.sourceRowSet.size());
-            ctx.influencerPositions = RowSetFactory.flat(ctx.sourceRowSet.size());
+
+            // quick test to see if we will need all rows
+            if (prevUnits > 0 && fwdUnits >= 0) {
+                // the current row influences itself, therefore all rows are needed
+                ctx.influencerRows = ctx.affectedRows;
+                ctx.influencerPositions = ctx.affectedRowPositions;
+            } else {
+                // some rows will be excluded, get the exact set of influencer rows
+                final long size = ctx.affectedRows.size();
+                final long startPos = Math.max(0, 1 - prevUnits);
+                final long endPos = Math.min(size - 1, size + fwdUnits - 1);
+
+                // subSetByPositionRange() endPos is exclusive
+                ctx.influencerRows = ctx.affectedRows.subSetByPositionRange(startPos, endPos + 1);
+                ctx.influencerPositions = ctx.affectedRowPositions.subSetByPositionRange(startPos, endPos + 1);
+            }
 
             // mark all operators as affected by this update
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
             context.dirtySourceIndices = getUniqueSourceIndices();
 
             makeOperatorContexts(ctx);
-            ctx.isDirty = !upstream.empty();
+            ctx.isDirty = true;
             return;
         }
 
         // determine which operators are affected by this update
-        ctx.isDirty = false;
-        boolean allAffected = upstream.added().isNonempty() ||
-                upstream.removed().isNonempty();
+        boolean allAffected = upstream.added().isNonempty() || upstream.removed().isNonempty();
 
         if (allAffected) {
             // mark all operators as affected by this update
@@ -231,7 +201,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
             context.dirtySourceIndices = getUniqueSourceIndices();
             context.isDirty = true;
         } else {
-            // determine which operators wer affected by this update
+            // determine which operators were affected by this update
             TIntArrayList dirtyOperatorList = new TIntArrayList(operators.length);
             TIntHashSet inputSourcesSet = new TIntHashSet(getUniqueSourceIndices().length);
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
@@ -251,15 +221,15 @@ public class UpdateByWindowTicks extends UpdateByWindow {
             return;
         }
 
-        // changed rows are all mods+adds
-        WritableRowSet changed = upstream.added().union(upstream.modified());
-
         // need a writable rowset
-        WritableRowSet tmpAffected;
+        final WritableRowSet tmpAffected;
 
-        // compute the rows affected from these changes
-        try (final WritableRowSet changedInverted = ctx.sourceRowSet.invert(changed)) {
-            tmpAffected = computeAffectedRowsTicks(ctx.sourceRowSet, changed, changedInverted, prevUnits, fwdUnits);
+        // changed rows are all mods+adds
+        try (final WritableRowSet changed = upstream.added().union(upstream.modified())) {
+            // compute the rows affected from these changes
+            try (final WritableRowSet changedInverted = ctx.sourceRowSet.invert(changed)) {
+                tmpAffected = computeAffectedRowsTicks(ctx.sourceRowSet, changed, changedInverted, prevUnits, fwdUnits);
+            }
         }
 
         // other rows can be affected by removes
@@ -303,18 +273,15 @@ public class UpdateByWindowTicks extends UpdateByWindow {
             winOp.initializeUpdate(ctx.opContext[opIdx]);
         }
 
-        ctx.influencerIt = ctx.influencerRows.getRowSequenceIterator();
-        ctx.influencerPosIt = ctx.influencerPositions.getRowSequenceIterator();
-
         try (final RowSequence.Iterator it = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator posIt = ctx.affectedRowPositions.getRowSequenceIterator();
+                final RowSequence.Iterator influencerPosHeadIt = ctx.influencerPositions.getRowSequenceIterator();
+                final RowSequence.Iterator influencerPosTailIt = ctx.influencerPositions.getRowSequenceIterator();
+                final RowSequence.Iterator influencerKeyIt = ctx.influencerRows.getRowSequenceIterator();
                 final WritableIntChunk<? extends Values> pushChunk =
                         WritableIntChunk.makeWritableChunk(ctx.workingChunkSize);
                 final WritableIntChunk<? extends Values> popChunk =
                         WritableIntChunk.makeWritableChunk(ctx.workingChunkSize)) {
-
-            // load the first chunk of influencer values (fillWindowTicks() will call in future)
-            loadNextInfluencerChunks(ctx);
 
             final long sourceRowSetSize = ctx.sourceRowSet.size();
 
@@ -338,48 +305,15 @@ public class UpdateByWindowTicks extends UpdateByWindow {
                     final long tail = Math.min(sourceRowSetSize - 1, currentPos + fwdUnits);
 
                     // pop out all values from the current window that are not in the new window
-                    int popCount = 0;
-                    while (!ctx.currentWindowPositions.isEmpty() && ctx.currentWindowPositions.front() < head) {
-                        ctx.currentWindowPositions.remove();
-                        popCount++;
-                    }
+                    long popCount = influencerPosHeadIt.advanceAndGetPositionDistance(head);
 
-                    // skip values until they match the window (this can only happen on initial addition of rows
-                    // to the table, because we short-circuited the precise building of the influencer rows for
-                    // efficiency)
-                    while (ctx.nextInfluencerPos < head) {
-                        ctx.nextInfluencerIndex++;
-
-                        if (ctx.nextInfluencerIndex < ctx.influencerPosChunkSize) {
-                            ctx.nextInfluencerPos = (int) ctx.influencerPosChunk.get(ctx.nextInfluencerIndex);
-                            ctx.nextInfluencerKey = ctx.influencerKeyChunk.get(ctx.nextInfluencerIndex);
-                        } else {
-                            // try to bring in new data
-                            loadNextInfluencerChunks(ctx);
-                        }
-                    }
-
-                    // push matching values
-                    int pushCount = 0;
-                    while (ctx.nextInfluencerPos <= tail) {
-                        ctx.currentWindowPositions.add(ctx.nextInfluencerPos);
-                        pushCount++;
-                        // add this key to the needed set for this chunk
-                        chunkInfluencerBuilder.appendKey(ctx.nextInfluencerKey);
-                        ctx.nextInfluencerIndex++;
-
-                        if (ctx.nextInfluencerIndex < ctx.influencerPosChunkSize) {
-                            ctx.nextInfluencerPos = (int) ctx.influencerPosChunk.get(ctx.nextInfluencerIndex);
-                            ctx.nextInfluencerKey = ctx.influencerKeyChunk.get(ctx.nextInfluencerIndex);
-                        } else {
-                            // try to bring in new data
-                            loadNextInfluencerChunks(ctx);
-                        }
-                    }
+                    // push in all values that are in the new window (inclusive of tail)
+                    long pushCount = influencerPosTailIt.advanceAndGetPositionDistance(tail + 1);
+                    chunkInfluencerBuilder.appendRowSequence(influencerKeyIt.getNextRowSequenceWithLength(pushCount));
 
                     // write the push and pop counts to the chunks
-                    popChunk.set(ii, popCount);
-                    pushChunk.set(ii, pushCount);
+                    popChunk.set(ii, Math.toIntExact(popCount));
+                    pushChunk.set(ii, Math.toIntExact(pushCount));
                 }
 
                 // execute the operators

@@ -889,13 +889,12 @@ public abstract class UpdateBy {
             }
         }
 
-        // We will divide the operators into similar windows for efficient processing. It will be more useful to store
-        // indices into the operator in oppArr rather than operator objects.
-        final KeyedObjectHashMap<UpdateByOperator, List<Integer>> windowMap =
+        // We will divide the operators into similar windows for efficient processing.
+        final KeyedObjectHashMap<UpdateByOperator, List<UpdateByOperator>> windowMap =
                 new KeyedObjectHashMap<>(new KeyedObjectKey<>() {
                     @Override
-                    public UpdateByOperator getKey(List<Integer> updateByOperators) {
-                        return opArr[updateByOperators.get(0)];
+                    public UpdateByOperator getKey(List<UpdateByOperator> updateByOperators) {
+                        return updateByOperators.get(0);
                     }
 
                     @Override
@@ -905,33 +904,30 @@ public abstract class UpdateBy {
 
                     @Override
                     public boolean equalKey(UpdateByOperator updateByOperator,
-                            List<Integer> updateByOperators) {
-                        return UpdateByWindow.isEquivalentWindow(updateByOperator, opArr[updateByOperators.get(0)]);
+                            List<UpdateByOperator> updateByOperators) {
+                        return UpdateByWindow.isEquivalentWindow(updateByOperator, updateByOperators.get(0));
                     }
                 });
-        for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
+        for (UpdateByOperator updateByOperator : opArr) {
             final MutableBoolean created = new MutableBoolean(false);
-            int finalOpIdx = opIdx;
-            final List<Integer> opList = windowMap.putIfAbsent(opArr[opIdx],
+            final List<UpdateByOperator> opList = windowMap.putIfAbsent(updateByOperator,
                     (newOpListOp) -> {
-                        final List<Integer> newOpList = new ArrayList<>();
-                        newOpList.add(finalOpIdx);
+                        final List<UpdateByOperator> newOpList = new ArrayList<>();
+                        newOpList.add(newOpListOp);
                         created.setTrue();
                         return newOpList;
                     });
             if (!created.booleanValue()) {
-                opList.add(finalOpIdx);
+                opList.add(updateByOperator);
             }
         }
 
         // make the windows and create unique input sources for all the window operators
-        final UpdateByWindow[] windowArr = new UpdateByWindow[windowMap.size()];
-        final MutableInt winIdx = new MutableInt(0);
 
         final ArrayList<ColumnSource<?>> inputSourceList = new ArrayList<>();
         final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
 
-        windowMap.forEach((ignored, opList) -> {
+        final UpdateByWindow[] windowArr = windowMap.values().stream().map((final List<UpdateByOperator> opList) -> {
             // build an array from the operator indices
             UpdateByOperator[] windowOps = new UpdateByOperator[opList.size()];
             // local map of operators indices to input source indices
@@ -939,8 +935,7 @@ public abstract class UpdateBy {
 
             // do the mapping from operator input sources to unique input sources
             for (int idx = 0; idx < opList.size(); idx++) {
-                final int opIdx = opList.get(idx);
-                final UpdateByOperator localOp = opArr[opIdx];
+                final UpdateByOperator localOp = opList.get(idx);
                 // store this operator into an array for window creation
                 windowOps[idx] = localOp;
                 // iterate over each input column and map this operator to unique source
@@ -951,7 +946,7 @@ public abstract class UpdateBy {
                     final int maybeExistingSlot = sourceToSlotMap.get(input);
                     if (maybeExistingSlot == sourceToSlotMap.getNoEntryValue()) {
                         // create a new input source
-                        int srcIdx = inputSourceList.size();
+                        final int srcIdx = inputSourceList.size();
                         inputSourceList.add(ReinterpretUtils.maybeConvertToPrimitive(input));
                         sourceToSlotMap.put(input, srcIdx);
                         // map the window operator indices to this new source
@@ -962,12 +957,8 @@ public abstract class UpdateBy {
                     }
                 }
             }
-
-            // create and store the window for these operators
-            windowArr[winIdx.getAndIncrement()] =
-                    UpdateByWindow.createFromOperatorArray(windowOps, windowOpSourceSlots);
-        });
-
+            return UpdateByWindow.createFromOperatorArray(windowOps, windowOpSourceSlots);
+        }).toArray(UpdateByWindow[]::new);
         final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());

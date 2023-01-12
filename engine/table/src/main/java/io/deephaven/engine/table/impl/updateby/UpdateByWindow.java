@@ -10,6 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,25 +80,12 @@ public abstract class UpdateByWindow {
 
         @Override
         public void close() {
-            // these might be the same object, don't close both!
-            if (influencerRows != null && influencerRows != affectedRows) {
-                influencerRows.close();
-                influencerRows = null;
+            try (final SafeCloseable ignoredRs1 = affectedRows == sourceRowSet ? null : affectedRows;
+                    final SafeCloseable ignoredRs2 = influencerRows == affectedRows ? null : influencerRows) {
             }
-            try (final RowSet ignoredRs1 = affectedRows) {
-            }
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                if (opContext[opIdx] != null) {
-                    opContext[opIdx].close();
-                }
-            }
+            SafeCloseableArray.close(opContext);
             if (inputSources != null) {
-                for (int srcIdx = 0; srcIdx < inputSources.length; srcIdx++) {
-                    if (inputSourceGetContexts[srcIdx] != null) {
-                        inputSourceGetContexts[srcIdx].close();
-                        inputSourceGetContexts[srcIdx] = null;
-                    }
-                }
+                SafeCloseableArray.close(inputSourceGetContexts);
             }
         }
     }
