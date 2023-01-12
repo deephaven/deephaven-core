@@ -72,9 +72,22 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
          * Invoke a callback that will allow external trackers to record changes to states in build or probe calls.
          *
          * @param stateSlot The state slot (in main table space)
-         * @param index     The probed index key
+         * @param rowKey     The probed rowKey key
          */
-        void invoke(long stateSlot, long index);
+        void invoke(long stateSlot, long rowKey);
+    }
+
+    @FunctionalInterface
+    interface StateTrackingCallbackWithRightIndex {
+
+        /**
+         * Invoke a callback that will allow external trackers to record changes to states in build or probe calls.
+         *
+         * @param stateSlot The state slot (in main table space)
+         * @param rowKey     The probed rowKey key
+         * @param rightRowSet The right RowSet
+         */
+        void invoke(long stateSlot, long rowKey, RowSet rightRowSet);
     }
     // endregion preamble variables
 
@@ -163,8 +176,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     // endmixin rehash
 
     // region extra variables
-    // maintain a mapping from left index to its slot
-    private final WritableRowRedirection leftIndexToSlot;
+    // maintain a mapping from left rowKey to its slot
+    private final WritableRowRedirection leftRowToSlot;
     private final ColumnSource<?>[] leftKeySources;
     private final long EMPTY_RIGHT_SLOT = Long.MIN_VALUE;
     private final QueryTable leftTable;
@@ -178,10 +191,11 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                                                     // region constructor arguments
             , QueryTable leftTable
             , int numRightBitsToReserve
+            , boolean leftOuterJoin
                                               // endregion constructor arguments
     ) {
         // region super
-        super(numRightBitsToReserve);
+        super(numRightBitsToReserve, leftOuterJoin);
         // endregion super
         keyColumnCount = tableKeySources.length;
 
@@ -218,7 +232,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
+        leftRowToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
         this.leftKeySources = tableKeySources;
         this.leftTable = leftTable;
         // endregion constructor
@@ -264,30 +278,33 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
         if (!rightTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(rightKeys, rightTable.size())) {
-                buildTable(bc, rightTable.getRowSet(), rightKeys, (slot, index) -> {
+                buildTable(bc, rightTable.getRowSet(), rightKeys, (slot, rowKey) -> {
                     if (isOverflowLocation(slot)) {
-                        addToIndex(overflowRightRowSetSource, hashLocationToOverflowLocation(slot), index, ignoreMissing);
+                        addToRowSet(overflowRightRowSetSource, hashLocationToOverflowLocation(slot), rowKey, ignoreMissing);
                     } else {
-                        addToIndex(rightRowSetSource, slot, index, ignoreMissing);
+                        addToRowSet(rightRowSetSource, slot, rowKey, ignoreMissing);
                     }
                 });
             }
         }
 
         // We can now validate key-space after all of our right rows have been aggregated into groups, which determined
-        // how many bits we need for the right indexes.
+        // how many bits we need for the right keys.
         validateKeySpaceSize();
 
-        final RowSetBuilderRandom resultIndex = RowSetFactory.builderRandom();
+        final RowSetBuilderRandom resultRowSet = RowSetFactory.builderRandom();
         if (!leftTable.isEmpty()) {
-            addLeft(leftTable.getRowSet(), (slot, index) -> {
-                final long regionStart = index << getNumShiftBits();
-                final RowSet rightRowSet = getRightRowSet(slot);
-                resultIndex.addRange(regionStart, regionStart + rightRowSet.size() - 1);
+            addLeft(leftTable.getRowSet(), (slot, rowKey, rightRowSet) -> {
+                final long regionStart = rowKey << getNumShiftBits();
+                if (rightRowSet.isNonempty()) {
+                    resultRowSet.addRange(regionStart, regionStart + rightRowSet.size() - 1);
+                } else if (leftOuterJoin()) {
+                    resultRowSet.addKey(regionStart);
+                }
             });
         }
 
-        return resultIndex.build();
+        return resultRowSet.build();
     }
 
     void removeLeft(final RowSet leftToRemove, final StateTrackingCallback trackingCallback) {
@@ -297,13 +314,13 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         final boolean usePrev = true;
         try (final ProbeContext pc = makeProbeContext(leftKeySources, leftToRemove.size())) {
             decorationProbe(pc, leftToRemove, leftKeySources, usePrev, null, (stateSlot, leftKey) -> {
-                leftIndexToSlot.removeVoid(leftKey);
+                leftRowToSlot.removeVoid(leftKey);
                 trackingCallback.invoke(stateSlot, leftKey);
             });
         }
     }
 
-    void addLeft(final RowSet leftToAdd, final StateTrackingCallback trackingCallback) {
+    void addLeft(final RowSet leftToAdd, final StateTrackingCallbackWithRightIndex trackingCallback) {
         if (leftToAdd.isEmpty()) {
             return;
         }
@@ -311,20 +328,20 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         try (final ProbeContext pc = makeProbeContext(leftKeySources, leftToAdd.size())) {
             decorationProbe(pc, leftToAdd, leftKeySources, usePrev, () -> {
                 for (int ii = 0; ii < pc.keyIndices.size(); ++ii) {
-                    final long index = pc.keyIndices.get(ii);
+                    final long rowKey = pc.keyIndices.get(ii);
                     final long slot = pc.mappedSlots.get(ii);
                     final RowSet rightRowSet = getRightRowSet(slot);
-                    if (rightRowSet.isNonempty()) {
-                        leftIndexToSlot.putVoid(index, slot);
-                        trackingCallback.invoke(slot, index);
+                    if (leftOuterJoin() || rightRowSet.isNonempty()) {
+                        leftRowToSlot.putVoid(rowKey, slot);
+                        trackingCallback.invoke(slot, rowKey, rightRowSet);
                     }
                 }
             }, null);
         }
     }
 
-    void applyLeftShift(final RowSet prevLeftIndex, final RowSetShiftData shiftData) {
-        leftIndexToSlot.applyShift(prevLeftIndex, shiftData);
+    void applyLeftShift(final RowSet prevLeftRowSet, final RowSetShiftData shiftData) {
+        leftRowToSlot.applyShift(prevLeftRowSet, shiftData);
     }
 
     void processLeftModifies(final TableUpdate upstream, final TableUpdateImpl downstream, final WritableRowSet resultRowSet) {
@@ -345,29 +362,38 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 for (int ii = 0; ii < pc.keyIndices.size(); ++ii) {
                     final long currKey = it.nextLong();
                     final long prevKey = pit.nextLong();
-                    final long prevSlot = leftIndexToSlot.getPrev(prevKey);
+                    final long prevSlot = leftRowToSlot.getPrev(prevKey);
                     final long currSlot = pc.mappedSlots.get(ii);
                     final long regionStart = currKey << getNumShiftBits();
-                    final RowSet currRowSet = getRightRowSet(currSlot);
-                    if (prevSlot == currSlot && currRowSet.isNonempty()) {
-                        modBuilder.appendRange(regionStart, regionStart + currRowSet.size() - 1);
-                    } else if (prevSlot != currSlot) {
-                        final RowSet prevRowSet = getRightRowSet(prevSlot);
+                    final long currentSize = currSlot == EMPTY_RIGHT_SLOT ? 0 : getRightRowSet(currSlot).size();
+                    if (prevSlot == currSlot) {
+                        if (currentSize > 0) {
+                            modBuilder.appendRange(regionStart, regionStart + currentSize - 1);
+                        } else if (leftOuterJoin()) {
+                            modBuilder.appendKey(regionStart);
+                        }
+                    } else {
+                        final long prevSize =  prevSlot == EMPTY_RIGHT_SLOT ? 0 : getRightRowSet(prevSlot).size();
                         final long prevRegionStart = prevKey << getNumShiftBits();
                         if (currSlot == EMPTY_RIGHT_SLOT) {
-                            leftIndexToSlot.removeVoid(currKey);
+                            leftRowToSlot.removeVoid(currKey);
                         } else {
-                            leftIndexToSlot.putVoid(currKey, currSlot);
+                            leftRowToSlot.putVoid(currKey, currSlot);
                         }
 
-                        if (prevRowSet.isNonempty()) {
+                        if (prevSize > 0) {
                             // note: removes are in old key space, but we have already shifted our result RowSet after
                             // processing upstream removals
-                            rmBuilder.appendRange(prevRegionStart, prevRegionStart + prevRowSet.size() - 1);
-                            rmResultBuilder.appendRange(regionStart, regionStart + prevRowSet.size() - 1);
+                            rmBuilder.appendRange(prevRegionStart, prevRegionStart + prevSize - 1);
+                            rmResultBuilder.appendRange(regionStart, regionStart + prevSize - 1);
+                        } else if (leftOuterJoin()) {
+                            rmBuilder.appendKey(prevRegionStart);
+                            rmResultBuilder.appendKey(regionStart);
                         }
-                        if (currRowSet.isNonempty()) {
-                            addBuilder.appendRange(regionStart, regionStart + currRowSet.size() - 1);
+                        if (currentSize > 0) {
+                            addBuilder.appendRange(regionStart, regionStart + currentSize - 1);
+                        } else if (leftOuterJoin()) {
+                            addBuilder.appendKey(regionStart);
                         }
                     }
                 }
@@ -385,7 +411,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         downstream.modified = modBuilder.build();
     }
 
-    private void addToIndex(final ObjectArraySource<TrackingWritableRowSet> source, final long location, final long keyToAdd, boolean ignoreMissing) {
+    private void addToRowSet(final ObjectArraySource<TrackingWritableRowSet> source, final long location, final long keyToAdd, boolean ignoreMissing) {
         final long size;
         final WritableRowSet rowSet = source.get(location);
         if (rowSet == null) {
@@ -410,7 +436,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     void startTrackingPrevValues() {
-        leftIndexToSlot.startTrackingPrevValues();
+        leftRowToSlot.startTrackingPrevValues();
     }
     // endregion build wrappers
 
@@ -494,7 +520,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         final ChunkSource.GetContext[] buildContexts;
 
         // region build context
-        final WritableLongChunk<OrderedRowKeys> sourceIndexKeys;
+        final WritableLongChunk<OrderedRowKeys> sourceRowKeys;
         // endregion build context
 
         final boolean haveSharedContexts;
@@ -521,7 +547,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             overflowContexts = makeFillContexts(overflowKeySources, sharedOverflowContext, chunkSize);
             buildContexts = makeGetContexts(buildSources, sharedBuildContext, chunkSize);
             // region build context constructor
-            sourceIndexKeys = WritableLongChunk.makeWritableChunk(chunkSize);
+            sourceRowKeys = WritableLongChunk.makeWritableChunk(chunkSize);
             // endregion build context constructor
             sortContext = LongIntTimsortKernel.createContext(chunkSize);
             stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
@@ -620,7 +646,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             writeThroughOverflowLocations.close();
             // endmixin rehash
             // region build context close
-            sourceIndexKeys.close();
+            sourceRowKeys.close();
             // endregion build context close
             closeSharedContexts();
         }
@@ -639,7 +665,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     private void buildTable(final BuildContext bc,
-                            final RowSequence buildIndex,
+                            final RowSequence buildRows,
                             ColumnSource<?>[] buildSources
                             // region extra build arguments
             , final StateTrackingCallback trackingCallback
@@ -649,7 +675,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // region build start
         // endregion build start
 
-        try (final RowSequence.Iterator rsIt = buildIndex.getRowSequenceIterator();
+        try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator();
              // region build initialization try
              // endregion build initialization try
         ) {
@@ -672,7 +698,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 hashKeyChunks(bc.hashChunk, sourceKeyChunks);
 
                 // region build loop initialization
-                chunkOk.fillRowKeyChunk(bc.sourceIndexKeys);
+                chunkOk.fillRowKeyChunk(bc.sourceRowKeys);
                 // endregion build loop initialization
 
                 // turn hash codes into indices within our table
@@ -702,7 +728,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                     final long tableLocation = bc.tableLocationsChunk.get(ii);
                     if (bc.equalValues.get(ii)) {
                         // region build found main
-                        final long keyToAdd = bc.sourceIndexKeys.get(ii);
+                        final long keyToAdd = bc.sourceRowKeys.get(ii);
                         trackingCallback.invoke(tableLocation, keyToAdd);
                         // endregion build found main
                     } else if (bc.filledValues.get(ii)) {
@@ -733,7 +759,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    final long keyToAdd = bc.sourceIndexKeys.get(firstChunkPositionForHashLocation);
+                    final long keyToAdd = bc.sourceRowKeys.get(firstChunkPositionForHashLocation);
                     trackingCallback.invoke(currentHashLocation, keyToAdd);
                     // endregion main insert
                     // mixin rehash
@@ -778,7 +804,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
                     if (bc.equalValues.get(ii)) {
                         // region build main duplicate
-                        final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
+                        final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
                         trackingCallback.invoke(tableLocation, keyToAdd);
                         // endregion build main duplicate
                     } else {
@@ -831,7 +857,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                             final long overflowLocation = bc.overflowLocationsToFetch.get(ii);
                             if (bc.equalValues.get(ii)) {
                                 // region build overflow found
-                                final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
+                                final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
                                 trackingCallback.invoke(overflowLocationToHashLocation(overflowLocation), keyToAdd);
                                 // endregion build overflow found
                             } else {
@@ -877,7 +903,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
+                            final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
                             trackingCallback.invoke(overflowLocationToHashLocation(allocatedOverflowLocation), keyToAdd);
                             // endregion build overflow insert
 
@@ -914,7 +940,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                             if (bc.equalValues.get(ii)) {
                                 final long insertedOverflowLocation = bc.overflowLocationForEqualityCheck.get(ii);
                                 // region build overflow duplicate
-                                final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
+                                final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
                                 // we match the first element, so should use the overflow slow we allocated for it
                                 trackingCallback.invoke(overflowLocationToHashLocation(insertedOverflowLocation), keyToAdd);
                                 // endregion build overflow duplicate
@@ -1389,8 +1415,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
-        // state exists; otherwise when building from the left it is always null
+        // the chunk of right keys that we read from the hash table, the empty right rowKey is used as a sentinel
+        // that the state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
         final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
 
@@ -1412,7 +1438,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
         // region probe context
 
-        // the chunk of indices created from our RowSequence, used to write into the hash table
+        // the chunk of rowkeys created from our RowSequence, used to write into the hash table
         final WritableLongChunk<OrderedRowKeys> keyIndices;
         WritableLongChunk<Values> mappedSlots;
 
@@ -1516,7 +1542,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     private void decorationProbe(ProbeContext pc
-                                , RowSequence probeIndex
+                                , RowSequence probeRows
                                 , final ColumnSource<?>[] probeSources
                                  // mixin prev
                                 , boolean usePrev
@@ -1539,7 +1565,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // endregion probe start
         long hashSlotOffset = 0;
 
-        try (final RowSequence.Iterator rsIt = probeIndex.getRowSequenceIterator();
+        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator();
              // region probe additional try resources
              // endregion probe additional try resources
             ) {
@@ -1607,6 +1633,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                         // region probe main not found
                         if (endProbeCallback != null) {
                             pc.mappedSlots.set(ii, EMPTY_RIGHT_SLOT);
+                        } else if (trackingCallback != null) {
+                            trackingCallback.invoke(RowSet.NULL_ROW_KEY, pc.keyIndices.get(ii));
                         }
                         // endregion probe main not found
                     }
@@ -1629,6 +1657,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                             // region probe overflow not found
                             if (endProbeCallback != null) {
                                 pc.mappedSlots.set(chunkPosition, EMPTY_RIGHT_SLOT);
+                            } else if (trackingCallback != null) {
+                                trackingCallback.invoke(RowSet.NULL_ROW_KEY, pc.keyIndices.get(chunkPosition));
                             }
                             // endregion probe overflow not found
                         }
@@ -1652,12 +1682,12 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
                         if (pc.equalValues.get(ii)) {
                             // region probe overflow found
-                            final long indexKey = pc.keyIndices.get(chunkPosition);
+                            final long rowKey = pc.keyIndices.get(chunkPosition);
                             final long hashLocation = overflowLocationToHashLocation(overflowLocation);
                             if (endProbeCallback != null) {
                                 pc.mappedSlots.set(chunkPosition, hashLocation);
                             } else {
-                                trackingCallback.invoke(hashLocation, indexKey);
+                                trackingCallback.invoke(hashLocation, rowKey);
                             }
                             // endregion probe overflow found
                         } else {
@@ -1740,9 +1770,23 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         return retVal;
     }
 
+    // the left side should never actually have a slot that is empty in which it will care for the size, because we only
+    // create slots that actually have a right side
+    public long getRightSize(long slot) {
+        Assert.neq(slot, "slot", EMPTY_RIGHT_SLOT);
+        final RowSet idx;
+        if (isOverflowLocation(slot)) {
+            idx = overflowRightRowSetSource.get(hashLocationToOverflowLocation(slot));
+        } else {
+            idx = rightRowSetSource.get(slot);
+        }
+        Assert.neqNull(idx, "idx");
+        return idx.size();
+    }
+
     @Override
-    public TrackingRowSet getRightRowSetFromLeftIndex(long leftIndex) {
-        long slot = leftIndexToSlot.get(leftIndex);
+    public TrackingRowSet getRightRowSetFromLeftRow(long leftRow) {
+        long slot = leftRowToSlot.get(leftRow);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
@@ -1750,8 +1794,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     @Override
-    public TrackingRowSet getRightRowSetFromPrevLeftIndex(long leftIndex) {
-        long slot = leftIndexToSlot.getPrev(leftIndex);
+    public TrackingRowSet getRightRowSetFromPrevLeftRow(long leftRow) {
+        long slot = leftRowToSlot.getPrev(leftRow);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
@@ -1766,8 +1810,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         final int numShiftBits = getNumShiftBits();
         if (minLeftBits + numShiftBits > 63) {
             throw new OutOfKeySpaceException("join out of rowSet space (left reqBits + right reservedBits > 63): "
-                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxIndex: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
-                    + "(right table: {maxIndexUsed: " + rightLastKey + " reqBits: " + minRightBits + " reservedBits: " + numShiftBits + "})"
+                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxRowKey: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
+                    + "(right table: {maxRowKeyUsed: " + rightLastKey + " reqBits: " + minRightBits + " reservedBits: " + numShiftBits + "})"
                     + " exceeds Long.MAX_VALUE. Consider flattening left table or reserving fewer right bits if possible.");
         }
     }

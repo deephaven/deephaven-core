@@ -1744,27 +1744,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                 () -> joinNoMemo(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve));
     }
 
-    private Table joinNoMemo(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+    private Table joinNoMemo(
+            final Table rightTableCandidate,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
             int numRightBitsToReserve) {
-        final MatchPair[] realColumnsToAdd;
-        if (columnsToAdd.length == 0) {
-            Set<String> columnsForMatching =
-                    Arrays.stream(columnsToMatch).filter(mp -> mp.rightColumn.equals(mp.leftColumn))
-                            .map(x -> x.rightColumn).collect(Collectors.toCollection(HashSet::new));
-
-            Set<String> rightColumnNames;
-            try {
-                rightColumnNames = rightTableCandidate.getColumnSourceMap().keySet();
-            } catch (UnsupportedOperationException uoe) {
-                throw new UnsupportedOperationException("Can not join a V2 table to a V1 table on the right side.",
-                        uoe);
-            }
-
-            realColumnsToAdd = rightColumnNames.stream().filter(x -> !columnsForMatching.contains(x))
-                    .map(x -> new MatchPair(x, x)).toArray(MatchPair[]::new);
-        } else {
-            realColumnsToAdd = columnsToAdd;
-        }
+        final MatchPair[] realColumnsToAdd =
+                createColumnsToAddIfMissing(rightTableCandidate, columnsToMatch, columnsToAdd);
 
         if (USE_CHUNKED_CROSS_JOIN) {
             final QueryTable coalescedRightTable = (QueryTable) rightTableCandidate.coalesce();
@@ -2293,7 +2279,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final long[] sizes = new long[intSize("ungroup")];
                     long maxSize = computeMaxSize(rowSet, arrayColumns, vectorColumns, null, sizes, nullFill);
                     final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), minimumUngroupBase);
-                    final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase);
+
+                    final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase, true);
 
                     final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
                     for (Map.Entry<String, ColumnSource<?>> es : getColumnSourceMap().entrySet()) {

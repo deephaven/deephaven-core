@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -60,6 +61,13 @@ public final class LongColumnSourceWritableRowRedirection
              final WritableLongChunk<Values> values = WritableLongChunk.makeWritableChunk(numKeys)) {
             values.fillWithNullValue(0, numKeys);
             columnSource.fillFromChunk(fillFromContext, values, outerRowKeys);
+        }
+    }
+
+    @Override
+    public void removeAllUnordered(LongChunk<RowKeys> outerRowKeys) {
+        for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
+            columnSource.setNull(outerRowKeys.get(ii));
         }
     }
 

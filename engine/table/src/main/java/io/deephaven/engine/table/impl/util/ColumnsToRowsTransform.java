@@ -149,7 +149,7 @@ public class ColumnsToRowsTransform {
         final List<String> expandSet = new ArrayList<>();
 
         final int bits = 64 - Long.numberOfLeadingZeros(fanout - 1);
-        final CrossJoinShiftState crossJoinShiftState = bits > 0 ? new CrossJoinShiftState(bits) : null;
+        final CrossJoinShiftState crossJoinShiftState = bits > 0 ? new CrossJoinShiftState(bits, false) : null;
         final Class<?>[] valueTypes = new Class[transposeColumns.length];
         final String[] typeSourceName = new String[transposeColumns.length];
         final ColumnSource<?>[][] sourcesToTranspose = new ColumnSource[transposeColumns.length][labels.length];
