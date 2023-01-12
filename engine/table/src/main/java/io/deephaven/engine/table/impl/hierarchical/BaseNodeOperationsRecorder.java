@@ -97,6 +97,7 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
                 return resultDefinition = definition;
             }
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                // noinspection resource
                 final Table emptyNode = new QueryTable(definition, RowSetFactory.empty().toTracking(),
                         NullValueColumnSource.createColumnSourceMap(definition));
                 final Table emptyNodeFormatted = emptyNode.updateView(getRecordedFormats());

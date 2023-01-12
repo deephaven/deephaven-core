@@ -7,6 +7,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -61,6 +62,7 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
      * @param columns The columns to designate
      * @return The new TreeTable
      */
+    @ScriptApi
     TreeTable withNodeFilterColumns(@NotNull Collection<? extends ColumnName> columns);
 
     /**

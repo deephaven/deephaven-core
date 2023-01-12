@@ -170,7 +170,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
             final SessionState session = sessionService.getCurrentSession();
 
-            final SessionState.ExportObject<HierarchicalTable> inputHierarchicalTableExport = ticketRouter.resolve(
+            final SessionState.ExportObject<HierarchicalTable<?>> inputHierarchicalTableExport = ticketRouter.resolve(
                     session, request.getInputHierarchicalTableId(), "apply.inputHierarchicalTableId");
 
             session.newExport(request.getResultHierarchicalTableId(), "apply.resultHierarchicalTableId")
@@ -358,9 +358,9 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final HierarchicalTableView targetExistingView = usedExisting
                                 ? (HierarchicalTableView) target
                                 : null;
-                        final HierarchicalTable targetHierarchicalTable = usedExisting
+                        final HierarchicalTable<?> targetHierarchicalTable = usedExisting
                                 ? targetExistingView.getHierarchicalTable()
-                                : (HierarchicalTable) target;
+                                : (HierarchicalTable<?>) target;
 
                         authWiring.checkPermissionView(session.getAuthContext(), request, keyTable == null
                                 ? List.of(targetHierarchicalTable.getSource())
@@ -429,7 +429,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
 
             final SessionState session = sessionService.getCurrentSession();
 
-            final SessionState.ExportObject<HierarchicalTable> hierarchicalTableExport = ticketRouter.resolve(
+            final SessionState.ExportObject<HierarchicalTable<?>> hierarchicalTableExport = ticketRouter.resolve(
                     session, request.getHierarchicalTableId(), "exportSource.hierarchicalTableId");
 
             session.newExport(request.getResultTableId(), "exportSource.resultTableId")
