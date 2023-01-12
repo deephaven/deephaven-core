@@ -7,6 +7,12 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public interface JsonMessage extends MessageMetadata {
 
+    /**
+     * Parses and returns the JSON content of this message.
+     * 
+     * @return A {@code JsonNode} parsed from this message.
+     * @throws JsonNodeUtil.JsonStringParseException If an exception occurs while parsing the JSON content.
+     */
     JsonNode getJson() throws JsonNodeUtil.JsonStringParseException;
 
     /**

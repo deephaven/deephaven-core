@@ -144,7 +144,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
      * @return this builder
      */
     @ScriptApi
-    public JSONToTableWriterAdapterBuilder addNestedField(final String field,
+    public JSONToTableWriterAdapterBuilder addNestedField(
+            final String field,
             final JSONToTableWriterAdapterBuilder builder) {
         checkNestedBuilder(builder, field);
         addNestedColumns(builder);
@@ -203,11 +204,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
     }
 
     private void checkSubtableBuilder(final JSONToTableWriterAdapterBuilder builder, final String field) {
-        if (!builder.allowedUnmappedColumns.isEmpty()) {
-            throw new JSONIngesterException("Nested fields may not define unmapped fields, " + field + "!");
-        }
         if (!builder.getInternalColumns().isEmpty()) {
-            throw new JSONIngesterException("Nested fields may not define message header columns field " + field
+            throw new JSONIngesterException("Subtables may not define message header columns field " + field
                     + ", columns=" + builder.getInternalColumns());
         }
     }

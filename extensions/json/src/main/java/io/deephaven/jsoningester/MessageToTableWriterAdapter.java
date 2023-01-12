@@ -5,6 +5,7 @@
 package io.deephaven.jsoningester;
 
 import io.deephaven.tablelogger.TableWriter;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -27,12 +28,12 @@ public interface MessageToTableWriterAdapter<M> {
     /**
      * Consume a generic String and write zero or more records to a TableWriter.
      *
-     * @param msgId The ID associated with the string to be consumed. ID must be unique and increasing for any source
-     *        using this method to write data to a Deephaven database.
+     * @param msgId The ID associated with the string to be consumed. If present, the ID must be unique and
+     *        monotonically increasing for any source using this method to write data to a Deephaven database.
      * @param message The received message
      * @throws IOException if there was an error writing to the output table
      */
-    void consumeMessage(String msgId, M message) throws IOException;
+    void consumeMessage(@Nullable String msgId, M message) throws IOException;
 
     /**
      * Take care of any 'cleanup' tasks that might be waiting; this is expected to mean that the inbound data has hit a

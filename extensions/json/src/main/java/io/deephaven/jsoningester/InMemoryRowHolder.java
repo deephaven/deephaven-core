@@ -45,6 +45,12 @@ class InMemoryRowHolder {
         return setters.computeIfAbsent(columnName, setter -> new SingleRowSetter(type));
     }
 
+    /**
+     * Returns the {@link MessageMetadata#getMsgNo() monotonically-increasing sequence number} from the message that
+     * corresponds to this row.
+     * 
+     * @return The message number from the original message that corresponds to this row.
+     */
     public long getMessageNumber() {
         return messageNumber;
     }
@@ -54,9 +60,10 @@ class InMemoryRowHolder {
     }
 
     /**
-     * Indicate whether this holder is a placeholder to indicate a message with no elements.
+     * Indicate whether this holder is a placeholder to indicate a message with no elements. Empty holders are used to
+     * ensure every {@link #getMessageNumber() sequence number} is processed.
      * 
-     * @return True if this holder should not cause a row to be created in the database, false otherwise.
+     * @return True if this holder should not cause a row to be created in the table, false otherwise.
      */
     public boolean getIsEmpty() {
         return isEmpty;

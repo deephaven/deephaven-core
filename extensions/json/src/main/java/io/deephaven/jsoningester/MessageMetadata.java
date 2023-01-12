@@ -37,10 +37,11 @@ public interface MessageMetadata {
     String getMessageId();
 
     /**
-     * Gets the monotonically-increasing sequential number indicating the sequence this message was received in by the
-     * ingester. The message number is used to ensure that
+     * Gets the monotonically-increasing sequence number for this message, indicating the order in which this message
+     * was received in by the ingester. The message number is used to ensure that data is written to the table in the
+     * order in which it was received, particularly when parallel processing is enabled.
      *
-     * @return the sequential number indicating the sequence this message was received in by the ingester.
+     * @return This message's sequence number.
      */
     long getMsgNo();
 }

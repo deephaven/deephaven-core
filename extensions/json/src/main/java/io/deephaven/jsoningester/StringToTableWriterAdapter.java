@@ -14,8 +14,10 @@ public interface StringToTableWriterAdapter extends AsynchronousDataIngester {
     /**
      * Consume a generic String and write zero or more records to a TableWriter.
      *
-     * @param msg The message to be consumed, including the string paylod and metadata. ID must be unique and increasing
-     *        for any source using this method to write data to a Deephaven database.
+     * @param msg The message to be consumed, including the string paylod and metadata. The
+     *        {@link MessageMetadata#getMsgNo() message number} (and, if present, {@link MessageMetadata#getMessageId()
+     *        message ID}) must be unique and increasing for any source using this method to write data to a Deephaven
+     *        table.
      * @throws IOException if there was an error writing to the output table
      */
     void consumeString(final TextMessage msg) throws IOException;

@@ -21,11 +21,11 @@ public class StreamJsonMessage extends BaseMessageMetadata implements JsonMessag
      * @param sentTime The time (if available) when this message was sent
      * @param receiveTime The time (reported by subscriber) when this message was received.
      * @param ingestTime The time when this message was finished processing by its ingester and was ready to be flushed.
-     * @param messageId The unique, monotonically-increasing ID for this message.
-     * @param messageNumber The sequential number indicating the sequence this message was received in by the ingester.
-     * @param inputStream The stream containing the message body.
+     * @param messageId An optional message ID string. (Used by some message brokers to support recovery.)
+     * @param messageNumber The unique, monotonically-increasing sequential number for this message.
+     * @param inputStream The stream containing the message body. The stream will be closed after it is consumed.
      * @param afterParseAction Operation to run after parsing the JSON and closing the input stream (e.g. to close an
-     *        http response)
+     *        HTTP response).
      */
     public StreamJsonMessage(DateTime sentTime, DateTime receiveTime, DateTime ingestTime, String messageId,
             long messageNumber, InputStream inputStream, Runnable afterParseAction) {

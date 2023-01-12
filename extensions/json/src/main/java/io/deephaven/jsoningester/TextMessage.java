@@ -19,12 +19,16 @@ public class TextMessage extends BaseMessageMetadata {
      * @param sentTime The time (if available) when this message was sent.
      * @param receiveTime The time (reported by subscriber) when this message was received.
      * @param ingestTime The time when this message was finished processing by its ingester and was ready to be flushed.
-     * @param messageId The unique, monotonically-increasing ID for this message.
-     * @param messageNumber The sequential number indicating the sequence this message was received in by the ingester.
+     * @param messageId An optional message ID string. (Used by some message brokers to support recovery.)
+     * @param messageNumber The monotonically-increasing sequence number for the message.
      * @param text The String message body.
      */
-    public TextMessage(final DateTime sentTime, final DateTime receiveTime, final DateTime ingestTime,
-            final String messageId, final long messageNumber, final String text) {
+    public TextMessage(final DateTime sentTime,
+            final DateTime receiveTime,
+            final DateTime ingestTime,
+            final String messageId,
+            final long messageNumber,
+            final String text) {
         super(sentTime, receiveTime, ingestTime, messageId, messageNumber);
         this.text = text;
     }

@@ -8,6 +8,7 @@ import io.deephaven.engine.table.impl.util.DynamicTableWriter;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.TableWriter;
+import io.deephaven.util.annotations.ScriptApi;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,6 +29,8 @@ public class JSONToInMemoryTableAdapterBuilder {
             .autoValueMapping(false);
 
     private final Map<String, JSONToInMemoryTableAdapterBuilder> subtableFieldsToBuilders = new LinkedHashMap<>();
+
+    private final Map<String, JSONToInMemoryTableAdapterBuilder> routedTableIdsToBuilders = new HashMap<>();
 
     private final List<String> colNames = new ArrayList<>();
     private final List<Class<?>> colTypes = new ArrayList<>();
@@ -50,11 +53,10 @@ public class JSONToInMemoryTableAdapterBuilder {
     }
 
     public JSONToInMemoryTableAdapterBuilder() {
-        this.mainResultTableName = null;
+        this(null);
     }
 
     public JSONToInMemoryTableAdapterBuilder(final String mainResultTableName) {
-        Require.neqNull(mainResultTableName, "mainResultTableName");
         this.mainResultTableName = mainResultTableName;
     }
 
@@ -69,11 +71,12 @@ public class JSONToInMemoryTableAdapterBuilder {
         final Map<String, Table> resultTables = new LinkedHashMap<>();
         final Map<String, TableWriter<?>> resultTableWriters = new LinkedHashMap<>();
 
-        // Map of all subtable writers for the main builder and its nested/subtable builders. Note that since this
-        // is keyed off of a field name and is a global map for the entire JSON tree, it means a given key (i.e. field
-        // name) can only be used for one subtable anywhere in the tree. So, if two nested fields both have an array
-        // field of the same name, only one of them would be able to be used as a subtable.
-        final Map<String, TableWriter<?>> subtableWriters = new LinkedHashMap<>();
+        // Map of all subtable writers for the main builder and its nested/subtable builders. (This includes routed
+        // table adapters.) Note that since this is keyed off of a field name and is a global map for the entire JSON
+        // tree, it means a given key (i.e. field name or routed table identifier) can only be used for one subtable
+        // anywhere in the tree. So, if two nested fields both have an array field of the same name, only one of them
+        // would be able to be used as a subtable.
+        final Map<String, TableWriter<?>> routedAndSubtableWriters = new LinkedHashMap<>();
 
         // Make this table's tablewriter
         final DynamicTableWriter thisTableWriter = getTableWriter(false);
@@ -82,13 +85,22 @@ public class JSONToInMemoryTableAdapterBuilder {
 
         subtableFieldsToBuilders.forEach((k, v) -> {
             final DynamicTableWriter subtableTableWriter = v.getTableWriter(true);
-            subtableWriters.put(k, subtableTableWriter);
+            routedAndSubtableWriters.put(k, subtableTableWriter);
             resultTableWriters.put(k, subtableTableWriter);
             resultTables.put(k, subtableTableWriter.getTable());
         });
 
+        routedTableIdsToBuilders.forEach((k, v) -> {
+            final DynamicTableWriter routedTableWriter = v.getTableWriter(true);
+            if (routedAndSubtableWriters.put(k, routedTableWriter) != null) {
+                throw new IllegalStateException("key " + k + " used for both routed table and subtable");
+            }
+            resultTableWriters.put(k, routedTableWriter);
+            resultTables.put(k, routedTableWriter.getTable());
+        });
+
         final JSONToTableWriterAdapter jsonAdapter =
-                jsonAdpaterBuilder.makeAdapter(log, thisTableWriter, subtableWriters);
+                jsonAdpaterBuilder.makeAdapter(log, thisTableWriter, routedAndSubtableWriters);
 
         if (flushIntervalMillis > 0) {
             jsonAdapter.createCleanupThread(flushIntervalMillis);
@@ -159,7 +171,8 @@ public class JSONToInMemoryTableAdapterBuilder {
         return this;
     }
 
-    public JSONToInMemoryTableAdapterBuilder addNestedField(final String field,
+    public JSONToInMemoryTableAdapterBuilder addNestedField(
+            final String field,
             final JSONToInMemoryTableAdapterBuilder builder) {
         addCols(builder.colNames, builder.colTypes);
 
@@ -176,8 +189,26 @@ public class JSONToInMemoryTableAdapterBuilder {
 
         // include subtables of this subtable as well
         subtableFieldsToBuilders.putAll(subtableBuilder.subtableFieldsToBuilders);
+        routedTableIdsToBuilders.putAll(subtableBuilder.routedTableIdsToBuilders);
         subtableFieldsToBuilders.put(field, subtableBuilder);
         jsonAdpaterBuilder.addFieldToSubTableMapping(field, subtableBuilder.jsonAdpaterBuilder);
+        return this;
+    }
+
+    @ScriptApi
+    public JSONToInMemoryTableAdapterBuilder addRoutedTableAdapter(
+            final String routedTableIdentifier,
+            final Predicate<JsonNode> routingPredicate,
+            final JSONToInMemoryTableAdapterBuilder routedBuilder) {
+        // routed tables are basically subtables -- still need a subtable row ID col.
+        colNames.add(JSONToTableWriterAdapter.getSubtableRowIdColName(routedTableIdentifier));
+        colTypes.add(long.class);
+
+        subtableFieldsToBuilders.putAll(routedBuilder.subtableFieldsToBuilders);
+        routedTableIdsToBuilders.putAll(routedBuilder.routedTableIdsToBuilders);
+        routedTableIdsToBuilders.put(routedTableIdentifier, routedBuilder);
+        jsonAdpaterBuilder.addRoutedTableAdapter(routedTableIdentifier, routingPredicate,
+                routedBuilder.jsonAdpaterBuilder);
         return this;
     }
 

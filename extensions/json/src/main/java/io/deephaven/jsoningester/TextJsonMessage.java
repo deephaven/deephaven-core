@@ -14,8 +14,8 @@ public class TextJsonMessage extends TextMessage implements JsonMessage {
      * @param sentTime The time (if available) when this message was sent
      * @param receiveTime The time (reported by subscriber) when this message was received.
      * @param ingestTime The time when this message was finished processing by its ingester and was ready to be flushed.
-     * @param messageId The unique, monotonically-increasing ID for this message.
-     * @param messageNumber The sequential number indicating the sequence this message was received in by the ingester.
+     * @param messageId An optional message ID string. (Used by some message brokers to support recovery.)
+     * @param messageNumber The monotonically-increasing sequence number for the message.
      * @param text The String message body.
      */
     public TextJsonMessage(DateTime sentTime, DateTime receiveTime, DateTime ingestTime, String messageId,
