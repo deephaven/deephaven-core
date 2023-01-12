@@ -2193,7 +2193,7 @@ public class JsonAdapterTest {
 
         final String logText = baos.toString(StandardCharsets.UTF_8);
         if (!logText.startsWith(
-                "Unable to parse JSON message: \"~x=y;b=c\": \nio.deephaven.jsoningester.JsonNodeUtil$JsonStringParseException: Failed to parse JSON string.")) {
+                "Unable to parse JSON message #1: \"~x=y;b=c\": \nio.deephaven.jsoningester.JsonNodeUtil$JsonStringParseException: Failed to parse JSON string.")) {
             TestCase.fail("Expected JSON parse error in log, but was : " + logText);
         }
         baos.reset();

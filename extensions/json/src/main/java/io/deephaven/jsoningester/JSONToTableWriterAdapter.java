@@ -1070,9 +1070,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      * @param json The input JSON string
      * @return The {@link BaseMessageMetadata#getMsgNo() message number} assigned to the message. This is automatically
      *         set to the current value of {@link #messagesQueued}.
-     * @throws IOException
      */
-    public synchronized long consumeString(final String json) throws IOException {
+    public synchronized long consumeString(final String json) {
         long msgId = messagesQueued.get();
         final DateTime now = DateTime.now();
         final TextJsonMessage msg = new TextJsonMessage(now, now, now, null, msgId, json);
@@ -1199,9 +1198,12 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                         // next message
                         if (unparseableMessagesLogged++ < MAX_UNPARSEABLE_LOG_MESSAGES) {
                             final String origMsgTxt = finalHolder.getOriginalText();
-                            final String origTxtFormatted = origMsgTxt == null ? "null" : "\"" + origMsgTxt + "\": ";
+                            final String origTxtFormatted = origMsgTxt == null ? "<original message text unavailable>"
+                                    : "\"" + origMsgTxt + "\": ";
                             log.error()
-                                    .append("Unable to parse JSON message: ")
+                                    .append("Unable to parse JSON message #")
+                                    .append(finalHolder.getMessageNumber())
+                                    .append(": ")
                                     .append(origTxtFormatted)
                                     .nl()
                                     .append(finalHolder.getParseException()).endl();

@@ -122,18 +122,10 @@ public class ComplexJsonImportTest2 {
 
 
         System.out.println("Consuming message!");
-        try {
-            adapter.consumeString(json);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        adapter.consumeString(json);
         System.out.println("Consumed message!");
 
-        try {
-            adapter.consumeString(ExampleJSON.getFullObservationsJson("KCOS"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        adapter.consumeString(ExampleJSON.getFullObservationsJson("KCOS"));
         System.out.println("Consumed message 2!");
 
 
