@@ -240,7 +240,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final AggregationRowLookup filteredBaseLevelRowLookup = nodeKey -> {
             final int unfilteredRowKey = baseLevelRowLookup.get(nodeKey);
             // NB: Rollup snapshot patterns allow us to safely always use current, here.
-            if (filteredBaseLevelRowSet.find(unfilteredRowKey) > 0) {
+            if (filteredBaseLevelRowSet.find(unfilteredRowKey) >= 0) {
                 return unfilteredRowKey;
             }
             return DEFAULT_UNKNOWN_ROW;
