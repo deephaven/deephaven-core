@@ -90,6 +90,7 @@ public class JsTreeTable extends HasEventHandling {
     private class TicketAndPromise {
         private final Ticket ticket;
         private final Promise<?> promise;
+        private boolean released = false;
 
         private TicketAndPromise(Ticket ticket, Promise<?> promise) {
             this.ticket = ticket;
@@ -101,7 +102,11 @@ public class JsTreeTable extends HasEventHandling {
         }
 
         public void release() {
-            connection.releaseTicket(ticket);
+            if (!released) {
+                // don't double-release, in cases where the same ticket is used for multiple parts of the request
+                released = true;
+                connection.releaseTicket(ticket);
+            }
         }
     }
 
@@ -621,7 +626,7 @@ public class JsTreeTable extends HasEventHandling {
                 })
                 .catch_(err -> {
                     failureHandled(err.toString());
-                    return null;
+                    return Promise.reject(err);
                 });
     }
 
