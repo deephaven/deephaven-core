@@ -515,7 +515,7 @@ public class SessionState {
         private volatile int exportListenerVersion = 0;
 
         /** Indicates whether this export has already been well defined. This prevents export object reuse. */
-        private volatile boolean hasHadWorkSet = false;
+        private boolean hasHadWorkSet = false;
 
         /** This indicates whether or not this export should use the serial execution queue. */
         private boolean requiresSerialQueue;
