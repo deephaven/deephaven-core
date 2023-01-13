@@ -90,7 +90,6 @@ public abstract class UpdateBy {
         @Nullable
         private final WritableRowRedirection rowRedirection;
         private final WritableRowSet freeRows;
-        private WritableRowSet toClear;
         private long maxInnerRowKey;
 
         private UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
@@ -107,13 +106,15 @@ public abstract class UpdateBy {
             return maxInnerRowKey;
         }
 
-        private void processUpdateForRedirection(@NotNull final TableUpdate upstream,
+        /**
+         * Process the upstream {@link TableUpdate update} and return the rowset of dense keys that need cleared for
+         * Object array sources
+         */
+        private WritableRowSet processUpdateForRedirection(@NotNull final TableUpdate upstream,
                 final TrackingRowSet sourceRowSet) {
             assert rowRedirection != null;
 
-            // take this chance to clean up last cycle's rowset
-            try (final RowSet ignored = toClear) {
-            }
+            final WritableRowSet toClear;
 
             if (upstream.removed().isNonempty()) {
                 final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
@@ -148,6 +149,7 @@ public abstract class UpdateBy {
                     freeRows.clear();
                 }
             }
+            return toClear;
         }
 
         private RowSet getInnerKeys(final RowSet outerKeys) {
@@ -163,18 +165,6 @@ public abstract class UpdateBy {
                 }
             }
             return builder.build();
-        }
-
-        /***
-         * Compute the inner source keys that need to be cleared. These are rows that were removed this cycle and not
-         * replaced by added rows. These are in the dense key-space and must only be applied to the inner sources of the
-         * redirected output sources.
-         *
-         * @return the set of rows that should be cleared from the inner (dense) sources. This {@link RowSet} should be
-         *         closed by the caller.
-         */
-        WritableRowSet getRowsToClear() {
-            return toClear.copy();
         }
     }
 
@@ -688,19 +678,15 @@ public abstract class UpdateBy {
          */
         public void processUpdate() {
             if (redirHelper.isRedirected()) {
-                // this call does all the work needed for redirected output sources, including handling removed rows
-                redirHelper.processUpdateForRedirection(upstream, source.getRowSet());
+                // this call does all the work needed for redirected output sources, returns the set of rows we need
+                // to clear from our Object array output sources
+                toClear = redirHelper.processUpdateForRedirection(upstream, source.getRowSet());
                 changedRows = RowSetFactory.empty();
-
-                // identify which rows we need to clear in our Object columns. These rows will not intersect with rows
-                // we intend to modify later
-                toClear = redirHelper.getRowsToClear();
 
                 // clear them now and let them set their own prev states
                 if (!initialStep && !toClear.isEmpty()) {
                     for (UpdateByOperator op : operators) {
                         op.clearOutputRows(toClear);
-
                     }
                 }
             } else {

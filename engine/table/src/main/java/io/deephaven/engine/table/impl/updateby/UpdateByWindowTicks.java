@@ -8,6 +8,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -26,7 +27,7 @@ import java.util.stream.IntStream;
  * maintain a window of data based on row distance rather than timestamps. Window-based operators must maintain a buffer
  * of `influencer` values to add to the rolling window as the current row changes.
  */
-public class UpdateByWindowTicks extends UpdateByWindow {
+class UpdateByWindowTicks extends UpdateByWindow {
     private final long prevUnits;
     private final long fwdUnits;
 
@@ -36,7 +37,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         private RowSet influencerPositions;
         private int currentGetContextSize;
 
-        public UpdateByWindowBucketTicksContext(final TrackingRowSet sourceRowSet,
+        UpdateByWindowBucketTicksContext(final TrackingRowSet sourceRowSet,
                 final int chunkSize, final boolean initialStep) {
             super(sourceRowSet, null, null, chunkSize, initialStep);
         }
@@ -70,7 +71,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
     }
 
     @Override
-    public UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
+    UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
@@ -85,7 +86,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
         // Potential cases and reasoning:
         // 1) rev 1, fwd 0 - this row only influences, affected should also be 1, 0
         // 2) rev 2, fwd 0 - this row and previous influences, affected should be 1, 1
-        // 3) rev 10, fwd 0 - this row and previous 9 influeces, affected should be 1, 9
+        // 3) rev 10, fwd 0 - this row and previous 9 influences, affected should be 1, 9
         // 4) rev 0, fwd 10 - next 10 influences, affected should be 11, -1 (looks weird but that is how we would
         // exclude the current row)
         // 5) rev 10, fwd 50 - affected should be 51, 9
@@ -95,9 +96,6 @@ public class UpdateByWindowTicks extends UpdateByWindow {
 
     private static WritableRowSet computeInfluencerRowsTicks(final RowSet sourceSet, final RowSet subset,
             final RowSet invertedSubSet, long revTicks, long fwdTicks) {
-        if (sourceSet.size() == subset.size()) {
-            return sourceSet.copy();
-        }
 
         long maxPos = sourceSet.size() - 1;
 
@@ -122,9 +120,11 @@ public class UpdateByWindowTicks extends UpdateByWindow {
             while (size < newSize) {
                 size *= 2;
             }
+
+            // if size would no longer be poolable, use the exact size for the new contexts
             ctx.currentGetContextSize = LongSizedDataStructure.intSize(
                     "ensureGetContextSize exceeded Integer.MAX_VALUE",
-                    size);
+                    size >= ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY ? newSize : size);
 
             // use this to track which contexts have already resized
             final boolean[] resized = new boolean[ctx.inputSources.length];
@@ -153,7 +153,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
      * these values (i.e. that fall within the window and will `influence` this computation).
      */
     @Override
-    public void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
+    void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
 
         UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
@@ -247,6 +247,9 @@ public class UpdateByWindowTicks extends UpdateByWindow {
             }
         }
 
+        // naturally need to compute the newly added rows
+        tmpAffected.insert(upstream.added());
+
         ctx.affectedRows = tmpAffected;
 
         // now get influencer rows for the affected rows
@@ -262,7 +265,7 @@ public class UpdateByWindowTicks extends UpdateByWindow {
     }
 
     @Override
-    public void processRows(UpdateByWindowBucketContext context, boolean initialStep) {
+    void processRows(UpdateByWindowBucketContext context, boolean initialStep) {
         UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");

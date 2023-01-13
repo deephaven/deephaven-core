@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 
-public abstract class UpdateByWindow {
+abstract class UpdateByWindow {
     @Nullable
     protected final String timestampColumnName;
 
@@ -30,7 +30,7 @@ public abstract class UpdateByWindow {
     protected int[] uniqueInputSourceIndices;
 
     /** This context will store the necessary info to process a single window for a single bucket */
-    public class UpdateByWindowBucketContext implements SafeCloseable {
+    class UpdateByWindowBucketContext implements SafeCloseable {
         /** A reference to the source rowset */
         protected final TrackingRowSet sourceRowSet;
         /** The column source providing the timestamp data for this window */
@@ -63,7 +63,7 @@ public abstract class UpdateByWindow {
         /** Indicates which sources are needed to process this window context */
         protected int[] dirtySourceIndices;
 
-        public UpdateByWindowBucketContext(final TrackingRowSet sourceRowSet,
+        UpdateByWindowBucketContext(final TrackingRowSet sourceRowSet,
                 @Nullable final ColumnSource<?> timestampColumnSource,
                 @Nullable final LongSegmentedSortedArray timestampSsa,
                 final int chunkSize,
@@ -97,7 +97,7 @@ public abstract class UpdateByWindow {
             final int chunkSize,
             final boolean isInitializeStep);
 
-    protected UpdateByWindow(UpdateByOperator[] operators, int[][] operatorInputSourceSlots,
+    UpdateByWindow(UpdateByOperator[] operators, int[][] operatorInputSourceSlots,
             @Nullable String timestampColumnName) {
         this.operators = operators;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
@@ -112,7 +112,7 @@ public abstract class UpdateByWindow {
      *
      * @return a new {@link UpdateByWindow window} from these operators
      */
-    public static UpdateByWindow createFromOperatorArray(final UpdateByOperator[] operators,
+    static UpdateByWindow createFromOperatorArray(final UpdateByOperator[] operators,
             final int[][] operatorSourceSlots) {
         // review operators to extract timestamp column (if one exists)
         String timestampColumnName = null;
@@ -144,21 +144,13 @@ public abstract class UpdateByWindow {
     }
 
     /**
-     * Returns the timestamp column name for this window (or null if no timestamps in use)
-     */
-    @Nullable
-    public String getTimestampColumnName() {
-        return timestampColumnName;
-    }
-
-    /**
      * Returns the operators for this window (a subset of the total operators for this UpdateBy call)
      */
-    public UpdateByOperator[] getOperators() {
+    UpdateByOperator[] getOperators() {
         return operators;
     }
 
-    public int[] getUniqueSourceIndices() {
+    int[] getUniqueSourceIndices() {
         if (uniqueInputSourceIndices == null) {
             final TIntHashSet set = new TIntHashSet();
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
@@ -174,7 +166,7 @@ public abstract class UpdateByWindow {
      *
      * @param srcIdx the index of the input source
      */
-    public boolean isSourceInUse(int srcIdx) {
+    boolean isSourceInUse(int srcIdx) {
         // this looks worse than it actually is, windows are defined by their input sources so there will be only
         // one or two entries in `getUniqueSourceIndices()`. Iterating will be faster than building a lookup table
         // or a hashset
@@ -191,7 +183,7 @@ public abstract class UpdateByWindow {
      *
      * @param changes the rowset indicating which rows will be modified or added this cycle
      */
-    public void prepareForParallelPopulation(final RowSet changes) {
+    void prepareForParallelPopulation(final RowSet changes) {
         for (UpdateByOperator operator : operators) {
             operator.prepareForParallelPopulation(changes);
         }
@@ -206,7 +198,7 @@ public abstract class UpdateByWindow {
      * @param context the window context that will store the results.
      * @param upstream the update that indicates incoming changes to the data.
      */
-    public abstract void computeAffectedRowsAndOperators(final UpdateByWindowBucketContext context,
+    abstract void computeAffectedRowsAndOperators(final UpdateByWindowBucketContext context,
             @NotNull final TableUpdate upstream);
 
     /**
@@ -216,7 +208,7 @@ public abstract class UpdateByWindow {
      * @param context the window context that will store these sources.
      * @param inputSources the (potentially cached) input sources to use for processing.
      */
-    public void assignInputSources(final UpdateByWindowBucketContext context, final ColumnSource<?>[] inputSources) {
+    void assignInputSources(final UpdateByWindowBucketContext context, final ColumnSource<?>[] inputSources) {
         context.inputSources = inputSources;
         context.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
         context.inputSourceChunks = new WritableChunk[inputSources.length];
@@ -248,14 +240,14 @@ public abstract class UpdateByWindow {
      * @param context the window context that will manage the results.
      * @param initialStep whether this is the creation step of the table.
      */
-    public abstract void processRows(final UpdateByWindowBucketContext context, final boolean initialStep);
+    abstract void processRows(final UpdateByWindowBucketContext context, final boolean initialStep);
 
     /**
      * Returns `true` if the window for this bucket needs to be processed this cycle.
      *
      * @param context the window context that will manage the results.
      */
-    public boolean isWindowDirty(final UpdateByWindowBucketContext context) {
+    boolean isWindowDirty(final UpdateByWindowBucketContext context) {
         return context.isDirty;
     }
 
@@ -264,7 +256,7 @@ public abstract class UpdateByWindow {
      *
      * @param context the window context that will manage the results.
      */
-    public int[] getDirtyOperators(final UpdateByWindowBucketContext context) {
+    int[] getDirtyOperators(final UpdateByWindowBucketContext context) {
         return context.dirtyOperatorIndices;
     }
 
@@ -273,7 +265,7 @@ public abstract class UpdateByWindow {
      *
      * @param context the window context that will manage the results.
      */
-    public RowSet getAffectedRows(final UpdateByWindowBucketContext context) {
+    RowSet getAffectedRows(final UpdateByWindowBucketContext context) {
         return context.affectedRows;
     }
 
@@ -282,7 +274,7 @@ public abstract class UpdateByWindow {
      *
      * @param context the window context that will manage the results.
      */
-    public RowSet getInfluencerRows(final UpdateByWindowBucketContext context) {
+    RowSet getInfluencerRows(final UpdateByWindowBucketContext context) {
         return context.influencerRows;
     }
 
@@ -291,7 +283,7 @@ public abstract class UpdateByWindow {
     /**
      * Returns a hash code to help distinguish between windows on the same UpdateBy call
      */
-    protected static int hashCode(boolean windowed, @NotNull String[] inputColumnNames,
+    private static int hashCode(boolean windowed, @NotNull String[] inputColumnNames,
             @Nullable String timestampColumnName, long prevUnits,
             long fwdUnits) {
 
@@ -318,7 +310,7 @@ public abstract class UpdateByWindow {
     /**
      * Returns a hash code given a particular operator
      */
-    public static int hashCodeFromOperator(final UpdateByOperator op) {
+    static int hashCodeFromOperator(final UpdateByOperator op) {
         return hashCode(op instanceof UpdateByWindowedOperator,
                 op.getInputColumnNames(),
                 op.getTimestampColumnName(),
@@ -329,7 +321,7 @@ public abstract class UpdateByWindow {
     /**
      * Returns `true` if two operators are compatible and can be executed as part of the same window
      */
-    public static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
+    static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
         // verify input columns are identical
         if (!Arrays.equals(opA.getInputColumnNames(), opB.getInputColumnNames())) {
             return false;
