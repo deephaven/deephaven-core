@@ -563,10 +563,12 @@ public class ArrowFlightUtil {
                     final SessionState.ExportObject<Object> parent =
                             ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "ticket");
 
-                    onExportResolvedContinuation = session.nonExport()
-                            .require(parent)
-                            .onErrorHandler(DoExchangeMarshaller.this::onError)
-                            .submit(() -> onExportResolved(parent));
+                    synchronized (this) {
+                        onExportResolvedContinuation = session.nonExport()
+                                .require(parent)
+                                .onErrorHandler(DoExchangeMarshaller.this::onError)
+                                .submit(() -> onExportResolved(parent));
+                    }
                 }
             }
 
