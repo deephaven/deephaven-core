@@ -27,10 +27,12 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.experimental.categories.Category;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,6 +44,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
+@Category(OutOfBandTest.class)
 public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase {
     static private final int MAX_SEEDS = 1;
     private final int numRightBitsToReserve;
@@ -140,7 +143,8 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i(1 << 16);
-            update.removed = update.modified = i();
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = RowSetShiftData.EMPTY;
             rTable.notifyListeners(update);
@@ -174,7 +178,9 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             removeRows(rTable, i(origIndex));
             addToTable(rTable, i(newIndex), longCol("Y", 2));
             final TableUpdateImpl update = new TableUpdateImpl();
-            update.added = update.removed = update.modified = i();
+            update.added = i();
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(origIndex, origIndex, newIndex - origIndex);
@@ -211,7 +217,8 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i(1 << 16);
-            update.removed = update.modified = i();
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(128, 128, 1);
@@ -242,7 +249,9 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             removeRows(lTable, i(0, 1, 2, 3));
             addToTable(lTable, i(2, 4, 5, 7), col("X", "a", "b", "c", "d"));
             final TableUpdateImpl lUpdate = new TableUpdateImpl();
-            lUpdate.added = lUpdate.removed = lUpdate.modified = i();
+            lUpdate.added = i();
+            lUpdate.removed = i();
+            lUpdate.modified = i();
             final RowSetShiftData.Builder lShiftBuilder = new RowSetShiftData.Builder();
             lShiftBuilder.shiftRange(0, 0, 2);
             lShiftBuilder.shiftRange(1, 2, 3);
@@ -256,7 +265,8 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
             final TableUpdateImpl rUpdate = new TableUpdateImpl();
             rUpdate.added = i(1 << 16);
-            rUpdate.removed = rUpdate.modified = i();
+            rUpdate.removed = i();
+            rUpdate.modified = i();
             rUpdate.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             final RowSetShiftData.Builder rShiftBuilder = new RowSetShiftData.Builder();
             rShiftBuilder.shiftRange(128, 128, 1);

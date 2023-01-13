@@ -339,6 +339,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
         try (final ProbeContext pc = makeProbeContext(rightKeySources, removed.size());
              final WritableLongChunk<RowKeys> rightToRemove = WritableLongChunk.makeWritableChunk(pc.chunkSize)) {
+            rightToRemove.setSize(0);
             final boolean usePrev = true;
             decorationProbe(pc, removed, rightKeySources, usePrev, null, (cookie, slot, rowKey, prevRowKey) -> {
                 rightRowToSlot.removeVoid(rowKey);
