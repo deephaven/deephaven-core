@@ -31,7 +31,7 @@ OUT_DIR=authorization/src/main/java/
 PROTO_DIR=proto/proto-backplane-grpc/src/main/proto/
 ROOT_DIR=$PROTO_DIR/deephaven/proto
 
-PATH=.:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
+PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
      $ROOT_DIR/application.proto                                        \
      $ROOT_DIR/console.proto                                            \
      $ROOT_DIR/config.proto                                             \
@@ -41,15 +41,16 @@ PATH=.:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
      $ROOT_DIR/storage.proto                                            \
      $ROOT_DIR/ticket.proto
 
-PATH=.:$PATH protoc --contextual-auth-wiring_out=$OUT_DIR -I $PROTO_DIR \
+PATH=authorization-codegen:$PATH protoc --contextual-auth-wiring_out=$OUT_DIR -I $PROTO_DIR \
      $ROOT_DIR/table.proto                                              \
      $ROOT_DIR/inputtable.proto                                         \
-     $ROOT_DIR/partitionedtable.proto
+     $ROOT_DIR/partitionedtable.proto                                   \
+     $ROOT_DIR/hierarchicaltable.proto
 
 OUT_DIR=authorization/src/main/java/
 PROTO_DIR=../grpc/src/proto/grpc/health/v1/
 ROOT_DIR=$PROTO_DIR
 
-PATH=.:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
+PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
      $ROOT_DIR/health.proto
 ```
