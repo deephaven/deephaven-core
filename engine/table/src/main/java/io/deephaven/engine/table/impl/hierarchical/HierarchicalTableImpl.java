@@ -12,6 +12,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
@@ -465,9 +466,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 if (filtered != null) {
                     return;
                 }
-                filtered = applyNodeFormatsAndFilters(id, base);
-                if (filtered != base && filtered.isRefreshing()) {
-                    filtered.retainReference();
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    filtered = applyNodeFormatsAndFilters(id, base);
+                    if (filtered != base && filtered.isRefreshing()) {
+                        filtered.retainReference();
+                    }
                 }
             }
 
@@ -476,15 +479,17 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 if (sorted != null) {
                     return;
                 }
-                sorted = applyNodeSorts(id, filtered);
-                if (sorted != filtered) {
-                    // NB: We can safely assume that sorted != base if sorted != filtered
-                    if (sorted.isRefreshing()) {
-                        sorted.retainReference();
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    sorted = applyNodeSorts(id, filtered);
+                    if (sorted != filtered) {
+                        // NB: We can safely assume that sorted != base if sorted != filtered
+                        if (sorted.isRefreshing()) {
+                            sorted.retainReference();
+                        }
+                        // NB: We could drop our reference to filtered here, but there's no real reason to do it now
+                        // rather than in release
+                        sortReverseLookup = SortOperation.getReverseLookup(filtered, sorted);
                     }
-                    // NB: We could drop our reference to filtered here, but there's no real reason to do it now rather
-                    // than in release
-                    sortReverseLookup = SortOperation.getReverseLookup(filtered, sorted);
                 }
             }
 
