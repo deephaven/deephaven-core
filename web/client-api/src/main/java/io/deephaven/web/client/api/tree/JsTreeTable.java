@@ -272,7 +272,7 @@ public class JsTreeTable extends HasEventHandling {
     private Column rowDepthCol;
     private Column rowExpandedCol;
     private final Column actionCol;
-    private final JsArray<Column> groupedColumns = new JsArray<>();
+    private final JsArray<Column> groupedColumns;
 
     // The source JsTable behind the original HierarchicalTable, lazily built at this time
     private final JsLazy<Promise<JsTable>> sourceTable;
@@ -325,7 +325,7 @@ public class JsTreeTable extends HasEventHandling {
         boolean hasConstituentColumns = !columnDefsByName.get(true).isEmpty();
 
         Map<String, Column> constituentColumns = new HashMap<>();
-
+        JsArray<Column> groupedColumns = new JsArray<>();
         for (ColumnDefinition definition : tableDefinition.getColumns()) {
             Column column = definition.makeJsColumn(columns.length, columnDefsByName);
             if (definition.isForRow()) {
@@ -362,6 +362,7 @@ public class JsTreeTable extends HasEventHandling {
             }
         }
         this.rowFormatColumn = rowFormatColumn;
+        this.groupedColumns = JsObject.freeze(groupedColumns);
 
         sourceColumns = columnDefsByName.get(false).values().stream()
                 .map(c -> {
