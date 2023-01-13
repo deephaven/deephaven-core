@@ -253,7 +253,8 @@ public class JsRollupConfig {
         return request;
     }
 
-    private JsArray<String> dedup(LinkedHashSet<String> cols, List<String> colsNeedingCompoundNames, String aggregationType) {
+    private JsArray<String> dedup(LinkedHashSet<String> cols, List<String> colsNeedingCompoundNames,
+            String aggregationType) {
         return cols.stream().map(col -> {
             if (colsNeedingCompoundNames.contains(col)) {
                 return col + "_" + aggregationType + " = " + col;
@@ -262,8 +263,7 @@ public class JsRollupConfig {
         }).collect(Collector.of(
                 JsArray<String>::new,
                 JsArray::push,
-                (arr1, arr2) -> arr1.concat(arr2.asArray(new String[0]))
-        ));
+                (arr1, arr2) -> arr1.concat(arr2.asArray(new String[0]))));
     }
 
     private String unusedColumnName(JsArray<Column> existingColumns, String... suggestedNames) {
