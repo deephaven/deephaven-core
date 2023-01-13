@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -65,6 +66,9 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     @SuppressWarnings("FieldCanBeLocal")
     private final ThreadGroup consumerThreadGroup;
     private final List<AsynchronousDataIngester> allSubtableAdapters;
+    private ShutdownManager.Task shutdownTask;
+    private final ShutdownManager.OrderingCategory SHUTDOWN_TASK_ORDERING_CATEGORY =
+            ShutdownManager.OrderingCategory.FIRST;
 
     /**
      * The owner message adapter, which has {@link RowSetter setters} for metadata columns.
@@ -490,50 +494,69 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
     /**
      * Starts a thread to run {@link #cleanup()} occasionally. Also registers a task to {@link #shutdown()} this adapter
-     * cleanly at VM shutdown.
+     * cleanly at VM shutdown. The cleanup thread will also {@link #closeWriters() close the table writers} before
+     * exiting.
      * 
      * @param flushIntervalMillis Interval in milliseconds at which {@code cleanup()} is run.
      */
-    void createCleanupThread(final long flushIntervalMillis) {
+    synchronized void createCleanupThread(final long flushIntervalMillis) {
+        if (isShutdown.get()) {
+            throw new IllegalStateException("Adapter already shut down");
+        }
+        if (shutdownTask != null) {
+            throw new IllegalStateException("Cleanup thread already created");
+        }
+
         // Start a thread to flush the adapter
         final Thread cleanupThread = new Thread(() -> {
             long lastFlush = 0L;
             // cleanup() every flushIntervalMillis until shutdown.
             // (then cleanup once more after consumer threads exit.)
-            while (!isShutdown.get()) {
-                try {
-                    // noinspection BusyWait
-                    Thread.sleep(flushIntervalMillis);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(
-                            Thread.currentThread().getName() + ": Interrupted while waiting to flush", e);
-                }
-                final long now = System.currentTimeMillis();
-                if (now - lastFlush > flushIntervalMillis) {
+            try {
+                while (!isShutdown.get()) {
                     try {
-                        lastFlush = now;
-                        JSONToTableWriterAdapter.this.cleanup();
-                    } catch (IOException e) {
-                        throw new RuntimeException(Thread.currentThread().getName()
-                                + ": Exception while flushing data to table writers", e);
+                        // noinspection BusyWait
+                        Thread.sleep(flushIntervalMillis);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(
+                                Thread.currentThread().getName() + ": Interrupted while waiting to flush", e);
+                    }
+                    final long now = System.currentTimeMillis();
+                    if (now - lastFlush > flushIntervalMillis) {
+                        try {
+                            lastFlush = now;
+                            JSONToTableWriterAdapter.this.cleanup();
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(Thread.currentThread().getName()
+                                    + ": Exception while flushing data to table writers", e);
+                        }
                     }
                 }
-            }
 
-            // wait for consumer threads to exit -- all messages should be processed by then
-            try {
-                if (!(JSONToTableWriterAdapter.this.consumerThreadsCountDownLatch.await(15,
-                        TimeUnit.SECONDS))) {
-                    log.warn().append("Consumer threads did not exit within timeout").endl();
+                // wait for consumer threads to exit -- all messages should be processed by then
+                try {
+                    final int timeoutSecs = 30;
+                    if (!(JSONToTableWriterAdapter.this.consumerThreadsCountDownLatch.await(timeoutSecs,
+                            TimeUnit.SECONDS))) {
+                        log.warn().append("Consumer threads did not exit within timeout (").append(timeoutSecs)
+                                .append(" seconds)").endl();
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Interrupted while waiting for consumer threads to exit", e);
                 }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
 
-            try {
-                JSONToTableWriterAdapter.this.cleanup();
-            } catch (IOException e) {
-                throw new RuntimeException("Exception while flushing data to table writers", e);
+                try {
+                    JSONToTableWriterAdapter.this.cleanup();
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Exception occurred while flushing data to table writers", e);
+                }
+            } finally {
+                try {
+                    JSONToTableWriterAdapter.this.closeWriters();
+                } catch (IOException e) {
+                    log.error().append(new UncheckedIOException("Exception occurred while closing table writers", e))
+                            .endl();
+                }
             }
         }, JSONToTableWriterAdapter.class.getSimpleName() + '_' + instanceId + "_cleanupThread");
         cleanupThread.setDaemon(true);
@@ -541,8 +564,20 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
         // handle shutdown. (since we are taking responsibility for flushing the data, we should also take
         // responsibility for clean shutdown.)
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
-                this::shutdown);
+        // this is not done by default in the constructor because it can contribute to memory leaks -- if the writer
+        // is an in-memory table writer, then the shutdown hook's reference to this adapter will lead to retention
+        // of the table writer, its output table, and all the data written to that table.
+        shutdownTask = this::shutdown;
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(SHUTDOWN_TASK_ORDERING_CATEGORY, shutdownTask);
+    }
+
+    private synchronized void deregisterShutdownTask() {
+        // deregister the shutdown task (to prevent a memory leak)
+        if (shutdownTask != null) {
+            ProcessEnvironment.getGlobalShutdownManager().deregisterTask(SHUTDOWN_TASK_ORDERING_CATEGORY,
+                    shutdownTask);
+            shutdownTask = null;
+        }
     }
 
     /**
@@ -1277,6 +1312,22 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         }
     }
 
+    /**
+     * Close the table writer for this adapter and any subtable adapters.
+     * 
+     * @throws IOException If a table writer cannot be closed
+     */
+    public void closeWriters() throws IOException {
+        log.debug().append("JSONToTableWriterAdapter closeWriters - closing table writers").endl();
+
+        log.debug().append("JSONToTableWriterAdapter closeWriters - shutting down subtable table writers").endl();
+        for (JSONToTableWriterAdapter jsonToTableWriterAdapter : subtableFieldsToAdapters.values()) {
+            jsonToTableWriterAdapter.closeWriters();
+        }
+
+        log.debug().append("JSONToTableWriterAdapter closeWriters - closing local table writer").endl();
+        writer.close();
+    }
 
     private void cleanupMetadata(final InMemoryRowHolder holder) {
         if (owner != null) {
@@ -1315,6 +1366,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                     .endl();
             return;
         } else {
+            deregisterShutdownTask();
+
             // Shut down the adapters
             log.debug().append("JSONToTableWriterAdapter shutdown - shutting down nested adapters").endl();
             nestedAdapters.forEach(JSONToTableWriterAdapter::shutdown);
@@ -1323,7 +1376,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             subtableFieldsToAdapters.values().forEach(JSONToTableWriterAdapter::shutdown);
         }
 
-        // IF using threads, wait for the consumer threads to finish:
+        // If using threads, wait for the consumer threads to finish:
         if (consumerThreadsCountDownLatch != null) {
             try {
                 log.debug().append("JSONToTableWriterAdapter shutdown - awaiting termination").endl();

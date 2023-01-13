@@ -23,7 +23,6 @@ import java.util.function.ToLongFunction;
  * Translates a message into a standardized form for further processing, including attaching any needed metadata.
  */
 public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapter<M> {
-    private static final long MILLIS_TO_NANOS = 1_000_000L;
 
     private final StringToTableWriterAdapter stringAdapter;
     private final String messageIdColumn;
