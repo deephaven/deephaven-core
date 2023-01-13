@@ -25,6 +25,7 @@ public class JsAggregationOperation {
             // Array operation isn't legal in all contexts, just omit it for now
             // ARRAY = "Array",
             // These need some other parameter to function, not supported yet
+            // TODO #3302 support these
             // SORTED_FIRST="SortedFirst",
             // SORTED_LAST="SortedLast",
             // WSUM = "WeightedSum";

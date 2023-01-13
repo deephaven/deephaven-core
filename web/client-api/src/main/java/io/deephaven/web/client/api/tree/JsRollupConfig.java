@@ -231,14 +231,16 @@ public class JsRollupConfig {
                     break;
                 }
                 // case JsAggregationOperation.SORTED_FIRST: {
-                // // TODO support this
+                // // TODO #3302 support this
                 // }
                 // case JsAggregationOperation.SORTED_LAST: {
-                // // TODO support this
+                // // TODO #3302 support this
                 // }
                 // case JsAggregationOperation.WSUM: {
-                // // TODO support this
+                // // TODO #3302 support this
                 // }
+                default:
+                    JsLog.warn("Aggregation " + aggregationType + " not supported, ignoring");
             }
 
             if (columns == null || columns.getMatchPairsList().length > 0) {

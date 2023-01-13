@@ -68,8 +68,6 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * Semantics around getting updates from the server are slightly different - we don't "unset" the viewport here after
  * operations are performed, but encourage the client code to re-set them to the desired position.
  *
- * The "__Hierarchical_Children" column should generally be left out of the UI, but is provided for debugging purposes.
- *
  * The table size will be -1 until a viewport has been fetched.
  */
 public class JsTreeTable extends HasEventHandling {
@@ -384,7 +382,7 @@ public class JsTreeTable extends HasEventHandling {
                         Function.identity()));
         // add the rest of the constituent columns as themselves, they will only show up in constituent rows
         sourceColumns.putAll(constituentColumns);
-        // TODO offer those as plain columns too
+        // TODO #3303 offer those as plain columns too
 
         // visit each column with a source column but no format/style column - if the source column as a format column,
         // we will reference the source column's format column data instead
