@@ -624,12 +624,12 @@ public class JsTreeTable extends HasEventHandling {
                     return Promise.resolve(doExchange);
                 });
         stream.catch_(err -> {
-                    // if this is the active attempt at a subscription, report the error
-                    if (this.stream == stream) {
-                        failureHandled(err.toString());
-                    }
-                    return Promise.reject(err);
-                });
+            // if this is the active attempt at a subscription, report the error
+            if (this.stream == stream) {
+                failureHandled(err.toString());
+            }
+            return Promise.reject(err);
+        });
         this.stream = stream;
     }
 
