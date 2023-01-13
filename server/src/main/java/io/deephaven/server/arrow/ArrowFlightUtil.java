@@ -563,10 +563,12 @@ public class ArrowFlightUtil {
                     final SessionState.ExportObject<Object> parent =
                             ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "ticket");
 
-                    onExportResolvedContinuation = session.nonExport()
-                            .require(parent)
-                            .onErrorHandler(DoExchangeMarshaller.this::onError)
-                            .submit(() -> onExportResolved(parent));
+                    synchronized (this) {
+                        onExportResolvedContinuation = session.nonExport()
+                                .require(parent)
+                                .onErrorHandler(DoExchangeMarshaller.this::onError)
+                                .submit(() -> onExportResolved(parent));
+                    }
                 }
             }
 
@@ -672,11 +674,6 @@ public class ArrowFlightUtil {
 
             @Override
             public synchronized void close() {
-                if (onExportResolvedContinuation != null) {
-                    onExportResolvedContinuation.cancel();
-                    onExportResolvedContinuation = null;
-                }
-
                 if (bmp != null) {
                     bmp.removeSubscription(listener);
                     bmp = null;
@@ -685,6 +682,12 @@ public class ArrowFlightUtil {
                     htvs = null;
                 } else {
                     GrpcUtil.safelyComplete(listener);
+                }
+
+                // After we've signaled that the stream should close, cancel the export
+                if (onExportResolvedContinuation != null) {
+                    onExportResolvedContinuation.cancel();
+                    onExportResolvedContinuation = null;
                 }
 
                 if (preExportSubscriptions != null) {

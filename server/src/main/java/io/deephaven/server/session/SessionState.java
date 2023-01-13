@@ -1288,9 +1288,14 @@ public class SessionState {
 
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
-                errorHandler.onError(GrpcUtil.statusRuntimeException(
-                        Code.FAILED_PRECONDITION,
-                        "Details Logged w/ID '" + errorContext + "'" + dependentStr));
+                if (cause == null) {
+                    errorHandler.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                            "Export in state " + resultState + dependentStr));
+                } else {
+                    errorHandler.onError(GrpcUtil.statusRuntimeException(
+                            Code.FAILED_PRECONDITION,
+                            "Details Logged w/ID '" + errorContext + "'" + dependentStr));
+                }
             }));
         }
 
