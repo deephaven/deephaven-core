@@ -508,7 +508,7 @@ public class JsTreeTable extends HasEventHandling {
     }
 
     private void replaceSubscription() {
-        this.stream = Promise.resolve(defer())
+        Promise<BiDiStream<?, ?>> stream = Promise.resolve(defer())
                 .then(ignore -> {
                     makeKeyTable();
                     TicketAndPromise filter = prepareFilter();
@@ -581,7 +581,7 @@ public class JsTreeTable extends HasEventHandling {
                         }
                     });
                     doExchange.onEnd(status -> {
-                        stream = null;
+                        this.stream = null;
                     });
                     doExchange.onData(flightData -> {
                         Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
@@ -596,7 +596,7 @@ public class JsTreeTable extends HasEventHandling {
                         if (appMetadataBytes.length != 0) {
                             BarrageMessageWrapper barrageMessageWrapper =
                                     BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
-                                            new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
+                                            new ByteBuffer(
                                                     appMetadataBytes));
 
                             update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
@@ -622,11 +622,15 @@ public class JsTreeTable extends HasEventHandling {
                         handleUpdate(nextSort, nextFilters, vd, alwaysFireEvent);
                     });
                     return Promise.resolve(doExchange);
-                })
-                .catch_(err -> {
-                    failureHandled(err.toString());
+                });
+        stream.catch_(err -> {
+                    // if this is the active attempt at a subscription, report the error
+                    if (this.stream == stream) {
+                        failureHandled(err.toString());
+                    }
                     return Promise.reject(err);
                 });
+        this.stream = stream;
     }
 
     /**
