@@ -21,7 +21,7 @@ public class JsAggregationOperation {
             STD = "Std",
             FIRST = "First",
             LAST = "Last",
-            UNIQUE = "Unique",
+            UNIQUE = "Unique";
             // Array operation isn't legal in all contexts, just omit it for now
             // ARRAY = "Array",
             // These need some other parameter to function, not supported yet
@@ -29,5 +29,6 @@ public class JsAggregationOperation {
             // SORTED_FIRST="SortedFirst",
             // SORTED_LAST="SortedLast",
             // WSUM = "WeightedSum";
-            SKIP = "Skip";
+    @Deprecated
+    public static final String SKIP = "Skip";
 }
