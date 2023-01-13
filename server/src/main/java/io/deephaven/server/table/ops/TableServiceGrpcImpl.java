@@ -26,7 +26,6 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
-import io.deephaven.proto.backplane.grpc.FetchPandasTableRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;
@@ -308,13 +307,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     @Override
     public void whereIn(WhereInRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.WHERE_IN, request, responseObserver);
-    }
-
-    @Override
-    public void fetchPandasTable(FetchPandasTableRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        // do not forget to check permissions via TableServiceContextualAuthWiring#checkPermissionFetchPandasTable
-        super.fetchPandasTable(request, responseObserver);
     }
 
     @Override
