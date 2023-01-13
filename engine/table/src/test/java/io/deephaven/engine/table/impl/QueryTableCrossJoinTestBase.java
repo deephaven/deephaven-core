@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -15,11 +16,13 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -28,8 +31,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.*;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.util.TableTools.col;
-import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
@@ -213,6 +215,43 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    public void testCrossJoinShift() {
+        final QueryTable left = (QueryTable) TableTools.newTable(intCol("LK", 1, 2, 3), intCol("LS", 1, 2, 3));
+        final QueryTable right = TstUtils.testRefreshingTable(intCol("RK", 1, 2, 3), intCol("RS", 10, 20, 30));
+
+        final QueryTable joined = (QueryTable) CrossJoinHelper.join(left, right,
+                MatchPairFactory.getExpressions("LK=RK"), MatchPairFactory.getExpressions("RS"), 1);
+        assertTableEquals(TableTools.newTable(intCol("LK", 1, 2, 3), intCol("LS", 1, 2, 3), intCol("RS", 10, 20, 30)),
+                joined);
+
+        final ErrorListener errorListener = makeAndListenToValidator(joined);
+        final PrintListener printListener = new PrintListener("joined", joined);
+        final SimpleListener listener = new SimpleListener(joined);
+        joined.addUpdateListener(listener);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(4, 5), intCol("RK", 2, 2), intCol("RS", 40, 50));
+            right.notifyListeners(i(4, 5), i(), i());
+        });
+
+        assertTableEquals(TableTools.newTable(intCol("LK", 1, 2, 2, 2, 3), intCol("LS", 1, 2, 2, 2, 3),
+                intCol("RS", 10, 20, 40, 50, 30)), joined);
+
+        assertEquals(1, listener.count);
+        assertEquals(i(), listener.update.removed());
+        assertEquals(i(), listener.update.modified());
+        assertEquals(i(5, 6), listener.update.added());
+        listener.reset();
+    }
+
+    private ErrorListener makeAndListenToValidator(QueryTable joined) {
+        final TableUpdateValidator validator = TableUpdateValidator.make("joined", joined);
+        final QueryTable validatorResult = validator.getResultTable();
+        final ErrorListener errorListener = new ErrorListener(validatorResult);
+        validatorResult.addUpdateListener(errorListener);
+        return errorListener;
+    }
+
     private void testIncrementalZeroKeyJoin(final String ctxt, final int size, final int seed,
             final MutableInt numSteps) {
         final int leftSize = (int) Math.ceil(Math.sqrt(size));
@@ -261,11 +300,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             for (int rt = 0; rt < 2; ++rt) {
                 boolean leftTicking = lt == 1;
                 boolean rightTicking = rt == 1;
-                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking);
+                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking,
+                        TestJoinControl.DEFAULT_JOIN_CONTROL);
                 // force left build
-                testStaticJoin(types, cardinality, 1, types.length, leftTicking, rightTicking);
+                testStaticJoin(types, cardinality, 1, types.length, leftTicking, rightTicking,
+                        TestJoinControl.DEFAULT_JOIN_CONTROL);
                 // force right build
-                testStaticJoin(types, cardinality, types.length, 1, leftTicking, rightTicking);
+                testStaticJoin(types, cardinality, types.length, 1, leftTicking, rightTicking,
+                        TestJoinControl.DEFAULT_JOIN_CONTROL);
             }
         }
     }
@@ -281,23 +323,35 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             for (int rt = 0; rt < 2; ++rt) {
                 boolean leftTicking = lt == 1;
                 boolean rightTicking = rt == 1;
-                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking);
+                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking,
+                        TestJoinControl.DEFAULT_JOIN_CONTROL);
             }
         }
     }
 
+    public void testLargeStaticOverflow() {
+        final String[] types = new String[26];
+        final int[] cardinality = new int[26];
+        for (int i = 0; i < 26; ++i) {
+            types[i] = String.valueOf('a' + i);
+            cardinality[i] = i * i;
+        }
+        testStaticJoin(types, cardinality, types.length, types.length, false, false,
+                TestJoinControl.OVERFLOW_JOIN_CONTROL);
+    }
+
     // generate a table such that all pairs of types exist and are part of the cross-join
     private void testStaticJoin(final String[] types, final int[] cardinality, int maxLeftType, int maxRightType,
-            boolean leftTicking, boolean rightTicking) {
+            boolean leftTicking, boolean rightTicking, JoinControl joinControl) {
         Assert.eq(types.length, "types.length", cardinality.length, "cardinality.length");
 
         long nextLeftRow = 0;
         final ArrayList<String> leftKeys = new ArrayList<>();
-        final ArrayList<Long> leftData = new ArrayList<>();
+        final TLongArrayList leftData = new TLongArrayList();
 
         long nextRightRow = 0;
         final ArrayList<String> rightKeys = new ArrayList<>();
-        final ArrayList<Long> rightData = new ArrayList<>();
+        final TLongArrayList rightData = new TLongArrayList();
 
         int expectedSize = 0;
         final Map<String, MutableLong> expectedByKey = Maps.newHashMap();
@@ -327,25 +381,18 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             }
         }
 
-        final QueryTable left;
+        final QueryTable left = (QueryTable) TableTools.newTable(
+                stringCol("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                longCol("leftData", leftData.toArray()));
         if (leftTicking) {
-            left = TstUtils.testRefreshingTable(RowSetFactory.flat(nextLeftRow).toTracking(),
-                    col("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    col("leftData", leftData.toArray(new Long[] {})));
-        } else {
-            left = TstUtils.testTable(RowSetFactory.flat(nextLeftRow).toTracking(),
-                    col("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    col("leftData", leftData.toArray(new Long[] {})));
+            left.setRefreshing(true);
         }
-        final QueryTable right;
+
+        final QueryTable right = (QueryTable) TableTools.newTable(stringCol("sharedKey",
+                rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                longCol("rightData", rightData.toArray()));
         if (rightTicking) {
-            right = TstUtils.testRefreshingTable(RowSetFactory.flat(nextRightRow).toTracking(),
-                    col("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    col("rightData", rightData.toArray(new Long[] {})));
-        } else {
-            right = TstUtils.testTable(RowSetFactory.flat(nextRightRow).toTracking(),
-                    col("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    col("rightData", rightData.toArray(new Long[] {})));
+            right.setRefreshing(true);
         }
 
         final Table chunkedCrossJoin = left.join(right, "sharedKey", numRightBitsToReserve);

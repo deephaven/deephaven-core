@@ -90,8 +90,36 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
     }
 
     /**
+     * Remove the specified {@code outerRowKeys}.
+     *
+     * @param outerRowKeys The outer row keys to remove
+     */
+    default void removeAllUnordered(final LongChunk<RowKeys> outerRowKeys) {
+        for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
+            removeVoid(get(ii));
+        }
+    }
+
+    /**
+     * A basic, empty, singleton default {@link ChunkSink.FillFromContext} instance.
+     */
+    ChunkSink.FillFromContext DEFAULT_FILL_FROM_INSTANCE = new ChunkSink.FillFromContext() {};
+
+    /**
+     * Make a {@link ChunkSink.FillFromContext } for this WritableRowRedirection. The default implementation supplies
+     * {@link #DEFAULT_FILL_FROM_INSTANCE}, suitable for use with the default implementation of
+     * {@link #fillFromChunk(ChunkSink.FillFromContext , Chunk, RowSequence)}.
+     *
+     * @param chunkCapacity The maximum number of mappings that will be supplied in one operation
+     * @return The {@link ChunkSink.FillFromContext } to use
+     */
+    default ChunkSink.FillFromContext makeFillFromContext(final int chunkCapacity) {
+        return DEFAULT_FILL_FROM_INSTANCE;
+    }
+
+    /**
      * Insert mappings from each element in a {@link RowSequence} to the parallel element in a {@link LongChunk}. h
-     * 
+     *
      * @param fillFromContext THe FillFromContext
      * @param innerRowKeys The inner row keys to map to
      * @param outerRowKeys The outer row keys to map from
