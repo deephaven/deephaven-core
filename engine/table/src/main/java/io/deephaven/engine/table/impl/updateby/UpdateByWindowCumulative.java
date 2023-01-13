@@ -1,7 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -25,14 +23,14 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * This is the specialization of {@link UpdateByWindow} that handles `cumulative` operators. These operators do not
  * maintain a window of data and can be computed from the previous value and the current value.
  */
-public class UpdateByWindowCumulative extends UpdateByWindow {
+class UpdateByWindowCumulative extends UpdateByWindow {
 
-    public UpdateByWindowCumulative(UpdateByOperator[] operators, int[][] operatorSourceSlots,
+    UpdateByWindowCumulative(UpdateByOperator[] operators, int[][] operatorSourceSlots,
             @Nullable String timestampColumnName) {
         super(operators, operatorSourceSlots, timestampColumnName);
     }
 
-    protected void makeOperatorContexts(UpdateByWindowBucketContext context) {
+    private void makeOperatorContexts(UpdateByWindowBucketContext context) {
         // working chunk size need not be larger than affectedRows.size()
         context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
 
@@ -42,7 +40,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
         }
     }
 
-    public UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
+    UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final int chunkSize,
@@ -53,7 +51,11 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    public void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
+    void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
+        if (upstream.empty() || context.sourceRowSet.isEmpty()) {
+            return;
+        }
+
         // all rows are affected on the initial step
         if (context.initialStep) {
             context.affectedRows = context.sourceRowSet.copy();
@@ -111,7 +113,7 @@ public class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    public void processRows(UpdateByWindowBucketContext context, final boolean initialStep) {
+    void processRows(UpdateByWindowBucketContext context, final boolean initialStep) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
         if (initialStep) {

@@ -28,11 +28,11 @@ import java.util.stream.IntStream;
  * of `influencer` values to add to the rolling window as the current row changes.
  */
 class UpdateByWindowTicks extends UpdateByWindow {
+    private static final int WINDOW_CHUNK_SIZE = 4096;
     private final long prevUnits;
     private final long fwdUnits;
 
     class UpdateByWindowBucketTicksContext extends UpdateByWindowBucketContext {
-        private static final int WINDOW_CHUNK_SIZE = 4096;
         private RowSet affectedRowPositions;
         private RowSet influencerPositions;
         private int currentGetContextSize;
@@ -61,7 +61,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
     private void makeOperatorContexts(UpdateByWindowBucketContext context) {
         UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
-        ctx.workingChunkSize = UpdateByWindowBucketTicksContext.WINDOW_CHUNK_SIZE;
+        ctx.workingChunkSize = WINDOW_CHUNK_SIZE;
         ctx.currentGetContextSize = ctx.workingChunkSize;
 
         // create contexts for the affected operators
@@ -84,8 +84,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
         // adjust fwd/rev to get the affected windows
 
         // Potential cases and reasoning:
-        // 1) rev 1, fwd 0 - this row only influences, affected should also be 1, 0
-        // 2) rev 2, fwd 0 - this row and previous influences, affected should be 1, 1
+        // 1) rev 1, fwd 0 - this row influences, affected should also be 1, 0
+        // 2) rev 2, fwd 0 - this row and previous 1 influences, affected should be 1, 1
         // 3) rev 10, fwd 0 - this row and previous 9 influences, affected should be 1, 9
         // 4) rev 0, fwd 10 - next 10 influences, affected should be 11, -1 (looks weird but that is how we would
         // exclude the current row)
@@ -96,7 +96,6 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
     private static WritableRowSet computeInfluencerRowsTicks(final RowSet sourceSet, final RowSet subset,
             final RowSet invertedSubSet, long revTicks, long fwdTicks) {
-
         long maxPos = sourceSet.size() - 1;
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -157,7 +156,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
         UpdateByWindowBucketTicksContext ctx = (UpdateByWindowBucketTicksContext) context;
 
-        if (upstream.empty()) {
+        if (upstream.empty() || context.sourceRowSet.isEmpty()) {
             return;
         }
 
@@ -247,7 +246,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
             }
         }
 
-        // naturally need to compute the newly added rows
+        // naturally need to compute all newly added rows
         tmpAffected.insert(upstream.added());
 
         ctx.affectedRows = tmpAffected;
