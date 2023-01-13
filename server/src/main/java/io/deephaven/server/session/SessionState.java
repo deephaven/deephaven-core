@@ -514,6 +514,9 @@ public class SessionState {
         private volatile ExportNotification.State state = ExportNotification.State.UNKNOWN;
         private volatile int exportListenerVersion = 0;
 
+        /** Indicates whether this export has already been well defined. This prevents export object reuse. */
+        private volatile boolean hasHadWorkSet = false;
+
         /** This indicates whether or not this export should use the serial execution queue. */
         private boolean requiresSerialQueue;
 
@@ -566,6 +569,7 @@ public class SessionState {
             this.exportId = NON_EXPORT_ID;
             this.result = result;
             this.dependentCount = 0;
+            this.hasHadWorkSet = true;
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
             if (result == null) {
@@ -619,9 +623,10 @@ public class SessionState {
          */
         private synchronized void setWork(final Callable<T> exportMain, final ExportErrorHandler errorHandler,
                 final boolean requiresSerialQueue) {
-            if (this.exportMain != null) {
-                throw new IllegalStateException("work can only be set once on an exportable object");
+            if (hasHadWorkSet) {
+                throw new IllegalStateException("export object can only be defined once");
             }
+            hasHadWorkSet = true;
             this.requiresSerialQueue = requiresSerialQueue;
 
             if (isExportStateTerminal(this.state)) {
@@ -1208,17 +1213,6 @@ public class SessionState {
             } else {
                 // noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
-                switch (this.export.getState()) {
-                    case UNKNOWN:
-                        return;
-                    case RELEASED:
-                    case CANCELLED:
-                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "export already released/cancelled id: " + exportId);
-                    default:
-                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "cannot re-export to existing exportId: " + exportId);
-                }
             }
         }
 
