@@ -710,7 +710,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(ss, s);
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(y, i(10), col("Symbol", "B"), col("X", "5"), intCol("Y", 109));
-                    y.notifyListeners(i(10), i(), i());
+            y.notifyListeners(i(10), i(), i());
         });
         assertTableEquals(ss, s);
     }
