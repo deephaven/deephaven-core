@@ -165,7 +165,7 @@ case "\$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
-CLASSPATH=$classpath
+CLASSPATH=/apps/libs/*:$classpath
 <% if ( mainClassName.startsWith('--module ') ) { %>
 MODULE_PATH=$modulePath
 <% } %>
