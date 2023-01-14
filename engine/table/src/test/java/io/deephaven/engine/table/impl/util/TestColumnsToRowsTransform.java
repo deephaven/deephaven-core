@@ -99,7 +99,6 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
         final Table filtered = out.where("Sentinel=101 && Name=`V1` || Sentinel=102 && Name=`V2`");
         showWithRowSet(filtered);
 
-        // noinspection unchecked
         final ColumnSource<Integer> valueSource = filtered.getColumnSource("Value");
         try (final WritableIntChunk<Values> destination = WritableIntChunk.makeWritableChunk(2);
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
@@ -144,7 +143,7 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
 
     private void testIncremental(int seed) {
         final Random random = new Random(0);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final int size = 30;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "D1", "D2", "D3", "I1", "I2", "I3", "I4", "I5"},
@@ -158,14 +157,13 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
                         new IntGenerator(1000000, 10000000),
                         new IntGenerator(10000000, 100000000)));
 
-        final Map<String, String> nameMap = new HashMap<>();
-        nameMap.put("I1", "EyeOne");
-        nameMap.put("I2", "AiTwo");
-        nameMap.put("I3", "IThree");
-        nameMap.put("First", "EyeOne");
-        nameMap.put("Second", "AiTwo");
-        nameMap.put("Third", "IThree");
-        QueryScope.addParam("nameMap", Collections.unmodifiableMap(nameMap));
+        QueryScope.addParam("nameMap", Map.of(
+                "I1", "EyeOne",
+                "I2", "AiTwo",
+                "I3", "IThree",
+                "First", "EyeOne",
+                "Second", "AiTwo",
+                "Third", "IThree"));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(

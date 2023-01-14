@@ -220,9 +220,9 @@ public class SessionStateTest {
         exportObj.cancel();
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
 
+        // We should be able to cancel prior to definition without error.
         final MutableBoolean submitted = new MutableBoolean();
-        expectException(StatusRuntimeException.class,
-                () -> session.newExport(nextExportId++).submit(submitted::setTrue));
+        session.newExport(nextExportId++).submit(submitted::setTrue);
         scheduler.runUntilQueueEmpty();
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);

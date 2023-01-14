@@ -69,31 +69,31 @@ final class ExportStates {
     }
 
     /**
-     * An unreferencable table is a table that is reachable from the current set of exports, but isn't an export itself.
-     * An unreferencable table can no longer be referenced by the client.
+     * An unreferenceable table is a table that is reachable from the current set of exports, but isn't an export
+     * itself. An unreferenceable table can no longer be referenced by the client.
      */
-    private Set<TableSpec> unreferencableTables() {
-        // todo: potentially keep around Set<TableSpec> unreferencableTables as class member
-        final Set<TableSpec> unreferencableTables = ParentsVisitor.reachable(exports.keySet());
-        unreferencableTables.removeAll(exports.keySet());
-        return unreferencableTables;
+    private Set<TableSpec> unreferenceableTables() {
+        // todo: potentially keep around Set<TableSpec> unreferenceableTables as class member
+        final Set<TableSpec> unreferenceableTables = ParentsVisitor.reachable(exports.keySet());
+        unreferenceableTables.removeAll(exports.keySet());
+        return unreferenceableTables;
     }
 
-    private Optional<TableSpec> searchUnreferencableTable(ExportsRequest request) {
-        final Set<TableSpec> unreferencableTables = unreferencableTables();
+    private Optional<TableSpec> searchUnreferenceableTable(ExportsRequest request) {
+        final Set<TableSpec> unreferenceableTables = unreferenceableTables();
         final Set<TableSpec> keySet = exports.keySet();
         // Note: this is *not* excluding everything that can be reached via exports.keySet(), it
         // just excludes paths from the request roots that go through an export.keySet().
         return ParentsVisitor.search(request.tables(), keySet::contains,
-                unreferencableTables::contains);
+                unreferenceableTables::contains);
     }
 
-    synchronized boolean hasUnreferencableTable(ExportsRequest request) {
-        return searchUnreferencableTable(request).isPresent();
+    synchronized boolean hasUnreferenceableTable(ExportsRequest request) {
+        return searchUnreferenceableTable(request).isPresent();
     }
 
     synchronized List<Export> export(ExportsRequest requests) {
-        ensureNoUnreferencableTables(requests);
+        ensureNoUnreferenceableTables(requests);
 
         final Set<TableSpec> oldExports = new HashSet<>(exports.keySet());
 
@@ -171,15 +171,15 @@ final class ExportStates {
         return postOrderNewExcludeOld;
     }
 
-    private void ensureNoUnreferencableTables(ExportsRequest requests) {
-        final Optional<TableSpec> unreferencable = searchUnreferencableTable(requests);
-        if (unreferencable.isPresent()) {
+    private void ensureNoUnreferenceableTables(ExportsRequest requests) {
+        final Optional<TableSpec> unreferenceable = searchUnreferenceableTable(requests);
+        if (unreferenceable.isPresent()) {
             // todo: potentially extend engine Table api and Ticket resolver to be able to take an
-            // existing export and a list of parent indices to rehydrate an "unreferencable" table?
+            // existing export and a list of parent indices to rehydrate an "unreferenceable" table?
             // Alternatively, our impl could export everything.
             throw new IllegalArgumentException(String.format(
-                    "Unable to complete request, contains an unreferencable table: %s",
-                    unreferencable.get()));
+                    "Unable to complete request, contains an unreferenceable table: %s",
+                    unreferenceable.get()));
         }
     }
 

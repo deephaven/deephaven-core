@@ -1,19 +1,33 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharGenerator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.testutil.generator;
 
-import java.util.Random;
-import java.util.TreeMap;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.util.QueryConstants;
 
+import java.util.Random;
+
+/**
+ * Generates columns of random intacters.
+ */
 public class IntGenerator extends AbstractGenerator<Integer> {
 
     private final int to, from;
     private final double nullFraction;
 
     public IntGenerator() {
-        this(-Integer.MAX_VALUE / 2, Integer.MAX_VALUE / 2);
+        this(PrimitiveGeneratorFunctions.minInt(), PrimitiveGeneratorFunctions.maxInt());
     }
 
     public IntGenerator(int from, int to) {
-        this(from, to, 0);
+        this.from = from;
+        this.to = to;
+        nullFraction = 0.0;
     }
 
     public IntGenerator(int from, int to, double nullFraction) {
@@ -23,13 +37,26 @@ public class IntGenerator extends AbstractGenerator<Integer> {
     }
 
     @Override
-    public Integer nextValue(TreeMap<Long, Integer> values, long key, Random random) {
+    public Integer nextValue(Random random) {
+        return nextInt(random);
+    }
+
+    private int nextInt(Random random) {
         if (nullFraction > 0) {
             if (random.nextDouble() < nullFraction) {
-                return null;
+                return QueryConstants.NULL_INT;
             }
         }
-        return from + random.nextInt(to - from);
+        return PrimitiveGeneratorFunctions.generateInt(random, from, to);
+    }
+
+    @Override
+    public WritableIntChunk<Values> populateChunk(RowSet toAdd, Random random) {
+        final int[] result = new int[toAdd.intSize()];
+        for (int ii = 0; ii < result.length; ++ii) {
+            result[ii] = nextInt(random);
+        }
+        return WritableIntChunk.writableChunkWrap(result);
     }
 
     @Override

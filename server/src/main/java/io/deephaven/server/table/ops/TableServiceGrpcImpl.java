@@ -39,6 +39,7 @@ import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
@@ -49,6 +50,7 @@ import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
@@ -67,8 +69,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
 
 public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase {
 
@@ -209,6 +212,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
+    public void snapshotWhen(final SnapshotWhenTableRequest request,
+            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT_WHEN, request, responseObserver);
+    }
+
+    @Override
     public void dropColumns(final DropColumnsRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.DROP_COLUMNS, request, responseObserver);
@@ -337,14 +346,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
             final Runnable onOneResolved = () -> {
                 if (remaining.decrementAndGet() == 0) {
-                    safelyExecuteLocked(responseObserver, () -> {
-                        final StatusRuntimeException failure = firstFailure.get();
-                        if (failure != null) {
-                            responseObserver.onError(failure);
-                        } else {
-                            responseObserver.onCompleted();
-                        }
-                    });
+                    final StatusRuntimeException failure = firstFailure.get();
+                    if (failure != null) {
+                        safelyError(responseObserver, failure);
+                    } else {
+                        safelyComplete(responseObserver);
+                    }
                 }
             };
 
@@ -373,13 +380,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                             .setSuccess(false)
                             .setErrorInfo(errorInfo)
                             .build();
-                    safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
+                    safelyOnNext(responseObserver, response);
                     onOneResolved.run();
                 }).submit(() -> {
                     final Table table = exportBuilder.doExport();
                     final ExportedTableCreationResponse response =
                             ExportUtil.buildTableCreationResponse(resultId, table);
-                    safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(response));
+                    safelyOnNext(responseObserver, response);
                     onOneResolved.run();
                     return table;
                 });
@@ -426,10 +433,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                                 session.getAuthContext(), request, Collections.singletonList((Table) obj));
                         final ExportedTableCreationResponse response =
                                 ExportUtil.buildTableCreationResponse(request, (Table) obj);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(response);
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, response);
                     });
         });
     }
@@ -468,10 +472,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         final Table result = operation.create(request, dependencies);
                         final ExportedTableCreationResponse response =
                                 ExportUtil.buildTableCreationResponse(resultId, result);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(response);
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, response);
                         return result;
                     });
         });

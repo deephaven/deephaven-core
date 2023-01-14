@@ -1,13 +1,14 @@
 package io.deephaven.extensions.barrage;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.BitSet;
-import java.util.Map;
+import java.util.function.ToIntFunction;
 
 /**
  * A StreamGenerator takes a BarrageMessage and re-uses portions of the serialized payload across different subscribers
@@ -30,11 +31,11 @@ public interface BarrageStreamGenerator<MessageView> extends SafeCloseable {
         /**
          * Create a MessageView of the Schema to send as the initial message to a new subscriber.
          *
-         * @param table the description of the table's data layout
-         * @param attributes the table attributes
+         * @param schemaPayloadWriter a function that writes schema data to a {@link FlatBufferBuilder} and returns the
+         *        schema offset
          * @return a MessageView that can be sent to a subscriber
          */
-        MessageView getSchemaView(TableDefinition table, Map<String, Object> attributes);
+        MessageView getSchemaView(@NotNull ToIntFunction<FlatBufferBuilder> schemaPayloadWriter);
     }
 
     /**

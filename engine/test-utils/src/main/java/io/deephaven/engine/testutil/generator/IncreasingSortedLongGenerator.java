@@ -1,7 +1,6 @@
 package io.deephaven.engine.testutil.generator;
 
 import java.util.Random;
-import java.util.TreeMap;
 
 public class IncreasingSortedLongGenerator extends AbstractGenerator<Long> {
     private final int step;
@@ -18,7 +17,7 @@ public class IncreasingSortedLongGenerator extends AbstractGenerator<Long> {
     }
 
     @Override
-    Long nextValue(TreeMap<Long, Long> values, long key, Random random) {
+    public Long nextValue(Random random) {
         lastValue += random.nextInt(step);
         return lastValue;
     }

@@ -77,7 +77,7 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
     }
 
     TreeNodeOperationsRecorder withOperations(@NotNull final TreeNodeOperationsRecorder other) {
-        if (!definition.equals(other.definition)) {
+        if (!getResultDefinition().equals(other.definition)) {
             throw new IllegalArgumentException(
                     "Incompatible operation recorders; compatible recorders must be created from the same table");
         }

@@ -23,6 +23,8 @@ import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.value.Value;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
@@ -54,6 +56,7 @@ import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
@@ -87,6 +90,7 @@ import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SnapshotTable;
+import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableSchema;
@@ -252,13 +256,26 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(SnapshotTable snapshotTable) {
-            SnapshotTableRequest.Builder builder = SnapshotTableRequest.newBuilder()
-                    .setResultId(ticket).setDoInitialSnapshot(snapshotTable.doInitialSnapshot())
-                    .setLeftId(ref(snapshotTable.trigger())).setRightId(ref(snapshotTable.base()));
-            for (ColumnName stampColumn : snapshotTable.stampColumns()) {
-                builder.addStampColumns(stampColumn.name());
-            }
+            final SnapshotTableRequest.Builder builder = SnapshotTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(snapshotTable.parent()));
             out = op(Builder::setSnapshot, builder.build());
+        }
+
+        @Override
+        public void visit(SnapshotWhenTable snapshotWhenTable) {
+            final SnapshotWhenOptions options = snapshotWhenTable.options();
+            final SnapshotWhenTableRequest.Builder builder = SnapshotWhenTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setBaseId(ref(snapshotWhenTable.base()))
+                    .setTriggerId(ref(snapshotWhenTable.trigger()))
+                    .setInitial(options.has(Flag.INITIAL))
+                    .setIncremental(options.has(Flag.INCREMENTAL))
+                    .setHistory(options.has(Flag.HISTORY));
+            for (JoinAddition stampColumn : options.stampColumns()) {
+                builder.addStampColumns(Strings.of(stampColumn));
+            }
+            out = op(Builder::setSnapshotWhen, builder.build());
         }
 
         @Override

@@ -79,7 +79,7 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
                     }
                 }
                 for (int jj = 0; jj < additions; ++jj) {
-                    set.add(new ArrayTuple(generator.nextValue(null, 0, random)));
+                    set.add(new ArrayTuple(generator.nextValue(random)));
                 }
 
                 ((Runnable) result).run();

@@ -274,7 +274,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
                 final long outerRowKey = reverseLookup.get(innerRowKey);
-                return outerRowKey == reverseLookup.getNoEntryKey() ? RowSequence.NULL_ROW_KEY : outerRowKey;
+                return outerRowKey == reverseLookup.getNoEntryValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
             });
 
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup, sortColumns, sortOrder,

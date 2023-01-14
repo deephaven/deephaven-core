@@ -21,16 +21,16 @@ import java.util.stream.Stream;
 public abstract class AbstractTupleSource<TUPLE_TYPE>
         implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Values> {
 
-    private final ColumnSource[] columnSources;
-    private final List<ColumnSource> listColumnSources;
+    private final ColumnSource<?>[] columnSources;
+    private final List<ColumnSource<?>> listColumnSources;
 
-    public AbstractTupleSource(ColumnSource... columnSources) {
+    public AbstractTupleSource(ColumnSource<?>... columnSources) {
         this.columnSources = columnSources;
         this.listColumnSources = List.of(columnSources);
     }
 
     @Override
-    public final List<ColumnSource> getColumnSources() {
+    public final List<ColumnSource<?>> getColumnSources() {
         return listColumnSources;
     }
 
@@ -50,10 +50,9 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
-        Chunk<Values>[] chunks = tupleFillContext.chunks;
+        Chunk<? extends Values>[] chunks = tupleFillContext.chunks;
 
         for (int i = 0; i < columnSources.length; ++i) {
-            // noinspection unchecked
             chunks[i] = columnSources[i].getChunk(getContexts[i], rowSequence);
         }
 
@@ -66,10 +65,9 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
-        Chunk<Values>[] chunks = tupleFillContext.chunks;
+        Chunk<? extends Values>[] chunks = tupleFillContext.chunks;
 
         for (int i = 0; i < columnSources.length; ++i) {
-            // noinspection unchecked
             chunks[i] = columnSources[i].getPrevChunk(getContexts[i], rowSequence);
         }
 
@@ -77,7 +75,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
     }
 
     protected abstract void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize,
-            Chunk<Values>[] chunks);
+            Chunk<? extends Values>[] chunks);
 
     class TupleFillContext implements FillContext {
 

@@ -140,16 +140,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 return;
             }
 
-            // noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (export) {
-                final ExportNotification.State currState = export.getState();
-                if (SessionState.isExportStateTerminal(currState)) {
-                    responseObserver.onError(
-                            GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Ticket already in state: " + currState));
-                    return;
-                }
-            }
-
+            // If the export is already in a terminal state, the implementation quietly ignores the request as there
+            // are no additional resources to release.
             export.cancel();
             responseObserver.onNext(ReleaseResponse.getDefaultInstance());
             responseObserver.onCompleted();
@@ -178,8 +170,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .require(source)
                     .onError(responseObserver)
                     .submit(() -> {
-                        GrpcUtil.safelyExecute(() -> responseObserver.onNext(ExportResponse.getDefaultInstance()));
-                        GrpcUtil.safelyExecute(responseObserver::onCompleted);
+                        GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
                         return source.get();
                     });
         });

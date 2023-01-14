@@ -21,8 +21,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final Table snapshotTable;
     private long snapshotPrevLength;
     private final QueryTable result;
-    private final Map<String, SingleValueColumnSource<?>> resultLeftColumns;
-    private final Map<String, ArrayBackedColumnSource<?>> resultRightColumns;
+    private final Map<String, SingleValueColumnSource<?>> resultTriggerColumns;
+    private final Map<String, ArrayBackedColumnSource<?>> resultBaseColumns;
     private final Map<String, ? extends ColumnSource<?>> triggerStampColumns;
     private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
     private final TrackingWritableRowSet resultRowSet;
@@ -31,8 +31,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             boolean lazySnapshot,
             Table snapshotTable,
             QueryTable result,
-            Map<String, SingleValueColumnSource<?>> resultLeftColumns,
-            Map<String, ArrayBackedColumnSource<?>> resultRightColumns,
+            Map<String, SingleValueColumnSource<?>> resultTriggerColumns,
+            Map<String, ArrayBackedColumnSource<?>> resultBaseColumns,
             TrackingWritableRowSet resultRowSet) {
         super("snapshot " + result.getColumnSourceMap().keySet(), triggerTable, result);
         this.triggerTable = triggerTable;
@@ -40,8 +40,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.lazySnapshot = lazySnapshot;
         this.snapshotTable = snapshotTable;
         this.snapshotPrevLength = 0;
-        this.resultLeftColumns = resultLeftColumns;
-        this.resultRightColumns = resultRightColumns;
+        this.resultTriggerColumns = resultTriggerColumns;
+        this.resultBaseColumns = resultBaseColumns;
         this.resultRowSet = resultRowSet;
         if (snapshotTable.isRefreshing()) {
             manage(snapshotTable);
@@ -61,9 +61,11 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         }
 
         // Populate stamp columns from the triggering table
-        if (!triggerTable.getRowSet().isEmpty()) {
+        if (triggerTable.getRowSet().isEmpty()) {
+            SnapshotUtils.setNullStampColumns(triggerStampColumns, resultTriggerColumns);
+        } else {
             SnapshotUtils.copyStampColumns(triggerStampColumns, triggerTable.getRowSet().lastRowKey(),
-                    resultLeftColumns);
+                    resultTriggerColumns);
         }
         final TrackingRowSet currentRowSet = snapshotTable.getRowSet();
         final long snapshotSize;
@@ -73,7 +75,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             if (!snapshotRowSet.isEmpty()) {
                 try (final RowSet destRowSet = RowSetFactory.fromRange(0, snapshotRowSet.size() - 1)) {
                     SnapshotUtils.copyDataColumns(snapshotDataColumns,
-                            snapshotRowSet, resultRightColumns, destRowSet, usePrev);
+                            snapshotRowSet, resultBaseColumns, destRowSet, usePrev);
                 }
             }
         }

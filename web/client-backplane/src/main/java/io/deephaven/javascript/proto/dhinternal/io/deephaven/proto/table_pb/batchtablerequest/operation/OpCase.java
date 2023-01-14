@@ -36,6 +36,7 @@ public class OpCase {
             SELECT,
             SELECT_DISTINCT,
             SNAPSHOT,
+            SNAPSHOT_WHEN,
             SORT,
             TAIL,
             TAIL_BY,

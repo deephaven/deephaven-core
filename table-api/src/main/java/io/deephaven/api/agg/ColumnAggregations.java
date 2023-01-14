@@ -36,8 +36,8 @@ public abstract class ColumnAggregations implements Aggregation {
     @Check
     final void checkSize() {
         if (pairs().size() < 2) {
-            throw new IllegalArgumentException(
-                    String.format("%s should have at least two pairs", ColumnAggregations.class));
+            throw new IllegalArgumentException(String.format("%s should have at least two pairs, has %d",
+                    ColumnAggregations.class, pairs().size()));
         }
     }
 

@@ -18,8 +18,8 @@ public interface NullValueMap {
     }
 
     @JsProperty(name = "NULL_VALUE")
-    double getNULL_VALUE();
+    int getNULL_VALUE();
 
     @JsProperty(name = "NULL_VALUE")
-    void setNULL_VALUE(double NULL_VALUE);
+    void setNULL_VALUE(int NULL_VALUE);
 }

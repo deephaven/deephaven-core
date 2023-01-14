@@ -608,7 +608,7 @@ public class TotalsTableBuilder {
         final Map<AggType, List<String>> columnsByType = new LinkedHashMap<>();
         for (final Map.Entry<String, ? extends ColumnSource> entry : source.getColumnSourceMap().entrySet()) {
             final String columnName = entry.getKey();
-            if (ColumnFormattingValues.isFormattingColumn(columnName)) {
+            if (ColumnFormatting.isFormattingColumn(columnName)) {
                 continue;
             }
 

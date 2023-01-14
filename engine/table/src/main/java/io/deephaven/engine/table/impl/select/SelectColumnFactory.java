@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.Pair;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.api.expression.ExpressionParser;
-import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.ColumnFormatting;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,7 +32,7 @@ public class SelectColumnFactory {
          * FormulaColumn#createFormulaColumn(String, String, FormulaParserConfiguration) where appropriate.
          */
         // <ColumnName>=<expression>
-        parser.registerFactory(new AbstractExpressionFactory<SelectColumn>(
+        parser.registerFactory(new AbstractExpressionFactory<>(
                 START_PTRN + "(" + ID_PTRN + ")\\s*=\\s*(" + ANYTHING + ")" + END_PTRN) {
             @Override
             public SelectColumn getExpression(String expression, Matcher matcher, Object... args) {
@@ -42,7 +42,7 @@ public class SelectColumnFactory {
 
         // <ColumnName>
         parser.registerFactory(
-                new AbstractExpressionFactory<SelectColumn>(START_PTRN + "(" + ID_PTRN + ")" + END_PTRN) {
+                new AbstractExpressionFactory<>(START_PTRN + "(" + ID_PTRN + ")" + END_PTRN) {
                     @Override
                     public SelectColumn getExpression(String expression, Matcher matcher, Object... args) {
                         return new SourceColumn(matcher.group(1));
@@ -86,20 +86,16 @@ public class SelectColumnFactory {
         final Matcher numberMatcher = numberFormatPattern.matcher(topMatcher.group(2));
         final Matcher dateMatcher = dateFormatPattern.matcher(topMatcher.group(2));
 
-        String columnName = topMatcher.group(1);
-        if (columnName.equals("*")) {
-            columnName = ColumnFormattingValues.ROW_FORMAT_NAME;
-        }
-
+        final String columnName = topMatcher.group(1);
         if (numberMatcher.matches()) {
-            return FormulaColumn.createFormulaColumn(columnName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME,
+            return FormulaColumn.createFormulaColumn(ColumnFormatting.getNumberFormatColumn(columnName),
                     numberMatcher.group(1),
                     FormulaParserConfiguration.Deephaven);
         } else if (dateMatcher.matches()) {
-            return FormulaColumn.createFormulaColumn(columnName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME,
+            return FormulaColumn.createFormulaColumn(ColumnFormatting.getDateFormatColumn(columnName),
                     dateMatcher.group(1), FormulaParserConfiguration.Deephaven);
         } else {
-            return FormulaColumn.createFormulaColumn(columnName + ColumnFormattingValues.TABLE_FORMAT_NAME,
+            return FormulaColumn.createFormulaColumn(ColumnFormatting.getStyleFormatColumn(columnName),
                     "io.deephaven.engine.util.ColorUtil.toLong("
                             + (colorMatcher.matches() ? colorMatcher.group(1) : topMatcher.group(2)) + ")",
                     FormulaParserConfiguration.Deephaven);
@@ -108,31 +104,5 @@ public class SelectColumnFactory {
 
     public static DhFormulaColumn[] getFormatExpressions(String... expressions) {
         return Arrays.stream(expressions).map(SelectColumnFactory::getFormatExpression).toArray(DhFormulaColumn[]::new);
-    }
-
-    /**
-     * Returns the base column-name used to create a formatting column via {@link #getFormatExpression(String)} method
-     *
-     * @param selectColumn a {@link SelectColumn} returned from the {@link #getFormatExpression(String)} method
-     * @return the baseColumn used to define the provided selectColumn
-     */
-    public static String getFormatBaseColumn(final SelectColumn selectColumn) {
-        final String formattingColumn = selectColumn.getName();
-
-        if (formattingColumn.startsWith(ColumnFormattingValues.ROW_FORMAT_NAME)) {
-            return "*";
-        }
-
-        int index;
-
-        // though ugly, this should be no worse than {@link ColumnFormattingValues#isFormattingColumn(String)}
-        index = formattingColumn.lastIndexOf(ColumnFormattingValues.TABLE_FORMAT_NAME);
-        if (index == -1) {
-            index = formattingColumn.lastIndexOf(ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME);
-            if (index == -1) {
-                index = formattingColumn.lastIndexOf(ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
-            }
-        }
-        return index == -1 ? null : formattingColumn.substring(0, index);
     }
 }

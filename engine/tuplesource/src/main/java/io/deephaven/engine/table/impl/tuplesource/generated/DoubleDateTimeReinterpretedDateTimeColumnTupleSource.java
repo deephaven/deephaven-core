@@ -127,11 +127,11 @@ public class DoubleDateTimeReinterpretedDateTimeColumnTupleSource extends Abstra
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<DoubleLongLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        DoubleChunk<Values> chunk1 = chunks[0].asDoubleChunk();
-        ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
-        LongChunk<Values> chunk3 = chunks[2].asLongChunk();
+        DoubleChunk<? extends Values> chunk1 = chunks[0].asDoubleChunk();
+        ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
+        LongChunk<? extends Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new DoubleLongLongTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
         }

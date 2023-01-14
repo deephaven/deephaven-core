@@ -59,6 +59,11 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        set(null);
+    }
+
+    @Override
     public final void set(long key, T value) {
         set(value);
     }

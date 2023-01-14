@@ -58,7 +58,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     }
 
     public void testPreserveGrouping() {
-        final Table x = TstUtils.testTable(TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+        final Table x = TstUtils.testTable(TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
         final RowSetIndexer xIndexer = RowSetIndexer.of(x.getRowSet());
         assertTrue(xIndexer.hasGrouping(x.getColumnSource("Sym")));
@@ -79,13 +79,13 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         final File testDirectory = Files.createTempDirectory("DeferredGroupingTest").toFile();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            final ColumnHolder symHolder = TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
-            final ColumnHolder sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
+            final ColumnHolder<?> symHolder = TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
+            final ColumnHolder<?> sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
 
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             final TrackingRowSet rowSet = RowSetFactory.flat(6).toTracking();
-            columns.put("Sym", TstUtils.getTreeMapColumnSource(rowSet, symHolder));
-            columns.put("Sentinel", TstUtils.getTreeMapColumnSource(rowSet, sentinelHolder));
+            columns.put("Sym", TstUtils.getTestColumnSource(rowSet, symHolder));
+            columns.put("Sentinel", TstUtils.getTestColumnSource(rowSet, sentinelHolder));
             final TableDefinition definition = TableDefinition.of(
                     ColumnDefinition.ofString("Sym").withGrouping(),
                     ColumnDefinition.ofInt("Sentinel"));

@@ -18,7 +18,7 @@ public interface TupleSource<TUPLE_TYPE> extends TupleExporter<TUPLE_TYPE>, Chun
      *
      * @return The column sources
      */
-    List<ColumnSource> getColumnSources();
+    List<ColumnSource<?>> getColumnSources();
 
     /**
      * Create a tuple for key column values at the supplied row key.

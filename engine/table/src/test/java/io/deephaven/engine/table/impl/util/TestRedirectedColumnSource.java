@@ -11,7 +11,6 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -64,12 +63,12 @@ public class TestRedirectedColumnSource {
         final Table t = new InMemoryTable(
                 new String[] {"StringsCol", "IntsCol"},
                 new Object[] {strs, is});
-        ((DynamicNode) t).setRefreshing(true);
+        t.setRefreshing(true);
         return t;
     }
 
     private void doCheck(
-            final ColumnSource cs,
+            final ColumnSource<?> cs,
             final RowSequence rs,
             final WritableObjectChunk<String, Values> chunk,
             final long offset) {
@@ -81,12 +80,12 @@ public class TestRedirectedColumnSource {
         });
     }
 
-    private Table doFillAndCheck(
+    private void doFillAndCheck(
             final Table t,
             final String col,
             final WritableObjectChunk<String, Values> chunk,
             final int sz) {
-        final ColumnSource cs = t.getColumnSource(col);
+        final ColumnSource<?> cs = t.getColumnSource(col);
         final RowSet ix = t.getRowSet();
         try (final ColumnSource.FillContext fc = cs.makeFillContext(sz);
                 final RowSequence.Iterator it = ix.getRowSequenceIterator()) {
@@ -98,7 +97,6 @@ public class TestRedirectedColumnSource {
                 offset += rs.size();
             }
         }
-        return t;
     }
 
     @Test
@@ -147,7 +145,7 @@ public class TestRedirectedColumnSource {
         showWithRowSet(b);
 
         final TByteList byteList = new TByteArrayList(6);
-        final ColumnSource reinterpretedB = b.getColumnSource("BoolVal2").reinterpret(byte.class);
+        final ColumnSource<?> reinterpretedB = b.getColumnSource("BoolVal2").reinterpret(byte.class);
         b.getRowSet().forAllRowKeys(x -> {
             final byte value = reinterpretedB.getByte(x);
             System.out.println(value);
@@ -171,7 +169,7 @@ public class TestRedirectedColumnSource {
         final Table c = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> a.naturalJoin(b, "I2=IntVal", "BoolVal3=BoolVal2"));
         showWithRowSet(c);
-        final ColumnSource reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
+        final ColumnSource<?> reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
         byteList.clear();
         b.getRowSet().forAllRowKeys(x -> {
             final byte value = reinterpretedC.getByte(x);
@@ -205,8 +203,7 @@ public class TestRedirectedColumnSource {
             assertArrayEquals(nullBytes, chunkResult);
         }
 
-        final Table captured =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(c));
+        final Table captured = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(c::snapshot);
         showWithRowSet(captured);
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();

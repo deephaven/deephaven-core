@@ -3,11 +3,13 @@
  */
 package io.deephaven.replicators;
 
+import io.deephaven.replication.ReplicatePrimitiveCode;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -56,6 +58,27 @@ public class ReplicateSourceAndChunkTests {
                 Collections.emptyMap()));
         fixupObjectDeltaAwareColumnSourceTest(charToObject(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java"));
+
+        charToAllButBoolean("engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/CharTestSource.java");
+        fixupObjectTestSource(charToObject(
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/CharTestSource.java"));
+        charToAllButBoolean(
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/ImmutableCharTestSource.java");
+        fixupObjectTestSource(charToObject(
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/ImmutableCharTestSource.java"));
+
+        charToAllButBooleanAndFloats(
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/CharGenerator.java");
+        floatToAllFloatingPoints(
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/FloatGenerator.java");
+        charToAllButBooleanAndFloats(
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/UniqueCharGenerator.java");
+        charToLong("engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java");
+        charToInteger("engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",
+                Collections.emptyMap());
+        fixupSortedDoubleGenerator(charToDouble(
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",
+                Collections.emptyMap()));
     }
 
     private static void fixupObjectColumnSourceTest(String objectPath) throws IOException {
@@ -157,5 +180,93 @@ public class ReplicateSourceAndChunkTests {
         lines = addImport(lines, "import io.deephaven.util.BooleanUtils;");
         lines = addImport(lines, "import io.deephaven.chunk.ObjectChunk;");
         FileUtils.writeLines(booleanFile, lines);
+    }
+
+    private static void fixupObjectTestSource(String objectPath) throws IOException {
+        List<String> lines;
+        final File objectFile = new File(objectPath);
+        lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = removeImport(lines, "\\s*import .*QueryConstants.*;");
+        lines = globalReplacements(lines, "QueryConstants.NULL_OBJECT", "null",
+                "Object getObject", "T get",
+                "getObject", "get",
+                "Object retVal", "T retVal",
+                "Object getPrevObject", "T getPrev",
+                "ForObject", "ForObject<T>",
+                "ObjectTestSource extends", "ObjectTestSource<T> extends",
+                "<Object>", "<T>",
+                "add(.*)Object \\[\\]", "add$1T \\[\\]",
+                "([^.])Long2ObjectOpenHashMap", "$1Long2ObjectOpenHashMap<T>");
+        lines = removeRegion(lines, "boxing imports");
+        lines = removeRegion(lines, "boxed get");
+        lines = removeRegion(lines, "boxed add");
+        lines = removeRegion(lines, "boxed getPrev");
+        final boolean isImmutable = objectPath.contains("Immutable");
+        if (isImmutable) {
+            lines = replaceRegion(lines, "empty constructor",
+                    Collections.singletonList("    public ImmutableObjectTestSource(Class<T> type) {\n" +
+                            "        this(type, RowSetFactory.empty(), ObjectChunk.getEmptyChunk());\n" +
+                            "    }\n"));
+        } else {
+            lines = replaceRegion(lines, "empty constructor",
+                    Collections.singletonList("    public ObjectTestSource(Class<T> type) {\n" +
+                            "        this(type, RowSetFactory.empty(), ObjectChunk.getEmptyChunk());\n" +
+                            "    }\n"));
+        }
+        if (isImmutable) {
+            lines = replaceRegion(lines, "chunk constructor", Collections.singletonList(
+                    "    public ImmutableObjectTestSource(Class<T> type, RowSet rowSet, Chunk<Values> data) {\n" +
+                            "        super(type);\n" +
+                            "        add(rowSet, data);\n" +
+                            "        setDefaultReturnValue(this.data);\n" +
+                            "    }\n"));
+        } else {
+            lines = replaceRegion(lines, "chunk constructor",
+                    Collections.singletonList(
+                            "    public ObjectTestSource(Class<T> type, RowSet rowSet, Chunk<Values> data) {\n" +
+                                    "        super(type);\n" +
+                                    "        add(rowSet, data);\n" +
+                                    "        setDefaultReturnValue(this.data);\n" +
+                                    "        this.prevData = this.data;\n" +
+                                    "    }\n"));
+        }
+        lines = replaceRegion(lines, "chunk add", Arrays.asList(
+                "    public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {\n" +
+                        "        setGroupToRange(null);\n" +
+                        "\n" +
+                        "        if (rowSet.size() != vs.size()) {\n" +
+                        "            throw new IllegalArgumentException(\"rowSet=\" + rowSet + \", data size=\" + vs.size());\n"
+                        +
+                        "        }",
+                (isImmutable ? "" : "\n        maybeInitializePrevForStep();\n"),
+                "        final ObjectChunk<T, Values> vcs = vs.asObjectChunk();",
+                "        rowSet.forAllRowKeys(new LongConsumer() {",
+                "            private final MutableInt ii = new MutableInt(0);",
+                "",
+                "            @Override",
+                "            public void accept(final long v) {",
+                (isImmutable
+                        ? "                // the unit test framework will ask us to add things, we need to conveniently ignore it\n"
+                        : "") +
+                        (isImmutable ? "                if (!data.containsKey(v)) {\n" : "") +
+                        (isImmutable ? "    " : "") + "                data.put(v, vcs.get(ii.intValue()));",
+                (isImmutable ? "                }\n" : "") +
+                        "                ii.increment();",
+                "            }",
+                "        });",
+                "    }"));
+        FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static void fixupSortedDoubleGenerator(String doublePath) throws IOException {
+        List<String> lines;
+        final File doubleFile = new File(doublePath);
+        lines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
+        lines = addImport(lines, "import org.apache.commons.lang3.mutable.MutableDouble;");
+        lines = replaceRegion(lines, "check sorted mutable", Collections
+                .singletonList("        final MutableDouble lastValue = new MutableDouble(-Double.MAX_VALUE);"));
+        lines = replaceRegion(lines, "check sorted assertion", Collections
+                .singletonList("            Assert.leq(lastValue.doubleValue(), \"lastValue\", value, \"value\");\n"));
+        FileUtils.writeLines(doubleFile, lines);
     }
 }

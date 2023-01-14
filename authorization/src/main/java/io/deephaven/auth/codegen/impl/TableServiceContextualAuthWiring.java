@@ -34,6 +34,7 @@ import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
@@ -400,6 +401,17 @@ public interface TableServiceContextualAuthWiring {
             List<Table> sourceTables);
 
     /**
+     * Authorize a request to SnapshotWhen.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke SnapshotWhen
+     */
+    void checkPermissionSnapshotWhen(AuthContext authContext, SnapshotWhenTableRequest request,
+            List<Table> sourceTables);
+
+    /**
      * Authorize a request to Flatten.
      *
      * @param authContext the authentication context of the request
@@ -550,6 +562,9 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
                 List<Table> sourceTables) {}
+
+        public void checkPermissionSnapshotWhen(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {}
 
         public void checkPermissionFlatten(AuthContext authContext, FlattenRequest request,
                 List<Table> sourceTables) {}
@@ -725,6 +740,11 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
                 List<Table> sourceTables) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
+        public void checkPermissionSnapshotWhen(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
@@ -978,6 +998,13 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionSnapshot(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionSnapshotWhen(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionSnapshotWhen(authContext, request, sourceTables);
             }
         }
 

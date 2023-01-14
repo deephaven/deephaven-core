@@ -155,6 +155,19 @@ public class ReplicatePrimitiveCode {
         return replaceAll(sourceClassJavaPath, null, exemptions, pairs);
     }
 
+    public static String longToByte(String sourceClassJavaPath, String... exemptions) throws IOException {
+        final String[][] pairs = new String[][] {
+                // these happen in order, so we want to turn our longs to ints first, then do char to long, we can't
+                // actually discriminate between "Long" as text and "Long" as a type,
+                // so we are going to fail for integers here, but it is hopefully enough to use just for the Timsort
+                // kernel that needs it.
+                {"Long", "Byte"},
+                {"long", "byte"},
+                {"LONG", "BYTE"},
+        };
+        return replaceAll(sourceClassJavaPath, null, exemptions, pairs);
+    }
+
     public static String charLongToIntInt(String sourceClassJavaPath, String... exemptions)
             throws IOException {
         final String[][] pairs = new String[][] {

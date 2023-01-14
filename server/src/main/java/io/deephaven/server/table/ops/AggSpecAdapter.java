@@ -38,6 +38,7 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecVar;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
 import io.deephaven.proto.backplane.grpc.NullValue;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.deephaven.server.table.ops.GrpcErrorHelper.extractField;
+import static io.deephaven.server.grpc.GrpcErrorHelper.extractField;
 
 class AggSpecAdapter {
 

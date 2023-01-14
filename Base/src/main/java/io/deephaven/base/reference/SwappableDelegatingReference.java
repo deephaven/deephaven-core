@@ -49,6 +49,5 @@ public class SwappableDelegatingReference<T> implements SimpleReference<T> {
     @Override
     public void clear() {
         delegate.clear();
-        delegate = null;
     }
 }

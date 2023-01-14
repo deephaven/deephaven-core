@@ -17,12 +17,11 @@ import io.deephaven.engine.table.impl.*;
 import java.util.*;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
-import static io.deephaven.engine.util.TableTools.diff;
 
 public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
     public void testIterative() {
         Random random = new Random(0);
-        ColumnInfo columnInfo[];
+        ColumnInfo<?, ?>[] columnInfo;
         int size = 50;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},

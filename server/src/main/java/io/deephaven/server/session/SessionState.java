@@ -59,8 +59,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
 
 /**
  * SessionState manages all exports for a single session.
@@ -514,6 +514,9 @@ public class SessionState {
         private volatile ExportNotification.State state = ExportNotification.State.UNKNOWN;
         private volatile int exportListenerVersion = 0;
 
+        /** Indicates whether this export has already been well defined. This prevents export object reuse. */
+        private boolean hasHadWorkSet = false;
+
         /** This indicates whether or not this export should use the serial execution queue. */
         private boolean requiresSerialQueue;
 
@@ -566,6 +569,7 @@ public class SessionState {
             this.exportId = NON_EXPORT_ID;
             this.result = result;
             this.dependentCount = 0;
+            this.hasHadWorkSet = true;
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
             if (result == null) {
@@ -619,9 +623,10 @@ public class SessionState {
          */
         private synchronized void setWork(final Callable<T> exportMain, final ExportErrorHandler errorHandler,
                 final boolean requiresSerialQueue) {
-            if (this.exportMain != null) {
-                throw new IllegalStateException("work can only be set once on an exportable object");
+            if (hasHadWorkSet) {
+                throw new IllegalStateException("export object can only be defined once");
             }
+            hasHadWorkSet = true;
             this.requiresSerialQueue = requiresSerialQueue;
 
             if (isExportStateTerminal(this.state)) {
@@ -761,7 +766,11 @@ public class SessionState {
                 if (errorId == null) {
                     assignErrorId();
                 }
-                safelyExecute(() -> errorHandler.onError(state, errorId, caughtException, dependentHandle));
+                try {
+                    errorHandler.onError(state, errorId, caughtException, dependentHandle);
+                } catch (final Exception err) {
+                    log.error().append("Unexpected error while reporting state failure: ").append(err).endl();
+                }
             }
 
             if (state == ExportNotification.State.EXPORTED || isExportStateTerminal(state)) {
@@ -1159,7 +1168,7 @@ public class SessionState {
                 isClosed = true;
             }
 
-            safelyExecuteLocked(listener, listener::onCompleted);
+            safelyComplete(listener);
         }
     }
 
@@ -1204,17 +1213,6 @@ public class SessionState {
             } else {
                 // noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
-                switch (this.export.getState()) {
-                    case UNKNOWN:
-                        return;
-                    case RELEASED:
-                    case CANCELLED:
-                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "export already released/cancelled id: " + exportId);
-                    default:
-                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "cannot re-export to existing exportId: " + exportId);
-                }
             }
         }
 
@@ -1290,9 +1288,14 @@ public class SessionState {
 
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
-                errorHandler.onError(GrpcUtil.statusRuntimeException(
-                        Code.FAILED_PRECONDITION,
-                        "Details Logged w/ID '" + errorContext + "'" + dependentStr));
+                if (cause == null) {
+                    errorHandler.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                            "Export in state " + resultState + dependentStr));
+                } else {
+                    errorHandler.onError(GrpcUtil.statusRuntimeException(
+                            Code.FAILED_PRECONDITION,
+                            "Details Logged w/ID '" + errorContext + "'" + dependentStr));
+                }
             }));
         }
 
@@ -1309,9 +1312,7 @@ public class SessionState {
          */
         public ExportBuilder<T> onError(StreamObserver<?> streamObserver) {
             return onErrorHandler(statusRuntimeException -> {
-                synchronized (streamObserver) {
-                    streamObserver.onError(statusRuntimeException);
-                }
+                safelyError(streamObserver, statusRuntimeException);
             });
         }
 

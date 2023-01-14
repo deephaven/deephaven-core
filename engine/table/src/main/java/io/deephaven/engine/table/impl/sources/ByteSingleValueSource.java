@@ -71,6 +71,11 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        set(NULL_BYTE);
+    }
+
+    @Override
     public final void set(long key, byte value) {
         set(value);
     }

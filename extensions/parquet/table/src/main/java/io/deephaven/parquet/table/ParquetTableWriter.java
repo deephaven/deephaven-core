@@ -318,7 +318,8 @@ public class ParquetTableWriter {
             final String colName = column.getName();
             if (table.hasColumns(colName)) {
                 if (StringSet.class.isAssignableFrom(column.getDataType())) {
-                    updateViewColumnsTransform.add(FormulaColumn.createFormulaColumn(colName, colName + ".values()"));
+                    updateViewColumnsTransform.add(FormulaColumn.createFormulaColumn(colName,
+                            "isNull(" + colName + ") ? null : " + colName + ".values()"));
                 }
                 viewColumnsTransform.add(new SourceColumn(colName));
             } else {
