@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -28,7 +27,7 @@ import java.util.stream.Collectors;
  */
 public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements ShiftData.ShiftCallback {
     private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
-            new KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>>() {
+            new KeyedObjectKey.Basic<>() {
                 @Override
                 public Pair<Class<?>, Class<?>> getKey(NullValueColumnSource columnSource) {
                     // noinspection unchecked,rawtypes
@@ -41,10 +40,10 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     private static final ColumnSource<Byte> BOOL_AS_BYTE_SOURCE =
             new BooleanAsByteColumnSource(getInstance(Boolean.class, null));
 
-    public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz, @Nullable final Class elementType) {
+    public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz, @Nullable final Class<?> elementType) {
         // noinspection unchecked,rawtypes
         return (NullValueColumnSource) INSTANCES.putIfAbsent(new Pair<>(clazz, elementType),
-                p -> new NullValueColumnSource<T2>(clazz, elementType));
+                p -> new NullValueColumnSource<>(clazz, elementType));
     }
 
     public static LinkedHashMap<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
@@ -55,7 +54,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
                 LinkedHashMap::new));
     }
 
-    private NullValueColumnSource(Class<T> type, @Nullable final Class elementType) {
+    private NullValueColumnSource(Class<T> type, @Nullable final Class<?> elementType) {
         super(type, elementType);
     }
 
@@ -174,7 +173,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
         if ((type == Boolean.class || type == boolean.class) &&
                 (alternateDataType == byte.class || alternateDataType == Byte.class)) {
             // noinspection unchecked
-            return (ColumnSource) BOOL_AS_BYTE_SOURCE;
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) BOOL_AS_BYTE_SOURCE;
         }
 
         return getInstance(alternateDataType, null);

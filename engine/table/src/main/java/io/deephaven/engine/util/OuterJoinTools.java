@@ -13,6 +13,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.CrossJoinHelper;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -86,7 +87,8 @@ public class OuterJoinTools {
                     (QueryTable) leftWithSentinel,
                     matchPairs,
                     createColumnsToAdd(leftWithSentinel, matchPairs, MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
-                    CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE).where(sentinelColumnName + " == null")
+                    CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE)
+                    .where(sentinelColumnName + " == null")
                     .dropColumns(sentinelColumnName);
 
             return TableTools.merge(leftTable, rightTable);
@@ -104,23 +106,23 @@ public class OuterJoinTools {
                 .toArray(MatchPair[]::new);
 
         // prepare filter for columnsToAdd
-        final SelectColumn[] rightColumns = Arrays.stream(columnsToAdd)
-                .map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn()))
+        final SelectColumn[] rightColumns = Streams.concat(
+                Arrays.stream(columnsToAdd).map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn())),
+                table1.getColumnSourceMap().entrySet().stream().map(entry -> new NullSelectColumn<>(
+                        entry.getValue().getType(), entry.getValue().getComponentType(), entry.getKey())))
                 .toArray(SelectColumn[]::new);
 
         // we must use leftOuterJoin again as there may be multiple matches per group
-        final Table rightOnlyTable = CrossJoinHelper.leftOuterJoin(
+        final Table rightTable = CrossJoinHelper.leftOuterJoin(
                 (QueryTable) table2.coalesce(),
                 (QueryTable) table1.coalesce().view(leftColumns),
                 matchColumns,
                 new MatchPair[] {new MatchPair(sentinelColumnName, sentinelColumnName)},
-                CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE).where(sentinelColumnName + " == null")
+                CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE)
+                .where(sentinelColumnName + " == null")
                 .view(rightColumns);
 
-        final Table nullLeftTable = TableTools.newTable(
-                1, NullValueColumnSource.createColumnSourceMap(table1.getDefinition()));
-
-        return TableTools.merge(leftTable, nullLeftTable.join(rightOnlyTable));
+        return TableTools.merge(leftTable, rightTable);
     }
 
     private static MatchPair[] createColumnsToAdd(@NotNull final Table rightTable,
