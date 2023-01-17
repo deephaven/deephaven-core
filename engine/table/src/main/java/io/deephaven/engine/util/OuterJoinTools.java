@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
-import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,7 +26,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Provides static methods to perform SQL-style left outer and full outer joins.
@@ -73,56 +74,51 @@ public class OuterJoinTools {
             sentinelColumnName = "__sentinel_" + (numAttempts++) + "__";
         } while (resultColumns.containsKey(sentinelColumnName));
 
-        // handle the simpler scenario where no conflicts may exist otherwise leftOuterJoin would have failed
-        if (columnsToAdd.length == 0) {
-            final MatchPair[] matchPairs = Arrays.stream(columnsToMatch)
-                    .map(mp -> new MatchPair(mp.rightColumn(), mp.leftColumn()))
-                    .toArray(MatchPair[]::new);
-
-            final Table leftWithSentinel = table1.coalesce().updateView(sentinelColumnName + " = true");
-
-            // we must use leftOuterJoin again as there may be multiple matches per group
-            final Table rightTable = CrossJoinHelper.leftOuterJoin(
-                    (QueryTable) table2.coalesce(),
-                    (QueryTable) leftWithSentinel,
-                    matchPairs,
-                    createColumnsToAdd(leftWithSentinel, matchPairs, MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
-                    CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE)
-                    .where(sentinelColumnName + " == null")
-                    .dropColumns(sentinelColumnName);
-
-            return TableTools.merge(leftTable, rightTable);
-        }
-
-        // only need match columns from the left; rename and drop remaining to avoid column name conflicts
+        // only need match columns from the left; rename to right names and drop remaining to avoid name conflicts
         final SelectColumn[] leftColumns = Streams.concat(
                 Arrays.stream(columnsToMatch).map(mp -> new SourceColumn(mp.leftColumn(), mp.rightColumn())),
-                List.of(SelectColumn.of(Selectable.parse(sentinelColumnName + " = true"))).stream())
+                Stream.of(SelectColumn.of(Selectable.parse(sentinelColumnName + " = true"))))
                 .toArray(SelectColumn[]::new);
 
-        // we will modify the join to use exact matches
-        final MatchPair[] matchColumns = Arrays.stream(columnsToMatch)
+        final SelectColumn[] leftMatchColumns = Arrays.stream(columnsToMatch)
+                .map(mp -> new SourceColumn(mp.leftColumn()))
+                .toArray(SelectColumn[]::new);
+        final Table uniqueLeftGroups = table1.coalesce()
+                .selectDistinct(leftMatchColumns)
+                .view(leftColumns);
+
+        // we will modify the join to use exact matches on the right column names
+        final MatchPair[] rightMatchColumns = Arrays.stream(columnsToMatch)
                 .map(mp -> new MatchPair(mp.rightColumn(), mp.rightColumn()))
                 .toArray(MatchPair[]::new);
 
         // prepare filter for columnsToAdd
-        final SelectColumn[] rightColumns = Streams.concat(
-                Arrays.stream(columnsToAdd).map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn())),
-                table1.getColumnSourceMap().entrySet().stream().map(entry -> new NullSelectColumn<>(
-                        entry.getValue().getType(), entry.getValue().getComponentType(), entry.getKey())))
+        final Stream<SourceColumn> rightSourcedColumns = columnsToAdd.length != 0
+                ? Arrays.stream(columnsToAdd).map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn()))
+                : table2.getDefinition().getColumnNames().stream().map(SourceColumn::new);
+
+        // we merge identity match columns, otherwise all left columns are to be null view columns
+        final Set<String> identityMatchColumns = Arrays.stream(columnsToMatch)
+                .filter(mp -> mp.leftColumn().equals(mp.rightColumn()))
+                .map(MatchPair::leftColumn)
+                .collect(Collectors.toSet());
+
+        // note that right sourced columns must be applied first to avoid any clashing column names
+        final SelectColumn[] rightColumns = Streams.concat(rightSourcedColumns,
+                table1.getColumnSourceMap().entrySet().stream()
+                        .filter(entry -> !identityMatchColumns.contains(entry.getKey()))
+                        .map(entry -> new NullSelectColumn<>(
+                                entry.getValue().getType(), entry.getValue().getComponentType(), entry.getKey())))
                 .toArray(SelectColumn[]::new);
 
-        // we must use leftOuterJoin again as there may be multiple matches per group
-        final Table rightTable = CrossJoinHelper.leftOuterJoin(
-                (QueryTable) table2.coalesce(),
-                (QueryTable) table1.coalesce().view(leftColumns),
-                matchColumns,
-                new MatchPair[] {new MatchPair(sentinelColumnName, sentinelColumnName)},
-                CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE)
+        // perform a natural join, filter for unmatched, and apply columnsToAdd / null view columns
+        final Table unmatchedRightRows = table2.coalesce()
+                .naturalJoin(uniqueLeftGroups, rightMatchColumns, MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY)
                 .where(sentinelColumnName + " == null")
                 .view(rightColumns);
 
-        return TableTools.merge(leftTable, rightTable);
+        // merge will respect leftTable's column ordering even though unmatchedRightRows' columns are out of order
+        return TableTools.merge(leftTable, unmatchedRightRows);
     }
 
     private static MatchPair[] createColumnsToAdd(@NotNull final Table rightTable,
