@@ -88,7 +88,7 @@
             ide = await connection.startSession("python");
             await ide.runCode(`
 from deephaven import empty_table
-remoteTable = empty_table(100).update("I=i", "J = \`\` + (int)(i/10)")
+remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`\` + (int)(i/10)", "K = i % 13"])
 `)
         } else if (types.indexOf("groovy") !== -1) {
             ide = await connection.startSession("groovy");
