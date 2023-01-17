@@ -313,11 +313,11 @@ public class FigureWidgetTranslator {
                                 // TODO #3293: Individual point shapes/sizes/labels
                                 // Right now just gets one set for the whole series
                                 AbstractXYDataSeries abstractSeries = (AbstractXYDataSeries) s;
-                                assignOptionalStringField(abstractSeries.getPointShape(0), clientSeries::setShape,
+                                assignOptionalStringField(abstractSeries.getPointShape(), clientSeries::setShape,
                                         clientSeries::clearShape);
-                                assignOptionalField(abstractSeries.getPointSize(0), clientSeries::setShapeSize,
+                                assignOptionalField(abstractSeries.getPointSize(), clientSeries::setShapeSize,
                                         clientSeries::clearShapeSize);
-                                assignOptionalField(abstractSeries.getPointLabel(0), clientSeries::setShapeLabel,
+                                assignOptionalField(abstractSeries.getPointLabel(), clientSeries::setShapeLabel,
                                         clientSeries::clearShapeLabel);
 
                                 if (s instanceof IntervalXYDataSeriesArray) {
@@ -358,11 +358,11 @@ public class FigureWidgetTranslator {
                                 // TODO #3293: Individual point shapes/sizes/labels
                                 // Right now just gets one set for the whole series
                                 AbstractCategoryDataSeries abstractSeries = (AbstractCategoryDataSeries) s;
-                                assignOptionalStringField(abstractSeries.getPointShape(0), clientSeries::setShape,
+                                assignOptionalStringField(abstractSeries.getPointShape(), clientSeries::setShape,
                                         clientSeries::clearShape);
-                                assignOptionalField(abstractSeries.getPointSize(0), clientSeries::setShapeSize,
+                                assignOptionalField(abstractSeries.getPointSize(), clientSeries::setShapeSize,
                                         clientSeries::clearShapeSize);
-                                assignOptionalField(abstractSeries.getLabel(0), clientSeries::setShapeLabel,
+                                assignOptionalField(abstractSeries.getLabel(), clientSeries::setShapeLabel,
                                         clientSeries::clearShapeLabel);
 
                                 if (s instanceof CategoryDataSeriesPartitionedTable) {// bar and pie from a table
