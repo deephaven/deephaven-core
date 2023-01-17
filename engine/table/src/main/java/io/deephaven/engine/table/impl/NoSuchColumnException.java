@@ -3,8 +3,6 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.StringUtils;
-
 import java.util.Collection;
 import java.util.Collections;
 
@@ -19,8 +17,8 @@ public class NoSuchColumnException extends IllegalArgumentException {
      * @param requestedColumns the request column names that were not found
      */
     public NoSuchColumnException(Collection<String> presentColumns, Collection<String> requestedColumns) {
-        super("Unknown column names [" + StringUtils.joinStrings(requestedColumns, ",")
-                + "], available column names are [" + StringUtils.joinStrings(presentColumns, ",") + "]");
+        super("Unknown column names [" + String.join(",", requestedColumns)
+                + "], available column names are [" + String.join(",", presentColumns) + "]");
     }
 
     /**

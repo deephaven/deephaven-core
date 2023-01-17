@@ -86,6 +86,20 @@ public class SnapshotUtils {
     }
 
     /**
+     * Like the above, but with a singleton destination that will be set to the appropriate {@code null} value.
+     *
+     * @param stampColumns The stamp columns that serve as the source data
+     * @param destColumns The destination columns we are writing to
+     */
+    public static void setNullStampColumns(
+            @NotNull Map<String, ? extends ColumnSource<?>> stampColumns,
+            @NotNull Map<String, SingleValueColumnSource<?>> destColumns) {
+        for (String name : stampColumns.keySet()) {
+            destColumns.get(name).setNull();
+        }
+    }
+
+    /**
      * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by
      * srcRowSet) to a column indicated by destColumns.get(name) (with a range of rows defined by destRowSet).
      *

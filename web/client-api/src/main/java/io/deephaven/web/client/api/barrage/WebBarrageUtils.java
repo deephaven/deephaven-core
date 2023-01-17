@@ -364,6 +364,19 @@ public class WebBarrageUtils {
                 return new ShortArrayColumnData(Js.uncheckedCast(shortArray));
             case "boolean":
             case "java.lang.Boolean":
+                // noinspection IntegerDivisionInFloatingPointContext
+                assert positions.length().toFloat64() >= ((size + 63) / 64);
+                // booleans are stored as a bitset, but internally we represent booleans as bytes
+                data.position((int) positions.offset().toFloat64());
+                BitSet wireValues = readBitSetWithLength(data, (int) (positions.length().toFloat64()));
+                Boolean[] boolArray = new Boolean[size];
+                for (int i = 0; i < size; ++i) {
+                    if (!hasNulls || valid.get(i)) {
+                        boolArray[i] = wireValues.get(i);
+                    }
+                }
+                return new ByteArrayColumnData(Js.uncheckedCast(boolArray));
+
             case "byte":
                 assert positions.length().toFloat64() >= size;
                 Int8Array byteArray =

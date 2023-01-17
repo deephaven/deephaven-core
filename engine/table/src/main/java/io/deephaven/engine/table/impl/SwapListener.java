@@ -36,7 +36,7 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
  */
 public class SwapListener extends LivenessArtifact implements TableUpdateListener {
 
-    protected static final boolean DEBUG =
+    static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("SwapListener.debug", false);
     static final boolean DEBUG_NOTIFICATIONS =
             Configuration.getInstance().getBooleanWithDefault("SwapListener.debugNotifications", false);
@@ -145,6 +145,7 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
             referenceForSource.swapDelegate(initialDelegate, eventualListener instanceof LegacyListenerAdapter
                     ? (LegacyListenerAdapter) eventualListener
                     : new WeakSimpleReference<>(eventualListener));
+            forceReferenceCountToZero();
         }
 
         return success;

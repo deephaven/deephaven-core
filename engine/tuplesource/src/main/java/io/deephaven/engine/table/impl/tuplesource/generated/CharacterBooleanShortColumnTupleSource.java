@@ -126,11 +126,11 @@ public class CharacterBooleanShortColumnTupleSource extends AbstractTupleSource<
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<CharByteShortTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        CharChunk<Values> chunk1 = chunks[0].asCharChunk();
-        ObjectChunk<Boolean, Values> chunk2 = chunks[1].asObjectChunk();
-        ShortChunk<Values> chunk3 = chunks[2].asShortChunk();
+        CharChunk<? extends Values> chunk1 = chunks[0].asCharChunk();
+        ObjectChunk<Boolean, ? extends Values> chunk2 = chunks[1].asObjectChunk();
+        ShortChunk<? extends Values> chunk3 = chunks[2].asShortChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new CharByteShortTuple(chunk1.get(ii), BooleanUtils.booleanAsByte(chunk2.get(ii)), chunk3.get(ii)));
         }

@@ -11,6 +11,8 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
+import io.deephaven.server.grpc.Common;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;

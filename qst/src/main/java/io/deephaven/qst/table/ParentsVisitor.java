@@ -179,7 +179,12 @@ public class ParentsVisitor implements Visitor {
 
     @Override
     public void visit(SnapshotTable snapshotTable) {
-        out = Stream.of(snapshotTable.base(), snapshotTable.trigger());
+        out = single(snapshotTable);
+    }
+
+    @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        out = Stream.of(snapshotWhenTable.base(), snapshotWhenTable.trigger());
     }
 
     @Override

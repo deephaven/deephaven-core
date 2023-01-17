@@ -7,7 +7,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.HierarchicalTable;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
@@ -72,13 +71,7 @@ public class ColumnPreviewManager {
      * @return the table containing the preview columns
      */
     public static Table applyPreview(final Table table) {
-        if (table instanceof HierarchicalTable) {
-            // HierarchicalTable tables do not permit `updateView(...)`, and therefore there is nothing of value that
-            // can be applied in this method. short-circuit away
-            return table;
-        }
-
-        Table result = table;
+        BaseTable<?> result = (BaseTable<?>) table;
         final List<SelectColumn> selectColumns = new ArrayList<>();
         final Map<String, ? extends ColumnSource<?>> columns = table.getColumnSourceMap();
         final Map<String, String> originalTypes = new HashMap<>();
@@ -114,9 +107,8 @@ public class ColumnPreviewManager {
         }
 
         if (!selectColumns.isEmpty()) {
-            result = table.updateView(selectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
-            ((BaseTable) table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
-
+            result = (BaseTable<?>) table.updateView(selectColumns);
+            ((BaseTable<?>) table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
             result.setAttribute(Table.PREVIEW_PARENT_TABLE, table);
 
             // Add original types to the column descriptions

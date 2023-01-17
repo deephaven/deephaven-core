@@ -8,11 +8,11 @@ from dataclasses import dataclass
 import jpy
 import numpy as np
 
-from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table
+from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, input_table
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
-from deephaven.table_factory import DynamicTableWriter, InputTable
+from deephaven.table_factory import DynamicTableWriter
 from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
@@ -222,25 +222,25 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertEqual(t.size, 2)
         col_defs = {c.name: c.data_type for c in t.columns}
         with self.subTest("from table definition"):
-            append_only_input_table = InputTable(col_defs=col_defs)
+            append_only_input_table = input_table(col_defs=col_defs)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
-            keyed_input_table = InputTable(col_defs=col_defs, key_cols="String")
+            keyed_input_table = input_table(col_defs=col_defs, key_cols="String")
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
 
         with self.subTest("from init table"):
-            append_only_input_table = InputTable(init_table=t)
+            append_only_input_table = input_table(init_table=t)
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
-            keyed_input_table = InputTable(init_table=t, key_cols="String")
+            keyed_input_table = input_table(init_table=t, key_cols="String")
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
@@ -248,12 +248,12 @@ class TableFactoryTestCase(BaseTestCase):
             self.assertEqual(keyed_input_table.size, 2)
 
         with self.subTest("deletion on input table"):
-            append_only_input_table = InputTable(init_table=t)
+            append_only_input_table = input_table(init_table=t)
             with self.assertRaises(DHError) as cm:
                 append_only_input_table.delete(t)
             self.assertIn("not allowed.", str(cm.exception))
 
-            keyed_input_table = InputTable(init_table=t, key_cols=["String", "Double"])
+            keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.delete(t.select(["String", "Double"]))
             self.assertEqual(keyed_input_table.size, 0)

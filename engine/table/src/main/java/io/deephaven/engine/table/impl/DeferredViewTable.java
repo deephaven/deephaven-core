@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 /**
  * An uncoalesced table with view and where operations to be applied after {@link #coalesce()} is forced.
  */
-public class DeferredViewTable extends RedefinableTable {
+public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     private final TableReference tableReference;
     protected final String[] deferredDropColumns;
@@ -94,7 +94,7 @@ public class DeferredViewTable extends RedefinableTable {
             Table result = tableAndRemainingFilters.table;
             result = applyDeferredViews(result);
             result = result.where(tableAndRemainingFilters.remainingFilters);
-            copyAttributes(result, CopyAttributeOperation.Coalesce);
+            copyAttributes((BaseTable<?>) result, CopyAttributeOperation.Coalesce);
             setCoalesced(result);
             return result;
         }
@@ -115,7 +115,7 @@ public class DeferredViewTable extends RedefinableTable {
             localResult = localResult.where(preAndPostFilters.postViewFilters);
         }
         if (whereFilters.length == 0) {
-            copyAttributes(localResult, CopyAttributeOperation.Coalesce);
+            copyAttributes((BaseTable<?>) localResult, CopyAttributeOperation.Coalesce);
             setCoalesced(localResult);
         }
         return localResult;
@@ -235,7 +235,7 @@ public class DeferredViewTable extends RedefinableTable {
             result = tableReference.get();
             result = applyDeferredViews(result);
         }
-        copyAttributes(result, CopyAttributeOperation.Coalesce);
+        copyAttributes((BaseTable<?>) result, CopyAttributeOperation.Coalesce);
         return result;
     }
 
@@ -262,6 +262,15 @@ public class DeferredViewTable extends RedefinableTable {
         /* If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult. */
         Table selectDistinct = tableReference.selectDistinctInternal(columns);
         return selectDistinct == null ? coalesce().selectDistinct(columns) : selectDistinct;
+    }
+
+    @Override
+    protected DeferredViewTable copy() {
+        final DeferredViewTable result = new DeferredViewTable(definition, description, new SimpleTableReference(this),
+                null, null, null);
+        result.setRefreshing(isRefreshing());
+        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        return result;
     }
 
     @Override

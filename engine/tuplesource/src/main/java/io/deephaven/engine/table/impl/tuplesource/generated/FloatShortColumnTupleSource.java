@@ -106,10 +106,10 @@ public class FloatShortColumnTupleSource extends AbstractTupleSource<FloatShortT
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<FloatShortTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        FloatChunk<Values> chunk1 = chunks[0].asFloatChunk();
-        ShortChunk<Values> chunk2 = chunks[1].asShortChunk();
+        FloatChunk<? extends Values> chunk1 = chunks[0].asFloatChunk();
+        ShortChunk<? extends Values> chunk2 = chunks[1].asShortChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new FloatShortTuple(chunk1.get(ii), chunk2.get(ii)));
         }

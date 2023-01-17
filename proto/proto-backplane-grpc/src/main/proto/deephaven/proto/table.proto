@@ -176,12 +176,17 @@ service TableService {
   rpc Aggregate(AggregateRequest) returns (ExportedTableCreationResponse) {};
 
   /*
-   * Snapshot rightId, triggered by leftId, and export the resulting new Table.
-   * The left table's change events cause a new snapshot to be taken. The result table includes a
-   * "snapshot key" which is a subset (possibly all) of the left table's columns. The
-   * remaining columns in the result table come from right table, the table being snapshotted.
+   * Takes a single snapshot of the source_id table.
    */
   rpc Snapshot(SnapshotTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Snapshot base_id, triggered by trigger_id, and export the resulting new table.
+   * The trigger_id table's change events cause a new snapshot to be taken. The result table includes a
+   * "snapshot key" which is a subset (possibly all) of the base_id table's columns. The
+   * remaining columns in the result table come from base_id table, the table being snapshotted.
+   */
+  rpc SnapshotWhen(SnapshotWhenTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
    * Returns a new table with a flattened row set.
@@ -505,15 +510,29 @@ message MergeTablesRequest {
 
 message SnapshotTableRequest {
   Ticket result_id = 1;
+  TableReference source_id = 2;
+}
 
-  // The table on which to invoke the snapshot function. If unset, an empty(1) table will be used.
-  TableReference left_id = 2;
-  // The table to pass into the snapshot function.
-  TableReference right_id = 3;
-  // Whether to take an initial snapshot (passed to table.snapshot function).
-  bool do_initial_snapshot = 4;
-  // Which columns to take from the left table (can be renamed if desired).
-  repeated string stamp_columns = 5;
+message SnapshotWhenTableRequest {
+  Ticket result_id = 1;
+
+  // The base table.
+  TableReference base_id = 2;
+
+  // The trigger table.
+  TableReference trigger_id = 3;
+
+  // Whether the results should contain an initial snapshot.
+  bool initial = 4;
+
+  // Whether the results should be incremental.
+  bool incremental = 5;
+
+  // Whether the results should keep history.
+  bool history = 6;
+
+  // Which columns to stamp from the trigger table. If empty, all columns from the trigger table are stamped. Allows renaming columns.
+  repeated string stamp_columns = 7;
 }
 
 message CrossJoinTablesRequest {
@@ -1039,6 +1058,7 @@ message BatchTableRequest {
   repeated Operation ops = 1;
 
   message Operation {
+    reserved 20;
     oneof op {
       EmptyTableRequest empty_table = 1;
       TimeTableRequest time_table = 2;
@@ -1059,7 +1079,6 @@ message BatchTableRequest {
       UngroupRequest ungroup = 17;
       MergeTablesRequest merge = 18;
       ComboAggregateRequest combo_aggregate = 19;
-      SnapshotTableRequest snapshot = 20;
       FlattenRequest flatten = 21;
       RunChartDownsampleRequest run_chart_downsample = 22;
       CrossJoinTablesRequest cross_join = 23;
@@ -1075,6 +1094,8 @@ message BatchTableRequest {
       WhereInRequest where_in = 33;
       AggregateAllRequest aggregate_all = 34;
       AggregateRequest aggregate = 35;
+      SnapshotTableRequest snapshot = 36;
+      SnapshotWhenTableRequest snapshot_when = 37;
     }
   }
 }

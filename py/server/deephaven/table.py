@@ -35,6 +35,7 @@ _JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
 _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
+_JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -55,6 +56,10 @@ _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDee
 # For unittest vectorization
 _test_vectorization = False
 _vectorized_count = 0
+
+# Rollup Table and Tree Table
+_JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
+_JTreeTable = jpy.get_type("io.deephaven.engine.table.hierarchical.TreeTable")
 
 
 def _j_py_script_session() -> _JPythonScriptSession:
@@ -214,6 +219,42 @@ def _td_to_columns(table_definition):
     return cols
 
 
+class RollupTable(JObjectWrapper):
+    """ A RollupTable is generated as a result of applying the :meth:`~Table.rollup` method on a Table.
+
+    Note: RollupTable should not be instantiated directly by user code.
+    """
+    j_object_type = _JRollupTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_rollup_table
+
+    def __init__(self, j_rollup_table: jpy.JType, aggs: Sequence[Aggregation], include_constituents: bool,
+                 by: Sequence[str]):
+        self.j_rollup_table = j_rollup_table
+        self.aggs = aggs
+        self.include_constituents = include_constituents
+        self.by = by
+
+
+class TreeTable(JObjectWrapper):
+    """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a Table.
+
+    Note: TreeTable should not be instantiated directly by user code.
+    """
+    j_object_type = _JTreeTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_tree_table
+
+    def __init__(self, j_tree_table: jpy.JType, id_col: str, parent_col: str):
+        self.j_tree_table = j_tree_table
+        self.id_col = id_col
+        self.parent_col = parent_col
+
+
 class Table(JObjectWrapper):
     """A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
 
@@ -301,16 +342,8 @@ class Table(JObjectWrapper):
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
 
-    def snapshot(self, source_table: Table, do_init: bool = False, cols: Union[str, List[str]] = None) -> Table:
-        """Produces an in-memory copy of a source table that refreshes when this table changes.
-
-        Note, this table is often a time table that adds new rows at a regular, user-defined interval.
-
-        Args:
-            source_table (Table): the table to be snapshot
-            do_init (bool): whether to snapshot when this method is initially called, default is False
-            cols (Union[str, List[str]]): names of the columns of this table to be included in the snapshot, default is
-                None, meaning all the columns
+    def snapshot(self) -> Table:
+        """Returns a static snapshot table.
 
         Returns:
             a new table
@@ -319,26 +352,31 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = to_sequence(cols)
-            with auto_locking_ctx(self, source_table):
-                return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init, *cols))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.snapshot())
         except Exception as e:
-            raise DHError(message="failed to create a snapshot table.") from e
+            raise DHError(message="failed to create a snapshot.") from e
 
-    def snapshot_history(self, source_table: Table) -> Table:
-        """Produces an in-memory history of a source table that adds a new snapshot when this table (trigger table)
-        changes.
+    def snapshot_when(self, trigger_table: Table, stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False, history: bool = False) -> Table:
+        """Returns a table that captures a snapshot of this table whenever trigger_table updates.
 
-        The trigger table is often a time table that adds new rows at a regular, user-defined interval.
-
-        Columns from the trigger table appear in the result table. If the trigger and source tables have columns with
-        the same name, an error will be raised. To avoid this problem, rename conflicting columns.
-
-        Because snapshot_history stores a copy of the source table for every trigger event, large source tables or
-        rapidly changing trigger tables can result in large memory usage.
+        When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
+        table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If trigger_table is
+        empty, the "stamp key" will be represented by NULL values.
 
         Args:
-            source_table (Table): the table to be snapshot
+            trigger_table (Table): the trigger table
+            stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be
+                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
+            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
+                resulting table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
+                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
+                been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
+                is currently incompatible with initial and incremental: when history is True, incremental and initial
+                must be False.
 
         Returns:
             a new table
@@ -347,10 +385,11 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            with auto_locking_ctx(self, source_table):
-                return Table(j_table=self.j_table.snapshotHistory(source_table.j_table))
+            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
+            with auto_locking_ctx(self, trigger_table):
+                return Table(j_table=self.j_table.snapshotWhen(trigger_table.j_table, options))
         except Exception as e:
-            raise DHError(message="failed to create a snapshot history table.") from e
+            raise DHError(message="failed to create a snapshot_when table.") from e
 
     #
     # Table operation category: Select
@@ -737,18 +776,22 @@ class Table(JObjectWrapper):
     #
     # region Sort
     def restrict_sort_to(self, cols: Union[str, Sequence[str]]):
-        """The restrict_sort_to method only allows sorting on specified table columns. This can be useful to prevent
-        users from accidentally performing expensive sort operations as they interact with tables in the UI.
+        """The restrict_sort_to method adjusts the input table to produce an output table that only allows sorting on
+        specified table columns. This can be useful to prevent users from accidentally performing expensive sort
+        operations as they interact with tables in the UI.
 
         Args:
             cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            a new table
 
         Raises:
             DHError
         """
         try:
             cols = to_sequence(cols)
-            return self.j_table.restrictSortTo(*cols)
+            return Table(self.j_table.restrictSortTo(*cols))
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
@@ -1657,6 +1700,76 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table slice operation failed.") from e
 
+    def rollup(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
+               include_constituents: bool = False) -> RollupTable:
+        """Creates a rollup table.
+
+         A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
+         using one less by column on each level. The column that is no longer part of the aggregation key is
+         replaced with null on each level.
+
+         Note some aggregations can not be used in creating a rollup tables, these include: group, partition, median,
+         pct, weighted_avg
+
+        Args:
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            include_constituents (bool): whether to include the constituent rows at the leaf level, default is False
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            if not by:
+                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
+                                   include_constituents=include_constituents, by=by)
+            else:
+                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
+                                   aggs=aggs, include_constituents=include_constituents, by=by)
+        except Exception as e:
+            raise DHError(e, "table rollup operation failed.") from e
+
+    def tree(self, id_col: str, parent_col: str, promote_orphans: bool = False) -> TreeTable:
+        """Creates a hierarchical tree table.
+
+        The structure of the table is encoded by an "id" and a "parent" column. The id column should represent a unique
+        identifier for a given row, and the parent column indicates which row is the parent for a given row. Rows that
+        have a None parent are part of the "root" table.
+
+        It is possible for rows to be "orphaned" if their parent is non-None and does not exist in the table. These
+        rows will not be present in the resulting tree. If this is not desirable, they could be promoted to become
+        children of the root table by setting 'promote_orphans' argument to True.
+
+        Args:
+            id_col (str): the name of a column containing a unique identifier for a particular row in the table
+            parent_col (str): the name of a column containing the parent's identifier, {@code null} for rows that are
+                part of the root table
+            promote_orphans (bool): whether to promote node tables whose parents don't exist to be children of the
+                root node, default is False
+
+        Returns:
+            a new TreeTable organized according to the parent-child relationships expressed by id_col and parent_col
+
+        Raises:
+            DHError
+        """
+        try:
+            if promote_orphans:
+                with auto_locking_ctx(self):
+                    j_table = _JTreeTable.promoteOrphans(self.j_table, id_col, parent_col)
+            else:
+                j_table = self.j_table
+
+            return TreeTable(j_tree_table=j_table.tree(id_col, parent_col), id_col=id_col, parent_col=parent_col)
+        except Exception as e:
+            raise DHError(e, "table tree operation failed.") from e
+
 
 class PartitionedTable(JObjectWrapper):
     """A partitioned table is a table containing tables, known as constituent tables.
@@ -2102,22 +2215,10 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "reverse operation on the PartitionedTableProxy failed.") from e
 
-    def snapshot(self, source_table: Union[Table, PartitionedTableProxy], do_init: bool = False,
-                 cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying
-        partitioned table with the provided source table or PartitionedTableProxy, and produces a new
-        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
-
-        In the case of source table being another PartitionedTableProxy, the :meth:`~Table.snapshot` table operation
-        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Note, the constituent tables are often time tables that add new rows at a regular, user-defined interval.
-
-        Args:
-            source_table (Union[Table, PartitionedTableProxy]): the table or PartitionedTableProxy to be snapshot
-            do_init (bool): whether to snapshot when this method is initially called, default is False
-            cols (Union[str, List[str]]): names of the columns of the constituent table to be included in the snapshot,
-                default is None, meaning all the columns
+    def snapshot(self) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
 
         Returns:
             a new PartitionedTableProxy
@@ -2126,12 +2227,44 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            cols = to_sequence(cols)
-            table_op = jpy.cast(source_table.j_object, _JTableOperations)
-            with auto_locking_ctx(self, source_table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot(table_op, do_init, *cols))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot())
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
+
+    def snapshot_when(self, trigger_table: Union[Table, PartitionedTableProxy], stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False, history: bool = False) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.snapshot_when` table operation to all constituent tables of the underlying
+        partitioned table with the provided trigger table or PartitionedTableProxy, and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the trigger table being another PartitionedTableProxy, the :meth:`~Table.snapshot_when` table
+        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Args:
+            trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
+            stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be
+                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
+            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
+                resulting table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
+                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
+                been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
+                is currently incompatible with initial and incremental: when history is True, incremental and initial
+                must be False.
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
+            with auto_locking_ctx(self, trigger_table):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshotWhen(trigger_table.j_object, options))
+        except Exception as e:
+            raise DHError(e, "snapshot_when operation on the PartitionedTableProxy failed.") from e
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTableProxy:

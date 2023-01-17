@@ -5,12 +5,12 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedIntChunk;
+import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.sort.IntSortKernel;
+import io.deephaven.engine.table.impl.sort.ByteSortKernel;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableLongChunk;
@@ -59,9 +59,7 @@ class CrossJoinModifiedSlotTracker {
         boolean isLeftShifted = false;
 
         int chunkCapacity = 0;
-        // if we had a sort kernel that used bytes as the "index" instead of just ints we could reduce the size of this
-        // chunk down to a byte chunk instead of using a full 4 bytes for a 1 byte field
-        final SizedIntChunk<Values> flagChunk = new SizedIntChunk<>();
+        final SizedByteChunk<Values> flagChunk = new SizedByteChunk<>();
         final SizedLongChunk<RowKeys> keyChunk = new SizedLongChunk<>();
         RowSetBuilderRandom indexBuilder = RowSetFactory.builderRandom();
 
@@ -71,7 +69,7 @@ class CrossJoinModifiedSlotTracker {
         WritableRowSet rightModified;
         RowSetShiftData innerShifted;
 
-        WritableRowSet leftRowSet; // reference, NOT a copy
+        TrackingWritableRowSet leftRowSet; // reference, NOT a copy
         TrackingWritableRowSet rightRowSet; // reference, NOT a copy
 
         private SlotState() {}
@@ -133,7 +131,7 @@ class CrossJoinModifiedSlotTracker {
             return this;
         }
 
-        private SlotState appendToBuilder(final long key) {
+        private SlotState addToBuilder(final long key) {
             indexBuilder.addKey(key);
             return this;
         }
@@ -145,12 +143,12 @@ class CrossJoinModifiedSlotTracker {
             finalizedRight = true;
 
             final WritableLongChunk<RowKeys> keyChunk = this.keyChunk.get();
-            final WritableIntChunk<Values> flagChunk = this.flagChunk.get();
+            final WritableByteChunk<Values> flagChunk = this.flagChunk.get();
             final int keySize = keySize();
 
             if (keySize > 0) {
                 ensureSortKernel();
-                sortKernel.sort(WritableIntChunk.downcast(flagChunk), keyChunk);
+                sortKernel.sort(WritableByteChunk.downcast(flagChunk), keyChunk);
             }
 
             rightChanged = keySize > 0;
@@ -168,7 +166,7 @@ class CrossJoinModifiedSlotTracker {
                 // first we build and translate the removed
                 for (int ii = 0; ii < keySize; ++ii) {
                     final long key = keyChunk.get(ii);
-                    final int flag = flagChunk.get(ii);
+                    final byte flag = flagChunk.get(ii);
                     if (flag == FLAG_RM) {
                         innerRemoved.appendKey(key);
                         // translate the removed
@@ -213,7 +211,7 @@ class CrossJoinModifiedSlotTracker {
 
                 for (int ii = 0; ii < keySize; ++ii) {
                     final long key = keyChunk.get(ii);
-                    final long flag = flagChunk.get(ii);
+                    final byte flag = flagChunk.get(ii);
                     if (flag == FLAG_RM) {
                         continue;
                     }
@@ -248,9 +246,12 @@ class CrossJoinModifiedSlotTracker {
             }
 
             final long newRightSize = rightRowSet.size();
-            while (postOff < newRightSize && preOff < oldRightSize) {
-                final long preNextOff = (preIdx == keySize) ? oldRightSize : keyChunk.get(preIdx);
-                final long postNextOff = (postIdx == keySize) ? newRightSize : keyChunk.get(postIdx);
+            final long oldRightSizeAdjusted = jsm.leftOuterJoin() ? Math.max(oldRightSize, 1) : oldRightSize;
+            final long newRightSizeAdjusted = jsm.leftOuterJoin() ? Math.max(newRightSize, 1) : newRightSize;
+
+            while (postOff < newRightSizeAdjusted && preOff < oldRightSizeAdjusted) {
+                final long preNextOff = (preIdx == keySize) ? oldRightSizeAdjusted : keyChunk.get(preIdx);
+                final long postNextOff = (postIdx == keySize) ? newRightSizeAdjusted : keyChunk.get(postIdx);
 
                 final long canShift = Math.min(preNextOff - preOff, postNextOff - postOff);
                 if (canShift > 0) {
@@ -283,6 +284,11 @@ class CrossJoinModifiedSlotTracker {
                 }
             }
 
+            if (newRightSize == 0 && oldRightSize > 0 && jsm.leftOuterJoin()) {
+                // we need a single result row, that will be all null
+                addedBuilder.appendKey(0);
+            }
+
             rightAdded = addedBuilder.build();
             rightRemoved = removedBuilder.build();
             rightModified = modifiedBuilder.build();
@@ -296,11 +302,11 @@ class CrossJoinModifiedSlotTracker {
     }
 
     private final ObjectArraySource<SlotState> modifiedSlots = new ObjectArraySource<>(SlotState.class);
-    private IntSortKernel<RowKeys, RowKeys> sortKernel;
+    private ByteSortKernel<RowKeys, RowKeys> sortKernel;
 
     private void ensureSortKernel() {
         if (sortKernel == null) {
-            sortKernel = IntSortKernel.makeContext(ChunkType.Long, SortingOrder.Ascending, maxSlotChunkCapacity, true);
+            sortKernel = ByteSortKernel.makeContext(ChunkType.Long, SortingOrder.Ascending, maxSlotChunkCapacity, true);
         }
     }
 
@@ -444,8 +450,8 @@ class CrossJoinModifiedSlotTracker {
         return getSlotState(cookie, slot).appendToChunk(key, FLAG_MOD).cookie;
     }
 
-    long appendToBuilder(final long cookie, final long slot, final long leftIndex) {
-        return getSlotState(cookie, slot).appendToBuilder(leftIndex).cookie;
+    long addToBuilder(final long cookie, final long slot, final long leftIndex) {
+        return getSlotState(cookie, slot).addToBuilder(leftIndex).cookie;
     }
 
     // Right shifts cannot be applied until after the removes are applied to the slot's right RowSet. So, we ensure that
@@ -510,6 +516,11 @@ class CrossJoinModifiedSlotTracker {
                     final long prevOffset = ii << jsm.getPrevNumShiftBits();
                     builder.addRange(prevOffset, prevOffset + sizePrev - 1);
                 });
+            } else if (jsm.leftOuterJoin()) {
+                leftRemoved.forAllRowKeys(ii -> {
+                    final long prevOffset = ii << jsm.getPrevNumShiftBits();
+                    builder.addKey(prevOffset);
+                });
             }
         }
         leftRemoved = builder.build();
@@ -534,22 +545,29 @@ class CrossJoinModifiedSlotTracker {
                     final long currOffset = ii << jsm.getNumShiftBits();
                     downstreamAdds.addRange(currOffset, currOffset + size - 1);
                 });
+            } else if (jsm.leftOuterJoin()) {
+                leftAdded.forAllRowKeys(ii -> {
+                    final long currOffset = ii << jsm.getNumShiftBits();
+                    downstreamAdds.addKey(currOffset);
+                });
             }
 
             final RowSetBuilderRandom modifiedAdds = RowSetFactory.builderRandom();
             final int keySize = slotState.keySize();
             if (keySize > 0) {
                 final WritableLongChunk<RowKeys> keyChunk = slotState.keyChunk.get();
-                final WritableIntChunk<Values> flagChunk = slotState.flagChunk.get();
+                final WritableByteChunk<Values> flagChunk = slotState.flagChunk.get();
                 for (int ii = 0; ii < keySize; ++ii) {
                     final long key = keyChunk.get(ii);
                     if (flagChunk.get(ii) != FLAG_ADD) {
                         continue;
                     }
                     // must be a modify
+                    final long currOffset = key << jsm.getNumShiftBits();
                     if (size > 0) {
-                        final long currOffset = key << jsm.getNumShiftBits();
                         downstreamAdds.addRange(currOffset, currOffset + size - 1);
+                    } else if (jsm.leftOuterJoin()) {
+                        downstreamAdds.addKey(currOffset);
                     }
                     modifiedAdds.addKey(key);
                 }
@@ -590,21 +608,40 @@ class CrossJoinModifiedSlotTracker {
                     final long prevOffset = ii << jsm.getPrevNumShiftBits();
                     rmBuilder.addRange(prevOffset, prevOffset + sizePrev - 1);
                 });
+            } else if (jsm.leftOuterJoin()) {
+                leftRemoved.forAllRowKeys(ii -> {
+                    final long prevOffset = ii << jsm.getPrevNumShiftBits();
+                    rmBuilder.addKey(prevOffset);
+                });
             }
             final long size = slotState.rightRowSet.size();
             if (sizePrev > 0 && size > 0) {
                 final int keySize = slotState.keySize();
                 if (keySize > 0) {
                     final WritableLongChunk<RowKeys> keyChunk = slotState.keyChunk.get();
-                    final WritableIntChunk<Values> flagChunk = slotState.flagChunk.get();
+                    final WritableByteChunk<Values> flagChunk = slotState.flagChunk.get();
                     for (int ii = 0; ii < keySize; ++ii) {
                         final long key = keyChunk.get(ii);
-                        if (flagChunk.get(ii) != FLAG_MOD) {
-                            continue;
+                        if (flagChunk.get(ii) == FLAG_MOD) {
+                            final long currOffset = key << jsm.getNumShiftBits();
+                            modBuilder.addRange(currOffset, currOffset + size - 1);
                         }
                         // must be a modify
                         final long currOffset = key << jsm.getNumShiftBits();
                         modBuilder.addRange(currOffset, currOffset + size - 1);
+                    }
+                }
+            } else if (jsm.leftOuterJoin() && sizePrev == 0 && size == 0) {
+                final int keySize = slotState.keySize();
+                if (keySize > 0) {
+                    final WritableLongChunk<RowKeys> keyChunk = slotState.keyChunk.get();
+                    final WritableByteChunk<Values> flagChunk = slotState.flagChunk.get();
+                    for (int ii = 0; ii < keySize; ++ii) {
+                        final long key = keyChunk.get(ii);
+                        if (flagChunk.get(ii) == FLAG_MOD) {
+                            final long currOffset = key << jsm.getNumShiftBits();
+                            modBuilder.addKey(currOffset);
+                        }
                     }
                 }
             }

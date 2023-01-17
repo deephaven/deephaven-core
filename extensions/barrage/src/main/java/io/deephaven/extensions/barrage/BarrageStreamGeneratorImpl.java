@@ -44,6 +44,7 @@ import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -52,6 +53,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 
 import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 import static io.deephaven.proto.flight.util.MessageHelper.toIpcBytes;
@@ -99,10 +101,9 @@ public class BarrageStreamGeneratorImpl implements
         }
 
         @Override
-        public View getSchemaView(final TableDefinition table,
-                final Map<String, Object> attributes) {
+        public View getSchemaView(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
-            final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table, attributes);
+            final int schemaOffset = schemaPayloadWriter.applyAsInt(builder);
             builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                     org.apache.arrow.flatbuf.MessageHeader.Schema));
             return new SchemaView(builder.dataBuffer());
@@ -223,7 +224,6 @@ public class BarrageStreamGeneratorImpl implements
             shifted = new RowSetShiftDataGenerator(message.shifted);
 
             addColumnData = new ChunkListInputStreamGenerator[message.addColumnData.length];
-
             for (int i = 0; i < message.addColumnData.length; ++i) {
                 addColumnData[i] = new ChunkListInputStreamGenerator(message.addColumnData[i]);
                 addGeneratorCount = Math.max(addGeneratorCount, addColumnData[i].generators.length);
@@ -232,10 +232,6 @@ public class BarrageStreamGeneratorImpl implements
             modColumnData = new ModColumnData[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
                 modColumnData[i] = new ModColumnData(message.modColumnData[i]);
-            }
-
-            if (message.snapshotRowSet != null) {
-                message.snapshotRowSet.close();
             }
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while creating barrage message stream", e);

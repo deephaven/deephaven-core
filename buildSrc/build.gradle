@@ -26,11 +26,11 @@ dependencies {
         because('needed by plugin com.bmuschko.docker-remote-api')
     }
 
-    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.14.9') {
+    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.16.11') {
         because('needed by plugin com.avast.gradle.docker-compose')
     }
 
-    implementation('com.diffplug.spotless:spotless-plugin-gradle:5.14.2') {
+    implementation('com.diffplug.spotless:spotless-plugin-gradle:6.12.0') {
         because('needed by plugin java-coding-conventions')
     }
 

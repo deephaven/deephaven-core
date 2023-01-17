@@ -35,6 +35,7 @@ import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
@@ -85,8 +86,6 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_P
  */
 public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
-    private static final boolean DEBUG =
-            Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class, "debug", false);
     private static final int DELTA_CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(
             BarrageMessageProducer.class, "deltaChunkSize", ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
 
@@ -197,7 +196,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final Scheduler scheduler;
     private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
 
-    private final BaseTable parent;
+    private final BaseTable<?> parent;
     private final long updateIntervalMs;
     private volatile long lastUpdateTime = 0;
     private volatile long lastScheduledUpdateTime = 0;
@@ -207,8 +206,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private final Stats stats;
 
-    private final ColumnSource<?>[] sourceColumns; // might be reinterpreted
+    /** the possibly reinterpretted source column */
+    private final ColumnSource<?>[] sourceColumns;
+    /** which source columns are object columns and thus need proactive garbage collection */
     private final BitSet objectColumns = new BitSet();
+    /** internally, booleans are reinterpretted to bytes; however we need to be packed bitsets over Arrow */
+    private final Class<?>[] realColumnType;
+    private final Class<?>[] realColumnComponentType;
 
     // We keep this RowSet in-sync with deltas being propagated to subscribers.
     private final WritableRowSet propagationRowSet;
@@ -320,27 +324,30 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         this.parentTableSize = parent.size();
         this.parentIsRefreshing = parent.isRefreshing();
 
-        if (DEBUG) {
-            log.info().append(logPrefix).append("Creating new BarrageMessageProducer for ")
+        if (log.isDebugEnabled()) {
+            log.debug().append(logPrefix).append("Creating new BarrageMessageProducer for ")
                     .append(System.identityHashCode(parent)).append(" with an interval of ")
                     .append(updateIntervalMs).endl();
         }
 
         sourceColumns = parent.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         deltaColumns = new WritableColumnSource[sourceColumns.length];
+        realColumnType = new Class<?>[sourceColumns.length];
+        realColumnComponentType = new Class<?>[sourceColumns.length];
 
         // we start off with initial sizes of zero, because its quite possible no one will ever look at this table
         final int capacity = 0;
 
-        for (int i = 0; i < sourceColumns.length; ++i) {
-            // If the source column is a DBDate time we'll just always use longs to avoid silly reinterpretations during
-            // serialization/deserialization
-            sourceColumns[i] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumns[i]);
-            deltaColumns[i] = ArrayBackedColumnSource.getMemoryColumnSource(
-                    capacity, sourceColumns[i].getType(), sourceColumns[i].getComponentType());
+        for (int ci = 0; ci < sourceColumns.length; ++ci) {
+            // avoid silly reinterpretations during ser/deser by using primitive types when possible
+            realColumnType[ci] = sourceColumns[ci].getType();
+            realColumnComponentType[ci] = sourceColumns[ci].getComponentType();
+            sourceColumns[ci] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumns[ci]);
+            deltaColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
+                    capacity, sourceColumns[ci].getType(), sourceColumns[ci].getComponentType());
 
-            if (deltaColumns[i] instanceof ObjectArraySource) {
-                objectColumns.set(i);
+            if (deltaColumns[ci] instanceof ObjectArraySource) {
+                objectColumns.set(ci);
             }
         }
     }
@@ -478,7 +485,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             final Subscription subscription =
                     new Subscription(listener, options, cols, initialViewport, reverseViewport);
 
-            log.info().append(logPrefix)
+            log.debug().append(logPrefix)
                     .append(subscription.logPrefix)
                     .append("subbing to columns ")
                     .append(FormatBitSet.formatBitSet(cols))
@@ -488,7 +495,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             pendingSubscriptions.add(subscription);
 
             // we'd like to send the initial snapshot as soon as possible
-            log.info().append(logPrefix).append(subscription.logPrefix)
+            log.debug().append(logPrefix).append(subscription.logPrefix)
                     .append("scheduling update immediately, for initial snapshot.").endl();
             updatePropagationJob.scheduleImmediately();
         }
@@ -541,7 +548,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
 
             sub.pendingColumns = cols;
-            log.info().append(logPrefix).append(sub.logPrefix)
+            log.debug().append(logPrefix).append(sub.logPrefix)
                     .append("scheduling update immediately, for viewport and column updates.").endl();
         });
     }
@@ -549,7 +556,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     public void removeSubscription(final StreamObserver<MessageView> listener) {
         findAndUpdateSubscription(listener, sub -> {
             sub.pendingDelete = true;
-            log.info().append(logPrefix).append(sub.logPrefix)
+            log.debug().append(logPrefix).append(sub.logPrefix)
                     .append("scheduling update immediately, for removed subscription.").endl();
         });
     }
@@ -590,9 +597,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
                 lastIndexClockStep = LogicalClock.DEFAULT.currentStep();
-                if (DEBUG) {
+                if (log.isDebugEnabled()) {
                     try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
-                        log.info().append(logPrefix)
+                        log.debug().append(logPrefix)
                                 .append("lastIndexClockStep=").append(lastIndexClockStep)
                                 .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
                                 .append(shouldEnqueueDelta)
@@ -790,8 +797,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
         }
 
-        if (DEBUG) {
-            log.info().append(logPrefix).append("step=").append(LogicalClock.DEFAULT.currentStep())
+        if (log.isDebugEnabled()) {
+            log.debug().append(logPrefix).append("step=").append(LogicalClock.DEFAULT.currentStep())
                     .append(", upstream=").append(upstream).append(", activeSubscriptions=")
                     .append(activeSubscriptions.size())
                     .append(", numFullSubscriptions=").append(numFullSubscriptions)
@@ -868,8 +875,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
         }
 
-        if (DEBUG) {
-            log.info().append(logPrefix).append("update accumulation complete for step=")
+        if (log.isDebugEnabled()) {
+            log.debug().append(logPrefix).append("update accumulation complete for step=")
                     .append(LogicalClock.DEFAULT.currentStep()).endl();
         }
 
@@ -886,8 +893,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final long msSinceLastUpdate = now - localLastUpdateTime;
         if (lastScheduledUpdateTime != 0 && lastScheduledUpdateTime > lastUpdateTime) {
             // an already scheduled update is coming up
-            if (DEBUG) {
-                log.info().append(logPrefix)
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix)
                         .append("Not scheduling update, because last update was ").append(localLastUpdateTime)
                         .append(" and now is ").append(now).append(" msSinceLastUpdate=").append(msSinceLastUpdate)
                         .append(" interval=").append(updateIntervalMs).append(" already scheduled to run at ")
@@ -896,8 +903,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         } else if (msSinceLastUpdate < localLastUpdateTime) {
             // we have updated within the period, so wait until a sufficient gap
             final long nextRunTime = localLastUpdateTime + updateIntervalMs;
-            if (DEBUG) {
-                log.info().append(logPrefix).append("Last Update Time: ").append(localLastUpdateTime)
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix).append("Last Update Time: ").append(localLastUpdateTime)
                         .append(" next run: ")
                         .append(nextRunTime).endl();
             }
@@ -905,8 +912,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             updatePropagationJob.scheduleAt(nextRunTime);
         } else {
             // we have not updated recently, so go for it right away
-            if (DEBUG) {
-                log.info().append(logPrefix)
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix)
                         .append("Scheduling update immediately, because last update was ").append(localLastUpdateTime)
                         .append(" and now is ").append(now).append(" msSinceLastUpdate=").append(msSinceLastUpdate)
                         .append(" interval=").append(updateIntervalMs).endl();
@@ -943,8 +950,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         final StatusRuntimeException apiError = GrpcUtil.securelyWrapError(log, exception);
 
                         Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
-                                .forEach(sub -> GrpcUtil.safelyExecuteLocked(sub.listener,
-                                        () -> sub.listener.onError(apiError)));
+                                .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
 
                         activeSubscriptions.clear();
                         pendingSubscriptions.clear();
@@ -1013,8 +1019,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private void updateSubscriptionsSnapshotAndPropagate() {
         lastUpdateTime = scheduler.currentTimeMillis();
-        if (DEBUG) {
-            log.info().append(logPrefix).append("Starting update job at " + lastUpdateTime).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append(logPrefix).append("Starting update job at " + lastUpdateTime).endl();
         }
 
         boolean firstSubscription = false;
@@ -1413,9 +1419,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // propagate any error notifying listeners there are no more updates incoming
         if (pendingError != null) {
+            StatusRuntimeException ex = GrpcUtil.securelyWrapError(log, pendingError);
             for (final Subscription subscription : activeSubscriptions) {
                 // TODO (core#801): effective error reporting to api clients
-                GrpcUtil.safelyExecute(() -> subscription.listener.onError(pendingError));
+                GrpcUtil.safelyError(subscription.listener, ex);
             }
         }
 
@@ -1424,8 +1431,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         lastUpdateTime = scheduler.currentTimeMillis();
-        if (DEBUG) {
-            log.info().append(logPrefix).append("Completed Propagation: " + lastUpdateTime);
+        if (log.isDebugEnabled()) {
+            log.debug().append(logPrefix).append("Completed Propagation: " + lastUpdateTime);
         }
     }
 
@@ -1505,8 +1512,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         if (needsSnapshot) {
-            if (DEBUG) {
-                log.info().append(logPrefix).append("Sending snapshot to ")
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix).append("Sending snapshot to ")
                         .append(System.identityHashCode(subscription)).endl();
             }
 
@@ -1518,8 +1525,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            parent.getDefinition(),
-                            parent.getAttributes()));
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                                    parent.getDefinition(), parent.getAttributes())));
                 }
 
                 // some messages may be empty of rows, but we need to update the client viewport and column set
@@ -1529,7 +1536,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                                 subscription.subscribedColumns));
 
             } catch (final Exception e) {
-                GrpcUtil.safelyExecute(() -> subscription.listener.onError(GrpcUtil.securelyWrapError(log, e)));
+                GrpcUtil.safelyError(subscription.listener, GrpcUtil.securelyWrapError(log, e));
                 removeSubscription(subscription.listener);
             }
         }
@@ -1640,8 +1647,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     }
                 }
 
-                adds.type = deltaColumn.getType();
-                adds.componentType = deltaColumn.getComponentType();
+                adds.type = realColumnType[ci];
+                adds.componentType = realColumnComponentType[ci];
             }
 
             for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
@@ -1671,8 +1678,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     mods.rowsModified = RowSetFactory.empty();
                 }
 
-                mods.type = deltaColumn.getType();
-                mods.componentType = deltaColumn.getComponentType();
+                mods.type = realColumnType[ci];
+                mods.componentType = realColumnComponentType[ci];
             }
         } else {
             // We must coalesce these updates.
@@ -1843,33 +1850,35 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     for (long[] addedMapping : info.addedMappings) {
                         final WritableChunk<Values> chunk = adds.chunkType.makeWritableChunk(addedMapping.length);
                         try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(addedMapping.length)) {
-                            ((FillUnordered) deltaColumn).fillChunkUnordered(fc, chunk,
+                            // noinspection unchecked
+                            ((FillUnordered<Values>) deltaColumn).fillChunkUnordered(fc, chunk,
                                     LongChunk.chunkWrap(addedMapping));
                         }
                         adds.data.add(chunk);
                     }
                 }
 
-                adds.type = deltaColumn.getType();
-                adds.componentType = deltaColumn.getComponentType();
+                adds.type = realColumnType[ci];
+                adds.componentType = realColumnComponentType[ci];
             }
 
             int numActualModCols = 0;
-            for (int i = 0; i < downstream.modColumnData.length; ++i) {
-                final ColumnSource<?> sourceColumn = deltaColumns[i];
+            for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
+                final ColumnSource<?> sourceColumn = deltaColumns[ci];
                 final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
                 mods.data = new ArrayList<>();
                 mods.chunkType = sourceColumn.getChunkType();
 
                 downstream.modColumnData[numActualModCols++] = mods;
 
-                if (modColumnSet.get(i)) {
-                    final ColumnInfo info = getColumnInfo.apply(i);
+                if (modColumnSet.get(ci)) {
+                    final ColumnInfo info = getColumnInfo.apply(ci);
                     mods.rowsModified = info.recordedMods.copy();
                     for (long[] modifiedMapping : info.modifiedMappings) {
                         final WritableChunk<Values> chunk = mods.chunkType.makeWritableChunk(modifiedMapping.length);
                         try (final ChunkSource.FillContext fc = sourceColumn.makeFillContext(modifiedMapping.length)) {
-                            ((FillUnordered) sourceColumn).fillChunkUnordered(fc, chunk,
+                            // noinspection unchecked
+                            ((FillUnordered<Values>) sourceColumn).fillChunkUnordered(fc, chunk,
                                     LongChunk.chunkWrap(modifiedMapping));
                         }
                         mods.data.add(chunk);
@@ -1878,8 +1887,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     mods.rowsModified = RowSetFactory.empty();
                 }
 
-                mods.type = sourceColumn.getType();
-                mods.componentType = sourceColumn.getComponentType();
+                mods.type = realColumnType[ci];
+                mods.componentType = realColumnComponentType[ci];
             }
         }
 
@@ -2080,8 +2089,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             this.step = notifiedOnThisStep ? step : step - 1;
 
-            if (DEBUG) {
-                log.info().append(logPrefix)
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix)
                         .append("previousValuesAllowed usePrevious=").append(usePrevious)
                         .append(", step=").append(step).append(", validStep=").append(this.step).endl();
             }
@@ -2111,8 +2120,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     promoteSnapshotToActive();
                 }
             }
-            if (DEBUG) {
-                log.info().append(logPrefix)
+            if (log.isDebugEnabled()) {
+                log.debug().append(logPrefix)
                         .append("success=").append(success).append(", step=").append(step).endl();
             }
             return success;

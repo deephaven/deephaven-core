@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -16,7 +17,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * {@link WritableRowRedirection} implementation that wraps a {@link WritableColumnSource} of {@code longs}.
  */
-public final class LongColumnSourceWritableRowRedirection extends LongColumnSourceRowRedirection<WritableColumnSource<Long>>
+public final class LongColumnSourceWritableRowRedirection
+        extends LongColumnSourceRowRedirection<WritableColumnSource<Long>>
         implements WritableRowRedirection {
 
     public LongColumnSourceWritableRowRedirection(WritableColumnSource<Long> columnSource) {
@@ -24,7 +26,7 @@ public final class LongColumnSourceWritableRowRedirection extends LongColumnSour
     }
 
     @Override
-    public final long put(long outerRowKey, long innerRowKey) {
+    public long put(long outerRowKey, long innerRowKey) {
         final long previous = columnSource.getLong(outerRowKey);
 
         columnSource.set(outerRowKey, innerRowKey);
@@ -33,12 +35,12 @@ public final class LongColumnSourceWritableRowRedirection extends LongColumnSour
     }
 
     @Override
-    public final void putVoid(long outerRowKey, long innerRowKey) {
+    public void putVoid(long outerRowKey, long innerRowKey) {
         columnSource.set(outerRowKey, innerRowKey);
     }
 
     @Override
-    public final long remove(long outerRowKey) {
+    public long remove(long outerRowKey) {
         final long previous = columnSource.getLong(outerRowKey);
         if (previous == QueryConstants.NULL_LONG) {
             return RowSequence.NULL_ROW_KEY;
@@ -48,7 +50,7 @@ public final class LongColumnSourceWritableRowRedirection extends LongColumnSour
     }
 
     @Override
-    public final void removeVoid(long outerRowKey) {
+    public void removeVoid(long outerRowKey) {
         columnSource.set(outerRowKey, QueryConstants.NULL_LONG);
     }
 
@@ -63,18 +65,27 @@ public final class LongColumnSourceWritableRowRedirection extends LongColumnSour
     }
 
     @Override
+    public void removeAllUnordered(LongChunk<RowKeys> outerRowKeys) {
+        for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
+            columnSource.setNull(outerRowKeys.get(ii));
+        }
+    }
+
+    @Override
     public ChunkSink.FillFromContext makeFillFromContext(int chunkCapacity) {
         return columnSource.makeFillFromContext(chunkCapacity);
     }
 
     @Override
-    public void fillFromChunk(@NotNull ChunkSink.FillFromContext context,
-            @NotNull Chunk<? extends RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
+    public void fillFromChunk(
+            @NotNull final ChunkSink.FillFromContext context,
+            @NotNull final Chunk<? extends RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
         columnSource.fillFromChunk(context, innerRowKeys, outerRowKeys);
     }
 
     @Override
-    public final void startTrackingPrevValues() {
+    public void startTrackingPrevValues() {
         columnSource.startTrackingPrevValues();
     }
 }

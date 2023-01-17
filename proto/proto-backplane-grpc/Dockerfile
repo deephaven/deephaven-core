@@ -26,6 +26,7 @@ RUN set -eux; \
     /includes/deephaven/proto/inputtable.proto \
     /includes/deephaven/proto/partitionedtable.proto \
     /includes/deephaven/proto/config.proto \
+    /includes/deephaven/proto/hierarchicaltable.proto \
     /includes/deephaven/proto/storage.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-ts=/usr/src/app/node_modules/.bin/protoc-gen-ts \
@@ -44,6 +45,7 @@ RUN set -eux; \
     /includes/deephaven/proto/inputtable.proto \
     /includes/deephaven/proto/partitionedtable.proto \
     /includes/deephaven/proto/config.proto \
+    /includes/deephaven/proto/hierarchicaltable.proto \
     /includes/deephaven/proto/storage.proto; \
   python3 -m grpc_tools.protoc \
     --grpc_python_out=/generated/python \
@@ -58,6 +60,7 @@ RUN set -eux; \
     /includes/deephaven/proto/inputtable.proto \
     /includes/deephaven/proto/partitionedtable.proto \
     /includes/deephaven/proto/config.proto \
+    /includes/deephaven/proto/hierarchicaltable.proto \
     /includes/deephaven/proto/storage.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-go=/opt/protoc-gen-go \
@@ -76,4 +79,5 @@ RUN set -eux; \
     /includes/deephaven/proto/inputtable.proto \
     /includes/deephaven/proto/partitionedtable.proto \
     /includes/deephaven/proto/config.proto \
+    /includes/deephaven/proto/hierarchicaltable.proto \
     /includes/deephaven/proto/storage.proto;

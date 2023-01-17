@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
 public class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
-    public static final int LARGE_TABLE_SIZE = 2000000;
+    public static final int LARGE_TABLE_SIZE = 2_000_000;
 
     private static File rootFile;
 
@@ -164,6 +164,8 @@ public class ParquetTableReadWriteTest {
                 "someStringSet = (StringSet)new ArrayStringSet( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
         result = result.update(
                 "largeStringSet = (StringSet)new ArrayStringSet(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
+        result = result.update(
+                "nullStringSet = (StringSet)null");
         result = result.update(
                 "someStringColumn = (String[])(((Object)someStringColumn) == null?null:someStringColumn.toArray())",
                 "nonNullString = (String[])(((Object)nonNullString) == null?null:nonNullString.toArray())",

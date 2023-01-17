@@ -125,11 +125,11 @@ public class FloatFloatReinterpretedBooleanColumnTupleSource extends AbstractTup
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<FloatFloatByteTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        FloatChunk<Values> chunk1 = chunks[0].asFloatChunk();
-        FloatChunk<Values> chunk2 = chunks[1].asFloatChunk();
-        ByteChunk<Values> chunk3 = chunks[2].asByteChunk();
+        FloatChunk<? extends Values> chunk1 = chunks[0].asFloatChunk();
+        FloatChunk<? extends Values> chunk2 = chunks[1].asFloatChunk();
+        ByteChunk<? extends Values> chunk3 = chunks[2].asByteChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new FloatFloatByteTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

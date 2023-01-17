@@ -5,8 +5,10 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 
 /**
@@ -14,28 +16,27 @@ import java.util.function.ToIntFunction;
  */
 public interface AggregationContextTransformer {
 
-    AggregationContextTransformer[] ZERO_LENGTH_AGGREGATION_CONTEXT_TRANSFORMER_ARRAY =
-            new AggregationContextTransformer[0];
-
     /**
      * After we have created the key columns, and the default result columns, allow each transformer to add additional
      * columns to the result set that are not handled by the regular modified column set transformer, etc. logic.
      */
-    default void resultColumnFixup(Map<String, ColumnSource<?>> resultColumns) {}
+    default void resultColumnFixup(@NotNull final Map<String, ColumnSource<?>> resultColumns) {}
 
     /**
-     * Before we return the result, each transformer has a chance to replace it or change it as it sees fit.
-     *
-     * Practically this is used to change the attributes for rollups.
+     * Before we return the result, each transformer has a chance to replace it or change it as it sees fit. Practically
+     * this is used to change the attributes for rollups and trees.
      */
-    default QueryTable transformResult(QueryTable table) {
+    default QueryTable transformResult(@NotNull final QueryTable table) {
         return table;
     }
 
     /**
-     * The helper calls the transformer with a suitable reverse lookup function for this table.
+     * The helper calls the transformer with a supplier to create a suitable {@link AggregationRowLookup row lookup}
+     * function for the result table.
      *
-     * @param reverseLookup a function that translates an object to an integer position in our output.
+     * @param rowLookupFactory Factory for a function that translates an opaque key to an integer row position in the
+     *        result table, which is also the row key in the result table
+     * 
      */
-    default void setReverseLookupFunction(ToIntFunction<Object> reverseLookup) {}
+    default void supplyRowLookup(@NotNull final Supplier<AggregationRowLookup> rowLookupFactory) {}
 }

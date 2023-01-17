@@ -9,13 +9,14 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.util.TableTools.col;
 
 public class TestToMapListener extends RefreshingTableTestCase {
     public void testToMap() {
         final QueryTable source = testRefreshingTable(
                 i(2, 4, 6, 8).toTracking(),
-                c("Sentinel", "A", "B", "C", "D"),
-                c("Sentinel2", "H", "I", "J", "K"));
+                col("Sentinel", "A", "B", "C", "D"),
+                col("Sentinel2", "H", "I", "J", "K"));
         TableTools.show(source);
 
         final ColumnSource<String> sentinelSource = source.getColumnSource("Sentinel");
@@ -32,7 +33,7 @@ public class TestToMapListener extends RefreshingTableTestCase {
         assertNull(tml.get("E"));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(source, i(10), c("Sentinel", "E"), c("Sentinel2", "L"));
+            addToTable(source, i(10), col("Sentinel", "E"), col("Sentinel2", "L"));
             source.notifyListeners(i(10), i(), i());
 
             assertEquals("H", tml.get("A"));
@@ -49,7 +50,7 @@ public class TestToMapListener extends RefreshingTableTestCase {
         assertEquals("L", tml.get("E"));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(source, i(10), c("Sentinel", "E"), c("Sentinel2", "M"));
+            addToTable(source, i(10), col("Sentinel", "E"), col("Sentinel2", "M"));
             removeRows(source, i(2));
             source.notifyListeners(i(), i(2), i(10));
         });

@@ -71,45 +71,45 @@ public class QueryTableWhereTest {
 
         java.util.function.Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
-                c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
+                col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
 
-        assertEquals("", diff(table.where(Filter.from("k%2 == 0")), table, 10));
-        assertEquals("", diff(table.where(filter.apply("k%2 == 0")), table, 10));
+        assertTableEquals(table.where(Filter.from("k%2 == 0")), table);
+        assertTableEquals(table.where(filter.apply("k%2 == 0")), table);
 
-        assertEquals("", diff(table.where(Filter.from("i%2 == 0")),
-                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
-        assertEquals("", diff(table.where(filter.apply("i%2 == 0")), testRefreshingTable(i(2, 6).toTracking(),
-                c("x", 1, 3), c("y", 'a', 'c')), 10));
+        assertTableEquals(table.where(Filter.from("i%2 == 0")),
+                testRefreshingTable(i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
+        assertTableEquals(table.where(filter.apply("i%2 == 0")), testRefreshingTable(
+                i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
 
-        assertEquals("", diff(table.where((Filter.from("(y-'a') = 2"))),
-                testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
-        assertEquals("", diff(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(i(2).toTracking(),
-                c("x", 3), c("y", 'c')), 10));
+        assertTableEquals(table.where((Filter.from("(y-'a') = 2"))), testRefreshingTable(
+                i(2).toTracking(), col("x", 3), col("y", 'c')));
+        assertTableEquals(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(
+                i(2).toTracking(), col("x", 3), col("y", 'c')));
 
         final QueryTable whereResult = (QueryTable) table.where(filter.apply("x%2 == 1"));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.addUpdateListener(whereResultListener);
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
+            addToTable(table, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
 
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 9).toTracking(), c("x", 1, 3, 5), c("y", 'a', 'c', 'e')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 9).toTracking(), col("x", 1, 3, 5), col("y", 'a', 'c', 'e')));
         assertEquals(base.added, i(9));
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
+            addToTable(table, i(7, 9), col("x", 3, 10), col("y", 'e', 'd'));
             table.notifyListeners(i(), i(), i(7, 9));
         });
 
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 7).toTracking(), c("x", 1, 3, 3), c("y", 'a', 'c', 'e')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 7).toTracking(), col("x", 1, 3, 3), col("y", 'a', 'c', 'e')));
 
         assertEquals(base.added, i(7));
         assertEquals(base.removed, i(9));
@@ -128,12 +128,12 @@ public class QueryTableWhereTest {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
-            addToTable(table, i(2, 4, 6), c("x", 1, 21, 3), c("y", 'a', 'x', 'c'));
+            addToTable(table, i(2, 4, 6), col("x", 1, 21, 3), col("y", 'a', 'x', 'c'));
             table.notifyListeners(i(2, 6), i(9), i(4));
         });
 
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 4, 6).toTracking(), c("x", 1, 21, 3), c("y", 'a', 'x', 'c')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 4, 6).toTracking(), col("x", 1, 21, 3), col("y", 'a', 'x', 'c')));
 
         assertEquals(base.added, i(2, 4, 6));
         assertEquals(base.removed, i());
@@ -162,33 +162,36 @@ public class QueryTableWhereTest {
     @Test
     public void testWhereOneOfTwo() {
         final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
-                c("x", 1, 2, 3, 4), c("y", 'a', 'b', 'c', 'f'));
+                col("x", 1, 2, 3, 4), col("y", 'a', 'b', 'c', 'f'));
 
         final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1", "y=='f'")));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.addUpdateListener(whereResultListener);
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 8).toTracking(), c("x", 1, 3, 4), c("y", 'a', 'c', 'f')), 10));
-
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 8).toTracking(), col("x", 1, 3, 4), col("y", 'a', 'c', 'f')));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
+            addToTable(table, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 6, 8, 9).toTracking(),
-                c("x", 1, 3, 4, 5), c("y", 'a', 'c', 'f', 'e')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 8, 9).toTracking(),
+                col("x", 1, 3, 4, 5),
+                col("y", 'a', 'c', 'f', 'e')));
         assertEquals(base.added, i(9));
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
+            addToTable(table, i(7, 9), col("x", 3, 10), col("y", 'e', 'd'));
             table.notifyListeners(i(), i(), i(7, 9));
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 6, 7, 8).toTracking(),
-                c("x", 1, 3, 3, 4), c("y", 'a', 'c', 'e', 'f')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 6, 7, 8).toTracking(),
+                col("x", 1, 3, 3, 4),
+                col("y", 'a', 'c', 'e', 'f')));
 
         assertEquals(base.added, i(7));
         assertEquals(base.removed, i(9));
@@ -199,7 +202,7 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(8).toTracking(), c("x", 4), c("y", 'f')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(i(8).toTracking(), col("x", 4), col("y", 'f')));
 
         assertEquals(base.added, i());
         assertEquals(base.removed, i(2, 6, 7));
@@ -207,12 +210,12 @@ public class QueryTableWhereTest {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
-            addToTable(table, i(2, 4, 6), c("x", 1, 21, 3), c("y", 'a', 'x', 'c'));
+            addToTable(table, i(2, 4, 6), col("x", 1, 21, 3), col("y", 'a', 'x', 'c'));
             table.notifyListeners(i(2, 6), i(9), i(4));
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 4, 6, 8).toTracking(),
-                c("x", 1, 21, 3, 4), c("y", 'a', 'x', 'c', 'f')), 10));
+        assertTableEquals(whereResult, testRefreshingTable(
+                i(2, 4, 6, 8).toTracking(), col("x", 1, 21, 3, 4), col("y", 'a', 'x', 'c', 'f')));
 
         assertEquals(base.added, i(2, 4, 6));
         assertEquals(base.removed, i());
@@ -220,17 +223,17 @@ public class QueryTableWhereTest {
 
         showWithRowSet(table);
         final Table usingStringArray = table.where(FilterOr.of(Filter.from("x%3 == 0", "y=='f'")));
-        assertEquals("", diff(usingStringArray, testRefreshingTable(i(4, 6, 8).toTracking(),
-                c("x", 21, 3, 4), c("y", 'x', 'c', 'f')), 10));
+        assertTableEquals(usingStringArray, testRefreshingTable(
+                i(4, 6, 8).toTracking(), col("x", 21, 3, 4), col("y", 'x', 'c', 'f')));
     }
 
     @Test
     public void testWhereInDependency() {
         final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(),
-                c("A", 1, 2, 3, 4, 5, 6), c("B", 2, 4, 6, 8, 10, 12), c("C", 'a', 'b', 'c', 'd', 'e', 'f'));
+                col("A", 1, 2, 3, 4, 5, 6), col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
 
         final QueryTable setTable = testRefreshingTable(i(100, 101, 102).toTracking(),
-                c("A", 1, 2, 3), c("B", 2, 4, 6));
+                col("A", 1, 2, 3), col("B", 2, 4, 6));
         final Table setTable1 = setTable.where("A > 2");
         final Table setTable2 = setTable.where("B > 6");
 
@@ -245,18 +248,18 @@ public class QueryTableWhereTest {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
         });
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(setTable, i(103), c("A", 5), c("B", 8));
+            addToTable(setTable, i(103), col("A", 5), col("B", 8));
             setTable.notifyListeners(i(103), i(), i());
 
-            TestCase.assertFalse(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // this will do the notification for table; which should first fire the recorder for setTable1
             UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
@@ -266,52 +269,52 @@ public class QueryTableWhereTest {
             boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
 
             // the next notification should be the merged listener for setTable2
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // the dynamicFilter1 updates
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // the dynamicFilter2 updates
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // now that both filters are complete, we can run the composed listener
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase.assertTrue(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(((QueryTable) setTable2).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(((QueryTable) composed).satisfied(LogicalClock.DEFAULT.currentStep()));
+            TestCase.assertTrue(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
             // and we are done
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
@@ -323,14 +326,14 @@ public class QueryTableWhereTest {
         final Table expected =
                 TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
 
-        TestCase.assertEquals("", TableTools.diff(composed, expected, 10));
+        assertTableEquals(composed, expected);
     }
 
     @Test
     public void testWhereDynamicIn() {
-        final QueryTable setTable = testRefreshingTable(i(2, 4, 6, 8).toTracking(), c("X", "A", "B", "C", "B"));
+        final QueryTable setTable = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("X", "A", "B", "C", "B"));
         final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
-                c("X", "A", "B", "C", "D", "E"));
+                col("X", "A", "B", "C", "D", "E"));
 
         final Table result =
                 UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> filteredTable.whereIn(setTable, "X"));
@@ -344,7 +347,7 @@ public class QueryTableWhereTest {
         assertEquals(asList("D", "E"), asList((String[]) resultInverse.getColumn("X").getDirect()));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(filteredTable, i(6), c("X", "A"));
+            addToTable(filteredTable, i(6), col("X", "A"));
             filteredTable.notifyListeners(i(6), i(), i());
         });
         show(result);
@@ -354,7 +357,7 @@ public class QueryTableWhereTest {
         assertEquals(asList("D", "E"), asList((String[]) resultInverse.getColumn("X").getDirect()));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(setTable, i(7), c("X", "D"));
+            addToTable(setTable, i(7), col("X", "D"));
             setTable.notifyListeners(i(7), i(), i());
         });
         showWithRowSet(result);
@@ -366,8 +369,8 @@ public class QueryTableWhereTest {
 
     @Test
     public void testWhereDynamicInIncremental() {
-        final ColumnInfo[] setInfo;
-        final ColumnInfo[] filteredInfo;
+        final ColumnInfo<?, ?>[] setInfo;
+        final ColumnInfo<?, ?>[] filteredInfo;
 
         final int setSize = 10;
         final int filteredSize = 500;
@@ -414,29 +417,25 @@ public class QueryTableWhereTest {
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "floatCol")),
         };
 
-        try {
-            for (int i = 0; i < 100; i++) {
-                final boolean modSet = random.nextInt(10) < 1;
-                final boolean modFiltered = random.nextBoolean();
+        for (int step = 0; step < 100; step++) {
+            final boolean modSet = random.nextInt(10) < 1;
+            final boolean modFiltered = random.nextBoolean();
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    if (modSet) {
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                setSize, random, setTable, setInfo);
-                    }
-                });
-                validate(en);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                if (modSet) {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            setSize, random, setTable, setInfo);
+                }
+            });
+            validate(en);
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    if (modFiltered) {
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                filteredSize, random, filteredTable, filteredInfo);
-                    }
-                });
-                validate(en);
-            }
-        } catch (Exception e) {
-            TestCase.fail(e.getMessage());
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                if (modFiltered) {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            filteredSize, random, filteredTable, filteredInfo);
+                }
+            });
+            validate(en);
         }
     }
 
@@ -463,7 +462,7 @@ public class QueryTableWhereTest {
 
     @Test
     public void testWhereInDiamond() {
-        final ColumnInfo[] filteredInfo;
+        final ColumnInfo<?, ?>[] filteredInfo;
 
         final int size = 500;
         final Random random = new Random(0);
@@ -474,7 +473,7 @@ public class QueryTableWhereTest {
                         new IntGenerator(0, 100),
                         new IntGenerator(0, 100)));
 
-        final EvalNugget en[] = new EvalNugget[] {
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock()
@@ -497,7 +496,7 @@ public class QueryTableWhereTest {
 
     @Test
     public void testWhereInDiamond2() {
-        final QueryTable table = testRefreshingTable(i(1, 2, 3).toTracking(), c("x", 1, 2, 3), c("y", 2, 4, 6));
+        final QueryTable table = testRefreshingTable(i(1, 2, 3).toTracking(), col("x", 1, 2, 3), col("y", 2, 4, 6));
         final Table setTable = table.where("x % 2 == 0").dropColumns("y");
         final Table filteredTable =
                 UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.whereIn(setTable, "y=x"));
@@ -505,7 +504,7 @@ public class QueryTableWhereTest {
         TableTools.show(filteredTable);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(4), c("x", 4), c("y", 8));
+            addToTable(table, i(4), col("x", 4), col("y", 8));
             table.notifyListeners(i(4), i(), i());
         });
 
@@ -536,7 +535,7 @@ public class QueryTableWhereTest {
     @Test
     public void testWhereOneOfIncremental() {
 
-        final ColumnInfo[] filteredInfo;
+        final ColumnInfo<?, ?>[] filteredInfo;
 
         final int setSize = 10;
         final int filteredSize = 500;
@@ -598,18 +597,18 @@ public class QueryTableWhereTest {
         final int PRIME = 61409;
         assertTrue(2 * PRIME > UnionRedirection.ALLOCATION_UNIT_ROW_KEYS);
 
-        final ColumnInfo[] filteredInfo;
+        final ColumnInfo<?, ?>[] filteredInfo;
 
         final int setSize = 10;
         final int filteredSize = 500;
         final Random random = new Random(0);
 
-        final QueryTable growingTable = testRefreshingTable(i(1).toTracking(), c("intCol", 1));
+        final QueryTable growingTable = testRefreshingTable(i(1).toTracking(), col("intCol", 1));
         final QueryTable randomTable = getTable(setSize, random, filteredInfo = initColumnInfos(new String[] {"intCol"},
                 new IntGenerator(0, 1 << 8)));
         final Table m2 = TableTools.merge(growingTable, randomTable).updateView("intCol=intCol*53");
 
-        final EvalNugget en[] = new EvalNugget[] {
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> TableTools.merge(growingTable, randomTable)),
                 EvalNugget.from(() -> TableTools.merge(growingTable, m2).where("intCol % 3 == 0")),
         };
@@ -617,7 +616,7 @@ public class QueryTableWhereTest {
         for (int ii = 1; ii < 100; ++ii) {
             final int fii = PRIME * ii;
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(growingTable, i(fii), c("intCol", fii));
+                addToTable(growingTable, i(fii), col("intCol", fii));
                 growingTable.notifyListeners(i(fii), i(), i());
                 GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, filteredSize,
                         random, randomTable, filteredInfo);
@@ -631,7 +630,7 @@ public class QueryTableWhereTest {
         final Random random = new Random(0);
         final int size = 10;
 
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable filteredTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sentinel", "boolCol", "nullBoolCol"},
                         new IntGenerator(0, 10000),
@@ -825,6 +824,7 @@ public class QueryTableWhereTest {
         return table;
     }
 
+    @Test
     public void testComparableBinarySearch() {
         final Random random = new Random(0);
 

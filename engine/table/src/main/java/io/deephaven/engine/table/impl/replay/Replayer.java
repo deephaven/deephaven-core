@@ -186,7 +186,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public Table replay(Table dataSource, String timeColumn) {
         if (dataSource.isRefreshing()) {
-            dataSource = TableTools.emptyTable(0).snapshot(dataSource);
+            dataSource = dataSource.snapshot();
         }
         final ReplayTable result =
                 new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);

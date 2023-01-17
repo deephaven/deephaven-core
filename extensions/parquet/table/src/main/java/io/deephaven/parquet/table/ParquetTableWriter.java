@@ -318,7 +318,8 @@ public class ParquetTableWriter {
             final String colName = column.getName();
             if (table.hasColumns(colName)) {
                 if (StringSet.class.isAssignableFrom(column.getDataType())) {
-                    updateViewColumnsTransform.add(FormulaColumn.createFormulaColumn(colName, colName + ".values()"));
+                    updateViewColumnsTransform.add(FormulaColumn.createFormulaColumn(colName,
+                            "isNull(" + colName + ") ? null : " + colName + ".values()"));
                 }
                 viewColumnsTransform.add(new SourceColumn(colName));
             } else {
@@ -1070,8 +1071,8 @@ public class ParquetTableWriter {
 
     private static Table groupingAsTable(Table tableToSave, String columnName) {
         final QueryTable coalesced = (QueryTable) tableToSave.coalesce();
-        final Table tableToGroup = coalesced.isRefreshing() ? coalesced.silent() : coalesced;
-        tableToGroup.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true); // We want persistent first/last-by
+        final Table tableToGroup = (coalesced.isRefreshing() ? (QueryTable) coalesced.silent() : coalesced)
+                .withAttributes(Map.of(Table.STREAM_TABLE_ATTRIBUTE, true)); // We want persistent first/last-by
         final Table grouped = tableToGroup
                 .view(List.of(Selectable.of(ColumnName.of(GROUPING_KEY), ColumnName.of(columnName)),
                         Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")), // Range start, inclusive

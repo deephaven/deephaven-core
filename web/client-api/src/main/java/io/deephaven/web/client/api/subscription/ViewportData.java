@@ -192,21 +192,6 @@ public class ViewportData implements TableData {
                 }
                 return cleanData;
             }
-            case "java.lang.Boolean": {
-                JsArray<Any> values = Js.uncheckedCast(dataColumn);
-                java.lang.Boolean[] cleanData = new java.lang.Boolean[values.length];
-                for (int i = 0; i < values.length; i++) {
-                    int value = values.getAtAsAny(i).asInt();
-                    if (value == 1) {
-                        cleanData[i] = true;
-                    } else if (value == 0) {
-                        cleanData[i] = false;
-                    } else {
-                        cleanData[i] = null;
-                    }
-                }
-                return cleanData;
-            }
             case "java.math.BigDecimal": {
                 final JsArray<Any> values = Js.uncheckedCast(dataColumn);
                 final BigDecimalWrapper[] cleanData = new BigDecimalWrapper[values.length];

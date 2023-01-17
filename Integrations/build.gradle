@@ -95,9 +95,9 @@ dockerCompose {
 }
 
 Closure composeConfig = { task ->
-    task.network = dockerCompose.projectName.toLowerCase() + '_default'
-    task.containerDependencies.dependsOn = dockerCompose.upTask
-    task.containerDependencies.finalizedBy = dockerCompose.downTask
+    task.network = "${dockerCompose.projectName.get()}_default"
+    task.containerDependencies.dependsOn = dockerCompose.tasksConfigurator.upTask
+    task.containerDependencies.finalizedBy = dockerCompose.tasksConfigurator.downTask
 }
 
 def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)

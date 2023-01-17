@@ -16,7 +16,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -60,7 +59,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         final TotalsTableBuilder builder = new TotalsTableBuilder();
         final Table totals = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(builder.applyToTable(queryTable)));
-        final Map<String, ? extends ColumnSource> resultColumns = totals.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> resultColumns = totals.getColumnSourceMap();
         assertEquals(1, totals.size());
         assertEquals(new LinkedHashSet<>(Arrays.asList("intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
                 "floatCol", "byteCol", "shortCol")), resultColumns.keySet());
@@ -124,16 +123,16 @@ public class TestTotalsTable extends RefreshingTableTestCase {
 
             final Table totals4 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
-            assertTrue(totals3 == totals4);
+            assertSame(totals3, totals4);
         } finally {
             QueryTable.setMemoizeResults(old);
         }
     }
 
-    public void testTotalsTableIncremental() throws IOException {
+    public void testTotalsTableIncremental() {
         final int size = 1000;
         final Random random = new Random(0);
-        final ColumnInfo columnInfo[];
+        final ColumnInfo<?, ?>[] columnInfo;
 
         final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
                 new String[] {"Sym", "intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2", "shortCol"},
@@ -145,7 +144,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 new SetGenerator<>(10.1, 20.1, 30.1),
                 new ShortGenerator()));
 
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();

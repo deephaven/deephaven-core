@@ -747,16 +747,37 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     }
 
     private RowSet getRelevantShifts(RowSetShiftData shifted, RowSet previousToShift) {
-        final RowSetBuilderRandom relevantShiftKeys = RowSetFactory.builderRandom();
-        final RowSetShiftData.Iterator sit = shifted.applyIterator();
-        while (sit.hasNext()) {
-            sit.next();
-            final RowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
-            if (!rowSetToShift.isEmpty()) {
-                relevantShiftKeys.addRowSet(rowSetToShift);
+        final RowSetBuilderSequential relevantShiftKeys = RowSetFactory.builderSequential();
+
+        final RowSet.RangeIterator it = previousToShift.rangeIterator();
+
+        for (int ii = 0; ii < shifted.size(); ++ii) {
+            final long beginRange = shifted.getBeginRange(ii);
+            final long endRange = shifted.getEndRange(ii);
+            if (!it.advance(beginRange)) {
+                break;
             }
-            rowSetToShift.close();
+            if (it.currentRangeStart() > endRange) {
+                continue;
+            }
+
+            while (true) {
+                final long startOfNewRange = Math.max(it.currentRangeStart(), beginRange);
+                final long endOfNewRange = Math.min(it.currentRangeEnd(), endRange);
+                relevantShiftKeys.appendRange(startOfNewRange, endOfNewRange);
+                if (it.currentRangeEnd() < endRange) {
+                    if (!it.hasNext())
+                        break;
+                    it.next();
+                    if (it.currentRangeStart() > endRange) {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
         }
+
         return relevantShiftKeys.build();
     }
 

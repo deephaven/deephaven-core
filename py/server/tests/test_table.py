@@ -1,13 +1,9 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-import random
-import time
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
-
-import deephaven
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
@@ -19,27 +15,47 @@ from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
 
+# for scoping dependent table operation tests
+def global_fn() -> str:
+    return "global str"
+
+
+global_int = 1001
+a_number = 10001
+
+
+class EmptyCls:
+    ...
+
+
+foo = EmptyCls()
+foo.name = "GOOG"
+foo.price = 1000
+
+
 class TableTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
-        self.aggs = [
-            group(["aggGroup=var"]),
+        self.aggs_for_rollup = [
             avg(["aggAvg=var"]),
             count_("aggCount"),
-            partition("aggPartition"),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),
-            median(["aggMed=var"]),
             min_(["aggMin=var"]),
-            pct(0.20, ["aggPct=var"]),
             std(["aggStd=var"]),
             sum_(["aggSum=var"]),
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
-            weighted_avg("var", ["weights"]),
         ]
+        self.aggs_not_for_rollup = [group(["aggGroup=var"]),
+                                    partition("aggPartition"),
+                                    median(["aggMed=var"]),
+                                    pct(0.20, ["aggPct=var"]),
+                                    weighted_avg("var", ["weights"]),
+                                    ]
+        self.aggs = self.aggs_for_rollup + self.aggs_not_for_rollup
 
     def tearDown(self) -> None:
         self.test_table = None
@@ -227,12 +243,12 @@ class TableTestCase(BaseTestCase):
 
     def test_restrict_sort_to(self):
         cols = ["b", "e"]
-        self.test_table.restrict_sort_to(cols)
-        result_table = self.test_table.sort(order_by=cols)
-        self.test_table.restrict_sort_to("b")
-        result_table = self.test_table.sort(order_by="b")
+        restricted_table = self.test_table.restrict_sort_to(cols)
+        result_table = restricted_table.sort(order_by=cols)
+        restricted_table = self.test_table.restrict_sort_to("b")
+        result_table = restricted_table.sort(order_by="b")
         with self.assertRaises(DHError) as cm:
-            self.test_table.sort(order_by=["a"])
+            restricted_table.sort(order_by=["a"])
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
     def test_sort_descending(self):
@@ -489,30 +505,31 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(result_pt2.table.size, 2)
             self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
 
-    def test_snapshot(self):
-        with self.subTest("do_init is False"):
-            t = empty_table(0).update(
-                formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
-            )
-            snapshot = t.snapshot(source_table=self.test_table)
-            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
-            self.assertEqual(0, snapshot.size)
-
-        with self.subTest("do_init is True"):
-            snapshot = t.snapshot(source_table=self.test_table, do_init=True)
+    def test_snapshot_when(self):
+        t = time_table("00:00:01").update_view(["X = i * i", "Y = i + i"])
+        with self.subTest("with defaults"):
+            snapshot = self.test_table.snapshot_when(t)
+            self.wait_ticking_table_update(snapshot, row_count=1, timeout=5)
             self.assertEqual(self.test_table.size, snapshot.size)
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
 
-        with self.subTest("with cols"):
-            snapshot = t.snapshot(source_table=self.test_table, cols="X")
+        with self.subTest("initial=True"):
+            snapshot = self.test_table.snapshot_when(t, initial=True)
+            self.assertEqual(self.test_table.size, snapshot.size)
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
+
+        with self.subTest("stamp_cols=\"X\""):
+            snapshot = self.test_table.snapshot_when(t, stamp_cols="X")
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
-            snapshot = t.snapshot(source_table=self.test_table, cols=["X", "Y"])
+
+        with self.subTest("stamp_cols=[\"X\", \"Y\"]"):
+            snapshot = self.test_table.snapshot_when(t, stamp_cols=["X", "Y"])
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
-    def test_snapshot_history(self):
-        t = empty_table(1).update(
-            formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
-        )
-        snapshot_hist = t.snapshot_history(source_table=self.test_table)
+    def test_snapshot_when_with_history(self):
+        t = time_table("00:00:01")
+        snapshot_hist = self.test_table.snapshot_when(t, history=True)
+        self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
 
@@ -809,22 +826,39 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             rt = t.slice(3, 2)
 
+    def test_rollup(self):
+        test_table = empty_table(100)
+        test_table = test_table.update(
+            ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
+        )
+        for agg in self.aggs_not_for_rollup:
+            with self.assertRaises(DHError) as cm:
+                rollup_table = test_table.rollup(aggs=[agg])
+            self.assertRegex(str(cm.exception), r".+ is not supported for rollup")
 
-def global_fn() -> str:
-    return "global str"
+        rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, by='grp_id')
+        self.assertIsNotNone(rollup_table)
 
+        rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, include_constituents=True)
+        self.assertIsNotNone(rollup_table)
 
-global_int = 1001
-a_number = 10001
+    def test_tree(self):
+        # column 'a' contains duplicate values
+        with self.assertRaises(DHError) as cm:
+            tree_table = self.test_table.tree(id_col='a', parent_col='c')
+        self.assertRegex(str(cm.exception), r".+IllegalStateException")
 
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c')
+        self.assertIsNotNone(tree_table)
+        self.assertEqual(tree_table.id_col, 'a')
+        self.assertEqual(tree_table.parent_col, 'c')
 
-class EmptyCls:
-    ...
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='a')
+        self.assertIsNotNone(tree_table)
 
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c', promote_orphans=True)
+        self.assertIsNotNone(tree_table)
 
-foo = EmptyCls()
-foo.name = "GOOG"
-foo.price = 1000
 
 if __name__ == "__main__":
     unittest.main()

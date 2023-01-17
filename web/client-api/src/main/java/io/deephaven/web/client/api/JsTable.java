@@ -13,7 +13,14 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
@@ -786,20 +793,17 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     public Promise<JsTable> freeze() {
         return workerConnection.newState((c, state, metadata) -> {
             SnapshotTableRequest request = new SnapshotTableRequest();
-            request.setLeftId(null);// explicit null to signal that we are just freezing this table
-            request.setRightId(state().getHandle().makeTableReference());
+            request.setSourceId(state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
-            request.setDoInitialSnapshot(true);
-            request.setStampColumnsList(new String[0]);
             workerConnection.tableServiceClient().snapshot(request, metadata, c::apply);
         }, "freeze").refetch(this, workerConnection.metadata())
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     @JsMethod
-    public Promise<JsTable> snapshot(JsTable rightHandSide, @JsOptional Boolean doInitialSnapshot,
+    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
             @JsOptional String[] stampColumns) {
-        Objects.requireNonNull(rightHandSide, "Snapshot right-hand-side table");
+        Objects.requireNonNull(baseTable, "Snapshot base table");
         final boolean realDoInitialSnapshot;
         if (doInitialSnapshot != null) {
             realDoInitialSnapshot = doInitialSnapshot;
@@ -814,16 +818,16 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             realStampColums = Arrays.stream(stampColumns).toArray(String[]::new);
         }
         final String fetchSummary =
-                "snapshot(" + rightHandSide + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
+                "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
         return workerConnection.newState((c, state, metadata) -> {
-            SnapshotTableRequest request = new SnapshotTableRequest();
-            request.setLeftId(state().getHandle().makeTableReference());
-            request.setRightId(rightHandSide.state().getHandle().makeTableReference());
+            SnapshotWhenTableRequest request = new SnapshotWhenTableRequest();
+            request.setBaseId(baseTable.state().getHandle().makeTableReference());
+            request.setTriggerId(state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
-            request.setDoInitialSnapshot(realDoInitialSnapshot);
+            request.setInitial(realDoInitialSnapshot);
             request.setStampColumnsList(realStampColums);
 
-            workerConnection.tableServiceClient().snapshot(request, metadata, c::apply);
+            workerConnection.tableServiceClient().snapshotWhen(request, metadata, c::apply);
         }, fetchSummary).refetch(this, workerConnection.metadata())
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }

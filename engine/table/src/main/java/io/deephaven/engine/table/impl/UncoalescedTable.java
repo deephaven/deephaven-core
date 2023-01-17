@@ -10,12 +10,15 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
@@ -31,7 +34,7 @@ import java.util.function.Function;
  * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
  * on.
  */
-public abstract class UncoalescedTable extends BaseTable {
+public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_TYPE>> extends BaseTable<IMPL_TYPE> {
 
     private final Object coalescingLock = new Object();
 
@@ -269,12 +272,6 @@ public abstract class UncoalescedTable extends BaseTable {
 
     @Override
     @ConcurrentMethod
-    public Table formatColumns(String... columnFormats) {
-        return coalesce().formatColumns(columnFormats);
-    }
-
-    @Override
-    @ConcurrentMethod
     public Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
         return coalesce().moveColumns(index, moveToEnd, columnsToMove);
     }
@@ -386,15 +383,15 @@ public abstract class UncoalescedTable extends BaseTable {
 
     @Override
     @ConcurrentMethod
-    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            ColumnName... groupByColumns) {
+    public RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            Collection<? extends ColumnName> groupByColumns) {
         return coalesce().rollup(aggregations, includeConstituents, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table treeTable(String idColumn, String parentColumn) {
-        return coalesce().treeTable(idColumn, parentColumn);
+    public TreeTable tree(String idColumn, String parentColumn) {
+        return coalesce().tree(idColumn, parentColumn);
     }
 
     @Override
@@ -418,18 +415,13 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
-        return coalesce().snapshot(baseTable, doInitialSnapshot, stampColumns);
+    public Table snapshot() {
+        return coalesce().snapshot();
     }
 
     @Override
-    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return coalesce().snapshotIncremental(rightTable, doInitialSnapshot, stampColumns);
-    }
-
-    @Override
-    public Table snapshotHistory(Table rightTable) {
-        return coalesce().snapshotHistory(rightTable);
+    public Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
+        return coalesce().snapshotWhen(trigger, options);
     }
 
     @Override

@@ -10,7 +10,6 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -52,7 +51,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
+        implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
@@ -314,6 +313,22 @@ public abstract class ArrayBackedColumnSource<T>
         try (final FillFromContext context = result.makeFillFromContext(data.length);
                 final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, LongChunk.chunkWrap(data), range);
+        }
+        return result;
+    }
+
+    /**
+     * Produces an DateTimeArraySource with the given data.
+     *
+     * @param data an array containing the data to insert into the ColumnSource, represented as long nanoseconds since
+     *        the epoch
+     * @return an in-memory column source with the requested data
+     */
+    public static ArrayBackedColumnSource<DateTime> getDateTimeMemoryColumnSource(LongChunk<Values> data) {
+        final ArrayBackedColumnSource<DateTime> result = new DateTimeArraySource();
+        result.ensureCapacity(data.size());
+        for (int ii = 0; ii < data.size(); ++ii) {
+            result.set(ii, data.get(ii));
         }
         return result;
     }

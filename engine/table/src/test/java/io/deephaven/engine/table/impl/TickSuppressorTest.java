@@ -28,7 +28,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 public class TickSuppressorTest extends QueryTableTestBase {
     public void testModifyToAddRemoves() {
         final Random random = new Random(0);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final int size = 50;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -66,7 +66,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
 
     private void testRemoveSpuriousModificationsIterative(int seed, int size, int maxSteps) {
         final Random random = new Random(seed);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
 
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "boolCol", "boolCol2"},

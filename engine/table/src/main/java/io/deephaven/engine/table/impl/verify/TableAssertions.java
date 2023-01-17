@@ -14,11 +14,11 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Assert properties of a table.
- *
+ * <p>
  * The table assertions verify that a table meets certain properties. Presently, that the table is add only and that it
  * is sorted by a particular column. The desired property is verified on the initial table, and if the table is
  * refreshing then a listener is attached to ensure that the property remains true.
- *
+ * <p>
  * The returned table may have attributes set which allow the query engine to more efficiently perform downstream
  * operations.
  */
@@ -31,7 +31,7 @@ public class TableAssertions {
      * This can be used to ensure the safety and stability of stateful operations.
      *
      * @param table The table to apply the assertion to
-     * @return The provided {@code table}.
+     * @return {@code table}, or a copy with the appropriate assertion applied
      */
     public static Table assertAppendOnly(@NotNull Table table) {
         return assertAppendOnly(null, table);
@@ -45,7 +45,7 @@ public class TableAssertions {
      * @param description An optional description which will be included in the exception message if the assertion is
      *        violated.
      * @param table The table to apply the assertion to
-     * @return The provided {@code table}.
+     * @return {@code table}, or a copy with the appropriate assertion applied
      */
     public static Table assertAppendOnly(String description, @NotNull Table table) {
         // noinspection ConstantConditions
@@ -74,13 +74,13 @@ public class TableAssertions {
 
     /**
      * Asserts that the {@code table} is sorted by the given column.
-     *
+     * <p>
      * This allows range filters to utilize binary search instead of a linear scan of the table for the given column.
      *
      * @param table The table to apply the assertion to
      * @param column The column that the table is sorted by.
      * @param order Whether the column is ascending or descending.
-     * @return The provided {@code table}.
+     * @return {@code table}, or a copy with the appropriate assertion applied
      */
     public static Table assertSorted(@NotNull Table table, @NotNull final String column, SortingOrder order) {
         return assertSorted(null, table, column, order);
@@ -88,7 +88,7 @@ public class TableAssertions {
 
     /**
      * Asserts that the {@code table} is sorted by the given column.
-     *
+     * <p>
      * This allows range filters to utilize binary search instead of a linear scan of the table for the given column.
      *
      * @param description An optional description which will be included in the exception message if the assertion is
@@ -96,7 +96,7 @@ public class TableAssertions {
      * @param table The table to apply the assertion to
      * @param column The column that the table is sorted by.
      * @param order Whether the column is ascending or descending.
-     * @return The provided {@code table}.
+     * @return {@code table}, or a copy with the appropriate assertion applied
      */
     public static Table assertSorted(String description, @NotNull Table table, @NotNull final String column,
             SortingOrder order) {
@@ -110,10 +110,8 @@ public class TableAssertions {
         SortedAssertionInstrumentedListenerAdapter.doCheckStatic(table.getRowSet(), columnSource,
                 SortCheck.make(columnSource.getChunkType(), order.isDescending()), description, column, order);
 
-
         if (!table.isRefreshing()) {
-            SortedColumnsAttribute.setOrderForColumn(table, column, order);
-            return table;
+            return SortedColumnsAttribute.withOrderForColumn(table, column, order);
         }
 
         final QueryTable coalesced = (QueryTable) table.coalesce();
@@ -125,7 +123,7 @@ public class TableAssertions {
                     final TableUpdateListener listener = new SortedAssertionInstrumentedListenerAdapter(description,
                             coalesced, result, column, order);
                     coalesced.addUpdateListener(listener);
-                    ((BaseTable) table).copyAttributes(result, s -> true);
+                    ((BaseTable<?>) table).copyAttributes(result, s -> true);
                     SortedColumnsAttribute.setOrderForColumn(result, column, order);
                     return result;
                 });

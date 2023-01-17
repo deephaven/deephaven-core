@@ -187,7 +187,7 @@ class DynamicTableWriter(JObjectWrapper):
                 of the table
 
         Raises:
-             DHError
+            DHError
         """
         try:
             values = to_sequence(values)
@@ -206,7 +206,8 @@ class InputTable(Table):
     The keyed input tablet has keys for each row and supports addition/deletion/modification of rows by the keys.
     """
 
-    def __init__(self, col_defs: Dict[str, DType] = None, init_table: Table = None, key_cols: Union[str, Sequence[str]] = None):
+    def __init__(self, col_defs: Dict[str, DType] = None, init_table: Table = None,
+                 key_cols: Union[str, Sequence[str]] = None):
         """Creates an InputTable instance from either column definitions or initial table. When key columns are
         provided, the InputTable will be keyed, otherwise it will be append-only.
 
@@ -214,6 +215,9 @@ class InputTable(Table):
             col_defs (Dict[str, DType]): the column definitions
             init_table (Table): the initial table
             key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
+
+        Raises:
+            DHError
         """
         try:
             if col_defs is None and init_table is None:
@@ -222,7 +226,8 @@ class InputTable(Table):
                 raise ValueError("both column definitions and init table are provided.")
 
             if col_defs:
-                j_arg_1 = _JTableDefinition.of([Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
+                j_arg_1 = _JTableDefinition.of(
+                    [Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
             else:
                 j_arg_1 = init_table.j_table
 
@@ -268,3 +273,21 @@ class InputTable(Table):
         except Exception as e:
             raise DHError(e, "delete data in the InputTable failed.") from e
 
+
+def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
+                key_cols: Union[str, Sequence[str]] = None) -> InputTable:
+    """Creates an InputTable from either column definitions or initial table. When key columns are
+    provided, the InputTable will be keyed, otherwise it will be append-only.
+
+    Args:
+        col_defs (Dict[str, DType]): the column definitions
+        init_table (Table): the initial table
+        key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
+
+    Returns:
+        an InputTable
+
+    Raises:
+        DHError
+    """
+    return InputTable(col_defs=col_defs, init_table=init_table, key_cols=key_cols)

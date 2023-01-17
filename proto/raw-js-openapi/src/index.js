@@ -8,6 +8,7 @@ require("deephaven/proto/object_pb");
 require("deephaven/proto/partitionedtable_pb");
 require("deephaven/proto/storage_pb");
 require("deephaven/proto/config_pb");
+require("deephaven/proto/hierarchicaltable_pb");
 require("Flight_pb")
 require("BrowserFlight_pb")
 var sessionService = require("deephaven/proto/session_pb_service");
@@ -19,6 +20,7 @@ var objectService = require("deephaven/proto/object_pb_service");
 var partitionedTableService = require("deephaven/proto/partitionedtable_pb_service");
 var storageService = require("deephaven/proto/storage_pb_service");
 var configService = require("deephaven/proto/config_pb_service");
+var hierarchicalTableService = require("deephaven/proto/hierarchicaltable_pb_service");
 var browserFlightService = require("BrowserFlight_pb_service");
 var flightService = require("Flight_pb_service");
 
@@ -53,6 +55,8 @@ var io = { deephaven: {
             storage_pb_service: storageService,
             config_pb: proto.io.deephaven.proto.backplane.grpc,
             config_pb_service: configService,
+            hierarchicaltable_pb: proto.io.deephaven.proto.backplane.grpc,
+            hierarchicaltable_pb_service: hierarchicalTableService
         },
         barrage: {
             "flatbuf": {

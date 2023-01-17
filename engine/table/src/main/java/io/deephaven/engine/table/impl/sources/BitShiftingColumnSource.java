@@ -326,27 +326,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        // noinspection unchecked
-        return new ReinterpretToOriginal(alternateDataType);
-    }
-
-    private class ReinterpretToOriginal<ALTERNATE_DATA_TYPE> extends BitShiftingColumnSource<ALTERNATE_DATA_TYPE> {
-        private ReinterpretToOriginal(Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            super(BitShiftingColumnSource.this.shiftState,
-                    BitShiftingColumnSource.this.innerSource.reinterpret(alternateDataType));
-        }
-
-        @Override
-        public boolean allowsReinterpret(@NotNull Class alternateDataType) {
-            return alternateDataType == BitShiftingColumnSource.this.getType();
-        }
-
-        @Override
-        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(
-                @NotNull Class<ORIGINAL_TYPE> alternateDataType) {
-            // noinspection unchecked
-            return (ColumnSource<ORIGINAL_TYPE>) BitShiftingColumnSource.this;
-        }
+        return new BitShiftingColumnSource<>(shiftState, innerSource.reinterpret(alternateDataType));
     }
 
     private static class FillContext implements ColumnSource.FillContext {
@@ -385,9 +365,6 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
 
             private final WritableIntChunk<ChunkLengths> runLengths;
             private final WritableLongChunk<OrderedRowKeys> uniqueIndices;
-            private final MutableInt currentRunLength = new MutableInt();
-            private final MutableInt currentRunPosition = new MutableInt();
-            private final MutableLong currentRunInnerIndexKey = new MutableLong();
 
             private boolean keysAndLengthsReusable;
 
@@ -406,9 +383,9 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
                     reset();
                 }
 
-                currentRunLength.setValue(0);
-                currentRunPosition.setValue(0);
-                currentRunInnerIndexKey.setValue(RowSequence.NULL_ROW_KEY);
+                final MutableInt currentRunLength = new MutableInt(0);
+                final MutableInt currentRunPosition = new MutableInt(0);
+                final MutableLong currentRunInnerIndexKey = new MutableLong(RowSequence.NULL_ROW_KEY);
 
                 rowSequence.forAllRowKeys((final long indexKey) -> {
                     final long lastInnerIndexKey = currentRunInnerIndexKey.longValue();

@@ -71,6 +71,11 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        set(NULL_INT);
+    }
+
+    @Override
     public final void set(long key, int value) {
         set(value);
     }

@@ -44,7 +44,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 public class QueryTableSortTest extends QueryTableTestBase {
 
     public void testSort() {
-        final Table result0 = newTable(c("Unsorted", 3.0, null, 2.0), c("DataToSort", "c", "a", "b"));
+        final Table result0 = newTable(col("Unsorted", 3.0, null, 2.0), col("DataToSort", "c", "a", "b"));
         show(result0.sort("Unsorted"));
         assertEquals(Arrays.asList(null, 2.0, 3.0),
                 Arrays.asList(result0.sort("Unsorted").getColumn("Unsorted").get(0, 3)));
@@ -52,8 +52,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals(Arrays.asList(3.0, 2.0, null),
                 Arrays.asList(result0.sortDescending("Unsorted").getColumn("Unsorted").get(0, 3)));
 
-        Table result1 = newTable(c("Unsorted", 4.0, 3.0, 1.1, Double.NaN, 2.0, 1.0, 5.0),
-                c("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
+        Table result1 = newTable(col("Unsorted", 4.0, 3.0, 1.1, Double.NaN, 2.0, 1.0, 5.0),
+                col("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
         final Table nanSorted = result1.sort("Unsorted");
         show(nanSorted);
         assertEquals(Arrays.asList(1.0, 1.1, 2.0, 3.0, 4.0, 5.0, Double.NaN),
@@ -61,8 +61,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g"),
                 Arrays.asList(nanSorted.getColumn("DataToSort").get(0, 7)));
 
-        result1 = newTable(c("Unsorted", 4.1f, 3.1f, 1.2f, Float.NaN, 2.1f, 1.1f, 5.1f),
-                c("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
+        result1 = newTable(col("Unsorted", 4.1f, 3.1f, 1.2f, Float.NaN, 2.1f, 1.1f, 5.1f),
+                col("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
         final Table nanFloatSorted = result1.sort("Unsorted");
         System.out.println("result1");
         show(result1);
@@ -74,41 +74,41 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 Arrays.asList(nanFloatSorted.getColumn("DataToSort").get(0, 7)));
 
 
-        Table result = newTable(c("Unsorted", 3, 1, 2), c("DataToSort", "c", "a", "b")).sort("DataToSort");
+        Table result = newTable(col("Unsorted", 3, 1, 2), col("DataToSort", "c", "a", "b")).sort("DataToSort");
         assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
-        result = newTable(c("Unsorted", 3, 1, 2), c("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
+        result = newTable(col("Unsorted", 3, 1, 2), col("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
         assertEquals(Arrays.asList(3, 2, 1), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
 
-        result = newTable(c("Unsorted", '3', '1', '2'), c("DataToSort", "c", "a", "b")).sort("Unsorted");
+        result = newTable(col("Unsorted", '3', '1', '2'), col("DataToSort", "c", "a", "b")).sort("Unsorted");
         assertEquals(Arrays.asList('1', '2', '3'), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
-        result = newTable(c("Unsorted", '3', '1', '2'), c("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
+        result = newTable(col("Unsorted", '3', '1', '2'), col("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
         assertEquals(Arrays.asList('3', '2', '1'), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
 
-        final ColumnHolder c1 = TstUtils.cG("Unsorted", 3, 1, 2);
-        final Table table = newTable(c1, c("DataToSort", "c", "a", "b"));
+        final ColumnHolder<?> c1 = TstUtils.colGrouped("Unsorted", 3, 1, 2);
+        final Table table = newTable(c1, col("DataToSort", "c", "a", "b"));
         result = table.sort("DataToSort");
         assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
-        final ColumnHolder c11 = TstUtils.cG("Unsorted", 3, 1, 2);
-        result = newTable(c11, c("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
+        final ColumnHolder<?> c11 = TstUtils.colGrouped("Unsorted", 3, 1, 2);
+        result = newTable(c11, col("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
         assertEquals(Arrays.asList(3, 2, 1), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
 
-        final ColumnHolder c2 = TstUtils.cG("Unsorted", '3', '1', '2');
-        result = newTable(c2, c("DataToSort", "c", "a", "b")).sort("Unsorted");
+        final ColumnHolder<?> c2 = TstUtils.colGrouped("Unsorted", '3', '1', '2');
+        result = newTable(c2, col("DataToSort", "c", "a", "b")).sort("Unsorted");
         assertEquals(Arrays.asList('1', '2', '3'), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
-        final ColumnHolder c22 = TstUtils.cG("Unsorted", '3', '1', '2');
-        result = newTable(c22, c("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
+        final ColumnHolder<?> c22 = TstUtils.colGrouped("Unsorted", '3', '1', '2');
+        result = newTable(c22, col("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
         assertEquals(Arrays.asList('3', '2', '1'), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
 
         final Table input =
-                newTable(c("C1", 2, 4, 2, 4), c("C2", '1', '1', '2', '2'), c("Witness", "a", "b", "c", "d"));
+                newTable(col("C1", 2, 4, 2, 4), col("C2", '1', '1', '2', '2'), col("Witness", "a", "b", "c", "d"));
         System.out.println("Input:");
         showWithRowSet(input);
         result = input.sort("C1", "C2");
@@ -118,69 +118,70 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals(Arrays.asList('1', '2', '1', '2'), Arrays.asList(result.getColumn("C2").get(0, 4)));
         assertEquals(Arrays.asList("a", "c", "b", "d"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
 
-        result = newTable(c("C1", 2, 4, 2, 4), c("C2", '2', '2', '1', '1'), c("Witness", "a", "b", "c", "d")).sort("C2",
-                "C1");
+        result = newTable(col("C1", 2, 4, 2, 4), col("C2", '2', '2', '1', '1'), col("Witness", "a", "b", "c", "d"))
+                .sort("C2",
+                        "C1");
         assertEquals(Arrays.asList(2, 4, 2, 4), Arrays.asList(result.getColumn("C1").get(0, 4)));
         assertEquals(Arrays.asList('1', '1', '2', '2'), Arrays.asList(result.getColumn("C2").get(0, 4)));
         assertEquals(Arrays.asList("c", "d", "a", "b"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
 
-        result = newTable(c("C1", 2, 4, 2, 4), c("C2", '1', '1', '2', '2'), c("Witness", "a", "b", "c", "d"))
+        result = newTable(col("C1", 2, 4, 2, 4), col("C2", '1', '1', '2', '2'), col("Witness", "a", "b", "c", "d"))
                 .sortDescending("C1", "C2");
         assertEquals(Arrays.asList(4, 4, 2, 2), Arrays.asList(result.getColumn("C1").get(0, 4)));
         assertEquals(Arrays.asList('2', '1', '2', '1'), Arrays.asList(result.getColumn("C2").get(0, 4)));
         assertEquals(Arrays.asList("d", "b", "c", "a"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
 
-        result = newTable(c("C1", 2, 4, 2, 4), c("C2", '2', '2', '1', '1'), c("Witness", "a", "b", "c", "d"))
+        result = newTable(col("C1", 2, 4, 2, 4), col("C2", '2', '2', '1', '1'), col("Witness", "a", "b", "c", "d"))
                 .sortDescending("C2", "C1");
         assertEquals(Arrays.asList(4, 2, 4, 2), Arrays.asList(result.getColumn("C1").get(0, 4)));
         assertEquals(Arrays.asList('2', '2', '1', '1'), Arrays.asList(result.getColumn("C2").get(0, 4)));
         assertEquals(Arrays.asList("b", "a", "d", "c"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
 
 
-        final ColumnHolder c3 = TstUtils.cG("Unsorted", '3', '1', '2', null);
-        result = newTable(c3, c("DataToSort", "c", "a", "b", "d")).sort("Unsorted");
+        final ColumnHolder<?> c3 = TstUtils.colGrouped("Unsorted", '3', '1', '2', null);
+        result = newTable(c3, col("DataToSort", "c", "a", "b", "d")).sort("Unsorted");
         show(result);
         assertEquals(Arrays.asList(null, '1', '2', '3'), Arrays.asList(result.getColumn("Unsorted").get(0, 4)));
         assertEquals(Arrays.asList("d", "a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 4)));
-        final ColumnHolder c4 = TstUtils.cG("Unsorted", '3', '1', null, '2');
-        result = newTable(c4, c("DataToSort", "c", "a", "d", "b")).sortDescending("Unsorted");
+        final ColumnHolder<?> c4 = TstUtils.colGrouped("Unsorted", '3', '1', null, '2');
+        result = newTable(c4, col("DataToSort", "c", "a", "d", "b")).sortDescending("Unsorted");
         assertEquals(Arrays.asList('3', '2', '1', null), Arrays.asList(result.getColumn("Unsorted").get(0, 4)));
         assertEquals(Arrays.asList("c", "b", "a", "d"), Arrays.asList(result.getColumn("DataToSort").get(0, 4)));
     }
 
     public void testSort2() {
         final QueryTable table = testRefreshingTable(i(10, 20, 30).toTracking(),
-                c("A", 3, 1, 2), c("B", "c", "a", "b"));
+                col("A", 3, 1, 2), col("B", "c", "a", "b"));
 
         final QueryTable sorted = (QueryTable) table.sort("A");
         show(sorted);
-        assertTableEquals(testTable(c("A", 1, 2, 3), c("B", "a", "b", "c")), sorted);
+        assertTableEquals(testTable(col("A", 1, 2, 3), col("B", "a", "b", "c")), sorted);
         assertTrue(SortedColumnsAttribute.isSortedBy(sorted, "A", SortingOrder.Ascending));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(20), c("A", 1), c("B", "A"));
+            addToTable(table, i(20), col("A", 1), col("B", "A"));
             table.notifyListeners(i(), i(), i(20));
         });
         show(sorted);
 
-        assertTableEquals(testTable(c("A", 1, 2, 3), c("B", "A", "b", "c")), sorted);
+        assertTableEquals(testTable(col("A", 1, 2, 3), col("B", "A", "b", "c")), sorted);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(20), c("A", 1), c("B", "A2"));
-            addToTable(table, i(25), c("A", 1), c("B", "A2'"));
+            addToTable(table, i(20), col("A", 1), col("B", "A2"));
+            addToTable(table, i(25), col("A", 1), col("B", "A2'"));
             table.notifyListeners(i(25), i(), i(20));
         });
         show(sorted);
 
-        assertTableEquals(testTable(c("A", 1, 1, 2, 3), c("B", "A2", "A2'", "b", "c")), sorted);
+        assertTableEquals(testTable(col("A", 1, 1, 2, 3), col("B", "A2", "A2'", "b", "c")), sorted);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(20, 25), c("A", 1, 3), c("B", "A3", "C2"));
+            addToTable(table, i(20, 25), col("A", 1, 3), col("B", "A3", "C2"));
             table.notifyListeners(i(), i(), i(20, 25));
         });
         show(sorted);
 
-        assertTableEquals(testRefreshingTable(c("A", 1, 2, 3, 3), c("B", "A3", "b", "c", "C2")), sorted);
+        assertTableEquals(testRefreshingTable(col("A", 1, 2, 3, 3), col("B", "A3", "b", "c", "C2")), sorted);
 
         final Table sortedTwice = sorted.sort("A");
         assertSame(sorted, sortedTwice);
@@ -202,9 +203,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     public void testGroupedSortRefreshing() {
         final Table table = testRefreshingTable(RowSetFactory.flat(9).toTracking(),
-                cG("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
+                colGrouped("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
                         "Canteloupe"),
-                c("Secondary", "C", "A", "B", "C", "A", "B", "C", "A", "B")).update("Sentinel=i");
+                col("Secondary", "C", "A", "B", "C", "A", "B", "C", "A", "B")).update("Sentinel=i");
 
         final QueryTable sorted = (QueryTable) table.dropColumns("Secondary").sortDescending("A");
         show(sorted);
@@ -238,9 +239,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
 
         final Table grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
-                cG("Captain", values)).update("Sentinel=i");
+                colGrouped("Captain", values)).update("Sentinel=i");
         final Table nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
-                c("Captain", values)).update("Sentinel=i");
+                col("Captain", values)).update("Sentinel=i");
 
         final Table sortedGrouped = grouped.sortDescending("Captain");
         final Table sortedNoGroups = nogroups.sortDescending("Captain");
@@ -251,14 +252,14 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     public void testSortBool() {
         final QueryTable table = testRefreshingTable(i(10, 20, 30, 40, 50).toTracking(),
-                c("boolCol", false, true, null, true, false));
+                col("boolCol", false, true, null, true, false));
 
         final QueryTable sorted = (QueryTable) table.sort("boolCol");
         show(sorted);
-        assertEquals("", diff(sorted, testRefreshingTable(c("boolCol", null, false, false, true, true)), 10));
+        assertTableEquals(sorted, testRefreshingTable(col("boolCol", null, false, false, true, true)));
         final QueryTable descending = (QueryTable) table.sort(List.of(SortColumn.desc(ColumnName.of("boolCol"))));
         show(descending);
-        assertEquals("", diff(descending, testRefreshingTable(c("boolCol", true, true, false, false, null)), 10));
+        assertTableEquals(descending, testRefreshingTable(col("boolCol", true, true, false, false, null)));
     }
 
     public void testSortIncremental2() {
@@ -270,7 +271,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     public void testMultiColumnRuns() {
         final Random random = new Random(0);
-        final ColumnInfo columnInfo[];
+        final ColumnInfo<?, ?>[] columnInfo;
         final int tableSize;
         if (SHORT_TESTS) {
             tableSize = 1_000;
@@ -286,7 +287,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                         new BooleanGenerator(),
                         new IntGenerator(0, 100000)));
 
-        final EvalNugget en[] = new EvalNugget[] {
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.sort("bool1")),
                 new EvalNugget() {
                     public Table e() {
@@ -315,7 +316,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
-    private ColumnInfo[] getIncrementalColumnInfo() {
+    private ColumnInfo<?, ?>[] getIncrementalColumnInfo() {
         return initColumnInfos(
                 new String[] {"Sym", "intCol", "doubleCol", "floatCol", "longCol", "shortCol", "byteCol", "charCol",
                         "boolCol", "bigI", "bigD", "Indices"},
@@ -336,10 +337,10 @@ public class QueryTableSortTest extends QueryTableTestBase {
     private void testSortIncremental(final String ctxt, final int size, int seed, MutableInt numSteps) {
         final int maxSteps = numSteps.intValue();
         final Random random = new Random(seed);
-        final ColumnInfo[] columnInfo = getIncrementalColumnInfo();
+        final ColumnInfo<?, ?>[] columnInfo = getIncrementalColumnInfo();
         final QueryTable queryTable = getTable(size, random, columnInfo);
 
-        final EvalNugget en[] = new EvalNugget[] {
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.sort("Sym")),
                 EvalNugget.from(() -> queryTable.update("x = Indices").sortDescending("intCol")),
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").sort("Sym", "intCol"))
@@ -457,7 +458,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
 
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(0).toTracking(),
-                c("intCol", values[0]));
+                col("intCol", values[0]));
 
         final QueryTable sorted = (QueryTable) (ascending ? queryTable.sort("intCol")
                 : queryTable.sortDescending("intCol"));
@@ -471,7 +472,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         for (int ii = 1; ii < values.length; ++ii) {
             final int fii = ii;
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(queryTable, i(fii), c("intCol", values[fii]));
+                addToTable(queryTable, i(fii), col("intCol", values[fii]));
                 queryTable.notifyListeners(i(fii), i(), i());
             });
 
@@ -503,9 +504,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     public void testSortIncremental() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
-                c("Sym", "aa", "bc", "aa", "aa"),
-                c("intCol", 10, 20, 30, 50),
-                c("doubleCol", 0.1, 0.2, 0.3, 0.5));
+                col("Sym", "aa", "bc", "aa", "aa"),
+                col("intCol", 10, 20, 30, 50),
+                col("doubleCol", 0.1, 0.2, 0.3, 0.5));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.sort("Sym").view("Sym")),
@@ -526,13 +527,13 @@ public class QueryTableSortTest extends QueryTableTestBase {
         };
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(queryTable, i(3, 9), c("Sym", "aa", "aa"), c("intCol", 20, 10), c("doubleCol", 2.1, 2.2));
+            addToTable(queryTable, i(3, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10), col("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(3, 9), i(), i());
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(queryTable, i(1, 9), c("Sym", "bc", "aa"), c("intCol", 30, 11), c("doubleCol", 2.1, 2.2));
+            addToTable(queryTable, i(1, 9), col("Sym", "bc", "aa"), col("intCol", 30, 11), col("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
@@ -547,13 +548,13 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     public void testSortFloatIncremental() {
         final Random random = new Random(0);
-        final ColumnInfo columnInfo[];
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(100, random,
                 columnInfo = initColumnInfos(new String[] {"intCol", "doubleCol", "floatCol"},
                         new IntGenerator(10, 10000),
                         new DoubleGenerator(0, 1000, 0.1, 0.1, 0.05, 0.05),
                         new FloatGenerator(0, 1000, 0.1, 0.1, 0.05, 0.05)));
-        final EvalNugget en[] = new EvalNugget[] {
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.sort("doubleCol");
@@ -582,7 +583,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testGrowingMergeReinterpret() {
-        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
         final Table viewed = table.update("Timestamp='2019-04-11T09:30 NY' + (ii * 60L * 1000000000L)");
         final Table sorted = TableTools.merge(viewed, viewed).sortDescending("Timestamp");
 
@@ -590,7 +591,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
             // Use large enough indices that we blow beyond merge's initially reserved 64k key-space.
             final int fii = 8059 * ii;
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(table, i(fii), c("Sentinel", fii));
+                addToTable(table, i(fii), col("Sentinel", fii));
                 table.notifyListeners(i(fii), i(), i());
             });
         }
@@ -690,6 +691,30 @@ public class QueryTableSortTest extends QueryTableTestBase {
         sentinels.clear();
     }
 
+    public void testDh11506() {
+        final Table x = TableTools.newTable(
+                col("Symbol", "B", "B", "B", "B"),
+                col("X", "2", "4", "6", "8"),
+                intCol("Y", 101, 102, 103, 104));
+        final QueryTable y = TstUtils.testRefreshingTable(
+                col("Symbol", "B", "B", "B", "B"),
+                col("X", "3", "5", "7", "9"),
+                intCol("Y", 105, 106, 107, 108));
+        final Table xb = x.groupBy("Symbol");
+        final Table yb = y.groupBy("Symbol");
+        final Table m = TableTools.merge(xb, yb).ungroup();
+        final Table ms = m.select();
+        final Table s = m.sortDescending("Symbol", "X");
+        final Table ss = ms.sortDescending("Symbol", "X");
+        TableTools.showWithRowSet(s);
+        assertTableEquals(ss, s);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(y, i(10), col("Symbol", "B"), col("X", "5"), intCol("Y", 109));
+            y.notifyListeners(i(10), i(), i());
+        });
+        assertTableEquals(ss, s);
+    }
+
     public void testSymbolTableSort() throws IOException {
         diskBackedTestHarness(this::doSymbolTableTest);
     }
@@ -758,8 +783,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         final String[] syms = new String[] {"Apple", "Banana", "Cantaloupe"};
         final DateTime baseTime = DateTimeUtils.convertDateTime("2019-04-11T09:30 NY");
-        final long dateOffset[] = new long[] {0, 5, 10, 15, 1, 6, 11, 16, 2, 7};
-        final Boolean booleans[] = new Boolean[] {true, false, null, true, false, null, true, false, null, true, false};
+        final long[] dateOffset = new long[] {0, 5, 10, 15, 1, 6, 11, 16, 2, 7};
+        final Boolean[] booleans = new Boolean[] {true, false, null, true, false, null, true, false, null, true, false};
         QueryScope.addParam("syms", syms);
         QueryScope.addParam("baseTime", baseTime);
         QueryScope.addParam("dateOffset", dateOffset);
@@ -782,8 +807,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
     public void testAlreadySorted() {
         final Table t = emptyTable(10000).update("Key=i");
         final Table s = t.sort("Key");
-        assertSame(t, s);
+        assertSame(t.getRowSet(), s.getRowSet());
         final Table sd = t.sortDescending("Key");
-        assertNotSame(t, sd);
+        assertNotSame(t.getRowSet(), sd.getRowSet());
     }
 }

@@ -6,7 +6,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggr
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationCount;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationPartition;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationRowKey;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.TypeCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -1094,7 +1093,7 @@ public class Aggregation {
 
     public native AggregationPartition getPartition();
 
-    public native TypeCase getTypeCase();
+    public native int getTypeCase();
 
     public native boolean hasColumns();
 

@@ -279,11 +279,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         prevAllocated.clear();
     }
 
-    private static final FillFromContext FILL_FROM_CONTEXT_INSTANCE = new FillFromContext() {};
-
     @Override
     public FillFromContext makeFillFromContext(int chunkCapacity) {
-        return FILL_FROM_CONTEXT_INSTANCE;
+        return DEFAULT_FILL_FROM_INSTANCE;
     }
 
     @Override

@@ -381,17 +381,12 @@ public class SessionService {
 
         @Override
         protected void onClose() {
-            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
-                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Session has ended"));
-            });
+            GrpcUtil.safelyError(responseObserver, Code.UNAUTHENTICATED, "Session has ended");
             terminationListeners.remove(this);
         }
 
         void sendMessage(final TerminationNotificationResponse response) {
-            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
-            });
+            GrpcUtil.safelyComplete(responseObserver, response);
         }
     }
 }

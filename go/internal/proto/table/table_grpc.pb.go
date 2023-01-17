@@ -93,11 +93,13 @@ type TableServiceClient interface {
 	// the encounter order within the source_id table, thereby ensuring that the row key for a given group never
 	// changes.
 	Aggregate(ctx context.Context, in *AggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	// Snapshot rightId, triggered by leftId, and export the resulting new Table.
-	// The left table's change events cause a new snapshot to be taken. The result table includes a
-	// "snapshot key" which is a subset (possibly all) of the left table's columns. The
-	// remaining columns in the result table come from right table, the table being snapshotted.
+	// Takes a single snapshot of the source_id table.
 	Snapshot(ctx context.Context, in *SnapshotTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Snapshot base_id, triggered by trigger_id, and export the resulting new table.
+	// The trigger_id table's change events cause a new snapshot to be taken. The result table includes a
+	// "snapshot key" which is a subset (possibly all) of the base_id table's columns. The
+	// remaining columns in the result table come from base_id table, the table being snapshotted.
+	SnapshotWhen(ctx context.Context, in *SnapshotWhenTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns a new table with a flattened row set.
 	Flatten(ctx context.Context, in *FlattenRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// *
@@ -426,6 +428,15 @@ func (c *tableServiceClient) Snapshot(ctx context.Context, in *SnapshotTableRequ
 	return out, nil
 }
 
+func (c *tableServiceClient) SnapshotWhen(ctx context.Context, in *SnapshotWhenTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tableServiceClient) Flatten(ctx context.Context, in *FlattenRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/Flatten", in, out, opts...)
@@ -609,11 +620,13 @@ type TableServiceServer interface {
 	// the encounter order within the source_id table, thereby ensuring that the row key for a given group never
 	// changes.
 	Aggregate(context.Context, *AggregateRequest) (*ExportedTableCreationResponse, error)
-	// Snapshot rightId, triggered by leftId, and export the resulting new Table.
-	// The left table's change events cause a new snapshot to be taken. The result table includes a
-	// "snapshot key" which is a subset (possibly all) of the left table's columns. The
-	// remaining columns in the result table come from right table, the table being snapshotted.
+	// Takes a single snapshot of the source_id table.
 	Snapshot(context.Context, *SnapshotTableRequest) (*ExportedTableCreationResponse, error)
+	// Snapshot base_id, triggered by trigger_id, and export the resulting new table.
+	// The trigger_id table's change events cause a new snapshot to be taken. The result table includes a
+	// "snapshot key" which is a subset (possibly all) of the base_id table's columns. The
+	// remaining columns in the result table come from base_id table, the table being snapshotted.
+	SnapshotWhen(context.Context, *SnapshotWhenTableRequest) (*ExportedTableCreationResponse, error)
 	// Returns a new table with a flattened row set.
 	Flatten(context.Context, *FlattenRequest) (*ExportedTableCreationResponse, error)
 	// *
@@ -745,6 +758,9 @@ func (UnimplementedTableServiceServer) Aggregate(context.Context, *AggregateRequ
 }
 func (UnimplementedTableServiceServer) Snapshot(context.Context, *SnapshotTableRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Snapshot not implemented")
+}
+func (UnimplementedTableServiceServer) SnapshotWhen(context.Context, *SnapshotWhenTableRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SnapshotWhen not implemented")
 }
 func (UnimplementedTableServiceServer) Flatten(context.Context, *FlattenRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Flatten not implemented")
@@ -1356,6 +1372,24 @@ func _TableService_Snapshot_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_SnapshotWhen_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SnapshotWhenTableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).SnapshotWhen(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).SnapshotWhen(ctx, req.(*SnapshotWhenTableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_Flatten_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FlattenRequest)
 	if err := dec(in); err != nil {
@@ -1622,6 +1656,10 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Snapshot",
 			Handler:    _TableService_Snapshot_Handler,
+		},
+		{
+			MethodName: "SnapshotWhen",
+			Handler:    _TableService_SnapshotWhen_Handler,
 		},
 		{
 			MethodName: "Flatten",

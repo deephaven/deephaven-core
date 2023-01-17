@@ -25,7 +25,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 /**
  * Manage the lifecycle of exports that are Tables.
@@ -103,7 +103,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             return;
         }
         isDestroyed = true;
-        safelyExecute(responseObserver::onCompleted);
+        safelyComplete(responseObserver);
         updateListenerMap.forEach(ListenerImpl::dropReference);
         updateListenerMap.clear();
         log.info().append(logPrefix).append("is complete").endl();

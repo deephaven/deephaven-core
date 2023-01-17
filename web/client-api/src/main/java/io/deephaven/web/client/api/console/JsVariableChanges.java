@@ -14,6 +14,7 @@ public class JsVariableChanges {
     @JsProperty(namespace = "dh.VariableType")
     public static final String TABLE = "Table",
             TREETABLE = "TreeTable",
+            HIERARCHICALTABLE = "HierarchicalTable",
             TABLEMAP = "TableMap",
             PARTITIONEDTABLE = "PartitionedTable",
             FIGURE = "Figure",

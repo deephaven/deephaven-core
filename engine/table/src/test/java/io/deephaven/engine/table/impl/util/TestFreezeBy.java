@@ -113,8 +113,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         final Table frozen = FreezeBy.freezeBy(input);
         showWithRowSet(frozen);
 
-        final Table originalExpect =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
+        final Table originalExpect = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(input::snapshot);
         assertTableEquals(input, originalExpect);
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
@@ -149,8 +148,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
             input.notifyListeners(i(2), i(), i());
         });
         showWithRowSet(frozen);
-        final Table newExpect =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
+        final Table newExpect = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(input::snapshot);
         assertTableEquals(input, newExpect);
         assertTableEquals(newExpect, frozen);
 

@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.extensions.barrage.util.ExportUtil.buildTableCreationResponse;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc.PartitionedTableServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(PartitionedTableServiceGrpcImpl.class);
@@ -68,10 +68,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                                 Collections.singletonList(targetTable.get()));
                         PartitionedTable partitionedTable = targetTable.get().partitionBy(request.getDropKeys(),
                                 request.getKeyColumnNamesList().toArray(String[]::new));
-                        safelyExecute(() -> {
-                            responseObserver.onNext(PartitionByResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, PartitionByResponse.getDefaultInstance());
                         return partitionedTable;
                     });
 
@@ -102,10 +99,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         merged = authorizationTransformation.transform(merged);
                         final ExportedTableCreationResponse response =
                                 buildTableCreationResponse(request.getResultId(), merged);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(response);
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, response);
                         return merged;
                     });
         });
@@ -170,10 +164,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         table = authorizationTransformation.transform(table);
                         final ExportedTableCreationResponse response =
                                 buildTableCreationResponse(request.getResultId(), table);
-                        safelyExecute(() -> {
-                            responseObserver.onNext(response);
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, response);
                         return table;
                     });
         });

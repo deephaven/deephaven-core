@@ -10,14 +10,16 @@ import io.deephaven.engine.updategraph.LogicalClock;
  * Shift state used by the {@link io.deephaven.engine.table.impl.sources.BitShiftingColumnSource}.
  */
 public class CrossJoinShiftState {
+    private final boolean leftOuterJoin;
     private int numShiftBits;
     private int prevNumShiftBits;
     private long mask;
     private long prevMask;
     private long updatedClockTick = 0;
 
-    public CrossJoinShiftState(final int numInitialShiftBits) {
+    public CrossJoinShiftState(final int numInitialShiftBits, final boolean leftOuterJoin) {
         setNumShiftBits(numInitialShiftBits);
+        this.leftOuterJoin = leftOuterJoin;
     }
 
     void setNumShiftBits(final int newNumShiftBits) {
@@ -53,6 +55,10 @@ public class CrossJoinShiftState {
             updatedClockTick = 0;
         }
         return numShiftBits;
+    }
+
+    public boolean leftOuterJoin() {
+        return leftOuterJoin;
     }
 
     public long getShifted(long index) {
