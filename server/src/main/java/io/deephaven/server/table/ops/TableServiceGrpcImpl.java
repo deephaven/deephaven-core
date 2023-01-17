@@ -409,11 +409,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                                 request.getInsensitive(),
                                 request.getContains(),
                                 request.getIsBackward()));
-                        safelyExecuteLocked(responseObserver, () -> {
-                            SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
-                            responseObserver.onNext(rowResponse.setResultRow(result).build());
-                            responseObserver.onCompleted();
-                        });
+                        SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
+                        safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
                     });
         });
     }
