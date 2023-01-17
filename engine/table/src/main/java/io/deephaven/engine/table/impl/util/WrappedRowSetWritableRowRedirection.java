@@ -58,19 +58,19 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
     /* @formatter:off
      * TODO: Switch to this version if we ever uncomment the override for fillChunkUnordered.
      * private static final class FillContextForUnordered implements ChunkSource.FillContext {
-     * 
+     *
      *     private final int chunkCapacity;
      *     private final WritableLongChunk<RowKeys> rowPositions;
-     * 
+     *
      *     private LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext;
      *     private WritableIntChunk<ChunkPositions> unorderedFillChunkPositions;
      *     private WritableLongChunk<RowKeys> unorderedFillMappedKeys;
-     * 
+     *
      *     private FillContextForUnordered(final int chunkCapacity) {
      *         this.chunkCapacity = chunkCapacity;
      *         rowPositions = WritableLongChunk.makeWritableChunk(chunkCapacity);
      *     }
-     * 
+     *
      *     private void ensureUnorderedFillFieldsInitialized() {
      *         if (sortKernelContext == null) {
      *             sortKernelContext =
@@ -83,7 +83,7 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
      *             unorderedFillMappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
      *         }
      *     }
-     * 
+     *
      *     @Override
      *     public void close() {
      *         rowPositions.close();
@@ -220,14 +220,15 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
 
         long positionStart = 0;
 
-        for (final RowSet.RangeIterator rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext();) {
+        final RowSet.RangeIterator rangeIterator;
+        for (rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext(); rangeIterator.next()) {
             if (positionStart > 0) {
                 builder.append(", ");
             }
             final long rangeStart = rangeIterator.currentRangeStart();
             final long length = rangeIterator.currentRangeEnd() - rangeStart + 1;
             if (length > 1) {
-                builder.append(rangeIterator.currentRangeStart()).append("-").append(positionStart + length - 1)
+                builder.append(positionStart).append("-").append(positionStart + length - 1)
                         .append(" -> ").append(rangeStart).append("-").append(rangeIterator.currentRangeEnd());
             } else {
                 builder.append(positionStart).append(" -> ").append(rangeStart);

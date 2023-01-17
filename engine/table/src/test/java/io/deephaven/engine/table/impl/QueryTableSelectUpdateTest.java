@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.testutil.*;
@@ -1050,5 +1051,25 @@ public class QueryTableSelectUpdateTest {
         final Table output = input.select("B");
         Assert.assertEquals(5, output.size());
         Assert.assertTrue(output.isFlat());
+    }
+
+    @Test
+    public void testRedirectUpdate() {
+        final Table input = emptyTable(1000000).updateView("A=ii", "B=ii % 1000", "C=ii % 2 == 0");
+        final Table evens = input.where("C");
+        final Table updated = evens.update("D=A+B");
+        Assert.assertSame(updated.getRowSet(), evens.getRowSet());
+
+        final Table fullUpdate = input.update("D=A+B");
+        assertTableEquals(updated, fullUpdate.where("C"));
+
+        final ColumnSource<?> fcs = fullUpdate.getColumnSource("D");
+        Assert.assertTrue(fcs instanceof InMemoryColumnSource);
+
+        final ColumnSource<?> cs = updated.getColumnSource("D");
+        Assert.assertTrue(cs instanceof RedirectedColumnSource);
+
+        Assert.assertEquals(4L, updated.getColumnSource("D").get(updated.getRowSet().get(1)));
+        Assert.assertEquals(8L, updated.getColumnSource("D").getPrev(updated.getRowSet().copyPrev().get(2)));
     }
 }
