@@ -259,6 +259,14 @@ public class JsTreeTable extends HasEventHandling {
         }
     }
 
+    /**
+     * Ordered series of steps that must be performed when changes are made to the table. When any change is applied,
+     * all subsequent steps must be performed as well.
+     */
+    private enum RebuildStep {
+        FILTER, SORT, HIERARCHICAL_TABLE_VIEW, SUBSCRIPTION;
+    }
+
     private final WorkerConnection connection;
 
     // This group of fields represent the underlying state of the original HierarchicalTable
@@ -283,6 +291,8 @@ public class JsTreeTable extends HasEventHandling {
     private TicketAndPromise filteredTable;
     private TicketAndPromise sortedTable;
 
+    // Tracking for the current/next key table contents. Note that the key table doesn't necessarily
+    // only include key columns, but all HierarchicalTable.isExpandByColumn columns.
     private final Object[][] keyTableData;
     private Promise<JsTable> keyTable;
 
@@ -410,7 +420,6 @@ public class JsTreeTable extends HasEventHandling {
             columnsByName.put(column.getName(), column);
         }
 
-
         keyTableData = new Object[keyColumns.length + 2][0];
         actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false);
 
@@ -507,7 +516,36 @@ public class JsTreeTable extends HasEventHandling {
         return viewTicket;
     }
 
-    private void replaceSubscription() {
+    private void replaceSubscription(RebuildStep step) {
+        // Perform steps required to remove the existing intermediate tickets.
+        // Fall-through between steps is deliberate.
+        switch (step) {
+            case FILTER:
+                if (filteredTable != null) {
+                    filteredTable.release();
+                    filteredTable = null;
+                }
+            case SORT:
+                if (sortedTable != null) {
+                    sortedTable.release();
+                    sortedTable = null;
+                }
+            case HIERARCHICAL_TABLE_VIEW:
+                if (viewTicket != null) {
+                    viewTicket.release();
+                    viewTicket = null;
+                }
+            case SUBSCRIPTION:
+                if (stream != null) {
+                    stream.then(stream -> {
+                        stream.end();
+                        stream.cancel();
+                        return null;
+                    });
+                    stream = null;
+                }
+        }
+
         Promise<BiDiStream<?, ?>> stream = Promise.resolve(defer())
                 .then(ignore -> {
                     makeKeyTable();
@@ -568,9 +606,6 @@ public class JsTreeTable extends HasEventHandling {
                     subscriptionRequestWrapper.setAppMetadata(
                             WebBarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSubscriptionRequest));
                     doExchange.send(subscriptionRequestWrapper);
-
-                    // hang on to this to get server-sent snapshots, cancel when needed
-                    // doExchange.end();
 
                     String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
                             .map(ColumnDefinition::getType)
@@ -651,8 +686,8 @@ public class JsTreeTable extends HasEventHandling {
             return;
         }
 
-        // if requested to fire the event, or if the data has changed in some way, fire the event
-        final boolean fireEvent = true;// alwaysFireEvent || !viewportData.containsSameDataAs(currentViewportData);
+        // TODO #3310 if requested to fire the event, or if the data has changed in some way, fire the event
+        final boolean fireEvent = true;
 
         this.currentViewportData = viewportData;
 
@@ -721,20 +756,7 @@ public class JsTreeTable extends HasEventHandling {
             });
             keyTable = null;
         }
-
-        if (viewTicket != null) {
-            viewTicket.release();
-            viewTicket = null;
-        }
-        if (stream != null) {
-            stream.then(stream -> {
-                stream.end();
-                stream.cancel();
-                return null;
-            });
-            stream = null;
-        }
-        replaceSubscription();
+        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
     }
 
     @JsMethod
@@ -758,15 +780,7 @@ public class JsTreeTable extends HasEventHandling {
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : visibleColumns;
         this.updateInterval = updateInterval == null ? 1000 : (int) (double) updateInterval;
 
-        if (stream != null) {
-            stream.then(stream -> {
-                stream.end();
-                stream.cancel();
-                return null;
-            });
-            stream = null;
-        }
-        replaceSubscription();
+        replaceSubscription(RebuildStep.SUBSCRIPTION);
     }
 
     @JsMethod
@@ -822,24 +836,8 @@ public class JsTreeTable extends HasEventHandling {
             }
         }
         nextSort = Arrays.asList(sort);
-        if (sortedTable != null) {
-            sortedTable.release();
-            sortedTable = null;
-        }
-        if (viewTicket != null) {
-            viewTicket.release();
-            viewTicket = null;
-        }
-        if (stream != null) {
-            stream.then(stream -> {
-                stream.end();
-                stream.cancel();
-                return null;
-            });
-            stream = null;
-        }
 
-        replaceSubscription();
+        replaceSubscription(RebuildStep.SORT);
 
         return getSort();
     }
@@ -848,28 +846,8 @@ public class JsTreeTable extends HasEventHandling {
     @SuppressWarnings("unusable-by-js")
     public JsArray<FilterCondition> applyFilter(FilterCondition[] filter) {
         nextFilters = Arrays.asList(filter);
-        if (filteredTable != null) {
-            filteredTable.release();
-            filteredTable = null;
-        }
-        if (sortedTable != null) {
-            sortedTable.release();
-            sortedTable = null;
-        }
-        if (viewTicket != null) {
-            viewTicket.release();
-            viewTicket = null;
-        }
-        if (stream != null) {
-            stream.then(stream -> {
-                stream.end();
-                stream.cancel();
-                return null;
-            });
-            stream = null;
-        }
 
-        replaceSubscription();
+        replaceSubscription(RebuildStep.FILTER);
 
         return getFilter();
     }
