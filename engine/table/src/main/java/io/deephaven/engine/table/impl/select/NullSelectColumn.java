@@ -19,7 +19,7 @@ public class NullSelectColumn<T> implements SelectColumn {
     private final String name;
     private final NullValueColumnSource<T> nvcs;
 
-    public NullSelectColumn(final Class<T> type, final Class<T> elementType, final String name) {
+    public NullSelectColumn(final Class<T> type, final Class<?> elementType, final String name) {
         nvcs = NullValueColumnSource.getInstance(type, elementType);
         this.name = name;
     }
