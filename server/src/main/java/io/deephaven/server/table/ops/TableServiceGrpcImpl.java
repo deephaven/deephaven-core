@@ -307,6 +307,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     private Object getSeekValue(Literal literal, Class<?> dataType) {
         if (literal.hasStringValue()) {
+            if (BigDecimal.class.isAssignableFrom(dataType)) {
+                return new BigDecimal(literal.getStringValue());
+            }
+            if (BigInteger.class.isAssignableFrom(dataType)) {
+                return new BigInteger(literal.getStringValue());
+            }
             if (!String.class.isAssignableFrom(dataType)) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Invalid String type for seek: " + dataType);
@@ -337,12 +343,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             if (dataType == double.class) {
                 return longValue.doubleValue();
             }
-            if (dataType == BigInteger.class) {
-                return BigInteger.valueOf(longValue);
-            }
-            if (dataType == BigDecimal.class) {
-                return new BigDecimal(longValue);
-            }
         } else if (literal.hasDoubleValue()) {
             Double doubleValue = literal.getDoubleValue();
             if (dataType == byte.class) {
@@ -362,12 +362,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             }
             if (dataType == double.class) {
                 return doubleValue;
-            }
-            if (dataType == BigInteger.class) {
-                return BigDecimal.valueOf(doubleValue).toBigInteger();
-            }
-            if (dataType == BigDecimal.class) {
-                return BigDecimal.valueOf(doubleValue);
             }
         } else if (literal.hasBoolValue()) {
             return literal.getBoolValue();
