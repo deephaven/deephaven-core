@@ -59,7 +59,6 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.server.table.ops.GrpcTableOperation;
 import io.deephaven.time.DateTime;
 import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.grpc.StatusRuntimeException;
@@ -67,7 +66,6 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
-import java.lang.Object;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
