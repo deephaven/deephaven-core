@@ -12,6 +12,8 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
@@ -513,6 +515,31 @@ public class QueryTableSelectUpdateTest {
             System.out.println("Step = " + step + ", " + deltaUsed + "(" + usedMemory + "total) used, " + freeMemory
                     + " free / " + totalMemory + " total, " + " updated size=" + updated.size() + ", memory/row="
                     + (deltaUsed / updated.size()));
+        }
+    }
+
+    @Test
+    public void testSelectRedirectionFlat() {
+        final boolean startSelect = QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT;
+        final boolean startUpdate = QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE;
+
+        try {
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = true;
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = true;
+
+            final QueryTable test1 = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(),
+                    intCol("Sentinel", 1, 2, 3, 4));
+
+            final Table select1 = test1.select();
+            final Table selectFlat = test1.flatten().select();
+
+            final ColumnSource<?> select1Column = select1.getColumnSource("Sentinel");
+            final ColumnSource<?> selectFlatColumn = selectFlat.getColumnSource("Sentinel");
+            Assert.assertTrue(select1Column instanceof RedirectedColumnSource);
+            Assert.assertTrue(selectFlatColumn instanceof SparseArrayColumnSource);
+        } finally {
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = startSelect;
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = startUpdate;
         }
     }
 
