@@ -40,14 +40,15 @@ class UpdateByWindowCumulative extends UpdateByWindow {
         }
     }
 
+    @Override
     UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
+            final TrackingRowSet timestampValidRowSet,
             final int chunkSize,
             final boolean isInitializeStep) {
-        return new UpdateByWindowBucketContext(sourceRowSet, timestampColumnSource, timestampSsa,
-                chunkSize,
-                isInitializeStep);
+        return new UpdateByWindowBucketContext(sourceRowSet, timestampColumnSource, timestampSsa, timestampValidRowSet,
+                chunkSize, isInitializeStep);
     }
 
     @Override

@@ -1,13 +1,12 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.api.updateby.BadDataBehavior;
-import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
@@ -20,7 +19,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;

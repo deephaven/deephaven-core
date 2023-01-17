@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.util.NoSuchElementException;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
 
 public class IntRingBufferTest extends TestCase {
@@ -84,6 +85,13 @@ public class IntRingBufferTest extends TestCase {
 
     private void assertContents(IntRingBuffer rb, int... expectedData) {
         final int[] data = rb.getAll();
+        assertEquals(data.length, expectedData.length);
+        for (int ii = 0; ii < data.length; ii++) {
+            assertEquals(data[ii], expectedData[ii]);
+        }
+    }
+
+    private void assertArrayEquals(int[] data, int... expectedData) {
         assertEquals(data.length, expectedData.length);
         for (int ii = 0; ii < data.length; ii++) {
             assertEquals(data[ii], expectedData[ii]);
@@ -457,6 +465,73 @@ public class IntRingBufferTest extends TestCase {
         assert (rb.isEmpty());
 
         assert (A == rb.peekBack(A));
+    }
 
+
+    public void testMultipleRemove() {
+        IntRingBuffer rb = new IntRingBuffer(10, false);
+
+        // this should throw
+        assertThrows(NoSuchElementException.class,
+                () -> rb.remove());
+
+        // this should throw
+        assertThrows(NoSuchElementException.class,
+                () -> rb.remove(1));
+
+        rb.add(A);
+        rb.add(B);
+
+        int[] values = rb.remove(2);
+        assertArrayEquals(values, A, B);
+        assertEmpty(rb);
+
+        rb.add(C);
+        rb.add(D);
+        rb.add(E);
+        rb.add(F);
+
+        values = rb.remove(2);
+        assertArrayEquals(values, C, D);
+
+        values = rb.remove(2);
+        assertArrayEquals(values, E, F);
+        assertEmpty(rb);
+
+        rb.add(A);
+        rb.add(B);
+        rb.add(C);
+        rb.add(D);
+        rb.add(E);
+        rb.add(F);
+
+        values = rb.remove(6);
+        assertArrayEquals(values, A, B, C, D, E, F);
+        assertEmpty(rb);
+    }
+
+    public void testAddUnsafe() {
+        IntRingBuffer rbNoGrow = new IntRingBuffer(3, false);
+
+        // this should throw
+        assertThrows(UnsupportedOperationException.class,
+                () -> rbNoGrow.ensureRemaining(10));
+
+        rbNoGrow.ensureRemaining(3);
+        rbNoGrow.addUnsafe(A);
+        rbNoGrow.addUnsafe(B);
+        rbNoGrow.addUnsafe(C);
+
+        assertContents(rbNoGrow, A, B, C);
+
+        IntRingBuffer rbGrow = new IntRingBuffer(3, true);
+
+        for (int size = 10; size < 1_000_000; size *= 10) {
+            rbGrow.ensureRemaining(size);
+            assert (rbGrow.remaining() >= size);
+            for (int i = 0; i < size; i++) {
+                rbGrow.addUnsafe(A);
+            }
+        }
     }
 }

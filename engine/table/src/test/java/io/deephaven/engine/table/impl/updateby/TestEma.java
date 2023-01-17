@@ -1,18 +1,22 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.string.StringUtils;
@@ -20,6 +24,7 @@ import io.deephaven.numerics.movingaverages.AbstractMa;
 import io.deephaven.numerics.movingaverages.ByEma;
 import io.deephaven.numerics.movingaverages.ByEmaSimple;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTime;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -29,8 +34,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
-import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
@@ -351,6 +356,70 @@ public class TestEma extends BaseUpdateByTest {
         input = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 floatCol("col", 0, Float.NaN, 2, Float.NaN, 4, 5));
         assertTableEquals(expected, input.updateBy(UpdateByOperation.Ema(nanCtl, "ts", 10)));
+    }
+
+    /**
+     * This is a hacky, inefficient way to force nulls into the timestamps while maintaining sorted-ness otherwise
+     */
+    private class SortedIntGeneratorWithNulls extends SortedDateTimeGenerator {
+        final double nullFrac;
+
+        public SortedIntGeneratorWithNulls(DateTime minTime, DateTime maxTime, double nullFrac) {
+            super(minTime, maxTime);
+            this.nullFrac = nullFrac;
+        }
+
+        @Override
+        public Chunk<Values> populateChunk(RowSet toAdd, Random random) {
+            Chunk<Values> retChunk = super.populateChunk(toAdd, random);
+            if (nullFrac == 0.0) {
+                return retChunk;
+            }
+            ObjectChunk<DateTime, Values> srcChunk = retChunk.asObjectChunk();
+            Object[] dateArr = new Object[srcChunk.size()];
+            srcChunk.copyToArray(0, dateArr, 0, dateArr.length);
+
+            // force some entries to null
+            for (int ii = 0; ii < srcChunk.size(); ii++) {
+                if (random.nextDouble() < nullFrac) {
+                    dateArr[ii] = null;
+                }
+            }
+            return ObjectChunk.chunkWrap(dateArr);
+        }
+    }
+
+    @Test
+    public void testNullTimestamps() {
+        final CreateResult timeResult = createTestTable(100, true, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedIntGeneratorWithNulls(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"),
+                        0.25)});
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final EvalNugget[] timeNuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        TableDefaults base = timeResult.t;
+                        // short timescale to make sure we trigger all the transition behavior
+                        return base.updateBy(UpdateByOperation.Ema(skipControl, "ts", 2 * MINUTE));
+                    }
+                }
+        };
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(10, billy, timeResult.t, timeResult.infos, timeNuggets);
+            } catch (Throwable t) {
+                System.out.println("Crapped out on step " + ii);
+                throw t;
+            }
+        }
     }
 
     // endregion

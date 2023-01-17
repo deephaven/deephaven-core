@@ -53,6 +53,10 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
     /** Indicates this bucket needs to be processed (at least one window and operator are dirty) */
     boolean isDirty;
+    /** This rowset will store row keys where the timestamp is not null (will mirror the SSA contents) */
+    TrackingWritableRowSet timestampValidRowSet;
+    /** Track how many rows in this bucket have NULL timestamps */
+    long nullTimestampCount;
 
     /**
      * Perform updateBy operations on a single bucket of data (either zero-key or already limited through partitioning)
@@ -93,10 +97,12 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             this.timestampColumnSource =
                     ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(this.timestampColumnName));
             this.timestampColumnSet = source.newModifiedColumnSet(timestampColumnName);
+            this.timestampValidRowSet = source.getRowSet().writableCast();
         } else {
             this.timestampSsa = null;
             this.timestampColumnSource = null;
             this.timestampColumnSet = null;
+            this.timestampValidRowSet = null;
         }
 
         this.windowContexts = new UpdateByWindow.UpdateByWindowBucketContext[windows.length];
@@ -122,21 +128,28 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     }
 
     private void processUpdateForSsa(TableUpdate upstream) {
+        if (upstream.empty()) {
+            return;
+        }
+
         final boolean stampModified = upstream.modifiedColumnSet().containsAny(timestampColumnSet);
+
+        final int chunkSize = 1 << 12; // 4k
 
         try (final RowSet addedAndModified = stampModified ? upstream.added().union(upstream.modified()) : null;
                 final RowSet removedAndModifiedPreShift =
-                        stampModified ? upstream.removed().union(upstream.getModifiedPreShift()) : null) {
+                        stampModified ? upstream.removed().union(upstream.getModifiedPreShift()) : null;
+                final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(chunkSize);
+                final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(chunkSize);
+                final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(chunkSize);
+                final WritableLongChunk<OrderedRowKeys> nullTsKeys = WritableLongChunk.makeWritableChunk(chunkSize)) {
+
             final RowSet restampAdditions = stampModified ? addedAndModified : upstream.added();
             final RowSet restampRemovals = stampModified ? removedAndModifiedPreShift : upstream.removed();
 
             // removes
             if (restampRemovals.isNonempty()) {
-                final int size = (int) Math.min(restampRemovals.size(), 4096);
-                try (final RowSequence.Iterator it = restampRemovals.getRowSequenceIterator();
-                        final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
-                        final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
-                        final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+                try (final RowSequence.Iterator it = restampRemovals.getRowSequenceIterator()) {
 
                     MutableLong lastTimestamp = new MutableLong(NULL_LONG);
                     while (it.hasMore()) {
@@ -148,18 +161,35 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                         LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
 
                         // push only non-null values/keys into the Ssa
-                        fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
+                        nullTimestampCount -= fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues,
+                                nullTsKeys, lastTimestamp);
                         timestampSsa.remove(ssaValues, ssaKeys);
+
+                        // if we have removed all the nulls, we can reset to mirror the source. Otherwise need to
+                        // remove these rows from the non-null set
+                        if (timestampValidRowSet != source.getRowSet()) {
+                            if (nullTimestampCount == 0) {
+                                timestampValidRowSet.close();
+                                timestampValidRowSet = source.getRowSet().writableCast();
+                            } else {
+                                timestampValidRowSet.remove(ssaKeys, 0, ssaKeys.size());
+                            }
+                        }
                     }
                 }
             }
 
             // shifts
             if (upstream.shifted().nonempty()) {
+                if (timestampValidRowSet != source.getRowSet()) {
+                    upstream.shifted().apply(timestampValidRowSet.writableCast());
+                }
+
                 final int size = Math.max(
-                        upstream.modified().intSize()
-                                + Math.max(upstream.added().intSize(), upstream.removed().intSize()),
+                        upstream.modified().intSize() + Math.max(upstream.added().intSize(),
+                                upstream.removed().intSize()),
                         (int) upstream.shifted().getEffectiveSize());
+
                 try (final RowSet fullPrevRowSet = source.getRowSet().copyPrev();
                         final WritableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
                         final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
@@ -184,14 +214,10 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
             // adds
             if (restampAdditions.isNonempty()) {
-                final int size = (int) Math.min(restampAdditions.size(), 4096);
-                try (final RowSequence.Iterator it = restampAdditions.getRowSequenceIterator();
-                        final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(size);
-                        final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(size);
-                        final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(size)) {
+                try (final RowSequence.Iterator it = restampAdditions.getRowSequenceIterator()) {
                     MutableLong lastTimestamp = new MutableLong(NULL_LONG);
                     while (it.hasMore()) {
-                        RowSequence chunkRs = it.getNextRowSequenceWithLength(4096);
+                        RowSequence chunkRs = it.getNextRowSequenceWithLength(chunkSize);
 
                         // get the chunks for values and keys
                         LongChunk<? extends Values> valuesChunk =
@@ -199,8 +225,19 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                         LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
 
                         // push only non-null values/keys into the Ssa
-                        fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues, lastTimestamp);
+                        nullTimestampCount += fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues,
+                                nullTsKeys, lastTimestamp);
                         timestampSsa.insert(ssaValues, ssaKeys);
+
+                        if (timestampValidRowSet == source.getRowSet()) {
+                            if (nullTimestampCount > 0) {
+                                // make a copy and remove the nulls
+                                timestampValidRowSet = source.getRowSet().copy().toTracking().writableCast();
+                                timestampValidRowSet.remove(nullTsKeys, 0, nullTsKeys.size());
+                            }
+                        } else {
+                            timestampValidRowSet.insert(ssaKeys, 0, ssaKeys.size());
+                        }
                     }
                 }
             }
@@ -210,19 +247,26 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     /**
      * helper function to fill a LongChunk while skipping values that are NULL_LONG. Used to populate an SSA from a
      * source containing null values
+     *
+     * @return the number of NULL values found in the set
      */
-    private void fillChunkWithNonNull(LongChunk<OrderedRowKeys> keysChunk, LongChunk<? extends Values> valuesChunk,
+    private int fillChunkWithNonNull(LongChunk<OrderedRowKeys> keysChunk, LongChunk<? extends Values> valuesChunk,
             WritableLongChunk<OrderedRowKeys> ssaKeys, WritableLongChunk<? extends Values> ssaValues,
-            MutableLong lastTimestamp) {
+            WritableLongChunk<OrderedRowKeys> nullTimestampKeys, MutableLong lastTimestamp) {
+        int nullCount = 0;
+
         // reset the insertion chunks
         ssaValues.setSize(0);
         ssaKeys.setSize(0);
+        nullTimestampKeys.setSize(0);
 
         // add only non-null timestamps to this Ssa
         for (int i = 0; i < valuesChunk.size(); i++) {
             long ts = valuesChunk.get(i);
             if (ts == NULL_LONG) {
                 // null timestamps will not cause problems
+                nullTimestampKeys.add(keysChunk.get(i));
+                nullCount++;
                 continue;
             }
             if (ts < lastTimestamp.longValue()) {
@@ -236,6 +280,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             // store the current ts for comparison
             lastTimestamp.setValue(ts);
         }
+        return nullCount;
     }
 
     /**
@@ -262,6 +307,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                     sourceRowSet,
                     timestampColumnSource,
                     timestampSsa,
+                    timestampValidRowSet,
                     control.chunkCapacityOrDefault(),
                     initialStep);
 

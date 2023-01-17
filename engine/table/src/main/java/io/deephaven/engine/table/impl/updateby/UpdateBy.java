@@ -24,10 +24,10 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -368,9 +368,9 @@ public abstract class UpdateBy {
                 return;
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new,
                     0, cacheableSourceIndices.length,
-                    idx -> {
+                    (context, idx) -> {
                         final int srcIdx = cacheableSourceIndices[idx];
                         for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                             UpdateByWindow win = windows[winIdx];
@@ -437,27 +437,34 @@ public abstract class UpdateBy {
             final int taskCount =
                     Math.toIntExact((inputRowSet.size() + PARALLEL_CACHE_BATCH_SIZE - 1) / PARALLEL_CACHE_BATCH_SIZE);
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
-                    0, taskCount,
-                    idx -> {
-                        try (final RowSequence.Iterator rsIt = inputRowSet.getRowSequenceIterator();
-                                final ChunkSink.FillFromContext ffc =
-                                        outputSource.makeFillFromContext(PARALLEL_CACHE_CHUNK_SIZE);
-                                final ChunkSource.GetContext gc =
-                                        inputSource.makeGetContext(PARALLEL_CACHE_CHUNK_SIZE)) {
-                            // advance to the first key of this block
-                            rsIt.advance(inputRowSet.get(idx * PARALLEL_CACHE_BATCH_SIZE));
-                            int remaining = PARALLEL_CACHE_BATCH_SIZE;
-                            while (rsIt.hasMore() && remaining > 0) {
-                                final RowSequence chunkOk = rsIt
-                                        .getNextRowSequenceWithLength(Math.min(remaining, PARALLEL_CACHE_CHUNK_SIZE));
-                                final Chunk<? extends Values> values = inputSource.getChunk(gc, chunkOk);
-                                outputSource.fillFromChunk(ffc, values, chunkOk);
+            final class BatchContext extends JobScheduler.JobContext {
+                final RowSequence.Iterator rsIt = inputRowSet.getRowSequenceIterator();
+                final ChunkSink.FillFromContext ffc =
+                        outputSource.makeFillFromContext(PARALLEL_CACHE_CHUNK_SIZE);
+                final ChunkSource.GetContext gc =
+                        inputSource.makeGetContext(PARALLEL_CACHE_CHUNK_SIZE);
 
-                                // reduce by the attempted stride, if this is the final block the iterator will
-                                // be exhausted and hasMore() will return false
-                                remaining -= PARALLEL_CACHE_CHUNK_SIZE;
-                            }
+                @Override
+                public void close() {
+                    SafeCloseable.closeArray(rsIt, ffc, gc);
+                }
+            }
+
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, BatchContext::new,
+                    0, taskCount,
+                    (ctx, idx) -> {
+                        // advance to the first key of this block
+                        ctx.rsIt.advance(inputRowSet.get(idx * PARALLEL_CACHE_BATCH_SIZE));
+                        int remaining = PARALLEL_CACHE_BATCH_SIZE;
+                        while (ctx.rsIt.hasMore() && remaining > 0) {
+                            final RowSequence chunkOk = ctx.rsIt
+                                    .getNextRowSequenceWithLength(Math.min(remaining, PARALLEL_CACHE_CHUNK_SIZE));
+                            final Chunk<? extends Values> values = inputSource.getChunk(ctx.gc, chunkOk);
+                            outputSource.fillFromChunk(ctx.ffc, values, chunkOk);
+
+                            // reduce by the attempted stride, if this is the final block the iterator will
+                            // be exhausted and hasMore() will return false
+                            remaining -= PARALLEL_CACHE_CHUNK_SIZE;
                         }
                     }, resumeAction::run,
                     this::onError);
@@ -472,8 +479,9 @@ public abstract class UpdateBy {
                 final UpdateByWindow win = windows[winIdx];
                 final int[] uniqueWindowSources = win.getUniqueSourceIndices();
 
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, 0, uniqueWindowSources.length,
-                        (idx, sourceComplete) -> {
+                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new,
+                        0, uniqueWindowSources.length,
+                        (context, idx, sourceComplete) -> {
                             createCachedColumnSource(uniqueWindowSources[idx], sourceComplete);
                         }, resumeAction, this::onError);
             } else {
@@ -489,8 +497,9 @@ public abstract class UpdateBy {
         private void processWindowBuckets(int winIdx, final Runnable resumeAction) {
             if (jobScheduler.threadCount() > 1 && dirtyBuckets.length > 1) {
                 // process the buckets in parallel
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, 0, dirtyBuckets.length,
-                        bucketIdx -> {
+                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new,
+                        0, dirtyBuckets.length,
+                        (context, bucketIdx) -> {
                             UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
                             bucket.assignInputSources(winIdx, maybeCachedInputSources);
                             bucket.processWindow(winIdx, initialStep);
@@ -511,8 +520,9 @@ public abstract class UpdateBy {
          * cached columns before starting the next window. Calls {@code completedAction} when the work is complete
          */
         private void processWindows(final Runnable resumeAction) {
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this, 0, windows.length,
-                    (winIdx, windowComplete) -> {
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new, 0,
+                    windows.length,
+                    (context, winIdx, windowComplete) -> {
                         UpdateByWindow win = windows[winIdx];
 
                         // this is a chain of calls: cache, then shift, then process the dirty buckets for this window
@@ -854,8 +864,7 @@ public abstract class UpdateBy {
         String timestampColumnName = null;
         final Set<String> problems = new LinkedHashSet<>();
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
-        for (int opIdx = 0; opIdx < opArr.length; opIdx++) {
-            final UpdateByOperator op = opArr[opIdx];
+        for (final UpdateByOperator op : opArr) {
             op.getOutputColumns().forEach((name, col) -> {
                 if (opResultSources.putIfAbsent(name, col) != null) {
                     problems.add(name);

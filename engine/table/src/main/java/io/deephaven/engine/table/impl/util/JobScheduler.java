@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.referencecounting.ReferenceCounted;
@@ -9,6 +10,7 @@ import io.deephaven.util.referencecounting.ReferenceCounted;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * An interface for submitting jobs to be executed. Submitted jobs may be executed on the current thread, or in separate
@@ -16,6 +18,14 @@ import java.util.function.Consumer;
  * thread for inclusion in overall task metrics.
  */
 public interface JobScheduler {
+
+    /**
+     * A default context for the scheduled job actions. Override this to provide reusable resources for the serial and
+     * parallel iterate actions.
+     */
+    class JobContext implements Context {
+    }
+
     /**
      * Cause runnable to be executed.
      *
@@ -48,8 +58,8 @@ public interface JobScheduler {
      * schedule the next iteration.
      */
     @FunctionalInterface
-    interface IterateAction {
-        void run(int index);
+    interface IterateAction<CONTEXT_TYPE extends JobContext> {
+        void run(CONTEXT_TYPE taskThreadContext, int index);
     }
 
     /**
@@ -62,28 +72,31 @@ public interface JobScheduler {
      * will not block the scheduler, but the {@code completeAction} {@link Runnable} will never be called.
      */
     @FunctionalInterface
-    interface IterateResumeAction {
-        void run(int index, Runnable resume);
+    interface IterateResumeAction<CONTEXT_TYPE extends JobContext> {
+        void run(CONTEXT_TYPE taskThreadContext, int index, Runnable resume);
     }
 
-    class ErrorAccounter extends ReferenceCounted implements Consumer<Exception>, Runnable {
-        private final AtomicReference<Exception> exception = new AtomicReference<>();
-        private final Consumer<Exception> finalErrorConsumer;
-        private final IterateResumeAction action;
-        private final Runnable completeAction;
-        private final Runnable resumeAction;
-        private final AtomicInteger nextIndex;
-        private final AtomicInteger remaining;
+    class ErrorAccounter<CONTEXT_TYPE extends JobContext> extends ReferenceCounted
+            implements Consumer<Exception>, Runnable {
+        private final Supplier<CONTEXT_TYPE> taskThreadContextFactory;
         private final int start;
         private final int count;
+        private final Consumer<Exception> finalErrorConsumer;
+        private final IterateResumeAction<CONTEXT_TYPE> action;
+        private final AtomicInteger nextIndex;
+        private final AtomicInteger remaining;
+        private final Runnable resumeAction;
 
-        ErrorAccounter(final int start, final int count, final Consumer<Exception> finalErrorConsumer,
-                final IterateResumeAction action, final Runnable completeAction) {
+        private final AtomicReference<Exception> exception = new AtomicReference<>();
+
+        ErrorAccounter(final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
+                final int start, final int count, final Consumer<Exception> finalErrorConsumer,
+                final IterateResumeAction<CONTEXT_TYPE> action, final Runnable completeAction) {
+            this.taskThreadContextFactory = taskThreadContextFactory;
             this.start = start;
             this.count = count;
             this.finalErrorConsumer = finalErrorConsumer;
             this.action = action;
-            this.completeAction = completeAction;
 
             nextIndex = new AtomicInteger(start);
             remaining = new AtomicInteger(count);
@@ -109,29 +122,30 @@ public interface JobScheduler {
         @Override
         public void accept(Exception e) {
             exception.compareAndSet(null, e);
+            decrementReferenceCount();
         }
 
         @Override
         public void run() {
-            while (true) {
-                try {
+            try (final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get()) {
+                while (true) {
                     if (exception.get() != null) {
-
-                        incrementReferenceCount();
                         return;
                     }
-                    int idx = nextIndex.getAndIncrement();
-                    if (idx < start + count) {
+                    final int idx = nextIndex.getAndIncrement();
+                    if (idx >= start + count) {
+                        return;
+                    }
+                    if (!tryIncrementReferenceCount()) {
+                        // We raced with the exception consumer
+                        return;
+                    }
+                    try {
                         // do the work
-                        action.run(idx, resumeAction);
-                        incrementReferenceCount();
-                    } else {
-                        // no more work to do
-                        incrementReferenceCount();
-                        return;
+                        action.run(taskThreadContext, idx, resumeAction);
+                    } finally {
+                        decrementReferenceCount();
                     }
-                } finally {
-                    decrementReferenceCount();
                 }
             }
         }
@@ -142,6 +156,7 @@ public interface JobScheduler {
      *
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
+     * @param taskThreadContextFactory the factory that supplies {@link JobContext contexts} for the tasks
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index is provided as a parameter
@@ -149,11 +164,18 @@ public interface JobScheduler {
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
-    default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
-            int count, IterateAction action, Runnable completeAction, Consumer<Exception> onError) {
-        iterateParallel(executionContext, description, start, count,
-                (final int idx, final Runnable resume) -> {
-                    action.run(idx);
+    default <CONTEXT_TYPE extends JobContext> void iterateParallel(
+            ExecutionContext executionContext,
+            LogOutputAppendable description,
+            Supplier<CONTEXT_TYPE> taskThreadContextFactory,
+            int start,
+            int count,
+            IterateAction<CONTEXT_TYPE> action,
+            Runnable completeAction,
+            Consumer<Exception> onError) {
+        iterateParallel(executionContext, description, taskThreadContextFactory, start, count,
+                (final CONTEXT_TYPE taskThreadContext, final int idx, final Runnable resume) -> {
+                    action.run(taskThreadContext, idx);
                     resume.run();
                 },
                 completeAction, onError);
@@ -167,6 +189,7 @@ public interface JobScheduler {
      *
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
+     * @param taskThreadContextFactory the factory that supplies {@link JobContext contexts} for the tasks
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
@@ -174,40 +197,23 @@ public interface JobScheduler {
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
-    default void iterateParallel(ExecutionContext executionContext, LogOutputAppendable description, int start,
-            int count, IterateResumeAction action, Runnable completeAction, Consumer<Exception> onError) {
+    default <CONTEXT_TYPE extends JobContext> void iterateParallel(
+            ExecutionContext executionContext,
+            LogOutputAppendable description,
+            Supplier<CONTEXT_TYPE> taskThreadContextFactory,
+            int start,
+            int count,
+            IterateResumeAction<CONTEXT_TYPE> action,
+            Runnable completeAction,
+            Consumer<Exception> onError) {
 
         if (count == 0) {
             // no work to do
             completeAction.run();
         }
 
-        final ErrorAccounter ea = new ErrorAccounter(start, count, onError, action, completeAction);
-
-        // final AtomicBoolean cancelRemainingExecution = new AtomicBoolean(false);
-
-        // final Consumer<Exception> localError = exception -> {
-        // // signal only on the first error
-        // if (cancelRemainingExecution.compareAndSet(false, true)) {
-        // onError.accept(exception);
-        // }
-        // };
-
-        // final Runnable resumeAction = () -> {
-        // // check for completion
-        // if (remaining.decrementAndGet() == 0) {
-        // completeAction.run();
-        // }
-        // };
-
-        // final Runnable task = () -> {
-        // // this will run until all tasks have started
-        // while (true) {
-        // if (cancelRemainingExecution.get()) {
-        // return;
-        // }
-        // }
-        // };
+        final ErrorAccounter<CONTEXT_TYPE> ea =
+                new ErrorAccounter<>(taskThreadContextFactory, start, count, onError, action, completeAction);
 
         // create multiple tasks but not more than one per scheduler thread
         for (int i = 0; i < Math.min(count, threadCount()); i++) {
@@ -226,6 +232,7 @@ public interface JobScheduler {
      *
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
+     * @param taskThreadContextFactory the factory that supplies {@link JobContext contexts} for the tasks
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
@@ -233,13 +240,27 @@ public interface JobScheduler {
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
-    default void iterateSerial(ExecutionContext executionContext, LogOutputAppendable description, int start,
-            int count, IterateResumeAction action, Runnable completeAction, Consumer<Exception> onError) {
+    default <CONTEXT_TYPE extends JobContext> void iterateSerial(ExecutionContext executionContext,
+            LogOutputAppendable description,
+            Supplier<CONTEXT_TYPE> taskThreadContextFactory,
+            int start,
+            int count,
+            IterateResumeAction<CONTEXT_TYPE> action,
+            Runnable completeAction,
+            Consumer<Exception> onError) {
 
         if (count == 0) {
             // no work to do
             completeAction.run();
         }
+
+        // create a single execution context for all iterations
+        final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get();
+
+        final Consumer<Exception> localError = exception -> {
+            taskThreadContext.close();
+            onError.accept(exception);
+        };
 
         // no lambda, need the `this` reference to re-execute
         final Runnable resumeAction = new Runnable() {
@@ -250,6 +271,7 @@ public interface JobScheduler {
             public void run() {
                 // check for completion
                 if (--remaining == 0) {
+                    taskThreadContext.close();
                     completeAction.run();
                 } else {
 
@@ -257,13 +279,11 @@ public interface JobScheduler {
                     submit(executionContext,
                             () -> {
                                 int idx = nextIndex++;
-                                if (idx < start + count) {
-                                    // do the work
-                                    action.run(idx, this);
-                                }
+                                // do the work
+                                action.run(taskThreadContext, idx, this);
                             },
                             description,
-                            onError);
+                            localError);
                 }
 
             }
@@ -271,8 +291,8 @@ public interface JobScheduler {
 
         // create a single task
         submit(executionContext,
-                () -> action.run(start, resumeAction),
+                () -> action.run(taskThreadContext, start, resumeAction),
                 description,
-                onError);
+                localError);
     }
 }

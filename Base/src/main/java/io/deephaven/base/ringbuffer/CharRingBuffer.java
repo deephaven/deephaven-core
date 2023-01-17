@@ -17,9 +17,14 @@ public class CharRingBuffer implements Serializable {
     protected char[] storage;
     protected int head, tail;
 
-    private void grow() {
+    private void grow(int increase) {
         if (growable) {
-            char[] newStorage = new char[storage.length * 2];
+            final int minLength = storage.length + increase;
+            int newLength = storage.length * 2;
+            while (newLength < minLength) {
+                newLength = newLength * 2;
+            }
+            char[] newStorage = new char[newLength];
             if (tail > head) {
                 System.arraycopy(storage, head, newStorage, 0, tail - head);
                 tail = tail - head;
@@ -31,6 +36,10 @@ public class CharRingBuffer implements Serializable {
             head = 0;
             storage = newStorage;
         }
+    }
+
+    private void grow() {
+        grow(1);
     }
 
     public boolean isFull() {
@@ -100,6 +109,35 @@ public class CharRingBuffer implements Serializable {
     }
 
     /**
+     * Ensure that there is sufficient empty space to store {@code count} items in the buffer. If the buffer is
+     * {@code growable}, this may result in an internal growth operation. This call should be used in conjunction with
+     * {@link #addUnsafe(char)}.
+     *
+     * @param count the amount of empty entries in the buffer after this call
+     * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
+     */
+    public void ensureRemaining(int count) {
+        if (remaining() < count) {
+            if (!growable) {
+                throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
+            } else {
+                grow(count);
+            }
+        }
+    }
+
+    /**
+     * Add values unsafely (will silently overwrite values if the buffer is full). This call should be used in
+     * conjunction with * {@link #ensureRemaining(int)}.
+     *
+     * @param e the value to add to the buffer
+     */
+    public void addUnsafe(char e) {
+        storage[tail] = e;
+        tail = (tail + 1) % storage.length;
+    }
+
+    /**
      * Add an entry to the ring buffer. If the buffer is full, will overwrite the oldest entry with the new one.
      *
      * @param e the char to be added to the buffer
@@ -130,6 +168,21 @@ public class CharRingBuffer implements Serializable {
         storage[tail] = e;
         tail = (tail + 1) % storage.length;
         return true;
+    }
+
+    public char[] remove(int count) {
+        if (size() < count) {
+            throw new NoSuchElementException();
+        }
+        final char[] result = new char[count];
+        if (tail > head || storage.length - head >= count) {
+            System.arraycopy(storage, head, result, 0, count);
+        } else {
+            System.arraycopy(storage, head, result, 0, storage.length - head);
+            System.arraycopy(storage, 0, result, storage.length - head, count - (storage.length - head));
+        }
+        head = (head + count) % storage.length;
+        return result;
     }
 
     public char remove() {
