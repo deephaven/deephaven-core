@@ -23,11 +23,6 @@ service TableService {
   rpc FetchTable(FetchTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-   */
-  rpc FetchPandasTable(FetchPandasTableRequest) returns (ExportedTableCreationResponse) {}
-
-  /*
    * Create a table that has preview columns applied to an existing source table.
    */
   rpc ApplyPreviewColumns(ApplyPreviewColumnsRequest) returns (ExportedTableCreationResponse) {}
@@ -267,11 +262,6 @@ message FetchTableRequest {
 }
 
 message ApplyPreviewColumnsRequest {
-  TableReference source_id = 1;
-  Ticket result_id = 2;
-}
-
-message FetchPandasTableRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
 }
@@ -1040,6 +1030,8 @@ message BatchTableRequest {
 
   message Operation {
     reserved 20;
+    reserved 29;
+
     oneof op {
       EmptyTableRequest empty_table = 1;
       TimeTableRequest time_table = 2;
@@ -1068,7 +1060,6 @@ message BatchTableRequest {
       LeftJoinTablesRequest left_join = 26;
       AsOfJoinTablesRequest as_of_join = 27;
       FetchTableRequest fetch_table = 28;
-      FetchPandasTableRequest fetch_pandas_table = 29;
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
       CreateInputTableRequest create_input_table = 31;
       UpdateByRequest update_by = 32;
