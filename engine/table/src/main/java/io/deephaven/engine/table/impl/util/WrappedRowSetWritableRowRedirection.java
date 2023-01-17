@@ -220,8 +220,10 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
 
         long positionStart = 0;
 
-        final RowSet.RangeIterator rangeIterator;
-        for (rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext(); rangeIterator.next()) {
+
+        for (final RowSet.RangeIterator rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext();) {
+            rangeIterator.next();
+
             if (positionStart > 0) {
                 builder.append(", ");
             }
