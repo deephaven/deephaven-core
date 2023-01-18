@@ -230,7 +230,7 @@ public class WindowCheck {
                 upstream.forAllModified((oldIndex, newIndex) -> {
                     final long currentTimestamp = inWindowColumnSource.timeStampSource.getLong(newIndex);
                     final long prevTimestamp = inWindowColumnSource.timeStampSource.getPrevLong(oldIndex);
-                    if (!Objects.equals(currentTimestamp, prevTimestamp)) {
+                    if (currentTimestamp != prevTimestamp) {
                         updateRow(newIndex, currentTimestamp);
                     }
                 });
