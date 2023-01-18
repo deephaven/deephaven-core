@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -10,18 +11,15 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
-import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Random;
-import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.show;
 import static io.deephaven.engine.testutil.TstUtils.*;
 
-@Category(OutOfBandTest.class)
 public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
     public void testMatch() {
@@ -212,14 +210,46 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         final QueryTable queryTable = getTable(500, random, columnInfo);
 
+        QueryScope.addParam("bogus", Arrays.asList(new Object[] {null}));
+
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.wouldMatch("hasAG=Sym.contains(`G`)",
                         "BigHero6=Stringy.length()>=6 && Booly", "Mathy=(Inty+Floaty)/2 > 40")),
-                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG"),
-                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG == true")),
         };
 
         for (int i = 0; i < 100; i++) {
+            simulateShiftAwareStep("step == " + i, 1000, random, queryTable, columnInfo, en);
+        }
+    }
+
+    public void testColumnSourceMatch() {
+        final Random random = new Random(0xDEADDEAD);
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(new String[] {"Sym", "Sentinel"},
+                new SetGenerator<>("AAPL", "GOOG", "GLD", "VXX"),
+                new IntGenerator(10, 100));
+
+        final QueryTable queryTable = getTable(500, random, columnInfo);
+
+        QueryScope.addParam("bogus", Arrays.asList(new Object[] {null}));
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG"),
+                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG == true")),
+                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("!hasAG"),
+                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG == false")),
+                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("!hasAG"),
+                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG not in true")),
+                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG"),
+                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG not in false")),
+                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("true"),
+                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG in true, false")),
+                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").head(0),
+                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG in bogus")),
+                new TableComparator(queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("true"),
+                        queryTable.wouldMatch("hasAG=Sym.contains(`G`)").where("hasAG not in bogus")),
+        };
+
+        for (int i = 0; i < 10; i++) {
             simulateShiftAwareStep("step == " + i, 1000, random, queryTable, columnInfo, en);
         }
     }
@@ -262,7 +292,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         };
 
         try {
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 100; i++) {
                 final boolean modSet = random.nextInt(10) < 3;
                 final boolean modFiltered = random.nextBoolean();
 
