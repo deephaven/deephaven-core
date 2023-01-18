@@ -57,7 +57,7 @@ setup(
         'deephaven-plugin',
         'numpy',
         'pandas',
-        'pyarrow<10', # Turbodbc can't be built on MacOS 13.0.1 with pyarrow==10.0.1, filed an issue with the maintainer
+        'pyarrow',
         # Numba does not support 3.11 yet
         # https://github.com/numba/numba/issues/8304
         # TODO(deephaven-core#3082): Remove numba dependency workarounds
