@@ -1184,7 +1184,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REFRESHING;
                         }
                     } else {
-                        mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
+                        if (flavor == Flavor.Update && exceedsMaximumStaticSelectOverhead()) {
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_STATIC;
+                        } else {
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
+                        }
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
                     final SelectAndViewAnalyzer analyzer =

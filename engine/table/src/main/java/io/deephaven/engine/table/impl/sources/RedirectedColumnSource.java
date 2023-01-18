@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
@@ -34,7 +33,7 @@ import static io.deephaven.util.QueryConstants.*;
  *
  * @param <T>
  */
-public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
+public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSource<T>
         implements UngroupableColumnSource {
     protected final RowRedirection rowRedirection;
     protected final ColumnSource<T> innerSource;
