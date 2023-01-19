@@ -30,8 +30,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
             timestampValueChunk = valuesChunk;
         }
 
-        Context(final int chunkSize) {
-            super(chunkSize);
+        Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
         }
 
         @Override

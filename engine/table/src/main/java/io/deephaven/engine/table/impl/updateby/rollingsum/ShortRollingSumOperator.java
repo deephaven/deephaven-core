@@ -24,8 +24,8 @@ public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
         protected ShortRingBuffer shortWindowValues;
 
 
-        protected Context(int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
             shortWindowValues = new ShortRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -90,21 +90,20 @@ public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 
     public ShortRollingSumOperator(@NotNull final MatchPair pair,
                                    @NotNull final String[] affectingColumns,
-                                   @NotNull final OperationControl control,
                                    @Nullable final String timestampColumnName,
-                                   final long reverseTimeScaleUnits,
-                                   final long forwardTimeScaleUnits,
+                                   final long reverseWindowScaleUnits,
+                                   final long forwardWindowScaleUnits,
                                    @Nullable final RowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, rowRedirection);
         // region constructor
         // endregion constructor
     }

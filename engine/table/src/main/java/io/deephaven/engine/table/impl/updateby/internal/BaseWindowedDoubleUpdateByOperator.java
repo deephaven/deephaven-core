@@ -1,6 +1,6 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseWindowedFloatUpdateByOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseWindowedCharUpdateByOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.internal;
@@ -14,9 +14,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.sources.DoubleArraySource;
-import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
-import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByWindowedOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -32,8 +30,6 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
     protected final WritableColumnSource<Double> outputSource;
     protected final WritableColumnSource<Double> maybeInnerSource;
 
-    public double curVal = NULL_DOUBLE;
-
     // region extra-fields
     // endregion extra-fields
 
@@ -41,7 +37,10 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
         public final ChunkSink.FillFromContext outputFillContext;
         public final WritableDoubleChunk<Values> outputValues;
 
-        protected Context(final int chunkSize) {
+        public double curVal = NULL_DOUBLE;
+
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkCount);
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableDoubleChunk.makeWritableChunk(chunkSize);
         }
@@ -121,16 +120,15 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
 
     public BaseWindowedDoubleUpdateByOperator(@NotNull final MatchPair pair,
                                             @NotNull final String[] affectingColumns,
-                                            @NotNull final OperationControl control,
                                             @Nullable final String timestampColumnName,
-                                            final long reverseTimeScaleUnits,
-                                            final long forwardTimeScaleUnits,
+                                            final long reverseWindowScaleUnits,
+                                            final long forwardWindowScaleUnits,
                                             @Nullable final RowRedirection rowRedirection
                                             // region extra-constructor-args
                                             // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
-        if(rowRedirection != null) {
+                                    ) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, rowRedirection);
+        if (rowRedirection != null) {
             // region create-dense
             this.maybeInnerSource = new DoubleArraySource();
             // endregion create-dense
@@ -148,10 +146,6 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
 
     // region extra-methods
     // endregion extra-methods
-
-    @Override
-    public void initializeUpdate(@NotNull UpdateContext context) {
-    }
 
     @Override
     public void startTrackingPrev() {

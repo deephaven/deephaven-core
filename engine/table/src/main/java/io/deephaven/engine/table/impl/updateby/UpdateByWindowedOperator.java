@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -13,7 +12,13 @@ import org.jetbrains.annotations.Nullable;
 public abstract class UpdateByWindowedOperator extends UpdateByOperator {
 
     public abstract static class Context implements UpdateContext {
-        public int nullCount = 0;
+        /** Holds the chunks of input data for use by the accumulate call */
+        protected final Chunk<? extends Values>[] chunkArr;
+        protected int nullCount = 0;
+
+        public Context(int chunkCount) {
+            chunkArr = new Chunk[chunkCount];
+        }
 
         @Override
         public void close() {}
@@ -30,28 +35,23 @@ public abstract class UpdateByWindowedOperator extends UpdateByOperator {
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this operation
-     * @param control the control parameters for operation
      * @param timestampColumnName the optional time stamp column for windowing (uses ticks if not provided)
-     * @param reverseTimeScaleUnits the time (us) or ticks to extend the window backwards
-     * @param forwardTimeScaleUnits the time (us) or ticks to extend the window forwards
+     * @param reverseWindowScaleUnits the time (us) or ticks to extend the window backwards
+     * @param forwardWindowScaleUnits the time (us) or ticks to extend the window forwards
      * @param rowRedirection the row redirection to use for the operator output columns
      */
-    public UpdateByWindowedOperator(@NotNull final MatchPair pair,
+    protected UpdateByWindowedOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long reverseTimeScaleUnits,
-            final long forwardTimeScaleUnits,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
             @Nullable final RowRedirection rowRedirection) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits,
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits,
                 rowRedirection);
     }
 
     /**
      * Initialize the bucket context for this windowed operator
      */
-    public abstract void initializeUpdate(@NotNull final UpdateContext context);
-
-    @Override
-    public void finishUpdate(@NotNull final UpdateContext context) {}
+    public void initializeUpdate(@NotNull final UpdateContext context) {}
 }

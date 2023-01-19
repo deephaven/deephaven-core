@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -33,26 +32,24 @@ import java.util.Map;
  * </ol>
  */
 public abstract class UpdateByOperator {
-    public static UpdateByOperator[] ZERO_LENGTH_OP_ARRAY = new UpdateByOperator[0];
+    protected static UpdateByOperator[] ZERO_LENGTH_OP_ARRAY = new UpdateByOperator[0];
 
     protected final MatchPair pair;
     protected final String[] affectingColumns;
     protected final RowRedirection rowRedirection;
 
-    // these will be used by the timestamp-aware operators (EMA for example)
-    protected final OperationControl control;
-    protected final long reverseTimeScaleUnits;
-    protected final long forwardTimeScaleUnits;
+    protected final long reverseWindowScaleUnits;
+    protected final long forwardWindowScaleUnits;
     protected final String timestampColumnName;
 
     /**
      * The input modifiedColumnSet for this operator
      */
-    protected ModifiedColumnSet inputModifiedColumnSet;
+    ModifiedColumnSet inputModifiedColumnSet;
     /**
      * The output modifiedColumnSet for this operator
      */
-    protected ModifiedColumnSet outputModifiedColumnSet;
+    ModifiedColumnSet outputModifiedColumnSet;
 
     /**
      * A context item for use with updateBy operators
@@ -64,7 +61,7 @@ public abstract class UpdateByOperator {
         void setTimestampChunk(@NotNull LongChunk<? extends Values> valuesChunk);
 
         /**
-         * Add a value to the operators current data set
+         * Add values to the operators current data set
          *
          * @param key the row key associated with the value
          * @param pos the index in the associated chunk where this value can be found. Depending on the usage, might be
@@ -75,8 +72,8 @@ public abstract class UpdateByOperator {
         void push(long key, int pos, int count);
 
         /**
-         * Remove a value from the operators current data set. This is only valid for windowed operators as
-         * cumulative operators only append values
+         * Remove values from the operators current data set. This is only valid for windowed operators as cumulative
+         * operators only append values
          *
          * @param count the number of items to pop from the data set
          */
@@ -102,18 +99,16 @@ public abstract class UpdateByOperator {
 
     protected UpdateByOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long reverseTimeScaleUnits,
-            final long forwardTimeScaleUnits,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
             @Nullable final RowRedirection rowRedirection) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
         this.rowRedirection = rowRedirection;
         this.timestampColumnName = timestampColumnName;
-        this.control = control;
-        this.reverseTimeScaleUnits = reverseTimeScaleUnits;
-        this.forwardTimeScaleUnits = forwardTimeScaleUnits;
+        this.reverseWindowScaleUnits = reverseWindowScaleUnits;
+        this.forwardWindowScaleUnits = forwardWindowScaleUnits;
     }
 
     /**
@@ -122,7 +117,7 @@ public abstract class UpdateByOperator {
      * @return the names of the input column
      */
     @NotNull
-    public String[] getInputColumnNames() {
+    protected String[] getInputColumnNames() {
         return new String[] {pair.rightColumn};
     }
 
@@ -132,22 +127,22 @@ public abstract class UpdateByOperator {
      * @return the name of the timestamp column
      */
     @Nullable
-    public String getTimestampColumnName() {
+    protected String getTimestampColumnName() {
         return timestampColumnName;
     }
 
     /**
      * Get the value of the backward-looking window (might be nanoseconds or ticks).
      */
-    public long getPrevWindowUnits() {
-        return reverseTimeScaleUnits;
+    protected long getPrevWindowUnits() {
+        return reverseWindowScaleUnits;
     }
 
     /**
      * Get the value of the forward-looking window (might be nanoseconds or ticks).
      */
-    public long getFwdWindowUnits() {
-        return forwardTimeScaleUnits;
+    protected long getFwdWindowUnits() {
+        return forwardWindowScaleUnits;
     }
 
     /**
@@ -156,7 +151,7 @@ public abstract class UpdateByOperator {
      * @return an array of column names that affect this operator.
      */
     @NotNull
-    public String[] getAffectingColumnNames() {
+    protected String[] getAffectingColumnNames() {
         return affectingColumns;
     }
 
@@ -166,7 +161,7 @@ public abstract class UpdateByOperator {
      * @return the output column names.
      */
     @NotNull
-    public String[] getOutputColumnNames() {
+    protected String[] getOutputColumnNames() {
         return new String[] {pair.leftColumn};
     }
 
@@ -176,21 +171,22 @@ public abstract class UpdateByOperator {
      * @return a map of output column name to output column source
      */
     @NotNull
-    public abstract Map<String, ColumnSource<?>> getOutputColumns();
+    protected abstract Map<String, ColumnSource<?>> getOutputColumns();
 
     /**
      * Indicate that the operation should start tracking previous values for ticking updates.
      */
-    public abstract void startTrackingPrev();
+    protected abstract void startTrackingPrev();
 
     /**
      * Make an {@link UpdateContext} suitable for use with updates.
      *
      * @param chunkSize The expected size of chunks that will be provided during the update,
+     * @param chunkCount The number of chunks that will be provided during the update,
      * @return a new context
      */
     @NotNull
-    public abstract UpdateContext makeUpdateContext(final int chunkSize);
+    public abstract UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount);
 
     /**
      * Perform any bookkeeping required at the end of a single part of the update. This is always preceded with a call
@@ -198,49 +194,48 @@ public abstract class UpdateByOperator {
      *
      * @param context the context object
      */
-    public abstract void finishUpdate(@NotNull final UpdateContext context);
+    protected void finishUpdate(@NotNull final UpdateContext context) {}
 
     /**
      * Apply a shift to the operation.
      */
-    public abstract void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta);
+    protected abstract void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta);
 
     /**
      * Prepare this operator output column for parallel updated.
      */
-    public abstract void prepareForParallelPopulation(final RowSet changedRows);
+    protected abstract void prepareForParallelPopulation(final RowSet changedRows);
 
     /**
      * Create the modified column set for the input columns of this operator.
      */
-    public void createInputModifiedColumnSet(@NotNull final QueryTable source) {
+    protected void createInputModifiedColumnSet(@NotNull final QueryTable source) {
         inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames());
     }
 
     /**
      * Create the modified column set for the output columns from this operator.
      */
-    public void createOutputModifiedColumnSet(@NotNull final QueryTable result) {
+    protected void createOutputModifiedColumnSet(@NotNull final QueryTable result) {
         outputModifiedColumnSet = result.newModifiedColumnSet(getOutputColumnNames());
     }
 
     /**
      * Return the modified column set for the input columns of this operator.
      */
-    public ModifiedColumnSet getInputModifiedColumnSet() {
+    protected ModifiedColumnSet getInputModifiedColumnSet() {
         return inputModifiedColumnSet;
     }
 
     /**
      * Return the modified column set for the output columns from this operator.
      */
-    public ModifiedColumnSet getOutputModifiedColumnSet() {
+    protected ModifiedColumnSet getOutputModifiedColumnSet() {
         return outputModifiedColumnSet;
     }
 
     /**
      * Clear the output rows by setting value to NULL. Dense sources will apply removes to the inner source.
      */
-    public abstract void clearOutputRows(RowSet toClear);
-
+    protected abstract void clearOutputRows(RowSet toClear);
 }

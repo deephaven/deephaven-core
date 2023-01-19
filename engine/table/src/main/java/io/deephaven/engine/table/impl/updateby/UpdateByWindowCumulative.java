@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
@@ -36,7 +35,8 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
         // create contexts for the affected operators
         for (int opIdx : context.dirtyOperatorIndices) {
-            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize);
+            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
+                    operatorInputSourceSlots[opIdx].length);
         }
     }
 
@@ -175,20 +175,21 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                         : context.timestampColumnSource.getChunk(tsGetCtx, rs).asLongChunk();
 
                 for (int opIdx : context.dirtyOperatorIndices) {
+                    UpdateByCumulativeOperator.Context opCtx =
+                            (UpdateByCumulativeOperator.Context) context.opContext[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
-                    Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
                     for (int ii = 0; ii < srcIndices.length; ii++) {
                         int srcIdx = srcIndices[ii];
                         // chunk prep
                         prepareValuesChunkForSource(context, srcIdx, rs);
-                        chunkArr[ii] = context.inputSourceChunks[srcIdx];
+                        opCtx.chunkArr[ii] = context.inputSourceChunks[srcIdx];
                     }
 
                     // make the specialized call for cumulative operators
                     ((UpdateByCumulativeOperator.Context) context.opContext[opIdx]).accumulate(
                             rs,
-                            chunkArr,
+                            opCtx.chunkArr,
                             tsChunk,
                             size);
                 }
@@ -223,22 +224,17 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                 return affectedRowSet.firstRowKey();
             }
 
-            // get the key previous to this one and shift to post-space (if needed)
+            // get the key previous to this one and shift to post-space
             smallestModifiedKey = affectedRowSet.getPrev(pos - 1);
             if (upstream.shifted().nonempty()) {
-                final RowSetShiftData shifted = upstream.shifted();
-                for (int shiftIdx = 0; shiftIdx < shifted.size(); shiftIdx++) {
-                    if (shifted.getBeginRange(shiftIdx) > smallestModifiedKey) {
-                        // no shift applies so we are already in post-shift space
-                        break;
-                    } else if (shifted.getEndRange(shiftIdx) >= smallestModifiedKey) {
-                        // this shift applies, add the delta to get post-shift
-                        smallestModifiedKey += shifted.getShiftDelta(shiftIdx);
-                        break;
-                    }
-                }
+                smallestModifiedKey = upstream.shifted().apply(smallestModifiedKey);
             }
 
+            // tighten this up more by advancing one key in the post-shift space. This leaves us with first key
+            // following the first remove
+            if (smallestModifiedKey < affectedRowSet.lastRowKey()) {
+                smallestModifiedKey = affectedRowSet.get(affectedRowSet.find(smallestModifiedKey) + 1);
+            }
         }
 
         if (upstream.added().isNonempty()) {

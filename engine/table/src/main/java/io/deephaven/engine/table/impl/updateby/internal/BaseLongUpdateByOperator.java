@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByCumulativeOperator;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,8 +38,8 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
 
         public long curVal = NULL_LONG;
 
-        protected Context(final int chunkSize) {
-            super();
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkCount);
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableLongChunk.makeWritableChunk(chunkSize);
         }
@@ -117,8 +118,8 @@ public abstract class BaseLongUpdateByOperator extends UpdateByCumulativeOperato
      * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
-     *        measured in ticks, otherwise it is measured in nanoseconds.
+     * @param timeScaleUnits the smoothing window for the operator. If no {@code timestampColumnName} is provided, this
+     *                       is measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BaseLongUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,

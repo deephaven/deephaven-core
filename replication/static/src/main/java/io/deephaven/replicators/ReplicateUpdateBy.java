@@ -50,7 +50,7 @@ public class ReplicateUpdateBy {
                 "long getFirstReprocessKey"
         };
 
-        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseCharUpdateByOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -67,9 +67,6 @@ public class ReplicateUpdateBy {
         fixupStandardObject(objectResult, "BaseObjectUpdateByOperator", true,
                 "this\\(pair, affectingColumns, rowRedirection, null, 0\\);",
                 "this(pair, affectingColumns, rowRedirection, null, 0, colType);");
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseFloatUpdateByOperator.java",
-                exemptions);
 
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/ShortCumSumOperator.java",
@@ -85,7 +82,7 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
 
         // Replicate the rolling versions of UpdateByOperations
-        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseWindowedCharUpdateByOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -100,9 +97,6 @@ public class ReplicateUpdateBy {
         objectResult = ReplicatePrimitiveCode.charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseWindowedCharUpdateByOperator.java");
         fixupStandardObject(objectResult, "BaseWindowedObjectUpdateByOperator", true);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseWindowedFloatUpdateByOperator.java",
-                exemptions);
 
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
@@ -289,7 +283,7 @@ public class ReplicateUpdateBy {
                 " ObjectArraySource ", " ObjectArraySource<T> ",
                 "ObjectChunk<Object, Values>", "ObjectChunk<T, Values>",
                 "SizedObjectChunk<Object, >", "SizedObjectChunk<>",
-                "new ObjectArraySource\\(\\);", "new ObjectArraySource(colType);",
+                "new ObjectArraySource\\(\\);", "new ObjectArraySource<>(colType);",
                 "new ObjectSparseArraySource\\(\\);", "new ObjectSparseArraySource<>(colType);",
                 "(?:QueryConstants\\.)?NULL_OBJECT", "null",
                 "Object lastValidValue", "T lastValidValue",

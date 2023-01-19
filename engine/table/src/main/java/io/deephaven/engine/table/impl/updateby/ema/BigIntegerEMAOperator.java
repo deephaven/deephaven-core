@@ -18,8 +18,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
     public class Context extends BigNumberEMAOperator<BigInteger>.Context {
-        protected Context(int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
         }
 
         @Override
@@ -73,7 +73,7 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                                 // preserve curVal and timestamp
                             } else {
                                 // alpha is dynamic, based on time
-                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double)reverseTimeScaleUnits));
+                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseWindowScaleUnits));
                                 BigDecimal oneMinusAlpha = BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
 
                                 curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
@@ -121,7 +121,7 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 }

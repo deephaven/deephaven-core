@@ -329,7 +329,8 @@ public class TestRollingSum extends BaseUpdateByTest {
         final PartitionedTable preOp = t.partitionBy("Sym");
         final PartitionedTable postOp = summed.partitionBy("Sym");
 
-        final String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
+        final String[] columns =
+                t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {

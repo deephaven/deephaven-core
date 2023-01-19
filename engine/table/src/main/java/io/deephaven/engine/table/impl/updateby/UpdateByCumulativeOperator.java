@@ -11,14 +11,13 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-
 public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
     public abstract static class Context implements UpdateContext {
-        public long curTimestamp;
+        /** Holds the chunks of input data for use by the accumulate call */
+        public final Chunk<? extends Values>[] chunkArr;
 
-        protected Context() {
-            curTimestamp = NULL_LONG;
+        public Context(int chunkCount) {
+            chunkArr = new Chunk[chunkCount];
         }
 
         public boolean isValueValid(long atKey) {
@@ -41,41 +40,25 @@ public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
     }
 
     /**
-     * An operator that computes a cumulative operation from a column
+     * An operator that computes a cumulative operation from a column. The operation may be time or ticks aware (e.g.
+     * EMA) and timestamp column name and time units (ticks or nanoseconds) may optionally be provided
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this operation
      * @param rowRedirection the row redirection context to use for the operation
      */
-    public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection) {
-        super(pair, affectingColumns, null, null, 0L, 0L, rowRedirection);
-    }
-
-    /**
-     * An operator that computes a cumulative operation from a column while providing an optional timestamp column name
-     * and a
-     *
-     * @param pair the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns the names of the columns that affect this operation
-     * @param rowRedirection the row redirection context to use for the operation
-     */
-    public UpdateByCumulativeOperator(@NotNull final MatchPair pair,
+    protected UpdateByCumulativeOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
-            final long reverseTimeScaleUnits) {
-        super(pair, affectingColumns, null, timestampColumnName, reverseTimeScaleUnits, 0L, rowRedirection);
+            final long reverseWindowScaleUnits) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, 0L, rowRedirection);
     }
 
 
     /**
      * Initialize the bucket context for this cumulative operator
      */
-    abstract public void initializeUpdate(@NotNull final UpdateContext context, final long firstUnmodifiedKey,
-            long firstUnmodifiedTimestamp);
-
-    @Override
-    public void finishUpdate(@NotNull final UpdateContext context) {}
+    public void initializeUpdate(@NotNull final UpdateContext context, final long firstUnmodifiedKey,
+            long firstUnmodifiedTimestamp) {}
 }

@@ -3,7 +3,6 @@ package io.deephaven.engine.table.impl.updateby;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -57,6 +56,14 @@ class UpdateByWindowTicks extends UpdateByWindow {
         super(operators, operatorSourceSlots, null);
         this.prevUnits = prevUnits;
         this.fwdUnits = fwdUnits;
+
+        // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
+        final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
+        if (prevUnits + fwdUnits > MAX_ARRAY_SIZE) {
+            throw (new IllegalArgumentException(
+                    "UpdateBy window size may not exceed MAX_ARRAY_SIZE (" + MAX_ARRAY_SIZE + ")"));
+        }
     }
 
     private void makeOperatorContexts(UpdateByWindowBucketContext context) {
@@ -67,7 +74,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
         // create contexts for the affected operators
         for (int opIdx : context.dirtyOperatorIndices) {
-            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize);
+            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
+                    operatorInputSourceSlots[opIdx].length);
         }
     }
 
@@ -237,7 +245,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
         if (upstream.modified().isNonempty()) {
             // compute the rows affected from these changes
             try (final WritableRowSet modifiedInverted = ctx.sourceRowSet.invert(upstream.modified());
-                 final RowSet modifiedAffected = computeAffectedRowsTicks(ctx.sourceRowSet, modifiedInverted, prevUnits, fwdUnits)) {
+                    final RowSet modifiedAffected =
+                            computeAffectedRowsTicks(ctx.sourceRowSet, modifiedInverted, prevUnits, fwdUnits)) {
                 tmpAffected.insert(modifiedAffected);
             }
         }
@@ -248,7 +257,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
             final long fwd = Math.max(0, fwdUnits);
 
             try (final RowSet addedInverted = ctx.sourceRowSet.invert(upstream.added());
-                 final RowSet addedAffected = computeAffectedRowsTicks(ctx.sourceRowSet, addedInverted, prev, fwd)) {
+                    final RowSet addedAffected = computeAffectedRowsTicks(ctx.sourceRowSet, addedInverted, prev, fwd)) {
                 tmpAffected.insert(addedAffected);
             }
         }
@@ -259,9 +268,9 @@ class UpdateByWindowTicks extends UpdateByWindow {
             final long fwd = Math.max(0, fwdUnits);
 
             try (final RowSet prevRows = ctx.sourceRowSet.copyPrev();
-                 final RowSet removedInverted = prevRows.invert(upstream.removed());
-                 final WritableRowSet removedAffected =
-                         computeAffectedRowsTicks(prevRows, removedInverted, prev, fwd)) {
+                    final RowSet removedInverted = prevRows.invert(upstream.removed());
+                    final WritableRowSet removedAffected =
+                            computeAffectedRowsTicks(prevRows, removedInverted, prev, fwd)) {
                 // apply shifts to get back to pos-shift space
                 upstream.shifted().apply(removedAffected);
                 // retain only the rows that still exist in the sourceRowSet
@@ -346,20 +355,21 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
                 Arrays.fill(ctx.inputSourceChunks, null);
                 for (int opIdx : context.dirtyOperatorIndices) {
+                    UpdateByWindowedOperator.Context opCtx =
+                            (UpdateByWindowedOperator.Context) context.opContext[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
-                    Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
                     for (int ii = 0; ii < srcIndices.length; ii++) {
                         int srcIdx = srcIndices[ii];
                         // chunk prep
                         prepareValuesChunkForSource(ctx, srcIdx, chunkInfluencerRs);
-                        chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
+                        opCtx.chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
                     }
 
                     // make the specialized call for windowed operators
                     ((UpdateByWindowedOperator.Context) ctx.opContext[opIdx]).accumulate(
                             chunkRs,
-                            chunkArr,
+                            opCtx.chunkArr,
                             pushChunk,
                             popChunk,
                             chunkRsSize);

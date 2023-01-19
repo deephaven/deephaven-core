@@ -26,8 +26,8 @@ public class IntCumMinMaxOperator extends BaseIntUpdateByOperator {
     protected class Context extends BaseIntUpdateByOperator.Context {
         public IntChunk<? extends Values> intValueChunk;
 
-        protected Context(int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
         }
 
         @Override
@@ -67,7 +67,7 @@ public class IntCumMinMaxOperator extends BaseIntUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 }

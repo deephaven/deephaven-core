@@ -25,8 +25,8 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
     protected class Context extends BaseLongUpdateByOperator.Context {
         public ByteChunk<? extends Values> byteValueChunk;
 
-        protected Context(int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
         }
 
         @Override
@@ -61,7 +61,7 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 }

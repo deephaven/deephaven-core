@@ -21,8 +21,8 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
 
         public ShortChunk<? extends Values> shortValueChunk;
 
-        protected Context(int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
         }
 
         @Override
@@ -71,7 +71,7 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                         } else {
                             final long dt = timestamp - lastStamp;
                             // alpha is dynamic, based on time
-                            final double alpha = Math.exp(-dt / (double)reverseTimeScaleUnits);
+                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
                             curVal = alpha * curVal + ((1 - alpha) * input);
                             lastStamp = timestamp;
                         }
@@ -127,7 +127,7 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 }

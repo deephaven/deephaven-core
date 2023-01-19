@@ -89,36 +89,33 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
 
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
                         final Collection<? extends UpdateByOperation> clauses = List.of(
+                                UpdateByOperation.Fill(),
+                                UpdateByOperation.RollingSum(100, 0,
+                                        makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum(0, 100,
+                                        makeOpColNames(columnNamesArray, "_rollsumticksfwd", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.RollingSum(-50, 100,
-                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")));
+                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(-10), Duration.ofMinutes(15),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimefwdex", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum(50, 50,
+                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
+                                                "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
+                                                "boolCol")),
 
-//                                UpdateByOperation.Fill(),
-//                                UpdateByOperation.RollingSum(100, 0,
-//                                        makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
-//                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
-//                                        makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
-//                                UpdateByOperation.RollingSum(0, 100,
-//                                        makeOpColNames(columnNamesArray, "_rollsumticksfwd", "Sym", "ts", "boolCol")),
-//                                UpdateByOperation.RollingSum(-50, 100,
-//                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")),
-//                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
-//                                        makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
-//                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(-10), Duration.ofMinutes(15),
-//                                        makeOpColNames(columnNamesArray, "_rollsumtimefwdex", "Sym", "ts", "boolCol")),
-//                                UpdateByOperation.RollingSum(50, 50,
-//                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
-//                                                "boolCol")),
-//                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-//                                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
-//                                                "boolCol")),
-//
-//                                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
-//                                        makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
-//                                UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
-//                                UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
-//                                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
-//                                UpdateByOperation
-//                                        .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
+                                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
+                                        makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
+                                UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
+                                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                                UpdateByOperation
+                                        .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
                         final UpdateByControl control = UpdateByControl.builder().useRedirection(redirected).build();
                         return bucketed
                                 ? base.updateBy(control, clauses, ColumnName.from("Sym"))

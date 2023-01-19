@@ -1,3 +1,8 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseCharUpdateByOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.chunk.Chunk;
@@ -7,10 +12,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.sources.FloatArraySource;
-import io.deephaven.engine.table.impl.sources.FloatSparseArraySource;
-import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByCumulativeOperator;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperator {
     protected final WritableColumnSource<Float> outputSource;
@@ -34,8 +38,8 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
 
         public float curVal = NULL_FLOAT;
 
-        protected Context(final int chunkSize) {
-            super();
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkCount);
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableFloatChunk.makeWritableChunk(chunkSize);
         }
@@ -88,20 +92,19 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
         }
     }
 
-
     /**
      * Construct a base operator for operations that produce float outputs.
      *
-     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
      * @param rowRedirection the {@link RowRedirection} for the output column
      */
     public BaseFloatUpdateByOperator(@NotNull final MatchPair pair,
-                                     @NotNull final String[] affectingColumns,
-                                     @Nullable final RowRedirection rowRedirection
-                                     // region extra-constructor-args
-                                     // endregion extra-constructor-args
+                                    @NotNull final String[] affectingColumns,
+                                    @Nullable final RowRedirection rowRedirection
+                                    // region extra-constructor-args
+                                    // endregion extra-constructor-args
     ) {
         this(pair, affectingColumns, rowRedirection, null, 0);
     }
@@ -109,23 +112,23 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
     /**
      * Construct a base operator for operations that produce float outputs.
      *
-     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
      * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
-     *        measured in ticks, otherwise it is measured in nanoseconds.
+     * @param timeScaleUnits the smoothing window for the operator. If no {@code timestampColumnName} is provided, this
+     *                       is measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BaseFloatUpdateByOperator(@NotNull final MatchPair pair,
-                                     @NotNull final String[] affectingColumns,
-                                     @Nullable final RowRedirection rowRedirection,
-                                     @Nullable final String timestampColumnName,
-                                     final long timeScaleUnits
-                                     // region extra-constructor-args
-                                     // endregion extra-constructor-args
-                                     ) {
+                                    @NotNull final String[] affectingColumns,
+                                    @Nullable final RowRedirection rowRedirection,
+                                    @Nullable final String timestampColumnName,
+                                    final long timeScaleUnits
+                                    // region extra-constructor-args
+                                    // endregion extra-constructor-args
+                                    ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits);
         if(rowRedirection != null) {
             // region create-dense
@@ -142,6 +145,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
         // region constructor
         // endregion constructor
     }
+
 
     // region extra-methods
     // endregion extra-methods
@@ -170,7 +174,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByCumulativeOperat
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         ((FloatSparseArraySource)outputSource).shift(subRowSetToShift, delta);
     }
-    // endregion
+    // endregion Shifts
 
     @Override
     public void prepareForParallelPopulation(final RowSet changedRows) {

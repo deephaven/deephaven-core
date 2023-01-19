@@ -155,7 +155,7 @@ abstract class UpdateByWindow {
         return operators;
     }
 
-    int[] getUniqueSourceIndices() {
+    public int[] getUniqueSourceIndices() {
         if (uniqueInputSourceIndices == null) {
             final TIntHashSet set = new TIntHashSet();
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {

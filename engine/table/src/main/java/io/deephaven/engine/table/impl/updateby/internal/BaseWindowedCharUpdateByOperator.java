@@ -34,7 +34,8 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
 
         public char curVal = NULL_CHAR;
 
-        protected Context(final int chunkSize) {
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkCount);
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableCharChunk.makeWritableChunk(chunkSize);
         }
@@ -114,15 +115,14 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
 
     public BaseWindowedCharUpdateByOperator(@NotNull final MatchPair pair,
                                             @NotNull final String[] affectingColumns,
-                                            @NotNull final OperationControl control,
                                             @Nullable final String timestampColumnName,
-                                            final long reverseTimeScaleUnits,
-                                            final long forwardTimeScaleUnits,
+                                            final long reverseWindowScaleUnits,
+                                            final long forwardWindowScaleUnits,
                                             @Nullable final RowRedirection rowRedirection
                                             // region extra-constructor-args
                                             // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, rowRedirection);
         if (rowRedirection != null) {
             // region create-dense
             this.maybeInnerSource = new CharacterArraySource();
@@ -141,10 +141,6 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
 
     // region extra-methods
     // endregion extra-methods
-
-    @Override
-    public void initializeUpdate(@NotNull UpdateContext context) {
-    }
 
     @Override
     public void startTrackingPrev() {

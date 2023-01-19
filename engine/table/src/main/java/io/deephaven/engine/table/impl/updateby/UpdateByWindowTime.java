@@ -3,7 +3,6 @@ package io.deephaven.engine.table.impl.updateby;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -39,6 +38,7 @@ class UpdateByWindowTime extends UpdateByWindow {
 
     public class UpdateByWindowTimeBucketContext extends UpdateByWindowBucketContext {
         protected final ChunkSource.GetContext influencerTimestampContext;
+        final ChunkSource.GetContext timestampColumnGetContext;
         protected int currentGetContextSize;
 
         public UpdateByWindowTimeBucketContext(final TrackingRowSet sourceRowSet,
@@ -50,12 +50,14 @@ class UpdateByWindowTime extends UpdateByWindow {
             super(sourceRowSet, timestampColumnSource, timestampSsa, timestampValidRowSet, chunkSize, initialStep);
 
             influencerTimestampContext = timestampColumnSource.makeGetContext(WINDOW_CHUNK_SIZE);
+            timestampColumnGetContext = timestampColumnSource.makeGetContext(WINDOW_CHUNK_SIZE);
         }
 
         @Override
         public void close() {
             super.close();
-            try (final SafeCloseable ignoreCtx1 = influencerTimestampContext) {
+            try (final SafeCloseable ignoreCtx1 = influencerTimestampContext;
+                    final SafeCloseable ignoreCtx2 = timestampColumnGetContext) {
                 // leveraging try with resources to auto-close
             }
         }
@@ -77,7 +79,8 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         // create contexts for the affected operators
         for (int opIdx : context.dirtyOperatorIndices) {
-            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize);
+            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
+                    operatorInputSourceSlots[opIdx].length);
         }
     }
 
@@ -98,30 +101,26 @@ class UpdateByWindowTime extends UpdateByWindow {
      * window parameters. After these rows have been identified, must determine which rows will be needed to recompute
      * these values (i.e. that fall within the window and will `influence` this computation).
      */
-    private static WritableRowSet computeAffectedRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
-            long fwdNanos, final ColumnSource<?> timestampColumnSource, final LongSegmentedSortedArray timestampSsa,
-            boolean usePrev) {
+    private static WritableRowSet computeAffectedRowsTime(final UpdateByWindowTimeBucketContext ctx,
+            final RowSet subset, long revNanos, long fwdNanos, boolean usePrev) {
         // swap fwd/rev to get the affected windows
-        return computeInfluencerRowsTime(sourceSet, subset, fwdNanos, revNanos, timestampColumnSource, timestampSsa,
-                usePrev);
+        return computeInfluencerRowsTime(ctx, subset, fwdNanos, revNanos, usePrev);
     }
 
-    private static WritableRowSet computeInfluencerRowsTime(final RowSet sourceSet, final RowSet subset, long revNanos,
-            long fwdNanos, final ColumnSource<?> timestampColumnSource, final LongSegmentedSortedArray timestampSsa,
-            boolean usePrev) {
-        int chunkSize = (int) Math.min(subset.size(), 4096);
-        try (final RowSequence.Iterator it = subset.getRowSequenceIterator();
-                final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(chunkSize)) {
+    private static WritableRowSet computeInfluencerRowsTime(final UpdateByWindowTimeBucketContext ctx,
+            final RowSet subset,
+            long revNanos, long fwdNanos, boolean usePrev) {
+        try (final RowSequence.Iterator it = subset.getRowSequenceIterator()) {
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            LongSegmentedSortedArray.Iterator ssaIt = timestampSsa.iterator(false, false);
+            LongSegmentedSortedArray.Iterator ssaIt = ctx.timestampSsa.iterator(false, false);
 
             while (it.hasMore() && ssaIt.hasNext()) {
-                final RowSequence rs = it.getNextRowSequenceWithLength(chunkSize);
+                final RowSequence rs = it.getNextRowSequenceWithLength(WINDOW_CHUNK_SIZE);
                 final int rsSize = rs.intSize();
 
                 LongChunk<? extends Values> timestamps = usePrev
-                        ? timestampColumnSource.getPrevChunk(context, rs).asLongChunk()
-                        : timestampColumnSource.getChunk(context, rs).asLongChunk();
+                        ? ctx.timestampColumnSource.getPrevChunk(ctx.timestampColumnGetContext, rs).asLongChunk()
+                        : ctx.timestampColumnSource.getChunk(ctx.timestampColumnGetContext, rs).asLongChunk();
 
                 for (int ii = 0; ii < rsSize; ii++) {
                     final long ts = timestamps.get(ii);
@@ -194,10 +193,12 @@ class UpdateByWindowTime extends UpdateByWindow {
         }
     }
 
-    // windowed by time/ticks is more complex to compute: find all the changed rows and the rows that would
-    // be affected by the changes (includes newly added rows) and need to be recomputed. Then include all
-    // the rows that are affected by deletions (if any). After the affected rows have been identified,
-    // determine which rows will be needed to compute new values for the affected rows (influencer rows)
+    /**
+     * Windowed by time/ticks is complex to compute: must find all the changed rows and rows that would be affected by
+     * the changes (includes newly added rows) and need to be recomputed. Then include all the rows that are affected by
+     * deletions (if any). After the affected rows have been identified, determine which rows will be needed to compute
+     * new values for the affected rows (influencer rows)
+     */
     @Override
     public void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
         UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
@@ -210,8 +211,7 @@ class UpdateByWindowTime extends UpdateByWindow {
         if (ctx.initialStep) {
             ctx.affectedRows = ctx.sourceRowSet;
 
-            ctx.influencerRows = computeInfluencerRowsTime(ctx.timestampValidRowSet, ctx.affectedRows, prevUnits, fwdUnits,
-                    ctx.timestampColumnSource, ctx.timestampSsa, false);
+            ctx.influencerRows = computeInfluencerRowsTime(ctx, ctx.affectedRows, prevUnits, fwdUnits, false);
 
             // mark all operators as affected by this update
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
@@ -253,52 +253,51 @@ class UpdateByWindowTime extends UpdateByWindow {
             return;
         }
 
-        try (final RowSet prevRows = upstream.modified().isNonempty() || upstream.removed().isNonempty() ?
-                ctx.timestampValidRowSet.copyPrev() :
-                null) {
 
-            final WritableRowSet tmpAffected = RowSetFactory.empty();
+        final WritableRowSet tmpAffected = RowSetFactory.empty();
 
-            if (upstream.modified().isNonempty()) {
-                // modified timestamps will affect the current and previous values
-                try (final RowSet modifiedAffected = computeAffectedRowsTime(ctx.timestampValidRowSet, upstream.modified(), prevUnits, fwdUnits, ctx.timestampColumnSource, ctx.timestampSsa, false)) {
-                    tmpAffected.insert(modifiedAffected);
-                }
-                try (final WritableRowSet modifiedAffectedPrev = computeAffectedRowsTime(prevRows, upstream.getModifiedPreShift(), prevUnits, fwdUnits, ctx.timestampColumnSource, ctx.timestampSsa, true)) {
-                    // we used the SSA (post-shift) to get these keys, no need to shift
-                    // retain only the rows that still exist in the sourceRowSet
-                    modifiedAffectedPrev.retain(ctx.timestampValidRowSet);
-                    tmpAffected.insert(modifiedAffectedPrev);
-                }
-                // naturally need to compute all modified rows
-                tmpAffected.insert(upstream.modified());
+        if (upstream.modified().isNonempty()) {
+            // modified timestamps will affect the current and previous values
+            try (final RowSet modifiedAffected =
+                    computeAffectedRowsTime(ctx, upstream.modified(), prevUnits, fwdUnits, false)) {
+                tmpAffected.insert(modifiedAffected);
             }
-
-            if (upstream.added().isNonempty()) {
-                try (final RowSet addedAffected = computeAffectedRowsTime(ctx.timestampValidRowSet, upstream.added(), prevUnits, fwdUnits, ctx.timestampColumnSource, ctx.timestampSsa, false)) {
-                    tmpAffected.insert(addedAffected);
-                }
-                // naturally need to compute all new rows
-                tmpAffected.insert(upstream.added());
+            try (final WritableRowSet modifiedAffectedPrev =
+                    computeAffectedRowsTime(ctx, upstream.getModifiedPreShift(), prevUnits, fwdUnits, true)) {
+                // we used the SSA (post-shift) to get these keys, no need to shift
+                // retain only the rows that still exist in the sourceRowSet
+                modifiedAffectedPrev.retain(ctx.timestampValidRowSet);
+                tmpAffected.insert(modifiedAffectedPrev);
             }
-
-            // other rows can be affected by removes or mods
-            if (upstream.removed().isNonempty()) {
-                try (final WritableRowSet removedAffected = computeAffectedRowsTime(prevRows, upstream.removed(), prevUnits, fwdUnits, ctx.timestampColumnSource, ctx.timestampSsa, true)) {
-                    // we used the SSA (post-shift) to get these keys, no need to shift
-                    // retain only the rows that still exist in the sourceRowSet
-                    removedAffected.retain(ctx.timestampValidRowSet);
-
-                    tmpAffected.insert(removedAffected);
-                }
-            }
-
-            ctx.affectedRows = tmpAffected;
+            // naturally need to compute all modified rows
+            tmpAffected.insert(upstream.modified());
         }
 
+        if (upstream.added().isNonempty()) {
+            try (final RowSet addedAffected =
+                    computeAffectedRowsTime(ctx, upstream.added(), prevUnits, fwdUnits, false)) {
+                tmpAffected.insert(addedAffected);
+            }
+            // naturally need to compute all new rows
+            tmpAffected.insert(upstream.added());
+        }
+
+        // other rows can be affected by removes or mods
+        if (upstream.removed().isNonempty()) {
+            try (final WritableRowSet removedAffected =
+                    computeAffectedRowsTime(ctx, upstream.removed(), prevUnits, fwdUnits, true)) {
+                // we used the SSA (post-shift) to get these keys, no need to shift
+                // retain only the rows that still exist in the sourceRowSet
+                removedAffected.retain(ctx.timestampValidRowSet);
+
+                tmpAffected.insert(removedAffected);
+            }
+        }
+
+        ctx.affectedRows = tmpAffected;
+
         // now get influencer rows for the affected rows
-        ctx.influencerRows = computeInfluencerRowsTime(ctx.timestampValidRowSet, ctx.affectedRows, prevUnits, fwdUnits,
-                ctx.timestampColumnSource, ctx.timestampSsa, false);
+        ctx.influencerRows = computeInfluencerRowsTime(ctx, ctx.affectedRows, prevUnits, fwdUnits, false);
 
         makeOperatorContexts(ctx);
     }
@@ -395,20 +394,21 @@ class UpdateByWindowTime extends UpdateByWindow {
 
                 Arrays.fill(ctx.inputSourceChunks, null);
                 for (int opIdx : context.dirtyOperatorIndices) {
+                    UpdateByWindowedOperator.Context opCtx =
+                            (UpdateByWindowedOperator.Context) context.opContext[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
-                    Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
                     for (int ii = 0; ii < srcIndices.length; ii++) {
                         int srcIdx = srcIndices[ii];
                         // chunk prep
                         prepareValuesChunkForSource(ctx, srcIdx, chunkInfluencerRs);
-                        chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
+                        opCtx.chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
                     }
 
                     // make the specialized call for windowed operators
                     ((UpdateByWindowedOperator.Context) ctx.opContext[opIdx]).accumulate(
                             chunkRs,
-                            chunkArr,
+                            opCtx.chunkArr,
                             pushChunk,
                             popChunk,
                             chunkRsSize);

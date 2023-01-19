@@ -16,8 +16,8 @@ public final class BigIntegerCumProdOperator extends BaseObjectUpdateByOperator<
     protected class Context extends BaseObjectUpdateByOperator<BigInteger>.Context {
         public ObjectChunk<BigInteger, ? extends Values> objectValueChunk;
 
-        protected Context(int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
         }
 
         @Override
@@ -55,7 +55,7 @@ public final class BigIntegerCumProdOperator extends BaseObjectUpdateByOperator<
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 }

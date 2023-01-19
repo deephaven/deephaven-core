@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByCumulativeOperator;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,8 +41,8 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
 
         public T curVal = null;
 
-        protected Context(final int chunkSize) {
-            super();
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkCount);
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
         }
@@ -121,8 +122,8 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
      * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
-     *        measured in ticks, otherwise it is measured in nanoseconds.
+     * @param timeScaleUnits the smoothing window for the operator. If no {@code timestampColumnName} is provided, this
+     *                       is measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BaseObjectUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
@@ -136,7 +137,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
         super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits);
         if(rowRedirection != null) {
             // region create-dense
-            this.maybeInnerSource = new ObjectArraySource(colType);
+            this.maybeInnerSource = new ObjectArraySource<>(colType);
             // endregion create-dense
             this.outputSource = new WritableRedirectedColumnSource<>(rowRedirection, maybeInnerSource, 0);
         } else {

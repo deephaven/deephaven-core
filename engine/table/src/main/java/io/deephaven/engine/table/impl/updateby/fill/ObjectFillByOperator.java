@@ -25,8 +25,8 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
         public ObjectChunk<T, ? extends Values> ObjectValueChunk;
 
-        protected Context(int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
         }
 
         @Override
@@ -58,8 +58,8 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 
     // region extra-methods

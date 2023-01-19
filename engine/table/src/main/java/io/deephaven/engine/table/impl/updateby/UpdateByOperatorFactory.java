@@ -370,41 +370,31 @@ public class UpdateByOperatorFactory {
             final long fwdTimeScaleUnits = rs.fwdTimeScale().timescaleUnits();
 
             if (csType == Boolean.class || csType == boolean.class) {
-                return new ByteRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(), prevTimeScaleUnits, fwdTimeScaleUnits,
-                        rowRedirection, NULL_BOOLEAN_AS_BYTE);
+                return new ByteRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection, NULL_BOOLEAN_AS_BYTE);
             } else if (csType == byte.class || csType == Byte.class) {
-                return new ByteRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(), prevTimeScaleUnits, fwdTimeScaleUnits,
-                        rowRedirection, NULL_BYTE);
+                return new ByteRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection, NULL_BYTE);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(), prevTimeScaleUnits, fwdTimeScaleUnits,
-                        rowRedirection);
+                return new ShortRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(), prevTimeScaleUnits, fwdTimeScaleUnits,
-                        rowRedirection);
+                return new IntRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(), prevTimeScaleUnits, fwdTimeScaleUnits,
-                        rowRedirection);
+                return new LongRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(), prevTimeScaleUnits, fwdTimeScaleUnits,
-                        rowRedirection);
+                return new FloatRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(),
+                return new DoubleRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
                         prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection,
-                        control.mathContextOrDefault());
+                return new BigDecimalRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection, control.mathContextOrDefault());
             } else if (csType == BigInteger.class) {
-                return new BigIntegerRollingSumOperator(pair, affectingColumns, rs.controlOrDefault(),
-                        rs.prevTimeScale().timestampCol(),
+                return new BigIntegerRollingSumOperator(pair, affectingColumns, rs.prevTimeScale().timestampCol(),
                         prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
             }
 

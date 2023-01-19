@@ -28,8 +28,8 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
         protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
         protected PairwiseFloatRingBuffer floatPairwiseSum;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
             floatPairwiseSum = new PairwiseFloatRingBuffer(PAIRWISE_BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
                 if (a == NULL_FLOAT) {
                     return b;
@@ -90,21 +90,20 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 
     public FloatRollingSumOperator(@NotNull final MatchPair pair,
                                    @NotNull final String[] affectingColumns,
-                                   @NotNull final OperationControl control,
                                    @Nullable final String timestampColumnName,
-                                   final long reverseTimeScaleUnits,
-                                   final long forwardTimeScaleUnits,
+                                   final long reverseWindowScaleUnits,
+                                   final long forwardWindowScaleUnits,
                                    @Nullable final RowRedirection rowRedirection
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, rowRedirection);
         // region constructor
         // endregion constructor
     }

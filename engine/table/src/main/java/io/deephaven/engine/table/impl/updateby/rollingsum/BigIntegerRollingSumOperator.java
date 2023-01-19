@@ -22,8 +22,8 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
         protected ObjectChunk<BigInteger, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigInteger> objectWindowValues;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
             objectWindowValues = new RingBuffer<>(RING_BUFFER_INITIAL_CAPACITY);
         }
 
@@ -84,21 +84,20 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
 
     @NotNull
     @Override
-    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 
     public BigIntegerRollingSumOperator(@NotNull final MatchPair pair,
                                         @NotNull final String[] affectingColumns,
-                                        @NotNull final OperationControl control,
                                         @Nullable final String timestampColumnName,
-                                        final long reverseTimeScaleUnits,
-                                        final long forwardTimeScaleUnits,
+                                        final long reverseWindowScaleUnits,
+                                        final long forwardWindowScaleUnits,
                                         @Nullable final RowRedirection rowRedirection
                                         // region extra-constructor-args
                                         // endregion extra-constructor-args
                                         ) {
-        super(pair, affectingColumns, control, timestampColumnName, reverseTimeScaleUnits, forwardTimeScaleUnits, rowRedirection, BigInteger.class);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, rowRedirection, BigInteger.class);
         // region constructor
         // endregion constructor        
     }

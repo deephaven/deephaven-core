@@ -24,8 +24,8 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
     protected class Context extends BaseDoubleUpdateByOperator.Context {
         public DoubleChunk<? extends Values> doubleValueChunk;
 
-        protected Context(int chunkSize) {
-            super(chunkSize);
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
         }
 
         @Override
@@ -60,7 +60,7 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 }
