@@ -73,7 +73,7 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(test_table.columns[1].component_type, dtypes.double)
 
     def test_numeric_columns(self):
-        x = [MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG, 0.98888, 999999.888888]
+        x = [MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG, 1, 999999]
         n = len(x)
 
         def get_x(i) -> int:
