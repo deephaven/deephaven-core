@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.base;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.parquet.base.util.Helpers;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
@@ -21,10 +22,7 @@ import java.nio.IntBuffer;
  */
 public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
 
-    /**
-     * The maximum array size is determined by the JVM and in practice is less than Integer.MAX_VALUE. (See note at {@link jdk.internal.util.ArraysSupport#SOFT_MAX_ARRAY_LENGTH}.)
-     */
-    private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE - 8;
+    private static final int MAXIMUM_TOTAL_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE;
 
     private final ByteBufferAllocator allocator;
 
