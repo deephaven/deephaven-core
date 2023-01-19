@@ -12,16 +12,11 @@ __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 __gradlew="${__dir}/../../../gradlew"
 
 server_base_image_id="$(${__gradlew} -q docker-server-base:showImageId)"
-sklearn_base_image_id="$(${__gradlew} -q docker-sklearn-base:showImageId)"
 tensorflow_base_image_id="$(${__gradlew} -q docker-tensorflow-base:showImageId)"
 
 podman run -q --rm --override-arch arm64 "${server_base_image_id}" pip freeze > build/server-base.arm64.txt
 podman run -q --rm --override-arch amd64 "${server_base_image_id}" pip freeze > build/server-base.amd64.txt
 diff -q build/server-base.amd64.txt build/server-base.arm64.txt
-
-podman run -q --rm --override-arch arm64 "${sklearn_base_image_id}" pip freeze > build/sklearn-base.arm64.txt
-podman run -q --rm --override-arch amd64 "${sklearn_base_image_id}" pip freeze > build/sklearn-base.amd64.txt
-diff -q build/sklearn-base.amd64.txt build/sklearn-base.arm64.txt
 
 podman run -q --rm --override-arch arm64 "${tensorflow_base_image_id}" pip freeze > build/tensorflow-base.arm64.txt
 podman run -q --rm --override-arch amd64 "${tensorflow_base_image_id}" pip freeze > build/tensorflow-base.amd64.txt

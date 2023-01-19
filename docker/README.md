@@ -8,7 +8,6 @@ The `docker-server-slim` project produces the image `deephaven/server-slim-netty
 
 The `docker-server` project produces the images:
 * `deephaven/server-netty:local-build`
-* `deephaven/server-sklearn-netty:local-build`
 * `deephaven/server-tensorflow-netty:local-build`
 
 When the base images for `docker-server` are updated, the requirements.txt files may need to be updated.
@@ -16,7 +15,6 @@ This can currently be done manually via:
 
 ```shell
 docker run --rm ghcr.io/deephaven/server-base:latest pip freeze > docker/server/src/main/server/requirements.txt
-docker run --rm ghcr.io/deephaven/sklearn-base:latest pip freeze > docker/server/src/main/server-sklearn/requirements.txt
 docker run --rm ghcr.io/deephaven/tensorflow-base:latest pip freeze > docker/server/src/main/server-tensorflow/requirements.txt
 ```
 
