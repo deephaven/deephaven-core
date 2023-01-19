@@ -1378,14 +1378,18 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
         // If using threads, wait for the consumer threads to finish:
         if (consumerThreadsCountDownLatch != null) {
+            final Supplier<String> getStatusStr = () -> "(Threads still running: "
+                    + consumerThreadsCountDownLatch.getCount() +
+                    ", messagesQueued=" + messagesQueued.get() +
+                    ", messagesProcessed=" + messagesProcessed.longValue() +
+                    ')';
             try {
                 log.debug().append("JSONToTableWriterAdapter shutdown - awaiting termination").endl();
                 if (!consumerThreadsCountDownLatch.await(SHUTDOWN_TIMEOUT_SECS, TimeUnit.SECONDS)) {
-                    throw new JSONIngesterException("Timed out while awaiting shutdown! (Threads still running: "
-                            + consumerThreadsCountDownLatch.getCount() + ')');
+                    throw new JSONIngesterException("Timed out while awaiting shutdown! " + getStatusStr.get());
                 }
             } catch (InterruptedException ex) {
-                throw new JSONIngesterException("Interrupted while awaiting shutdown!", ex);
+                throw new JSONIngesterException("Interrupted while awaiting shutdown! " + getStatusStr.get(), ex);
             }
         }
 
