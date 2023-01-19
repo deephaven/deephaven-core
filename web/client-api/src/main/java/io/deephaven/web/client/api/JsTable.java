@@ -92,6 +92,14 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @JsProperty(namespace = "dh.Table")
     public static final double SIZE_UNCOALESCED = -2;
 
+    @JsProperty(namespace = "dh.ValueType")
+    public static final String STRING = "String",
+            NUMBER = "Number",
+            DOUBLE = "Double",
+            LONG = "Long",
+            DATETIME = "Datetime",
+            BOOLEAN = "Boolean";
+
     // indicates that the CTS has changed, "downstream" tables should take note
     public static final String INTERNAL_EVENT_STATECHANGED = "statechanged-internal",
             // indicates that the "size listener" has gone off, thought possibly without a change in size, indicating a
@@ -1033,23 +1041,22 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else if (Js.typeof(value).equals("boolean")) {
             literal.setBoolValue((Boolean) value);
         } else {
-            switch (FilterDescriptor.ValueType.valueOf(valueType)) {
-                case String:
+            switch (valueType) {
+                case STRING:
                     literal.setStringValue(value.toString());
                     break;
-                case Number:
+                case NUMBER:
                     literal.setDoubleValue(Double.parseDouble(value.toString()));
                     break;
-                case Long:
+                case LONG:
                     literal.setLongValue(value.toString());
                     break;
-                case Datetime:
+                case DATETIME:
                     literal.setNanoTimeValue(value.toString());
                     break;
-                case Boolean:
+                case BOOLEAN:
                     literal.setBoolValue(Boolean.parseBoolean(value.toString()));
                     break;
-                case Other:
                 default:
                     throw new UnsupportedOperationException("Invalid value type for seekRow: " + valueType);
             }

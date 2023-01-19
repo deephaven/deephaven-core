@@ -412,12 +412,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         });
     }
 
-    public void fetchPandasTable(FetchPandasTableRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        // do not forget to check permissions via TableServiceContextualAuthWiring#checkPermissionFetchPandasTable
-        super.fetchPandasTable(request, responseObserver);
-    }
-
     @Override
     public void batch(final BatchTableRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
