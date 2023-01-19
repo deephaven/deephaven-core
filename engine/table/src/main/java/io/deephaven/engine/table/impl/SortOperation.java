@@ -296,10 +296,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      */
     public static RowRedirection getRowRedirection(@NotNull final Table sortResult) {
         for (final ColumnSource<?> columnSource : sortResult.getColumnSources()) {
-            if (!(columnSource instanceof RedirectedColumnSource)) {
-                continue;
+            if (columnSource instanceof RedirectedColumnSource) {
+                return ((RedirectedColumnSource<?>) columnSource).getRowRedirection();
             }
-            return ((RedirectedColumnSource<?>) columnSource).getRowRedirection();
         }
         return null;
     }
