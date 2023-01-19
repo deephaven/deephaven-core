@@ -43,7 +43,6 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.STD,
             JsAggregationOperation.FIRST,
             JsAggregationOperation.LAST,
-            JsAggregationOperation.SKIP,
             JsAggregationOperation.COUNT_DISTINCT,
             JsAggregationOperation.DISTINCT,
             JsAggregationOperation.UNIQUE);

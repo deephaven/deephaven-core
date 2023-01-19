@@ -544,50 +544,6 @@ public class TableService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface FetchPandasTableType {
-        @JsOverlay
-        static TableService.FetchPandasTableType create() {
-            return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        String getMethodName();
-
-        @JsProperty
-        Object getRequestType();
-
-        @JsProperty
-        Object getResponseType();
-
-        @JsProperty
-        Object getService();
-
-        @JsProperty
-        boolean isRequestStream();
-
-        @JsProperty
-        boolean isResponseStream();
-
-        @JsProperty
-        void setMethodName(String methodName);
-
-        @JsProperty
-        void setRequestStream(boolean requestStream);
-
-        @JsProperty
-        void setRequestType(Object requestType);
-
-        @JsProperty
-        void setResponseStream(boolean responseStream);
-
-        @JsProperty
-        void setResponseType(Object responseType);
-
-        @JsProperty
-        void setService(Object service);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface FetchTableType {
         @JsOverlay
         static TableService.FetchTableType create() {
@@ -1787,7 +1743,6 @@ public class TableService {
     public static TableService.EmptyTableType EmptyTable;
     public static TableService.ExactJoinTablesType ExactJoinTables;
     public static TableService.ExportedTableUpdatesType ExportedTableUpdates;
-    public static TableService.FetchPandasTableType FetchPandasTable;
     public static TableService.FetchTableType FetchTable;
     public static TableService.FilterType Filter;
     public static TableService.FlattenType Flatten;

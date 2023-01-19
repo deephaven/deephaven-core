@@ -15,7 +15,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Cros
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FetchPandasTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FetchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FilterTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
@@ -1186,26 +1185,6 @@ public class Operation {
 
             @JsProperty
             void setRightId(Object rightId);
-        }
-
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface FetchPandasTableFieldType {
-            @JsOverlay
-            static Operation.ToObjectReturnType.FetchPandasTableFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            Object getResultId();
-
-            @JsProperty
-            Object getSourceId();
-
-            @JsProperty
-            void setResultId(Object resultId);
-
-            @JsProperty
-            void setSourceId(Object sourceId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2653,9 +2632,6 @@ public class Operation {
         Operation.ToObjectReturnType.ExactJoinFieldType getExactJoin();
 
         @JsProperty
-        Operation.ToObjectReturnType.FetchPandasTableFieldType getFetchPandasTable();
-
-        @JsProperty
         Operation.ToObjectReturnType.FetchTableFieldType getFetchTable();
 
         @JsProperty
@@ -2761,10 +2737,6 @@ public class Operation {
 
         @JsProperty
         void setExactJoin(Operation.ToObjectReturnType.ExactJoinFieldType exactJoin);
-
-        @JsProperty
-        void setFetchPandasTable(
-                Operation.ToObjectReturnType.FetchPandasTableFieldType fetchPandasTable);
 
         @JsProperty
         void setFetchTable(Operation.ToObjectReturnType.FetchTableFieldType fetchTable);
@@ -3984,26 +3956,6 @@ public class Operation {
 
             @JsProperty
             void setRightId(Object rightId);
-        }
-
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface FetchPandasTableFieldType {
-            @JsOverlay
-            static Operation.ToObjectReturnType0.FetchPandasTableFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            Object getResultId();
-
-            @JsProperty
-            Object getSourceId();
-
-            @JsProperty
-            void setResultId(Object resultId);
-
-            @JsProperty
-            void setSourceId(Object sourceId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -5451,9 +5403,6 @@ public class Operation {
         Operation.ToObjectReturnType0.ExactJoinFieldType getExactJoin();
 
         @JsProperty
-        Operation.ToObjectReturnType0.FetchPandasTableFieldType getFetchPandasTable();
-
-        @JsProperty
         Operation.ToObjectReturnType0.FetchTableFieldType getFetchTable();
 
         @JsProperty
@@ -5559,10 +5508,6 @@ public class Operation {
 
         @JsProperty
         void setExactJoin(Operation.ToObjectReturnType0.ExactJoinFieldType exactJoin);
-
-        @JsProperty
-        void setFetchPandasTable(
-                Operation.ToObjectReturnType0.FetchPandasTableFieldType fetchPandasTable);
 
         @JsProperty
         void setFetchTable(Operation.ToObjectReturnType0.FetchTableFieldType fetchTable);
@@ -5671,8 +5616,6 @@ public class Operation {
 
     public native void clearExactJoin();
 
-    public native void clearFetchPandasTable();
-
     public native void clearFetchTable();
 
     public native void clearFilter();
@@ -5742,8 +5685,6 @@ public class Operation {
     public native EmptyTableRequest getEmptyTable();
 
     public native ExactJoinTablesRequest getExactJoin();
-
-    public native FetchPandasTableRequest getFetchPandasTable();
 
     public native FetchTableRequest getFetchTable();
 
@@ -5816,8 +5757,6 @@ public class Operation {
     public native boolean hasEmptyTable();
 
     public native boolean hasExactJoin();
-
-    public native boolean hasFetchPandasTable();
 
     public native boolean hasFetchTable();
 
@@ -5910,10 +5849,6 @@ public class Operation {
     public native void setExactJoin();
 
     public native void setExactJoin(ExactJoinTablesRequest value);
-
-    public native void setFetchPandasTable();
-
-    public native void setFetchPandasTable(FetchPandasTableRequest value);
 
     public native void setFetchTable();
 

@@ -27,8 +27,6 @@ type TableServiceClient interface {
 	GetExportedTableCreationResponse(ctx context.Context, in *ticket.Ticket, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Fetches a Table from an existing source ticket and exports it to the local session result ticket.
 	FetchTable(ctx context.Context, in *FetchTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	// Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-	FetchPandasTable(ctx context.Context, in *FetchPandasTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Create a table that has preview columns applied to an existing source table.
 	ApplyPreviewColumns(ctx context.Context, in *ApplyPreviewColumnsRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Create an empty table with the given column names and types.
@@ -151,15 +149,6 @@ func (c *tableServiceClient) GetExportedTableCreationResponse(ctx context.Contex
 func (c *tableServiceClient) FetchTable(ctx context.Context, in *FetchTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/FetchTable", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *tableServiceClient) FetchPandasTable(ctx context.Context, in *FetchPandasTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
-	out := new(ExportedTableCreationResponse)
-	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -554,8 +543,6 @@ type TableServiceServer interface {
 	GetExportedTableCreationResponse(context.Context, *ticket.Ticket) (*ExportedTableCreationResponse, error)
 	// Fetches a Table from an existing source ticket and exports it to the local session result ticket.
 	FetchTable(context.Context, *FetchTableRequest) (*ExportedTableCreationResponse, error)
-	// Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-	FetchPandasTable(context.Context, *FetchPandasTableRequest) (*ExportedTableCreationResponse, error)
 	// Create a table that has preview columns applied to an existing source table.
 	ApplyPreviewColumns(context.Context, *ApplyPreviewColumnsRequest) (*ExportedTableCreationResponse, error)
 	// Create an empty table with the given column names and types.
@@ -668,9 +655,6 @@ func (UnimplementedTableServiceServer) GetExportedTableCreationResponse(context.
 }
 func (UnimplementedTableServiceServer) FetchTable(context.Context, *FetchTableRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchTable not implemented")
-}
-func (UnimplementedTableServiceServer) FetchPandasTable(context.Context, *FetchPandasTableRequest) (*ExportedTableCreationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FetchPandasTable not implemented")
 }
 func (UnimplementedTableServiceServer) ApplyPreviewColumns(context.Context, *ApplyPreviewColumnsRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplyPreviewColumns not implemented")
@@ -828,24 +812,6 @@ func _TableService_FetchTable_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TableServiceServer).FetchTable(ctx, req.(*FetchTableRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TableService_FetchPandasTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FetchPandasTableRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TableServiceServer).FetchPandasTable(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TableServiceServer).FetchPandasTable(ctx, req.(*FetchPandasTableRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1536,10 +1502,6 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FetchTable",
 			Handler:    _TableService_FetchTable_Handler,
-		},
-		{
-			MethodName: "FetchPandasTable",
-			Handler:    _TableService_FetchPandasTable_Handler,
 		},
 		{
 			MethodName: "ApplyPreviewColumns",

@@ -21,7 +21,9 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
+import io.deephaven.engine.table.impl.util.InverseRowRedirectionImpl;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -40,7 +42,7 @@ import java.util.stream.Stream;
 
 public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public enum Mode {
-        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING
+        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_STATIC
     }
 
     public static void initializeSelectColumns(
@@ -68,7 +70,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
-        if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
+        if (mode == Mode.SELECT_REDIRECTED_STATIC) {
+            rowRedirection = new InverseRowRedirectionImpl(rowSet);
+        } else if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
             rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
             analyzer = analyzer.createRedirectionLayer(rowSet, rowRedirection);
         } else {
@@ -149,6 +153,15 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     if (flattenedResult) {
                         numberOfInternallyFlattenedColumns++;
                     }
+                    break;
+                }
+                case SELECT_REDIRECTED_STATIC: {
+                    final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
+                    final WritableColumnSource<?> scs = new WritableRedirectedColumnSource<>(
+                            rowRedirection, underlyingSource, rowSet.size());
+                    analyzer =
+                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
+                                    mcsBuilder, true, false, false);
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:

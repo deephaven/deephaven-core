@@ -1177,14 +1177,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                     checkInitiateOperation();
                     final SelectAndViewAnalyzer.Mode mode;
                     if (isRefreshing()) {
-                        if (!isFlat() && (flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
-                                || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT)) {
+                        if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
+                                || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT))) {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_REFRESHING;
                         } else {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REFRESHING;
                         }
                     } else {
-                        mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
+                        if (flavor == Flavor.Update && exceedsMaximumStaticSelectOverhead()) {
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_STATIC;
+                        } else {
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
+                        }
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
                     final SelectAndViewAnalyzer analyzer =

@@ -1662,7 +1662,8 @@ class StaticChunkedCrossJoinStateManager
 
     // region extraction functions
     ResultOnlyCrossJoinStateManager getResultOnlyStateManager() {
-        return new ResultOnlyCrossJoinStateManager(rightRowSetSource, leftRowSetToSlot, getNumShiftBits(), false);
+        return new ResultOnlyCrossJoinStateManager(rightRowSetSource, leftRowSetToSlot, getNumShiftBits(),
+                leftOuterJoin());
     }
 
     /**

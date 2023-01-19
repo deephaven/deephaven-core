@@ -3,12 +3,13 @@
  */
 package io.deephaven.web.client.api;
 
-import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.TreeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
@@ -23,6 +24,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Seek
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.comboaggregaterequest.Aggregate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
@@ -476,11 +478,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @JsMethod
     public TableViewportSubscription setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
             @JsOptional Double updateIntervalMs) {
-        if (lastVisibleState().getTableDef().getAttributes().getTreeHierarchicalColumnName() != null) {
-            // we only need to check the last visible state since if it isn't a tree, our current state isnt either
-            throw new IllegalStateException(
-                    "Cannot set a normal table viewport on a treetable - please re-fetch this as a treetable");
-        }
         Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : null;
         ClientTableState currentState = state();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
@@ -745,8 +742,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         });
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTreeTable> rollup(Object configObject) {
         Objects.requireNonNull(configObject, "Table.rollup configuration");
         final JsRollupConfig config;
@@ -755,18 +751,32 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else {
             config = new JsRollupConfig(Js.cast(configObject));
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            // RollupTableRequest rollupRequest = config.buildRequest();
-            // rollupRequest.setTable(state().getHandle());
-            // rollupRequest.setResultHandle(state.getHandle());
-            // workerConnection.getServer().rollup(rollupRequest, c);
-            throw new UnsupportedOperationException("rollup");
-        }, "rollup " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata())
-                .then(state -> new JsTreeTable(state, workerConnection).finishFetch());
+
+        Ticket rollupTicket = workerConnection.getConfig().newTicket();
+
+        Promise<Object> rollupPromise = Callbacks.grpcUnaryPromise(c -> {
+            RollupRequest request = config.buildRequest(getColumns());
+            request.setSourceTableId(state().getHandle().makeTicket());
+            request.setResultRollupTableId(rollupTicket);
+            workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
+        });
+
+        JsWidget widget = new JsWidget(workerConnection, c -> {
+            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+            partitionedTableRequest.setSourceId(new TypedTicket());
+            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setTicket(rollupTicket);
+            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                    workerConnection.metadata(), (fail, success) -> {
+                        c.handleResponse(fail, success, rollupTicket);
+                    });
+        });
+
+        return Promise.all(widget.refetch(), rollupPromise)
+                .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTreeTable> treeTable(Object configObject) {
         Objects.requireNonNull(configObject, "Table.treeTable configuration");
         final JsTreeTableConfig config;
@@ -775,18 +785,34 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else {
             config = new JsTreeTableConfig(Js.cast(configObject));
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            // workerConnection.getServer().treeTable(
-            // state().getHandle(),
-            // state.getHandle(),
-            // config.idColumn,
-            // config.parentColumn,
-            // config.promoteOrphansToRoot,
-            // c
-            // );
-            throw new UnsupportedOperationException("treeTable");
-        }, "treeTable " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata())
-                .then(state -> new JsTreeTable(state, workerConnection).finishFetch());
+
+        Ticket treeTicket = workerConnection.getConfig().newTicket();
+
+        Promise<Object> treePromise = Callbacks.grpcUnaryPromise(c -> {
+            TreeRequest requestMessage = new TreeRequest();
+            requestMessage.setSourceTableId(state().getHandle().makeTicket());
+            requestMessage.setResultTreeTableId(treeTicket);
+            requestMessage.setIdentifierColumn(config.idColumn);
+            requestMessage.setParentIdentifierColumn(config.parentColumn);
+            requestMessage.setPromoteOrphans(config.promoteOrphansToRoot);
+
+            workerConnection.hierarchicalTableServiceClient().tree(requestMessage, workerConnection.metadata(),
+                    c::apply);
+        });
+
+        JsWidget widget = new JsWidget(workerConnection, c -> {
+            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+            partitionedTableRequest.setSourceId(new TypedTicket());
+            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setTicket(treeTicket);
+            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                    workerConnection.metadata(), (fail, success) -> {
+                        c.handleResponse(fail, success, treeTicket);
+                    });
+        });
+
+        return Promise.all(widget.refetch(), treePromise)
+                .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
     }
 
     @JsMethod

@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.engine.table.impl.sources.immutable.Immutable2DCharArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
