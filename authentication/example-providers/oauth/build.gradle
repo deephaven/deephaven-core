@@ -1,0 +1,3 @@
+dependencies {
+    implementation 'org.pac4j:pac4j-oauth:5.4.6'
+}

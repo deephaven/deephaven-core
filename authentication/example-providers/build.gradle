@@ -1,0 +1,19 @@
+plugins {
+    id 'io.deephaven.project.register'
+    id 'com.github.johnrengelman.shadow' apply false
+}
+
+project.subprojects { Project p ->
+    p.plugins.apply('java-library')
+    p.plugins.apply('io.deephaven.project.register')
+    p.plugins.apply('com.github.johnrengelman.shadow')
+    p.dependencies {
+        shadow project(':authentication')
+        shadow project(':Configuration')
+    }
+//    p.artifacts { h ->
+//        h.add('shadow', p.tasks.named('shadowJar'))
+////        shadow(p.tasks.named('shadowJar'))
+//    }
+    p.tasks.findByName('assemble').dependsOn p.tasks.named('shadowJar')
+}
