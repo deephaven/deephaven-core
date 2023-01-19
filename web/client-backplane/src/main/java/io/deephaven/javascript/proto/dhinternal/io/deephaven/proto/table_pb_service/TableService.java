@@ -1028,6 +1028,50 @@ public class TableService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface SeekRowType {
+        @JsOverlay
+        static TableService.SeekRowType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface SelectDistinctType {
         @JsOverlay
         static TableService.SelectDistinctType create() {
@@ -1710,6 +1754,7 @@ public class TableService {
     public static TableService.MergeTablesType MergeTables;
     public static TableService.NaturalJoinTablesType NaturalJoinTables;
     public static TableService.RunChartDownsampleType RunChartDownsample;
+    public static TableService.SeekRowType SeekRow;
     public static TableService.SelectType Select;
     public static TableService.SelectDistinctType SelectDistinct;
     public static TableService.SnapshotType Snapshot;

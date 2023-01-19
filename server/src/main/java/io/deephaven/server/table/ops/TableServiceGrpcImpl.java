@@ -4,6 +4,7 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.clientsupport.gotorow.SeekRow;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -32,9 +33,12 @@ import io.deephaven.proto.backplane.grpc.FlattenRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
+import io.deephaven.proto.backplane.grpc.SeekRowRequest;
+import io.deephaven.proto.backplane.grpc.SeekRowResponse;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -54,12 +58,15 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.time.DateTime;
 import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -304,9 +311,105 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_BY, request, responseObserver);
     }
 
+    private Object getSeekValue(Literal literal, Class<?> dataType) {
+        if (literal.hasStringValue()) {
+            if (BigDecimal.class.isAssignableFrom(dataType)) {
+                return new BigDecimal(literal.getStringValue());
+            }
+            if (BigInteger.class.isAssignableFrom(dataType)) {
+                return new BigInteger(literal.getStringValue());
+            }
+            if (!String.class.isAssignableFrom(dataType)) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Invalid String type for seek: " + dataType);
+            }
+            return literal.getStringValue();
+        } else if (literal.hasNanoTimeValue()) {
+            if (!DateTime.class.isAssignableFrom(dataType)) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid Date type for seek: " + dataType);
+            }
+            return new DateTime(literal.getNanoTimeValue());
+        } else if (literal.hasLongValue()) {
+            Long longValue = literal.getLongValue();
+            if (dataType == byte.class) {
+                return longValue.byteValue();
+            }
+            if (dataType == short.class) {
+                return longValue.shortValue();
+            }
+            if (dataType == int.class) {
+                return longValue.intValue();
+            }
+            if (dataType == long.class) {
+                return longValue;
+            }
+            if (dataType == float.class) {
+                return longValue.floatValue();
+            }
+            if (dataType == double.class) {
+                return longValue.doubleValue();
+            }
+        } else if (literal.hasDoubleValue()) {
+            Double doubleValue = literal.getDoubleValue();
+            if (dataType == byte.class) {
+                return doubleValue.byteValue();
+            }
+            if (dataType == short.class) {
+                return doubleValue.shortValue();
+            }
+            if (dataType == int.class) {
+                return doubleValue.intValue();
+            }
+            if (dataType == long.class) {
+                return doubleValue.longValue();
+            }
+            if (dataType == float.class) {
+                return doubleValue.floatValue();
+            }
+            if (dataType == double.class) {
+                return doubleValue;
+            }
+        } else if (literal.hasBoolValue()) {
+            return literal.getBoolValue();
+        }
+        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid column type for seek: " + dataType);
+    }
+
     @Override
     public void whereIn(WhereInRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.WHERE_IN, request, responseObserver);
+    }
+
+    @Override
+    public void seekRow(SeekRowRequest request, StreamObserver<SeekRowResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = sessionService.getCurrentSession();
+            final Ticket sourceId = request.getSourceId();
+            if (sourceId.getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
+            }
+
+            SessionState.ExportObject<Table> exportedTable =
+                    ticketRouter.resolve(session, sourceId, "sourceId");
+            session.nonExport()
+                    .require(exportedTable)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        final Table table = exportedTable.get();
+                        final String columnName = request.getColumnName();
+                        final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
+                        final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
+                        final Long result = table.apply(new SeekRow(
+                                request.getStartingRow(),
+                                columnName,
+                                seekValue,
+                                request.getInsensitive(),
+                                request.getContains(),
+                                request.getIsBackward()));
+                        SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
+                        safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
+                    });
+        });
     }
 
     @Override
