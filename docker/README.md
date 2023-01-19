@@ -8,7 +8,6 @@ The `docker-server-slim` project produces the image `deephaven/server-slim-netty
 
 The `docker-server` project produces the images:
 * `deephaven/server-netty:local-build`
-* `deephaven/server-nltk-netty:local-build`
 * `deephaven/server-pytorch-netty:local-build`
 * `deephaven/server-sklearn-netty:local-build`
 * `deephaven/server-tensorflow-netty:local-build`
@@ -18,7 +17,6 @@ This can currently be done manually via:
 
 ```shell
 docker run --rm ghcr.io/deephaven/server-base:latest pip freeze > docker/server/src/main/server/requirements.txt
-docker run --rm ghcr.io/deephaven/nltk-base:latest pip freeze > docker/server/src/main/server-nltk/requirements.txt
 docker run --rm ghcr.io/deephaven/pytorch-base:latest pip freeze > docker/server/src/main/server-pytorch/requirements.txt
 docker run --rm ghcr.io/deephaven/sklearn-base:latest pip freeze > docker/server/src/main/server-sklearn/requirements.txt
 docker run --rm ghcr.io/deephaven/tensorflow-base:latest pip freeze > docker/server/src/main/server-tensorflow/requirements.txt

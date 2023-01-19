@@ -14,7 +14,6 @@ __gradlew="${__dir}/../../../gradlew"
 
 # Get the (potentially) new IDs
 server_base_image_id="$(${__gradlew} -q docker-server-base:showImageId)"
-nltk_base_image_id="$(${__gradlew} -q docker-nltk-base:showImageId)"
 pytorch_base_image_id="$(${__gradlew} -q docker-pytorch-base:showImageId)"
 sklearn_base_image_id="$(${__gradlew} -q docker-sklearn-base:showImageId)"
 tensorflow_base_image_id="$(${__gradlew} -q docker-tensorflow-base:showImageId)"
@@ -25,7 +24,6 @@ all_ai_base_image_id="$(${__gradlew} -q docker-all-ai-base:showImageId)"
 # https://bugs.launchpad.net/ubuntu/+source/python-pip/+bug/1635463
 docker run --rm "${server_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server-jetty/src/main/server-jetty/requirements.txt"
 docker run --rm "${server_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-netty/requirements.txt"
-docker run --rm "${nltk_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-nltk-netty/requirements.txt"
 docker run --rm "${pytorch_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-pytorch-netty/requirements.txt"
 docker run --rm "${sklearn_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-sklearn-netty/requirements.txt"
 docker run --rm "${tensorflow_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-tensorflow-netty/requirements.txt"

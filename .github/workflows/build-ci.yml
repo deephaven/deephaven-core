@@ -60,20 +60,6 @@ jobs:
             type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
             type=ref,event=branch
 
-      - name: Docker meta server nltk
-        id: docker_meta_server_nltk
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-nltk-netty
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
-            type=ref,event=branch
-
       - name: Docker meta server pytorch
         id: docker_meta_server_pytorch
         uses: docker/metadata-action@v3
@@ -186,18 +172,6 @@ jobs:
           context: ./docker/server/build/context/
           push: false
 
-      - name: Docker build server nltk
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/nltk-base:local-build
-            SERVER=server-nltk-netty
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: false
-
       - name: Docker build server pytorch
         uses: docker/build-push-action@v2
         with:
@@ -263,7 +237,6 @@ jobs:
           ./docker/registry/protoc-base/build/crane/retag.sh
           ./docker/registry/slim-base/build/crane/retag.sh
           ./docker/registry/server-base/build/crane/retag.sh
-          ./docker/registry/nltk-base/build/crane/retag.sh
           ./docker/registry/pytorch-base/build/crane/retag.sh
           ./docker/registry/sklearn-base/build/crane/retag.sh
           ./docker/registry/tensorflow-base/build/crane/retag.sh
