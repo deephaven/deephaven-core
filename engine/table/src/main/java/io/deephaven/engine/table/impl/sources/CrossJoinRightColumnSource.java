@@ -29,6 +29,7 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.proto.backplane.grpc.NullValue;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -36,13 +37,34 @@ import org.jetbrains.annotations.NotNull;
 import static io.deephaven.util.QueryConstants.*;
 
 public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {
+
+    /**
+     * Wrap the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
+     *
+     * @param crossJoinManager The cross join manager to use
+     * @param innerSource The column source to redirect
+     * @param rightIsLive Whether the right side is live
+     */
+    public static <T> ColumnSource<T> maybeWrap(
+            @NotNull final CrossJoinStateManager crossJoinManager,
+            @NotNull final ColumnSource<T> innerSource,
+            boolean rightIsLive) {
+        // Force wrapping if this is a leftOuterJoin or else we will not see the nulls; unless every row is null.
+        if ((!crossJoinManager.leftOuterJoin() && innerSource instanceof RowKeyAgnosticColumnSource)
+                || innerSource instanceof NullValueColumnSource) {
+            return innerSource;
+        }
+        return new CrossJoinRightColumnSource<>(crossJoinManager, innerSource, rightIsLive);
+    }
+
     private final boolean rightIsLive;
     private final CrossJoinStateManager crossJoinManager;
     protected final ColumnSource<T> innerSource;
 
-
-    public CrossJoinRightColumnSource(@NotNull final CrossJoinStateManager crossJoinManager,
-            @NotNull final ColumnSource<T> innerSource, boolean rightIsLive) {
+    protected CrossJoinRightColumnSource(
+            @NotNull final CrossJoinStateManager crossJoinManager,
+            @NotNull final ColumnSource<T> innerSource,
+            boolean rightIsLive) {
         super(innerSource.getType());
         this.rightIsLive = rightIsLive;
         this.crossJoinManager = crossJoinManager;
@@ -397,7 +419,6 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
         private final ResettableWritableChunk<Values> innerOrderedValuesSlice;
         private final DupExpandKernel dupExpandKernel;
         private final PermuteKernel permuteKernel;
-        private final boolean allowRightSideNulls;
 
         FillContext(final CrossJoinRightColumnSource<?> cs, final int chunkCapacity,
                 final SharedContext sharedContext) {
@@ -420,7 +441,6 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 dupExpandKernel = DupExpandKernel.makeDupExpand(cs.getChunkType());
                 permuteKernel = PermuteKernel.makePermuteKernel(cs.getChunkType());
             }
-            allowRightSideNulls = cs.crossJoinManager.leftOuterJoin();
         }
 
         @Override

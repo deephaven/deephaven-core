@@ -8,12 +8,12 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -89,11 +89,17 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
 
     @Override
     public final short getShort(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
+            return NULL_SHORT;
+        }
         return current;
     }
 
     @Override
     public final short getPrevShort(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
+            return NULL_SHORT;
+        }
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }
@@ -118,5 +124,50 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
         final ShortChunk<? extends Values> chunk = src.asShortChunk();
         set(chunk.get(0));
+    }
+
+    @Override
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
+        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        destination.setSize(rowSequence.intSize());
+        destination.asWritableShortChunk().fillWithValue(0, rowSequence.intSize(), getShort(0));
+    }
+
+    @Override
+    public void fillPrevChunk(@NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        destination.setSize(rowSequence.intSize());
+        destination.asWritableShortChunk().fillWithValue(0, rowSequence.intSize(), getPrevShort(0));
+    }
+
+    @Override
+    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        short value = getShort(0);
+        final WritableShortChunk<? super Values> destChunk = dest.asWritableShortChunk();
+        for (int ii = 0; ii < keys.size(); ++ii) {
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_SHORT : value);
+        }
+        destChunk.setSize(keys.size());
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        short value = getPrevShort(0);
+        final WritableShortChunk<? super Values> destChunk = dest.asWritableShortChunk();
+        for (int ii = 0; ii < keys.size(); ++ii) {
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_SHORT : value);
+        }
+        destChunk.setSize(keys.size());
+    }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
     }
 }

@@ -140,7 +140,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
                         alternateKeySources[kci], mainKeySources[kci]);
             }
             // noinspection unchecked
-            keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot, alternatingColumnSources[kci]);
+            keyHashTableSources[kci] =
+                    RedirectedColumnSource.maybeRedirect(resultIndexToHashSlot, alternatingColumnSources[kci]);
         }
 
         return keyHashTableSources;

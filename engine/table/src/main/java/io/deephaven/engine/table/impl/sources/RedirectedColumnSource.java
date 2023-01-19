@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
@@ -35,11 +36,27 @@ import static io.deephaven.util.QueryConstants.*;
  */
 public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSource<T>
         implements UngroupableColumnSource {
+    /**
+     * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
+     *
+     * @param rowRedirection The row redirection to use
+     * @param innerSource The column source to redirect
+     */
+    public static <T> ColumnSource<T> maybeRedirect(
+            @NotNull final RowRedirection rowRedirection,
+            @NotNull final ColumnSource<T> innerSource) {
+        if (innerSource instanceof RowKeyAgnosticColumnSource) {
+            return innerSource;
+        }
+        return new RedirectedColumnSource<>(rowRedirection, innerSource);
+    }
+
     protected final RowRedirection rowRedirection;
     protected final ColumnSource<T> innerSource;
     private final boolean ascendingMapping;
 
-    public RedirectedColumnSource(@NotNull final RowRedirection rowRedirection,
+    public RedirectedColumnSource(
+            @NotNull final RowRedirection rowRedirection,
             @NotNull final ColumnSource<T> innerSource) {
         super(innerSource.getType());
         this.rowRedirection = rowRedirection;

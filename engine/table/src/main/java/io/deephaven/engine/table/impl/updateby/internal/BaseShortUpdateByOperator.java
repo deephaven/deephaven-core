@@ -100,7 +100,7 @@ public abstract class BaseShortUpdateByOperator implements UpdateByOperator {
             // region create-dense
             this.maybeInnerSource = new ShortArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse

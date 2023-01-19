@@ -4,13 +4,16 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
@@ -1576,6 +1579,25 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    public void testGetDirectAfterNaturalJoin() {
+        final Table sodiumLeft = emptyTable(3).updateView("Value=(i%5==0? null : i*2)", "ColLeft=`LeftOnlyContents`");
+        final Table peppermintRight =
+                emptyTable(4).updateView("Value=(i%5==0? null : i)", "ColRight=`RightOnlyContents`");
+        final Table vanillaVanilla = sodiumLeft.naturalJoin(peppermintRight, "Value");
+        final String rightValue = "RightOnlyContents";
+
+        final ColumnSource<?> colRightSource = vanillaVanilla.getColumnSource("ColRight");
+        try (final ChunkSource.GetContext gc = colRightSource.makeGetContext(3)) {
+            final ObjectChunk<String, ?> ck = colRightSource.getChunk(gc, vanillaVanilla.getRowSet()).asObjectChunk();
+            assertEquals(rightValue, ck.get(0));
+            assertEquals(rightValue, ck.get(1));
+            assertNull(ck.get(2));
+        }
+        final DataColumn<?> colRight = vanillaVanilla.getColumn("ColRight");
+        assertEquals(rightValue, colRight.get(0));
+        assertEquals(rightValue, colRight.get(1));
+        assertNull(colRight.get(2));
+    }
 
     private void diskBackedTestHarness(BiConsumer<Table, Table> testFunction) throws IOException {
         final File leftDirectory = Files.createTempDirectory("QueryTableJoinTest-Left").toFile();

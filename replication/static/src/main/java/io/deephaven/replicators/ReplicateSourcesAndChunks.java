@@ -160,11 +160,16 @@ public class ReplicateSourcesAndChunks {
                 "Object current", "T current",
                 "Object prev", "T prev",
                 "ColumnSource<[?] extends Object>", "ColumnSource<? extends T>",
+                "getObject", "get",
+                "getPrevObject", "getPrev",
                 "set\\(Object", "set(T",
                 "set\\(long key, Object", "set(long key, T",
                 "set\\(NULL_OBJECT", "set(null",
                 "final ObjectChunk<[?] extends Values>", "final ObjectChunk<T, ? extends Values>",
-                "unbox\\((.*)\\)", "$1");
+                "unbox\\((.*)\\)", "$1",
+                "NULL_OBJECT", "null",
+                "WritableObjectChunk<[?] super Values>", "WritableObjectChunk<T, ? super Values>",
+                "Object value", "T value");
         lines = ReplicationUtils.removeRegion(lines, "UnboxedSetter");
         lines = ReplicationUtils.replaceRegion(lines, "Constructor", Arrays.asList(
                 "    public ObjectSingleValueSource(Class<T> type) {",

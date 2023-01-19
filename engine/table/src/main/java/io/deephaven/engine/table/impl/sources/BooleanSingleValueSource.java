@@ -1,50 +1,58 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSingleValueSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
-
-import static io.deephaven.util.type.TypeUtils.unbox;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Single value source for Object.
- * <p>
- * The C-haracterSingleValueSource is replicated to all other types with
- * io.deephaven.engine.table.impl.sources.Replicate.
- *
- * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
+ * Single value source for Boolean.
  */
-public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> implements MutableColumnSourceGetDefaults.ForObject<T> {
+public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean {
+    private Boolean current;
+    private transient Boolean prev;
 
-    private T current;
-    private transient T prev;
-
-    // region Constructor
-    public ObjectSingleValueSource(Class<T> type) {
-        super(type);
-        current = null;
-        prev = null;
+    BooleanSingleValueSource() {
+        super(Boolean.class);
+        current = QueryConstants.NULL_BOOLEAN;
+        prev = QueryConstants.NULL_BOOLEAN;
     }
-    // endregion Constructor
+
+    @Nullable
+    @Override
+    public Boolean get(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
+            return QueryConstants.NULL_BOOLEAN;
+        }
+        return current;
+    }
+
+    @Nullable
+    @Override
+    public Boolean getPrev(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
+            return QueryConstants.NULL_BOOLEAN;
+        }
+        if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
+            return current;
+        }
+        return prev;
+    }
 
     @Override
-    public final void set(T value) {
+    public final void set(Boolean value) {
         if (isTrackingPrevValues) {
             final long currentStep = LogicalClock.DEFAULT.currentStep();
             if (changeTime < currentStep) {
@@ -55,62 +63,42 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
         current = value;
     }
 
-    // region UnboxedSetter
-    // endregion UnboxedSetter
-
     @Override
-    public final void setNull() {
-        set(null);
-    }
-
-    @Override
-    public final void set(long key, T value) {
+    public final void set(long key, Boolean value) {
         set(value);
     }
 
     @Override
-    public final void setNull(long key) {
+    public void setNull(long key) {
         // region null set
-        set(null);
+        set(QueryConstants.NULL_BOOLEAN);
         // endregion null set
     }
 
     @Override
-    public final T get(long rowKey) {
-        if (rowKey == RowSequence.NULL_ROW_KEY) {
-            return null;
-        }
-        return current;
-    }
-
-    @Override
-    public final T getPrev(long rowKey) {
-        if (rowKey == RowSequence.NULL_ROW_KEY) {
-            return null;
-        }
-        if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
-            return current;
-        }
-        return prev;
-    }
-
-    @Override
-    public final void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
-        if (rowSequence.size() == 0) {
+    public final void fillFromChunk(
+            @NotNull FillFromContext context,
+            @NotNull Chunk<? extends Values> src,
+            @NotNull RowSequence orderedKeys) {
+        if (orderedKeys.isEmpty()) {
             return;
         }
+
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
+        final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
         set(chunk.get(0));
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public void fillFromChunkUnordered(
+            @NotNull FillFromContext context,
+            @NotNull Chunk<? extends Values> src,
+            @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
+        final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
         set(chunk.get(0));
     }
 
@@ -127,15 +115,15 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
             @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         destination.setSize(rowSequence.intSize());
-        destination.asWritableObjectChunk().fillWithValue(0, rowSequence.intSize(), getPrev(0));
+        destination.asWritableObjectChunk().fillWithValue(0, rowSequence.intSize(), get(0));
     }
 
     @Override
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
         // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        T value = get(0);
-        final WritableObjectChunk<T, ? super Values> destChunk = dest.asWritableObjectChunk();
+        Boolean value = get(0);
+        final WritableObjectChunk<Boolean, ? super Values> destChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? null : value);
         }
@@ -146,8 +134,8 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
         // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        T value = getPrev(0);
-        final WritableObjectChunk<T, ? super Values> destChunk = dest.asWritableObjectChunk();
+        Boolean value = getPrev(0);
+        final WritableObjectChunk<Boolean, ? super Values> destChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? null : value);
         }

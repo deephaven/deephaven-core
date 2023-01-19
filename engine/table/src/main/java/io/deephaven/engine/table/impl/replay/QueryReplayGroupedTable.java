@@ -34,7 +34,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
         Map<String, ColumnSource<?>> result = new LinkedHashMap<>();
         for (Map.Entry<String, ? extends ColumnSource<?>> stringEntry : input.entrySet()) {
             ColumnSource<?> value = stringEntry.getValue();
-            result.put(stringEntry.getKey(), new RedirectedColumnSource<>(rowRedirection, value));
+            result.put(stringEntry.getKey(), RedirectedColumnSource.maybeRedirect(rowRedirection, value));
         }
         return result;
     }

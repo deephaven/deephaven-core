@@ -167,7 +167,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 }
                 case SELECT_REDIRECTED_STATIC: {
                     final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
-                    final WritableColumnSource<?> scs = new WritableRedirectedColumnSource<>(
+                    final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
                             rowRedirection, underlyingSource, rowSet.size());
                     analyzer =
                             analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
@@ -183,7 +183,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {
                         underlyingSource = scs;
-                        scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
+                        scs = WritableRedirectedColumnSource.maybeRedirect(
+                                rowRedirection, underlyingSource, rowSet.intSize());
                     }
                     analyzer =
                             analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,

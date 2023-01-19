@@ -179,7 +179,7 @@ public class ColumnsToRowsTransform {
             }
             expandSet.add(name);
             if (crossJoinShiftState != null) {
-                resultMap.put(name, new BitShiftingColumnSource<>(crossJoinShiftState, cs));
+                resultMap.put(name, BitShiftingColumnSource.maybeWrap(crossJoinShiftState, cs));
             } else {
                 resultMap.put(name, cs);
             }

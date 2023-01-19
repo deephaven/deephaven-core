@@ -48,7 +48,7 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
                 return;
             }
 
-            overriddenColumns.put(name, new RedirectedColumnSource<>(rowRedirection, cs));
+            overriddenColumns.put(name, RedirectedColumnSource.maybeRedirect(rowRedirection, cs));
         });
     }
 
