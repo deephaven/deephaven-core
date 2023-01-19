@@ -43,8 +43,8 @@ public class ConstantColumnLayer extends SelectOrViewColumnLayer {
         }
 
         try (final WritableColumnSource.FillFromContext destContext = writableSource.makeFillFromContext(1);
-             final ChunkSource.GetContext chunkSourceContext = chunkSource.makeGetContext(1);
-             final RowSequence keys = RowSetFactory.fromKeys(0)) {
+                final ChunkSource.GetContext chunkSourceContext = chunkSource.makeGetContext(1);
+                final RowSequence keys = RowSetFactory.fromKeys(0)) {
             writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
         }
     }
