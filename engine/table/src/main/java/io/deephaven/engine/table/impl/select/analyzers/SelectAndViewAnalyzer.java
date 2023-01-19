@@ -17,11 +17,12 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.InverseRowRedirectionImpl;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -114,6 +115,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
+            if (hasConstantValue(sc)) {
+                final WritableColumnSource<?> constViewSource =
+                        SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
+                analyzer = analyzer.createLayerForConstantView(
+                        sc.getName(), sc, constViewSource, distinctDeps, mcsBuilder);
+                continue;
+            }
+
             if (shouldPreserve(sc)) {
                 if (numberOfInternallyFlattenedColumns > 0) {
                     // we must preserve this column, but have already created an analyzer for the internally flattened
@@ -187,6 +196,18 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         return analyzer;
     }
 
+    private static boolean hasConstantValue(final SelectColumn sc) {
+        if (sc instanceof FormulaColumn) {
+            return ((FormulaColumn) sc).hasConstantValue();
+        } else if (sc instanceof SwitchColumn) {
+            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
+            if (realColumn instanceof FormulaColumn) {
+                return ((FormulaColumn) realColumn).hasConstantValue();
+            }
+        }
+        return false;
+    }
+
     private static boolean shouldPreserve(final SelectColumn sc) {
         if (!(sc instanceof SourceColumn)
                 && (!(sc instanceof SwitchColumn) || !(((SwitchColumn) sc).getRealColumn() instanceof SourceColumn))) {
@@ -251,6 +272,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             boolean alreadyFlattened) {
         return new SelectColumnLayer(parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
                 mcsBuilder, isRedirected, flatten, alreadyFlattened);
+    }
+
+    private SelectAndViewAnalyzer createLayerForConstantView(String name, SelectColumn sc, WritableColumnSource<?> cs,
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder) {
+        return new ConstantColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder);
     }
 
     private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource<?> cs,

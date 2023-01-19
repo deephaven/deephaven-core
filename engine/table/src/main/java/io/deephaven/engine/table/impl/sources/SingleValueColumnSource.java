@@ -9,12 +9,8 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.util.ShiftData;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
-
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback {
+        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback, InMemoryColumnSource {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;

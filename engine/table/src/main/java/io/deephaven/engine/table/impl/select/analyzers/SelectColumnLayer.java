@@ -279,9 +279,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final RowSet preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
         final RowSet postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
 
-        // Note that applyUpdate is called during initialization. If the table begins empty, we still want to force that
-        // an initial call to getDataView() (via getChunkSource()) or else the formula will only be computed later when
-        // data begins to flow; start-of-day is likely a bad time to find formula errors for our customers.
         final ChunkSource<Values> chunkSource = getChunkSource();
 
         final boolean needGetContext = upstream.added().isNonempty() || modifiesAffectUs;

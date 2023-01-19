@@ -220,7 +220,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         final VisitArgs printer = VisitArgs.create();
         try {
-            Expression expr = JavaExpressionParser.parseExpression(expression);
+            final Expression expr = JavaExpressionParser.parseExpression(expression);
+            final boolean isConstantValueExpression = JavaExpressionParser.isConstantValueExpression(expr);
 
             Class<?> type = expr.accept(this, printer);
 
@@ -228,7 +229,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 type = Object.class;
             }
 
-            result = new Result(type, printer.builder.toString(), variablesUsed);
+            result = new Result(type, printer.builder.toString(), variablesUsed, isConstantValueExpression);
         } catch (Throwable e) {
             // need to catch it and make a new one because it contains unserializable variables...
             final StringBuilder exceptionMessageBuilder = new StringBuilder(1024)
@@ -2372,11 +2373,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         private final Class<?> type;
         private final String source;
         private final HashSet<String> variablesUsed;
+        private final boolean isConstantValueExpression;
 
-        Result(Class<?> type, String source, HashSet<String> variablesUsed) {
+        Result(Class<?> type, String source, HashSet<String> variablesUsed, boolean isConstantValueExpression) {
             this.type = type;
             this.source = source;
             this.variablesUsed = variablesUsed;
+            this.isConstantValueExpression = isConstantValueExpression;
         }
 
         public Class<?> getType() {
@@ -2385,6 +2388,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         public String getConvertedExpression() {
             return source;
+        }
+
+        public boolean isConstantValueExpression() {
+            return isConstantValueExpression;
         }
 
         public HashSet<String> getVariablesUsed() {
