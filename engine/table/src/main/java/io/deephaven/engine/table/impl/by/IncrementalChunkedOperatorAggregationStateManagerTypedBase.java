@@ -76,7 +76,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         final ColumnSource[] keyHashTableSources = new ColumnSource[mainKeySources.length];
         for (int kci = 0; kci < mainKeySources.length; ++kci) {
             // noinspection unchecked
-            keyHashTableSources[kci] = new RedirectedColumnSource(resultRowKeyToHashSlot,
+            keyHashTableSources[kci] = RedirectedColumnSource.maybeRedirect(resultRowKeyToHashSlot,
                     new HashTableColumnSource(mainKeySources[kci], overflowKeySources[kci]));
         }
         return keyHashTableSources;

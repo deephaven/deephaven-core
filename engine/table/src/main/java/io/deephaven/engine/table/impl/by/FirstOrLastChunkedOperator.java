@@ -44,9 +44,8 @@ public class FirstOrLastChunkedOperator
 
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {
-            // noinspection unchecked
-            resultColumns.put(mp.leftColumn(),
-                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
+            resultColumns.put(mp.leftColumn(), RedirectedColumnSource.maybeRedirect(
+                    rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
         }
         exposeRedirections = exposeRedirectionAs != null;
         if (exposeRedirectionAs != null) {
@@ -298,9 +297,8 @@ public class FirstOrLastChunkedOperator
 
         private DuplicateOperator(MatchPair[] resultPairs, Table table, String exposeRedirectionAs) {
             for (final MatchPair mp : resultPairs) {
-                // noinspection unchecked
                 resultColumns.put(mp.leftColumn(),
-                        new RedirectedColumnSource(rowRedirection, table.getColumnSource(mp.rightColumn())));
+                        RedirectedColumnSource.maybeRedirect(rowRedirection, table.getColumnSource(mp.rightColumn())));
             }
             if (exposeRedirectionAs != null) {
                 resultColumns.put(exposeRedirectionAs, redirections);
@@ -466,9 +464,8 @@ public class FirstOrLastChunkedOperator
 
             this.resultColumns = new LinkedHashMap<>(resultPairs.length);
             for (final MatchPair mp : resultPairs) {
-                // noinspection unchecked
                 resultColumns.put(mp.leftColumn(),
-                        new RedirectedColumnSource(rowRedirection, table.getColumnSource(mp.rightColumn())));
+                        RedirectedColumnSource.maybeRedirect(rowRedirection, table.getColumnSource(mp.rightColumn())));
             }
             exposeRedirections = exposeRedirectionAs != null;
             if (exposeRedirections) {

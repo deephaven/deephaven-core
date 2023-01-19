@@ -19,7 +19,25 @@ import org.jetbrains.annotations.NotNull;
  * {@link RowRedirection}.
  */
 public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T> implements WritableColumnSource<T> {
-    private long maxInnerIndex;
+    /**
+     * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
+     *
+     * @param rowRedirection The row redirection to use
+     * @param innerSource The column source to redirect
+     * @param maxInnerIndex The maximum row key available in innerSource
+     */
+    public static <T> WritableColumnSource<T> maybeRedirect(
+            @NotNull final RowRedirection rowRedirection,
+            @NotNull final WritableColumnSource<T> innerSource,
+            final long maxInnerIndex) {
+        if (innerSource instanceof RowKeyAgnosticChunkSource) {
+            return innerSource;
+        }
+        return new WritableRedirectedColumnSource<>(rowRedirection, innerSource, maxInnerIndex);
+    }
+
+    /** The maximum row key available in innerSource. */
+    private final long maxInnerIndex;
 
     /**
      * Create a type-appropriate WritableRedirectedColumnSource for the supplied {@link WritableRowRedirection} and
@@ -29,7 +47,8 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
      * @param innerSource The column source to redirect
      * @param maxInnerIndex The maximum row key available in innerSource
      */
-    public WritableRedirectedColumnSource(@NotNull final RowRedirection rowRedirection,
+    protected WritableRedirectedColumnSource(
+            @NotNull final RowRedirection rowRedirection,
             @NotNull final ColumnSource<T> innerSource,
             final long maxInnerIndex) {
         super(rowRedirection, innerSource);
@@ -140,7 +159,7 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return new WritableRedirectedColumnSource<>(
-                rowRedirection, innerSource.reinterpret(alternateDataType), maxInnerIndex);
+        return WritableRedirectedColumnSource.maybeRedirect(rowRedirection,
+                (WritableColumnSource<ALTERNATE_DATA_TYPE>) innerSource.reinterpret(alternateDataType), maxInnerIndex);
     }
 }

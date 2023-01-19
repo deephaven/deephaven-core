@@ -2297,7 +2297,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             ungroupedSource.initializeBase(initialBase);
                             result = ungroupedSource;
                         } else {
-                            result = new BitShiftingColumnSource<>(shiftState, column);
+                            result = BitShiftingColumnSource.maybeWrap(shiftState, column);
                         }
                         resultMap.put(name, result);
                     }

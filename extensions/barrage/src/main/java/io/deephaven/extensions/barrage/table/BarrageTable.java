@@ -428,7 +428,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
                     0, column.getDataType(), column.getComponentType());
             finalColumns.put(column.getName(),
-                    new WritableRedirectedColumnSource<>(emptyRowRedirection, writableSources[ii], 0));
+                    WritableRedirectedColumnSource.maybeRedirect(emptyRowRedirection, writableSources[ii], 0));
         }
         return finalColumns;
     }

@@ -101,7 +101,7 @@ public abstract class BaseByteUpdateByOperator implements UpdateByOperator {
             // region create-dense
             this.maybeInnerSource = makeDenseSource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse

@@ -35,11 +35,41 @@ import static io.deephaven.util.QueryConstants.*;
  */
 public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSource<T>
         implements UngroupableColumnSource {
+    /**
+     * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
+     *
+     * @param rowRedirection The row redirection to use
+     * @param innerSource The column source to redirect
+     */
+    public static <T> ColumnSource<T> maybeRedirect(
+            @NotNull final RowRedirection rowRedirection,
+            @NotNull final ColumnSource<T> innerSource) {
+        if (innerSource instanceof RowKeyAgnosticChunkSource) {
+            return innerSource;
+        }
+        return new RedirectedColumnSource<>(rowRedirection, innerSource);
+    }
+
+    /**
+     * This factory method should be used when unmapped rows in the row redirection must be redirected to null values.
+     * For example, natural joins, left outer joins, and as-of joins must map unmatched rows to null values in
+     * right-side columns.
+     *
+     * @param rowRedirection The row redirection to use
+     * @param innerSource The column source to redirect
+     */
+    public static <T> ColumnSource<T> alwaysRedirect(
+            @NotNull final RowRedirection rowRedirection,
+            @NotNull final ColumnSource<T> innerSource) {
+        return new RedirectedColumnSource<>(rowRedirection, innerSource);
+    }
+
     protected final RowRedirection rowRedirection;
     protected final ColumnSource<T> innerSource;
     private final boolean ascendingMapping;
 
-    public RedirectedColumnSource(@NotNull final RowRedirection rowRedirection,
+    protected RedirectedColumnSource(
+            @NotNull final RowRedirection rowRedirection,
             @NotNull final ColumnSource<T> innerSource) {
         super(innerSource.getType());
         this.rowRedirection = rowRedirection;

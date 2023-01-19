@@ -21,10 +21,25 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {
 
+    /**
+     * Wrap the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
+     *
+     * @param shiftState The cross join shift state to use
+     * @param innerSource The column source to redirect
+     */
+    public static <T> ColumnSource<T> maybeWrap(
+            final ZeroKeyCrossJoinShiftState shiftState,
+            @NotNull final ColumnSource<T> innerSource) {
+        if (innerSource instanceof RowKeyAgnosticChunkSource) {
+            return innerSource;
+        }
+        return new BitMaskingColumnSource<>(shiftState, innerSource);
+    }
+
     private final ZeroKeyCrossJoinShiftState shiftState;
     private final ColumnSource<T> innerSource;
 
-    public BitMaskingColumnSource(
+    protected BitMaskingColumnSource(
             final ZeroKeyCrossJoinShiftState shiftState,
             @NotNull final ColumnSource<T> innerSource) {
         super(innerSource.getType());

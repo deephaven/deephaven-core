@@ -49,9 +49,8 @@ public class SortedFirstOrLastChunkedOperator
 
         this.resultColumns = new LinkedHashMap<>();
         for (final MatchPair mp : resultNames) {
-            // noinspection unchecked,rawtypes
-            resultColumns.put(mp.leftColumn(),
-                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
+            resultColumns.put(mp.leftColumn(), RedirectedColumnSource.maybeRedirect(
+                    rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
         }
     }
 

@@ -5,7 +5,9 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
  * A column source that returns null for all keys.
  */
 public class NullValueColumnSource<T> extends AbstractColumnSource<T>
-        implements ShiftData.ShiftCallback, InMemoryColumnSource {
+        implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values> {
     private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
             new KeyedObjectKey.Basic<>() {
                 @Override
@@ -191,5 +193,24 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T>
     public void fillPrevChunk(@NotNull FillContext context,
             @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
+    }
+
+    @Override
+    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        // note that we do not need to look for RowSequence.NULL_ROW_KEY; all values are null
+        destination.setSize(keys.size());
+        destination.fillWithNullValue(0, keys.size());
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        fillChunkUnordered(context, destination, keys);
+    }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
     }
 }

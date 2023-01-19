@@ -98,7 +98,7 @@ public abstract class BaseDoubleUpdateByOperator implements UpdateByOperator {
         this.isRedirected = rowRedirection != null;
         if(rowRedirection != null) {
             this.maybeInnerSource = new DoubleArraySource();
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             this.outputSource = new DoubleSparseArraySource();
