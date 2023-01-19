@@ -14,12 +14,10 @@ __gradlew="${__dir}/../../../gradlew"
 
 # Get the (potentially) new IDs
 server_base_image_id="$(${__gradlew} -q docker-server-base:showImageId)"
-all_ai_base_image_id="$(${__gradlew} -q docker-all-ai-base:showImageId)"
 
 # Write down the (potentially) new requirements
 # Need to manually remove pkg-resources
 # https://bugs.launchpad.net/ubuntu/+source/python-pip/+bug/1635463
 docker run --rm "${server_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server-jetty/src/main/server-jetty/requirements.txt"
 docker run --rm "${server_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-netty/requirements.txt"
-docker run --rm "${all_ai_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-all-ai-netty/requirements.txt"
 
