@@ -119,7 +119,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 final WritableColumnSource<?> constViewSource =
                         SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
                 analyzer = analyzer.createLayerForConstantView(
-                        sc.getName(), sc, constViewSource, distinctDeps, mcsBuilder);
+                        sc.getName(), sc, constViewSource, distinctDeps, mcsBuilder, flattenedResult,
+                        flatResult && flattenedResult);
                 continue;
             }
 
@@ -268,15 +269,17 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     private SelectAndViewAnalyzer createLayerForSelect(RowSet parentRowset, String name, SelectColumn sc,
             WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten,
-            boolean alreadyFlattened) {
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected,
+            boolean flattenResult, boolean alreadyFlattened) {
         return new SelectColumnLayer(parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
-                mcsBuilder, isRedirected, flatten, alreadyFlattened);
+                mcsBuilder, isRedirected, flattenResult, alreadyFlattened);
     }
 
     private SelectAndViewAnalyzer createLayerForConstantView(String name, SelectColumn sc, WritableColumnSource<?> cs,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder) {
-        return new ConstantColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder);
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean flattenResult,
+            boolean alreadyFlattened) {
+        return new ConstantColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder, flattenResult,
+                alreadyFlattened);
     }
 
     private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource<?> cs,

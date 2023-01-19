@@ -19,6 +19,8 @@ import java.util.BitSet;
 
 public class ConstantColumnLayer extends SelectOrViewColumnLayer {
     private final BitSet dependencyBitSet;
+    private final boolean flattenedResult;
+    private final boolean alreadyFlattenedSources;
 
     ConstantColumnLayer(
             SelectAndViewAnalyzer inner,
@@ -26,9 +28,13 @@ public class ConstantColumnLayer extends SelectOrViewColumnLayer {
             SelectColumn sc,
             WritableColumnSource<?> ws,
             String[] deps,
-            ModifiedColumnSet mcsBuilder) {
+            ModifiedColumnSet mcsBuilder,
+            boolean flattenedResult,
+            boolean alreadyFlattenedSources) {
         super(inner, name, sc, ws, null, deps, mcsBuilder);
         this.dependencyBitSet = new BitSet();
+        this.flattenedResult = flattenedResult;
+        this.alreadyFlattenedSources = alreadyFlattenedSources;
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
         initialize(ws);
     }
@@ -68,6 +74,16 @@ public class ConstantColumnLayer extends SelectOrViewColumnLayer {
     @Override
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{ConstantColumnLayer: ").append(selectColumn.toString()).append("}");
+    }
+
+    @Override
+    public boolean flattenedResult() {
+        return flattenedResult;
+    }
+
+    @Override
+    public boolean alreadyFlattenedSources() {
+        return alreadyFlattenedSources;
     }
 
     @Override
