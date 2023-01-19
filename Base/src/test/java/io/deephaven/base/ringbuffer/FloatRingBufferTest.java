@@ -510,7 +510,7 @@ public class FloatRingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
-    public void testAddUnsafe() {
+    public void testAddRemoveUnsafe() {
         FloatRingBuffer rbNoGrow = new FloatRingBuffer(3, false);
 
         // this should throw
@@ -523,6 +523,16 @@ public class FloatRingBufferTest extends TestCase {
         rbNoGrow.addUnsafe(C);
 
         assertContents(rbNoGrow, A, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), A);
+        assertContents(rbNoGrow, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), B);
+        assertContents(rbNoGrow, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), C);
+        assertEmpty(rbNoGrow);
+
 
         FloatRingBuffer rbGrow = new FloatRingBuffer(3, true);
 

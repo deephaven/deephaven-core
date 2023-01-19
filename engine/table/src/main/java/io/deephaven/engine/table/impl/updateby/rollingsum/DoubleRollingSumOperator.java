@@ -6,6 +6,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -21,6 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator {
     private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
@@ -55,21 +57,29 @@ public class DoubleRollingSumOperator extends BaseWindowedDoubleUpdateByOperator
         }
 
         @Override
-        public void push(long key, int pos) {
-            double val = doubleInfluencerValuesChunk.get(pos);
+        public void push(long key, int pos, int count) {
+            doublePairwiseSum.ensureRemaining(count);
 
-            doublePairwiseSum.push(val);
-            if (val == NULL_DOUBLE) {
-                nullCount++;
+            for (int ii = 0; ii < count; ii++) {
+                double val = doubleInfluencerValuesChunk.get(pos + ii);
+                doublePairwiseSum.pushUnsafe(val);
+
+                if (val == NULL_DOUBLE) {
+                    nullCount++;
+                }
             }
         }
 
         @Override
-        public void pop() {
-            double val = doublePairwiseSum.pop();
+        public void pop(int count) {
+            Assert.geq(doublePairwiseSum.size(), "shortWindowValues.size()", count);
 
-            if (val == NULL_DOUBLE) {
-                nullCount--;
+            for (int ii = 0; ii < count; ii++) {
+                double val = doublePairwiseSum.popUnsafe();
+
+                if (val == NULL_DOUBLE) {
+                    nullCount--;
+                }
             }
         }
 

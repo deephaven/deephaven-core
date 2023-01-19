@@ -5,6 +5,7 @@
  */
 package io.deephaven.engine.table.impl.updateby.fill;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
@@ -33,7 +34,9 @@ public class ByteFillByOperator extends BaseByteUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
+        public void push(long key, int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
             byte currentVal = byteValueChunk.get(pos);
             if(currentVal != NULL_BYTE) {
                 curVal = currentVal;

@@ -7,6 +7,7 @@ package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.ringbuffer.LongRingBuffer;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -46,31 +47,39 @@ public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
-            long val = longInfluencerValuesChunk.get(pos);
-            longWindowValues.add(val);
+        public void push(long key, int pos, int count) {
+            longWindowValues.ensureRemaining(count);
 
-            // increase the running sum
-            if (val != NULL_LONG) {
-                if (curVal == NULL_LONG) {
-                    curVal = val;
+            for (int ii = 0; ii < count; ii++) {
+                long val = longInfluencerValuesChunk.get(pos + ii);
+                longWindowValues.addUnsafe(val);
+
+                // increase the running sum
+                if (val != NULL_LONG) {
+                    if (curVal == NULL_LONG) {
+                        curVal = val;
+                    } else {
+                        curVal += val;
+                    }
                 } else {
-                    curVal += val;
+                    nullCount++;
                 }
-            } else {
-                nullCount++;
             }
         }
 
         @Override
-        public void pop() {
-            long val = longWindowValues.remove();
+        public void pop(int count) {
+            Assert.geq(longWindowValues.size(), "longWindowValues.size()", count);
 
-            // reduce the running sum
-            if (val != NULL_LONG) {
-                curVal -= val;
-            } else {
-                nullCount--;
+            for (int ii = 0; ii < count; ii++) {
+                long val = longWindowValues.removeUnsafe();
+
+                // reduce the running sum
+                if (val != NULL_LONG) {
+                    curVal -= val;
+                } else {
+                    nullCount--;
+                }
             }
         }
 

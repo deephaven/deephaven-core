@@ -7,6 +7,7 @@ package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.ringbuffer.IntRingBuffer;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -46,31 +47,39 @@ public class IntRollingSumOperator extends BaseWindowedLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
-            int val = intInfluencerValuesChunk.get(pos);
-            intWindowValues.add(val);
+        public void push(long key, int pos, int count) {
+            intWindowValues.ensureRemaining(count);
 
-            // increase the running sum
-            if (val != NULL_INT) {
-                if (curVal == NULL_LONG) {
-                    curVal = val;
+            for (int ii = 0; ii < count; ii++) {
+                int val = intInfluencerValuesChunk.get(pos + ii);
+                intWindowValues.addUnsafe(val);
+
+                // increase the running sum
+                if (val != NULL_INT) {
+                    if (curVal == NULL_LONG) {
+                        curVal = val;
+                    } else {
+                        curVal += val;
+                    }
                 } else {
-                    curVal += val;
+                    nullCount++;
                 }
-            } else {
-                nullCount++;
             }
         }
 
         @Override
-        public void pop() {
-            int val = intWindowValues.remove();
+        public void pop(int count) {
+            Assert.geq(intWindowValues.size(), "intWindowValues.size()", count);
 
-            // reduce the running sum
-            if (val != NULL_INT) {
-                curVal -= val;
-            } else {
-                nullCount--;
+            for (int ii = 0; ii < count; ii++) {
+                int val = intWindowValues.removeUnsafe();
+
+                // reduce the running sum
+                if (val != NULL_INT) {
+                    curVal -= val;
+                } else {
+                    nullCount--;
+                }
             }
         }
 

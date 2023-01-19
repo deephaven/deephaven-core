@@ -12,6 +12,7 @@ import io.deephaven.time.DateTime;
 import java.time.Instant;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -43,7 +44,9 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
+        public void push(long key, int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
             // read the value from the values chunk
             final long currentVal = longValueChunk.get(pos);
 

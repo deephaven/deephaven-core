@@ -7,6 +7,7 @@ package io.deephaven.engine.table.impl.updateby.fill;
 
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
@@ -34,7 +35,9 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
         }
 
         @Override
-        public void push(long key, int pos) {
+        public void push(long key, int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
             T currentVal = ObjectValueChunk.get(pos);
             if(currentVal != null) {
                 curVal = currentVal;

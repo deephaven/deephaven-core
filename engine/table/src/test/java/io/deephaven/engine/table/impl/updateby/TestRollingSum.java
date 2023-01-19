@@ -38,15 +38,15 @@ import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class TestRollingSum extends BaseUpdateByTest {
-    // region Zero Key Tests
+    // region Static Zero Key Tests
 
     @Test
-    public void testStaticZeroKey() {
+    public void testStaticZeroKeyRev() {
         final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
-        int prevTicks = 100;
-        int postTicks = 0;
+        final int prevTicks = 100;
+        final int postTicks = 0;
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
@@ -56,12 +56,42 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testStaticZeroKeyFwdWindow() {
+    public void testStaticZeroKeyRevExclusive() {
         final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
-        int prevTicks = 0;
-        int postTicks = 100;
+        final int prevTicks = 100;
+        final int postTicks = -50;
+
+        final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
+                    summed.getColumn(col).getType(), prevTicks, postTicks);
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyFwd() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
+        t.setRefreshing(false);
+
+        final int prevTicks = 0;
+        final int postTicks = 100;
+
+        final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
+                    summed.getColumn(col).getType(), prevTicks, postTicks);
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyFwdExclusive() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
+        t.setRefreshing(false);
+
+        final int prevTicks = -50;
+        final int postTicks = 100;
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
@@ -75,8 +105,8 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
-        int prevTicks = 100;
-        int postTicks = 100;
+        final int prevTicks = 100;
+        final int postTicks = 100;
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
@@ -86,14 +116,14 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testStaticZeroKeyTimed() {
+    public void testStaticZeroKeyTimedRev() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
-        Duration prevTime = Duration.ofMinutes(10);
-        Duration postTime = Duration.ZERO;
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ZERO;
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
@@ -101,8 +131,8 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
-        long[] timestamps = new long[t.intSize()];
+        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = ts[i].getNanos();
         }
@@ -114,14 +144,14 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testStaticZeroKeyFwdWindowTimed() {
+    public void testStaticZeroKeyTimedRevExclusive() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
-        Duration prevTime = Duration.ZERO;
-        Duration postTime = Duration.ofMinutes(10);
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(-5);
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
@@ -129,8 +159,8 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
-        long[] timestamps = new long[t.intSize()];
+        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = ts[i].getNanos();
         }
@@ -142,14 +172,14 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testStaticZeroKeyFwdRevWindowTimed() {
+    public void testStaticZeroKeyTimedFwd() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
-        Duration prevTime = Duration.ofMinutes(10);
-        Duration postTime = Duration.ofMinutes(10);
+        final Duration prevTime = Duration.ZERO;
+        final Duration postTime = Duration.ofMinutes(10);
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
@@ -157,8 +187,64 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
-        long[] timestamps = new long[t.intSize()];
+        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = ts[i].getNanos();
+        }
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
+                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyTimedFwdExclusive() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+
+        final Duration prevTime = Duration.ofMinutes(-5);
+        final Duration postTime = Duration.ofMinutes(10);
+
+        final Table summed =
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
+                        "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
+
+
+        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = ts[i].getNanos();
+        }
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
+                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyTimedFwdRev() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(10);
+
+        final Table summed =
+                t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
+                        "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
+
+
+        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = ts[i].getNanos();
         }
@@ -171,7 +257,7 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     // endregion
 
-    // region Bucketed Tests
+    // region Static Bucketed Tests
 
     @Test
     public void testNullOnBucketChange() {
@@ -197,20 +283,42 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testStaticBucketed() {
-        doTestStaticBucketed(false);
+    public void testStaticBucketedRev() {
+        final int prevTicks = 100;
+        final int postTicks = 0;
+        doTestStaticBucketed(false, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testStaticBucketedRevExclusive() {
+        final int prevTicks = 100;
+        final int postTicks = -50;
+        doTestStaticBucketed(false, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testStaticBucketedFwd() {
+        final int prevTicks = 0;
+        final int postTicks = 100;
+        doTestStaticBucketed(false, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testStaticBucketedFwdExclusive() {
+        final int prevTicks = -50;
+        final int postTicks = 100;
+        doTestStaticBucketed(false, prevTicks, postTicks);
     }
 
     @Test
     public void testStaticGroupedBucketed() {
-        doTestStaticBucketed(true);
+        final int prevTicks = 100;
+        final int postTicks = 0;
+        doTestStaticBucketed(true, prevTicks, postTicks);
     }
 
-    private void doTestStaticBucketed(boolean grouped) {
+    private void doTestStaticBucketed(boolean grouped, int prevTicks, int postTicks) {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0x31313131).t;
-
-        int prevTicks = 100;
-        int postTicks = 10;
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks, "byteCol", "shortCol", "intCol",
@@ -221,7 +329,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final PartitionedTable preOp = t.partitionBy("Sym");
         final PartitionedTable postOp = summed.partitionBy("Sym");
 
-        String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
+        final String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
@@ -233,18 +341,38 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testStaticBucketedTimed() {
-        doTestStaticBucketedTimed(false, Duration.ofMinutes(10), Duration.ZERO);
+    public void testStaticBucketedTimedRev() {
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(0);
+        doTestStaticBucketedTimed(false, prevTime, postTime);
     }
 
     @Test
-    public void testStaticBucketedFwdWindowTimed() {
-        doTestStaticBucketedTimed(false, Duration.ZERO, Duration.ofMinutes(10));
+    public void testStaticBucketedTimedRevExclusive() {
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(-5);
+        doTestStaticBucketedTimed(false, prevTime, postTime);
+    }
+
+    @Test
+    public void testStaticBucketedTimedFwd() {
+        final Duration prevTime = Duration.ofMinutes(0);
+        final Duration postTime = Duration.ofMinutes(10);
+        doTestStaticBucketedTimed(false, prevTime, postTime);
+    }
+
+    @Test
+    public void testStaticBucketedTimedFwdExclusive() {
+        final Duration prevTime = Duration.ofMinutes(-5);
+        final Duration postTime = Duration.ofMinutes(10);
+        doTestStaticBucketedTimed(false, prevTime, postTime);
     }
 
     @Test
     public void testStaticBucketedFwdRevWindowTimed() {
-        doTestStaticBucketedTimed(false, Duration.ofMinutes(10), Duration.ofMinutes(10));
+        final Duration prevTime = Duration.ofMinutes(5);
+        final Duration postTime = Duration.ofMinutes(5);
+        doTestStaticBucketedTimed(false, prevTime, postTime);
     }
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
@@ -284,16 +412,69 @@ public class TestRollingSum extends BaseUpdateByTest {
     // region Live Tests
 
     @Test
-    public void testZeroKeyAppendOnly() {
-        doTestAppendOnly(false);
+    public void testZeroKeyAppendOnlyRev() {
+        final int prevTicks = 100;
+        final int postTicks = 0;
+        doTestAppendOnly(false, prevTicks, postTicks);
     }
 
     @Test
-    public void testBucketedAppendOnly() {
-        doTestAppendOnly(true);
+    public void testZeroKeyAppendOnlyRevExclusive() {
+        final int prevTicks = 100;
+        final int postTicks = -50;
+        doTestAppendOnly(false, prevTicks, postTicks);
     }
 
-    private void doTestAppendOnly(boolean bucketed) {
+    @Test
+    public void testZeroKeyAppendOnlyFwd() {
+        final int prevTicks = 0;
+        final int postTicks = 100;
+        doTestAppendOnly(false, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testZeroKeyAppendOnlyFwdExclusive() {
+        final int prevTicks = -50;
+        final int postTicks = 100;
+        doTestAppendOnly(false, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testZeroKeyAppendOnlyFwdRev() {
+        final int prevTicks = 50;
+        final int postTicks = 50;
+        doTestAppendOnly(false, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyRev() {
+        final int prevTicks = 100;
+        final int postTicks = 0;
+        doTestAppendOnly(true, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyRevExclusive() {
+        final int prevTicks = 100;
+        final int postTicks = -50;
+        doTestAppendOnly(true, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyFwd() {
+        final int prevTicks = 0;
+        final int postTicks = 100;
+        doTestAppendOnly(true, prevTicks, postTicks);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyFwdExclusive() {
+        final int prevTicks = -50;
+        final int postTicks = 100;
+        doTestAppendOnly(true, prevTicks, postTicks);
+    }
+
+    private void doTestAppendOnly(boolean bucketed, int prevTicks, int postTicks) {
         final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131);
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -302,7 +483,7 @@ public class TestRollingSum extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return bucketed ? t.updateBy(UpdateByOperation.RollingSum(100), "Sym")
+                        return bucketed ? t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym")
                                 : t.updateBy(UpdateByOperation.RollingSum(100));
                     }
                 }
@@ -316,17 +497,41 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testZeroKeyAppendOnlyTimed() {
-        doTestAppendOnlyTimed(false);
+    public void testZeroKeyAppendOnlyTimedRev() {
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(0);
+        doTestAppendOnlyTimed(false, prevTime, postTime);
     }
 
     @Test
-    public void testBucketedAppendOnlyTimed() {
-        doTestAppendOnlyTimed(true);
+    public void testZeroKeyAppendOnlyTimedRevExclusive() {
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(-5);
+        doTestAppendOnlyTimed(false, prevTime, postTime);
     }
 
+    @Test
+    public void testZeroKeyAppendOnlyTimedFwd() {
+        final Duration prevTime = Duration.ofMinutes(0);
+        final Duration postTime = Duration.ofMinutes(10);
+        doTestAppendOnlyTimed(false, prevTime, postTime);
+    }
 
-    private void doTestAppendOnlyTimed(boolean bucketed) {
+    @Test
+    public void testZeroKeyAppendOnlyTimedFwdExclusive() {
+        final Duration prevTime = Duration.ofMinutes(-5);
+        final Duration postTime = Duration.ofMinutes(10);
+        doTestAppendOnlyTimed(false, prevTime, postTime);
+    }
+
+    @Test
+    public void testZeroKeyAppendOnlyTimedFwdRev() {
+        final Duration prevTime = Duration.ofMinutes(5);
+        final Duration postTime = Duration.ofMinutes(5);
+        doTestAppendOnlyTimed(false, prevTime, postTime);
+    }
+
+    private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
@@ -335,9 +540,6 @@ public class TestRollingSum extends BaseUpdateByTest {
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
-
-        Duration prevTime = Duration.ofMinutes(10);
-        Duration postTime = Duration.ZERO;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
@@ -357,17 +559,53 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testZeroKeyGeneralTicking() {
+    public void testBucketedAppendOnlyTimedRev() {
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(0);
+        doTestAppendOnlyTimed(true, prevTime, postTime);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyTimedRevExclusive() {
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(-5);
+        doTestAppendOnlyTimed(true, prevTime, postTime);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyTimedFwd() {
+        final Duration prevTime = Duration.ofMinutes(0);
+        final Duration postTime = Duration.ofMinutes(10);
+        doTestAppendOnlyTimed(true, prevTime, postTime);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyTimedFwdExclusive() {
+        final Duration prevTime = Duration.ofMinutes(-5);
+        final Duration postTime = Duration.ofMinutes(10);
+        doTestAppendOnlyTimed(true, prevTime, postTime);
+    }
+
+    @Test
+    public void testBucketedAppendOnlyTimedFwdRev() {
+        final Duration prevTime = Duration.ofMinutes(5);
+        final Duration postTime = Duration.ofMinutes(5);
+        doTestAppendOnlyTimed(true, prevTime, postTime);
+    }
+
+    @Test
+    public void testZeroKeyGeneralTickingRev() {
         final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
         final QueryTable t = result.t;
 
         final long prevTicks = 100;
+        final long fwdTicks = 0;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks));
+                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks, fwdTicks));
                     }
                 }
         };
@@ -381,7 +619,32 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testZeroKeyGeneralTickingFwdWindow() {
+    public void testZeroKeyGeneralTickingRevExclusive() {
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final long prevTicks = 100;
+        final long fwdTicks = -50;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks, fwdTicks));
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(100, billy, t, result.infos));
+            TstUtils.validate("Table - step " + ii, nuggets);
+        }
+    }
+
+    @Test
+    public void testZeroKeyGeneralTickingFwd() {
         final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
         final QueryTable t = result.t;
 
@@ -403,7 +666,32 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
-    public void testBucketedGeneralTicking() {
+    public void testZeroKeyGeneralTickingFwdExclusive() {
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum(-50, 100));
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(100, billy, t, result.infos));
+            TstUtils.validate("Table - step " + ii, nuggets);
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingRev() {
+        final int prevTicks = 100;
+        final int postTicks = 0;
+
         final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
         final QueryTable t = result.t;
 
@@ -411,7 +699,284 @@ public class TestRollingSum extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByOperation.RollingSum(100), "Sym");
+                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingRevExclusive() {
+        final int prevTicks = 100;
+        final int postTicks = -50;
+
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingFwd() {
+        final int prevTicks = 0;
+        final int postTicks = 100;
+
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingFwdExclusive() {
+        final int prevTicks = -50;
+        final int postTicks = 100;
+
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingFwdRev() {
+        final int prevTicks = 50;
+        final int postTicks = 50;
+
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingTimedRev() {
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(0);
+
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingTimedRevExclusive() {
+        final Duration prevTime = Duration.ofMinutes(10);
+        final Duration postTime = Duration.ofMinutes(-5);
+
+        final CreateResult result = createTestTable(100, true, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(10, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingTimedFwd() {
+        final Duration prevTime = Duration.ofMinutes(0);
+        final Duration postTime = Duration.ofMinutes(10);
+
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingTimedFwdExclusive() {
+        final Duration prevTime = Duration.ofMinutes(-5);
+        final Duration postTime = Duration.ofMinutes(10);
+
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 100; ii++) {
+            try {
+                simulateShiftAwareStep(100, billy, t, result.infos, nuggets);
+            } catch (Throwable ex) {
+                System.out.println("Crapped out on step " + ii);
+                throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testBucketedGeneralTickingTimedFwdRev() {
+        final Duration prevTime = Duration.ofMinutes(5);
+        final Duration postTime = Duration.ofMinutes(5);
+
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
                     }
                 }
         };

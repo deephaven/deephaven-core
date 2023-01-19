@@ -42,31 +42,36 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
         }
 
         @Override
-        public void push(long key, int pos) {
-            BigDecimal val = objectInfluencerValuesChunk.get(pos);
-            objectWindowValues.add(val);
+        public void push(long key, int pos, int count) {
+            for (int ii = 0; ii < count; ii++) {
+                BigDecimal val = objectInfluencerValuesChunk.get(pos + ii);
+                objectWindowValues.add(val);
 
-            // increase the running sum
-            if (val != null) {
-                if (curVal == null) {
-                    curVal = val;
+                // increase the running sum
+                if (val != null) {
+                    if (curVal == null) {
+                        curVal = val;
+                    } else {
+                        curVal = curVal.add(val, mathContext);
+                    }
                 } else {
-                    curVal = curVal.add(val, mathContext);
+                    nullCount++;
                 }
-            } else {
-                nullCount++;
             }
         }
 
         @Override
-        public void pop() {
-            BigDecimal val = objectWindowValues.remove();
+        public void pop(int count) {
+            for (int ii = 0; ii < count; ii++) {
+                BigDecimal val = objectWindowValues.remove();
 
-            // reduce the running sum
-            if (val != null) {
-                curVal = curVal.subtract(val, mathContext);
-            } else {
-                nullCount--;
+                // reduce the running sum
+                if (val != null) {
+                    curVal = curVal.subtract(val, mathContext);
+                } else {
+                    nullCount--;
+
+                }
             }
         }
 

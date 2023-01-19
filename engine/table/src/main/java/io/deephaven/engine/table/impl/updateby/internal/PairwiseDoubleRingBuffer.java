@@ -146,13 +146,19 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         return storageChunk.get(1);
     }
 
-    private void grow() {
+    private void grow(int increase) {
         int oldCapacity = capacity;
         int oldChunkSize = chunkSize;
 
-        // double the current capacity
-        capacity *= 2;
-        chunkSize = capacity * 2;
+        int size = size();
+
+        final int minLength = size + increase;
+
+        // double the current capacity until there is sufficient space for the increase
+        while (capacity <= minLength) {
+            capacity *= 2;
+            chunkSize = capacity * 2;
+        }
 
         // transfer to the new chunk
         WritableDoubleChunk<Values> oldChunk = storageChunk;
@@ -162,14 +168,16 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         storageChunk.fillWithValue(0, capacity, emptyVal);
 
         // move the data to the new chunk, note that we store the ring data in the second half of the array
-        if (tail > head) {
-            storageChunk.copyFromTypedChunk(oldChunk, head, capacity, tail - head);
-            tail = capacity + tail - head;
+
+        if (tail >= head) {
+            storageChunk.copyFromTypedChunk(oldChunk, head, capacity, size);
         } else {
-            storageChunk.copyFromTypedChunk(oldChunk, head, capacity, oldChunkSize - head);
-            storageChunk.copyFromTypedChunk(oldChunk, oldCapacity, oldChunkSize - head + capacity, tail - oldCapacity);
-            tail = capacity + oldCapacity - 1;
+            final int firstCopyLen = oldChunkSize - head;
+            storageChunk.copyFromTypedChunk(oldChunk, head, capacity, firstCopyLen);
+            storageChunk.copyFromTypedChunk(oldChunk, oldCapacity, capacity + firstCopyLen , size - firstCopyLen);
         }
+        tail = capacity + size;
+
         // fill the unused storage with the empty value
         storageChunk.fillWithValue(tail, chunkSize - tail, emptyVal);
 
@@ -184,6 +192,10 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         allDirty = true;
     }
 
+    private void grow() {
+        grow(1);
+    }
+
     public void push(double val) {
         if (isFull()) {
             grow();
@@ -196,6 +208,31 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
 
         // move the tail
         tail = ((tail + 1) % capacity) + capacity;
+    }
+
+    public void pushUnsafe(double val) {
+        // add the new data
+        storageChunk.set(tail, val);
+        if (!allDirty) {
+            dirtyIndices.add(tail);
+        }
+
+        // move the tail
+        tail = ((tail + 1) % capacity) + capacity;
+    }
+
+    /**
+     * Ensure that there is sufficient empty space to store {@code count} items in the buffer. If the buffer is
+     * {@code growable}, this may result in an internal growth operation. This call should be used in conjunction with
+     * {@link #pushUnsafe(double)}.
+     *
+     * @param count the amount of empty entries in the buffer after this call
+     * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
+     */
+    public void ensureRemaining(int count) {
+        if (remaining() < count) {
+            grow(count);
+        }
     }
 
     public void pushEmptyValue() {
@@ -215,6 +252,53 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         // move the head
         head = ((head + 1) % capacity) + capacity;
         return val;
+    }
+
+    public double popUnsafe() {
+        double val = storageChunk.get(head);
+        storageChunk.set(head, emptyVal);
+        if (!allDirty) {
+            dirtyIndices.add(head);
+        }
+
+        // move the head
+        head = ((head + 1) % capacity) + capacity;
+        return val;
+    }
+
+    public double[] pop(int count) {
+        if (size() < count) {
+            throw new NoSuchElementException();
+        }
+        final double[] result = new double[count];
+        final int firstCopyLen = chunkSize - head;
+
+        if (tail > head || firstCopyLen >= count) {
+            storageChunk.copyToArray(head, result, 0, count);
+            storageChunk.fillWithValue(head, count, emptyVal);
+            if (!allDirty) {
+                for (int ii = 0; ii < count; ii++) {
+                    dirtyIndices.add(head + ii);
+                }
+            }
+        } else {
+            storageChunk.copyToArray(head, result, 0, firstCopyLen);
+            storageChunk.fillWithValue(head, firstCopyLen, emptyVal);
+            storageChunk.copyToArray(capacity, result, firstCopyLen, count - firstCopyLen);
+            storageChunk.fillWithValue(capacity, count - firstCopyLen, emptyVal);
+            if (!allDirty) {
+                for (int ii = 0; ii < firstCopyLen; ii++) {
+                    dirtyIndices.add(head + ii);
+                }
+                for (int ii = 0; ii < count - firstCopyLen; ii++) {
+                    dirtyIndices.add(capacity + ii);
+                }
+            }
+        }
+
+        // move the head
+        head = ((head + count) % capacity) + capacity;
+        return result;
     }
 
     public boolean isFull() {

@@ -19,20 +19,22 @@ public class CharRingBuffer implements Serializable {
 
     private void grow(int increase) {
         if (growable) {
-            final int minLength = storage.length + increase;
+            final int size = size();
+
+            final int minLength = size + increase + 1;
             int newLength = storage.length * 2;
             while (newLength < minLength) {
                 newLength = newLength * 2;
             }
             char[] newStorage = new char[newLength];
-            if (tail > head) {
-                System.arraycopy(storage, head, newStorage, 0, tail - head);
-                tail = tail - head;
+            if (tail >= head) {
+                System.arraycopy(storage, head, newStorage, 0, size);
             } else {
-                System.arraycopy(storage, head, newStorage, 0, storage.length - head);
-                System.arraycopy(storage, 0, newStorage, storage.length - head, tail);
-                tail += storage.length - head;
+                final int firstCopyLen = storage.length - head;
+                System.arraycopy(storage, head, newStorage, 0, firstCopyLen);
+                System.arraycopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
             }
+            tail = size;
             head = 0;
             storage = newStorage;
         }
@@ -175,11 +177,13 @@ public class CharRingBuffer implements Serializable {
             throw new NoSuchElementException();
         }
         final char[] result = new char[count];
-        if (tail > head || storage.length - head >= count) {
+        final int firstCopyLen = storage.length - head;
+
+        if (tail >= head || firstCopyLen >= count) {
             System.arraycopy(storage, head, result, 0, count);
         } else {
-            System.arraycopy(storage, head, result, 0, storage.length - head);
-            System.arraycopy(storage, 0, result, storage.length - head, count - (storage.length - head));
+            System.arraycopy(storage, head, result, 0, firstCopyLen);
+            System.arraycopy(storage, 0, result, firstCopyLen, count - firstCopyLen);
         }
         head = (head + count) % storage.length;
         return result;
@@ -189,6 +193,12 @@ public class CharRingBuffer implements Serializable {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
+        char e = storage[head];
+        head = (head + 1) % storage.length;
+        return e;
+    }
+
+    public char removeUnsafe() {
         char e = storage[head];
         head = (head + 1) % storage.length;
         return e;

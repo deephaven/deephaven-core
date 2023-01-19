@@ -510,7 +510,7 @@ public class ShortRingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
-    public void testAddUnsafe() {
+    public void testAddRemoveUnsafe() {
         ShortRingBuffer rbNoGrow = new ShortRingBuffer(3, false);
 
         // this should throw
@@ -523,6 +523,16 @@ public class ShortRingBufferTest extends TestCase {
         rbNoGrow.addUnsafe(C);
 
         assertContents(rbNoGrow, A, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), A);
+        assertContents(rbNoGrow, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), B);
+        assertContents(rbNoGrow, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), C);
+        assertEmpty(rbNoGrow);
+
 
         ShortRingBuffer rbGrow = new ShortRingBuffer(3, true);
 

@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby.minmax;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -30,7 +31,9 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
+        public void push(long key, int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
             // read the value from the values chunk
             final short currentVal = shortValueChunk.get(pos);
 

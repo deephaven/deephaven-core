@@ -40,31 +40,35 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
         }
 
         @Override
-        public void push(long key, int pos) {
-            BigInteger val = objectInfluencerValuesChunk.get(pos);
-            objectWindowValues.add(val);
+        public void push(long key, int pos, int count) {
+            for (int ii = 0; ii < count; ii++) {
+                BigInteger val = objectInfluencerValuesChunk.get(pos + ii);
+                objectWindowValues.add(val);
 
-            // increase the running sum
-            if (val != null) {
-                if (curVal == null) {
-                    curVal = val;
+                // increase the running sum
+                if (val != null) {
+                    if (curVal == null) {
+                        curVal = val;
+                    } else {
+                        curVal = curVal.add(val);
+                    }
                 } else {
-                    curVal = curVal.add(val);
+                    nullCount++;
                 }
-            } else {
-                nullCount++;
             }
         }
 
         @Override
-        public void pop() {
-            BigInteger val = objectWindowValues.remove();
+        public void pop(int count) {
+            for (int ii = 0; ii < count; ii++) {
+                BigInteger val = objectWindowValues.remove();
 
-            // reduce the running sum
-            if (val != null) {
-                curVal = curVal.subtract(val);
-            } else {
-                nullCount--;
+                // reduce the running sum
+                if (val != null) {
+                    curVal = curVal.subtract(val);
+                } else {
+                    nullCount--;
+                }
             }
         }
 

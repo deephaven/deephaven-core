@@ -510,7 +510,7 @@ public class DoubleRingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
-    public void testAddUnsafe() {
+    public void testAddRemoveUnsafe() {
         DoubleRingBuffer rbNoGrow = new DoubleRingBuffer(3, false);
 
         // this should throw
@@ -523,6 +523,16 @@ public class DoubleRingBufferTest extends TestCase {
         rbNoGrow.addUnsafe(C);
 
         assertContents(rbNoGrow, A, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), A);
+        assertContents(rbNoGrow, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), B);
+        assertContents(rbNoGrow, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), C);
+        assertEmpty(rbNoGrow);
+
 
         DoubleRingBuffer rbGrow = new DoubleRingBuffer(3, true);
 

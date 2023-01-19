@@ -57,7 +57,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
 
             // chunk processing
             for (int ii = 0; ii < len; ii++) {
-                push(NULL_ROW_KEY, ii);
+                push(NULL_ROW_KEY, ii, 1);
                 writeToOutputChunk(ii);
             }
 

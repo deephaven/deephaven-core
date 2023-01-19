@@ -95,7 +95,7 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
+        public void push(long key, int pos, int count) {
             throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }

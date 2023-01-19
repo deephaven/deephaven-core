@@ -104,10 +104,17 @@ class UpdateByWindowTicks extends UpdateByWindow {
         final MutableLong minPos = new MutableLong(0L);
 
         invertedSubSet.forAllRowKeyRanges((s, e) -> {
-            long sPos = Math.max(s - revTicks + 1, minPos.longValue());
-            long ePos = Math.min(e + fwdTicks, maxPos);
-            builder.appendRange(sPos, ePos);
-            minPos.setValue(ePos + 1);
+            long head = s - revTicks + 1;
+            long tail = e + fwdTicks;
+
+            if (tail < minPos.longValue() || head > maxPos) {
+                // ignore this range
+                return;
+            }
+            head = Math.max(head, minPos.longValue());
+            tail = Math.min(tail, maxPos);
+            builder.appendRange(head, tail);
+            minPos.setValue(tail + 1);
         });
 
         try (final RowSet positions = builder.build()) {
@@ -225,33 +232,43 @@ class UpdateByWindowTicks extends UpdateByWindow {
         }
 
         // need a writable rowset
-        final WritableRowSet tmpAffected;
+        final WritableRowSet tmpAffected = RowSetFactory.empty();
 
-        // changed rows are all mods+adds
-        try (final WritableRowSet changed = upstream.added().union(upstream.modified())) {
+        if (upstream.modified().isNonempty()) {
             // compute the rows affected from these changes
-            try (final WritableRowSet changedInverted = ctx.sourceRowSet.invert(changed)) {
-                tmpAffected = computeAffectedRowsTicks(ctx.sourceRowSet, changedInverted, prevUnits, fwdUnits);
+            try (final WritableRowSet modifiedInverted = ctx.sourceRowSet.invert(upstream.modified());
+                 final RowSet modifiedAffected = computeAffectedRowsTicks(ctx.sourceRowSet, modifiedInverted, prevUnits, fwdUnits)) {
+                tmpAffected.insert(modifiedAffected);
             }
         }
 
-        // other rows can be affected by removes
+        if (upstream.added().isNonempty()) {
+            // add the new rows and any cascading changes from inserting rows
+            final long prev = Math.max(1, prevUnits);
+            final long fwd = Math.max(0, fwdUnits);
+
+            try (final RowSet addedInverted = ctx.sourceRowSet.invert(upstream.added());
+                 final RowSet addedAffected = computeAffectedRowsTicks(ctx.sourceRowSet, addedInverted, prev, fwd)) {
+                tmpAffected.insert(addedAffected);
+            }
+        }
+
         if (upstream.removed().isNonempty()) {
-            try (final RowSet prev = ctx.sourceRowSet.copyPrev();
-                    final RowSet removedPositions = prev.invert(upstream.removed());
-                    final WritableRowSet affectedByRemoves =
-                            computeAffectedRowsTicks(prev, removedPositions, prevUnits,
-                                    fwdUnits)) {
+            // add the cascading changes from removing rows
+            final long prev = Math.max(0, prevUnits);
+            final long fwd = Math.max(0, fwdUnits);
+
+            try (final RowSet prevRows = ctx.sourceRowSet.copyPrev();
+                 final RowSet removedInverted = prevRows.invert(upstream.removed());
+                 final WritableRowSet removedAffected =
+                         computeAffectedRowsTicks(prevRows, removedInverted, prev, fwd)) {
                 // apply shifts to get back to pos-shift space
-                upstream.shifted().apply(affectedByRemoves);
+                upstream.shifted().apply(removedAffected);
                 // retain only the rows that still exist in the sourceRowSet
-                affectedByRemoves.retain(ctx.sourceRowSet);
-                tmpAffected.insert(affectedByRemoves);
+                removedAffected.retain(ctx.sourceRowSet);
+                tmpAffected.insert(removedAffected);
             }
         }
-
-        // naturally need to compute all newly added rows
-        tmpAffected.insert(upstream.added());
 
         ctx.affectedRows = tmpAffected;
 
@@ -292,8 +309,6 @@ class UpdateByWindowTicks extends UpdateByWindow {
             final long sourceRowSetSize = ctx.sourceRowSet.size();
 
             // chunk processing
-            long totalCount = 0;
-
             while (it.hasMore()) {
                 final RowSequence chunkRs = it.getNextRowSequenceWithLength(ctx.workingChunkSize);
                 final RowSequence chunkPosRs = posIt.getNextRowSequenceWithLength(ctx.workingChunkSize);
@@ -302,6 +317,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
                 final LongChunk<OrderedRowKeys> posChunk = chunkPosRs.asRowKeyChunk();
 
                 // chunk processing
+                long totalCount = 0;
+
                 for (int ii = 0; ii < chunkRsSize; ii++) {
                     // read the current position
                     final long currentPos = posChunk.get(ii);

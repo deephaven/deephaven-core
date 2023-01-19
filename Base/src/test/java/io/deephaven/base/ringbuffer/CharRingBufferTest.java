@@ -505,7 +505,7 @@ public class CharRingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
-    public void testAddUnsafe() {
+    public void testAddRemoveUnsafe() {
         CharRingBuffer rbNoGrow = new CharRingBuffer(3, false);
 
         // this should throw
@@ -518,6 +518,16 @@ public class CharRingBufferTest extends TestCase {
         rbNoGrow.addUnsafe(C);
 
         assertContents(rbNoGrow, A, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), A);
+        assertContents(rbNoGrow, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), B);
+        assertContents(rbNoGrow, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), C);
+        assertEmpty(rbNoGrow);
+
 
         CharRingBuffer rbGrow = new CharRingBuffer(3, true);
 

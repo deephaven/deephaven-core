@@ -7,6 +7,7 @@ package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -47,31 +48,39 @@ public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
-            byte val = byteInfluencerValuesChunk.get(pos);
-            byteWindowValues.add(val);
+        public void push(long key, int pos, int count) {
+            byteWindowValues.ensureRemaining(count);
 
-            // increase the running sum
-            if (val != NULL_BYTE) {
-                if (curVal == NULL_LONG) {
-                    curVal = val;
+            for (int ii = 0; ii < count; ii++) {
+                byte val = byteInfluencerValuesChunk.get(pos + ii);
+                byteWindowValues.addUnsafe(val);
+
+                // increase the running sum
+                if (val != NULL_BYTE) {
+                    if (curVal == NULL_LONG) {
+                        curVal = val;
+                    } else {
+                        curVal += val;
+                    }
                 } else {
-                    curVal += val;
+                    nullCount++;
                 }
-            } else {
-                nullCount++;
             }
         }
 
         @Override
-        public void pop() {
-            byte val = byteWindowValues.remove();
+        public void pop(int count) {
+            Assert.geq(byteWindowValues.size(), "byteWindowValues.size()", count);
 
-            // reduce the running sum
-            if (val != NULL_BYTE) {
-                curVal -= val;
-            } else {
-                nullCount--;
+            for (int ii = 0; ii < count; ii++) {
+                byte val = byteWindowValues.removeUnsafe();
+
+                // reduce the running sum
+                if (val != NULL_BYTE) {
+                    curVal -= val;
+                } else {
+                    nullCount--;
+                }
             }
         }
 

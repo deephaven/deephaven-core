@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -16,6 +17,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
@@ -50,21 +52,29 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
-            float val = floatInfluencerValuesChunk.get(pos);
+        public void push(long key, int pos, int count) {
+            floatPairwiseSum.ensureRemaining(count);
 
-            floatPairwiseSum.push(val);
-            if (val == NULL_FLOAT) {
-                nullCount++;
+            for (int ii = 0; ii < count; ii++) {
+                float val = floatInfluencerValuesChunk.get(pos + ii);
+                floatPairwiseSum.pushUnsafe(val);
+
+                if (val == NULL_FLOAT) {
+                    nullCount++;
+                }
             }
         }
 
         @Override
-        public void pop() {
-            float val = floatPairwiseSum.pop();
+        public void pop(int count) {
+            Assert.geq(floatPairwiseSum.size(), "shortWindowValues.size()", count);
 
-            if (val == NULL_FLOAT) {
-                nullCount--;
+            for (int ii = 0; ii < count; ii++) {
+                float val = floatPairwiseSum.popUnsafe();
+
+                if (val == NULL_FLOAT) {
+                    nullCount--;
+                }
             }
         }
 

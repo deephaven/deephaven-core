@@ -359,4 +359,63 @@ public class PairwiseDoubleRingBufferTest extends TestCase {
             assertEquals((double)99, rb.evaluate()); // last value added is max
         }
     }
+
+    public void testPushPopUnsafe() {
+        try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, -Double.MAX_VALUE, Double::max)) {
+            // move the head and tail off zero
+            rb.ensureRemaining(500);
+            for (double i = 0; i < 500; i++) {
+                rb.pushUnsafe(i);
+            }
+            for (double i = 0; i < 500; i++) {
+                assertEquals(rb.popUnsafe(), i);
+            }
+
+            // do it again with an offset
+            rb.ensureRemaining(500);
+            for (double i = 0; i < 500; i++) {
+                rb.pushUnsafe(i + (double)1000);
+            }
+            for (double i = 0; i < 500; i++) {
+                assertEquals(rb.popUnsafe(), i + (double)1000);
+            }
+
+            for (double i = 0; i < 500; i++) {
+                rb.pushUnsafe(i + (double)1000);
+            }
+            rb.clear();
+
+            for (double i = 0; i < 100; i++) {
+                rb.push(i);
+            }
+            assertEquals((double)99, rb.evaluate()); // last value added is max
+        }
+    }
+
+    private double sum1toN(double n) {
+        return ((double)n * (double)(n+1) / (double)2);
+    }
+
+    public void testPopMultiple() {
+        try (final PairwiseDoubleRingBuffer rb = new PairwiseDoubleRingBuffer(3, (double)0, Double::sum)) {
+
+            for (int step = 0; step < 10; step++) {
+                rb.ensureRemaining(500);
+                for (double i = 0; i < 500; i++) {
+                    rb.pushUnsafe(i);
+                }
+
+                if (step % 2 == 0) {
+                    rb.evaluate();
+                }
+
+                double[] values = rb.pop(500);
+                for (double i = 0; i < 500; i++) {
+                    assertEquals(values[(int) i], i);
+                }
+                assertEmpty(rb);
+            }
+        }
+    }
+
 }

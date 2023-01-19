@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby.prod;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -29,7 +30,9 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
         }
 
         @Override
-        public void push(long key, int pos) {
+        public void push(long key, int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
             // read the value from the values chunk
             final BigDecimal currentVal = objectValueChunk.get(pos);
 

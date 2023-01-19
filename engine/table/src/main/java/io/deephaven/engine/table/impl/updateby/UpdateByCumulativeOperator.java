@@ -30,7 +30,7 @@ public abstract class UpdateByCumulativeOperator extends UpdateByOperator {
         public void close() {}
 
         @FinalDefault
-        public void pop() {
+        public void pop(int count) {
             throw new UnsupportedOperationException("Cumulative operators should never call pop()");
         }
 

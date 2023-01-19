@@ -70,14 +70,17 @@ public abstract class UpdateByOperator {
          * @param pos the index in the associated chunk where this value can be found. Depending on the usage, might be
          *        a values chunk (for cumulative operators) or an influencer values chunk (for windowed). It is the task
          *        of the operator to pull the data from the chunk and use it properly
+         * @param count the number of items to push from the chunk
          */
-        void push(long key, int pos);
+        void push(long key, int pos, int count);
 
         /**
-         * Remove a value from the operators current data set. This is only valid for windowed operators since
+         * Remove a value from the operators current data set. This is only valid for windowed operators as
          * cumulative operators only append values
+         *
+         * @param count the number of items to pop from the data set
          */
-        void pop();
+        void pop(int count);
 
         /**
          * Write the current value for this row to the output chunk

@@ -22,13 +22,15 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
         }
 
         @Override
-        public void push(long key, int pos) {
-            // read the value from the values chunk
-            final T currentVal = objectValueChunk.get(pos);
-            if(curVal == null) {
-                curVal = currentVal;
-            } else if(currentVal != null) {
-                curVal = doOperation(curVal, currentVal);
+        public void push(long key, int pos, int count) {
+            for (int ii = 0; ii < count; ii++) {
+                // read the value from the values chunk
+                final T currentVal = objectValueChunk.get(pos + ii);
+                if (curVal == null) {
+                    curVal = currentVal;
+                } else if (currentVal != null) {
+                    curVal = doOperation(curVal, currentVal);
+                }
             }
         }
 

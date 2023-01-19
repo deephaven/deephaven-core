@@ -354,4 +354,63 @@ public class PairwiseFloatRingBufferTest extends TestCase {
             assertEquals((float)99, rb.evaluate()); // last value added is max
         }
     }
+
+    public void testPushPopUnsafe() {
+        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, -Float.MAX_VALUE, Float::max)) {
+            // move the head and tail off zero
+            rb.ensureRemaining(500);
+            for (float i = 0; i < 500; i++) {
+                rb.pushUnsafe(i);
+            }
+            for (float i = 0; i < 500; i++) {
+                assertEquals(rb.popUnsafe(), i);
+            }
+
+            // do it again with an offset
+            rb.ensureRemaining(500);
+            for (float i = 0; i < 500; i++) {
+                rb.pushUnsafe(i + (float)1000);
+            }
+            for (float i = 0; i < 500; i++) {
+                assertEquals(rb.popUnsafe(), i + (float)1000);
+            }
+
+            for (float i = 0; i < 500; i++) {
+                rb.pushUnsafe(i + (float)1000);
+            }
+            rb.clear();
+
+            for (float i = 0; i < 100; i++) {
+                rb.push(i);
+            }
+            assertEquals((float)99, rb.evaluate()); // last value added is max
+        }
+    }
+
+    private float sum1toN(float n) {
+        return ((float)n * (float)(n+1) / (float)2);
+    }
+
+    public void testPopMultiple() {
+        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, (float)0, Float::sum)) {
+
+            for (int step = 0; step < 10; step++) {
+                rb.ensureRemaining(500);
+                for (float i = 0; i < 500; i++) {
+                    rb.pushUnsafe(i);
+                }
+
+                if (step % 2 == 0) {
+                    rb.evaluate();
+                }
+
+                float[] values = rb.pop(500);
+                for (float i = 0; i < 500; i++) {
+                    assertEquals(values[(int) i], i);
+                }
+                assertEmpty(rb);
+            }
+        }
+    }
+
 }

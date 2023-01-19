@@ -510,7 +510,7 @@ public class IntRingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
-    public void testAddUnsafe() {
+    public void testAddRemoveUnsafe() {
         IntRingBuffer rbNoGrow = new IntRingBuffer(3, false);
 
         // this should throw
@@ -523,6 +523,16 @@ public class IntRingBufferTest extends TestCase {
         rbNoGrow.addUnsafe(C);
 
         assertContents(rbNoGrow, A, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), A);
+        assertContents(rbNoGrow, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), B);
+        assertContents(rbNoGrow, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), C);
+        assertEmpty(rbNoGrow);
+
 
         IntRingBuffer rbGrow = new IntRingBuffer(3, true);
 

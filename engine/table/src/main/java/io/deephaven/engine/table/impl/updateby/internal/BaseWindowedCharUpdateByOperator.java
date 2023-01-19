@@ -54,16 +54,21 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
                 final int pushCount = pushChunk.get(ii);
                 final int popCount = popChunk.get(ii);
 
+                if (pushCount == NULL_INT) {
+                    writeNullToOutputChunk(ii);
+                    continue;
+                }
+
                 // pop for this row
-                for (int count = 0; count < popCount; count++) {
-                    pop();
+                if (popCount > 0) {
+                    pop(popCount);
                 }
 
                 // push for this row
-                for (int count = 0; count < pushCount; count++) {
-                    push(NULL_ROW_KEY, pushIndex + count);
+                if (pushCount > 0) {
+                    push(NULL_ROW_KEY, pushIndex, pushCount);
+                    pushIndex += pushCount;
                 }
-                pushIndex += pushCount;
 
                 // write the results to the output chunk
                 writeToOutputChunk(ii);
@@ -82,6 +87,10 @@ public abstract class BaseWindowedCharUpdateByOperator extends UpdateByWindowedO
         @Override
         public void writeToOutputChunk(int outIdx) {
             outputValues.set(outIdx, curVal);
+        }
+
+        void writeNullToOutputChunk(int outIdx) {
+            outputValues.set(outIdx, NULL_CHAR);
         }
 
         @Override

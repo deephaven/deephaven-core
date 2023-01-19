@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowedOperator {
     protected final WritableColumnSource<Float> outputSource;
@@ -56,16 +56,21 @@ public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowed
                 final int pushCount = pushChunk.get(ii);
                 final int popCount = popChunk.get(ii);
 
+                if (pushCount == NULL_INT) {
+                    writeNullToOutputChunk(ii);
+                    continue;
+                }
+
                 // pop for this row
-                for (int count = 0; count < popCount; count++) {
-                    pop();
+                if (popCount > 0) {
+                    pop(popCount);
                 }
 
                 // push for this row
-                for (int count = 0; count < pushCount; count++) {
-                    push(NULL_ROW_KEY, pushIndex + count);
+                if (pushCount > 0) {
+                    push(NULL_ROW_KEY, pushIndex, pushCount);
+                    pushIndex += pushCount;
                 }
-                pushIndex += pushCount;
 
                 // write the results to the output chunk
                 writeToOutputChunk(ii);
@@ -84,6 +89,10 @@ public abstract class BaseWindowedFloatUpdateByOperator extends UpdateByWindowed
         @Override
         public void writeToOutputChunk(int outIdx) {
             outputValues.set(outIdx, curVal);
+        }
+
+        void writeNullToOutputChunk(int outIdx) {
+            outputValues.set(outIdx, NULL_FLOAT);
         }
 
         @Override

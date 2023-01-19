@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.ringbuffer.ShortRingBuffer;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -41,31 +42,39 @@ public class ShortRollingSumOperator extends BaseWindowedLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos) {
-            short val = shortInfluencerValuesChunk.get(pos);
-            shortWindowValues.add(val);
+        public void push(long key, int pos, int count) {
+            shortWindowValues.ensureRemaining(count);
 
-            // increase the running sum
-            if (val != NULL_SHORT) {
-                if (curVal == NULL_LONG) {
-                    curVal = val;
+            for (int ii = 0; ii < count; ii++) {
+                short val = shortInfluencerValuesChunk.get(pos + ii);
+                shortWindowValues.addUnsafe(val);
+
+                // increase the running sum
+                if (val != NULL_SHORT) {
+                    if (curVal == NULL_LONG) {
+                        curVal = val;
+                    } else {
+                        curVal += val;
+                    }
                 } else {
-                    curVal += val;
+                    nullCount++;
                 }
-            } else {
-                nullCount++;
             }
         }
 
         @Override
-        public void pop() {
-            short val = shortWindowValues.remove();
+        public void pop(int count) {
+            Assert.geq(shortWindowValues.size(), "shortWindowValues.size()", count);
 
-            // reduce the running sum
-            if (val != NULL_SHORT) {
-                curVal -= val;
-            } else {
-                nullCount--;
+            for (int ii = 0; ii < count; ii++) {
+                short val = shortWindowValues.removeUnsafe();
+
+                // reduce the running sum
+                if (val != NULL_SHORT) {
+                    curVal -= val;
+                } else {
+                    nullCount--;
+                }
             }
         }
 

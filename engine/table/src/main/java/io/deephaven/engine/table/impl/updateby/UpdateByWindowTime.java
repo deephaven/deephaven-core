@@ -209,11 +209,9 @@ class UpdateByWindowTime extends UpdateByWindow {
         // all rows are affected on the initial step
         if (ctx.initialStep) {
             ctx.affectedRows = ctx.sourceRowSet;
-            // only non-null timestamps are actual influencers. Note that this is fast rather than precise. This set
-            // of rows may contain rows not needed for computation. E.g. when fwd and rev are both non-zero, we could
-            // eliminate rows at either the beginning or end of the set, but not convinced ROI > 0 and these rows are
-            // properly skipped by window creation
-            ctx.influencerRows = ctx.timestampValidRowSet.copy();
+
+            ctx.influencerRows = computeInfluencerRowsTime(ctx.timestampValidRowSet, ctx.affectedRows, prevUnits, fwdUnits,
+                    ctx.timestampColumnSource, ctx.timestampSsa, false);
 
             // mark all operators as affected by this update
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
@@ -255,38 +253,48 @@ class UpdateByWindowTime extends UpdateByWindow {
             return;
         }
 
-        final WritableRowSet tmpAffected;
+        try (final RowSet prevRows = upstream.modified().isNonempty() || upstream.removed().isNonempty() ?
+                ctx.timestampValidRowSet.copyPrev() :
+                null) {
 
-        // changed rows are all mods+adds
-        try (WritableRowSet changed = upstream.added().union(upstream.modified())) {
-            // need a writable rowset
-            tmpAffected = computeAffectedRowsTime(ctx.timestampValidRowSet, changed, prevUnits, fwdUnits,
-                    ctx.timestampColumnSource, ctx.timestampSsa, false);
-        }
+            final WritableRowSet tmpAffected = RowSetFactory.empty();
 
-        // other rows can be affected by removes or mods
-        if (upstream.removed().isNonempty()) {
-            try (final RowSet prev = ctx.timestampValidRowSet.copyPrev();
-                    final WritableRowSet affectedByRemoves =
-                            computeAffectedRowsTime(prev, upstream.removed(), prevUnits, fwdUnits,
-                                    ctx.timestampColumnSource, ctx.timestampSsa, true);
-                    final WritableRowSet affectedByModifies =
-                            computeAffectedRowsTime(prev, upstream.getModifiedPreShift(), prevUnits, fwdUnits,
-                                    ctx.timestampColumnSource, ctx.timestampSsa, true)) {
-                // we used the SSA (post-shift) to get these keys, no need to shift
-                // retain only the rows that still exist in the sourceRowSet
-                affectedByRemoves.retain(ctx.timestampValidRowSet);
-                affectedByModifies.retain(ctx.timestampValidRowSet);
-
-                tmpAffected.insert(affectedByRemoves);
-                tmpAffected.insert(affectedByModifies);
+            if (upstream.modified().isNonempty()) {
+                // modified timestamps will affect the current and previous values
+                try (final RowSet modifiedAffected = computeAffectedRowsTime(ctx.timestampValidRowSet, upstream.modified(), prevUnits, fwdUnits, ctx.timestampColumnSource, ctx.timestampSsa, false)) {
+                    tmpAffected.insert(modifiedAffected);
+                }
+                try (final WritableRowSet modifiedAffectedPrev = computeAffectedRowsTime(prevRows, upstream.getModifiedPreShift(), prevUnits, fwdUnits, ctx.timestampColumnSource, ctx.timestampSsa, true)) {
+                    // we used the SSA (post-shift) to get these keys, no need to shift
+                    // retain only the rows that still exist in the sourceRowSet
+                    modifiedAffectedPrev.retain(ctx.timestampValidRowSet);
+                    tmpAffected.insert(modifiedAffectedPrev);
+                }
+                // naturally need to compute all modified rows
+                tmpAffected.insert(upstream.modified());
             }
+
+            if (upstream.added().isNonempty()) {
+                try (final RowSet addedAffected = computeAffectedRowsTime(ctx.timestampValidRowSet, upstream.added(), prevUnits, fwdUnits, ctx.timestampColumnSource, ctx.timestampSsa, false)) {
+                    tmpAffected.insert(addedAffected);
+                }
+                // naturally need to compute all new rows
+                tmpAffected.insert(upstream.added());
+            }
+
+            // other rows can be affected by removes or mods
+            if (upstream.removed().isNonempty()) {
+                try (final WritableRowSet removedAffected = computeAffectedRowsTime(prevRows, upstream.removed(), prevUnits, fwdUnits, ctx.timestampColumnSource, ctx.timestampSsa, true)) {
+                    // we used the SSA (post-shift) to get these keys, no need to shift
+                    // retain only the rows that still exist in the sourceRowSet
+                    removedAffected.retain(ctx.timestampValidRowSet);
+
+                    tmpAffected.insert(removedAffected);
+                }
+            }
+
+            ctx.affectedRows = tmpAffected;
         }
-
-        // naturally need to compute all newly added rows
-        tmpAffected.insert(upstream.added());
-
-        ctx.affectedRows = tmpAffected;
 
         // now get influencer rows for the affected rows
         ctx.influencerRows = computeInfluencerRowsTime(ctx.timestampValidRowSet, ctx.affectedRows, prevUnits, fwdUnits,
