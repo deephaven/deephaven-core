@@ -1530,7 +1530,7 @@ public class AsOfJoinHelper {
         Arrays.stream(columnsToAdd).forEach(mp -> {
             // note that we must always redirect the right-hand side, because unmatched rows will be redirected to null
             final ColumnSource<?> rightSource =
-                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
+                    RedirectedColumnSource.alwaysRedirect(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
             if (refreshing) {
                 rightSource.startTrackingPrevValues();
             }
