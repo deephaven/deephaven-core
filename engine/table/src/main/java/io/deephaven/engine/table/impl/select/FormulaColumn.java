@@ -20,4 +20,11 @@ public interface FormulaColumn extends SelectColumn {
     static FormulaColumn createFormulaColumn(String columnName, String formulaString) {
         return createFormulaColumn(columnName, formulaString, FormulaParserConfiguration.parser);
     }
+
+    /**
+     * @return true if all rows have a single constant value
+     */
+    default boolean hasConstantValue() {
+        return false;
+    }
 }

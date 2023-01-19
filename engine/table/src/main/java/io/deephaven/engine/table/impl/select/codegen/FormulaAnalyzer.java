@@ -13,7 +13,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
-import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
@@ -38,7 +37,9 @@ public class FormulaAnalyzer {
         }
 
         log.debug().append("Expression (after language conversion) : ")
-                .append(queryLanguageResult.getConvertedExpression()).endl();
+                .append(queryLanguageResult.getConvertedExpression())
+                .append(" isConstantValueExpression=").append(queryLanguageResult.isConstantValueExpression())
+                .endl();
 
         final List<String> usedColumns = new ArrayList<>();
         final List<String> userParams = new ArrayList<>();
@@ -68,7 +69,8 @@ public class FormulaAnalyzer {
                 usedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 usedColumnArrays.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 userParams.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                rawFormulaString, cookedFormulaString, timeInstanceVariables);
+                rawFormulaString, cookedFormulaString, timeInstanceVariables,
+                queryLanguageResult.isConstantValueExpression());
     }
 
     public static QueryLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
@@ -138,13 +140,16 @@ public class FormulaAnalyzer {
         public final String rawFormulaString;
         public final String cookedFormulaString;
         public final String timeInstanceVariables;
+        public final boolean isConstantValueFormula;
 
         public Result(Class<?> returnedType, String[] usedColumns, String[] usedArrays, String[] usedParams,
-                String rawFormulaString, String cookedFormulaString, String timeInstanceVariables) {
+                String rawFormulaString, String cookedFormulaString, String timeInstanceVariables,
+                boolean isConstantValueFormula) {
             this.sourceDescriptor = new FormulaSourceDescriptor(returnedType, usedColumns, usedArrays, usedParams);
             this.rawFormulaString = rawFormulaString;
             this.cookedFormulaString = cookedFormulaString;
             this.timeInstanceVariables = timeInstanceVariables;
+            this.isConstantValueFormula = isConstantValueFormula;
         }
     }
 }

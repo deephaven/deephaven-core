@@ -62,6 +62,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             Configuration.getInstance().getBooleanWithDefault("FormulaColumn.useKernelFormulasProperty", false);
 
     private FormulaAnalyzer.Result analyzedFormula;
+    private boolean hasConstantValue;
 
     public FormulaColumnPython getFormulaColumnPython() {
         return formulaColumnPython;
@@ -189,6 +190,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     timeConversionResult);
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap,
                     timeConversionResult, result);
+            hasConstantValue = result.isConstantValueExpression();
 
             log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
@@ -728,11 +730,17 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final DhFormulaColumn copy = new DhFormulaColumn(columnName, formulaString);
         if (formulaFactory != null) {
             copy.analyzedFormula = analyzedFormula;
+            copy.hasConstantValue = hasConstantValue;
             copy.returnedType = returnedType;
             copy.formulaColumnPython = formulaColumnPython;
             onCopy(copy);
         }
         return copy;
+    }
+
+    @Override
+    public boolean hasConstantValue() {
+        return hasConstantValue;
     }
 
     private FormulaFactory createFormulaFactory() {
