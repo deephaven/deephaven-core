@@ -33,8 +33,8 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  */
 public class ImmutableConstantByteSource
         extends AbstractColumnSource<Byte>
-        implements ImmutableColumnSourceGetDefaults.ForByte, ShiftData.ShiftCallback,
-        RowKeyAgnosticColumnSource<Values> {
+        implements ImmutableColumnSourceGetDefaults.ForByte, ShiftData.ShiftCallback, InMemoryColumnSource,
+        RowKeyAgnosticChunkSource<Values> {
 
     private final byte value;
 
@@ -89,9 +89,10 @@ public class ImmutableConstantByteSource
     // endregion reinterpret
 
     @Override
-    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+    public void fillChunkUnordered(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         final WritableByteChunk<? super Values> destChunk = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_BYTE : value);
@@ -100,7 +101,9 @@ public class ImmutableConstantByteSource
     }
 
     @Override
-    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+    public void fillPrevChunkUnordered(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
         fillChunkUnordered(context , dest, keys);
     }

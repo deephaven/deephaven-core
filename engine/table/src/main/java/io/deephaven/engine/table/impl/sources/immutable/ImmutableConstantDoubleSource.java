@@ -31,8 +31,8 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
  */
 public class ImmutableConstantDoubleSource
         extends AbstractColumnSource<Double>
-        implements ImmutableColumnSourceGetDefaults.ForDouble, ShiftData.ShiftCallback,
-        RowKeyAgnosticColumnSource<Values> {
+        implements ImmutableColumnSourceGetDefaults.ForDouble, ShiftData.ShiftCallback, InMemoryColumnSource,
+        RowKeyAgnosticChunkSource<Values> {
 
     private final double value;
 
@@ -76,9 +76,10 @@ public class ImmutableConstantDoubleSource
     // endregion reinterpret
 
     @Override
-    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+    public void fillChunkUnordered(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         final WritableDoubleChunk<? super Values> destChunk = dest.asWritableDoubleChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_DOUBLE : value);
@@ -87,7 +88,9 @@ public class ImmutableConstantDoubleSource
     }
 
     @Override
-    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+    public void fillPrevChunkUnordered(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
         fillChunkUnordered(context , dest, keys);
     }

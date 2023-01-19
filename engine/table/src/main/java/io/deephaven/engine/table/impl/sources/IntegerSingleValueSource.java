@@ -129,27 +129,24 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         destination.setSize(rowSequence.intSize());
-        destination.asWritableIntChunk().fillWithValue(0, rowSequence.intSize(), getInt(0));
+        destination.asWritableIntChunk().fillWithValue(0, rowSequence.intSize(), current);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
             @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        int value = getPrevInt(0); // avoid duplicating the current vs prev logic in getPrevInt
         destination.setSize(rowSequence.intSize());
-        destination.asWritableIntChunk().fillWithValue(0, rowSequence.intSize(), getPrevInt(0));
+        destination.asWritableIntChunk().fillWithValue(0, rowSequence.intSize(), value);
     }
 
     @Override
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        int value = getInt(0);
         final WritableIntChunk<? super Values> destChunk = dest.asWritableIntChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_INT : value);
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_INT : current);
         }
         destChunk.setSize(keys.size());
     }
@@ -157,8 +154,7 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     @Override
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        int value = getPrevInt(0);
+        int value = getPrevInt(0); // avoid duplicating the current vs prev logic in getPrevInt
         final WritableIntChunk<? super Values> destChunk = dest.asWritableIntChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_INT : value);

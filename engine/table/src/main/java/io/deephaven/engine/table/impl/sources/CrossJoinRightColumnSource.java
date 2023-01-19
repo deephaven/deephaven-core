@@ -29,7 +29,6 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
-import io.deephaven.proto.backplane.grpc.NullValue;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +49,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             @NotNull final ColumnSource<T> innerSource,
             boolean rightIsLive) {
         // Force wrapping if this is a leftOuterJoin or else we will not see the nulls; unless every row is null.
-        if ((!crossJoinManager.leftOuterJoin() && innerSource instanceof RowKeyAgnosticColumnSource)
+        if ((!crossJoinManager.leftOuterJoin() && innerSource instanceof RowKeyAgnosticChunkSource)
                 || innerSource instanceof NullValueColumnSource) {
             return innerSource;
         }

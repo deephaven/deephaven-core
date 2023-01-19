@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
@@ -45,7 +44,7 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
     public static <T> ColumnSource<T> maybeRedirect(
             @NotNull final RowRedirection rowRedirection,
             @NotNull final ColumnSource<T> innerSource) {
-        if (innerSource instanceof RowKeyAgnosticColumnSource) {
+        if (innerSource instanceof RowKeyAgnosticChunkSource) {
             return innerSource;
         }
         return new RedirectedColumnSource<>(rowRedirection, innerSource);

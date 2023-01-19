@@ -129,27 +129,24 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         destination.setSize(rowSequence.intSize());
-        destination.asWritableDoubleChunk().fillWithValue(0, rowSequence.intSize(), getDouble(0));
+        destination.asWritableDoubleChunk().fillWithValue(0, rowSequence.intSize(), current);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
             @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        double value = getPrevDouble(0); // avoid duplicating the current vs prev logic in getPrevDouble
         destination.setSize(rowSequence.intSize());
-        destination.asWritableDoubleChunk().fillWithValue(0, rowSequence.intSize(), getPrevDouble(0));
+        destination.asWritableDoubleChunk().fillWithValue(0, rowSequence.intSize(), value);
     }
 
     @Override
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        double value = getDouble(0);
         final WritableDoubleChunk<? super Values> destChunk = dest.asWritableDoubleChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_DOUBLE : value);
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_DOUBLE : current);
         }
         destChunk.setSize(keys.size());
     }
@@ -157,8 +154,7 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
     @Override
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        double value = getPrevDouble(0);
+        double value = getPrevDouble(0); // avoid duplicating the current vs prev logic in getPrevDouble
         final WritableDoubleChunk<? super Values> destChunk = dest.asWritableDoubleChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_DOUBLE : value);

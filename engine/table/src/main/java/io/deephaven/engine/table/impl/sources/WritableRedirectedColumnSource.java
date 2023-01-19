@@ -30,7 +30,7 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
             @NotNull final RowRedirection rowRedirection,
             @NotNull final WritableColumnSource<T> innerSource,
             final long maxInnerIndex) {
-        if (innerSource instanceof RowKeyAgnosticColumnSource) {
+        if (innerSource instanceof RowKeyAgnosticChunkSource) {
             return innerSource;
         }
         return new WritableRedirectedColumnSource<>(rowRedirection, innerSource, maxInnerIndex);

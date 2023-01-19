@@ -31,8 +31,8 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
  */
 public class ImmutableConstantShortSource
         extends AbstractColumnSource<Short>
-        implements ImmutableColumnSourceGetDefaults.ForShort, ShiftData.ShiftCallback,
-        RowKeyAgnosticColumnSource<Values> {
+        implements ImmutableColumnSourceGetDefaults.ForShort, ShiftData.ShiftCallback, InMemoryColumnSource,
+        RowKeyAgnosticChunkSource<Values> {
 
     private final short value;
 
@@ -76,9 +76,10 @@ public class ImmutableConstantShortSource
     // endregion reinterpret
 
     @Override
-    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+    public void fillChunkUnordered(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         final WritableShortChunk<? super Values> destChunk = dest.asWritableShortChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_SHORT : value);
@@ -87,7 +88,9 @@ public class ImmutableConstantShortSource
     }
 
     @Override
-    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+    public void fillPrevChunkUnordered(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
         fillChunkUnordered(context , dest, keys);
     }

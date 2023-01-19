@@ -33,7 +33,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
     public static <T> ColumnSource<T> maybeWrap(
             @NotNull final CrossJoinShiftState shiftState,
             @NotNull final ColumnSource<T> innerSource) {
-        if (innerSource instanceof RowKeyAgnosticColumnSource) {
+        if (innerSource instanceof RowKeyAgnosticChunkSource) {
             return innerSource;
         }
         return new BitShiftingColumnSource<>(shiftState, innerSource);

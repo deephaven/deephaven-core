@@ -124,27 +124,24 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         destination.setSize(rowSequence.intSize());
-        destination.asWritableCharChunk().fillWithValue(0, rowSequence.intSize(), getChar(0));
+        destination.asWritableCharChunk().fillWithValue(0, rowSequence.intSize(), current);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
             @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        char value = getPrevChar(0); // avoid duplicating the current vs prev logic in getPrevChar
         destination.setSize(rowSequence.intSize());
-        destination.asWritableCharChunk().fillWithValue(0, rowSequence.intSize(), getPrevChar(0));
+        destination.asWritableCharChunk().fillWithValue(0, rowSequence.intSize(), value);
     }
 
     @Override
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        char value = getChar(0);
         final WritableCharChunk<? super Values> destChunk = dest.asWritableCharChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_CHAR : value);
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_CHAR : current);
         }
         destChunk.setSize(keys.size());
     }
@@ -152,8 +149,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        char value = getPrevChar(0);
+        char value = getPrevChar(0); // avoid duplicating the current vs prev logic in getPrevChar
         final WritableCharChunk<? super Values> destChunk = dest.asWritableCharChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_CHAR : value);

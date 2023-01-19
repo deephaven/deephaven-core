@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * A column source that returns null for all keys.
  */
 public class NullValueColumnSource<T> extends AbstractColumnSource<T>
-        implements ShiftData.ShiftCallback, RowKeyAgnosticColumnSource<Values> {
+        implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values> {
     private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
             new KeyedObjectKey.Basic<>() {
                 @Override

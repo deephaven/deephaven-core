@@ -129,27 +129,24 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         destination.setSize(rowSequence.intSize());
-        destination.asWritableByteChunk().fillWithValue(0, rowSequence.intSize(), getByte(0));
+        destination.asWritableByteChunk().fillWithValue(0, rowSequence.intSize(), current);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
             @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        byte value = getPrevByte(0); // avoid duplicating the current vs prev logic in getPrevByte
         destination.setSize(rowSequence.intSize());
-        destination.asWritableByteChunk().fillWithValue(0, rowSequence.intSize(), getPrevByte(0));
+        destination.asWritableByteChunk().fillWithValue(0, rowSequence.intSize(), value);
     }
 
     @Override
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        byte value = getByte(0);
         final WritableByteChunk<? super Values> destChunk = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_BYTE : value);
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_BYTE : current);
         }
         destChunk.setSize(keys.size());
     }
@@ -157,8 +154,7 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
     @Override
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        byte value = getPrevByte(0);
+        byte value = getPrevByte(0); // avoid duplicating the current vs prev logic in getPrevByte
         final WritableByteChunk<? super Values> destChunk = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_BYTE : value);

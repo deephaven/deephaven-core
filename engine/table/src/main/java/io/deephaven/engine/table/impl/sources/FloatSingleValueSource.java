@@ -129,27 +129,24 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
         destination.setSize(rowSequence.intSize());
-        destination.asWritableFloatChunk().fillWithValue(0, rowSequence.intSize(), getFloat(0));
+        destination.asWritableFloatChunk().fillWithValue(0, rowSequence.intSize(), current);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
             @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
+        float value = getPrevFloat(0); // avoid duplicating the current vs prev logic in getPrevFloat
         destination.setSize(rowSequence.intSize());
-        destination.asWritableFloatChunk().fillWithValue(0, rowSequence.intSize(), getPrevFloat(0));
+        destination.asWritableFloatChunk().fillWithValue(0, rowSequence.intSize(), value);
     }
 
     @Override
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        float value = getFloat(0);
         final WritableFloatChunk<? super Values> destChunk = dest.asWritableFloatChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_FLOAT : value);
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_FLOAT : current);
         }
         destChunk.setSize(keys.size());
     }
@@ -157,8 +154,7 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     @Override
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        // We can only hold one value, fill the chunk with the value obtained from an arbitrarily valid rowKey
-        float value = getPrevFloat(0);
+        float value = getPrevFloat(0); // avoid duplicating the current vs prev logic in getPrevFloat
         final WritableFloatChunk<? super Values> destChunk = dest.asWritableFloatChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_FLOAT : value);
