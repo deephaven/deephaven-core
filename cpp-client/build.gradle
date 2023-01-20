@@ -55,6 +55,9 @@ deephavenDocker {
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
+    // Only tested on x86, and we only build dependencies for x86
+    platform = 'linux/amd64'
+
     copyIn {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'
