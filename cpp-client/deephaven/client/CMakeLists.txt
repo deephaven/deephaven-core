@@ -171,7 +171,7 @@ add_library(client ${ALL_FILES})
 # This is so deephaven::client works both when using the installed CMake config
 # and when using this project as a CMake subdirectory of your own project.
 add_library(deephaven::client ALIAS client)
-target_compile_options(client PRIVATE -Wall -Werror)
+target_compile_options(client PRIVATE -Wall -Werror -Wno-deprecated-declarations)
 
 target_include_directories(client PRIVATE include/private)
 target_include_directories(client PRIVATE third_party/flatbuffers/include)
