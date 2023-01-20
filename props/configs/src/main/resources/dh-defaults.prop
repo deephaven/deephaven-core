@@ -45,6 +45,8 @@ default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnviro
 
 OperationInitializationThreadPool.threads=1
 
+# Default session duration is 5 minutes
+http.session.durationMs=300000
 
 AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 
@@ -53,7 +55,7 @@ AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 authentication.client.configuration.list=AuthHandlers
 
 # List of configuration properties to provide to authenticated clients, so they can interact with the server.
-client.configuration.list=java.version,deephaven.version,barrage.version,
+client.configuration.list=java.version,deephaven.version,barrage.version,http.session.durationMs
 # Version list to add to the configuration property list. Each `=`-delimited pair denotes a short name for a versioned
 # jar, and a class that is found in that jar. Any such keys will be made available to the client.configuration.list
 # as <key>.version.
