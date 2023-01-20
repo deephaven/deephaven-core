@@ -3,6 +3,7 @@
  */
 #include <iostream>
 #include "deephaven/client/client.h"
+#include "deephaven/client/flight.h"
 #include "deephaven/client/utility/table_maker.h"
 
 using deephaven::client::NumCol;

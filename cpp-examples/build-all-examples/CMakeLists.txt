@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(build-all-examples)
 
-add_subdirectory(../buffered-subscription buffered_subscription_dir)
 add_subdirectory(../cleanup cleanup_dir)
 add_subdirectory(../create_table_with_arrow_flight create_table_with_arrow_flight_dir)
 add_subdirectory(../create_table_with_table_maker create_table_with_table_maker_dir)
