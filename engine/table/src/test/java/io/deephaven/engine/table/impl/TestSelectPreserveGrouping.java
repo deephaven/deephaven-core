@@ -73,6 +73,18 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("SentinelDoubled")));
         assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("Foo")));
         assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("Sentinel")));
+
+        final Table x2 = TstUtils.testTable(TstUtils.i(0, 1 << 16, 2 << 16, 3 << 16, 4 << 16, 5 << 16).toTracking(),
+                TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6));
+
+        final Table xu = x2.update("Sym2=Sym");
+        assertTableEquals(x2, xu.view("Sym=Sym2", "Sentinel"));
+
+        final RowSetIndexer xuIndexer = RowSetIndexer.of(xu.getRowSet());
+        assertTrue(xuIndexer.hasGrouping(xu.getColumnSource("Sym")));
+        assertTrue(xuIndexer.hasGrouping(xu.getColumnSource("Sym2")));
+        assertFalse(xuIndexer.hasGrouping(xu.getColumnSource("Sentinel")));
     }
 
     public void testPreserveDeferredGrouping() throws IOException {

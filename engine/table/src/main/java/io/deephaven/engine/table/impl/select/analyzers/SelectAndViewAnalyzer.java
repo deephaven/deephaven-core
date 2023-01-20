@@ -5,22 +5,21 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.InverseWrappedRowSetWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
@@ -33,7 +32,7 @@ import java.util.stream.Stream;
 
 public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public enum Mode {
-        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING
+        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_STATIC
     }
 
     public static void initializeSelectColumns(
@@ -61,7 +60,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
-        if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
+        if (mode == Mode.SELECT_REDIRECTED_STATIC) {
+            rowRedirection = new InverseWrappedRowSetWritableRowRedirection(rowSet);
+        } else if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
             rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
             analyzer = analyzer.createRedirectionLayer(rowSet, rowRedirection);
         } else {
@@ -102,6 +103,15 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
+
+            if (hasConstantValue(sc)) {
+                final WritableColumnSource<?> constViewSource =
+                        SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
+                analyzer = analyzer.createLayerForConstantView(
+                        sc.getName(), sc, constViewSource, distinctDeps, mcsBuilder, flattenedResult,
+                        flatResult && flattenedResult);
+                continue;
+            }
 
             if (shouldPreserve(sc)) {
                 if (numberOfInternallyFlattenedColumns > 0) {
@@ -144,6 +154,15 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     }
                     break;
                 }
+                case SELECT_REDIRECTED_STATIC: {
+                    final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
+                    final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
+                            rowRedirection, underlyingSource, rowSet.size());
+                    analyzer =
+                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
+                                    mcsBuilder, true, false, false);
+                    break;
+                }
                 case SELECT_REDIRECTED_REFRESHING:
                 case SELECT_REFRESHING: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
@@ -153,7 +172,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {
                         underlyingSource = scs;
-                        scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
+                        scs = WritableRedirectedColumnSource.maybeRedirect(
+                                rowRedirection, underlyingSource, rowSet.intSize());
                     }
                     analyzer =
                             analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
@@ -165,6 +185,18 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
         }
         return analyzer;
+    }
+
+    private static boolean hasConstantValue(final SelectColumn sc) {
+        if (sc instanceof FormulaColumn) {
+            return ((FormulaColumn) sc).hasConstantValue();
+        } else if (sc instanceof SwitchColumn) {
+            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
+            if (realColumn instanceof FormulaColumn) {
+                return ((FormulaColumn) realColumn).hasConstantValue();
+            }
+        }
+        return false;
     }
 
     private static boolean shouldPreserve(final SelectColumn sc) {
@@ -227,10 +259,17 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     private SelectAndViewAnalyzer createLayerForSelect(RowSet parentRowset, String name, SelectColumn sc,
             WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten,
-            boolean alreadyFlattened) {
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected,
+            boolean flattenResult, boolean alreadyFlattened) {
         return new SelectColumnLayer(parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
-                mcsBuilder, isRedirected, flatten, alreadyFlattened);
+                mcsBuilder, isRedirected, flattenResult, alreadyFlattened);
+    }
+
+    private SelectAndViewAnalyzer createLayerForConstantView(String name, SelectColumn sc, WritableColumnSource<?> cs,
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean flattenResult,
+            boolean alreadyFlattened) {
+        return new ConstantColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder, flattenResult,
+                alreadyFlattened);
     }
 
     private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource<?> cs,

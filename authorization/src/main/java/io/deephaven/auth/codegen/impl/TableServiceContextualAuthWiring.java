@@ -21,7 +21,6 @@ import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
-import io.deephaven.proto.backplane.grpc.FetchPandasTableRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;
@@ -34,6 +33,7 @@ import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
@@ -67,17 +67,6 @@ public interface TableServiceContextualAuthWiring {
      * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke FetchTable
      */
     void checkPermissionFetchTable(AuthContext authContext, FetchTableRequest request,
-            List<Table> sourceTables);
-
-    /**
-     * Authorize a request to FetchPandasTable.
-     *
-     * @param authContext the authentication context of the request
-     * @param request the request to authorize
-     * @param sourceTables the operation's source tables
-     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke FetchPandasTable
-     */
-    void checkPermissionFetchPandasTable(AuthContext authContext, FetchPandasTableRequest request,
             List<Table> sourceTables);
 
     /**
@@ -400,6 +389,17 @@ public interface TableServiceContextualAuthWiring {
             List<Table> sourceTables);
 
     /**
+     * Authorize a request to SnapshotWhen.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke SnapshotWhen
+     */
+    void checkPermissionSnapshotWhen(AuthContext authContext, SnapshotWhenTableRequest request,
+            List<Table> sourceTables);
+
+    /**
      * Authorize a request to Flatten.
      *
      * @param authContext the authentication context of the request
@@ -460,9 +460,6 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionFetchTable(AuthContext authContext, FetchTableRequest request,
                 List<Table> sourceTables) {}
-
-        public void checkPermissionFetchPandasTable(AuthContext authContext,
-                FetchPandasTableRequest request, List<Table> sourceTables) {}
 
         public void checkPermissionApplyPreviewColumns(AuthContext authContext,
                 ApplyPreviewColumnsRequest request, List<Table> sourceTables) {}
@@ -551,6 +548,9 @@ public interface TableServiceContextualAuthWiring {
         public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
                 List<Table> sourceTables) {}
 
+        public void checkPermissionSnapshotWhen(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {}
+
         public void checkPermissionFlatten(AuthContext authContext, FlattenRequest request,
                 List<Table> sourceTables) {}
 
@@ -575,11 +575,6 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionFetchTable(AuthContext authContext, FetchTableRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
-        }
-
-        public void checkPermissionFetchPandasTable(AuthContext authContext,
-                FetchPandasTableRequest request, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
@@ -728,6 +723,11 @@ public interface TableServiceContextualAuthWiring {
             ServiceAuthWiring.operationNotAllowed();
         }
 
+        public void checkPermissionSnapshotWhen(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
         public void checkPermissionFlatten(AuthContext authContext, FlattenRequest request,
                 List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
@@ -768,13 +768,6 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionFetchTable(authContext, request, sourceTables);
-            }
-        }
-
-        public void checkPermissionFetchPandasTable(AuthContext authContext,
-                FetchPandasTableRequest request, List<Table> sourceTables) {
-            if (delegate != null) {
-                delegate.checkPermissionFetchPandasTable(authContext, request, sourceTables);
             }
         }
 
@@ -978,6 +971,13 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionSnapshot(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionSnapshotWhen(AuthContext authContext,
+                SnapshotWhenTableRequest request, List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionSnapshotWhen(authContext, request, sourceTables);
             }
         }
 

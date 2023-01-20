@@ -3,22 +3,28 @@
  */
 package io.deephaven.web.client.api;
 
-import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.TreeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Literal;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.comboaggregaterequest.Aggregate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
@@ -85,6 +91,14 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     @JsProperty(namespace = "dh.Table")
     public static final double SIZE_UNCOALESCED = -2;
+
+    @JsProperty(namespace = "dh.ValueType")
+    public static final String STRING = "String",
+            NUMBER = "Number",
+            DOUBLE = "Double",
+            LONG = "Long",
+            DATETIME = "Datetime",
+            BOOLEAN = "Boolean";
 
     // indicates that the CTS has changed, "downstream" tables should take note
     public static final String INTERNAL_EVENT_STATECHANGED = "statechanged-internal",
@@ -472,11 +486,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @JsMethod
     public TableViewportSubscription setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
             @JsOptional Double updateIntervalMs) {
-        if (lastVisibleState().getTableDef().getAttributes().getTreeHierarchicalColumnName() != null) {
-            // we only need to check the last visible state since if it isn't a tree, our current state isnt either
-            throw new IllegalStateException(
-                    "Cannot set a normal table viewport on a treetable - please re-fetch this as a treetable");
-        }
         Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : null;
         ClientTableState currentState = state();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
@@ -741,8 +750,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         });
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTreeTable> rollup(Object configObject) {
         Objects.requireNonNull(configObject, "Table.rollup configuration");
         final JsRollupConfig config;
@@ -751,18 +759,32 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else {
             config = new JsRollupConfig(Js.cast(configObject));
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            // RollupTableRequest rollupRequest = config.buildRequest();
-            // rollupRequest.setTable(state().getHandle());
-            // rollupRequest.setResultHandle(state.getHandle());
-            // workerConnection.getServer().rollup(rollupRequest, c);
-            throw new UnsupportedOperationException("rollup");
-        }, "rollup " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata())
-                .then(state -> new JsTreeTable(state, workerConnection).finishFetch());
+
+        Ticket rollupTicket = workerConnection.getConfig().newTicket();
+
+        Promise<Object> rollupPromise = Callbacks.grpcUnaryPromise(c -> {
+            RollupRequest request = config.buildRequest(getColumns());
+            request.setSourceTableId(state().getHandle().makeTicket());
+            request.setResultRollupTableId(rollupTicket);
+            workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
+        });
+
+        JsWidget widget = new JsWidget(workerConnection, c -> {
+            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+            partitionedTableRequest.setSourceId(new TypedTicket());
+            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setTicket(rollupTicket);
+            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                    workerConnection.metadata(), (fail, success) -> {
+                        c.handleResponse(fail, success, rollupTicket);
+                    });
+        });
+
+        return Promise.all(widget.refetch(), rollupPromise)
+                .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTreeTable> treeTable(Object configObject) {
         Objects.requireNonNull(configObject, "Table.treeTable configuration");
         final JsTreeTableConfig config;
@@ -771,38 +793,51 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         } else {
             config = new JsTreeTableConfig(Js.cast(configObject));
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            // workerConnection.getServer().treeTable(
-            // state().getHandle(),
-            // state.getHandle(),
-            // config.idColumn,
-            // config.parentColumn,
-            // config.promoteOrphansToRoot,
-            // c
-            // );
-            throw new UnsupportedOperationException("treeTable");
-        }, "treeTable " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata())
-                .then(state -> new JsTreeTable(state, workerConnection).finishFetch());
+
+        Ticket treeTicket = workerConnection.getConfig().newTicket();
+
+        Promise<Object> treePromise = Callbacks.grpcUnaryPromise(c -> {
+            TreeRequest requestMessage = new TreeRequest();
+            requestMessage.setSourceTableId(state().getHandle().makeTicket());
+            requestMessage.setResultTreeTableId(treeTicket);
+            requestMessage.setIdentifierColumn(config.idColumn);
+            requestMessage.setParentIdentifierColumn(config.parentColumn);
+            requestMessage.setPromoteOrphans(config.promoteOrphansToRoot);
+
+            workerConnection.hierarchicalTableServiceClient().tree(requestMessage, workerConnection.metadata(),
+                    c::apply);
+        });
+
+        JsWidget widget = new JsWidget(workerConnection, c -> {
+            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
+            partitionedTableRequest.setSourceId(new TypedTicket());
+            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setTicket(treeTicket);
+            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
+                    workerConnection.metadata(), (fail, success) -> {
+                        c.handleResponse(fail, success, treeTicket);
+                    });
+        });
+
+        return Promise.all(widget.refetch(), treePromise)
+                .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
     }
 
     @JsMethod
     public Promise<JsTable> freeze() {
         return workerConnection.newState((c, state, metadata) -> {
             SnapshotTableRequest request = new SnapshotTableRequest();
-            request.setLeftId(null);// explicit null to signal that we are just freezing this table
-            request.setRightId(state().getHandle().makeTableReference());
+            request.setSourceId(state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
-            request.setDoInitialSnapshot(true);
-            request.setStampColumnsList(new String[0]);
             workerConnection.tableServiceClient().snapshot(request, metadata, c::apply);
         }, "freeze").refetch(this, workerConnection.metadata())
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     @JsMethod
-    public Promise<JsTable> snapshot(JsTable rightHandSide, @JsOptional Boolean doInitialSnapshot,
+    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
             @JsOptional String[] stampColumns) {
-        Objects.requireNonNull(rightHandSide, "Snapshot right-hand-side table");
+        Objects.requireNonNull(baseTable, "Snapshot base table");
         final boolean realDoInitialSnapshot;
         if (doInitialSnapshot != null) {
             realDoInitialSnapshot = doInitialSnapshot;
@@ -817,16 +852,16 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             realStampColums = Arrays.stream(stampColumns).toArray(String[]::new);
         }
         final String fetchSummary =
-                "snapshot(" + rightHandSide + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
+                "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
         return workerConnection.newState((c, state, metadata) -> {
-            SnapshotTableRequest request = new SnapshotTableRequest();
-            request.setLeftId(state().getHandle().makeTableReference());
-            request.setRightId(rightHandSide.state().getHandle().makeTableReference());
+            SnapshotWhenTableRequest request = new SnapshotWhenTableRequest();
+            request.setBaseId(baseTable.state().getHandle().makeTableReference());
+            request.setTriggerId(state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
-            request.setDoInitialSnapshot(realDoInitialSnapshot);
+            request.setInitial(realDoInitialSnapshot);
             request.setStampColumnsList(realStampColums);
 
-            workerConnection.tableServiceClient().snapshot(request, metadata, c::apply);
+            workerConnection.tableServiceClient().snapshotWhen(request, metadata, c::apply);
         }, fetchSummary).refetch(this, workerConnection.metadata())
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
@@ -993,6 +1028,83 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             throw new UnsupportedOperationException("getColumnStatistics");
         }).then(
                 tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
+    }
+
+    private Literal objectToLiteral(String valueType, Object value) {
+        Literal literal = new Literal();
+        if (value instanceof DateWrapper) {
+            literal.setNanoTimeValue(((DateWrapper) value).valueOf());
+        } else if (value instanceof LongWrapper) {
+            literal.setLongValue(((LongWrapper) value).valueOf());
+        } else if (Js.typeof(value).equals("number")) {
+            literal.setDoubleValue(Js.asDouble(value));
+        } else if (Js.typeof(value).equals("boolean")) {
+            literal.setBoolValue((Boolean) value);
+        } else {
+            switch (valueType) {
+                case STRING:
+                    literal.setStringValue(value.toString());
+                    break;
+                case NUMBER:
+                    literal.setDoubleValue(Double.parseDouble(value.toString()));
+                    break;
+                case LONG:
+                    literal.setLongValue(value.toString());
+                    break;
+                case DATETIME:
+                    literal.setNanoTimeValue(value.toString());
+                    break;
+                case BOOLEAN:
+                    literal.setBoolValue(Boolean.parseBoolean(value.toString()));
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Invalid value type for seekRow: " + valueType);
+            }
+        }
+        return literal;
+    }
+
+    /**
+     * Seek the row matching the data provided
+     * 
+     * @param startingRow Row to start the seek from
+     * @param column Column to seek for value on
+     * @param valueType Type of value provided
+     * @param seekValue Value to seek
+     * @param insensitive Optional value to flag a search as case-insensitive. Defaults to `false`.
+     * @param contains Optional value to have the seek value do a contains search instead of exact equality. Defaults to
+     *        `false`.
+     * @param isBackwards Optional value to seek backwards through the table instead of forwards. Defaults to `false`.
+     * @return A promise that resolves to the row value found.
+     */
+    @JsMethod
+    public Promise<Double> seekRow(
+            double startingRow,
+            Column column,
+            String valueType,
+            Object seekValue,
+            @JsOptional Boolean insensitive,
+            @JsOptional Boolean contains,
+            @JsOptional Boolean isBackwards) {
+        SeekRowRequest seekRowRequest = new SeekRowRequest();
+        seekRowRequest.setSourceId(state().getHandle().makeTicket());
+        seekRowRequest.setStartingRow(String.valueOf(startingRow));
+        seekRowRequest.setColumnName(column.getName());
+        seekRowRequest.setSeekValue(objectToLiteral(valueType, seekValue));
+        if (insensitive != null) {
+            seekRowRequest.setInsensitive(insensitive);
+        }
+        if (contains != null) {
+            seekRowRequest.setContains(contains);
+        }
+        if (isBackwards != null) {
+            seekRowRequest.setIsBackward(isBackwards);
+        }
+
+        return Callbacks
+                .<SeekRowResponse, Object>grpcUnaryPromise(c -> workerConnection.tableServiceClient()
+                        .seekRow(seekRowRequest, workerConnection.metadata(), c::apply))
+                .then(seekRowResponse -> Promise.resolve((double) Long.parseLong(seekRowResponse.getResultRow())));
     }
 
     public void maybeRevive(ClientTableState state) {

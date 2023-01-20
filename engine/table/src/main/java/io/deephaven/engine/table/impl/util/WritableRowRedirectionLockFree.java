@@ -228,6 +228,16 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     }
 
     @Override
+    public void removeAllUnordered(final LongChunk<RowKeys> outerRowKeys) {
+        if (updateCommitter != null) {
+            updateCommitter.maybeActivate();
+        }
+        for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
+            updates.put(outerRowKeys.get(ii), BASELINE_KEY_NOT_FOUND);
+        }
+    }
+
+    @Override
     public void startTrackingPrevValues() {
         Assert.eqNull(updateCommitter, "updateCommitter");
         Assert.eq(baseline, "baseline", updates, "updates");

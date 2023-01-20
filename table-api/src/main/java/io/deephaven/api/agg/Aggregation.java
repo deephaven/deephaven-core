@@ -72,6 +72,10 @@ public interface Aggregation extends Serializable {
      * @return The aggregation
      */
     static Aggregation of(AggSpec spec, List<String> pairs) {
+        if (pairs.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Must have at least one pair to create an Aggregation from an AggSpec. Did you mean to use TableOperations#aggAllBy?");
+        }
         if (pairs.size() == 1) {
             return of(spec, pairs.get(0));
         }
@@ -89,6 +93,9 @@ public interface Aggregation extends Serializable {
      * @return The combined aggregation
      */
     static Aggregation of(Aggregation... aggregations) {
+        if (aggregations.length == 0) {
+            throw new IllegalArgumentException("Unable to create an empty aggregation.");
+        }
         if (aggregations.length == 1) {
             return aggregations[0];
         }
@@ -108,6 +115,9 @@ public interface Aggregation extends Serializable {
     @SafeVarargs
     static <INPUT_TYPE> Aggregation of(BiFunction<ColumnName, INPUT_TYPE, ColumnAggregation> columnAggFactory,
             String inputColumn, INPUT_TYPE... inputs) {
+        if (inputs.length == 0) {
+            throw new IllegalArgumentException("Unable to create an empty aggregation.");
+        }
         final ColumnName inputColumnName = ColumnName.of(inputColumn);
         if (inputs.length == 1) {
             return columnAggFactory.apply(inputColumnName, inputs[0]);

@@ -5,20 +5,18 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.AttributeMap;
-import io.deephaven.engine.table.GridAttributes;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.BitSet;
+import java.util.List;
 
 /**
  * Base interface for the results of operations that produce a hierarchy of table nodes.
  */
 public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>>
-        extends AttributeMap<IFACE_TYPE>, GridAttributes<IFACE_TYPE> {
+        extends AttributeMap<IFACE_TYPE>, GridAttributes<IFACE_TYPE>, LivenessReferent {
 
     /**
      * Get a description of this HierarchicalTable.
@@ -68,16 +66,26 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     ColumnName getRowDepthColumn();
 
     /**
-     * Get the {@link TableDefinition} of that should be used for snapshotting this HierarchicalTable.
-     * <p>
-     * The result will always begin with the "extra" columns that should be exposed to snapshot consumers. These include
-     * the {@link #getRowDepthColumn() row-depth column} and {@link #getRowExpandedColumn() row-expanded column}.
-     * <p>
-     * The "extra" columns are then followed by type-specific node-level columns.
+     * Get the {@link ColumnDefinition definitions} for all structural columns. Structural columns are synthetic columns
+     * that allow snapshot consumers to make sense of the relationship between rows, and should always be included in
+     * the requested columns set when snapshotting a HierarchicalTable. This list includes the
+     * {@link #getRowDepthColumn() row-depth column} and the {@link #getRowExpandedColumn() row-expanded column}, but
+     * never includes type-specific node-level columns.
      *
-     * @return The externally-visible {@link TableDefinition} for snapshots
+     * @return A list of @link ColumnDefinition definitions} for all structural columns
      */
-    TableDefinition getSnapshotDefinition();
+    List<ColumnDefinition<?>> getStructuralColumnDefinitions();
+
+    /**
+     * Get the {@link ColumnDefinition definitions} for all available columns that may be requested in a snapshot.
+     * <p>
+     * The result will always begin with the {@link #getStructuralColumnDefinitions() structural columns}, which are
+     * then followed by type-specific node-level columns.
+     *
+     * @return A list of {@link ColumnDefinition definitions} for all available columns that may be requested in a
+     *         snapshot
+     */
+    List<ColumnDefinition<?>> getAvailableColumnDefinitions();
 
     /**
      * Opaque interface for objects used to cache snapshot state across multiple invocations of

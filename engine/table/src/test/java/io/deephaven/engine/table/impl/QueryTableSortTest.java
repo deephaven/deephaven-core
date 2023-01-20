@@ -691,6 +691,30 @@ public class QueryTableSortTest extends QueryTableTestBase {
         sentinels.clear();
     }
 
+    public void testDh11506() {
+        final Table x = TableTools.newTable(
+                col("Symbol", "B", "B", "B", "B"),
+                col("X", "2", "4", "6", "8"),
+                intCol("Y", 101, 102, 103, 104));
+        final QueryTable y = TstUtils.testRefreshingTable(
+                col("Symbol", "B", "B", "B", "B"),
+                col("X", "3", "5", "7", "9"),
+                intCol("Y", 105, 106, 107, 108));
+        final Table xb = x.groupBy("Symbol");
+        final Table yb = y.groupBy("Symbol");
+        final Table m = TableTools.merge(xb, yb).ungroup();
+        final Table ms = m.select();
+        final Table s = m.sortDescending("Symbol", "X");
+        final Table ss = ms.sortDescending("Symbol", "X");
+        TableTools.showWithRowSet(s);
+        assertTableEquals(ss, s);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(y, i(10), col("Symbol", "B"), col("X", "5"), intCol("Y", 109));
+            y.notifyListeners(i(10), i(), i());
+        });
+        assertTableEquals(ss, s);
+    }
+
     public void testSymbolTableSort() throws IOException {
         diskBackedTestHarness(this::doSymbolTableTest);
     }

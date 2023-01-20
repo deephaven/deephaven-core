@@ -53,6 +53,11 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        accept(snapshotWhenTable);
+    }
+
+    @Override
     public void visit(WhereTable whereTable) {
         accept(whereTable);
     }

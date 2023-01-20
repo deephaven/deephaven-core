@@ -71,15 +71,15 @@ public class OperationHelper {
                         ? Stream.of(op.getAggregate().getSourceId(), op.getAggregate().getInitialGroupsId())
                         : Stream.of(op.getAggregate().getSourceId());
             case SNAPSHOT:
-                return Stream.of(op.getSnapshot().getLeftId(), op.getSnapshot().getRightId());
+                return Stream.of(op.getSnapshot().getSourceId());
+            case SNAPSHOT_WHEN:
+                return Stream.of(op.getSnapshotWhen().getBaseId(), op.getSnapshotWhen().getTriggerId());
             case FLATTEN:
                 return Stream.of(op.getFlatten().getSourceId());
             case RUN_CHART_DOWNSAMPLE:
                 return Stream.of(op.getRunChartDownsample().getSourceId());
             case FETCH_TABLE:
                 return Stream.of(op.getFetchTable().getSourceId());
-            case FETCH_PANDAS_TABLE:
-                return Stream.of(op.getFetchPandasTable().getSourceId());
             case APPLY_PREVIEW_COLUMNS:
                 return Stream.of(op.getApplyPreviewColumns().getSourceId());
             case CREATE_INPUT_TABLE:

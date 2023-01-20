@@ -14,7 +14,16 @@ public interface FillUnordered<ATTR extends Any> {
     /**
      * Populates a contiguous portion of the given destination chunk with data corresponding to the keys from the given
      * {@link LongChunk}.
+     * <p>
+     * It behaves as if the following code were executed:
      * 
+     * <pre>
+     * destination.setSize(keys.size());
+     * for (int ii = 0; ii < keys.size(); ++ii) {
+     *     destination.set(ii, get(keys.get(ii)));
+     * }
+     * </pre>
+     *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk.
      * @param dest The chunk to be populated according to {@code keys}
      * @param keys A chunk of individual, not assumed to be ordered keys to be fetched
@@ -27,7 +36,16 @@ public interface FillUnordered<ATTR extends Any> {
     /**
      * Populates a contiguous portion of the given destination chunk with prev data corresponding to the keys from the
      * given {@link LongChunk}.
+     * <p>
+     * It behaves as if the following code were executed:
      * 
+     * <pre>
+     * destination.setSize(keys.size());
+     * for (int ii = 0; ii < keys.size(); ++ii) {
+     *     destination.set(ii, getPrev(keys.get(ii)));
+     * }
+     * </pre>
+     *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk.
      * @param dest The chunk to be populated according to {@code keys}
      * @param keys A chunk of individual, not assumed to be ordered keys to be fetched

@@ -18,7 +18,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Exac
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FetchPandasTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FetchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FilterTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
@@ -28,13 +27,17 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Left
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.UngroupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.UnstructuredFilterTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.UpdateByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.WhereInRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsFunction;
@@ -978,99 +981,6 @@ public class TableServiceClient {
         @JsOverlay
         default boolean isExactJoinTablesMetadata_or_callbackFn() {
             return (Object) this instanceof TableServiceClient.ExactJoinTablesMetadata_or_callbackFn;
-        }
-    }
-
-    @JsFunction
-    public interface FetchPandasTableCallbackFn {
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface P0Type {
-            @JsOverlay
-            static TableServiceClient.FetchPandasTableCallbackFn.P0Type create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            double getCode();
-
-            @JsProperty
-            String getMessage();
-
-            @JsProperty
-            BrowserHeaders getMetadata();
-
-            @JsProperty
-            void setCode(double code);
-
-            @JsProperty
-            void setMessage(String message);
-
-            @JsProperty
-            void setMetadata(BrowserHeaders metadata);
-        }
-
-        void onInvoke(
-                TableServiceClient.FetchPandasTableCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
-    }
-
-    @JsFunction
-    public interface FetchPandasTableMetadata_or_callbackFn {
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface P0Type {
-            @JsOverlay
-            static TableServiceClient.FetchPandasTableMetadata_or_callbackFn.P0Type create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            double getCode();
-
-            @JsProperty
-            String getMessage();
-
-            @JsProperty
-            BrowserHeaders getMetadata();
-
-            @JsProperty
-            void setCode(double code);
-
-            @JsProperty
-            void setMessage(String message);
-
-            @JsProperty
-            void setMetadata(BrowserHeaders metadata);
-        }
-
-        void onInvoke(
-                TableServiceClient.FetchPandasTableMetadata_or_callbackFn.P0Type p0,
-                ExportedTableCreationResponse p1);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface FetchPandasTableMetadata_or_callbackUnionType {
-        @JsOverlay
-        static TableServiceClient.FetchPandasTableMetadata_or_callbackUnionType of(Object o) {
-            return Js.cast(o);
-        }
-
-        @JsOverlay
-        default BrowserHeaders asBrowserHeaders() {
-            return Js.cast(this);
-        }
-
-        @JsOverlay
-        default TableServiceClient.FetchPandasTableMetadata_or_callbackFn asFetchPandasTableMetadata_or_callbackFn() {
-            return Js.cast(this);
-        }
-
-        @JsOverlay
-        default boolean isBrowserHeaders() {
-            return (Object) this instanceof BrowserHeaders;
-        }
-
-        @JsOverlay
-        default boolean isFetchPandasTableMetadata_or_callbackFn() {
-            return (Object) this instanceof TableServiceClient.FetchPandasTableMetadata_or_callbackFn;
         }
     }
 
@@ -2096,6 +2006,96 @@ public class TableServiceClient {
     }
 
     @JsFunction
+    public interface SeekRowCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.SeekRowCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(TableServiceClient.SeekRowCallbackFn.P0Type p0, SeekRowResponse p1);
+    }
+
+    @JsFunction
+    public interface SeekRowMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.SeekRowMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(TableServiceClient.SeekRowMetadata_or_callbackFn.P0Type p0, SeekRowResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface SeekRowMetadata_or_callbackUnionType {
+        @JsOverlay
+        static TableServiceClient.SeekRowMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default TableServiceClient.SeekRowMetadata_or_callbackFn asSeekRowMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isSeekRowMetadata_or_callbackFn() {
+            return (Object) this instanceof TableServiceClient.SeekRowMetadata_or_callbackFn;
+        }
+    }
+
+    @JsFunction
     public interface SelectCallbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
@@ -2370,6 +2370,99 @@ public class TableServiceClient {
         @JsOverlay
         default boolean isSnapshotMetadata_or_callbackFn() {
             return (Object) this instanceof TableServiceClient.SnapshotMetadata_or_callbackFn;
+        }
+    }
+
+    @JsFunction
+    public interface SnapshotWhenCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.SnapshotWhenCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.SnapshotWhenCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+    }
+
+    @JsFunction
+    public interface SnapshotWhenMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.SnapshotWhenMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.SnapshotWhenMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface SnapshotWhenMetadata_or_callbackUnionType {
+        @JsOverlay
+        static TableServiceClient.SnapshotWhenMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default TableServiceClient.SnapshotWhenMetadata_or_callbackFn asSnapshotWhenMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isSnapshotWhenMetadata_or_callbackFn() {
+            return (Object) this instanceof TableServiceClient.SnapshotWhenMetadata_or_callbackFn;
         }
     }
 
@@ -2923,6 +3016,99 @@ public class TableServiceClient {
         @JsOverlay
         default boolean isUnstructuredFilterMetadata_or_callbackFn() {
             return (Object) this instanceof TableServiceClient.UnstructuredFilterMetadata_or_callbackFn;
+        }
+    }
+
+    @JsFunction
+    public interface UpdateByCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.UpdateByCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.UpdateByCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+    }
+
+    @JsFunction
+    public interface UpdateByMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static TableServiceClient.UpdateByMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                TableServiceClient.UpdateByMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface UpdateByMetadata_or_callbackUnionType {
+        @JsOverlay
+        static TableServiceClient.UpdateByMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default TableServiceClient.UpdateByMetadata_or_callbackFn asUpdateByMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isUpdateByMetadata_or_callbackFn() {
+            return (Object) this instanceof TableServiceClient.UpdateByMetadata_or_callbackFn;
         }
     }
 
@@ -3833,58 +4019,6 @@ public class TableServiceClient {
             ExportedTableUpdatesRequest requestMessage);
 
     @JsOverlay
-    public final UnaryResponse fetchPandasTable(
-            FetchPandasTableRequest requestMessage,
-            BrowserHeaders metadata_or_callback,
-            TableServiceClient.FetchPandasTableCallbackFn callback) {
-        return fetchPandasTable(
-                requestMessage,
-                Js.<TableServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback),
-                callback);
-    }
-
-    @JsOverlay
-    public final UnaryResponse fetchPandasTable(
-            FetchPandasTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
-        return fetchPandasTable(
-                requestMessage,
-                Js.<TableServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback));
-    }
-
-    @JsOverlay
-    public final UnaryResponse fetchPandasTable(
-            FetchPandasTableRequest requestMessage,
-            TableServiceClient.FetchPandasTableMetadata_or_callbackFn metadata_or_callback,
-            TableServiceClient.FetchPandasTableCallbackFn callback) {
-        return fetchPandasTable(
-                requestMessage,
-                Js.<TableServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback),
-                callback);
-    }
-
-    @JsOverlay
-    public final UnaryResponse fetchPandasTable(
-            FetchPandasTableRequest requestMessage,
-            TableServiceClient.FetchPandasTableMetadata_or_callbackFn metadata_or_callback) {
-        return fetchPandasTable(
-                requestMessage,
-                Js.<TableServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
-                        metadata_or_callback));
-    }
-
-    public native UnaryResponse fetchPandasTable(
-            FetchPandasTableRequest requestMessage,
-            TableServiceClient.FetchPandasTableMetadata_or_callbackUnionType metadata_or_callback,
-            TableServiceClient.FetchPandasTableCallbackFn callback);
-
-    public native UnaryResponse fetchPandasTable(
-            FetchPandasTableRequest requestMessage,
-            TableServiceClient.FetchPandasTableMetadata_or_callbackUnionType metadata_or_callback);
-
-    @JsOverlay
     public final UnaryResponse fetchTable(
             FetchTableRequest requestMessage,
             BrowserHeaders metadata_or_callback,
@@ -4457,6 +4591,58 @@ public class TableServiceClient {
             TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
+    public final UnaryResponse seekRow(
+            SeekRowRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.SeekRowCallbackFn callback) {
+        return seekRow(
+                requestMessage,
+                Js.<TableServiceClient.SeekRowMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse seekRow(
+            SeekRowRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return seekRow(
+                requestMessage,
+                Js.<TableServiceClient.SeekRowMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse seekRow(
+            SeekRowRequest requestMessage,
+            TableServiceClient.SeekRowMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.SeekRowCallbackFn callback) {
+        return seekRow(
+                requestMessage,
+                Js.<TableServiceClient.SeekRowMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse seekRow(
+            SeekRowRequest requestMessage,
+            TableServiceClient.SeekRowMetadata_or_callbackFn metadata_or_callback) {
+        return seekRow(
+                requestMessage,
+                Js.<TableServiceClient.SeekRowMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse seekRow(
+            SeekRowRequest requestMessage,
+            TableServiceClient.SeekRowMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.SeekRowCallbackFn callback);
+
+    public native UnaryResponse seekRow(
+            SeekRowRequest requestMessage,
+            TableServiceClient.SeekRowMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
     public final UnaryResponse select(
             SelectOrUpdateRequest requestMessage,
             BrowserHeaders metadata_or_callback,
@@ -4611,6 +4797,58 @@ public class TableServiceClient {
     public native UnaryResponse snapshot(
             SnapshotTableRequest requestMessage,
             TableServiceClient.SnapshotMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse snapshotWhen(
+            SnapshotWhenTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.SnapshotWhenCallbackFn callback) {
+        return snapshotWhen(
+                requestMessage,
+                Js.<TableServiceClient.SnapshotWhenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse snapshotWhen(
+            SnapshotWhenTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return snapshotWhen(
+                requestMessage,
+                Js.<TableServiceClient.SnapshotWhenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse snapshotWhen(
+            SnapshotWhenTableRequest requestMessage,
+            TableServiceClient.SnapshotWhenMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.SnapshotWhenCallbackFn callback) {
+        return snapshotWhen(
+                requestMessage,
+                Js.<TableServiceClient.SnapshotWhenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse snapshotWhen(
+            SnapshotWhenTableRequest requestMessage,
+            TableServiceClient.SnapshotWhenMetadata_or_callbackFn metadata_or_callback) {
+        return snapshotWhen(
+                requestMessage,
+                Js.<TableServiceClient.SnapshotWhenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse snapshotWhen(
+            SnapshotWhenTableRequest requestMessage,
+            TableServiceClient.SnapshotWhenMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.SnapshotWhenCallbackFn callback);
+
+    public native UnaryResponse snapshotWhen(
+            SnapshotWhenTableRequest requestMessage,
+            TableServiceClient.SnapshotWhenMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse sort(
@@ -4975,6 +5213,58 @@ public class TableServiceClient {
     public native UnaryResponse update(
             SelectOrUpdateRequest requestMessage,
             TableServiceClient.UpdateMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse updateBy(
+            UpdateByRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.UpdateByCallbackFn callback) {
+        return updateBy(
+                requestMessage,
+                Js.<TableServiceClient.UpdateByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse updateBy(
+            UpdateByRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return updateBy(
+                requestMessage,
+                Js.<TableServiceClient.UpdateByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse updateBy(
+            UpdateByRequest requestMessage,
+            TableServiceClient.UpdateByMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.UpdateByCallbackFn callback) {
+        return updateBy(
+                requestMessage,
+                Js.<TableServiceClient.UpdateByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse updateBy(
+            UpdateByRequest requestMessage,
+            TableServiceClient.UpdateByMetadata_or_callbackFn metadata_or_callback) {
+        return updateBy(
+                requestMessage,
+                Js.<TableServiceClient.UpdateByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse updateBy(
+            UpdateByRequest requestMessage,
+            TableServiceClient.UpdateByMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.UpdateByCallbackFn callback);
+
+    public native UnaryResponse updateBy(
+            UpdateByRequest requestMessage,
+            TableServiceClient.UpdateByMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse updateView(

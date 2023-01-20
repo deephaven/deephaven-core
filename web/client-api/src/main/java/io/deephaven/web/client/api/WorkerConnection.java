@@ -40,6 +40,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_ser
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb_service.HierarchicalTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
@@ -188,6 +189,7 @@ public class WorkerConnection {
     private PartitionedTableServiceClient partitionedTableServiceClient;
     private StorageServiceClient storageServiceClient;
     private ConfigServiceClient configServiceClient;
+    private HierarchicalTableServiceClient hierarchicalTableServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -233,6 +235,8 @@ public class WorkerConnection {
                 new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         storageServiceClient = new StorageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         configServiceClient = new ConfigServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        hierarchicalTableServiceClient =
+                new HierarchicalTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -738,10 +742,16 @@ public class WorkerConnection {
                     .then(widget -> widget.getExportedObjects()[0].fetch());
         } else if (JsVariableChanges.PARTITIONEDTABLE.equals(definition.getType())) {
             return getPartitionedTable(definition);
+        } else if (JsVariableChanges.HIERARCHICALTABLE.equals(definition.getType())) {
+            return getHierarchicalTable(definition);
         } else {
             if (JsVariableChanges.TABLEMAP.equals(definition.getType())) {
                 JsLog.warn(
                         "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
+            }
+            if (JsVariableChanges.TREETABLE.equals(definition.getType())) {
+                JsLog.warn(
+                        "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
             }
             return getWidget(definition);
         }
@@ -865,11 +875,11 @@ public class WorkerConnection {
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
-        return getTable(varDef, null).then(t -> {
-            Promise<JsTreeTable> result = Promise.resolve(new JsTreeTable(t.state(), this).finishFetch());
-            t.close();
-            return result;
-        });
+        return getWidget(varDef).then(w -> Promise.resolve(new JsTreeTable(this, w)));
+    }
+
+    public Promise<JsTreeTable> getHierarchicalTable(JsVariableDefinition varDef) {
+        return getWidget(varDef).then(w -> Promise.resolve(new JsTreeTable(this, w)));
     }
 
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
@@ -943,6 +953,10 @@ public class WorkerConnection {
 
     public ConfigServiceClient configServiceClient() {
         return configServiceClient;
+    }
+
+    public HierarchicalTableServiceClient hierarchicalTableServiceClient() {
+        return hierarchicalTableServiceClient;
     }
 
     public BrowserHeaders metadata() {

@@ -1,7 +1,9 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.aggspecnonuniquesentinel.TypeCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -201,7 +203,7 @@ public class AggSpecNonUniqueSentinel {
 
     public native String getStringValue();
 
-    public native TypeCase getTypeCase();
+    public native int getTypeCase();
 
     public native boolean hasBoolValue();
 

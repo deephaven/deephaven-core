@@ -15,6 +15,8 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.qst.TableCreationLogic;
@@ -54,30 +56,24 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final SnapshotTable snapshot(TableSpec baseTable, String... stampColumns) {
-        SnapshotTable.Builder builder = SnapshotTable.builder().trigger(this).base(baseTable);
-        for (String stampColumn : stampColumns) {
-            builder.addStampColumns(ColumnName.of(stampColumn));
-        }
-        return builder.build();
+    public final SnapshotTable snapshot() {
+        return SnapshotTable.of(this);
     }
 
     @Override
-    public final SnapshotTable snapshot(TableSpec baseTable, boolean doInitialSnapshot,
+    public final SnapshotWhenTable snapshotWhen(TableSpec trigger, Flag... features) {
+        return SnapshotWhenTable.of(this, trigger, SnapshotWhenOptions.of(features));
+    }
+
+    @Override
+    public final SnapshotWhenTable snapshotWhen(TableSpec trigger, Collection<Flag> features,
             String... stampColumns) {
-        SnapshotTable.Builder builder = SnapshotTable.builder().trigger(this).base(baseTable)
-                .doInitialSnapshot(doInitialSnapshot);
-        for (String stampColumn : stampColumns) {
-            builder.addStampColumns(ColumnName.of(stampColumn));
-        }
-        return builder.build();
+        return SnapshotWhenTable.of(this, trigger, SnapshotWhenOptions.of(features, stampColumns));
     }
 
     @Override
-    public final SnapshotTable snapshot(TableSpec baseTable, boolean doInitialSnapshot,
-            Collection<ColumnName> stampColumns) {
-        return SnapshotTable.builder().trigger(this).base(baseTable)
-                .doInitialSnapshot(doInitialSnapshot).addAllStampColumns(stampColumns).build();
+    public final SnapshotWhenTable snapshotWhen(TableSpec trigger, SnapshotWhenOptions options) {
+        return SnapshotWhenTable.of(this, trigger, options);
     }
 
     @Override

@@ -73,11 +73,11 @@ class RightIncrementalChunkedCrossJoinStateManager
          *
          * @param cookie    The last known cookie for state slot (in main table space)
          * @param stateSlot The state slot (in main table space)
-         * @param index     The probed row key
-         * @param prevIndex The probed prev row key (applicable only when prevIndex provided to build/probe otherwise RowSet.NULL_ROW_KEY)
+         * @param rowKey    The probed row key
+         * @param prevRowKey The probed prev row key (applicable only when prevRowKey provided to build/probe otherwise RowSet.NULL_ROW_KEY)
          * @return The new cookie for the state
          */
-        long invoke(long cookie, long stateSlot, long index, long prevIndex);
+        long invoke(long cookie, long stateSlot, long rowKey, long prevRowKey);
     }
     // endregion preamble variables
 
@@ -166,9 +166,10 @@ class RightIncrementalChunkedCrossJoinStateManager
     // endmixin rehash
 
     // region extra variables
-    // maintain a mapping from left index to its slot
-    private final WritableRowRedirection leftIndexToSlot;
-    private final WritableRowRedirection rightIndexToSlot;
+    // maintain a mapping from left rowKey to its slot
+    private final WritableRowRedirection leftRowToSlot;
+    // maintain a mapping from right rowKey to its slot
+    private final WritableRowRedirection rightRowToSlot;
     private final ColumnSource<?>[] leftKeySources;
     private final ColumnSource<?>[] rightKeySources;
     private final ObjectArraySource<TrackingWritableRowSet> leftRowSetSource
@@ -195,10 +196,11 @@ class RightIncrementalChunkedCrossJoinStateManager
             , ColumnSource<?>[] rightKeySources
             , QueryTable leftTable
             , int initialNumRightBits
+            , boolean leftOuterJoin
                                               // endregion constructor arguments
     ) {
         // region super
-        super(initialNumRightBits);
+        super(initialNumRightBits, leftOuterJoin);
         // endregion super
         keyColumnCount = tableKeySources.length;
 
@@ -235,8 +237,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         // endmixin rehash
 
         // region constructor
-        this.leftIndexToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
-        this.rightIndexToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
+        this.leftRowToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
+        this.rightRowToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
         this.leftKeySources = tableKeySources;
         this.rightKeySources = rightKeySources;
         this.isLeftTicking = leftTable.isRefreshing();
@@ -291,7 +293,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             try (final BuildContext bc = makeBuildContext(leftKeySources, leftTable.getRowSet().size())) {
                 final boolean isLeft = true;
                 buildTable(bc, leftTable.getRowSet(), leftKeySources, null, null,
-                        (cookie, slot, index, prevIndex) -> addToIndex(isLeft, slot, index));
+                        (cookie, slot, rowKey, prevRowKey) -> addToRowSet(isLeft, slot, rowKey));
             }
         }
 
@@ -300,7 +302,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                 try (final BuildContext bc = makeBuildContext(rightKeySources, rightTable.getRowSet().size())) {
                     final boolean isLeft = false;
                     buildTable(bc, rightTable.getRowSet(), rightKeySources, null, null,
-                            (cookie, slot, index, prevIndex) -> addToIndex(isLeft, slot, index));
+                            (cookie, slot, rowKey, prevRowKey) -> addToRowSet(isLeft, slot, rowKey));
                 }
             } else {
                 // we don't actually need to create groups that don't (and will never) exist on the left; thus can probe-only
@@ -308,36 +310,41 @@ class RightIncrementalChunkedCrossJoinStateManager
                     final boolean isLeft = false;
                     final boolean usePrev = false;
                     decorationProbe(pc, rightTable.getRowSet(), rightKeySources, usePrev, null,
-                            (cookie, slot, index, prevIndex) -> addToIndex(isLeft, slot, index));
+                            (cookie, slot, rowKey, prevRowKey) -> addToRowSet(isLeft, slot, rowKey));
                 }
             }
         }
 
         // We can now validate key-space after all of our right rows have been aggregated into groups, which determined
-        // how many bits we need for the right indexes.
+        // how many bits we need for the right keyspace.
         validateKeySpaceSize();
 
-        final RowSetBuilderSequential resultIndex = RowSetFactory.builderSequential();
-        leftTable.getRowSet().forAllRowKeys(index -> {
-            final long regionStart = index << getNumShiftBits();
-            final RowSet rightRowSet = getRightRowSetFromLeftIndex(index);
+        final RowSetBuilderSequential resultRowSet = RowSetFactory.builderSequential();
+        leftTable.getRowSet().forAllRowKeys(rowKey -> {
+            final long regionStart = rowKey << getNumShiftBits();
+            final RowSet rightRowSet = getRightRowSetFromLeftRow(rowKey);
             if (rightRowSet.isNonempty()) {
-                resultIndex.appendRange(regionStart, regionStart + rightRowSet.size() - 1);
+                resultRowSet.appendRange(regionStart, regionStart + rightRowSet.size() - 1);
+            } else if (leftOuterJoin()) {
+                resultRowSet.appendKey(regionStart);
             }
         });
 
-        return resultIndex.build();
+        return resultRowSet.build();
     }
 
     void rightRemove(final RowSet removed, final CrossJoinModifiedSlotTracker tracker) {
         if (removed.isEmpty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(rightKeySources, removed.size())) {
+        try (final ProbeContext pc = makeProbeContext(rightKeySources, removed.size());
+             final WritableLongChunk<RowKeys> rightToRemove = WritableLongChunk.makeWritableChunk(pc.chunkSize)) {
+            rightToRemove.setSize(0);
             final boolean usePrev = true;
-            decorationProbe(pc, removed, rightKeySources, usePrev, null, (cookie, slot, index, prevIndex) -> {
-                rightIndexToSlot.removeVoid(index);
-                long newCookie = tracker.appendChunkRemove(cookie, slot, index);
+            decorationProbe(pc, removed, rightKeySources, usePrev, null, (cookie, slot, rowKey, prevRowKey) -> {
+                rightRowToSlot.removeVoid(rowKey);
+                addRightRemove(rightToRemove, rowKey);
+                long newCookie = tracker.appendChunkRemove(cookie, slot, rowKey);
                 if (isOverflowLocation(slot)) {
                     overflowModifiedTrackerCookieSource.set(overflowLocationToHashLocation(slot), newCookie);
                 } else {
@@ -345,16 +352,29 @@ class RightIncrementalChunkedCrossJoinStateManager
                 }
                 return newCookie;
             });
+            flushRightRemove(rightToRemove);
         }
     }
 
-    void shiftRightIndexToSlot(final RowSet filterIndex, final RowSetShiftData shifted) {
-        rightIndexToSlot.applyShift(filterIndex, shifted);
+    private void addRightRemove(WritableLongChunk<RowKeys> rightToRemove, long rowKey) {
+        rightToRemove.add(rowKey);
+        if (rightToRemove.size() == rightToRemove.capacity()) {
+            flushRightRemove(rightToRemove);
+        }
     }
 
-    void rightShift(final RowSet filterIndex, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
-        shifted.forAllInRowSet(filterIndex, (ii, delta) -> {
-            final long slot = rightIndexToSlot.get(ii);
+    private void flushRightRemove(WritableLongChunk<RowKeys> rightToRemove) {
+        rightRowToSlot.removeAllUnordered(rightToRemove);
+        rightToRemove.setSize(0);
+    }
+
+    void shiftRightRowSetToSlot(final RowSet filterRowSet, final RowSetShiftData shifted) {
+        rightRowToSlot.applyShift(filterRowSet, shifted);
+    }
+
+    void rightShift(final RowSet filterRowSet, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
+        shifted.forAllInRowSet(filterRowSet, (ii, delta) -> {
+            final long slot = rightRowToSlot.get(ii);
             if (slot == RowSequence.NULL_ROW_KEY) {
                 // right-ticking w/static-left does not maintain group states that will never be used
                 return;
@@ -381,9 +401,9 @@ class RightIncrementalChunkedCrossJoinStateManager
             return;
         }
 
-        final StateTrackingCallback addKeyCallback = (cookie, slot, index, prevIndex) -> {
+        final StateTrackingCallback addKeyCallback = (cookie, slot, rowKey, prevRowKey) -> {
             ensureSlotExists(slot);
-            return tracker.appendChunkAdd(cookie, slot, index);
+            return tracker.appendChunkAdd(cookie, slot, rowKey);
         };
 
         if (!isLeftTicking) {
@@ -408,7 +428,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             try (final ProbeContext pc = makeProbeContext(rightKeySources, upstream.modified().size())) {
                 final boolean usePrev = false;
                 decorationProbe(pc, upstream.modified(), rightKeySources, usePrev, null,
-                        (cookie, slot, index, prevIndex) -> tracker.appendChunkModify(cookie, slot, index));
+                        (cookie, slot, rowKey, prevRowKey) -> tracker.appendChunkModify(cookie, slot, rowKey));
             }
             return;
         }
@@ -416,15 +436,18 @@ class RightIncrementalChunkedCrossJoinStateManager
         try (final ProbeContext pc = isLeftTicking ? null : makeProbeContext(rightKeySources, upstream.modified().size());
              final BuildContext bc = isLeftTicking ? makeBuildContext(rightKeySources, upstream.modified().size()) : null;
              final RowSequence.Iterator preShiftModified = upstream.getModifiedPreShift().getRowSequenceIterator();
-             final RowSequence.Iterator postShiftModified = upstream.modified().getRowSequenceIterator()) {
+             final RowSequence.Iterator postShiftModified = upstream.modified().getRowSequenceIterator();
+             final WritableLongChunk<RowKeys> rightRemoved = WritableLongChunk.makeWritableChunk(CHUNK_SIZE)) {
+            rightRemoved.setSize(0);
 
             while (preShiftModified.hasMore()) {
                 final RowSequence postChunk = postShiftModified.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final RowSequence preChunk = preShiftModified.getNextRowSequenceWithLength(CHUNK_SIZE);
                 Assert.eq(preChunk.size(), "preChunk.size()", postChunk.size(), "postChunk.size()");
 
-                final StateTrackingCallback callback = (cookie, postSlot, index, prevIndex) -> {
-                    long preSlot = rightIndexToSlot.get(prevIndex);
+                final StateTrackingCallback callback = (cookie, postSlot, rowKey, prevRowKey) -> {
+                    // TODO: ugly virtual call on the RowRedirection
+                    long preSlot = rightRowToSlot.get(prevRowKey);
 
                     final boolean preIsOverflow = isOverflowLocation(preSlot);
                     final LongArraySource preCookieSource = preIsOverflow ? overflowModifiedTrackerCookieSource : modifiedTrackerCookieSource;
@@ -433,18 +456,18 @@ class RightIncrementalChunkedCrossJoinStateManager
                     if (preSlot != postSlot) {
                         if (preSlot != EMPTY_RIGHT_SLOT) {
                             final long oldCookie = preCookieSource.getUnsafe(preHashSlot);
-                            final long newCookie = tracker.appendChunkRemove(oldCookie, preSlot, prevIndex);
+                            final long newCookie = tracker.appendChunkRemove(oldCookie, preSlot, prevRowKey);
                             if (oldCookie != newCookie) {
                                 preCookieSource.set(preHashSlot, newCookie);
                             }
-                            rightIndexToSlot.removeVoid(prevIndex);
+                            addRightRemove(rightRemoved, prevRowKey);
                         }
                         if (postSlot != EMPTY_RIGHT_SLOT) {
-                            cookie = tracker.appendChunkAdd(cookie, postSlot, index);
+                            cookie = tracker.appendChunkAdd(cookie, postSlot, rowKey);
                         }
                     } else if (preSlot != EMPTY_RIGHT_SLOT) {
-                        // note we must mark postShiftIndex as the modification
-                        cookie = tracker.appendChunkModify(cookie, postSlot, index);
+                        // note we must mark postShift rowKey as the modification
+                        cookie = tracker.appendChunkModify(cookie, postSlot, rowKey);
                     }
                     return cookie;
                 };
@@ -455,6 +478,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                     final boolean usePrevOnPost = false;
                     decorationProbe(pc, postChunk, rightKeySources, usePrevOnPost, preChunk, callback);
                 }
+                flushRightRemove(rightRemoved);
             }
         }
     }
@@ -463,9 +487,9 @@ class RightIncrementalChunkedCrossJoinStateManager
         if (removed.isNonempty()) {
             try (final ProbeContext pc = makeProbeContext(leftKeySources, removed.size())) {
                 final boolean usePrev = true;
-                decorationProbe(pc, removed, leftKeySources, usePrev, null, (cookie, slot, index, prevIndex) -> {
-                    leftIndexToSlot.removeVoid(index);
-                    long newCookie = tracker.appendToBuilder(cookie, slot, index);
+                decorationProbe(pc, removed, leftKeySources, usePrev, null, (cookie, slot, rowKey, prevRowKey) -> {
+                    leftRowToSlot.removeVoid(rowKey);
+                    long newCookie = tracker.addToBuilder(cookie, slot, rowKey);
                     if (isOverflowLocation(slot)) {
                         overflowModifiedTrackerCookieSource.set(overflowLocationToHashLocation(slot), newCookie);
                     } else {
@@ -482,9 +506,9 @@ class RightIncrementalChunkedCrossJoinStateManager
     void leftAdded(final RowSet added, final CrossJoinModifiedSlotTracker tracker) {
         if (added.isNonempty()) {
             try (final BuildContext pc = makeBuildContext(leftKeySources, added.size())) {
-                buildTable(pc, added, leftKeySources, tracker, null, (cookie, slot, index, prevIndex) -> {
+                buildTable(pc, added, leftKeySources, tracker, null, (cookie, slot, rowKey, prevRowKey) -> {
                     ensureSlotExists(slot);
-                    long newCookie = tracker.appendToBuilder(cookie, slot, index);
+                    long newCookie = tracker.addToBuilder(cookie, slot, rowKey);
                     if (isOverflowLocation(slot)) {
                         overflowModifiedTrackerCookieSource.set(overflowLocationToHashLocation(slot), newCookie);
                     } else {
@@ -507,7 +531,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             try (final ProbeContext pc = makeProbeContext(leftKeySources, upstream.modified().size())) {
                 final boolean usePrev = false;
                 decorationProbe(pc, upstream.modified(), leftKeySources, usePrev, null,
-                        (cookie, slot, index, prevIndex) -> tracker.appendChunkModify(cookie, slot, index));
+                        (cookie, slot, rowKey, prevRowKey) -> tracker.appendChunkModify(cookie, slot, rowKey));
             }
             tracker.flushLeftModifies();
             return;
@@ -523,30 +547,26 @@ class RightIncrementalChunkedCrossJoinStateManager
                 final RowSequence postChunk = postShiftModified.getNextRowSequenceWithLength(CHUNK_SIZE);
                 Assert.eq(preChunk.size(), "preChunk.size()", postChunk.size(), "postChunk.size()");
 
-                final StateTrackingCallback callback = (cookie, postSlot, index, prevIndex) -> {
-                    long preSlot = leftIndexToSlot.get(prevIndex);
+                final StateTrackingCallback callback = (cookie, postSlot, rowKey, prevRowKey) -> {
+                    Assert.neq(postSlot, "postSlot", EMPTY_RIGHT_SLOT);
+                    long preSlot = leftRowToSlot.get(prevRowKey);
+                    Assert.neq(preSlot, "preSlot", EMPTY_RIGHT_SLOT);
 
                     final boolean preIsOverflow = isOverflowLocation(preSlot);
                     final LongArraySource preCookieSource = preIsOverflow ? overflowModifiedTrackerCookieSource : modifiedTrackerCookieSource;
                     final long preHashSlot = preIsOverflow ? overflowLocationToHashLocation(preSlot) : preSlot;
 
                     if (preSlot != postSlot) {
-                        // unlike rightModified, leftIndexToSlot is not yet shifted; so we operate in terms of pre-shift value.
-                        if (preSlot != EMPTY_RIGHT_SLOT) {
-                            final long oldCookie = preCookieSource.getUnsafe(preHashSlot);
-                            final long newCookie = tracker.appendToBuilder(oldCookie, preSlot, prevIndex);
-                            if (oldCookie != newCookie) {
-                                preCookieSource.set(preHashSlot, newCookie);
-                            }
+                        // unlike rightModified, leftRowToSlot is not yet shifted; so we operate in terms of pre-shift value.
+                        final long oldCookie = preCookieSource.getUnsafe(preHashSlot);
+                        final long newCookie = tracker.addToBuilder(oldCookie, preSlot, prevRowKey);
+                        if (oldCookie != newCookie) {
+                            preCookieSource.set(preHashSlot, newCookie);
                         }
-                        if (postSlot != EMPTY_RIGHT_SLOT) {
-                            cookie = tracker.appendChunkAdd(cookie, postSlot, index);
-                        } else {
-                            leftIndexToSlot.removeVoid(prevIndex);
-                        }
-                    } else if (preSlot != EMPTY_RIGHT_SLOT) {
-                        // note we must mark post shift index as the modification
-                        cookie = tracker.appendChunkModify(cookie, postSlot, index);
+                        cookie = tracker.appendChunkAdd(cookie, postSlot, rowKey);
+                    } else {
+                        // note we must mark post shift rowKey as the modification
+                        cookie = tracker.appendChunkModify(cookie, postSlot, rowKey);
                     }
                     return cookie;
                 };
@@ -557,9 +577,9 @@ class RightIncrementalChunkedCrossJoinStateManager
         tracker.flushLeftModifies();
     }
 
-    void leftShift(final RowSet filterIndex, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
-        shifted.forAllInRowSet(filterIndex, (ii, delta) -> {
-            final long slot = leftIndexToSlot.get(ii);
+    void leftShift(final RowSet filterRowSet, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
+        shifted.forAllInRowSet(filterRowSet, (ii, delta) -> {
+            final long slot = leftRowToSlot.get(ii);
             if (slot == RowSequence.NULL_ROW_KEY) {
                 // This might happen if a RowSet is moving from one slot to another; we shift after removes but before
                 // the adds. We don't need to shift the slot that was related to this RowSet.
@@ -582,7 +602,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                 }
             }
         });
-        leftIndexToSlot.applyShift(filterIndex, shifted);
+        leftRowToSlot.applyShift(filterRowSet, shifted);
     }
 
     private void ensureSlotExists(final long slot) {
@@ -596,7 +616,14 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    private long addToIndex(final boolean isLeft, final long slot, final long keyToAdd) {
+    private long addToRowSet(final boolean isLeft, final long slot, final long keyToAdd) {
+        if (slot == EMPTY_RIGHT_SLOT) {
+            // we are never going to get here.  if we are building; the slot will be allocated.
+            // if we are probing, then we must be on the right-hand side; and the callback is not invoked for additions
+            // only for previous values ... since this is the addToRowSet method we will not have previous values and
+            // thus can not get into this function
+            throw new IllegalStateException();
+        }
         final boolean isOverflowLocation = isOverflowLocation(slot);
         final long location = isOverflowLocation ? overflowLocationToHashLocation(slot) : slot;
         final ObjectArraySource<TrackingWritableRowSet> source;
@@ -609,11 +636,6 @@ class RightIncrementalChunkedCrossJoinStateManager
         final long size;
         final WritableRowSet rowSet = source.get(location);
         if (rowSet == null) {
-            if (!isLeft && !isLeftTicking) {
-                // when left table is static and this grouping does not exist then ignore
-                return CrossJoinModifiedSlotTracker.NULL_COOKIE;
-            }
-
             source.set(location, RowSetFactory.fromKeys(keyToAdd).toTracking());
             size = 1;
         } else {
@@ -622,12 +644,12 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
 
         if (isLeft) {
-            leftIndexToSlot.put(keyToAdd, slot);
+            leftRowToSlot.put(keyToAdd, slot);
 
             // ensure a right mapping exists, or else it will appear that this mapping is non-existent
             ensureSlotExists(slot);
         } else {
-            rightIndexToSlot.put(keyToAdd, slot);
+            rightRowToSlot.put(keyToAdd, slot);
 
             // only right side insertions can cause shifts
             final int numBitsNeeded = CrossJoinShiftState.getMinBits(size - 1);
@@ -659,16 +681,16 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     void startTrackingPrevValues() {
-        this.leftIndexToSlot.startTrackingPrevValues();
+        this.leftRowToSlot.startTrackingPrevValues();
         this.rightRowSetSource.startTrackingPrevValues();
         this.overflowRightRowSetSource.startTrackingPrevValues();
     }
 
     public void updateLeftRowRedirection(RowSet leftAdded, long slotLocation) {
         if (slotLocation == RowSequence.NULL_ROW_KEY) {
-            leftAdded.forAllRowKeys(leftIndexToSlot::removeVoid);
+            leftAdded.forAllRowKeys(leftRowToSlot::removeVoid);
         } else {
-            leftAdded.forAllRowKeys(ii -> leftIndexToSlot.putVoid(ii, slotLocation));
+            leftAdded.forAllRowKeys(ii -> leftRowToSlot.putVoid(ii, slotLocation));
         }
     }
 
@@ -682,7 +704,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         if (size > maxRightGroupSize) {
             maxRightGroupSize = size;
         }
-        rightAdded.forAllRowKeys(ii -> rightIndexToSlot.putVoid(ii, slotLocation));
+        // TODO: THIS IS ANOTHER CASE OF UNFORTUNATE VIRTUAL CALLS
+        rightAdded.forAllRowKeys(ii -> rightRowToSlot.putVoid(ii, slotLocation));
     }
     // endregion build wrappers
 
@@ -762,8 +785,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         final ChunkSource.GetContext[] buildContexts;
 
         // region build context
-        final WritableLongChunk<OrderedRowKeys> sourceIndexKeys;
-        final WritableLongChunk<OrderedRowKeys> sourcePrevIndexKeys;
+        final WritableLongChunk<OrderedRowKeys> sourceRowKeys;
+        final WritableLongChunk<OrderedRowKeys> sourcePrevRowKeys;
         // endregion build context
 
         final boolean haveSharedContexts;
@@ -790,8 +813,8 @@ class RightIncrementalChunkedCrossJoinStateManager
             overflowContexts = makeFillContexts(overflowKeySources, sharedOverflowContext, chunkSize);
             buildContexts = makeGetContexts(buildSources, sharedBuildContext, chunkSize);
             // region build context constructor
-            sourceIndexKeys = WritableLongChunk.makeWritableChunk(chunkSize);
-            sourcePrevIndexKeys = WritableLongChunk.makeWritableChunk(chunkSize);
+            sourceRowKeys = WritableLongChunk.makeWritableChunk(chunkSize);
+            sourcePrevRowKeys = WritableLongChunk.makeWritableChunk(chunkSize);
             // endregion build context constructor
             sortContext = LongIntTimsortKernel.createContext(chunkSize);
             stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
@@ -887,8 +910,8 @@ class RightIncrementalChunkedCrossJoinStateManager
             writeThroughOverflowLocations.close();
             // endmixin rehash
             // region build context close
-            sourceIndexKeys.close();
-            sourcePrevIndexKeys.close();
+            sourceRowKeys.close();
+            sourcePrevRowKeys.close();
             // endregion build context close
             closeSharedContexts();
         }
@@ -907,11 +930,11 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     private void buildTable(final BuildContext bc,
-                            final RowSequence buildIndex,
+                            final RowSequence buildRows,
                             ColumnSource<?>[] buildSources
                             // region extra build arguments
             , final CrossJoinModifiedSlotTracker modifiedSlotTracker
-            , final RowSequence prevIndex
+            , final RowSequence prevRowSet
             , final StateTrackingCallback trackingCallback
                             // endregion extra build arguments
     ) {
@@ -919,14 +942,14 @@ class RightIncrementalChunkedCrossJoinStateManager
         // region build start
         // endregion build start
 
-        try (final RowSequence.Iterator rsIt = buildIndex.getRowSequenceIterator();
+        try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator();
              // region build initialization try
              // endregion build initialization try
         ) {
             // region build initialization
-            final RowSequence.Iterator prevRsIt = prevIndex == null ? null : prevIndex.getRowSequenceIterator();
-            if (prevIndex != null) {
-                Assert.eq(prevIndex.size(), "prevIndex.size()", buildIndex.size(), "buildIndex.size()");
+            final RowSequence.Iterator prevRsIt = prevRowSet == null ? null : prevRowSet.getRowSequenceIterator();
+            if (prevRowSet != null) {
+                Assert.eq(prevRowSet.size(), "prevRowSet.size()", buildRows.size(), "buildRows.size()");
             }
             // endregion build initialization
 
@@ -946,9 +969,9 @@ class RightIncrementalChunkedCrossJoinStateManager
                 hashKeyChunks(bc.hashChunk, sourceKeyChunks);
 
                 // region build loop initialization
-                chunkOk.fillRowKeyChunk(bc.sourceIndexKeys);
-                if (prevIndex != null) {
-                    prevRsIt.getNextRowSequenceWithLength(bc.chunkSize).fillRowKeyChunk(bc.sourcePrevIndexKeys);
+                chunkOk.fillRowKeyChunk(bc.sourceRowKeys);
+                if (prevRowSet != null) {
+                    prevRsIt.getNextRowSequenceWithLength(bc.chunkSize).fillRowKeyChunk(bc.sourcePrevRowKeys);
                 }
                 // endregion build loop initialization
 
@@ -979,8 +1002,8 @@ class RightIncrementalChunkedCrossJoinStateManager
                     final long tableLocation = bc.tableLocationsChunk.get(ii);
                     if (bc.equalValues.get(ii)) {
                         // region build found main
-                        final long keyToAdd = bc.sourceIndexKeys.get(ii);
-                        final long prevKey = prevIndex == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(ii);
+                        final long keyToAdd = bc.sourceRowKeys.get(ii);
+                        final long prevKey = prevRowSet == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevRowKeys.get(ii);
                         final long oldCookie = modifiedTrackerCookieSource.getUnsafe(tableLocation);
                         final long newCookie = trackingCallback.invoke(oldCookie, (int) tableLocation, keyToAdd, prevKey);
                         if (oldCookie != newCookie) {
@@ -1015,8 +1038,8 @@ class RightIncrementalChunkedCrossJoinStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    final long keyToAdd = bc.sourceIndexKeys.get(firstChunkPositionForHashLocation);
-                    final long prevKey = prevIndex == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(firstChunkPositionForHashLocation);
+                    final long keyToAdd = bc.sourceRowKeys.get(firstChunkPositionForHashLocation);
+                    final long prevKey = prevRowSet == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevRowKeys.get(firstChunkPositionForHashLocation);
                     ensureSlotExists(currentHashLocation);
                     final long cookie = trackingCallback.invoke(CrossJoinModifiedSlotTracker.NULL_COOKIE, currentHashLocation, keyToAdd, prevKey);
                     modifiedTrackerCookieSource.set(currentHashLocation, cookie);
@@ -1063,8 +1086,8 @@ class RightIncrementalChunkedCrossJoinStateManager
 
                     if (bc.equalValues.get(ii)) {
                         // region build main duplicate
-                        final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
-                        final long prevKey = prevIndex == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
+                        final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
+                        final long prevKey = prevRowSet == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevRowKeys.get(chunkPosition);
                         // NB: We just inserted this slot, so there's no way that its cookie can have changed.
                         trackingCallback.invoke(modifiedTrackerCookieSource.getUnsafe(tableLocation), (int) tableLocation, keyToAdd, prevKey);
                         // endregion build main duplicate
@@ -1118,8 +1141,8 @@ class RightIncrementalChunkedCrossJoinStateManager
                             final long overflowLocation = bc.overflowLocationsToFetch.get(ii);
                             if (bc.equalValues.get(ii)) {
                                 // region build overflow found
-                                final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
-                                final long prevKey = prevIndex == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
+                                final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
+                                final long prevKey = prevRowSet == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevRowKeys.get(chunkPosition);
                                 final long hashLocation = overflowLocationToHashLocation(overflowLocation);
                                 final long oldCookie = overflowModifiedTrackerCookieSource.getUnsafe(overflowLocation);
                                 final long newCookie = trackingCallback.invoke(oldCookie, hashLocation, keyToAdd, prevKey);
@@ -1170,8 +1193,8 @@ class RightIncrementalChunkedCrossJoinStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
-                            final long prevKey = prevIndex == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
+                            final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
+                            final long prevKey = prevRowSet == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevRowKeys.get(chunkPosition);
                             final long hashLocation = overflowLocationToHashLocation(allocatedOverflowLocation);
                             ensureSlotExists(hashLocation);
                             final long cookie = trackingCallback.invoke(CrossJoinModifiedSlotTracker.NULL_COOKIE, hashLocation, keyToAdd, prevKey);
@@ -1211,8 +1234,8 @@ class RightIncrementalChunkedCrossJoinStateManager
                             if (bc.equalValues.get(ii)) {
                                 final long insertedOverflowLocation = bc.overflowLocationForEqualityCheck.get(ii);
                                 // region build overflow duplicate
-                                final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
-                                final long prevKey = prevIndex == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
+                                final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
+                                final long prevKey = prevRowSet == null ? RowSequence.NULL_ROW_KEY : bc.sourcePrevRowKeys.get(chunkPosition);
                                 final long hashLocation = overflowLocationToHashLocation(insertedOverflowLocation);
                                 // we match the first element, so should use the overflow slow we allocated for it (note expect cookie does not change)
                                 trackingCallback.invoke(overflowModifiedTrackerCookieSource.getUnsafe(insertedOverflowLocation), hashLocation, keyToAdd, prevKey);
@@ -1240,7 +1263,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                 hashSlotOffset += chunkOk.size();
             }
             // region post build loop
-            if (prevIndex != null) {
+            if (prevRowSet != null) {
                 prevRsIt.close();
             }
             // endregion post build loop
@@ -1338,13 +1361,13 @@ class RightIncrementalChunkedCrossJoinStateManager
                     leftRowSetSource.set(newHashLocation, leftRowSetValue);
                     leftRowSetSource.set(oldHashLocation, null);
                     if (leftRowSetValue != null) {
-                        leftRowSetValue.forAllRowKeys(left -> leftIndexToSlot.putVoid(left, newHashLocation));
+                        leftRowSetValue.forAllRowKeys(left -> leftRowToSlot.putVoid(left, newHashLocation));
                     }
                     stateValueToMove.forAllRowKeys(right -> {
                         // stateValueToMove may not yet be up to date and may include modifications
-                        final long prevLocation = rightIndexToSlot.get(right);
+                        final long prevLocation = rightRowToSlot.get(right);
                         if (prevLocation == oldHashLocation) {
-                            rightIndexToSlot.putVoid(right, newHashLocation);
+                            rightRowToSlot.putVoid(right, newHashLocation);
                         }
                     });
                     moveModifiedSlot(modifiedSlotTracker, oldHashLocation, newHashLocation);
@@ -1422,9 +1445,9 @@ class RightIncrementalChunkedCrossJoinStateManager
                         rightRowSetSource.set(tableLocation, stateValueToMove);
                         stateValueToMove.forAllRowKeys(right -> {
                             // stateValueToMove may not yet be up to date and may include modifications
-                            final long prevLocation = rightIndexToSlot.get(right);
+                            final long prevLocation = rightRowToSlot.get(right);
                             if (prevLocation == overflowHashLocation) {
-                                rightIndexToSlot.putVoid(right, tableLocation);
+                                rightRowToSlot.putVoid(right, tableLocation);
                             }
                         });
                         overflowRightRowSetSource.set(overflowLocation, EMPTY_RIGHT_VALUE);
@@ -1434,7 +1457,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         leftRowSetSource.set(tableLocation, leftRowSetValue);
                         overflowLeftRowSetSource.set(overflowLocation, null);
                         if (leftRowSetValue != null) {
-                            leftRowSetValue.forAllRowKeys(left -> leftIndexToSlot.putVoid(left, tableLocation));
+                            leftRowSetValue.forAllRowKeys(left -> leftRowToSlot.putVoid(left, tableLocation));
                         }
 
                         // notify tracker and move/update cookie
@@ -1707,8 +1730,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
-        // state exists; otherwise when building from the left it is always null
+        // the chunk of right keys that we read from the hash table, the empty right rowKey is used as a sentinel
+        // that the state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
         final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
 
@@ -1833,13 +1856,13 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     private void decorationProbe(ProbeContext pc
-                                , RowSequence probeIndex
+                                , RowSequence probeRows
                                 , final ColumnSource<?>[] probeSources
                                  // mixin prev
                                 , boolean usePrev
                                  // endmixin prev
                                  // region additional probe arguments
-            , RowSequence probePrevIndex
+            , RowSequence probePrevRowSequence
             , final StateTrackingCallback trackingCallback
                                  // endregion additional probe arguments
     )  {
@@ -1847,9 +1870,10 @@ class RightIncrementalChunkedCrossJoinStateManager
         // endregion probe start
         long hashSlotOffset = 0;
 
-        try (final RowSequence.Iterator rsIt = probeIndex.getRowSequenceIterator();
+        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator();
              // region probe additional try resources
-             final RowSequence.Iterator prevRsIt = probePrevIndex == null ? null : probePrevIndex.getRowSequenceIterator()
+             final RowSequence.Iterator prevRsIt =
+                     probePrevRowSequence == null ? null : probePrevRowSequence.getRowSequenceIterator()
              // endregion probe additional try resources
             ) {
             //noinspection unchecked
@@ -1907,7 +1931,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                     if (pc.equalValues.get(ii)) {
                         // region probe main found
                         final long tableLocation = pc.tableLocationsChunk.get(ii);
-                        final long prevKey = probePrevIndex == null ? RowSequence.NULL_ROW_KEY : pc.prevKeyIndices.get(ii);
+                        final long prevKey = probePrevRowSequence == null ? RowSequence.NULL_ROW_KEY : pc.prevKeyIndices.get(ii);
                         final long oldCookie = modifiedTrackerCookieSource.getUnsafe(tableLocation);
                         final long newCookie = trackingCallback.invoke(oldCookie, tableLocation, pc.keyIndices.get(ii), prevKey);
                         if (oldCookie != newCookie) {
@@ -1920,7 +1944,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         pc.overflowLocationsToFetch.add(pc.tableLocationsChunk.get(ii));
                     } else {
                         // region probe main not found
-                        if (probePrevIndex != null) {
+                        if (probePrevRowSequence != null) {
                             trackingCallback.invoke(CrossJoinModifiedSlotTracker.NULL_COOKIE, EMPTY_RIGHT_SLOT, pc.keyIndices.get(ii), pc.prevKeyIndices.get(ii));
                         }
                         // endregion probe main not found
@@ -1942,7 +1966,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                             pc.chunkPositionsForFetches.add(chunkPosition);
                         } else {
                             // region probe overflow not found
-                            if (probePrevIndex != null) {
+                            if (probePrevRowSequence != null) {
                                 trackingCallback.invoke(CrossJoinModifiedSlotTracker.NULL_COOKIE, EMPTY_RIGHT_SLOT,
                                         pc.keyIndices.get(chunkPosition), pc.prevKeyIndices.get(chunkPosition));
                             }
@@ -1968,11 +1992,11 @@ class RightIncrementalChunkedCrossJoinStateManager
 
                         if (pc.equalValues.get(ii)) {
                             // region probe overflow found
-                            final long indexKey = pc.keyIndices.get(chunkPosition);
-                            final long prevKey = probePrevIndex == null ? RowSequence.NULL_ROW_KEY : pc.prevKeyIndices.get(chunkPosition);
+                            final long rowKey = pc.keyIndices.get(chunkPosition);
+                            final long prevRowKey = probePrevRowSequence == null ? RowSequence.NULL_ROW_KEY : pc.prevKeyIndices.get(chunkPosition);
                             final long hashLocation = overflowLocationToHashLocation(overflowLocation);
                             final long oldCookie = overflowModifiedTrackerCookieSource.getUnsafe(overflowLocation);
-                            final long newCookie = trackingCallback.invoke(oldCookie, hashLocation, indexKey, prevKey);
+                            final long newCookie = trackingCallback.invoke(oldCookie, hashLocation, rowKey, prevRowKey);
                             if (oldCookie != newCookie) {
                                 overflowModifiedTrackerCookieSource.set(overflowLocation, newCookie);
                             }
@@ -2067,8 +2091,8 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     @Override
-    public TrackingRowSet getRightRowSetFromLeftIndex(long leftIndex) {
-        long slot = leftIndexToSlot.get(leftIndex);
+    public TrackingRowSet getRightRowSetFromLeftRow(long leftRowKey) {
+        long slot = leftRowToSlot.get(leftRowKey);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
@@ -2076,8 +2100,8 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     @Override
-    public TrackingRowSet getRightRowSetFromPrevLeftIndex(long leftIndex) {
-        long slot = leftIndexToSlot.getPrev(leftIndex);
+    public TrackingRowSet getRightRowSetFromPrevLeftRow(long leftRowKey) {
+        long slot = leftRowToSlot.getPrev(leftRowKey);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
@@ -2111,8 +2135,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    public long getSlotFromLeftIndex(long leftIndex) {
-        return leftIndexToSlot.get(leftIndex);
+    public long getSlotFromLeftRowKey(long rowKey) {
+        return leftRowToSlot.get(rowKey);
     }
 
     void clearCookies() {
@@ -2132,8 +2156,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         final int numShiftBits = getNumShiftBits();
         if (minLeftBits + numShiftBits > 63) {
             throw new OutOfKeySpaceException("join out of rowSet space (left reqBits + right reservedBits > 63): "
-                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxIndex: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
-                    + "(right table: {maxIndexUsed: " + rightLastKey + " reqBits: " + minRightBits + " reservedBits: " + numShiftBits + "})"
+                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxRowKey: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
+                    + "(right table: {maxRowKey: " + rightLastKey + " reqBits: " + minRightBits + " reservedBits: " + numShiftBits + "})"
                     + " exceeds Long.MAX_VALUE. Consider flattening left table or reserving fewer right bits if possible.");
         }
     }

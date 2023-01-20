@@ -203,8 +203,7 @@ public class TestRedirectedColumnSource {
             assertArrayEquals(nullBytes, chunkResult);
         }
 
-        final Table captured =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(c));
+        final Table captured = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(c::snapshot);
         showWithRowSet(captured);
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();

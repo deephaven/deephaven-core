@@ -64,17 +64,15 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                         handleBadData(this, true, false);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
-                    } else {
-                        if(curVal == NULL_DOUBLE) {
+                    } else if (curVal == NULL_DOUBLE) {
                             curVal = input;
                             lastStamp = timestamp;
-                        } else {
-                            final long dt = timestamp - lastStamp;
-                            // alpha is dynamic, based on time
-                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            curVal = alpha * curVal + ((1 - alpha) * input);
-                            lastStamp = timestamp;
-                        }
+                    } else {
+                        final long dt = timestamp - lastStamp;
+                        // alpha is dynamic, based on time
+                        final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                        curVal = alpha * curVal + (1 - alpha) * input;
+                        lastStamp = timestamp;
                     }
                     outputValues.set(ii, curVal);
                 }

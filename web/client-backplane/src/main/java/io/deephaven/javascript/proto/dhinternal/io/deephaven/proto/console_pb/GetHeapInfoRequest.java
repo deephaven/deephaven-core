@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 

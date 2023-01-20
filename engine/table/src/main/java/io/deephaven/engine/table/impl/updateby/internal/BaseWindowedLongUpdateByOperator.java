@@ -132,7 +132,7 @@ public abstract class BaseWindowedLongUpdateByOperator extends UpdateByWindowedO
             // region create-dense
             this.maybeInnerSource = new LongArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource<>(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse

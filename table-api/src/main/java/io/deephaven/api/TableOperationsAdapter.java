@@ -6,6 +6,8 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 
@@ -45,20 +47,23 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 snapshot(TABLE_1 baseTable, String... stampColumns) {
-        return adapt(delegate.snapshot(adapt(baseTable), stampColumns));
+    public final TOPS_1 snapshot() {
+        return adapt(delegate.snapshot());
     }
 
     @Override
-    public final TOPS_1 snapshot(TABLE_1 baseTable, boolean doInitialSnapshot,
-            String... stampColumns) {
-        return adapt(delegate.snapshot(adapt(baseTable), doInitialSnapshot, stampColumns));
+    public final TOPS_1 snapshotWhen(TABLE_1 trigger, Flag... features) {
+        return adapt(delegate.snapshotWhen(adapt(trigger), features));
     }
 
     @Override
-    public final TOPS_1 snapshot(TABLE_1 baseTable, boolean doInitialSnapshot,
-            Collection<ColumnName> stampColumns) {
-        return adapt(delegate.snapshot(adapt(baseTable), doInitialSnapshot, stampColumns));
+    public final TOPS_1 snapshotWhen(TABLE_1 trigger, Collection<Flag> features, String... stampColumns) {
+        return adapt(delegate.snapshotWhen(adapt(trigger), features, stampColumns));
+    }
+
+    @Override
+    public final TOPS_1 snapshotWhen(TABLE_1 trigger, SnapshotWhenOptions options) {
+        return adapt(delegate.snapshotWhen(adapt(trigger), options));
     }
 
     @Override

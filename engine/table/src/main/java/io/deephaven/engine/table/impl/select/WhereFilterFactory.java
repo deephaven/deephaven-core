@@ -7,7 +7,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.gui.table.QuickFilterMode;
@@ -237,7 +237,7 @@ public class WhereFilterFactory {
             }
 
             return tableDefinition.getColumnStream()
-                    .filter(cd -> !ColumnFormattingValues.isFormattingColumn(cd.getName()) &&
+                    .filter(cd -> !ColumnFormatting.isFormattingColumn(cd.getName()) &&
                             (columnNames.isEmpty() || columnNames.contains(cd.getName())))
                     .map(cd -> {
                         final Class<?> colClass = cd.getDataType();
@@ -284,7 +284,7 @@ public class WhereFilterFactory {
 
         for (String part : parts) {
             final WhereFilter[] filterArray = tableDefinition.getColumnStream()
-                    .filter(cd -> !ColumnFormattingValues.isFormattingColumn(cd.getName()))
+                    .filter(cd -> !ColumnFormatting.isFormattingColumn(cd.getName()))
                     .map(cd -> {
                         final Class<?> colClass = cd.getDataType();
                         final String colName = cd.getName();

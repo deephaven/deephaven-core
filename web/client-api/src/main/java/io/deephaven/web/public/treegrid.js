@@ -119,6 +119,9 @@ class TreeGrid {
 
         td.textContent = row.get(col);
         td.internalValue = row.get(col);
+        var format = row.getFormat(col);
+        td.style.backgroundColor = format.backgroundColor;
+        td.style.color = format.color;
         tr.appendChild(td);
       }
       tbody.appendChild(tr);

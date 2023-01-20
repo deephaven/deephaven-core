@@ -76,7 +76,7 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         final Context ctx = (Context) updateContext;
         // If we set the last state to null, then we know it was a reset state and the timestamp must also
         // have been reset.
-        if (ctx.curVal == NULL_DOUBLE || (firstUnmodifiedKey == NULL_ROW_KEY)) {
+        if (ctx.curVal == NULL_DOUBLE || firstUnmodifiedKey == NULL_ROW_KEY) {
             ctx.lastStamp = NULL_LONG;
         } else {
             // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)

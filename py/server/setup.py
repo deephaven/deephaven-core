@@ -57,6 +57,7 @@ setup(
         'deephaven-plugin',
         'numpy',
         'pandas',
+        'pyarrow',
         # Numba does not support 3.11 yet
         # https://github.com/numba/numba/issues/8304
         # TODO(deephaven-core#3082): Remove numba dependency workarounds

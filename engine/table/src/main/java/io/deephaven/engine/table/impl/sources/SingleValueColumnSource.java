@@ -4,17 +4,15 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.util.ShiftData;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
-
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback {
+        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback, InMemoryColumnSource,
+        RowKeyAgnosticChunkSource<Values> {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;
@@ -47,6 +45,8 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
             result = new LongSingleValueSource();
         } else if (type == Short.class || type == short.class) {
             result = new ShortSingleValueSource();
+        } else if (type == Boolean.class || type == boolean.class) {
+            result = new BooleanSingleValueSource();
         } else {
             result = new ObjectSingleValueSource<>(type);
         }
@@ -93,6 +93,13 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
 
     public void setNull() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public final void setNull(RowSequence orderedKeys) {
+        if (!orderedKeys.isEmpty()) {
+            setNull();
+        }
     }
 
     @Override

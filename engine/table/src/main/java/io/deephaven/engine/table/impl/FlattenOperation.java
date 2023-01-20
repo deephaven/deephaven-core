@@ -43,7 +43,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         final long size = usePrev ? rowSet.sizePrev() : rowSet.size();
 
         for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
-            resultColumns.put(entry.getKey(), new RedirectedColumnSource<>(rowRedirection, entry.getValue()));
+            resultColumns.put(entry.getKey(), RedirectedColumnSource.maybeRedirect(rowRedirection, entry.getValue()));
         }
 
         resultTable = new QueryTable(RowSetFactory.flat(size).toTracking(), resultColumns);

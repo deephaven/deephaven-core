@@ -10,6 +10,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
@@ -414,18 +415,13 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
-        return coalesce().snapshot(baseTable, doInitialSnapshot, stampColumns);
+    public Table snapshot() {
+        return coalesce().snapshot();
     }
 
     @Override
-    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return coalesce().snapshotIncremental(rightTable, doInitialSnapshot, stampColumns);
-    }
-
-    @Override
-    public Table snapshotHistory(Table rightTable) {
-        return coalesce().snapshotHistory(rightTable);
+    public Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
+        return coalesce().snapshotWhen(trigger, options);
     }
 
     @Override

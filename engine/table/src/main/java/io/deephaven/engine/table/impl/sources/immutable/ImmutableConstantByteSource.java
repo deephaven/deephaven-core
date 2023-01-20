@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableConstantCharSource and regenerate
@@ -7,9 +10,12 @@ package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.engine.table.ColumnSource;
 
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
@@ -27,7 +33,8 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  */
 public class ImmutableConstantByteSource
         extends AbstractColumnSource<Byte>
-        implements ImmutableColumnSourceGetDefaults.ForByte, InMemoryColumnSource, ShiftData.ShiftCallback {
+        implements ImmutableColumnSourceGetDefaults.ForByte, ShiftData.ShiftCallback, InMemoryColumnSource,
+        RowKeyAgnosticChunkSource<Values> {
 
     private final byte value;
 
@@ -80,4 +87,29 @@ public class ImmutableConstantByteSource
          return (ColumnSource<ALTERNATE_DATA_TYPE>) new ByteAsBooleanColumnSource(this);
     }
     // endregion reinterpret
+
+    @Override
+    public void fillChunkUnordered(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        final WritableByteChunk<? super Values> destChunk = dest.asWritableByteChunk();
+        for (int ii = 0; ii < keys.size(); ++ii) {
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_BYTE : value);
+        }
+        destChunk.setSize(keys.size());
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(
+            @NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        fillChunkUnordered(context , dest, keys);
+    }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
+    }
 }

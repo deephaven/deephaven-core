@@ -132,7 +132,7 @@ public abstract class BaseWindowedDoubleUpdateByOperator extends UpdateByWindowe
             // region create-dense
             this.maybeInnerSource = new DoubleArraySource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource<>(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse

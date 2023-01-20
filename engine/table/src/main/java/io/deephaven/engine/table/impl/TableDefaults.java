@@ -7,6 +7,8 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
@@ -21,7 +23,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -274,7 +276,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     default Table dropColumnFormats() {
         String[] columnAry = getDefinition().getColumnStream()
                 .map(ColumnDefinition::getName)
-                .filter(ColumnFormattingValues::isFormattingColumn)
+                .filter(ColumnFormatting::isFormattingColumn)
                 .toArray(String[]::new);
         if (columnAry.length == 0) {
             if (isRefreshing()) {
@@ -308,7 +310,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     @FinalDefault
     default Table formatRowWhere(String condition, String formula) {
-        return formatColumnWhere(ColumnFormattingValues.ROW_FORMAT_NAME, condition, formula);
+        return formatColumnWhere(ColumnFormatting.Constants.ROW_FORMAT_WILDCARD, condition, formula);
     }
 
     @Override
@@ -328,12 +330,14 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
         final Set<String> existingColumns = getDefinition().getColumnNames()
                 .stream()
-                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
+                .filter(column -> !ColumnFormatting.isFormattingColumn(column))
                 .collect(Collectors.toSet());
 
         final String[] unknownColumns = Arrays.stream(selectColumns)
-                .map(SelectColumnFactory::getFormatBaseColumn)
-                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
+                .map(sc -> ColumnFormatting.getFormatBaseColumn(sc.getName()))
+                .filter(column -> (column != null
+                        && !column.equals(ColumnFormatting.Constants.ROW_FORMAT_WILDCARD)
+                        && !existingColumns.contains(column)))
                 .toArray(String[]::new);
 
         if (unknownColumns.length > 0) {
@@ -624,8 +628,14 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table snapshotIncremental(Table rightTable, String... stampColumns) {
-        return snapshotIncremental(rightTable, false, stampColumns);
+    default Table snapshotWhen(Table trigger, Flag... features) {
+        return snapshotWhen(trigger, SnapshotWhenOptions.of(features));
+    }
+
+    @Override
+    @FinalDefault
+    default Table snapshotWhen(Table trigger, Collection<Flag> features, String... stampColumns) {
+        return snapshotWhen(trigger, SnapshotWhenOptions.of(features, stampColumns));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

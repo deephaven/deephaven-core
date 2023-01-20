@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import jsinterop.annotations.JsOverlay;
@@ -18,8 +21,8 @@ public interface NullValueMap {
     }
 
     @JsProperty(name = "NULL_VALUE")
-    double getNULL_VALUE();
+    int getNULL_VALUE();
 
     @JsProperty(name = "NULL_VALUE")
-    void setNULL_VALUE(double NULL_VALUE);
+    void setNULL_VALUE(int NULL_VALUE);
 }

@@ -428,7 +428,7 @@ public abstract class UpdateBy {
             // there will be no updates to this cached column source, so use a simple redirection
             final WritableRowRedirection rowRedirection = new InverseWrappedRowSetWritableRowRedirection(inputRowSet);
             final WritableColumnSource<?> outputSource =
-                    new WritableRedirectedColumnSource<>(rowRedirection, innerSource, 0);
+                    WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerSource, 0);
 
             // holding this reference should protect `rowDirection` and `innerSource` from GC
             maybeCachedInputSources[srcIdx] = outputSource;
