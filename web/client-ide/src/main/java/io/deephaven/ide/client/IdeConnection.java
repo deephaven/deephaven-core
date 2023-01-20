@@ -27,7 +27,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         ConnectToken token = null;
         if (options != null && options.authToken != null) {
             token = new ConnectToken();
-            token.setBytes(atob(options.authToken).getBytes(StandardCharsets.UTF_8));
+            token.setValue(atob(options.authToken));
         }
         return AuthTokenPromiseSupplier.oneShot(token);
     }
@@ -44,6 +44,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     /**
      * Direct connection to an already-running worker instance, without first authenticating to a client.
      */
+    @Deprecated
     @JsConstructor
     public IdeConnection(String serverUrl, @JsOptional IdeConnectionOptions options) {
         super(getAuthTokenPromiseSupplier(options));

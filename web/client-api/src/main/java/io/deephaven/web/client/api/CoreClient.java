@@ -8,10 +8,13 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.Con
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
 import io.deephaven.web.client.api.storage.JsStorageService;
+import io.deephaven.web.client.fu.JsLog;
+import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsType;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @JsType(namespace = "dh")
@@ -30,6 +33,7 @@ public class CoreClient extends QueryConnectable<CoreClient> {
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
     private final String serverUrl;
+    private ConnectToken token;
 
     public CoreClient(String serverUrl) {
         super(AuthTokenPromiseSupplier.oneShot(null));
@@ -53,7 +57,7 @@ public class CoreClient extends QueryConnectable<CoreClient> {
         if (!connection.isAvailable() || connection.get().isUsable()) {
             return Promise.resolve(this);
         } else {
-            return (Promise) Promise.reject("Cannot connect, session is dead.");
+            return Promise.reject("Cannot connect, session is dead.");
         }
     }
 
@@ -72,11 +76,33 @@ public class CoreClient extends QueryConnectable<CoreClient> {
     }
 
     public Promise<Void> login(LoginCredentials credentials) {
-        return connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
+        Objects.requireNonNull(credentials.getType(), "type must be specified");
+        token = new ConnectToken();
+        if (LOGIN_TYPE_PASSWORD.equals(credentials.getType())) {
+            Objects.requireNonNull(credentials.getUsername(), "username must be specified for password login");
+            Objects.requireNonNull(credentials.getToken(), "token must be specified for password login");
+            token.setType("Basic");
+            token.setValue(ConnectToken.bytesToBase64(credentials.getUsername() + ":" + credentials.getToken()));
+        } else {
+            token.setType(credentials.getType());
+            token.setValue(credentials.getToken());
+            if (credentials.getUsername() != null) {
+                JsLog.warn("username ignored for login type " + credentials.getType());
+            }
+        }
+        Promise<Void> login = connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
+        login.then(ignore -> {
+            return getServerConfigValues();
+        }).then(configs -> {
+            for (String[] config : configs) {
+                if (config[0].equals())
+            }
+        });
+        return login;
     }
 
-    public Promise<Void> relogin(String token) {
-        return login(LoginCredentials.reconnect(token));
+    public Promise<Void> relogin(Object token) {
+        return login(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes()));
     }
 
     public Promise<String[][]> getServerConfigValues() {

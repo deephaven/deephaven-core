@@ -18,7 +18,8 @@
     var table;
     (async () => {
         // create a connection to the server
-        connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+        connection = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
+        connection.login({type:dh.CoreClient.LOGIN_TYPE_ANONYMOUS});
 
         // check if a language was specified
         var url = new URL(window.location);

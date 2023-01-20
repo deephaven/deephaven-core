@@ -24,7 +24,8 @@ public class AnonymousAuthenticationHandler implements AuthenticationRequestHand
     @Override
     public void initialize(String targetUrl) {
         // TODO(deephaven-core#2934): Enable anonymous authentication warning
-        log.info().append("Anonymous authentication is enabled. Listening on ").append(targetUrl).endl();
+        // TODO complete that issue when we merge this
+        log.warn().append("Anonymous authentication is enabled. Listening on ").append(targetUrl).endl();
     }
 
     @Override
