@@ -64,6 +64,7 @@ static const char* TableService_method_names[] = {
   "/io.deephaven.proto.backplane.grpc.TableService/WhereIn",
   "/io.deephaven.proto.backplane.grpc.TableService/Batch",
   "/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates",
+  "/io.deephaven.proto.backplane.grpc.TableService/SeekRow",
 };
 
 std::unique_ptr< TableService::Stub> TableService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -111,6 +112,7 @@ TableService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& chann
   , rpcmethod_WhereIn_(TableService_method_names[35], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_Batch_(TableService_method_names[36], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   , rpcmethod_ExportedTableUpdates_(TableService_method_names[37], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_SeekRow_(TableService_method_names[38], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status TableService::Stub::GetExportedTableCreationResponse(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::Ticket& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
@@ -973,6 +975,29 @@ void TableService::Stub::async::ExportedTableUpdates(::grpc::ClientContext* cont
   return ::grpc::internal::ClientAsyncReaderFactory< ::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>::Create(channel_.get(), cq, rpcmethod_ExportedTableUpdates_, context, request, false, nullptr);
 }
 
+::grpc::Status TableService::Stub::SeekRow(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest& request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::SeekRowRequest, ::io::deephaven::proto::backplane::grpc::SeekRowResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_SeekRow_, context, request, response);
+}
+
+void TableService::Stub::async::SeekRow(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::SeekRowRequest, ::io::deephaven::proto::backplane::grpc::SeekRowResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SeekRow_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::async::SeekRow(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SeekRow_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::SeekRowResponse>* TableService::Stub::PrepareAsyncSeekRowRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::SeekRowResponse, ::io::deephaven::proto::backplane::grpc::SeekRowRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_SeekRow_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::SeekRowResponse>* TableService::Stub::AsyncSeekRowRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncSeekRowRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 TableService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       TableService_method_names[0],
@@ -1354,6 +1379,16 @@ TableService::Service::Service() {
              ::grpc::ServerWriter<::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>* writer) {
                return service->ExportedTableUpdates(ctx, req, writer);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[38],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SeekRowRequest, ::io::deephaven::proto::backplane::grpc::SeekRowResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* req,
+             ::io::deephaven::proto::backplane::grpc::SeekRowResponse* resp) {
+               return service->SeekRow(ctx, req, resp);
+             }, this)));
 }
 
 TableService::Service::~Service() {
@@ -1622,6 +1657,13 @@ TableService::Service::~Service() {
   (void) context;
   (void) request;
   (void) writer;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status TableService::Service::SeekRow(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
