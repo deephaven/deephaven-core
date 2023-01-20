@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.util.TableLoggerWrapperUtility;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
@@ -68,7 +69,7 @@ public class UpdatePerformanceTracker {
     }
 
     private final Logger logger;
-    private final MemoryTableLogger<UpdatePerformanceLogLogger> tableLogger;
+    private final TableLoggerWrapperUtility<UpdatePerformanceLogLogger> tableLogger;
 
     private final AtomicInteger entryIdCounter = new AtomicInteger(1);
     private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
