@@ -7,8 +7,11 @@ import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.util.MemoryTableLogger;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
+import io.deephaven.engine.table.impl.util.TableLoggerWrapperUtility;
+import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -135,6 +138,7 @@ public class DeephavenApiServer {
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
+        TableLoggerWrapperUtility.Factory.setCreateFunction(MemoryTableLogger::new);
         UpdatePerformanceTracker.start();
         ServerStateTracker.start();
 

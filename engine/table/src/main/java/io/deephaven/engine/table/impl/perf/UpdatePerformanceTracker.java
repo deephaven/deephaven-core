@@ -9,7 +9,6 @@ import io.deephaven.engine.table.impl.util.TableLoggerWrapperUtility;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.util.MemoryTableLogger;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -79,8 +78,7 @@ public class UpdatePerformanceTracker {
             @NotNull final Logger logger,
             @NotNull final TableDefinition logTableDefinition) {
         this.logger = logger;
-        tableLogger = new MemoryTableLogger<>(
-                logger, new UpdatePerformanceLogLogger(processInfoId), logTableDefinition);
+        tableLogger = TableLoggerWrapperUtility.Factory.create(logger, new UpdatePerformanceLogLogger(processInfoId), logTableDefinition);
     }
 
     private void startThread() {
