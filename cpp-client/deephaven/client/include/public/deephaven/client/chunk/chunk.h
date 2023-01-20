@@ -51,9 +51,15 @@ template<typename T>
 class GenericChunk final : public Chunk {
 public:
   /**
-   * Factory method. Create a Chunk having the specified size.
+   * Factory method. Create a Chunk having the specified size, with a privately allocated buffer.
    */
   static GenericChunk<T> create(size_t size);
+
+  /**
+   * Factory method. Create a Chunk on a buffer owned by the caller. The buffer must outlive this
+   * Chunk and all Chunks derived from this chunk (e.g. via take/drop).
+   */
+  static GenericChunk<T> createView(T *data, size_t size);
 
   /**
    * Constructor.
@@ -311,6 +317,27 @@ GenericChunk<T> GenericChunk<T>::create(size_t size) {
   // until C++20.
   auto data = std::shared_ptr<T[]>(new T[size]);
   return GenericChunk<T>(std::move(data), size);
+}
+
+template<typename T>
+GenericChunk<T> GenericChunk<T>::createView(T *data, size_t size) {
+  // GenericChunks allocated by create() point to an underlying heap-allocated buffer. On the other
+  // hand, GenericChunks created by createView() point to the caller's buffer. In the former case
+  // we own the buffer and need to delete it when there are no more shared_ptrs pointing to it. In
+  // the latter case the caller owns the buffer, and we should not try to deallocate it.
+  // One might think we have to use two different data structures to handle these two different
+  // case, but by using the below trick we are able to use std::shared_ptr<T[]> for both cases.
+
+  // Start with an empty shared pointer. Like all shared pointers it has a reference count and an
+  // underlying buffer that it is managing, but in this case the buffer it is managing is null.
+  // This variable is just around for the purposes of the next line.
+  std::shared_ptr<T[]> empty;
+  // Now make an aliasing shared pointer, which shares the same reference count and manages the same
+  // underlying buffer (which is null) but which is configured to return an unrelated pointer
+  // (namely 'data'). When the reference count eventually reaches zero, the shared ptr will
+  // deallocate the buffer it owns (namely the null buffer) but it won't touch the user's buffer.
+  std::shared_ptr<T[]> data_sp(empty, data);
+  return GenericChunk<T>(std::move(data_sp), size);
 }
 
 template<typename T>

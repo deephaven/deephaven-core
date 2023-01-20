@@ -6,6 +6,7 @@
 #include "deephaven/client/chunk/chunk_maker.h"
 #include "deephaven/client/chunk/chunk.h"
 #include "deephaven/client/container/row_sequence.h"
+#include "deephaven/client/table/schema.h"
 #include "deephaven/client/utility/utility.h"
 
 #include <optional>
@@ -18,6 +19,7 @@ using deephaven::client::container::RowSequence;
 using deephaven::client::container::RowSequenceIterator;
 using deephaven::client::utility::makeReservedVector;
 using deephaven::client::utility::separatedList;
+using deephaven::client::utility::SimpleOstringstream;
 using deephaven::client::utility::stringf;
 
 namespace deephaven::client::table {
@@ -69,11 +71,25 @@ internal::TableStreamAdaptor Table::stream(bool wantHeaders, bool wantRowNumbers
   return {*this, std::move(rowSequences), wantHeaders, wantRowNumbers, true};
 }
 
-Schema::Schema(std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> columns) :
-  columns_(std::move(columns)) {}
-Schema::Schema(Schema &&other) noexcept = default;
-Schema &Schema::operator=(Schema &&other) noexcept = default;
-Schema::~Schema() = default;
+std::string Table::toString(bool wantHeaders, bool wantRowNumbers) const {
+  SimpleOstringstream oss;
+  oss << stream(wantHeaders, wantRowNumbers);
+  return std::move(oss.str());
+}
+
+std::string Table::toString(bool wantHeaders, bool wantRowNumbers,
+    std::shared_ptr<RowSequence> rowSequence) const {
+  SimpleOstringstream oss;
+  oss << stream(wantHeaders, wantRowNumbers, std::move(rowSequence));
+  return std::move(oss.str());
+}
+
+std::string Table::toString(bool wantHeaders, bool wantRowNumbers,
+    std::vector<std::shared_ptr<RowSequence>> rowSequences) const {
+  SimpleOstringstream oss;
+  oss << stream(wantHeaders, wantRowNumbers, std::move(rowSequences));
+  return std::move(oss.str());
+}
 
 namespace internal {
 std::ostream &operator<<(std::ostream &s, const TableStreamAdaptor &o) {
