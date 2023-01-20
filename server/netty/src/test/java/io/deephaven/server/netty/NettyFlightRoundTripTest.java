@@ -16,6 +16,8 @@ import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
 
 import javax.inject.Singleton;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
 
@@ -25,6 +27,7 @@ public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
         static NettyConfig providesNettyConfig() {
             return NettyConfig.builder()
                     .port(0)
+                    .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
                     .build();
         }
     }
