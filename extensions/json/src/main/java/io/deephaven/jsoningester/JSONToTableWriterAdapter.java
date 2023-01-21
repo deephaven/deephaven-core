@@ -1378,18 +1378,13 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
 
         // If using threads, wait for the consumer threads to finish:
         if (consumerThreadsCountDownLatch != null) {
-            final Supplier<String> getStatusStr = () -> "(Threads still running: "
-                    + consumerThreadsCountDownLatch.getCount() +
-                    ", messagesQueued=" + messagesQueued.get() +
-                    ", messagesProcessed=" + messagesProcessed.longValue() +
-                    ')';
             try {
                 log.debug().append("JSONToTableWriterAdapter shutdown - awaiting termination").endl();
                 if (!consumerThreadsCountDownLatch.await(SHUTDOWN_TIMEOUT_SECS, TimeUnit.SECONDS)) {
-                    throw new JSONIngesterException("Timed out while awaiting shutdown! " + getStatusStr.get());
+                    throw new JSONIngesterException("Timed out while awaiting shutdown! " + getThreadingStatusStr());
                 }
             } catch (InterruptedException ex) {
-                throw new JSONIngesterException("Interrupted while awaiting shutdown! " + getStatusStr.get(), ex);
+                throw new JSONIngesterException("Interrupted while awaiting shutdown! " + getThreadingStatusStr(), ex);
             }
         }
 
@@ -1399,6 +1394,14 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     @Override
     public void setOwner(@Nullable final StringMessageToTableAdapter<?> parent) {
         this.owner = parent;
+    }
+
+    private String getThreadingStatusStr() {
+        return "(Threads still running: "
+                + consumerThreadsCountDownLatch.getCount() +
+                ", messagesQueued=" + messagesQueued.get() +
+                ", messagesProcessed=" + messagesProcessed.longValue() +
+                ')';
     }
 
     private class ConsumerThread extends Thread {
@@ -1820,6 +1823,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     @Override
     public void waitForProcessing(final long timeoutMillis) throws InterruptedException, TimeoutException {
         if (numThreads == 0) {
+            // processing is synchronous so there is nothing to wait for
             return;
         }
 
