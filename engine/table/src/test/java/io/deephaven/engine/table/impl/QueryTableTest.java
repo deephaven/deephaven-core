@@ -214,129 +214,47 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table sortedTable = queryTable.sort("intCol");
 
         final EvalNugget[] en = new EvalNugget[] {
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.updateView("intCol=intCol * 2");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.updateView("intCol=intCol + doubleCol");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.updateView("newCol=intCol / 2", "newCol2=newCol * 4");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.updateView("newCol=intCol / 2").updateView("newCol2=newCol * 4");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.view("intCol=intCol * 2");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.view("intCol=intCol + doubleCol");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.view("newCol=intCol / 2").updateView("newCol2=newCol * 4");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return sortedTable.updateView("intCol=intCol * 2");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return sortedTable.updateView("intCol=intCol + doubleCol");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol * 4");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return sortedTable.updateView("newCol=intCol / 2").updateView("newCol2=newCol * 4");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return sortedTable.view("intCol=intCol * 2");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return sortedTable.view("intCol=intCol + doubleCol");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return sortedTable.view("newCol=intCol / 2").updateView("newCol2=newCol * 4");
-                    }
-                },
-                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
-                        .hasUnstableColumns("newCol2"),
-                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
-                        .hasUnstableColumns("newCol2"),
-                EvalNugget
-                        .from(() -> queryTable.updateView("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-                                "repeatedCol=newCol_[i-1] * repeatedCol"))
-                        .hasUnstableColumns("repeatedCol"),
-                EvalNugget.from(() -> queryTable.updateView("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(() -> queryTable.updateView("newCol=intCol_[i-1]"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
-                        .hasUnstableColumns("newCol2"),
-                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
-                        .hasUnstableColumns("newCol2"),
-                EvalNugget
-                        .from(() -> sortedTable.updateView("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-                                "repeatedCol=newCol_[i-1] * repeatedCol"))
-                        .hasUnstableColumns("repeatedCol"),
-                EvalNugget.from(() -> sortedTable.updateView("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol_[i-1]"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(() -> queryTable.view("newCol=intCol_[i-1]"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(() -> queryTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
-                        .hasUnstableColumns("newCol2"),
-                EvalNugget.from(() -> queryTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
-                        .hasUnstableColumns("newCol2"),
-                EvalNugget
-                        .from(() -> queryTable.view("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-                                "repeatedCol=newCol_[i-1] * repeatedCol"))
-                        .hasUnstableColumns("repeatedCol"),
-                EvalNugget.from(() -> queryTable.view("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(() -> sortedTable.view("newCol=intCol_[i-1]"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(() -> sortedTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4"))
-                        .hasUnstableColumns("newCol2"),
-                EvalNugget.from(() -> sortedTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol"))
-                        .hasUnstableColumns("newCol2"),
-                EvalNugget
-                        .from(() -> sortedTable.view("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-                                "repeatedCol=newCol_[i-1] * repeatedCol"))
-                        .hasUnstableColumns("repeatedCol"),
-                EvalNugget.from(() -> sortedTable.view("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(
-                        () -> queryTable.updateView("newCol2=intCol / 2", "newCol=newCol2", "newCol=newCol_[i-1] + 7"))
-                        .hasUnstableColumns("newCol"),
-                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol=newCol_[i-1] + 7"))
-                        .hasUnstableColumns("newCol"),
+                EvalNugget.from(() -> queryTable.updateView("intCol=intCol * 2")),
+                EvalNugget.from(() -> queryTable.updateView("intCol=intCol + doubleCol")),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol2=newCol * 4")),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2").updateView("newCol2=newCol * 4")),
+                EvalNugget.from(() -> queryTable.view("intCol=intCol * 2")),
+                EvalNugget.from(() -> queryTable.view("intCol=intCol + doubleCol")),
+                EvalNugget.from(() -> queryTable.view("newCol=intCol / 2").updateView("newCol2=newCol * 4")),
+                EvalNugget.from(() -> sortedTable.updateView("intCol=intCol * 2")),
+                EvalNugget.from(() -> sortedTable.updateView("intCol=intCol + doubleCol")),
+                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol * 4")),
+                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol / 2").updateView("newCol2=newCol * 4")),
+                EvalNugget.from(() -> sortedTable.view("intCol=intCol * 2")),
+                EvalNugget.from(() -> sortedTable.view("intCol=intCol + doubleCol")),
+                EvalNugget.from(() -> sortedTable.view("newCol=intCol / 2").updateView("newCol2=newCol * 4")),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4")),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol")),
+                EvalNugget.from(() -> queryTable.updateView("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                        "repeatedCol=newCol_[i-1] * repeatedCol")),
+                EvalNugget.from(() -> queryTable.updateView("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7")),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol_[i-1]")),
+                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4")),
+                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol")),
+                EvalNugget.from(() -> sortedTable.updateView("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                        "repeatedCol=newCol_[i-1] * repeatedCol")),
+                EvalNugget.from(() -> sortedTable.updateView("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7")),
+                EvalNugget.from(() -> sortedTable.updateView("newCol=intCol_[i-1]")),
+                EvalNugget.from(() -> queryTable.view("newCol=intCol_[i-1]")),
+                EvalNugget.from(() -> queryTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4")),
+                EvalNugget.from(() -> queryTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol")),
+                EvalNugget.from(() -> queryTable.view("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                        "repeatedCol=newCol_[i-1] * repeatedCol")),
+                EvalNugget.from(() -> queryTable.view("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7")),
+                EvalNugget.from(() -> sortedTable.view("newCol=intCol_[i-1]")),
+                EvalNugget.from(() -> sortedTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * 4")),
+                EvalNugget.from(() -> sortedTable.view("newCol=intCol / 2", "newCol2=newCol_[i-1] * newCol")),
+                EvalNugget.from(() -> sortedTable.view("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                        "repeatedCol=newCol_[i-1] * repeatedCol")),
+                EvalNugget.from(() -> sortedTable.view("newCol2=intCol / 2", "newCol=newCol2_[i-1] + 7")),
+                EvalNugget.from(() -> queryTable.updateView("newCol2=intCol / 2", "newCol=newCol2",
+                        "newCol=newCol_[i-1] + 7")),
+                EvalNugget.from(() -> queryTable.updateView("newCol=intCol / 2", "newCol=newCol_[i-1] + 7")),
         };
 
         for (int i = 0; i < 10; i++) {
@@ -2705,11 +2623,7 @@ public class QueryTableTest extends QueryTableTestBase {
                     table.groupBy("Sym").sort("Sym").update("MyBoolean=boolArray", "MyDouble=doubleArray");
 
             final EvalNugget[] en = new EvalNugget[] {
-                    new EvalNugget() {
-                        public Table e() {
-                            return mismatch.ungroup(nullFill);
-                        }
-                    },
+                    EvalNugget.from(() -> mismatch.ungroup(nullFill)),
             };
 
             for (int i = 0; i < 10; i++) {

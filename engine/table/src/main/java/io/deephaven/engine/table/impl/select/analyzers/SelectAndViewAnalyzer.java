@@ -47,16 +47,16 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
-    public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
-            TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
+    public static SelectAndViewAnalyzerWrapper create(Mode mode, Map<String, ColumnSource<?>> columnSources,
+            TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, boolean useShiftedColumns,
             SelectColumn... selectColumns) {
-        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, true, selectColumns);
+        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, useShiftedColumns, true,
+                selectColumns);
     }
 
-    public static SelectAndViewAnalyzer create(final Mode mode, final Map<String, ColumnSource<?>> columnSources,
+    public static SelectAndViewAnalyzerWrapper create(final Mode mode, final Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
-            final boolean allowInternalFlatten,
-            final SelectColumn... selectColumns) {
+            boolean useShiftedColumns, final boolean allowInternalFlatten, final SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
@@ -78,8 +78,17 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 && mode == Mode.SELECT_STATIC;
         int numberOfInternallyFlattenedColumns = 0;
 
+        List<SelectColumn> processedCols = new LinkedList<>();
+        List<SelectColumn> remainingCols = null;
+        FormulaColumn shiftColumn = null;
+
         final HashSet<String> resultColumns = flattenedResult ? new HashSet<>() : null;
         for (final SelectColumn sc : selectColumns) {
+            if (remainingCols != null) {
+                remainingCols.add(sc);
+                continue;
+            }
+
             analyzer.updateColumnDefinitionsFromTopLayer(columnDefinitions);
             sc.initDef(columnDefinitions);
             sc.initInputs(rowSet, analyzer.getAllColumnSources());
@@ -103,6 +112,16 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
+
+            if (useShiftedColumns && hasConstantArrayAccess(sc)) {
+                remainingCols = new LinkedList<>();
+                shiftColumn = sc instanceof FormulaColumn
+                        ? (FormulaColumn) sc
+                        : (FormulaColumn) ((SwitchColumn) sc).getRealColumn();
+                continue;
+            }
+
+            processedCols.add(sc);
 
             if (hasConstantValue(sc)) {
                 final WritableColumnSource<?> constViewSource =
@@ -184,7 +203,19 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     throw new UnsupportedOperationException("Unsupported case " + mode);
             }
         }
-        return analyzer;
+        return new SelectAndViewAnalyzerWrapper(analyzer, shiftColumn, remainingCols, processedCols);
+    }
+
+    private static boolean hasConstantArrayAccess(final SelectColumn sc) {
+        if (sc instanceof FormulaColumn) {
+            return ((FormulaColumn) sc).hasConstantArrayAccess();
+        } else if (sc instanceof SwitchColumn) {
+            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
+            if (realColumn instanceof FormulaColumn) {
+                return ((FormulaColumn) realColumn).hasConstantArrayAccess();
+            }
+        }
+        return false;
     }
 
     private static boolean hasConstantValue(final SelectColumn sc) {
@@ -387,8 +418,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
      * this in two stages. In the first stage we create a map from column to (set of dependent columns). In the second
      * stage we reverse that map.
      */
-    public final Map<String, String[]> calcEffects() {
-        final Map<String, Set<String>> dependsOn = calcDependsOnRecurse();
+    public final Map<String, String[]> calcEffects(boolean forcePublishAllResources) {
+        final Map<String, Set<String>> dependsOn = calcDependsOnRecurse(forcePublishAllResources);
 
         // Now create effects, which is the inverse of dependsOn:
         // An entry W -> [X, Y, Z] in effects means that W affects X, Y, and Z
@@ -408,7 +439,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         return result;
     }
 
-    abstract Map<String, Set<String>> calcDependsOnRecurse();
+    abstract Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources);
 
     public abstract SelectAndViewAnalyzer getInner();
 
