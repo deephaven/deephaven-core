@@ -80,7 +80,7 @@ public class StreamTableAggregationTest {
                     new WrappedRowSetWritableRowRedirection(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
-                    (entry -> new RedirectedColumnSource<>(streamRedirections, entry.getValue())),
+                    (entry -> RedirectedColumnSource.maybeRedirect(streamRedirections, entry.getValue())),
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }

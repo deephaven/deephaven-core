@@ -46,7 +46,7 @@ class PartitionedTableService final {
    public:
     virtual ~StubInterface() {}
     //
-    // Transforms a table into a partitioned table, consisting of many separate table, each individually
+    // Transforms a table into a partitioned table, consisting of many separate tables, each individually
     // addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
     virtual ::grpc::Status PartitionBy(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PartitionByRequest& request, ::io::deephaven::proto::backplane::grpc::PartitionByResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::PartitionByResponse>> AsyncPartitionBy(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PartitionByRequest& request, ::grpc::CompletionQueue* cq) {
@@ -88,7 +88,7 @@ class PartitionedTableService final {
      public:
       virtual ~async_interface() {}
       //
-      // Transforms a table into a partitioned table, consisting of many separate table, each individually
+      // Transforms a table into a partitioned table, consisting of many separate tables, each individually
       // addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
       virtual void PartitionBy(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PartitionByRequest* request, ::io::deephaven::proto::backplane::grpc::PartitionByResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void PartitionBy(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::PartitionByRequest* request, ::io::deephaven::proto::backplane::grpc::PartitionByResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
@@ -184,7 +184,7 @@ class PartitionedTableService final {
     Service();
     virtual ~Service();
     //
-    // Transforms a table into a partitioned table, consisting of many separate table, each individually
+    // Transforms a table into a partitioned table, consisting of many separate tables, each individually
     // addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
     virtual ::grpc::Status PartitionBy(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::PartitionByRequest* request, ::io::deephaven::proto::backplane::grpc::PartitionByResponse* response);
     //

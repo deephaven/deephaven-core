@@ -171,15 +171,15 @@ public class UpdateByEmaOptions {
 
     public native MathContext getBigValueContext();
 
-    public native double getOnNanValue();
+    public native int getOnNanValue();
 
-    public native double getOnNegativeDeltaTime();
+    public native int getOnNegativeDeltaTime();
 
-    public native double getOnNullTime();
+    public native int getOnNullTime();
 
-    public native double getOnNullValue();
+    public native int getOnNullValue();
 
-    public native double getOnZeroDeltaTime();
+    public native int getOnZeroDeltaTime();
 
     public native boolean hasBigValueContext();
 
@@ -199,15 +199,15 @@ public class UpdateByEmaOptions {
 
     public native void setBigValueContext(MathContext value);
 
-    public native void setOnNanValue(double value);
+    public native void setOnNanValue(int value);
 
-    public native void setOnNegativeDeltaTime(double value);
+    public native void setOnNegativeDeltaTime(int value);
 
-    public native void setOnNullTime(double value);
+    public native void setOnNullTime(int value);
 
-    public native void setOnNullValue(double value);
+    public native void setOnNullValue(int value);
 
-    public native void setOnZeroDeltaTime(double value);
+    public native void setOnZeroDeltaTime(int value);
 
     public native UpdateByEmaOptions.ToObjectReturnType0 toObject();
 

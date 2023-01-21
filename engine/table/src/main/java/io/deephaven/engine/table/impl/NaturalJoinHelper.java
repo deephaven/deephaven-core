@@ -440,8 +440,9 @@ class NaturalJoinHelper {
             final boolean rightRefreshingColumns) {
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         for (MatchPair mp : columnsToAdd) {
-            final RedirectedColumnSource<?> redirectedColumnSource =
-                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
+            // note that we must always redirect the right-hand side, because unmatched rows will be redirected to null
+            final ColumnSource<?> redirectedColumnSource =
+                    RedirectedColumnSource.alwaysRedirect(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
             if (rightRefreshingColumns) {
                 redirectedColumnSource.startTrackingPrevValues();
             }

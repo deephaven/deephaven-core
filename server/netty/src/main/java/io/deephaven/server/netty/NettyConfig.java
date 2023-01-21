@@ -26,9 +26,8 @@ public abstract class NettyConfig implements ServerConfig {
     /**
      * The default configuration is suitable for local development purposes. It inherits all of the defaults, which are
      * documented on each individual method. In brief, the default server starts up on all interfaces with plaintext
-     * port {@value DEFAULT_PLAINTEXT_PORT}, a token expiration duration of {@value DEFAULT_TOKEN_EXPIRE_MIN} minutes, a
-     * scheduler pool size of {@value DEFAULT_SCHEDULER_POOL_SIZE}, and a max inbound message size of
-     * {@value DEFAULT_MAX_INBOUND_MESSAGE_SIZE_MiB} MiB.
+     * port {@value DEFAULT_PLAINTEXT_PORT}, a scheduler pool size of {@value DEFAULT_SCHEDULER_POOL_SIZE}, and a max
+     * inbound message size of {@value DEFAULT_MAX_INBOUND_MESSAGE_SIZE_MiB} MiB.
      */
     public static NettyConfig defaultConfig() {
         return builder().build();

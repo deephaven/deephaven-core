@@ -73,183 +73,138 @@
 <button id="open">Display Rollup Table</button>
 <div id="treetable"></div>
 <script>
-  var url = new URL('/socket', window.location);
-  if (url.protocol === 'http:') {
-    url.protocol = 'ws:';
-  } else {
-    url.protocol = 'wss:';
-  }
+    var connection;
+    var ide;
+    var treeParent = document.getElementById('treetable');
+    var treeColumns = document.getElementById('treeColumns');
+    var aggColumns = document.getElementById('aggColumns');
 
-  window.c = new dh.Client(url.href);
-  c.addEventListener(dh.Client.EVENT_CONNECT, () => {
-    connected();
-    c.login({username:'dh',token:'dh',type:'password'}).then(result => {
-      console.log("login successful");
-    });
-  });
+    var oldTableHandlerCleanup;
+    (async () => {
+        connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+        var types = await connection.getConsoleTypes();
 
-  var queries = document.getElementById('queries');
-  var configs = Object.create(null);
+        if (types.indexOf("python") !== -1) {
+            ide = await connection.startSession("python");
+            await ide.runCode(`
+from deephaven import empty_table
+remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`\` + (int)(i/10)", "K = i % 13"])
+`)
+        } else if (types.indexOf("groovy") !== -1) {
+            ide = await connection.startSession("groovy");
+            await ide.runCode('remoteTable = emptyTable(100).update("I=i", "J = `` + (int)(i/10)", "K = i % 13")')
+        }
 
-  function connected() {
-    c.addEventListener(dh.Client.EVENT_CONFIG_REMOVED, event => {
-      removeQuery(event.detail);
-    });
-    c.addEventListener(dh.Client.EVENT_CONFIG_UPDATED, event => {
-      removeQuery(event.detail);
-      addQuery(event.detail);
-    });
-    c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
-      addQuery(event.detail);
-    });
-    function removeQuery(queryInfo) {
-      var old = configs[queryInfo.serial];
-      if (old) {
-        var queryElt = old.elt;
-        queryElt.parentNode.removeChild(queryElt);
-        delete configs[queryInfo.serial];
-      }
-    }
-    function addQuery(queryInfo) {
-      console.log("config added: " + queryInfo.name);
+        displayTableDetails(await ide.getTable('remoteTable'));
 
-      var queryElt = document.createElement('li');
-      configs[queryInfo.serial] = {info:queryInfo, elt:queryElt};
-      queryElt.innerText = queryInfo.name + ' [' + queryInfo.status + ']';
-      queryElt.classList.add('closed');
-      var open = false;
-      queryElt.onclick = () => {
-        open = !open;
-        queryElt.className = open ? 'open' : 'closed';
-        queryInfo.addEventListener(dh.QueryInfo.EVENT_TABLE_METRICS, event => {
-          if (event.detail.nanos === -1) {
-            console.log(event.detail.type);
-          } else {
-            console.log(`Metrics: ${event.detail.type} in ${event.detail.formatted}`);
-          }
-        });
-      };
-      var tables = document.createElement('ul');
-      queryElt.appendChild(tables);
-      queryInfo.tables.forEach(t => {
-        var tableElt = document.createElement('li');
-        tableElt.innerText = t;
-        tables.appendChild(tableElt);
-        tableElt.onclick = e => {
-          e.stopPropagation();
-          queryInfo.getTable(t).then(table => displayTableDetails(table));
-          document.querySelectorAll('.selected').forEach(elt => {
-            elt.classList.remove('selected');
-          });
-          e.target.classList.add('selected');
+        // wire up buttons to move items back and forth
+        document.getElementById('left').onclick = e => {
+            var moved = getSelectedValues(aggColumns);
+            addToSelect(treeColumns, moved).map(opt => opt.selected = true);
+            removeFromSelect(aggColumns, moved);
         };
-      });
-      queries.appendChild(queryElt);
-    }
-  }
+        document.getElementById('right').onclick = e => {
+            var moved = getSelectedValues(treeColumns);
+            addToSelect(aggColumns, moved).map(opt => opt.selected = true);
+            removeFromSelect(treeColumns, moved);
+        };
+
+        function removeFromSelect(select, values) {
+            Array.prototype.filter.call(select.options, opt => values.indexOf(opt.value) !== -1)
+                .forEach(opt => select.removeChild(opt));
+        }
+
+        function addToSelect(select, values) {
+            return values.map(v => {
+                var option = document.createElement('option');
+                option.value = v;
+                option.textContent = v;
+                select.appendChild(option);
+                return option;
+            });
+        }
+
+        function getAllValues(select) {
+            return Array.prototype.map.call(select.options, option => option.value);
+        }
+
+        function getSelectedValues(select) {
+            return Array.prototype.filter.call(select.options,
+                option => option.selected)
+                .map(option => option.value);
+        }
+
+        var currentTable;
+
+        function displayTableDetails(table) {
+            closeAll();
+            currentTable = table;
+            // pick out the non-numeric fields for hierarchy
+            var numeric = [];
+            var nonNumeric = [];
+            table.columns.forEach(c => {
+                switch (c.type) {
+                    case "int":
+                    case "double":
+                    case "long":
+                        numeric.push(c.name);
+                        break;
+                    default:
+                        nonNumeric.push(c.name);
+                        break;
+                }
+            });
+            while (treeColumns.hasChildNodes()) {
+                treeColumns.removeChild(treeColumns.lastChild);
+            }
+            addToSelect(treeColumns, nonNumeric);
+            while (aggColumns.hasChildNodes()) {
+                aggColumns.removeChild(aggColumns.lastChild);
+            }
+            addToSelect(aggColumns, numeric);
+        }
+
+        var currentTree;
+        document.getElementById('open').onclick = e => {
+            if (currentTable == null) {
+                console.error("Need a table selected!");
+                return;
+            }
+            closeTree();
+            // collect the expected tree columns and aggregation columns, make into a config object
+            var config = {
+                groupingColumns: [],
+                aggregations: {}
+            };
+            var operation = document.getElementById('operation').value;
+            let aggColumnNames = getAllValues(aggColumns);
+            if (aggColumnNames.length > 0) {
+                config.aggregations[operation] = aggColumnNames;
+            }
+            config.groupingColumns = getAllValues(treeColumns);
+            config.includeConstituents = document.getElementById('includeConstituents').checked;
+
+            // roll up the selected table with the given config, and render it
+            currentTable.rollup(config).then(treeTable => {
+                currentTree = treeTable;
+                var tableElt = new TreeGrid(treeTable).element;
+                treeParent.appendChild(tableElt);
 
 
-  var treeColumns = document.getElementById('treeColumns');
-  var aggColumns = document.getElementById('aggColumns');
-  // wire up buttons to move items back and forth
-  document.getElementById('left').onclick = e => {
-    var moved = getSelectedValues(aggColumns);
-    addToSelect(treeColumns, moved).map(opt => opt.selected = true);
-    removeFromSelect(aggColumns, moved);
-  };
-  document.getElementById('right').onclick = e => {
-    var moved = getSelectedValues(treeColumns);
-    addToSelect(aggColumns, moved).map(opt => opt.selected = true);
-    removeFromSelect(treeColumns, moved);
-  };
-  function removeFromSelect(select, values) {
-    Array.prototype.filter.call(select.options, opt => values.indexOf(opt.value) !== -1)
-      .forEach(opt => select.removeChild(opt));
-  }
-  function addToSelect(select, values) {
-    return values.map(v => {
-      var option = document.createElement('option');
-      option.value = v;
-      option.textContent = v;
-      select.appendChild(option);
-      return option;
-    });
-  }
-  function getAllValues(select) {
-    return Array.prototype.map.call(select.options, option => option.value);
-  }
-  function getSelectedValues(select) {
-    return Array.prototype.filter.call(select.options,
-      option => option.selected)
-      .map(option => option.value);
-  }
-  var currentTable;
-  function displayTableDetails(table) {
-    closeAll();
-    currentTable = table;
-    // pick out the non-numeric fields for hierarchy
-    var numeric = [];
-    var nonNumeric = [];
-    table.columns.forEach(c => {
-      switch (c.type) {
-        case "int":
-        case "double":
-        case "long":
-          numeric.push(c.name);
-          break;
-        default:
-          nonNumeric.push(c.name);
-          break;
-      }
-    });
-    while (treeColumns.hasChildNodes()) {
-      treeColumns.removeChild(treeColumns.lastChild);
-    }
-    addToSelect(treeColumns, nonNumeric);
-    while (aggColumns.hasChildNodes()) {
-      aggColumns.removeChild(aggColumns.lastChild);
-    }
-    addToSelect(aggColumns, numeric);
-  }
+                // new TotalsTableHelper(null, treeTable, tableElt, 1);
+            });
+        };
 
-  var treeParent = document.getElementById('treetable');
-  var currentTree;
-  document.getElementById('open').onclick = e => {
-    if (currentTable == null) {
-      console.error("Need a table selected!");
-      return;
-    }
-    closeTree();
-    // collect the expected tree columns and aggregation columns, make into a config object
-    var config = {
-      groupingColumns:[],
-      aggregations:{}
-    };
-    var operation = document.getElementById('operation').value;
-    config.aggregations[operation] = getAllValues(aggColumns);
-    config.groupingColumns = getAllValues(treeColumns);
-    config.includeConstituents = document.getElementById('includeConstituents').checked;
+        function closeAll() {
+            currentTable && currentTable.close();
+            closeTree();
+        }
 
-    // roll up the selected table with the given config, and render it
-    currentTable.rollup(config).then(treeTable => {
-      currentTree = treeTable;
-      var tableElt = new TreeGrid(treeTable).element;
-      treeParent.appendChild(tableElt);
-
-
-      new TotalsTableHelper(null, treeTable, tableElt, 1);
-    });
-  };
-
-  function closeAll() {
-    currentTable && currentTable.close();
-    closeTree();
-  }
-
-  function closeTree() {
-    currentTree && currentTree.close();
-    treeParent.hasChildNodes() && treeParent.removeChild(treeParent.firstElementChild);
-  }
+        function closeTree() {
+            currentTree && currentTree.close();
+            treeParent.hasChildNodes() && treeParent.removeChild(treeParent.firstElementChild);
+        }
+    })();
 </script>
 </body>
 </html>

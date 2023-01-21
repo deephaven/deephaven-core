@@ -10,6 +10,7 @@ RUN set -eux; \
   mkdir -p /generated/js; \
   mkdir -p /generated/go; \
   mkdir -p /generated/python; \
+  mkdir -p /generated/cpp; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/protoc-gen-grpc-java \
     --java_out=/generated/java \
@@ -65,10 +66,13 @@ RUN set -eux; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-go=/opt/protoc-gen-go \
     --plugin=protoc-gen-go-grpc=/opt/protoc-gen-go-grpc \
+    --plugin=protoc-gen-cpp_grpc=/opt/cpp/grpc_cpp_plugin \
     --go_out=/generated/go \
     --go-grpc_out=/generated/go \
     --go_opt=module=github.com/deephaven/deephaven-core/go \
     --go-grpc_opt=module=github.com/deephaven/deephaven-core/go \
+    --cpp_out=generated/cpp \
+    --cpp_grpc_out=generated/cpp \
     -I/includes \
     /includes/deephaven/proto/ticket.proto \
     /includes/deephaven/proto/console.proto \

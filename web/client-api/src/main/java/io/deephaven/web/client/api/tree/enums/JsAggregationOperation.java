@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.tree.enums;
 
+import io.deephaven.web.client.fu.JsLog;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 @JsType(name = "AggregationOperation", namespace = "dh")
@@ -19,8 +21,14 @@ public class JsAggregationOperation {
             STD = "Std",
             FIRST = "First",
             LAST = "Last",
-            UNIQUE = "Unique",
-            // Array operation isn't legal in all contexts, just omit it for now
-            // ARRAY = "Array",
-            SKIP = "Skip";
+            UNIQUE = "Unique";
+    // Array operation isn't legal in all contexts, just omit it for now
+    // ARRAY = "Array",
+    // These need some other parameter to function, not supported yet
+    // TODO #3302 support these
+    // SORTED_FIRST="SortedFirst",
+    // SORTED_LAST="SortedLast",
+    // WSUM = "WeightedSum";
+    @Deprecated
+    public static final String SKIP = "Skip";
 }

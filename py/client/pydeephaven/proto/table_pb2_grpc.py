@@ -25,11 +25,6 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
-        self.FetchPandasTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
         self.ApplyPreviewColumns = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
@@ -210,6 +205,11 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.FromString,
                 )
+        self.SeekRow = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/SeekRow',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.SeekRowRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.SeekRowResponse.FromString,
+                )
 
 
 class TableServiceServicer(object):
@@ -226,14 +226,6 @@ class TableServiceServicer(object):
     def FetchTable(self, request, context):
         """
         Fetches a Table from an existing source ticket and exports it to the local session result ticket.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def FetchPandasTable(self, request, context):
-        """
-        Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -548,6 +540,14 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SeekRow(self, request, context):
+        """
+        Seek a row number within a table.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_TableServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -559,11 +559,6 @@ def add_TableServiceServicer_to_server(servicer, server):
             'FetchTable': grpc.unary_unary_rpc_method_handler(
                     servicer.FetchTable,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'FetchPandasTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.FetchPandasTable,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'ApplyPreviewColumns': grpc.unary_unary_rpc_method_handler(
@@ -746,6 +741,11 @@ def add_TableServiceServicer_to_server(servicer, server):
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.SerializeToString,
             ),
+            'SeekRow': grpc.unary_unary_rpc_method_handler(
+                    servicer.SeekRow,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SeekRowRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.SeekRowResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'io.deephaven.proto.backplane.grpc.TableService', rpc_method_handlers)
@@ -786,23 +786,6 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchTable',
             deephaven_dot_proto_dot_table__pb2.FetchTableRequest.SerializeToString,
-            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def FetchPandasTable(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable',
-            deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -1416,5 +1399,22 @@ class TableService(object):
         return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates',
             deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SeekRow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/SeekRow',
+            deephaven_dot_proto_dot_table__pb2.SeekRowRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.SeekRowResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -28,7 +28,6 @@ namespace grpc {
 static const char* TableService_method_names[] = {
   "/io.deephaven.proto.backplane.grpc.TableService/GetExportedTableCreationResponse",
   "/io.deephaven.proto.backplane.grpc.TableService/FetchTable",
-  "/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable",
   "/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns",
   "/io.deephaven.proto.backplane.grpc.TableService/EmptyTable",
   "/io.deephaven.proto.backplane.grpc.TableService/TimeTable",
@@ -38,6 +37,7 @@ static const char* TableService_method_names[] = {
   "/io.deephaven.proto.backplane.grpc.TableService/View",
   "/io.deephaven.proto.backplane.grpc.TableService/UpdateView",
   "/io.deephaven.proto.backplane.grpc.TableService/Select",
+  "/io.deephaven.proto.backplane.grpc.TableService/UpdateBy",
   "/io.deephaven.proto.backplane.grpc.TableService/SelectDistinct",
   "/io.deephaven.proto.backplane.grpc.TableService/Filter",
   "/io.deephaven.proto.backplane.grpc.TableService/UnstructuredFilter",
@@ -54,12 +54,17 @@ static const char* TableService_method_names[] = {
   "/io.deephaven.proto.backplane.grpc.TableService/LeftJoinTables",
   "/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables",
   "/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate",
+  "/io.deephaven.proto.backplane.grpc.TableService/AggregateAll",
+  "/io.deephaven.proto.backplane.grpc.TableService/Aggregate",
   "/io.deephaven.proto.backplane.grpc.TableService/Snapshot",
+  "/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen",
   "/io.deephaven.proto.backplane.grpc.TableService/Flatten",
   "/io.deephaven.proto.backplane.grpc.TableService/RunChartDownsample",
   "/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable",
+  "/io.deephaven.proto.backplane.grpc.TableService/WhereIn",
   "/io.deephaven.proto.backplane.grpc.TableService/Batch",
   "/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates",
+  "/io.deephaven.proto.backplane.grpc.TableService/SeekRow",
 };
 
 std::unique_ptr< TableService::Stub> TableService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -71,16 +76,16 @@ std::unique_ptr< TableService::Stub> TableService::NewStub(const std::shared_ptr
 TableService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
   : channel_(channel), rpcmethod_GetExportedTableCreationResponse_(TableService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_FetchTable_(TableService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_FetchPandasTable_(TableService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ApplyPreviewColumns_(TableService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_EmptyTable_(TableService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_TimeTable_(TableService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_DropColumns_(TableService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Update_(TableService_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_LazyUpdate_(TableService_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_View_(TableService_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UpdateView_(TableService_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Select_(TableService_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ApplyPreviewColumns_(TableService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_EmptyTable_(TableService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_TimeTable_(TableService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_DropColumns_(TableService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Update_(TableService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_LazyUpdate_(TableService_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_View_(TableService_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UpdateView_(TableService_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Select_(TableService_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UpdateBy_(TableService_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_SelectDistinct_(TableService_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_Filter_(TableService_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_UnstructuredFilter_(TableService_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
@@ -97,12 +102,17 @@ TableService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& chann
   , rpcmethod_LeftJoinTables_(TableService_method_names[25], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_AsOfJoinTables_(TableService_method_names[26], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_ComboAggregate_(TableService_method_names[27], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Snapshot_(TableService_method_names[28], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Flatten_(TableService_method_names[29], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RunChartDownsample_(TableService_method_names[30], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_CreateInputTable_(TableService_method_names[31], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Batch_(TableService_method_names[32], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
-  , rpcmethod_ExportedTableUpdates_(TableService_method_names[33], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_AggregateAll_(TableService_method_names[28], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Aggregate_(TableService_method_names[29], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Snapshot_(TableService_method_names[30], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SnapshotWhen_(TableService_method_names[31], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Flatten_(TableService_method_names[32], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RunChartDownsample_(TableService_method_names[33], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_CreateInputTable_(TableService_method_names[34], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_WhereIn_(TableService_method_names[35], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Batch_(TableService_method_names[36], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_ExportedTableUpdates_(TableService_method_names[37], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_SeekRow_(TableService_method_names[38], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status TableService::Stub::GetExportedTableCreationResponse(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::Ticket& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
@@ -147,29 +157,6 @@ void TableService::Stub::async::FetchTable(::grpc::ClientContext* context, const
 ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncFetchTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchTableRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncFetchTableRaw(context, request, cq);
-  result->StartCall();
-  return result;
-}
-
-::grpc::Status TableService::Stub::FetchPandasTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_FetchPandasTable_, context, request, response);
-}
-
-void TableService::Stub::async::FetchPandasTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_FetchPandasTable_, context, request, response, std::move(f));
-}
-
-void TableService::Stub::async::FetchPandasTable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_FetchPandasTable_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::PrepareAsyncFetchPandasTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_FetchPandasTable_, context, request);
-}
-
-::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncFetchPandasTableRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest& request, ::grpc::CompletionQueue* cq) {
-  auto* result =
-    this->PrepareAsyncFetchPandasTableRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -377,6 +364,29 @@ void TableService::Stub::async::Select(::grpc::ClientContext* context, const ::i
 ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncSelectRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncSelectRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status TableService::Stub::UpdateBy(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::UpdateByRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::UpdateByRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UpdateBy_, context, request, response);
+}
+
+void TableService::Stub::async::UpdateBy(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::UpdateByRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::UpdateByRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdateBy_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::async::UpdateBy(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::UpdateByRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdateBy_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::PrepareAsyncUpdateByRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::UpdateByRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::io::deephaven::proto::backplane::grpc::UpdateByRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_UpdateBy_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncUpdateByRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::UpdateByRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncUpdateByRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -749,6 +759,52 @@ void TableService::Stub::async::ComboAggregate(::grpc::ClientContext* context, c
   return result;
 }
 
+::grpc::Status TableService::Stub::AggregateAll(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateAllRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::AggregateAllRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_AggregateAll_, context, request, response);
+}
+
+void TableService::Stub::async::AggregateAll(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateAllRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::AggregateAllRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AggregateAll_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::async::AggregateAll(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateAllRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AggregateAll_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::PrepareAsyncAggregateAllRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateAllRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::io::deephaven::proto::backplane::grpc::AggregateAllRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_AggregateAll_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncAggregateAllRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateAllRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncAggregateAllRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status TableService::Stub::Aggregate(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::AggregateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Aggregate_, context, request, response);
+}
+
+void TableService::Stub::async::Aggregate(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::AggregateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Aggregate_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::async::Aggregate(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Aggregate_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::PrepareAsyncAggregateRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::io::deephaven::proto::backplane::grpc::AggregateRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Aggregate_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncAggregateRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncAggregateRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 ::grpc::Status TableService::Stub::Snapshot(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Snapshot_, context, request, response);
 }
@@ -768,6 +824,29 @@ void TableService::Stub::async::Snapshot(::grpc::ClientContext* context, const :
 ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncSnapshotRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncSnapshotRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status TableService::Stub::SnapshotWhen(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_SnapshotWhen_, context, request, response);
+}
+
+void TableService::Stub::async::SnapshotWhen(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SnapshotWhen_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::async::SnapshotWhen(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SnapshotWhen_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::PrepareAsyncSnapshotWhenRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_SnapshotWhen_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncSnapshotWhenRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncSnapshotWhenRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -841,6 +920,29 @@ void TableService::Stub::async::CreateInputTable(::grpc::ClientContext* context,
   return result;
 }
 
+::grpc::Status TableService::Stub::WhereIn(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::WhereInRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::WhereInRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_WhereIn_, context, request, response);
+}
+
+void TableService::Stub::async::WhereIn(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::WhereInRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::WhereInRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_WhereIn_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::async::WhereIn(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::WhereInRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_WhereIn_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::PrepareAsyncWhereInRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::WhereInRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::io::deephaven::proto::backplane::grpc::WhereInRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_WhereIn_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncWhereInRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::WhereInRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncWhereInRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 ::grpc::ClientReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::BatchRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::BatchTableRequest& request) {
   return ::grpc::internal::ClientReaderFactory< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>::Create(channel_.get(), rpcmethod_Batch_, context, request);
 }
@@ -873,6 +975,29 @@ void TableService::Stub::async::ExportedTableUpdates(::grpc::ClientContext* cont
   return ::grpc::internal::ClientAsyncReaderFactory< ::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>::Create(channel_.get(), cq, rpcmethod_ExportedTableUpdates_, context, request, false, nullptr);
 }
 
+::grpc::Status TableService::Stub::SeekRow(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest& request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::SeekRowRequest, ::io::deephaven::proto::backplane::grpc::SeekRowResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_SeekRow_, context, request, response);
+}
+
+void TableService::Stub::async::SeekRow(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::SeekRowRequest, ::io::deephaven::proto::backplane::grpc::SeekRowResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SeekRow_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::async::SeekRow(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SeekRow_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::SeekRowResponse>* TableService::Stub::PrepareAsyncSeekRowRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::SeekRowResponse, ::io::deephaven::proto::backplane::grpc::SeekRowRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_SeekRow_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::SeekRowResponse>* TableService::Stub::AsyncSeekRowRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncSeekRowRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 TableService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       TableService_method_names[0],
@@ -897,16 +1022,6 @@ TableService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       TableService_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
-          [](TableService::Service* service,
-             ::grpc::ServerContext* ctx,
-             const ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest* req,
-             ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
-               return service->FetchPandasTable(ctx, req, resp);
-             }, this)));
-  AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[3],
-      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
              ::grpc::ServerContext* ctx,
@@ -915,7 +1030,7 @@ TableService::Service::Service() {
                return service->ApplyPreviewColumns(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[4],
+      TableService_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::EmptyTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -925,7 +1040,7 @@ TableService::Service::Service() {
                return service->EmptyTable(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[5],
+      TableService_method_names[4],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::TimeTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -935,7 +1050,7 @@ TableService::Service::Service() {
                return service->TimeTable(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[6],
+      TableService_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::DropColumnsRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -945,7 +1060,7 @@ TableService::Service::Service() {
                return service->DropColumns(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[7],
+      TableService_method_names[6],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -955,7 +1070,7 @@ TableService::Service::Service() {
                return service->Update(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[8],
+      TableService_method_names[7],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -965,7 +1080,7 @@ TableService::Service::Service() {
                return service->LazyUpdate(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[9],
+      TableService_method_names[8],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -975,7 +1090,7 @@ TableService::Service::Service() {
                return service->View(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[10],
+      TableService_method_names[9],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -985,7 +1100,7 @@ TableService::Service::Service() {
                return service->UpdateView(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[11],
+      TableService_method_names[10],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -993,6 +1108,16 @@ TableService::Service::Service() {
              const ::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest* req,
              ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
                return service->Select(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[11],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::UpdateByRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::UpdateByRequest* req,
+             ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
+               return service->UpdateBy(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       TableService_method_names[12],
@@ -1157,6 +1282,26 @@ TableService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       TableService_method_names[28],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::AggregateAllRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::AggregateAllRequest* req,
+             ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
+               return service->AggregateAll(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[29],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::AggregateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::AggregateRequest* req,
+             ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
+               return service->Aggregate(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[30],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
              ::grpc::ServerContext* ctx,
@@ -1165,7 +1310,17 @@ TableService::Service::Service() {
                return service->Snapshot(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[29],
+      TableService_method_names[31],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* req,
+             ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
+               return service->SnapshotWhen(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[32],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::FlattenRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -1175,7 +1330,7 @@ TableService::Service::Service() {
                return service->Flatten(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[30],
+      TableService_method_names[33],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -1185,7 +1340,7 @@ TableService::Service::Service() {
                return service->RunChartDownsample(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[31],
+      TableService_method_names[34],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -1195,7 +1350,17 @@ TableService::Service::Service() {
                return service->CreateInputTable(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[32],
+      TableService_method_names[35],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::WhereInRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::WhereInRequest* req,
+             ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
+               return service->WhereIn(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[36],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::BatchTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
           [](TableService::Service* service,
@@ -1205,7 +1370,7 @@ TableService::Service::Service() {
                return service->Batch(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[33],
+      TableService_method_names[37],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::ExportedTableUpdatesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>(
           [](TableService::Service* service,
@@ -1213,6 +1378,16 @@ TableService::Service::Service() {
              const ::io::deephaven::proto::backplane::grpc::ExportedTableUpdatesRequest* req,
              ::grpc::ServerWriter<::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>* writer) {
                return service->ExportedTableUpdates(ctx, req, writer);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[38],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SeekRowRequest, ::io::deephaven::proto::backplane::grpc::SeekRowResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* req,
+             ::io::deephaven::proto::backplane::grpc::SeekRowResponse* resp) {
+               return service->SeekRow(ctx, req, resp);
              }, this)));
 }
 
@@ -1227,13 +1402,6 @@ TableService::Service::~Service() {
 }
 
 ::grpc::Status TableService::Service::FetchTable(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::FetchTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
-  (void) context;
-  (void) request;
-  (void) response;
-  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-}
-
-::grpc::Status TableService::Service::FetchPandasTable(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
   (void) context;
   (void) request;
   (void) response;
@@ -1297,6 +1465,13 @@ TableService::Service::~Service() {
 }
 
 ::grpc::Status TableService::Service::Select(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status TableService::Service::UpdateBy(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::UpdateByRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
   (void) context;
   (void) request;
   (void) response;
@@ -1415,7 +1590,28 @@ TableService::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
+::grpc::Status TableService::Service::AggregateAll(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateAllRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status TableService::Service::Aggregate(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::AggregateRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
 ::grpc::Status TableService::Service::Snapshot(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status TableService::Service::SnapshotWhen(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
   (void) context;
   (void) request;
   (void) response;
@@ -1443,6 +1639,13 @@ TableService::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
+::grpc::Status TableService::Service::WhereIn(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::WhereInRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
 ::grpc::Status TableService::Service::Batch(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::BatchTableRequest* request, ::grpc::ServerWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* writer) {
   (void) context;
   (void) request;
@@ -1454,6 +1657,13 @@ TableService::Service::~Service() {
   (void) context;
   (void) request;
   (void) writer;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status TableService::Service::SeekRow(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::SeekRowRequest* request, ::io::deephaven::proto::backplane::grpc::SeekRowResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 

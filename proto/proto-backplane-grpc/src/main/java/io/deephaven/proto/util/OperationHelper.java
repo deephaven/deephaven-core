@@ -80,8 +80,6 @@ public class OperationHelper {
                 return Stream.of(op.getRunChartDownsample().getSourceId());
             case FETCH_TABLE:
                 return Stream.of(op.getFetchTable().getSourceId());
-            case FETCH_PANDAS_TABLE:
-                return Stream.of(op.getFetchPandasTable().getSourceId());
             case APPLY_PREVIEW_COLUMNS:
                 return Stream.of(op.getApplyPreviewColumns().getSourceId());
             case CREATE_INPUT_TABLE:

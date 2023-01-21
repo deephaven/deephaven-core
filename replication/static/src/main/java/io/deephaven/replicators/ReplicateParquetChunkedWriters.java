@@ -39,8 +39,8 @@ public class ReplicateParquetChunkedWriters {
                 "final int currentCapacity",
                 "final int currentPosition",
                 "final int targetPageSize",
-                "int requiredCapacity",
                 "int newCapacity",
+                "MAXIMUM_TOTAL_CAPACITY <= Integer.MAX_VALUE / 2",
                 "int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE")
                 .forEach(ReplicateParquetChunkedWriters::injectIntBuffer);
     }

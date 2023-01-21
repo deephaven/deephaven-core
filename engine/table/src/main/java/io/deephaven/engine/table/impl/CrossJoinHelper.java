@@ -177,7 +177,8 @@ public class CrossJoinHelper {
 
                     return makeResult(leftTable, rightTable, columnsToAdd, resultStateManager,
                             resultRowSet.toTracking(),
-                            cs -> new CrossJoinRightColumnSource<>(resultStateManager, cs, rightTable.isRefreshing()));
+                            cs -> CrossJoinRightColumnSource.maybeWrap(
+                                    resultStateManager, cs, rightTable.isRefreshing()));
                 }
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
@@ -190,7 +191,7 @@ public class CrossJoinHelper {
                 final TrackingWritableRowSet resultRowSet =
                         jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources).toTracking();
                 final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                        cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
+                        cs -> CrossJoinRightColumnSource.maybeWrap(jsm, cs, rightTable.isRefreshing()));
 
                 jsm.startTrackingPrevValues();
                 final ModifiedColumnSet.Transformer leftTransformer = leftTable.newModifiedColumnSetTransformer(
@@ -290,7 +291,7 @@ public class CrossJoinHelper {
             final TrackingWritableRowSet resultRowSet = jsm.build(leftTable, rightTable).toTracking();
 
             final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                    cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
+                    cs -> CrossJoinRightColumnSource.maybeWrap(jsm, cs, rightTable.isRefreshing()));
 
             final ModifiedColumnSet.Transformer rightTransformer =
                     rightTable.newModifiedColumnSetTransformer(resultTable, columnsToAdd);
@@ -1045,7 +1046,7 @@ public class CrossJoinHelper {
         }
 
         final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, crossJoinState, resultRowSet,
-                cs -> new BitMaskingColumnSource<>(crossJoinState, cs));
+                cs -> BitMaskingColumnSource.maybeWrap(crossJoinState, cs));
 
         if (leftTable.isRefreshing() || rightTable.isRefreshing()) {
             crossJoinState.startTrackingPrevious();
@@ -1409,8 +1410,7 @@ public class CrossJoinHelper {
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
 
         for (final Map.Entry<String, ColumnSource<?>> leftColumn : leftTable.getColumnSourceMap().entrySet()) {
-            final BitShiftingColumnSource<?> wrappedSource =
-                    new BitShiftingColumnSource<>(joinState, leftColumn.getValue());
+            final ColumnSource<?> wrappedSource = BitShiftingColumnSource.maybeWrap(joinState, leftColumn.getValue());
             columnSourceMap.put(leftColumn.getKey(), wrappedSource);
         }
 

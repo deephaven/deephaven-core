@@ -35,9 +35,8 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator
 
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {
-            // noinspection unchecked
-            resultColumns.put(mp.leftColumn(),
-                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
+            resultColumns.put(mp.leftColumn(), RedirectedColumnSource.maybeRedirect(
+                    rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
         }
         if (exposeRedirectionAs != null) {
             resultColumns.put(exposeRedirectionAs, redirections);

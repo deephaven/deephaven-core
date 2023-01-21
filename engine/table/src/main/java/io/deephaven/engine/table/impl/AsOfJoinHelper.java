@@ -1528,8 +1528,9 @@ public class AsOfJoinHelper {
             MatchPair[] columnsToAdd, boolean refreshing) {
         final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         Arrays.stream(columnsToAdd).forEach(mp -> {
-            final RedirectedColumnSource<?> rightSource =
-                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
+            // note that we must always redirect the right-hand side, because unmatched rows will be redirected to null
+            final ColumnSource<?> rightSource =
+                    RedirectedColumnSource.alwaysRedirect(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
             if (refreshing) {
                 rightSource.startTrackingPrevValues();
             }

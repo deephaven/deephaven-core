@@ -27,8 +27,6 @@ type TableServiceClient interface {
 	GetExportedTableCreationResponse(ctx context.Context, in *ticket.Ticket, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Fetches a Table from an existing source ticket and exports it to the local session result ticket.
 	FetchTable(ctx context.Context, in *FetchTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	// Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-	FetchPandasTable(ctx context.Context, in *FetchPandasTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Create a table that has preview columns applied to an existing source table.
 	ApplyPreviewColumns(ctx context.Context, in *ApplyPreviewColumnsRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Create an empty table with the given column names and types.
@@ -127,6 +125,8 @@ type TableServiceClient interface {
 	// exports have sent their refresh update. Table updates may be intermingled with initial refresh updates after their
 	// initial update had been sent.
 	ExportedTableUpdates(ctx context.Context, in *ExportedTableUpdatesRequest, opts ...grpc.CallOption) (TableService_ExportedTableUpdatesClient, error)
+	// Seek a row number within a table.
+	SeekRow(ctx context.Context, in *SeekRowRequest, opts ...grpc.CallOption) (*SeekRowResponse, error)
 }
 
 type tableServiceClient struct {
@@ -149,15 +149,6 @@ func (c *tableServiceClient) GetExportedTableCreationResponse(ctx context.Contex
 func (c *tableServiceClient) FetchTable(ctx context.Context, in *FetchTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/FetchTable", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *tableServiceClient) FetchPandasTable(ctx context.Context, in *FetchPandasTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
-	out := new(ExportedTableCreationResponse)
-	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -535,6 +526,15 @@ func (x *tableServiceExportedTableUpdatesClient) Recv() (*ExportedTableUpdateMes
 	return m, nil
 }
 
+func (c *tableServiceClient) SeekRow(ctx context.Context, in *SeekRowRequest, opts ...grpc.CallOption) (*SeekRowResponse, error) {
+	out := new(SeekRowResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/SeekRow", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TableServiceServer is the server API for TableService service.
 // All implementations must embed UnimplementedTableServiceServer
 // for forward compatibility
@@ -543,8 +543,6 @@ type TableServiceServer interface {
 	GetExportedTableCreationResponse(context.Context, *ticket.Ticket) (*ExportedTableCreationResponse, error)
 	// Fetches a Table from an existing source ticket and exports it to the local session result ticket.
 	FetchTable(context.Context, *FetchTableRequest) (*ExportedTableCreationResponse, error)
-	// Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-	FetchPandasTable(context.Context, *FetchPandasTableRequest) (*ExportedTableCreationResponse, error)
 	// Create a table that has preview columns applied to an existing source table.
 	ApplyPreviewColumns(context.Context, *ApplyPreviewColumnsRequest) (*ExportedTableCreationResponse, error)
 	// Create an empty table with the given column names and types.
@@ -643,6 +641,8 @@ type TableServiceServer interface {
 	// exports have sent their refresh update. Table updates may be intermingled with initial refresh updates after their
 	// initial update had been sent.
 	ExportedTableUpdates(*ExportedTableUpdatesRequest, TableService_ExportedTableUpdatesServer) error
+	// Seek a row number within a table.
+	SeekRow(context.Context, *SeekRowRequest) (*SeekRowResponse, error)
 	mustEmbedUnimplementedTableServiceServer()
 }
 
@@ -655,9 +655,6 @@ func (UnimplementedTableServiceServer) GetExportedTableCreationResponse(context.
 }
 func (UnimplementedTableServiceServer) FetchTable(context.Context, *FetchTableRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchTable not implemented")
-}
-func (UnimplementedTableServiceServer) FetchPandasTable(context.Context, *FetchPandasTableRequest) (*ExportedTableCreationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FetchPandasTable not implemented")
 }
 func (UnimplementedTableServiceServer) ApplyPreviewColumns(context.Context, *ApplyPreviewColumnsRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplyPreviewColumns not implemented")
@@ -767,6 +764,9 @@ func (UnimplementedTableServiceServer) Batch(*BatchTableRequest, TableService_Ba
 func (UnimplementedTableServiceServer) ExportedTableUpdates(*ExportedTableUpdatesRequest, TableService_ExportedTableUpdatesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ExportedTableUpdates not implemented")
 }
+func (UnimplementedTableServiceServer) SeekRow(context.Context, *SeekRowRequest) (*SeekRowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SeekRow not implemented")
+}
 func (UnimplementedTableServiceServer) mustEmbedUnimplementedTableServiceServer() {}
 
 // UnsafeTableServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -812,24 +812,6 @@ func _TableService_FetchTable_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TableServiceServer).FetchTable(ctx, req.(*FetchTableRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TableService_FetchPandasTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FetchPandasTableRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TableServiceServer).FetchPandasTable(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TableServiceServer).FetchPandasTable(ctx, req.(*FetchPandasTableRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1488,6 +1470,24 @@ func (x *tableServiceExportedTableUpdatesServer) Send(m *ExportedTableUpdateMess
 	return x.ServerStream.SendMsg(m)
 }
 
+func _TableService_SeekRow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SeekRowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).SeekRow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/SeekRow",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).SeekRow(ctx, req.(*SeekRowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TableService_ServiceDesc is the grpc.ServiceDesc for TableService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1502,10 +1502,6 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FetchTable",
 			Handler:    _TableService_FetchTable_Handler,
-		},
-		{
-			MethodName: "FetchPandasTable",
-			Handler:    _TableService_FetchPandasTable_Handler,
 		},
 		{
 			MethodName: "ApplyPreviewColumns",
@@ -1642,6 +1638,10 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "WhereIn",
 			Handler:    _TableService_WhereIn_Handler,
+		},
+		{
+			MethodName: "SeekRow",
+			Handler:    _TableService_SeekRow_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -21,7 +21,6 @@ import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
-import io.deephaven.proto.backplane.grpc.FetchPandasTableRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;
@@ -68,17 +67,6 @@ public interface TableServiceContextualAuthWiring {
      * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke FetchTable
      */
     void checkPermissionFetchTable(AuthContext authContext, FetchTableRequest request,
-            List<Table> sourceTables);
-
-    /**
-     * Authorize a request to FetchPandasTable.
-     *
-     * @param authContext the authentication context of the request
-     * @param request the request to authorize
-     * @param sourceTables the operation's source tables
-     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke FetchPandasTable
-     */
-    void checkPermissionFetchPandasTable(AuthContext authContext, FetchPandasTableRequest request,
             List<Table> sourceTables);
 
     /**
@@ -473,9 +461,6 @@ public interface TableServiceContextualAuthWiring {
         public void checkPermissionFetchTable(AuthContext authContext, FetchTableRequest request,
                 List<Table> sourceTables) {}
 
-        public void checkPermissionFetchPandasTable(AuthContext authContext,
-                FetchPandasTableRequest request, List<Table> sourceTables) {}
-
         public void checkPermissionApplyPreviewColumns(AuthContext authContext,
                 ApplyPreviewColumnsRequest request, List<Table> sourceTables) {}
 
@@ -590,11 +575,6 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionFetchTable(AuthContext authContext, FetchTableRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
-        }
-
-        public void checkPermissionFetchPandasTable(AuthContext authContext,
-                FetchPandasTableRequest request, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
@@ -788,13 +768,6 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionFetchTable(authContext, request, sourceTables);
-            }
-        }
-
-        public void checkPermissionFetchPandasTable(AuthContext authContext,
-                FetchPandasTableRequest request, List<Table> sourceTables) {
-            if (delegate != null) {
-                delegate.checkPermissionFetchPandasTable(authContext, request, sourceTables);
             }
         }
 

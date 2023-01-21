@@ -23,11 +23,6 @@ service TableService {
   rpc FetchTable(FetchTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-   */
-  rpc FetchPandasTable(FetchPandasTableRequest) returns (ExportedTableCreationResponse) {}
-
-  /*
    * Create a table that has preview columns applied to an existing source table.
    */
   rpc ApplyPreviewColumns(ApplyPreviewColumnsRequest) returns (ExportedTableCreationResponse) {}
@@ -229,6 +224,11 @@ service TableService {
    * initial update had been sent.
    */
   rpc ExportedTableUpdates(ExportedTableUpdatesRequest) returns (stream ExportedTableUpdateMessage) {}
+
+  /*
+   * Seek a row number within a table.
+   */
+  rpc SeekRow(SeekRowRequest) returns (SeekRowResponse) {}
 }
 
 message TableReference {
@@ -267,11 +267,6 @@ message FetchTableRequest {
 }
 
 message ApplyPreviewColumnsRequest {
-  TableReference source_id = 1;
-  Ticket result_id = 2;
-}
-
-message FetchPandasTableRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
 }
@@ -863,6 +858,20 @@ message FilterTableRequest {
   repeated Condition filters = 3;
 }
 
+message SeekRowRequest {
+    Ticket source_id = 1;
+    sint64 starting_row = 2 [jstype=JS_STRING];
+    string column_name = 3;
+    Literal seek_value = 4;
+    bool insensitive = 5;
+    bool contains = 6;
+    bool is_backward = 7;
+}
+
+message SeekRowResponse {
+    sint64 result_row = 1 [jstype=JS_STRING];
+}
+
 message Reference {
   string column_name = 1;
 }
@@ -1040,6 +1049,8 @@ message BatchTableRequest {
 
   message Operation {
     reserved 20;
+    reserved 29;
+
     oneof op {
       EmptyTableRequest empty_table = 1;
       TimeTableRequest time_table = 2;
@@ -1068,7 +1079,6 @@ message BatchTableRequest {
       LeftJoinTablesRequest left_join = 26;
       AsOfJoinTablesRequest as_of_join = 27;
       FetchTableRequest fetch_table = 28;
-      FetchPandasTableRequest fetch_pandas_table = 29;
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
       CreateInputTableRequest create_input_table = 31;
       UpdateByRequest update_by = 32;

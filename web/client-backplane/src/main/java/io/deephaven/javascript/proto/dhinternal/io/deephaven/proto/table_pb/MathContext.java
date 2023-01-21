@@ -68,15 +68,15 @@ public class MathContext {
     public static native MathContext.ToObjectReturnType toObject(
             boolean includeInstance, MathContext msg);
 
-    public native double getPrecision();
+    public native int getPrecision();
 
-    public native double getRoundingMode();
+    public native int getRoundingMode();
 
     public native Uint8Array serializeBinary();
 
-    public native void setPrecision(double value);
+    public native void setPrecision(int value);
 
-    public native void setRoundingMode(double value);
+    public native void setRoundingMode(int value);
 
     public native MathContext.ToObjectReturnType0 toObject();
 

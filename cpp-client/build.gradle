@@ -1,3 +1,5 @@
+import io.deephaven.tools.docker.DiffTask
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -6,6 +8,27 @@ plugins {
 }
 
 evaluationDependsOn Docker.registryProject('cpp-client-base')
+
+configurations {
+    cpp {}
+}
+dependencies {
+    cpp project(path: ':proto:proto-backplane-grpc', configuration: 'cpp')
+}
+def protoSourceDir = layout.projectDirectory.dir('deephaven/client/proto')
+def compare = tasks.register('compareProtobuf', DiffTask) {
+    expectedContents.set configurations.cpp
+    actualContents.set protoSourceDir
+    generateTask.set ':cpp-client:updateProtobuf'
+}
+// fail a "check" build if these are out of date
+tasks.getByName('quick').dependsOn(compare)
+
+tasks.register('updateProtobuf', Sync) {
+    finalizedBy compare
+    from configurations.cpp
+    into protoSourceDir
+}
 
 license {
     header rootProject.file('license-header')
@@ -32,6 +55,9 @@ deephavenDocker {
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
+    // Only tested on x86, and we only build dependencies for x86
+    platform = 'linux/amd64'
+
     copyIn {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'

@@ -21,50 +21,50 @@ public interface RoundingModeMap {
     }
 
     @JsProperty(name = "CEILING")
-    double getCEILING();
+    int getCEILING();
 
     @JsProperty(name = "DOWN")
-    double getDOWN();
+    int getDOWN();
 
     @JsProperty(name = "FLOOR")
-    double getFLOOR();
+    int getFLOOR();
 
     @JsProperty(name = "HALF_DOWN")
-    double getHALF_DOWN();
+    int getHALF_DOWN();
 
     @JsProperty(name = "HALF_EVEN")
-    double getHALF_EVEN();
+    int getHALF_EVEN();
 
     @JsProperty(name = "HALF_UP")
-    double getHALF_UP();
+    int getHALF_UP();
 
     @JsProperty(name = "UNNECESSARY")
-    double getUNNECESSARY();
+    int getUNNECESSARY();
 
     @JsProperty(name = "UP")
-    double getUP();
+    int getUP();
 
     @JsProperty(name = "CEILING")
-    void setCEILING(double CEILING);
+    void setCEILING(int CEILING);
 
     @JsProperty(name = "DOWN")
-    void setDOWN(double DOWN);
+    void setDOWN(int DOWN);
 
     @JsProperty(name = "FLOOR")
-    void setFLOOR(double FLOOR);
+    void setFLOOR(int FLOOR);
 
     @JsProperty(name = "HALF_DOWN")
-    void setHALF_DOWN(double HALF_DOWN);
+    void setHALF_DOWN(int HALF_DOWN);
 
     @JsProperty(name = "HALF_EVEN")
-    void setHALF_EVEN(double HALF_EVEN);
+    void setHALF_EVEN(int HALF_EVEN);
 
     @JsProperty(name = "HALF_UP")
-    void setHALF_UP(double HALF_UP);
+    void setHALF_UP(int HALF_UP);
 
     @JsProperty(name = "UNNECESSARY")
-    void setUNNECESSARY(double UNNECESSARY);
+    void setUNNECESSARY(int UNNECESSARY);
 
     @JsProperty(name = "UP")
-    void setUP(double UP);
+    void setUP(int UP);
 }
