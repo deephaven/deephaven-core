@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
  */
 class UpdateByWindowTicks extends UpdateByWindow {
     /** growth rate after the contexts have exceeded the poolable chunk size */
-    public static final double CONTEXT_GROWTH_PERCENTAGE = 0.25;
+    private static final double CONTEXT_GROWTH_PERCENTAGE = 0.25;
     private static final int WINDOW_CHUNK_SIZE = 4096;
     private final long prevUnits;
     private final long fwdUnits;

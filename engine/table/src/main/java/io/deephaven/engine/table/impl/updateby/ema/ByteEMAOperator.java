@@ -45,10 +45,10 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                     // read the value from the values chunk
                     final byte input = byteValueChunk.get(ii);
 
-                    if(input == NULL_BYTE) {
+                    if (input == NULL_BYTE) {
                         handleBadData(this, true, false);
                     } else {
-                        if(curVal == NULL_DOUBLE) {
+                        if (curVal == NULL_DOUBLE) {
                             curVal = input;
                         } else {
                             curVal = alpha * curVal + (oneMinusAlpha * input);
@@ -65,21 +65,19 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                     //noinspection ConstantConditions
                     final boolean isNull = input == NULL_BYTE;
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    if(isNull) {
+                    if (isNull) {
                         handleBadData(this, true, false);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
+                    } else if (curVal == NULL_DOUBLE) {
+                        curVal = input;
+                        lastStamp = timestamp;
                     } else {
-                        if(curVal == NULL_DOUBLE) {
-                            curVal = input;
-                            lastStamp = timestamp;
-                        } else {
-                            final long dt = timestamp - lastStamp;
-                            // alpha is dynamic, based on time
-                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            curVal = alpha * curVal + ((1 - alpha) * input);
-                            lastStamp = timestamp;
-                        }
+                        final long dt = timestamp - lastStamp;
+                        // alpha is dynamic, based on time
+                        final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                        curVal = alpha * curVal + (1 - alpha) * input;
+                        lastStamp = timestamp;
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -108,11 +106,11 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
     /**
      * An operator that computes an EMA from a byte column using an exponential decay function.
      *
-     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param control        defines how to handle {@code null} input values.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
-     *                       measured in ticks, otherwise it is measured in nanoseconds
+     * @param control          defines how to handle {@code null} input values.
+     * @param timeScaleUnits   the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *                         measured in ticks, otherwise it is measured in nanoseconds
      */
     public ByteEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
@@ -123,7 +121,7 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                             final ColumnSource<?> valueSource
                             // region extra-constructor-args
                             // endregion extra-constructor-args
-                            ) {
+    ) {
         super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, rowRedirection);
         this.valueSource = valueSource;
         // region constructor

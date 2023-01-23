@@ -84,8 +84,11 @@ abstract class UpdateByWindow {
 
         @Override
         public void close() {
+            // For efficiency, we occasionally use the source rowsets. Must be careful not to close in these cases
             try (final SafeCloseable ignoredRs1 = affectedRows == sourceRowSet ? null : affectedRows;
-                    final SafeCloseable ignoredRs2 = influencerRows == affectedRows ? null : influencerRows) {
+                    final SafeCloseable ignoredRs2 =
+                            influencerRows == affectedRows || influencerRows == timestampValidRowSet ? null
+                                    : influencerRows) {
             }
             SafeCloseableArray.close(opContext);
             if (inputSources != null) {
