@@ -15,6 +15,9 @@ dependencies {
     implementation project(':web-client-api')
     implementation project(':open-api-lang-parser')
 
+    implementation 'com.vertispan.samples:tsinterop-annotations:1.0-SNAPSHOT'
+    annotationProcessor 'com.vertispan.samples:tsinterop-processor:1.0-SNAPSHOT'
+
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 }
 

@@ -10,6 +10,9 @@ dependencies {
     implementation project(':web-client-backplane')
 
     api 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
+
+    api 'com.vertispan.samples:tsinterop-annotations:1.0-SNAPSHOT'
+    annotationProcessor 'com.vertispan.samples:tsinterop-processor:1.0-SNAPSHOT'
 }
 Classpaths.inheritElemental(project, 'elemental2-core', 'api')
 Classpaths.inheritElemental(project, 'elemental2-promise', 'api')
