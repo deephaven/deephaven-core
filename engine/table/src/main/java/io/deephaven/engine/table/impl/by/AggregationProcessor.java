@@ -892,12 +892,19 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         @FinalDefault
         default void visit(@NotNull final AggSpecWAvg wAvg) {
-            rollupUnsupported("WAvg");
+            // TODO(deephaven-core#3350): AggWAvg support for rollup()
+            rollupUnsupported("WAvg", 3350);
         }
     }
 
     private static void rollupUnsupported(@NotNull final String operationName) {
         throw new UnsupportedOperationException(String.format("Agg%s is not supported for rollup()", operationName));
+    }
+
+    private static void rollupUnsupported(@NotNull final String operationName, int ticket) {
+        throw new UnsupportedOperationException(String.format(
+                "Agg%s is not supported for rollup(), see https://github.com/deephaven/deephaven-core/issues/%d",
+                operationName, ticket));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
