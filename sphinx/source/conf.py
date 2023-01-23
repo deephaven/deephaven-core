@@ -85,16 +85,33 @@ jvm_properties = {
             'deephaven.dataDir': os.path.realpath(workspace),
         }
 
+jvm_options = {
+    '-XX:InitialRAMPercentage=25.0',
+    '-XX:MinRAMPercentage=70.0',
+    '-XX:MaxRAMPercentage=80.0',
+
+    # Allow netty to (reflectively) access java.nio.Buffer fields
+    '--add-opens=java.base/java.nio=ALL-UNNAMED',
+
+    # Allow our hotspot-impl project to access internals
+    '--add-exports=java.management/sun.management=ALL-UNNAMED',
+
+    # Allow our clock-impl project to access internals
+    '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+}
+
 from deephaven_internal import jvm
 jvm.init_jvm(
     jvm_classpath=glob(os.environ.get('DEEPHAVEN_CLASSPATH')),
     jvm_properties=jvm_properties,
+    jvm_options=jvm_options,
 )
 
 import jpy
 py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
 py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
 py_dh_session.getExecutionContext().open()
+
 
 import deephaven
 docs_title = "Deephaven python modules."
