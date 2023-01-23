@@ -3,6 +3,9 @@
  */
 package io.deephaven.base.ringbuffer;
 
+import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.verify.Assert;
+
 import java.io.Serializable;
 import java.util.NoSuchElementException;
 
@@ -15,25 +18,32 @@ import java.util.NoSuchElementException;
 public class CharRingBuffer implements Serializable {
     protected final boolean growable;
     protected char[] storage;
-    protected int head, tail;
+    protected int head, tail, size;
 
     private void grow(int increase) {
         if (growable) {
-            final int size = size();
+            // assert that we are not asking for the impossible
+            Assert.eqTrue(ArrayUtil.MAX_ARRAY_SIZE - increase >= size, "CharRingBuffer size <= MAX_ARRAY_SIZE");
 
-            final int minLength = size + increase + 1;
+            final int minLength = size + increase;
             int newLength = storage.length * 2;
             while (newLength < minLength) {
-                newLength = newLength * 2;
+                newLength = Math.min(newLength * 2, ArrayUtil.MAX_ARRAY_SIZE);
             }
             char[] newStorage = new char[newLength];
-            if (tail >= head) {
-                System.arraycopy(storage, head, newStorage, 0, size);
-            } else {
-                final int firstCopyLen = storage.length - head;
-                System.arraycopy(storage, head, newStorage, 0, firstCopyLen);
-                System.arraycopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
-            }
+
+            // three scenarios: size is zero so nothing to copy, head is before tail so only one copy needed, head
+            // after tail so two copies needed.  Assuming that copying zero bytes is a fast operation, we will always
+            // make two calls for simplicity and branch-prediction friendliness.
+
+            // compute the size of the first copy
+            final int firstCopyLen = Math.min(storage.length - head, size);
+
+            // do the copying
+            System.arraycopy(storage, head, newStorage, 0, firstCopyLen);
+            System.arraycopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
+
+            // reset the pointers
             tail = size;
             head = 0;
             storage = newStorage;
@@ -45,7 +55,7 @@ public class CharRingBuffer implements Serializable {
     }
 
     public boolean isFull() {
-        return (tail + 1) % storage.length == head;
+        return size == storage.length;
     }
 
     /**
@@ -65,28 +75,35 @@ public class CharRingBuffer implements Serializable {
      */
     public CharRingBuffer(int capacity, boolean growable) {
         this.growable = growable;
-        this.storage = new char[capacity + 1];
+        if (growable) {
+            // use next larger power of 2
+            this.storage = new char[Integer.highestOneBit(capacity - 1) << 1];
+        } else {
+            // might as well use exact size and not over-allocate
+            this.storage = new char[capacity];
+        }
+
         this.tail = this.head = 0;
     }
 
     public boolean isEmpty() {
-        return tail == head;
+        return size == 0;
     }
 
     public int size() {
-        return tail >= head ? (tail - head) : (tail + (storage.length - head));
+        return size;
     }
 
     public int capacity() {
-        return storage.length - 1;
+        return storage.length;
     }
 
     public int remaining() {
-        return capacity() - size();
+        return storage.length - size;
     }
 
     public void clear() {
-        tail = head = 0;
+        size = tail = head = 0;
     }
 
     /**
@@ -107,6 +124,7 @@ public class CharRingBuffer implements Serializable {
         }
         storage[tail] = e;
         tail = (tail + 1) % storage.length;
+        size++;
         return true;
     }
 
@@ -137,6 +155,7 @@ public class CharRingBuffer implements Serializable {
     public void addUnsafe(char e) {
         storage[tail] = e;
         tail = (tail + 1) % storage.length;
+        size++;
     }
 
     /**
@@ -153,6 +172,7 @@ public class CharRingBuffer implements Serializable {
         }
         storage[tail] = e;
         tail = (tail + 1) % storage.length;
+        size++;
         return result;
     }
 
@@ -169,11 +189,12 @@ public class CharRingBuffer implements Serializable {
         }
         storage[tail] = e;
         tail = (tail + 1) % storage.length;
+        size++;
         return true;
     }
 
     public char[] remove(int count) {
-        if (size() < count) {
+        if (size < count) {
             throw new NoSuchElementException();
         }
         final char[] result = new char[count];
@@ -186,6 +207,7 @@ public class CharRingBuffer implements Serializable {
             System.arraycopy(storage, 0, result, firstCopyLen, count - firstCopyLen);
         }
         head = (head + count) % storage.length;
+        size -= count;
         return result;
     }
 
@@ -195,12 +217,14 @@ public class CharRingBuffer implements Serializable {
         }
         char e = storage[head];
         head = (head + 1) % storage.length;
+        size--;
         return e;
     }
 
     public char removeUnsafe() {
         char e = storage[head];
         head = (head + 1) % storage.length;
+        size--;
         return e;
     }
 
@@ -210,6 +234,7 @@ public class CharRingBuffer implements Serializable {
         }
         char e = storage[head];
         head = (head + 1) % storage.length;
+        size--;
         return e;
     }
 
@@ -232,7 +257,7 @@ public class CharRingBuffer implements Serializable {
     }
 
     public char front(int offset) {
-        if (offset >= size()) {
+        if (offset >= size) {
             throw new NoSuchElementException();
         }
         return storage[(head + offset) % storage.length];
@@ -260,7 +285,7 @@ public class CharRingBuffer implements Serializable {
         int count = -1;
 
         public boolean hasNext() {
-            return count + 1 < size();
+            return count + 1 < size;
         }
 
         public char next() {
@@ -274,7 +299,7 @@ public class CharRingBuffer implements Serializable {
     }
 
     public char[] getAll() {
-        char[] result = new char[size()];
+        char[] result = new char[size];
         if (result.length > 0) {
             if (tail > head) {
                 System.arraycopy(storage, head, result, 0, tail - head);

@@ -3,6 +3,8 @@
  */
 package io.deephaven.base.ringbuffer;
 
+import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.verify.AssertionFailure;
 import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Test;
@@ -110,7 +112,6 @@ public class CharRingBufferTest extends TestCase {
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
         assertContents(rb, A, B, C);
-        assertFull(rb);
 
         assertRemove(rb, 3, A);
         assertContents(rb, B, C);
@@ -165,7 +166,6 @@ public class CharRingBufferTest extends TestCase {
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
         assertContents(rb, A, B, C);
-        assertFull(rb);
 
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
@@ -190,8 +190,6 @@ public class CharRingBufferTest extends TestCase {
         assertOffer(rb, A, 1, A);
         assertOffer(rb, B, 2, A);
         assertOffer(rb, C, 3, A);
-
-        assertFull(rb);
 
         assertPoll(rb, 3, A);
         assertPoll(rb, 2, B);
@@ -229,10 +227,9 @@ public class CharRingBufferTest extends TestCase {
         assertOffer(rb, A, 1, A);
         assertOffer(rb, B, 2, A);
         assertOffer(rb, C, 3, A);
-        assertFull(rb);
+        assertOffer(rb, D, 4, A);
 
-        assertAdd(rb, D, 4, A); // need one add to grow it
-        assertOffer(rb, E, 5, A); // NOTE: assumes capacity grows by at least a factor of two
+        assertAdd(rb, E, 5, A); // need one add to grow it from 4 to 8
         assertOffer(rb, F, 6, A);
 
         assertPoll(rb, 6, A);
@@ -245,19 +242,21 @@ public class CharRingBufferTest extends TestCase {
     }
 
     public void testGrowSimple() {
-        CharRingBuffer rb = new CharRingBuffer(5);
+        CharRingBuffer rb = new CharRingBuffer(4);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
         assertAdd(rb, D, 4, A);
-        assertAdd(rb, E, 5, A);
         assertFull(rb);
 
-        // this will grow; the elements are in a single contiguous block
-        assertAdd(rb, F, 6, A);
+        // remove one so head != 0
+        assertRemove(rb, 4, A);
 
-        assertRemove(rb, 6, A);
+        assertAdd(rb, E, 4, B);
+        // this will grow; the elements are in a single contiguous block
+        assertAdd(rb, F, 5, B);
+
         assertRemove(rb, 5, B);
         assertRemove(rb, 4, C);
         assertRemove(rb, 3, D);
@@ -282,7 +281,6 @@ public class CharRingBufferTest extends TestCase {
         assertAdd(rb, C, 3, A);
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
-        assertFull(rb);
 
         // this will grow; the elements are in two blocks
         assertAdd(rb, F, 6, A);
@@ -305,7 +303,6 @@ public class CharRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertFull(rb);
 
         iter = rb.iterator();
         assertTrue(iter.hasNext());
@@ -377,7 +374,7 @@ public class CharRingBufferTest extends TestCase {
     }
 
     public void testBackTailIsZero() {
-        CharRingBuffer rb = new CharRingBuffer(5);
+        CharRingBuffer rb = new CharRingBuffer(5, false);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -538,5 +535,20 @@ public class CharRingBufferTest extends TestCase {
                 rbGrow.addUnsafe(A);
             }
         }
+    }
+
+    public void testOverflow() {
+        CharRingBuffer rbA = new CharRingBuffer(0);
+        // this should throw
+        assertThrows(AssertionFailure.class,
+                () -> rbA.ensureRemaining(ArrayUtil.MAX_ARRAY_SIZE + 1));
+
+        CharRingBuffer rbB = new CharRingBuffer(100);
+        for (int i = 0; i < 100; i++) {
+            rbB.addUnsafe(A);
+        }
+        // this should throw
+        assertThrows(AssertionFailure.class,
+                () -> rbB.ensureRemaining(ArrayUtil.MAX_ARRAY_SIZE - 100 + 1));
     }
 }
