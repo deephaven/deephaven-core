@@ -17,8 +17,6 @@ import java.util.Optional;
  */
 public interface ServerConfig {
 
-    int DEFAULT_TOKEN_EXPIRE_MIN = 5;
-
     int DEFAULT_SCHEDULER_POOL_SIZE = 4;
 
     int DEFAULT_MAX_INBOUND_MESSAGE_SIZE_MiB = 100;
@@ -145,12 +143,9 @@ public interface ServerConfig {
     Optional<SSLConfig> outboundSsl();
 
     /**
-     * The token expiration. Defaults to {@value DEFAULT_TOKEN_EXPIRE_MIN} minutes.
+     * The token expiration.
      */
-    @Default
-    default Duration tokenExpire() {
-        return Duration.ofMinutes(DEFAULT_TOKEN_EXPIRE_MIN);
-    }
+    Duration tokenExpire();
 
     /**
      * The scheduler pool size. Defaults to {@value DEFAULT_SCHEDULER_POOL_SIZE}.
