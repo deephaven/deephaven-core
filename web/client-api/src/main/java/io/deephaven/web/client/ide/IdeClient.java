@@ -1,10 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.ide.client;
+package io.deephaven.web.client.ide;
 
 import elemental2.promise.Promise;
-import io.deephaven.ide.shared.IdeSession;
 import io.deephaven.web.client.fu.CancellablePromise;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
