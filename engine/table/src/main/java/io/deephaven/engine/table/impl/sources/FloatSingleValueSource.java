@@ -81,13 +81,6 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_FLOAT);
-        // endregion null set
-    }
-
-    @Override
     public final float getFloat(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;

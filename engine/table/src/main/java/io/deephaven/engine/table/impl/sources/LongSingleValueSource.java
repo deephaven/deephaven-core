@@ -81,13 +81,6 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_LONG);
-        // endregion null set
-    }
-
-    @Override
     public final long getLong(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;

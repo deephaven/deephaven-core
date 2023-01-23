@@ -58,6 +58,11 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
+    public void setNull(long key) {
+        set(key, NULL_LONG);
+    }
+
+    @Override
     public final long getLong(long rowKey) {
         if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_LONG;

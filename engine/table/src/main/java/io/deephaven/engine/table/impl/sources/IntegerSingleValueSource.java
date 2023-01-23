@@ -81,13 +81,6 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_INT);
-        // endregion null set
-    }
-
-    @Override
     public final int getInt(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;

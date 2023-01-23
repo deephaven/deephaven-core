@@ -388,7 +388,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
 
         public void remove(final RowSet toRemove) {
-            expectedSource.remove(toRemove);
+            expectedSource.setNull(toRemove);
         }
 
         private void updateValues(final RowSequence toUpdate, final boolean usePrev) {

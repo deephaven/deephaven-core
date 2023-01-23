@@ -553,7 +553,7 @@ class NaturalJoinHelper {
         @Override
         public void onUpdate(final TableUpdate upstream) {
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-            upstream.removed().forAllRowKeys(rowRedirection::removeVoid);
+            rowRedirection.removeAll(upstream.removed());
 
             try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
                 rowRedirection.applyShift(prevRowSet, upstream.shifted());
@@ -773,7 +773,7 @@ class NaturalJoinHelper {
 
             if (rightIndex == RowSequence.NULL_ROW_KEY) {
                 jsm.checkExactMatch(exactMatch, leftIndices.firstRowKey(), rightIndex);
-                leftIndices.forAllRowKeys(rowRedirection::removeVoid);
+                rowRedirection.removeAll(leftIndices);
             } else {
                 leftIndices.forAllRowKeys((long key) -> rowRedirection.putVoid(key, rightIndex));
             }
@@ -939,7 +939,7 @@ class NaturalJoinHelper {
                         probeSize == 0 ? null : jsm.makeProbeContext(leftSources, probeSize);
                         final Context bc =
                                 buildSize == 0 ? null : jsm.makeBuildContext(leftSources, buildSize)) {
-                    leftRemoved.forAllRowKeys(rowRedirection::removeVoid);
+                    rowRedirection.removeAll(leftRemoved);
                     jsm.removeLeft(pc, leftRemoved, leftSources);
 
                     final RowSet leftModifiedPreShift;
@@ -952,7 +952,7 @@ class NaturalJoinHelper {
 
                         // remove pre-shift modified
                         jsm.removeLeft(pc, leftModifiedPreShift, leftSources);
-                        leftModifiedPreShift.forAllRowKeys(rowRedirection::removeVoid);
+                        rowRedirection.removeAll(leftModifiedPreShift);
                     } else {
                         leftModifiedPreShift = null;
                     }

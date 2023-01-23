@@ -116,13 +116,18 @@ public final class IntColumnSourceWritableRowRedirection implements WritableRowR
         if (previous == QueryConstants.NULL_INT) {
             return RowSequence.NULL_ROW_KEY;
         }
-        columnSource.set(outerRowKey, QueryConstants.NULL_INT);
+        columnSource.setNull(outerRowKey);
         return previous;
     }
 
     @Override
     public void removeVoid(long outerRowKey) {
-        columnSource.set(outerRowKey, QueryConstants.NULL_INT);
+        columnSource.setNull(outerRowKey);
+    }
+
+    @Override
+    public void removeAll(RowSequence rowSequence) {
+        columnSource.setNull(rowSequence);
     }
 
     @Override

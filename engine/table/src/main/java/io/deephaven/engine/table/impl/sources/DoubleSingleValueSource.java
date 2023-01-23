@@ -81,13 +81,6 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_DOUBLE);
-        // endregion null set
-    }
-
-    @Override
     public final double getDouble(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
