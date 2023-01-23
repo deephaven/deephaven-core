@@ -12,6 +12,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
@@ -42,7 +43,7 @@ public class BarrageStreamReader implements StreamReader {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
 
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
-    private static final int MAX_CHUNK_SIZE = Integer.MAX_VALUE - 8;
+    private static final int MAX_CHUNK_SIZE = ArrayUtil.MAX_ARRAY_SIZE;
 
     private final LongConsumer deserializeTmConsumer;
 
