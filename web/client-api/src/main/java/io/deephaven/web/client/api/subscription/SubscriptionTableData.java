@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.subscription;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.web.client.api.*;
@@ -446,6 +448,8 @@ public class SubscriptionTableData {
         return created;
     }
 
+    @TsInterface
+    @TsName(namespace = "dh")
     public class SubscriptionRow implements TableData.Row {
         private final long index;
         public LongWrapper indexCached;
@@ -504,6 +508,8 @@ public class SubscriptionTableData {
      * Event data, describing the indexes that were added/removed/updated, and providing access to Rows (and thus data
      * in columns) either by index, or scanning the complete present index.
      */
+    @TsInterface
+    @TsName(namespace = "dh")
     public class UpdateEventData implements TableData {
         private JsRangeSet added;
         private JsRangeSet removed;

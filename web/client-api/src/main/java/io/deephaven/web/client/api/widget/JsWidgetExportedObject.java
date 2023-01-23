@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.widget;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
@@ -15,6 +17,8 @@ import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh", name = "WidgetExportedObject")
 public class JsWidgetExportedObject {
     private final WorkerConnection connection;
 

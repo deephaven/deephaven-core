@@ -3,8 +3,11 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import jsinterop.annotations.JsMethod;
 
+@TsName(namespace = "dh", name = "LongWrapper")
 public class LongWrapper {
     private final long value;
 

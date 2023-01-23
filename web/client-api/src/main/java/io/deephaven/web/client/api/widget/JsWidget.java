@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.widget;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
@@ -13,6 +15,8 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh", name = "Widget")
 public class JsWidget {
     private final WorkerConnection connection;
     private final WidgetFetch fetch;

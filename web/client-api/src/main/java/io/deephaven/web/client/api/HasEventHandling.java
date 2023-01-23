@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.dom.CustomEvent;
@@ -23,6 +25,8 @@ import jsinterop.base.JsPropertyMap;
 
 /**
  */
+@TsInterface
+@TsName(namespace = "dh")
 public class HasEventHandling {
 
     @JsProperty(namespace = "dh.Client")

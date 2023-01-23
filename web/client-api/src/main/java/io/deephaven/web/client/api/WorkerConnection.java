@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
@@ -129,6 +131,8 @@ import static io.deephaven.web.client.api.barrage.WebBarrageUtils.*;
  * Responsible for reconnecting to the query server when required - when that server disappears, and at least one table
  * is left un-closed.
  */
+@TsName(namespace = "dh.internal")
+@TsInterface
 public class WorkerConnection {
     private static final boolean useWebsockets;
 

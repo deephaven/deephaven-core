@@ -3,13 +3,19 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
+import com.vertispan.samples.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsTable;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 
 import java.util.Map;
 
+@TsInterface
+@TsName(namespace = "dh.plot")
 public class SeriesDataSource {
     private final JsAxis axis;
     private final SourceDescriptor sourceDescriptor;
@@ -52,9 +58,11 @@ public class SeriesDataSource {
         return sourceDescriptor;
     }
 
+    @JsType(namespace = "dh.plot")
     public class SeriesDataSourceException extends RuntimeException {
         private SeriesDataSource source;
 
+        @JsIgnore
         SeriesDataSourceException(SeriesDataSource source, String message) {
             super(message);
 

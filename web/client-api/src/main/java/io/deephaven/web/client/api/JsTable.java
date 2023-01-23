@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -75,6 +77,8 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * TODO provide hooks into the event handlers so we can see if no one is listening any more and release the table
  * handle/viewport.
  */
+//@TsInterface
+@TsName(namespace = "dh", name = "Table")
 public class JsTable extends HasEventHandling implements HasTableBinding, HasLifecycle {
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_SIZECHANGED = "sizechanged",

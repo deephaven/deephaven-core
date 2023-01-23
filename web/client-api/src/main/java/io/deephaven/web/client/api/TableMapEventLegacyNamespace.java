@@ -9,6 +9,7 @@ import jsinterop.annotations.JsProperty;
  * Exists to keep the dh.TableMap namespace so that the web UI can remain compatible with the DHE API, which still calls
  * this type TableMap.
  */
+@Deprecated
 public class TableMapEventLegacyNamespace {
     @JsProperty(namespace = "dh.TableMap")
 

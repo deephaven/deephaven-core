@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
 import elemental2.promise.Promise;
@@ -22,6 +24,8 @@ import jsinterop.base.Js;
  * A new config is returned any time it is accessed, to prevent accidental mutation, and to allow it to be used as a
  * template when fetching a new totals table, or changing the totals table in use.
  */
+@TsInterface
+@TsName(namespace = "dh", name = "TotalsTable")
 public class JsTotalsTable {
     private final JsTable wrappedTable;
     private final String directive;

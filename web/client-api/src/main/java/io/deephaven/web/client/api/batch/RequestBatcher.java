@@ -20,7 +20,6 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.MappedIterable;
-import jsinterop.annotations.JsMethod;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
@@ -376,7 +375,6 @@ public class RequestBatcher {
         // any batches that depend on us must also be failed / cancelled...
     }
 
-    @JsMethod
     public void setSort(Sort[] newSort) {
         builder.setSort(Arrays.asList(newSort));
     }
@@ -385,7 +383,6 @@ public class RequestBatcher {
         builder.setSort(newSort);
     }
 
-    @JsMethod
     public void setFilter(FilterCondition[] newFilter) {
         builder.setFilter(Arrays.asList(newFilter));
     }
@@ -394,7 +391,6 @@ public class RequestBatcher {
         builder.setFilter(newFilter);
     }
 
-    @JsMethod
     public void setCustomColumns(String[] newColumns) {
         builder.setCustomColumns(CustomColumnDescriptor.from(newColumns));
     }
@@ -403,7 +399,6 @@ public class RequestBatcher {
         builder.setCustomColumns(newColumns);
     }
 
-    @JsMethod
     public void setFlat(boolean isFlat) {
         builder.setFlat(isFlat);
     }

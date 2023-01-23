@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.tree;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
@@ -70,6 +72,7 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  *
  * The table size will be -1 until a viewport has been fetched.
  */
+@TsName(namespace = "dh", name = "TreeTable")
 public class JsTreeTable extends HasEventHandling {
     @JsProperty(namespace = "dh.TreeTable")
     public static final String EVENT_UPDATED = "updated",
@@ -108,6 +111,8 @@ public class JsTreeTable extends HasEventHandling {
         }
     }
 
+    @TsInterface
+    @TsName(namespace = "dh")
     class TreeViewportData {
         private final Boolean[] expandedColumn;
         private final int[] depthColumn;

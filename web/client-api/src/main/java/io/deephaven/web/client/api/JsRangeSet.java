@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsName;
 import io.deephaven.web.client.fu.JsIterator;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
@@ -16,6 +17,7 @@ import java.util.stream.StreamSupport;
 /**
  * Simple wrapper to emulate RangeSet/Index in JS, with the caveat that LongWrappers may make poor keys in plain JS.
  */
+@TsName(namespace = "dh", name = "RangeSet")
 public class JsRangeSet {
     private final RangeSet range;
 

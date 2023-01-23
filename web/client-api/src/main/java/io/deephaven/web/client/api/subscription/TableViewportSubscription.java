@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.subscription;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
@@ -67,6 +69,8 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * Note that if the caller does close an instance, this shuts down the JsTable's use of this (while the converse is not
  * true), providing a way to stop the server from streaming updates to the client.
  */
+@TsInterface
+@TsName(namespace = "dh")
 public class TableViewportSubscription extends HasEventHandling {
     /**
      * Describes the possible lifecycle of the viewport as far as anything external cares about it

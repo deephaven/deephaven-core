@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsObject;
 import jsinterop.annotations.JsProperty;
 
@@ -11,8 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@TsInterface
+@TsName(namespace = "dh")
 public class JsLayoutHints {
-    private class ColumnGroup {
+    @TsInterface
+    @TsName(namespace = "dh")
+    public static class ColumnGroup {
         @JsProperty
         public String name;
         @JsProperty

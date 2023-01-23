@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api.subscription;
 
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.Column;
@@ -22,6 +23,7 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * "private" table instance does, since the original cannot modify the subscription, and the private instance must
  * forward data to it.
  */
+@TsName(namespace = "dh")
 public class TableSubscription extends HasEventHandling {
 
     @JsProperty(namespace = "dh.TableSubscription")

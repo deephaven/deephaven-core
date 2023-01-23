@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.samples.annotations.TsInterface;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SeriesDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
@@ -16,7 +17,8 @@ import jsinterop.annotations.JsType;
 import java.util.Arrays;
 import java.util.Map;
 
-@JsType
+@TsInterface
+@JsType(namespace = "dh.plot", name = "Series")
 public class JsSeries {
 
     private final SeriesDescriptor descriptor;

@@ -3,12 +3,15 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
+@TsName(namespace = "dh")
 public interface TableData {
     @JsProperty
     JsArray<Column> getColumns();

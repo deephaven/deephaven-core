@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
@@ -16,7 +18,6 @@ import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.ConnectToken;
-import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -35,6 +36,8 @@ import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
  * JS-exposed supertype handling details about connecting to a deephaven query worker. Wraps the WorkerConnection
  * instance, which manages the connection to the API server.
  */
+@TsName(namespace = "dh.internal")
+@TsInterface
 public abstract class QueryConnectable<Self extends QueryConnectable<Self>> extends HasEventHandling {
     public interface AuthTokenPromiseSupplier extends Supplier<Promise<ConnectToken>> {
         default AuthTokenPromiseSupplier withInitialToken(ConnectToken initialToken) {

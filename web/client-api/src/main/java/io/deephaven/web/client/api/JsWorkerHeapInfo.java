@@ -1,8 +1,12 @@
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetHeapInfoResponse;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh")
 public class JsWorkerHeapInfo {
     private long maximumHeapSize;
     private long freeMemory;

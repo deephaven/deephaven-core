@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
@@ -11,7 +13,8 @@ import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
-@JsType
+@TsInterface
+@TsName(namespace = "dh.plot", name = "Axis")
 public class JsAxis {
     private final AxisDescriptor axis;
     private final JsFigure jsFigure;
@@ -21,7 +24,6 @@ public class JsAxis {
     private Long min;
     private Long max;
 
-    @JsIgnore
     public JsAxis(AxisDescriptor descriptor, JsFigure jsFigure) {
         this.axis = descriptor;
         this.jsFigure = jsFigure;
@@ -193,7 +195,6 @@ public class JsAxis {
         jsFigure.updateDownsampleRange(axis, this.pixels, this.min, this.max);
     }
 
-    @JsIgnore
     public AxisDescriptor getDescriptor() {
         return this.axis;
     }

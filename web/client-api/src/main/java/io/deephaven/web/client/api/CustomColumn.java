@@ -3,11 +3,13 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsName;
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.JsPropertyMap;
 
+@TsName(namespace = "dh")
 public class CustomColumn {
     @JsProperty(namespace = "dh.CustomColumn")
     public static final String TYPE_FORMAT_COLOR = "FORMAT_COLOR",

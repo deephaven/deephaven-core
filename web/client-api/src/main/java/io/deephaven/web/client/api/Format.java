@@ -3,10 +3,14 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsNumber;
 import elemental2.core.JsString;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh")
 public class Format {
     private final long cellColors;
     private final long rowColors;
@@ -64,7 +68,7 @@ public class Format {
 
 
     /**
-     * @deprecated Prefer {@link #getFormatString()}.
+     * @deprecated Prefer formatString.
      */
     @Deprecated
     @JsProperty

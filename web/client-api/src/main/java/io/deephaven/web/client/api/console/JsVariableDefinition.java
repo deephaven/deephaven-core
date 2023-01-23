@@ -3,9 +3,13 @@
  */
 package io.deephaven.web.client.api.console;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh.ide", name = "VariableDefinition")
 public class JsVariableDefinition {
     private static final String JS_UNAVAILABLE = "js-constructed-not-available";
 

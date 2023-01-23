@@ -3,10 +3,12 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsDate;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import jsinterop.annotations.JsMethod;
 
+@TsName(namespace = "dh")
 public class DateWrapper extends LongWrapper {
     public DateWrapper(long valueInNanos) {
         super(valueInNanos);

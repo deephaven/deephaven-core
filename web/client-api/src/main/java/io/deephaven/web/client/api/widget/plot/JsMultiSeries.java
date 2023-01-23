@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
@@ -13,6 +15,8 @@ import jsinterop.annotations.JsProperty;
 import java.util.Collections;
 import java.util.Map;
 
+@TsInterface
+@TsName(namespace = "dh.plot")
 public class JsMultiSeries {
     private final MultiSeriesDescriptor descriptor;
     private final JsFigure figure;

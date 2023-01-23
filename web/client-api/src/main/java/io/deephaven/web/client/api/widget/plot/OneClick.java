@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import elemental2.dom.CustomEventInit;
@@ -13,11 +15,14 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.Arrays;
 
+@TsInterface
+@TsName(namespace = "dh.plot")
 public class OneClick {
     private final JsFigure jsFigure;
     private final OneClickDescriptor oneClick;

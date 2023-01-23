@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api.subscription;
 
+import com.vertispan.samples.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import io.deephaven.web.client.api.*;
@@ -20,6 +21,7 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator.OfLong;
 import java.util.Set;
 
+@TsName(namespace = "dh")
 public class ViewportData implements TableData {
     private static final Any NULL_SENTINEL = Js.asAny(new JsObject());
 
