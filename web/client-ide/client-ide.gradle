@@ -1,9 +1,6 @@
 plugins {
-    id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
 }
-
-evaluationDependsOn Docker.registryProject('nginx-noroot-base')
 
 apply from: "$rootDir/gradle/web-client.gradle"
 
