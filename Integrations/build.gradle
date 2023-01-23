@@ -67,8 +67,18 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // set up the container, env vars - things that aren't likely to change
             from 'deephaven/server-netty:local-build'
             runCommand '''set -eux; \\
-                      pip3 install pyarrow unittest-xml-reporting==3.0.4;\\
-                      mkdir -p /out/report'''
+                      pip3 install unittest-xml-reporting==3.0.4; \\
+                      mkdir -p /out/report; \\
+					  apt-get -qq update; \\
+					  apt-get -qq -y install odbc-postgresql; \\
+					  apt-get -qq -y install g++ libboost-all-dev unixodbc-dev; \\
+					  pip3 install turbodbc; \\
+					  pip3 install adbc-driver-manager adbc-driver-postgresql; \\
+					  echo "[PostgreSQL]" > /etc/odbcinst.ini; \\
+					  echo "Driver      = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so" >> /etc/odbcinst.ini; \\
+					  echo "Threading   = 2" >> /etc/odbcinst.ini'''
+
+//            apt-get install odbc-postgresql
             volume '/data'
             volume '/cache'
             environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath:/opt/deephaven/server/lib/*:/opt/deephaven/server/lib/'
