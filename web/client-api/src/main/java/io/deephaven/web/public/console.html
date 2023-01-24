@@ -13,13 +13,15 @@
     <textarea id="command" placeholder="waiting for connection..." rows="1" cols="80" autofocus="autofocus" disabled="disabled" style="resize:vertical"></textarea><button id="run">Run</button>
 </div>
 <script type="text/javascript">
+    var client;
     var connection;
     var ide;
     var table;
     (async () => {
         // create a connection to the server
-        connection = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
-        connection.login({type:dh.CoreClient.LOGIN_TYPE_ANONYMOUS});
+        client = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
+        await client.login({type:dh.CoreClient.LOGIN_TYPE_ANONYMOUS});
+        connection = await client.getAsIdeConnection();
 
         // check if a language was specified
         var url = new URL(window.location);

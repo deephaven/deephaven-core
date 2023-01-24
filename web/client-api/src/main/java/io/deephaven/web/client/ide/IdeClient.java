@@ -19,13 +19,10 @@ public class IdeClient {
         return IdeClient.getExistingSession(websocketUrl, authToken, serviceId, language);
     }
 
+    @Deprecated
     public static CancellablePromise<IdeSession> getExistingSession(String websocketUrl, String authToken,
             String serviceId, String language) {
-        IdeConnectionOptions options = new IdeConnectionOptions();
-        options.authToken = authToken;
-        options.serviceId = serviceId;
-
-        IdeConnection ideConnection = new IdeConnection(websocketUrl, options);
+        IdeConnection ideConnection = new IdeConnection(websocketUrl);
         return ideConnection.startSession(language);
     }
 }

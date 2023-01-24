@@ -101,6 +101,8 @@ public abstract class BiDiStream<Req, Resp> {
 
     public abstract void onEnd(JsConsumer<ResponseStreamWrapper.Status> handler);
 
+    public abstract void onHeaders(JsConsumer<Object> handler);
+
     static class WebsocketBiDiStream<T, U> extends BiDiStream<T, U> {
         @JsType(isNative = true, name = "Object", namespace = JsPackage.GLOBAL)
         private static class BidirectionalStreamWrapper<ReqT, ResT> {
@@ -147,6 +149,15 @@ public abstract class BiDiStream<Req, Resp> {
         @Override
         public void onEnd(JsConsumer<ResponseStreamWrapper.Status> handler) {
             wrapped.on("end", Js.cast(handler));
+        }
+
+        @Override
+        public void onHeaders(JsConsumer<Object> handler) {
+            try {
+                wrapped.on("headers", Js.cast(handler));
+            } catch (Exception ignored) {
+                // most implementations don't offer this, we can ignore this error
+            }
         }
     }
 
@@ -238,6 +249,11 @@ public abstract class BiDiStream<Req, Resp> {
         @Override
         public void onEnd(JsConsumer<ResponseStreamWrapper.Status> handler) {
             waitForStream(s -> s.onEnd(handler));
+        }
+
+        @Override
+        public void onHeaders(JsConsumer<Object> handler) {
+            waitForStream(s -> s.onHeaders(handler));
         }
     }
 }

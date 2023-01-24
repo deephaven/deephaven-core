@@ -3,6 +3,9 @@
  */
 package io.deephaven.web.client.api;
 
+import elemental2.core.Function;
+import elemental2.core.Global;
+import elemental2.core.JSONType;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
@@ -18,7 +21,9 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_gene
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.MetadataVersion;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightService;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.ResponseStream;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeResponse;
@@ -26,8 +31,12 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.Client;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.Invoke;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.InvokeRpcOptions;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.Request;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
@@ -49,6 +58,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_ser
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.WrappedAuthenticationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
@@ -68,6 +78,7 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.barrage.stream.HandshakeStreamFactory;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
@@ -215,7 +226,7 @@ public class WorkerConnection {
     private long lastSuccessResponseTime = 0;
     private static final long GIVE_UP_TIMEOUT_MS = 10_000;
 
-    public WorkerConnection(QueryConnectable<?> info, Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
+    public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
         this.config = new ClientConfiguration();
         state = State.Connecting;
@@ -241,9 +252,7 @@ public class WorkerConnection {
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
-        newSessionReconnect = new ReconnectState(() -> {
-            connectToWorker(authTokenPromiseSupplier);
-        });
+        newSessionReconnect = new ReconnectState(this::connectToWorker);
 
         // start connection
         newSessionReconnect.initialConnection();
@@ -263,14 +272,18 @@ public class WorkerConnection {
      * Once the table has been successfully fetched, after each reconnect until the table is close()d we'll attempt to
      * restore the table by re-fetching the table, then reapplying all operations on it.
      */
-    private void connectToWorker(Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
+    private void connectToWorker() {
         info.running()
                 .then(queryWorkerRunning -> {
                     // get the auth token
-                    return authTokenPromiseSupplier.get();
+                    return info.getConnectToken();
                 }).then(authToken -> {
                     // set the proposed initial token and make the first call
-                    metadata.set("authorization", authToken.getType() + " " + authToken.getValue());
+                    if (authToken.getType().equals("Anonymous")) {
+                        metadata.set("authorization", "Anonymous");
+                    } else {
+                        metadata.set("authorization", authToken.getType() + " " + authToken.getValue());
+                    }
                     return authUpdate();
                 }).then(handshakeResponse -> {
                     // subscribe to fatal errors
@@ -421,18 +434,20 @@ public class WorkerConnection {
         }
         return new Promise<>((resolve, reject) -> {
             // the streamfactory will automatically reference our existing metadata, but we can listen to update it
-            BiDiStream<HandshakeRequest, HandshakeResponse> handshake = this.<HandshakeRequest, HandshakeResponse>streamFactory().create(
-                    headers -> flightServiceClient.handshake(headers),
-                    (first, headers) -> browserFlightServiceClient.openHandshake(first, headers),
-                    (next, headers, callback) -> browserFlightServiceClient.nextHandshake(next, headers, callback::apply),
-                    new HandshakeRequest()
-            );
-            handshake.send(new HandshakeRequest());
+            BiDiStream<HandshakeRequest, HandshakeResponse> handshake = HandshakeStreamFactory.create(this);
+            HandshakeRequest payload = new HandshakeRequest();
+//            WrappedAuthenticationRequest req = new WrappedAuthenticationRequest();
+//            req.setType();
+//            payload.setPayload(req.serializeBinary());
+            handshake.send(payload);
+            handshake.end();
+            handshake.onHeaders(headers -> {
+                // use this new token
+                metadata().set("authorization", Js.<BrowserHeaders>uncheckedCast(headers).get("authorization"));
+                DomGlobal.console.log("new token", Global.JSON.stringify(metadata));
+            });
             handshake.onStatus(status -> {
                 if (status.isOk()) {
-                    // use this new token
-                    metadata().set("authorization", status.getMetadata().get("authorization"));
-
                     // schedule an update based on our currently configured delay
                     scheduledAuthUpdate = DomGlobal.setTimeout(ignore -> {
                         authUpdate();
@@ -667,6 +682,10 @@ public class WorkerConnection {
         // }
         newSessionReconnect.disconnected();
         DomGlobal.clearTimeout(killTimerCancelation);
+    }
+
+    public void setSessionTimeoutMs(double sessionTimeoutMs) {
+        this.sessionTimeoutMs = sessionTimeoutMs;
     }
 
     // @Override
@@ -969,6 +988,8 @@ public class WorkerConnection {
     }
 
     public BrowserHeaders metadata() {
+        DomGlobal.console.log("metadata()", Global.JSON.stringify(metadata));
+
         return metadata;
     }
 

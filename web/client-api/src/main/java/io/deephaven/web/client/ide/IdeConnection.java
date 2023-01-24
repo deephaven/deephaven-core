@@ -4,6 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.CoreClient;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
@@ -18,27 +19,21 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
-import java.nio.charset.StandardCharsets;
-
 /**
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
-    @JsMethod(namespace = JsPackage.GLOBAL)
-    private static native String atob(String encodedData);
-
-    private static AuthTokenPromiseSupplier getAuthTokenPromiseSupplier(IdeConnectionOptions options) {
-        ConnectToken token = null;
-        if (options != null && options.authToken != null) {
-            token = new ConnectToken();
-            token.setValue(atob(options.authToken));
-        }
-        return AuthTokenPromiseSupplier.oneShot(token);
-    }
-
     private final String serverUrl;
 
     private final JsRunnable deathListenerCleanup;
+    private CoreClient coreClient;
+
+    @JsIgnore
+    public IdeConnection(CoreClient coreClient) {
+        this(coreClient.getServerUrl());
+
+        this.coreClient = coreClient;
+    }
 
     @Override
     protected String logPrefix() {
@@ -48,12 +43,19 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     /**
      * Direct connection to an already-running worker instance, without first authenticating to a client.
      */
-    @Deprecated
     @JsConstructor
-    public IdeConnection(String serverUrl, @JsOptional IdeConnectionOptions options) {
-        super(getAuthTokenPromiseSupplier(options));
+    @Deprecated
+    public IdeConnection(String serverUrl) {
         this.serverUrl = serverUrl;
         this.deathListenerCleanup = JsRunnable.doNothing();
+    }
+
+    @Override
+    public Promise<ConnectToken> getConnectToken() {
+        if (coreClient == null) {
+            return Promise.resolve(new ConnectToken());
+        }
+        return coreClient.getConnectToken();
     }
 
     public void close() {

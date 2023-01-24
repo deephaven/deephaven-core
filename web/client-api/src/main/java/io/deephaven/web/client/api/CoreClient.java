@@ -9,9 +9,12 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.Con
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
+import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
 import java.util.Objects;
@@ -33,15 +36,22 @@ public class CoreClient extends QueryConnectable<CoreClient> {
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
     private final String serverUrl;
-    private ConnectToken token;
 
+    private final ConnectToken token = new ConnectToken();
+
+    @JsConstructor
     public CoreClient(String serverUrl) {
-        super(AuthTokenPromiseSupplier.oneShot(null));
         this.serverUrl = serverUrl;
     }
 
+    @JsIgnore
+    @Override
+    public Promise<ConnectToken> getConnectToken() {
+        return Promise.resolve(token);
+    }
+
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
-            JsFunction<R, Map<String, ConfigValue>> getConfigValues) {
+                                               JsFunction<R, Map<String, ConfigValue>> getConfigValues) {
         return Callbacks.grpcUnaryPromise(rpcCall).then(response -> {
             String[][] result = new String[0][];
             getConfigValues.apply(response).forEach((item, key) -> {
@@ -77,12 +87,14 @@ public class CoreClient extends QueryConnectable<CoreClient> {
 
     public Promise<Void> login(LoginCredentials credentials) {
         Objects.requireNonNull(credentials.getType(), "type must be specified");
-        token = new ConnectToken();
         if (LOGIN_TYPE_PASSWORD.equals(credentials.getType())) {
             Objects.requireNonNull(credentials.getUsername(), "username must be specified for password login");
             Objects.requireNonNull(credentials.getToken(), "token must be specified for password login");
             token.setType("Basic");
             token.setValue(ConnectToken.bytesToBase64(credentials.getUsername() + ":" + credentials.getToken()));
+        } else if (LOGIN_TYPE_ANONYMOUS.equals(credentials.getType())) {
+            token.setType("Anonymous");
+            token.setValue("");
         } else {
             token.setType(credentials.getType());
             token.setValue(credentials.getToken());
@@ -91,12 +103,15 @@ public class CoreClient extends QueryConnectable<CoreClient> {
             }
         }
         Promise<Void> login = connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
-        login.then(ignore -> {
-            return getServerConfigValues();
-        }).then(configs -> {
+
+        // fetch configs and check session timeout
+        login.then(ignore -> getServerConfigValues()).then(configs -> {
             for (String[] config : configs) {
-                if (config[0].equals())
+                if (config[0].equals("http.session.durationMs")) {
+                    connection.get().setSessionTimeoutMs(Double.parseDouble(config[1]));
+                }
             }
+            return null;
         });
         return login;
     }
@@ -120,5 +135,9 @@ public class CoreClient extends QueryConnectable<CoreClient> {
 
     public JsStorageService getStorageService() {
         return new JsStorageService(connection.get());
+    }
+
+    public Promise<IdeConnection> getAsIdeConnection() {
+        return Promise.resolve(new IdeConnection(this));
     }
 }

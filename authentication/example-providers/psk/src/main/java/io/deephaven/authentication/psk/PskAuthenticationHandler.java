@@ -65,7 +65,7 @@ public class PskAuthenticationHandler implements AuthenticationRequestHandler {
         logger.warn().append("================================================================================").endl();
         logger.warn().append("Superuser access through pre-shared key is enabled - use ").append(PSK)
                 .append(" to connect").endl();
-        logger.warn().append("Connect automatically to Web UI with ").append(targetUrl).append("ide/?psk=").append(PSK)
+        logger.warn().append("Connect automatically to Web UI with ").append(targetUrl).append("/ide/?psk=").append(PSK)
                 .endl();
         logger.warn().append("================================================================================").endl();
         logger.warn().endl().endl().endl().endl().endl();
