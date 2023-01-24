@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.util.InternalTableLoggerWrapper;
 @Module
 public interface InternalMetricsModule {
     @Provides
-    static InternalTableLoggerWrapper.Factory providesTableLoggerWrapperFactory() {
+    static InternalTableLoggerWrapper.Factory provideTableLoggerWrapperFactory() {
         return MemoryTableLogger::new;
     }
 }
