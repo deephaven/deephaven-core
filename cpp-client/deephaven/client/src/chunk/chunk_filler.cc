@@ -4,11 +4,11 @@
 #include "deephaven/client/chunk/chunk_filler.h"
 
 #include "deephaven/client/arrowutil/arrow_traits.h"
-#include "deephaven/client/arrowutil/arrow_visitors.h"
 #include "deephaven/client/arrowutil/arrow_value_converter.h"
 #include "deephaven/client/container/row_sequence.h"
 #include "deephaven/client/impl/util.h"
 #include "deephaven/client/types.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::arrowutil::isNumericType;

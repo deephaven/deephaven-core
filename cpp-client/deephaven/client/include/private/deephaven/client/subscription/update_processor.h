@@ -4,7 +4,9 @@
 #pragma once
 
 #include <atomic>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <arrow/flight/client.h>
 #include "deephaven/client/ticking.h"
 #include "deephaven/client/utility/misc.h"
@@ -21,12 +23,13 @@ public:
       std::shared_ptr<ColumnDefinitions> colDefs,
       std::shared_ptr<TickingCallback> callback);
 
-  UpdateProcessor(std::unique_ptr<arrow::flight::FlightStreamWriter> fsw,
+  UpdateProcessor(Private,
+      std::unique_ptr<arrow::flight::FlightStreamWriter> fsw,
       std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs, std::shared_ptr<TickingCallback> callback);
   ~UpdateProcessor();
 
-  void cancel();
+  void cancel(bool wait);
 
 private:
   static void runForever(const std::shared_ptr <UpdateProcessor> &self);
@@ -38,5 +41,8 @@ public:
   std::shared_ptr<ColumnDefinitions> colDefs_;
   std::shared_ptr<TickingCallback> callback_;
   std::atomic<bool> cancelled_;
+  std::mutex mutex_;
+  std::condition_variable condVar_;
+  bool threadAlive_ = false;
 };
 }  // namespace deephaven::client::subscription

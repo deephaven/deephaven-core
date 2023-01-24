@@ -12,6 +12,8 @@
 #include "deephaven/client/container/row_sequence.h"
 #include "deephaven/client/immerutil/abstract_flex_vector.h"
 #include "deephaven/client/subscription/shift_processor.h"
+#include "deephaven/client/table/schema.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::arrowutil::ArrowTypeVisitor;

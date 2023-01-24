@@ -5,12 +5,11 @@
 
 #include <cstdlib>
 #include <map>
+#include <optional>
 #include <set>
-#include <arrow/type.h>
 #include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/container/row_sequence.h"
 #include "deephaven/client/table/table.h"
-#include "immer/flex_vector.hpp"
 
 namespace deephaven::client {
 class TickingUpdate;
@@ -21,6 +20,8 @@ class TickingUpdate;
 
 class TickingCallback {
 public:
+  virtual ~TickingCallback();
+
   /**
    * Invoked on each update to the subscription.
    */
@@ -52,12 +53,25 @@ public:
   typedef deephaven::client::table::Table Table;
 
   /**
+   * Default constructor.
+   */
+   TickingUpdate();
+
+  /**
    * Constructor. Used internally.
    */
   TickingUpdate(std::shared_ptr<Table> prev,
       std::shared_ptr<RowSequence> removedRows, std::shared_ptr<Table> afterRemoves,
       std::shared_ptr<RowSequence> addedRows, std::shared_ptr<Table> afterAdds,
       std::vector<std::shared_ptr<RowSequence>> modifiedRows, std::shared_ptr<Table> afterModifies);
+  /**
+   * Copy constructor.
+   */
+  TickingUpdate(const TickingUpdate &other);
+  /**
+   * Assignment operator.
+   */
+  TickingUpdate &operator=(const TickingUpdate &other);
   /**
    * Move constructor.
    */
