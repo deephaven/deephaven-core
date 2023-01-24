@@ -11,6 +11,7 @@ import io.deephaven.server.console.python.PythonGlobalScopeCopyModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
+import io.deephaven.server.table.InternalMetricsModule;
 
 /**
  * Includes some of the common modules necessary for creating a {@link DeephavenApiServerComponent} /
@@ -43,6 +44,7 @@ import io.deephaven.server.plugin.python.PythonPluginsRegistration;
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         SessionToExecutionStateModule.class,
+        InternalMetricsModule.class
 })
 public interface CommunityDefaultsModule {
 }
