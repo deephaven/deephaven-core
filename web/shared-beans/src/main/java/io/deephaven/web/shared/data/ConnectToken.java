@@ -23,6 +23,7 @@ public class ConnectToken implements Serializable {
     public static String bytesToBase64(String str) {
         return bytesToBase64(str.getBytes(StandardCharsets.UTF_8));
     }
+
     public static String bytesToBase64(byte[] bytes) {
         String stringOfBytes = "";
         for (int i = 0; i < bytes.length; i++) {

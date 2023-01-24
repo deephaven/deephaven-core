@@ -8,7 +8,7 @@ public class JsRefreshToken {
 
     public static JsRefreshToken fromObject(Object token) {
         if (token instanceof JsRefreshToken) {
-            return (JsRefreshToken)token;
+            return (JsRefreshToken) token;
         }
         return new JsRefreshToken((JsPropertyMap<Object>) token);
     }

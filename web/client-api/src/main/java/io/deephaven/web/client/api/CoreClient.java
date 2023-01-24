@@ -51,7 +51,7 @@ public class CoreClient extends QueryConnectable<CoreClient> {
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
-                                               JsFunction<R, Map<String, ConfigValue>> getConfigValues) {
+            JsFunction<R, Map<String, ConfigValue>> getConfigValues) {
         return Callbacks.grpcUnaryPromise(rpcCall).then(response -> {
             String[][] result = new String[0][];
             getConfigValues.apply(response).forEach((item, key) -> {

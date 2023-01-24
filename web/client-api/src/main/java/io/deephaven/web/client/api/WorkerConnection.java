@@ -420,10 +420,10 @@ public class WorkerConnection {
     }
 
     /**
-     * Manages auth token update and rotation. A typical grpc/grpc-web client would support something like
-     * and interceptor to be able to tweak requests and responses slightly, but our client doesn't have an
-     * easy way to add something like that. Instead, this client will continue to call FlightService/Handshake
-     * at the specified interval, with empty payloads.
+     * Manages auth token update and rotation. A typical grpc/grpc-web client would support something like and
+     * interceptor to be able to tweak requests and responses slightly, but our client doesn't have an easy way to add
+     * something like that. Instead, this client will continue to call FlightService/Handshake at the specified
+     * interval, with empty payloads.
      *
      * @return a promise for when this auth is completed
      */
@@ -436,9 +436,9 @@ public class WorkerConnection {
             // the streamfactory will automatically reference our existing metadata, but we can listen to update it
             BiDiStream<HandshakeRequest, HandshakeResponse> handshake = HandshakeStreamFactory.create(this);
             HandshakeRequest payload = new HandshakeRequest();
-//            WrappedAuthenticationRequest req = new WrappedAuthenticationRequest();
-//            req.setType();
-//            payload.setPayload(req.serializeBinary());
+            // WrappedAuthenticationRequest req = new WrappedAuthenticationRequest();
+            // req.setType();
+            // payload.setPayload(req.serializeBinary());
             handshake.send(payload);
             handshake.end();
             handshake.onHeaders(headers -> {
@@ -456,7 +456,7 @@ public class WorkerConnection {
                     resolve.onInvoke((Void) null);
                 } else {
                     // token is no longer valid, signal deauth for re-login
-                    //TODO
+                    // TODO
                     checkStatus(status);
                     reject.onInvoke(status.getDetails());
                 }
