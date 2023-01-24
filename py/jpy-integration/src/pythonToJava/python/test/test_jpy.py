@@ -118,16 +118,6 @@ class TestJpy(unittest.TestCase):
     np_array = None
     self.assertEqual(get_refcount(jpy_array_id), jpy_array_refcount)
 
-    # The refcounting seems to work different in the memoryview case as we update from 3.7 to 3.10; either cpython or
-    # numpy (or both) may be interacting differently. Without digging down more into the details (if this is still an
-    # efficient use of the buffer protocol) there may be hooks to reference count different viewers differently.
-    # mv = memoryview(b'123412341234')
-    # mv_id = id(mv)
-    # mv_refcount = get_refcount(mv_id)
-    # np_array = numpy.frombuffer(mv, numpy.int32)
-    # self.assertEqual(get_refcount(mv_id), mv_refcount + 1)
-    # np_array = None
-    # self.assertEqual(get_refcount(mv_id), mv_refcount)
 
   def test_pyobject_unwrap(self):
     import jpy

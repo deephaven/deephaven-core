@@ -81,21 +81,15 @@ import os
 workspace = os.environ.get('DEEPHAVEN_WORKSPACE', '.')
 propfile = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
 jvm_properties = {
-            'Configuration.rootFile': propfile,
-            'deephaven.dataDir': os.path.realpath(workspace),
-        }
+    'Configuration.rootFile': propfile,
+    'deephaven.dataDir': os.path.realpath(workspace),
+}
 
 jvm_options = {
-    '-XX:InitialRAMPercentage=25.0',
-    '-XX:MinRAMPercentage=70.0',
-    '-XX:MaxRAMPercentage=80.0',
-
-    # Allow netty to (reflectively) access java.nio.Buffer fields
+    # Allow access to java.nio.Buffer fields
     '--add-opens=java.base/java.nio=ALL-UNNAMED',
-
     # Allow our hotspot-impl project to access internals
     '--add-exports=java.management/sun.management=ALL-UNNAMED',
-
     # Allow our clock-impl project to access internals
     '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
 }
