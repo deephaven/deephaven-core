@@ -1,0 +1,16 @@
+plugins {
+}
+
+dependencies {
+    implementation 'org.postgresql:postgresql:42.4.0'
+    implementation 'org.mindrot:jbcrypt:0.4'
+
+    // Don't relocate or shadow the flight classes
+    Classpaths.inheritArrow(project, 'flight-core', 'shadow')
+
+    implementation project(':log-factory')
+}
+
+shadowJar {
+    relocate 'org', 'io.deephaven.authentication.sql.rebased'
+}
