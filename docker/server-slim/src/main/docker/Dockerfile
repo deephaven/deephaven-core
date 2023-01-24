@@ -32,6 +32,7 @@ ENV \
     DEEPHAVEN_CACHE_DIR="/cache" \
     DEEPHAVEN_CONFIG_DIR="/opt/deephaven/config" \
     DEEPHAVEN_DATA_DIR="/data" \
+    EXTRA_CLASSPATH="/apps/libs/*" \
     START_OPTS="-Ddeephaven.console.type=groovy"
 ENTRYPOINT [ "/opt/deephaven/server/bin/start" ]
 

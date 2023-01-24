@@ -165,11 +165,11 @@ case "\$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
-EXTRA_CLASSPATHS="\${EXTRA_CLASSPATHS:-/apps/libs/*:}"
-echo "Extra classpaths: \$EXTRA_CLASSPATHS"
-
-CLASSPATH="\$EXTRA_CLASSPATHS":$classpath
-echo "Final classpath: \$CLASSPATH"
+if [ -z "\$EXTRA_CLASSPATH" ]; then
+    CLASSPATH=$classpath
+else
+    CLASSPATH="\$EXTRA_CLASSPATH":$classpath
+fi
 
 <% if ( mainClassName.startsWith('--module ') ) { %>
 MODULE_PATH=$modulePath
