@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.util.TableLoggerWrapperUtility;
+import io.deephaven.engine.table.impl.util.InternalTableLoggerWrapper;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
@@ -48,6 +48,7 @@ public class UpdatePerformanceTracker {
 
     private static volatile UpdatePerformanceTracker INSTANCE;
     private static boolean started = false;
+    private static InternalTableLoggerWrapper.Factory tableLoggerWrapperFactory;
     private boolean unitTestMode = false;
     private final PerformanceEntry aggregatedSmallUpdatesEntry =
             new PerformanceEntry(QueryConstants.NULL_INT, QueryConstants.NULL_INT, QueryConstants.NULL_INT,
@@ -68,7 +69,7 @@ public class UpdatePerformanceTracker {
     }
 
     private final Logger logger;
-    private final TableLoggerWrapperUtility<UpdatePerformanceLogLogger> tableLogger;
+    private final InternalTableLoggerWrapper<UpdatePerformanceLogLogger> tableLogger;
 
     private final AtomicInteger entryIdCounter = new AtomicInteger(1);
     private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
@@ -78,13 +79,20 @@ public class UpdatePerformanceTracker {
             @NotNull final Logger logger,
             @NotNull final TableDefinition logTableDefinition) {
         this.logger = logger;
-        tableLogger = TableLoggerWrapperUtility.Factory.create(logger, new UpdatePerformanceLogLogger(processInfoId), logTableDefinition);
+        if (tableLoggerWrapperFactory == null) {
+            throw new IllegalStateException("Must set internal table logger wrapper factory.");
+        }
+        tableLogger = tableLoggerWrapperFactory.create(logger, new UpdatePerformanceLogLogger(processInfoId), logTableDefinition);
     }
 
     private void startThread() {
         Thread driverThread = new Thread(new Driver(), "UpdatePerformanceTracker.Driver");
         driverThread.setDaemon(true);
         driverThread.start();
+    }
+
+    public static void setTableLoggerWrapperFactory(InternalTableLoggerWrapper.Factory tableLoggerWrapperFactory) {
+        UpdatePerformanceTracker.tableLoggerWrapperFactory = tableLoggerWrapperFactory;
     }
 
     public static synchronized void start() {

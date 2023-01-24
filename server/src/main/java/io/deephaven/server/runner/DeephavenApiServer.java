@@ -7,11 +7,9 @@ import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.table.impl.util.MemoryTableLogger;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
-import io.deephaven.engine.table.impl.util.TableLoggerWrapperUtility;
-import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
+import io.deephaven.engine.table.impl.util.InternalTableLoggerWrapper;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -54,6 +52,7 @@ public class DeephavenApiServer {
     private final Map<String, AuthenticationRequestHandler> authenticationHandlers;
     private final Provider<ExecutionContext> executionContextProvider;
     private final ServerConfig serverConfig;
+    private final InternalTableLoggerWrapper.Factory tableLoggerFactory;
 
     @Inject
     public DeephavenApiServer(
@@ -67,7 +66,8 @@ public class DeephavenApiServer {
             final SessionService sessionService,
             final Map<String, AuthenticationRequestHandler> authenticationHandlers,
             final Provider<ExecutionContext> executionContextProvider,
-            final ServerConfig serverConfig) {
+            final ServerConfig serverConfig,
+            final InternalTableLoggerWrapper.Factory tableLoggerFactory) {
         this.server = server;
         this.ugp = ugp;
         this.logInit = logInit;
@@ -79,6 +79,7 @@ public class DeephavenApiServer {
         this.authenticationHandlers = authenticationHandlers;
         this.executionContextProvider = executionContextProvider;
         this.serverConfig = serverConfig;
+        this.tableLoggerFactory = tableLoggerFactory;
     }
 
     @VisibleForTesting
@@ -138,7 +139,7 @@ public class DeephavenApiServer {
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
-        TableLoggerWrapperUtility.Factory.setCreateFunction(MemoryTableLogger::new);
+        UpdatePerformanceTracker.setTableLoggerWrapperFactory(tableLoggerFactory);
         UpdatePerformanceTracker.start();
         ServerStateTracker.start();
 

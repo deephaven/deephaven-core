@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-public class MemoryTableLogger<T extends TableLogger> implements TableLoggerWrapperUtility<T>{
+public class MemoryTableLogger<T extends TableLogger> implements InternalTableLoggerWrapper<T> {
     private final DynamicTableWriter tableWriter;
     private final T tableLogger;
     private final TableDefinition tableDefinition;
