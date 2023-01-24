@@ -5,9 +5,11 @@ package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.NoSuchElementException;
 
@@ -27,7 +29,6 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
     private static final int PAIRWISE_MAX_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE / 2;
     // use a sized float chunk for underlying storage
     private WritableFloatChunk<Values> storageChunk;
-
 
     private final FloatFunction pairwiseFunction;
     private final float emptyVal;
@@ -99,7 +100,8 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
         }
     }
 
-    private void evaluateTree(int startA, int endA) {
+    @VisibleForTesting
+    public float evaluateTree(int startA, int endA) {
         while (endA > 1) {
             // compute this level
             evaluateRangeFast(startA, endA);
@@ -108,14 +110,15 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
             startA /= 2;
             endA /= 2;
         }
+        return storageChunk.get(endA);
     }
 
-    private void evaluateTree(int startA, int endA, int startB, int endB) {
+    @VisibleForTesting
+    public float evaluateTree(int startA, int endA, int startB, int endB) {
         while (endB > 1) {
             if (endA >= startB - 1) {
                 // all collapse together into a single range
-                evaluateTree(startA, endB);
-                return;
+                return evaluateTree(startA, endB);
             } else {
                 // compute this level
                 evaluateRangeFast(startA, endA);
@@ -128,22 +131,21 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
                 endB /= 2;
             }
         }
+        throw new AssertionFailure("should never reach this line");
     }
 
-    private void evaluateTree(int startA, int endA, int startB, int endB, int startC, int endC) {
+    @VisibleForTesting
+    public float evaluateTree(int startA, int endA, int startB, int endB, int startC, int endC) {
         while (endC > 1) {
             if (endA >= startC - 1 || (endA >= startB - 1 && endB >= startC - 1)) {
                 // all collapse together into a single range
-                evaluateTree(startA, endC);
-                return;
+                return evaluateTree(startA, endC);
             } else if (endA >= startB - 1) {
                 // A and B collapse
-                evaluateTree(startA, endB, startC, endC);
-                return;
+                return evaluateTree(startA, endB, startC, endC);
             } else if (endB >= startC - 1) {
                 // B and C collapse
-                evaluateTree(startA, endA, startB, endC);
-                return;
+                return evaluateTree(startA, endA, startB, endC);
             } else {
                 // no collapse
                 evaluateRangeFast(startA, endA);
@@ -159,6 +161,7 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
                 endC /= 2;
             }
         }
+        throw new AssertionFailure("should never reach this line");
     }
 
     public float evaluate() {
@@ -169,49 +172,49 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
             return emptyVal;
         }
 
-        if (!pushDirty && !popDirty) {
-            return storageChunk.get(1);
-        }
-
         // This is a nested complex set of `if` statements that are used to set the correct and minimal initial
         // conditions for the evaluation.  The calls to evaluateTree recurse no more than twice (as the ranges
         // overlap and the calculation simplifies).
 
+        final float value;
+
         if (pushDirty && popDirty) {
             if (dirtyPushHead > dirtyPushTail && dirtyPopHead > dirtyPopTail) {
                 // both are wrapped
-                evaluateTree(capacity, Math.max(dirtyPushTail, dirtyPopTail), Math.min(dirtyPushHead, dirtyPopHead), chunkSize - 1);
+                value = evaluateTree(capacity, Math.max(dirtyPushTail, dirtyPopTail), Math.min(dirtyPushHead, dirtyPopHead), chunkSize - 1);
             } else if (dirtyPushHead > dirtyPushTail) {
                 // push wrapped, pop is not
-                evaluateTree(capacity, dirtyPushTail, dirtyPopHead, dirtyPopTail, dirtyPushHead, chunkSize - 1);
+                value = evaluateTree(capacity, dirtyPushTail, dirtyPopHead, dirtyPopTail, dirtyPushHead, chunkSize - 1);
             } else if (dirtyPopHead > dirtyPopTail) {
                 // pop wrapped, push is not
-                evaluateTree(capacity, dirtyPopTail, dirtyPushHead, dirtyPushTail, dirtyPopHead, chunkSize - 1);
+                value = evaluateTree(capacity, dirtyPopTail, dirtyPushHead, dirtyPushTail, dirtyPopHead, chunkSize - 1);
             } else {
                 // neither wrapped
                 if (dirtyPushHead > dirtyPopHead) {
-                    evaluateTree(dirtyPopHead, dirtyPopTail, dirtyPushHead, dirtyPushTail);
+                    value = evaluateTree(dirtyPopHead, dirtyPopTail, dirtyPushHead, dirtyPushTail);
                 } else {
-                    evaluateTree(dirtyPushHead, dirtyPushTail, dirtyPopHead, dirtyPopTail);
+                    value = evaluateTree(dirtyPushHead, dirtyPushTail, dirtyPopHead, dirtyPopTail);
                 }
             }
         } else if (pushDirty) {
             if (dirtyPushHead > dirtyPushTail) {
-                evaluateTree(capacity, dirtyPushTail, dirtyPushHead, chunkSize - 1);
+                value = evaluateTree(capacity, dirtyPushTail, dirtyPushHead, chunkSize - 1);
             } else {
-                evaluateTree(dirtyPushHead, dirtyPushTail);
+                value = evaluateTree(dirtyPushHead, dirtyPushTail);
             }
         } else if (popDirty) {
             if (dirtyPopHead > dirtyPopTail) {
-                evaluateTree(capacity, dirtyPopTail, dirtyPopHead, chunkSize - 1);
+                value = evaluateTree(capacity, dirtyPopTail, dirtyPopHead, chunkSize - 1);
             } else {
-                evaluateTree(dirtyPopHead, dirtyPopTail);
+                value = evaluateTree(dirtyPopHead, dirtyPopTail);
             }
+        } else {
+            value = storageChunk.get(1);
         }
 
         clearDirty();
 
-        return storageChunk.get(1);
+        return value;
     }
 
     private void grow(int increase) {

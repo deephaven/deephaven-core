@@ -11,12 +11,9 @@ package io.deephaven.base.ringbuffer;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.AssertionFailure;
 import junit.framework.TestCase;
-import org.junit.Assert;
-import org.junit.Test;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
 
 public class IntRingBufferTest extends TestCase {

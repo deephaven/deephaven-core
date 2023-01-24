@@ -26,27 +26,13 @@ public class IntRingBuffer implements Serializable {
     protected int[] storage;
     protected int head, tail, size;
 
-    private void fastCopy(int[] src, int srcPos, int[] dest, int destPos, int length) {
-        if (length < SYSTEM_ARRAYCOPY_THRESHOLD) {
-            for (int ii = 0; ii < length; ii++) {
-                dest[destPos + ii] = src[srcPos + ii];
-            }
-        } else {
-            System.arraycopy(src, srcPos, dest, 0, length);
-        }
-    }
-
     private void grow(int increase) {
         if (growable) {
             // assert that we are not asking for the impossible
             Assert.eqTrue(ArrayUtil.MAX_ARRAY_SIZE - increase >= size, "IntRingBuffer size <= MAX_ARRAY_SIZE");
 
             final int minLength = size + increase;
-            int newLength = storage.length * 2;
-            while (newLength < minLength) {
-                newLength = Math.min(newLength * 2, ArrayUtil.MAX_ARRAY_SIZE);
-            }
-            int[] newStorage = new int[newLength];
+            int[] newStorage = new int[Integer.highestOneBit(minLength - 1) << 1];
 
             // three scenarios: size is zero so nothing to copy, head is before tail so only one copy needed, head
             // after tail so two copies needed. Assuming that copying zero bytes is a fast operation, we will always
@@ -55,9 +41,9 @@ public class IntRingBuffer implements Serializable {
             // compute the size of the first copy
             final int firstCopyLen = Math.min(storage.length - head, size);
 
-            // do the copying
-            fastCopy(storage, head, newStorage, 0, firstCopyLen);
-            fastCopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
+            // do the copying (
+            System.arraycopy(storage, head, newStorage, 0, firstCopyLen);
+            System.arraycopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
 
             // reset the pointers
             tail = size;
@@ -90,6 +76,8 @@ public class IntRingBuffer implements Serializable {
      * @param growable whether to allow growth when the buffer is full.
      */
     public IntRingBuffer(int capacity, boolean growable) {
+        Assert.eqTrue(capacity <= ArrayUtil.MAX_ARRAY_SIZE, "IntRingBuffer size <= MAX_ARRAY_SIZE");
+
         this.growable = growable;
         if (growable) {
             // use next larger power of 2
@@ -138,9 +126,7 @@ public class IntRingBuffer implements Serializable {
                 grow();
             }
         }
-        storage[tail] = e;
-        tail = (tail + 1) % storage.length;
-        size++;
+        addUnsafe(e);
         return true;
     }
 
@@ -186,9 +172,7 @@ public class IntRingBuffer implements Serializable {
         if (isFull()) {
             result = remove();
         }
-        storage[tail] = e;
-        tail = (tail + 1) % storage.length;
-        size++;
+        addUnsafe(e);
         return result;
     }
 
@@ -203,9 +187,7 @@ public class IntRingBuffer implements Serializable {
         if (isFull()) {
             return false;
         }
-        storage[tail] = e;
-        tail = (tail + 1) % storage.length;
-        size++;
+        addUnsafe(e);
         return true;
     }
 
@@ -217,10 +199,10 @@ public class IntRingBuffer implements Serializable {
         final int firstCopyLen = storage.length - head;
 
         if (tail >= head || firstCopyLen >= count) {
-            fastCopy(storage, head, result, 0, count);
+            System.arraycopy(storage, head, result, 0, count);
         } else {
-            fastCopy(storage, head, result, 0, firstCopyLen);
-            fastCopy(storage, 0, result, firstCopyLen, count - firstCopyLen);
+            System.arraycopy(storage, head, result, 0, firstCopyLen);
+            System.arraycopy(storage, 0, result, firstCopyLen, count - firstCopyLen);
         }
         head = (head + count) % storage.length;
         size -= count;
@@ -231,10 +213,7 @@ public class IntRingBuffer implements Serializable {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        int e = storage[head];
-        head = (head + 1) % storage.length;
-        size--;
-        return e;
+        return removeUnsafe();
     }
 
     public int removeUnsafe() {
@@ -248,10 +227,7 @@ public class IntRingBuffer implements Serializable {
         if (isEmpty()) {
             return onEmpty;
         }
-        int e = storage[head];
-        head = (head + 1) % storage.length;
-        size--;
-        return e;
+        return removeUnsafe();
     }
 
     public int element() {
@@ -318,10 +294,10 @@ public class IntRingBuffer implements Serializable {
         int[] result = new int[size];
         if (result.length > 0) {
             if (tail > head) {
-                fastCopy(storage, head, result, 0, tail - head);
+                System.arraycopy(storage, head, result, 0, tail - head);
             } else {
-                fastCopy(storage, head, result, 0, storage.length - head);
-                fastCopy(storage, 0, result, storage.length - head, tail);
+                System.arraycopy(storage, head, result, 0, storage.length - head);
+                System.arraycopy(storage, 0, result, storage.length - head, tail);
             }
         }
         return result;
