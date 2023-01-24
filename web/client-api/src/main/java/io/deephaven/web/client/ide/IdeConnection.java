@@ -30,14 +30,10 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
 
     @JsIgnore
     public IdeConnection(CoreClient coreClient) {
+        // Delegate to the js constructor so we can still expose it to JS
         this(coreClient.getServerUrl());
 
         this.coreClient = coreClient;
-    }
-
-    @Override
-    protected String logPrefix() {
-        return "IdeConnection on " + getServerUrl() + ": ";
     }
 
     /**
@@ -48,6 +44,11 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     public IdeConnection(String serverUrl) {
         this.serverUrl = serverUrl;
         this.deathListenerCleanup = JsRunnable.doNothing();
+    }
+
+    @Override
+    protected String logPrefix() {
+        return "IdeConnection on " + getServerUrl() + ": ";
     }
 
     @Override
@@ -76,7 +77,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         if (!connection.isAvailable() || connection.get().isUsable()) {
             return Promise.resolve(this);
         } else {
-            return (Promise) Promise.reject("Cannot connect, session is dead.");
+            return Promise.reject("Cannot connect, session is dead.");
         }
     }
 

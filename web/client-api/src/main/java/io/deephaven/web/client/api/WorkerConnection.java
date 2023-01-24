@@ -279,11 +279,7 @@ public class WorkerConnection {
                     return info.getConnectToken();
                 }).then(authToken -> {
                     // set the proposed initial token and make the first call
-                    if (authToken.getType().equals("Anonymous")) {
-                        metadata.set("authorization", "Anonymous");
-                    } else {
-                        metadata.set("authorization", authToken.getType() + " " + authToken.getValue());
-                    }
+                    metadata.set("authorization", (authToken.getType() + " " + authToken.getValue()).trim());
                     return authUpdate();
                 }).then(handshakeResponse -> {
                     // subscribe to fatal errors
@@ -298,7 +294,6 @@ public class WorkerConnection {
                     // nuke pending callbacks, we'll remake them
                     handleCallbacks = new JsWeakMap<>();
                     definitionCallbacks = new JsWeakMap<>();
-
 
                     // for each cts in the cache, get all with active subs
                     ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
@@ -435,16 +430,13 @@ public class WorkerConnection {
         return new Promise<>((resolve, reject) -> {
             // the streamfactory will automatically reference our existing metadata, but we can listen to update it
             BiDiStream<HandshakeRequest, HandshakeResponse> handshake = HandshakeStreamFactory.create(this);
-            HandshakeRequest payload = new HandshakeRequest();
-            // WrappedAuthenticationRequest req = new WrappedAuthenticationRequest();
-            // req.setType();
-            // payload.setPayload(req.serializeBinary());
-            handshake.send(payload);
-            handshake.end();
             handshake.onHeaders(headers -> {
-                // use this new token
-                metadata().set("authorization", Js.<BrowserHeaders>uncheckedCast(headers).get("authorization"));
-                DomGlobal.console.log("new token", Global.JSON.stringify(metadata));
+                // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders != Metadata
+                JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get("authorization");
+                if (authorization.length > 0 && metadata().get("authorization").length > 0) {
+                    // use this new token
+                    metadata().set("authorization", authorization);
+                }
             });
             handshake.onStatus(status -> {
                 if (status.isOk()) {
@@ -461,6 +453,9 @@ public class WorkerConnection {
                     reject.onInvoke(status.getDetails());
                 }
             });
+
+            handshake.send(new HandshakeRequest());
+            handshake.end();
         });
     }
 

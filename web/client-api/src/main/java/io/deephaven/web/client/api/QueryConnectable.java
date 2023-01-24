@@ -70,7 +70,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         }
         notifiedConnectionError = true;
 
-        CustomEventInit event = CustomEventInit.create();
+        CustomEventInit<JsPropertyMap<Object>> event = CustomEventInit.create();
         event.setDetail(JsPropertyMap.of(
                 "status", status.getCode(),
                 "details", status.getDetails(),
@@ -89,7 +89,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
             return Promise.resolve((Void) null);
         }
         if (closed) {
-            return (Promise) Promise.reject("Connection already closed");
+            return Promise.reject("Connection already closed");
         }
 
         return new Promise<>((resolve, reject) -> addEventListenerOneShot(
