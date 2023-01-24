@@ -195,7 +195,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public void remove(RowSet toRemove) {
-        throw new UnsupportedOperationException();
+        setNull(toRemove);
     }
 
     public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
@@ -404,6 +404,15 @@ public abstract class SparseArrayColumnSource<T>
     // endregion fillChunk
 
     @Override
+    public void setNull(RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            nullByKeys(rowSequence);
+        } else {
+            nullByRanges(rowSequence);
+        }
+    }
+
+    @Override
     public void fillChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
@@ -447,6 +456,10 @@ public abstract class SparseArrayColumnSource<T>
     abstract void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
     abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
+
+    abstract void nullByRanges(@NotNull RowSequence rowSequence);
+
+    abstract void nullByKeys(@NotNull RowSequence rowSequence);
 
     @Override
     public boolean isImmutable() {
