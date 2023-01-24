@@ -11,7 +11,6 @@ configurations {
 dependencies {
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
-    implementation project(':open-api-lang-parser')
 
     implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 
