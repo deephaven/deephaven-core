@@ -198,7 +198,9 @@ public abstract class UpdateGraphLock {
         public synchronized void reset() {
             final RecordingLock writeLock = lockAccessor.writeLock();
             try {
-                if (writeLock.delegate.tryLock()) {
+                if (!lockAccessor.readLockIsHeldByCurrentThread()
+                        && !lockAccessor.writeLockIsHeldByCurrentThread()
+                        && writeLock.delegate.tryLock()) {
                     writeLock.delegate.unlock();
                 } else {
                     final RecordingLock readLock = lockAccessor.readLock();

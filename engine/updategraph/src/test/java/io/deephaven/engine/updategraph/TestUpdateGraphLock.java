@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.updategraph;
 
+import io.deephaven.UncheckedDeephavenException;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Test;
@@ -160,5 +161,26 @@ public class TestUpdateGraphLock {
             // Technically, this is a random-failer, but I expect it to be fine.
             TestCase.assertTrue(done.getValue());
         });
+    }
+
+    @Test
+    public void testDebugImplementation() {
+        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, true);
+        lock.sharedLock().lock();
+        lock.sharedLock().lock();
+        try {
+            lock.reset();
+            TestCase.fail("Expected exception");
+        } catch (UncheckedDeephavenException expected) {
+            expected.printStackTrace();
+        }
+        lock.exclusiveLock().lock();
+        try {
+            lock.reset();
+            TestCase.fail("Expected exception");
+        } catch (UncheckedDeephavenException expected) {
+            expected.printStackTrace();
+        }
+        lock.reset();
     }
 }
