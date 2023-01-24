@@ -3,12 +3,15 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
-import gnu.trove.list.array.TIntArrayList;
+import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.NoSuchElementException;
+
+import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /***
  * Store this data in the form of a binary tree where the latter half of the chunk is treated as a ring buffer and
@@ -21,10 +24,10 @@ import java.util.NoSuchElementException;
  */
 
 public class PairwiseFloatRingBuffer implements SafeCloseable {
+    private static final int PAIRWISE_MAX_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE / 2;
     // use a sized float chunk for underlying storage
     private WritableFloatChunk<Values> storageChunk;
-    private final TIntArrayList dirtyIndices;
-    private boolean allDirty;
+
 
     private final FloatFunction pairwiseFunction;
     private final float emptyVal;
@@ -35,6 +38,12 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
 
     private int head;
     private int tail;
+    private int size;
+
+    private int dirtyPushHead;
+    private int dirtyPushTail;
+    private int dirtyPopHead;
+    private int dirtyPopTail;
 
     @FunctionalInterface
     public interface FloatFunction {
@@ -61,22 +70,22 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
      *                         result is available
      */
     public PairwiseFloatRingBuffer(int initialSize, float emptyVal, FloatFunction pairwiseFunction) {
-        // increase to next power of two
-        this.capacity = Integer.highestOneBit(initialSize) * 2;
+        Assert.eqTrue(PAIRWISE_MAX_CAPACITY >= initialSize, "PairwiseFloatRingBuffer initialSize <= PAIRWISE_MAX_CAPACITY");
+
+        // use next larger power of 2
+        this.capacity = Integer.highestOneBit(initialSize - 1) << 1;
         this.chunkSize = capacity * 2;
         this.storageChunk = WritableFloatChunk.makeWritableChunk(chunkSize);
-        this.dirtyIndices = new TIntArrayList(chunkSize);
         this.pairwiseFunction = pairwiseFunction;
         this.emptyVal = emptyVal;
 
-        this.storageChunk.fillWithValue(0, chunkSize, emptyVal);
-        this.head = this.tail = this.capacity;
-        this.allDirty = false;
+        storageChunk.fillWithValue(0, chunkSize, emptyVal);
+        clear();
     }
 
     private void evaluateRangeFast(int start, int end) {
         // everything in this range needs to be reevaluated
-        for (int left = start & 0xFFFFFFFE; left < end; left += 2) {
+        for (int left = start & 0xFFFFFFFE; left <= end; left += 2) {
             final int right = left + 1;
             final int parent = left / 2;
 
@@ -87,57 +96,121 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
             // compute & store
             final float computeVal = pairwiseFunction.apply(leftVal, rightVal);
             storageChunk.set(parent, computeVal);
+        }
+    }
 
-            // mark the parent dirty
-            dirtyIndices.add(parent);
+    private void evaluateTree(int startA, int endA) {
+        while (endA > 1) {
+            // compute this level
+            evaluateRangeFast(startA, endA);
+
+            // compute the new parents
+            startA /= 2;
+            endA /= 2;
+        }
+    }
+
+    private void evaluateTree(int startA, int endA, int startB, int endB) {
+        while (endB > 1) {
+            if (endA >= startB - 1) {
+                // all collapse together into a single range
+                evaluateTree(startA, endB);
+                return;
+            } else {
+                // compute this level
+                evaluateRangeFast(startA, endA);
+                evaluateRangeFast(startB, endB);
+
+                // compute the new parents
+                startA /= 2;
+                endA /= 2;
+                startB /= 2;
+                endB /= 2;
+            }
+        }
+    }
+
+    private void evaluateTree(int startA, int endA, int startB, int endB, int startC, int endC) {
+        while (endC > 1) {
+            if (endA >= startC - 1 || (endA >= startB - 1 && endB >= startC - 1)) {
+                // all collapse together into a single range
+                evaluateTree(startA, endC);
+                return;
+            } else if (endA >= startB - 1) {
+                // A and B collapse
+                evaluateTree(startA, endB, startC, endC);
+                return;
+            } else if (endB >= startC - 1) {
+                // B and C collapse
+                evaluateTree(startA, endA, startB, endC);
+                return;
+            } else {
+                // no collapse
+                evaluateRangeFast(startA, endA);
+                evaluateRangeFast(startB, endB);
+                evaluateRangeFast(startC, endC);
+
+                // compute the new parents
+                startA /= 2;
+                endA /= 2;
+                startB /= 2;
+                endB /= 2;
+                startC /= 2;
+                endC /= 2;
+            }
         }
     }
 
     public float evaluate() {
-        // if all dirty, recompute all values
-        if (allDirty) {
-            if (head < tail) {
-                evaluateRangeFast(head, tail);
-            } else {
-                evaluateRangeFast(head, chunkSize);
-                evaluateRangeFast(capacity, tail);
-            }
+        final boolean pushDirty = dirtyPushHead != NULL_INT;
+        final boolean popDirty = dirtyPopHead != NULL_INT;
+
+        if (size == 0) {
+            return emptyVal;
         }
 
-        // work through all the dirty bits from high to low until none remain.
-        int dirtyIndex = 0;
-        while (dirtyIndex < dirtyIndices.size()) {
-            final int left = dirtyIndices.get(dirtyIndex) & 0xFFFFFFFE; // clear the final bit to force evenness
-            final int right = left + 1;
+        if (!pushDirty && !popDirty) {
+            return storageChunk.get(1);
+        }
 
-            // this isn't the typical parent = (n-1)/2 because the tree is right-shifted by one
-            final int parent = left / 2;
+        // This is a nested complex set of `if` statements that are used to set the correct and minimal initial
+        // conditions for the evaluation.  The calls to evaluateTree recurse no more than twice (as the ranges
+        // overlap and the calculation simplifies).
 
-            // load the data values
-            final float leftVal = storageChunk.get(left);
-            final float rightVal = storageChunk.get(right);
-            final float parentVal = storageChunk.get(parent);
-
-            final float computeVal = pairwiseFunction.apply(leftVal, rightVal);
-            if (parentVal != computeVal) {
-                storageChunk.set(parent, computeVal);
-                // mark the parent dirty (if not the last)
-                if (parent > 1) {
-                    dirtyIndices.add(parent);
+        if (pushDirty && popDirty) {
+            if (dirtyPushHead > dirtyPushTail && dirtyPopHead > dirtyPopTail) {
+                // both are wrapped
+                evaluateTree(capacity, Math.max(dirtyPushTail, dirtyPopTail), Math.min(dirtyPushHead, dirtyPopHead), chunkSize - 1);
+            } else if (dirtyPushHead > dirtyPushTail) {
+                // push wrapped, pop is not
+                evaluateTree(capacity, dirtyPushTail, dirtyPopHead, dirtyPopTail, dirtyPushHead, chunkSize - 1);
+            } else if (dirtyPopHead > dirtyPopTail) {
+                // pop wrapped, push is not
+                evaluateTree(capacity, dirtyPopTail, dirtyPushHead, dirtyPushTail, dirtyPopHead, chunkSize - 1);
+            } else {
+                // neither wrapped
+                if (dirtyPushHead > dirtyPopHead) {
+                    evaluateTree(dirtyPopHead, dirtyPopTail, dirtyPushHead, dirtyPushTail);
+                } else {
+                    evaluateTree(dirtyPushHead, dirtyPushTail, dirtyPopHead, dirtyPopTail);
                 }
             }
-            // how far should we advance
-            final int nextIndex = dirtyIndex + 1;
-            if (nextIndex < dirtyIndices.size() && dirtyIndices.get(nextIndex) == right) {
-                dirtyIndex += 2;
+        } else if (pushDirty) {
+            if (dirtyPushHead > dirtyPushTail) {
+                evaluateTree(capacity, dirtyPushTail, dirtyPushHead, chunkSize - 1);
             } else {
-                dirtyIndex++;
+                evaluateTree(dirtyPushHead, dirtyPushTail);
+            }
+        } else if (popDirty) {
+            if (dirtyPopHead > dirtyPopTail) {
+                evaluateTree(capacity, dirtyPopTail, dirtyPopHead, chunkSize - 1);
+            } else {
+                evaluateTree(dirtyPopHead, dirtyPopTail);
             }
         }
-        allDirty = false;
-        dirtyIndices.clear();
 
-        // final value is in index 1
+        clearDirty();
+
         return storageChunk.get(1);
     }
 
@@ -145,14 +218,15 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
         int oldCapacity = capacity;
         int oldChunkSize = chunkSize;
 
-        int size = size();
+        // assert that we are not asking for the impossible
+        Assert.eqTrue(PAIRWISE_MAX_CAPACITY - increase >= size, "PairwiseFloatRingBuffer size <= PAIRWISE_MAX_CAPACITY");
 
         final int minLength = size + increase;
 
         // double the current capacity until there is sufficient space for the increase
         while (capacity <= minLength) {
             capacity *= 2;
-            chunkSize = capacity * 2;
+            chunkSize = Math.min(capacity * 2, PAIRWISE_MAX_CAPACITY);
         }
 
         // transfer to the new chunk
@@ -163,14 +237,11 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
         storageChunk.fillWithValue(0, capacity, emptyVal);
 
         // move the data to the new chunk, note that we store the ring data in the second half of the array
+        final int firstCopyLen = Math.min(oldChunkSize - head, size);
 
-        if (tail >= head) {
-            storageChunk.copyFromTypedChunk(oldChunk, head, capacity, size);
-        } else {
-            final int firstCopyLen = oldChunkSize - head;
-            storageChunk.copyFromTypedChunk(oldChunk, head, capacity, firstCopyLen);
-            storageChunk.copyFromTypedChunk(oldChunk, oldCapacity, capacity + firstCopyLen , size - firstCopyLen);
-        }
+        // do the copying
+        storageChunk.copyFromTypedChunk(oldChunk, head, capacity, firstCopyLen);
+        storageChunk.copyFromTypedChunk(oldChunk, oldCapacity, capacity + firstCopyLen , size - firstCopyLen);
         tail = capacity + size;
 
         // fill the unused storage with the empty value
@@ -183,8 +254,13 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
         // TODO: investigate moving precomputed results also.  Since we are re-ordering the data values, would be
         // tricky to maintain order but a recursive function could probably do it efficiently.  For now, make life easy
         // by setting all input dirty so the tree is recomputed on next `evaluate()`
-        this.dirtyIndices.clear();
-        allDirty = true;
+
+        // treat all these like pushed data
+        dirtyPushHead = head;
+        dirtyPushTail = size;
+
+        dirtyPopHead = NULL_INT;
+        dirtyPopTail = 0;
     }
 
     private void grow() {
@@ -195,25 +271,19 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
         if (isFull()) {
             grow();
         }
-        // add the new data
-        storageChunk.set(tail, val);
-        if (!allDirty) {
-            dirtyIndices.add(tail);
-        }
-
-        // move the tail
-        tail = ((tail + 1) % capacity) + capacity;
+        pushUnsafe(val);
     }
 
     public void pushUnsafe(float val) {
-        // add the new data
         storageChunk.set(tail, val);
-        if (!allDirty) {
-            dirtyIndices.add(tail);
+        if (dirtyPushHead == NULL_INT) {
+            dirtyPushHead = tail;
         }
+        dirtyPushTail = tail;
 
         // move the tail
         tail = ((tail + 1) % capacity) + capacity;
+        size++;
     }
 
     /**
@@ -238,26 +308,21 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        float val = storageChunk.get(head);
-        storageChunk.set(head, emptyVal);
-        if (!allDirty) {
-            dirtyIndices.add(head);
-        }
-
-        // move the head
-        head = ((head + 1) % capacity) + capacity;
-        return val;
+        return popUnsafe();
     }
 
     public float popUnsafe() {
         float val = storageChunk.get(head);
         storageChunk.set(head, emptyVal);
-        if (!allDirty) {
-            dirtyIndices.add(head);
+
+        if (dirtyPopHead == NULL_INT) {
+            dirtyPopHead = head;
         }
+        dirtyPopTail = head;
 
         // move the head
         head = ((head + 1) % capacity) + capacity;
+        size--;
         return val;
     }
 
@@ -266,48 +331,34 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
             throw new NoSuchElementException();
         }
         final float[] result = new float[count];
-        final int firstCopyLen = chunkSize - head;
 
-        if (tail > head || firstCopyLen >= count) {
-            storageChunk.copyToArray(head, result, 0, count);
-            storageChunk.fillWithValue(head, count, emptyVal);
-            if (!allDirty) {
-                for (int ii = 0; ii < count; ii++) {
-                    dirtyIndices.add(head + ii);
-                }
-            }
-        } else {
-            storageChunk.copyToArray(head, result, 0, firstCopyLen);
-            storageChunk.fillWithValue(head, firstCopyLen, emptyVal);
-            storageChunk.copyToArray(capacity, result, firstCopyLen, count - firstCopyLen);
-            storageChunk.fillWithValue(capacity, count - firstCopyLen, emptyVal);
-            if (!allDirty) {
-                for (int ii = 0; ii < firstCopyLen; ii++) {
-                    dirtyIndices.add(head + ii);
-                }
-                for (int ii = 0; ii < count - firstCopyLen; ii++) {
-                    dirtyIndices.add(capacity + ii);
-                }
-            }
+        final int firstCopyLen = Math.min(chunkSize - head, count);
+        storageChunk.copyToArray(head, result, 0, firstCopyLen);
+        storageChunk.fillWithValue(head, firstCopyLen, emptyVal);
+        storageChunk.copyToArray(capacity, result, firstCopyLen, count - firstCopyLen);
+        storageChunk.fillWithValue(capacity, count - firstCopyLen, emptyVal);
+
+        if (dirtyPopHead == NULL_INT) {
+            dirtyPopHead = head;
         }
+        dirtyPopTail = ((head + count - 1) % capacity) + capacity;;
 
         // move the head
         head = ((head + count) % capacity) + capacity;
+        size -= count;
         return result;
     }
 
     public boolean isFull() {
-        return ((tail + 1) % capacity) + capacity == head;
+        return size == capacity;
     }
 
     public int size() {
-        return tail >= head
-                ? (tail - head) :
-                (tail + (capacity - head));
+        return size;
     }
 
     public boolean isEmpty() {
-        return tail == head;
+        return size == 0;
     }
 
     public float peek(float onEmpty) {
@@ -321,9 +372,7 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
         if (isEmpty()) {
             return onEmpty;
         }
-        float e = storageChunk.get(head);
-        head = (head + 1) % capacity + capacity;
-        return e;
+        return popUnsafe();
     }
 
     public float front() {
@@ -331,7 +380,7 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
     }
 
     public float front(int offset) {
-        if (offset < 0 || offset >= size()) {
+        if (offset < 0 || offset >= size) {
             throw new NoSuchElementException();
         }
         return storageChunk.get((head + offset) % capacity + capacity);
@@ -359,23 +408,30 @@ public class PairwiseFloatRingBuffer implements SafeCloseable {
     }
 
     public int capacity() {
-        return capacity - 1;
+        return capacity;
     }
 
     public int remaining() {
-        return capacity() - size();
+        return capacity - size;
+    }
+
+    private void clearDirty() {
+        dirtyPushHead = dirtyPopHead = NULL_INT;
+        dirtyPushTail = dirtyPopTail = NULL_INT;
     }
 
     public void clear() {
         head = tail = capacity;
-        dirtyIndices.clear();
-        allDirty = false;
+        size = 0;
+
+        clearDirty();
     }
 
     @Override
     public void close() {
         try (final WritableFloatChunk<Values> ignoredChunk = storageChunk) {
-            // close the closable items
+            // close the closable items and assign null
+            storageChunk = null;
         }
     }
 }

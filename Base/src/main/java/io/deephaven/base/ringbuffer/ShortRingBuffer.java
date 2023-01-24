@@ -21,9 +21,20 @@ import java.util.NoSuchElementException;
  * buffer instead.
  */
 public class ShortRingBuffer implements Serializable {
+    private static int SYSTEM_ARRAYCOPY_THRESHOLD = 16;
     protected final boolean growable;
     protected short[] storage;
     protected int head, tail, size;
+
+    private void fastCopy(short[] src, int srcPos, short[] dest, int destPos, int length) {
+        if (length < SYSTEM_ARRAYCOPY_THRESHOLD) {
+            for (int ii = 0; ii < length; ii++) {
+                dest[destPos + ii] = src[srcPos + ii];
+            }
+        } else {
+            System.arraycopy(src, srcPos, dest, 0, length);
+        }
+    }
 
     private void grow(int increase) {
         if (growable) {
@@ -38,15 +49,15 @@ public class ShortRingBuffer implements Serializable {
             short[] newStorage = new short[newLength];
 
             // three scenarios: size is zero so nothing to copy, head is before tail so only one copy needed, head
-            // after tail so two copies needed.  Assuming that copying zero bytes is a fast operation, we will always
+            // after tail so two copies needed. Assuming that copying zero bytes is a fast operation, we will always
             // make two calls for simplicity and branch-prediction friendliness.
 
             // compute the size of the first copy
             final int firstCopyLen = Math.min(storage.length - head, size);
 
             // do the copying
-            System.arraycopy(storage, head, newStorage, 0, firstCopyLen);
-            System.arraycopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
+            fastCopy(storage, head, newStorage, 0, firstCopyLen);
+            fastCopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
 
             // reset the pointers
             tail = size;
@@ -82,13 +93,13 @@ public class ShortRingBuffer implements Serializable {
         this.growable = growable;
         if (growable) {
             // use next larger power of 2
-            this.storage = new short[Integer.highestOneBit(capacity - 1) << 1];
+            storage = new short[Integer.highestOneBit(capacity - 1) << 1];
         } else {
             // might as well use exact size and not over-allocate
-            this.storage = new short[capacity];
+            storage = new short[capacity];
         }
 
-        this.tail = this.head = 0;
+        tail = head = 0;
     }
 
     public boolean isEmpty() {
@@ -138,7 +149,7 @@ public class ShortRingBuffer implements Serializable {
      * {@code growable}, this may result in an internal growth operation. This call should be used in conjunction with
      * {@link #addUnsafe(short)}.
      *
-     * @param count the amount of empty entries in the buffer after this call
+     * @param count the minimum number of empty entries in the buffer after this call
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      */
     public void ensureRemaining(int count) {
@@ -153,7 +164,7 @@ public class ShortRingBuffer implements Serializable {
 
     /**
      * Add values unsafely (will silently overwrite values if the buffer is full). This call should be used in
-     * conjunction with * {@link #ensureRemaining(int)}.
+     * conjunction with {@link #ensureRemaining(int)}.
      *
      * @param e the value to add to the buffer
      */
@@ -206,10 +217,10 @@ public class ShortRingBuffer implements Serializable {
         final int firstCopyLen = storage.length - head;
 
         if (tail >= head || firstCopyLen >= count) {
-            System.arraycopy(storage, head, result, 0, count);
+            fastCopy(storage, head, result, 0, count);
         } else {
-            System.arraycopy(storage, head, result, 0, firstCopyLen);
-            System.arraycopy(storage, 0, result, firstCopyLen, count - firstCopyLen);
+            fastCopy(storage, head, result, 0, firstCopyLen);
+            fastCopy(storage, 0, result, firstCopyLen, count - firstCopyLen);
         }
         head = (head + count) % storage.length;
         size -= count;
@@ -307,10 +318,10 @@ public class ShortRingBuffer implements Serializable {
         short[] result = new short[size];
         if (result.length > 0) {
             if (tail > head) {
-                System.arraycopy(storage, head, result, 0, tail - head);
+                fastCopy(storage, head, result, 0, tail - head);
             } else {
-                System.arraycopy(storage, head, result, 0, storage.length - head);
-                System.arraycopy(storage, 0, result, storage.length - head, tail);
+                fastCopy(storage, head, result, 0, storage.length - head);
+                fastCopy(storage, 0, result, storage.length - head, tail);
             }
         }
         return result;

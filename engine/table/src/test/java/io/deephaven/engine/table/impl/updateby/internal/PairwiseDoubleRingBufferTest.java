@@ -8,7 +8,6 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
-import io.deephaven.engine.table.impl.updateby.internal.PairwiseDoubleRingBuffer;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.experimental.categories.Category;

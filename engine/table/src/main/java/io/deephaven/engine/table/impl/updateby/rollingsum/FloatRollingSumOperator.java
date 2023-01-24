@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
-import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
@@ -17,7 +16,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
     private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;

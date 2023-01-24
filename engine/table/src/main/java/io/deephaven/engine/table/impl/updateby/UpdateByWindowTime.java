@@ -376,9 +376,9 @@ class UpdateByWindowTime extends UpdateByWindow {
                         popCount++;
                     }
 
-                    // advance the keyIt and timestamp iterators until we are within the window. This only happens
-                    // when initialStep == true because we have not created the minimum set of rows but include all
-                    // non-null timestamp rows in our influencer values
+                    // advance the influencerKeyIt and timestamp iterators until we are within the window. This only
+                    // happens when initialStep == true because we have not created the minimum set of rows but include
+                    // all non-null timestamp rows in our influencer values
                     long skipCount = 0;
                     while (currentTailTs < head) {
                         Assert.eqTrue(initialStep, "initialStep when skipping rows");
