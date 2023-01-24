@@ -26,6 +26,7 @@ import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerModule;
 import io.deephaven.server.runner.MainHelper;
+import io.deephaven.server.table.InternalMetricsModule;
 import io.deephaven.server.util.Scheduler;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
@@ -54,6 +55,7 @@ public class EmbeddedServer {
             GroovyConsoleSessionModule.class,
             SessionToExecutionStateModule.class,
             CommunityAuthorizationModule.class,
+            InternalMetricsModule.class
     })
     public interface PythonServerComponent extends JettyServerComponent {
         @Component.Builder
