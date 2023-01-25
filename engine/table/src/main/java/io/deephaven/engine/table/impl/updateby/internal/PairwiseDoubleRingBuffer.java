@@ -8,9 +8,7 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
-import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.SafeCloseable;
@@ -31,7 +29,10 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  */
 
 public class PairwiseDoubleRingBuffer implements SafeCloseable {
-    private static final int PAIRWISE_MAX_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE / 2;
+    /** We are limited to a buffer size exactly a power of two.  Since we store the values and the pairwise tree in the
+     * same buffer, we are limited to a max capacity of 2^29 (500M) entries
+     */
+    private static final int PAIRWISE_MAX_CAPACITY = 1 << 29;
     // use a sized double chunk for underlying storage
     private WritableDoubleChunk<Values> storageChunk;
 
@@ -76,7 +77,7 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
      *                         result is available
      */
     public PairwiseDoubleRingBuffer(int initialSize, double emptyVal, DoubleFunction pairwiseFunction) {
-        Assert.eqTrue(PAIRWISE_MAX_CAPACITY >= initialSize, "PairwiseDoubleRingBuffer initialSize <= PAIRWISE_MAX_CAPACITY");
+        Assert.eqTrue(initialSize <= PAIRWISE_MAX_CAPACITY, "PairwiseDoubleRingBuffer initialSize <= PAIRWISE_MAX_CAPACITY");
 
         // use next larger power of 2
         this.capacity = Integer.highestOneBit(initialSize - 1) << 1;
@@ -85,7 +86,6 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         this.pairwiseFunction = pairwiseFunction;
         this.emptyVal = emptyVal;
 
-        storageChunk.fillWithValue(0, chunkSize, emptyVal);
         clear();
     }
 
@@ -136,7 +136,7 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
                 endB /= 2;
             }
         }
-        throw new AssertionFailure("should never reach this line");
+        throw Assert.statementNeverExecuted();
     }
 
     @VisibleForTesting
@@ -166,16 +166,12 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
                 endC /= 2;
             }
         }
-        throw new AssertionFailure("should never reach this line");
+        throw Assert.statementNeverExecuted();
     }
 
     public double evaluate() {
         final boolean pushDirty = dirtyPushHead != NULL_INT;
         final boolean popDirty = dirtyPopHead != NULL_INT;
-
-        if (size == 0) {
-            return emptyVal;
-        }
 
         // This is a nested complex set of `if` statements that are used to set the correct and minimal initial
         // conditions for the evaluation.  The calls to evaluateTree recurse no more than twice (as the ranges
@@ -229,16 +225,10 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         // assert that we are not asking for the impossible
         Assert.eqTrue(PAIRWISE_MAX_CAPACITY - increase >= size, "PairwiseDoubleRingBuffer size <= PAIRWISE_MAX_CAPACITY");
 
-        final int minLength = size + increase;
-
-        // double the current capacity until there is sufficient space for the increase
-        while (capacity <= minLength) {
-            capacity *= 2;
-            chunkSize = Math.min(capacity * 2, PAIRWISE_MAX_CAPACITY);
-        }
-
-        // transfer to the new chunk
         WritableDoubleChunk<Values> oldChunk = storageChunk;
+
+        capacity = Integer.highestOneBit(size + increase - 1) << 1;
+        chunkSize = capacity * 2;
         storageChunk = WritableDoubleChunk.makeWritableChunk(chunkSize);
 
         // fill the pairwise tree (0 to capacity) with empty value
@@ -268,7 +258,7 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         dirtyPushTail = size;
 
         dirtyPopHead = NULL_INT;
-        dirtyPopTail = 0;
+        dirtyPopTail = NULL_INT;
     }
 
     private void grow() {
@@ -349,7 +339,7 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         if (dirtyPopHead == NULL_INT) {
             dirtyPopHead = head;
         }
-        dirtyPopTail = ((head + count - 1) % capacity) + capacity;;
+        dirtyPopTail = ((head + count - 1) % capacity) + capacity;
 
         // move the head
         head = ((head + count) % capacity) + capacity;
@@ -429,6 +419,9 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
     }
 
     public void clear() {
+        // fill with the empty value
+        storageChunk.fillWithValue(0, chunkSize, emptyVal);
+
         head = tail = capacity;
         size = 0;
 

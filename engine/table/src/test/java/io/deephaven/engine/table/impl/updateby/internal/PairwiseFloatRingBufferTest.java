@@ -8,6 +8,7 @@ import junit.framework.TestCase;
 import org.junit.experimental.categories.Category;
 
 import java.util.NoSuchElementException;
+import java.util.Random;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
@@ -37,9 +38,9 @@ public class PairwiseFloatRingBufferTest extends TestCase {
         assertFalse(rb.isEmpty());
         assertEquals(expectedSize, rb.size());
 
-        assertTrue(expectedHead == rb.peek(Long.MIN_VALUE));
+        assertEquals(expectedHead, rb.peek(Long.MIN_VALUE));
         try {
-            assertTrue(expectedHead == rb.element());
+            assertEquals(expectedHead, rb.element());
         } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
@@ -53,7 +54,7 @@ public class PairwiseFloatRingBufferTest extends TestCase {
     private void assertRemove(PairwiseFloatRingBuffer rb, int expectedSize, float expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         try {
-            assertTrue(expectedHead == rb.pop());
+            assertEquals(expectedHead, rb.pop());
         } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
@@ -69,195 +70,201 @@ public class PairwiseFloatRingBufferTest extends TestCase {
 
     public void testAddRemove() {
 
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, NULL_FLOAT, Float::min);
+        try (PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(3, NULL_FLOAT, Float::min)) {
 
-        assertEmpty(rb);
+            assertEmpty(rb);
 
-        // move the head and tail off zero
-        for (float i = 0; i < 1000; i++) {
-            rb.push(i);
+            // move the head and tail off zero
+            for (float i = 0; i < 1000; i++) {
+                rb.push(i);
+            }
+            for (float i = 0; i < 1000; i++) {
+                rb.pop();
+            }
+
+            assertEmpty(rb);
+
+            assertAdd(rb, A, 1, A);
+            assertAdd(rb, B, 2, A);
+            assertAdd(rb, C, 3, A);
+            // take this opportunity to test some front()/back() functions
+            assertEquals(rb.front(), A);
+            assertEquals(rb.front(0), A);
+            assertEquals(rb.front(1), B);
+            assertEquals(rb.front(2), C);
+            assertEquals(rb.back(), C);
+            assertEquals(rb.peekBack(NULL_FLOAT), C);
+
+            assertRemove(rb, 3, A);
+            assertRemove(rb, 2, B);
+            assertRemove(rb, 1, C);
+            assertEmpty(rb);
+
+            assertAdd(rb, A, 1, A);
+            assertAdd(rb, B, 2, A);
+            assertRemove(rb, 2, A);
+            assertAdd(rb, C, 2, B);
+            assertRemove(rb, 2, B);
+            assertRemove(rb, 1, C);
+            assertEmpty(rb);
+
+            assertAdd(rb, A, 1, A);
+            assertRemove(rb, 1, A);
+            assertEmpty(rb);
+            assertAdd(rb, B, 1, B);
+            assertRemove(rb, 1, B);
+            assertEmpty(rb);
+            assertAdd(rb, C, 1, C);
+            assertRemove(rb, 1, C);
+            assertEmpty(rb);
+
+            assertAdd(rb, D, 1, D);
+            assertRemove(rb, 1, D);
+            assertEmpty(rb);
+            assertAdd(rb, E, 1, E);
+            assertRemove(rb, 1, E);
+            assertEmpty(rb);
+            assertAdd(rb, F, 1, F);
+            assertRemove(rb, 1, F);
+            assertEmpty(rb);
+
+            assertAdd(rb, A, 1, A);
+            assertAdd(rb, B, 2, A);
+            assertAdd(rb, C, 3, A);
+
+            assertAdd(rb, D, 4, A);
+            assertAdd(rb, E, 5, A);
+            assertAdd(rb, F, 6, A);
+
+            assertRemove(rb, 6, A);
+            assertRemove(rb, 5, B);
+            assertRemove(rb, 4, C);
+            assertRemove(rb, 3, D);
+            assertRemove(rb, 2, E);
+            assertRemove(rb, 1, F);
+            assertEmpty(rb);
         }
-        for (float i = 0; i < 1000; i++) {
-            rb.pop();
-        }
-
-        assertEmpty(rb);
-
-        assertAdd(rb, A, 1, A);
-        assertAdd(rb, B, 2, A);
-        assertAdd(rb, C, 3, A);
-        // take this opportunity to test some front()/back() functions
-        assertEquals(rb.front(), A);
-        assertEquals(rb.front(0), A);
-        assertEquals(rb.front(1), B);
-        assertEquals(rb.front(2), C);
-        assertEquals(rb.back(), C);
-        assertEquals(rb.peekBack(NULL_FLOAT), C);
-
-        assertRemove(rb, 3, A);
-        assertRemove(rb, 2, B);
-        assertRemove(rb, 1, C);
-        assertEmpty(rb);
-
-        assertAdd(rb, A, 1, A);
-        assertAdd(rb, B, 2, A);
-        assertRemove(rb, 2, A);
-        assertAdd(rb, C, 2, B);
-        assertRemove(rb, 2, B);
-        assertRemove(rb, 1, C);
-        assertEmpty(rb);
-
-        assertAdd(rb, A, 1, A);
-        assertRemove(rb, 1, A);
-        assertEmpty(rb);
-        assertAdd(rb, B, 1, B);
-        assertRemove(rb, 1, B);
-        assertEmpty(rb);
-        assertAdd(rb, C, 1, C);
-        assertRemove(rb, 1, C);
-        assertEmpty(rb);
-
-        assertAdd(rb, D, 1, D);
-        assertRemove(rb, 1, D);
-        assertEmpty(rb);
-        assertAdd(rb, E, 1, E);
-        assertRemove(rb, 1, E);
-        assertEmpty(rb);
-        assertAdd(rb, F, 1, F);
-        assertRemove(rb, 1, F);
-        assertEmpty(rb);
-
-        assertAdd(rb, A, 1, A);
-        assertAdd(rb, B, 2, A);
-        assertAdd(rb, C, 3, A);
-
-        assertAdd(rb, D, 4, A);
-        assertAdd(rb, E, 5, A);
-        assertAdd(rb, F, 6, A);
-
-        assertRemove(rb, 6, A);
-        assertRemove(rb, 5, B);
-        assertRemove(rb, 4, C);
-        assertRemove(rb, 3, D);
-        assertRemove(rb, 2, E);
-        assertRemove(rb, 1, F);
-        assertEmpty(rb);
     }
 
     public void testGrowSimple() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+        try (PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min)) {
 
-        assertAdd(rb, A, 1, A);
-        assertAdd(rb, B, 2, A);
-        assertAdd(rb, C, 3, A);
-        assertAdd(rb, D, 4, A);
-        assertAdd(rb, E, 5, A);
+            assertAdd(rb, A, 1, A);
+            assertAdd(rb, B, 2, A);
+            assertAdd(rb, C, 3, A);
+            assertAdd(rb, D, 4, A);
+            assertAdd(rb, E, 5, A);
 
-        // this will grow; the elements are in a single contiguous block
-        assertAdd(rb, F, 6, A);
+            // this will grow; the elements are in a single contiguous block
+            assertAdd(rb, F, 6, A);
 
-        assertRemove(rb, 6, A);
-        assertRemove(rb, 5, B);
-        assertRemove(rb, 4, C);
-        assertRemove(rb, 3, D);
-        assertRemove(rb, 2, E);
-        assertRemove(rb, 1, F);
-        assertEmpty(rb);
+            assertRemove(rb, 6, A);
+            assertRemove(rb, 5, B);
+            assertRemove(rb, 4, C);
+            assertRemove(rb, 3, D);
+            assertRemove(rb, 2, E);
+            assertRemove(rb, 1, F);
+            assertEmpty(rb);
 
-        rb.pushEmptyValue();
-        assertEquals(rb.front(), NULL_FLOAT);
-        try {
-            rb.front(-1);
-            fail("expected a NoSuchElement exception");
-        } catch (NoSuchElementException x) {
-            // expected
+            rb.pushEmptyValue();
+            assertEquals(rb.front(), NULL_FLOAT);
+            try {
+                rb.front(-1);
+                fail("expected a NoSuchElement exception");
+            } catch (NoSuchElementException x) {
+                // expected
+            }
+            try {
+                rb.front(5);
+                fail("expected a NoSuchElement exception");
+            } catch (NoSuchElementException x) {
+                // expected
+            }
+            assertEquals(rb.poll(0.0f), NULL_FLOAT);
         }
-        try {
-            rb.front(5);
-            fail("expected a NoSuchElement exception");
-        } catch (NoSuchElementException x) {
-            // expected
-        }
-        assertEquals(rb.poll(0.0f), NULL_FLOAT);
     }
 
     public void testGrowComplex() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+        try (PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min)) {
 
-        assertAdd(rb, A, 1, A);
-        assertAdd(rb, B, 2, A);
-        assertAdd(rb, C, 3, A);
-        assertRemove(rb, 3, A);
-        assertRemove(rb, 2, B);
-        assertRemove(rb, 1, C);
-        assertEmpty(rb);
+            assertAdd(rb, A, 1, A);
+            assertAdd(rb, B, 2, A);
+            assertAdd(rb, C, 3, A);
+            assertRemove(rb, 3, A);
+            assertRemove(rb, 2, B);
+            assertRemove(rb, 1, C);
+            assertEmpty(rb);
 
-        assertAdd(rb, A, 1, A);
-        assertAdd(rb, B, 2, A);
-        assertAdd(rb, C, 3, A);
-        assertAdd(rb, D, 4, A);
-        assertAdd(rb, E, 5, A);
+            assertAdd(rb, A, 1, A);
+            assertAdd(rb, B, 2, A);
+            assertAdd(rb, C, 3, A);
+            assertAdd(rb, D, 4, A);
+            assertAdd(rb, E, 5, A);
 
-        // this will grow; the elements are in two blocks
-        assertAdd(rb, F, 6, A);
+            // this will grow; the elements are in two blocks
+            assertAdd(rb, F, 6, A);
 
-        assertRemove(rb, 6, A);
-        assertRemove(rb, 5, B);
-        assertRemove(rb, 4, C);
-        assertRemove(rb, 3, D);
-        assertRemove(rb, 2, E);
-        assertRemove(rb, 1, F);
-        assertEmpty(rb);
+            assertRemove(rb, 6, A);
+            assertRemove(rb, 5, B);
+            assertRemove(rb, 4, C);
+            assertRemove(rb, 3, D);
+            assertRemove(rb, 2, E);
+            assertRemove(rb, 1, F);
+            assertEmpty(rb);
+        }
     }
 
     public void testWhenEmpty() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
-        try {
-            rb.back();
-            fail("expected a NoSuchElement exception");
-        } catch (NoSuchElementException x) {
-            // expected
+        try (PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min)) {
+            try {
+                rb.back();
+                fail("expected a NoSuchElement exception");
+            } catch (NoSuchElementException x) {
+                // expected
+            }
+            try {
+                rb.pop();
+                fail("expected a NoSuchElement exception");
+            } catch (NoSuchElementException x) {
+                // expected
+            }
+            try {
+                rb.front();
+                fail("expected a NoSuchElement exception");
+            } catch (NoSuchElementException x) {
+                // expected
+            }
+            assertEquals(rb.poll((float) -1), (float) -1);
+            assertEquals(rb.peek((float) -1), (float) -1);
+            assertEquals(rb.peekBack((float) -1), (float) -1);
         }
-        try {
-            rb.pop();
-            fail("expected a NoSuchElement exception");
-        } catch (NoSuchElementException x) {
-            // expected
-        }
-        try {
-            rb.front();
-            fail("expected a NoSuchElement exception");
-        } catch (NoSuchElementException x) {
-            // expected
-        }
-        assertEquals(rb.poll((float) -1), (float) -1);
-        assertEquals(rb.peek((float) -1), (float) -1);
-        assertEquals(rb.peekBack((float) -1), (float) -1);
     }
 
     public void testBack() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+        try (PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min)) {
 
-        assertAdd(rb, A, 1, A);
-        assertEquals(rb.back(), A);
+            assertAdd(rb, A, 1, A);
+            assertEquals(rb.back(), A);
 
-        assertAdd(rb, B, 2, A);
-        assertAdd(rb, C, 3, A);
-        assertEquals(rb.back(), C);
+            assertAdd(rb, B, 2, A);
+            assertAdd(rb, C, 3, A);
+            assertEquals(rb.back(), C);
+        }
     }
 
     public void testBackTailIsZero() {
-        PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min);
+        try (PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(5, NULL_FLOAT, Float::min)) {
 
-        assertAdd(rb, A, 1, A);
-        assertAdd(rb, B, 2, A);
-        assertAdd(rb, C, 3, A);
-        assertAdd(rb, D, 4, A);
-        assertAdd(rb, E, 5, A);
+            assertAdd(rb, A, 1, A);
+            assertAdd(rb, B, 2, A);
+            assertAdd(rb, C, 3, A);
+            assertAdd(rb, D, 4, A);
+            assertAdd(rb, E, 5, A);
 
-        assertRemove(rb, 5, A);
-        assertAdd(rb, F, 5, B);
-        assertEquals(rb.back(), F);
+            assertRemove(rb, 5, A);
+            assertAdd(rb, F, 5, B);
+            assertEquals(rb.back(), F);
+        }
     }
 
     public void testLargeAmounts() {
@@ -341,20 +348,134 @@ public class PairwiseFloatRingBufferTest extends TestCase {
      * Return the sum of 0 to N-1
      */
     private float sum0toN(float n) {
-        return ((float) n * (float) (n - 1) / (float) 2);
+        if (n == (float) 0) {
+            return (float) 0; // not negative zero, sigh
+        }
+        return (n * (n - 1) / (float) 2);
     }
 
     public void testEvaluationEdgeCase() {
-        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(512, (float)0, Float::sum)) {
-            for (float i = 0; i < 512; i++) {
+        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(512, (float) 0, Float::sum)) {
+
+            final int PRIME = 97;
+            final float PRIME_SUM = sum0toN(PRIME);
+            final Random rnd = new Random(0xDEADBEEF);
+
+            // specific test for push or wrap araound
+            for (int step = 0; step < 100; step++) {
+                for (float i = 0; i < PRIME; i++) {
+                    rb.pushUnsafe(i);
+                }
+                assertEquals(PRIME_SUM, rb.evaluate());
+
+                for (float i = 0; i < PRIME; i++) {
+                    rb.popUnsafe();
+                }
+                assertEquals((float) 0, rb.evaluate());
+                // not a copy/paste error, call this twice
+                assertEquals((float) 0, rb.evaluate());
+            }
+
+            // specific test for push & wrap araound
+            for (int step = 0; step < 100; step++) {
+                for (float i = 0; i < PRIME; i++) {
+                    rb.pushUnsafe(i);
+                }
+                for (float i = 0; i < PRIME; i++) {
+                    rb.popUnsafe();
+                }
+                assertEquals((float) 0, rb.evaluate());
+                // not a copy/paste error, call this twice
+                assertEquals((float) 0, rb.evaluate());
+            }
+
+            // push random amounts and test
+            for (int step = 0; step < 100; step++) {
+                final int OFFSET = rnd.nextInt(PRIME);
+
+                for (float i = 0; i < OFFSET; i++) {
+                    rb.pushUnsafe(i);
+                }
+                assertEquals(sum0toN(OFFSET), rb.evaluate());
+
+                for (float i = OFFSET; i < PRIME; i++) {
+                    rb.pushUnsafe(i);
+                }
+                assertEquals(PRIME_SUM, rb.evaluate());
+
+                for (float i = 0; i < PRIME; i++) {
+                    rb.popUnsafe();
+                }
+                assertEquals((float) 0, rb.evaluate());
+            }
+
+            // pop random amounts and test
+            for (int step = 0; step < 100; step++) {
+                final int OFFSET = rnd.nextInt(PRIME);
+                for (float i = 0; i < PRIME; i++) {
+                    rb.pushUnsafe(i);
+                }
+                assertEquals(PRIME_SUM, rb.evaluate());
+
+                for (float i = 0; i < OFFSET; i++) {
+                    rb.popUnsafe();
+                }
+                assertEquals(PRIME_SUM - sum0toN(OFFSET), rb.evaluate());
+
+                for (float i = 0; i < (PRIME - OFFSET); i++) {
+                    rb.popUnsafe();
+                }
+                assertEquals((float) 0, rb.evaluate());
+            }
+        }
+
+        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(512, (float) 0, Float::sum)) {
+            // need to get the buffer to state where we have clean pushes and a wrapped pop
+
+            // move the pointers close to the end
+            for (float i = 0; i < 500; i++) {
+                rb.pushUnsafe(i);
+                rb.popUnsafe();
+            }
+            assertEquals((float) 0, rb.evaluate());
+            assertEmpty(rb);
+
+            // push past the end
+            for (float i = 0; i < 200; i++) {
                 rb.pushUnsafe(i);
             }
-            // eval single range (internal collapse expected)
-            assertEquals(sum0toN(512), rb.evaluateTree(512, 1023));
-            assertEquals(sum0toN(512), rb.evaluateTree(512, 600, 601, 1023));
-            assertEquals(sum0toN(512), rb.evaluateTree(512, 600, 601, 700, 701, 1023));
+            assertEquals(sum0toN(200), rb.evaluate());
 
-            //TODO: more edge cases
+            // one more push to dirty the pushes
+            rb.pushUnsafe(201);
+
+            // pop past the end
+            for (float i = 0; i < 200; i++) {
+                rb.popUnsafe();
+            }
+
+            // only thing in the buffer is the final push
+            assertEquals((float) 201, rb.evaluate());
+        }
+
+        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(512, (float) 0, Float::sum)) {
+            // cue some hacky stuff to improve code coverage
+            for (float i = 0; i < 100; i++) {
+                rb.pushUnsafe(i);
+            }
+
+            final float sum = sum0toN(100);
+
+            // evaluateTree() doesn't reset the dirty bits so these calls can follow each other
+
+            // no consecutive ranges
+            assertEquals(sum, rb.evaluateTree(512, 611, 712, 811, 912, 1023));
+            // first two ranges are consecutive
+            assertEquals(sum, rb.evaluateTree(512, 611, 612, 811, 912, 1023));
+            // second two ranges are consecutive
+            assertEquals(sum, rb.evaluateTree(512, 611, 712, 811, 812, 1023));
+            // all ranges are consecutive
+            assertEquals(sum, rb.evaluateTree(512, 611, 612, 811, 812, 1023));
         }
     }
 
@@ -401,6 +522,13 @@ public class PairwiseFloatRingBufferTest extends TestCase {
 
                 if (step % 2 == 0) {
                     rb.evaluate();
+                }
+
+                try {
+                    float[] values = rb.pop(501);
+                    fail("popping more values than size() should fail");
+                } catch (NoSuchElementException x) {
+                    // expected
                 }
 
                 float[] values = rb.pop(500);

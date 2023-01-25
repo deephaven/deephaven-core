@@ -16,7 +16,6 @@ import java.util.NoSuchElementException;
  * buffer instead.
  */
 public class CharRingBuffer implements Serializable {
-    private static int SYSTEM_ARRAYCOPY_THRESHOLD = 16;
     protected final boolean growable;
     protected char[] storage;
     protected int head, tail, size;
@@ -26,17 +25,18 @@ public class CharRingBuffer implements Serializable {
             // assert that we are not asking for the impossible
             Assert.eqTrue(ArrayUtil.MAX_ARRAY_SIZE - increase >= size, "CharRingBuffer size <= MAX_ARRAY_SIZE");
 
-            final int minLength = size + increase;
-            char[] newStorage = new char[Integer.highestOneBit(minLength - 1) << 1];
+            // make sure we cap out at ArrayUtil.MAX_ARRAY_SIZE
+            final int newLength =
+                    Math.toIntExact(Math.min(ArrayUtil.MAX_ARRAY_SIZE, Long.highestOneBit(size + increase - 1) << 1));
+            char[] newStorage = new char[newLength];
 
             // three scenarios: size is zero so nothing to copy, head is before tail so only one copy needed, head
-            // after tail so two copies needed. Assuming that copying zero bytes is a fast operation, we will always
-            // make two calls for simplicity and branch-prediction friendliness.
+            // after tail so two copies needed. Make two calls for simplicity and branch-prediction friendliness.
 
             // compute the size of the first copy
             final int firstCopyLen = Math.min(storage.length - head, size);
 
-            // do the copying (
+            // do the copying
             System.arraycopy(storage, head, newStorage, 0, firstCopyLen);
             System.arraycopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
 
