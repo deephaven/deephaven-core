@@ -1,12 +1,13 @@
 #
 #     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-"""This module supports ingesting data from external relational databases into Deephaven via the Python DB-API 2.0 (
-PEP 249) and the Open Database Connectivity (ODBC) interfaces by using the Turbodbc module.
+"""This module supports ingesting data from external relational databases into Deephaven via the Python DB-API 2.0
+(PEP 249) and the Open Database Connectivity (ODBC) interfaces by using the Turbodbc module.
 
 Turbodbc is DB-API 2.0 compliant, provides access to relational databases via the ODBC interface and more
-importantly it has optimized built-in Apache Arrow support when fetching ODBC result sets. This enables Deephaven to
+importantly it has optimized, built-in Apache Arrow support when fetching ODBC result sets. This enables Deephaven to
 achieve maximum efficiency when ingesting relational data. """
+
 from typing import Any
 
 from deephaven import DHError
@@ -19,7 +20,7 @@ except ImportError:
     raise DHError(message="import turbodbc failed")
 
 
-def read_cursor(cursor: Any) -> Table:
+def read_cursor(cursor: turbodbc.cursor.Cursor) -> Table:
     """Converts the result set of the provided cursor into a Deephaven table.
 
     Args:
@@ -30,12 +31,11 @@ def read_cursor(cursor: Any) -> Table:
         a new Table
 
     Raises:
-        DHError
+        DHError, TypeError
     """
 
     if not isinstance(cursor, turbodbc.cursor.Cursor):
-        raise DHError(message='')
-
+        raise TypeError(f"expect {turbodbc.cursor.Cursor} got {type(cursor)} instead.")
     try:
         pa_table = cursor.fetchallarrow()
     except Exception as e:
