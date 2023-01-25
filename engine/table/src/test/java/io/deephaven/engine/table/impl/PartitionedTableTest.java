@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.agg.Partition;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -830,7 +831,9 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     private EvalNugget newExecutionContextNugget(
-            QueryTable table, Function<PartitionedTable.Proxy, PartitionedTable.Proxy> op) {
+            String name,
+            QueryTable table,
+            Function<PartitionedTable.Proxy, PartitionedTable.Proxy> op) {
         return new EvalNugget() {
             @Override
             protected Table e() {
@@ -844,7 +847,8 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                     ExecutionContext.getContext().getQueryScope().putParam("queryScopeVar", "queryScopeValue");
                     ExecutionContext.getContext().getQueryScope().putParam("queryScopeFilter", 50000);
 
-                    final PartitionedTable.Proxy proxy = table.partitionedAggBy(List.of(), true, null, "intCol")
+                    final PartitionedTable.Proxy proxy = table
+                            .partitionedAggBy(List.of(Partition.of(name + "Constituent")), true, null, "intCol")
                             .proxy(false, false);
                     final Table result = op.apply(proxy).target().merge().sort("intCol");
 
@@ -868,12 +872,14 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                         new SortedLongGenerator(0, Long.MAX_VALUE - 1)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                newExecutionContextNugget(table, src -> src.update("K = queryScopeVar")),
-                newExecutionContextNugget(table, src -> src.updateView("K = queryScopeVar")),
-                newExecutionContextNugget(table, src -> src.select("K = queryScopeVar", "indices", "intCol")),
-                newExecutionContextNugget(table, src -> src.view("K = queryScopeVar", "indices", "intCol")),
-                newExecutionContextNugget(table, src -> src.where("intCol > queryScopeFilter")),
-                newExecutionContextNugget(table, src -> src.update("X = 0", "Y = X")),
+                newExecutionContextNugget("UpdateNugget1", table, src -> src.update("K = queryScopeVar")),
+                newExecutionContextNugget("UpdateViewNugget", table, src -> src.updateView("K = queryScopeVar")),
+                newExecutionContextNugget("SelectNugget", table,
+                        src -> src.select("K = queryScopeVar", "indices", "intCol")),
+                newExecutionContextNugget("ViewNugget", table,
+                        src -> src.view("K = queryScopeVar", "indices", "intCol")),
+                newExecutionContextNugget("WhereNugget", table, src -> src.where("intCol > queryScopeFilter")),
+                newExecutionContextNugget("UpdateNugget2", table, src -> src.update("X = 0", "Y = X")),
         };
 
         for (int i = 0; i < 100; i++) {

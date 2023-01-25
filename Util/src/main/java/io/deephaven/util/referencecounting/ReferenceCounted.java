@@ -95,6 +95,12 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
         referenceCount = initialValue == 0 ? INITIAL_ZERO_VALUE : initialValue;
     }
 
+    public static String getReferenceCountDebug(Object maybeReferenceCounted) {
+        return maybeReferenceCounted instanceof ReferenceCounted
+                ? Integer.toString(((ReferenceCounted) maybeReferenceCounted).getCurrentReferenceCount())
+                : "not reference counted";
+    }
+
     private int getCurrentReferenceCount() {
         return referenceCount;
     }
