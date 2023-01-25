@@ -1,11 +1,13 @@
 package io.deephaven.web.client.api;
 
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
@@ -16,9 +18,12 @@ import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 @JsType(namespace = "dh")
 public class CoreClient extends QueryConnectable<CoreClient> {
@@ -78,9 +83,9 @@ public class CoreClient extends QueryConnectable<CoreClient> {
 
     public Promise<String[][]> getAuthConfigValues() {
         return getConfigs(
-                c -> connection.get().configServiceClient().getAuthenticationConstants(
+                // Explicitly creating a new client, and not passing auth details, so this works pre-connection
+                c -> new ConfigServiceClient(getServerUrl(), CLIENT_OPTIONS).getAuthenticationConstants(
                         new AuthenticationConstantsRequest(),
-                        connection.get().metadata(),
                         c::apply),
                 AuthenticationConstantsResponse::getConfigValuesMap);
     }

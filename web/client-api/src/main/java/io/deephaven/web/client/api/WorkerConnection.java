@@ -58,7 +58,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_ser
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.WrappedAuthenticationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
@@ -75,6 +74,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_serv
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.WebGrpcUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -123,6 +123,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.*;
+import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 /**
  * Non-exported class, manages the connection to a given worker server. Exported types like QueryInfo and Table will
@@ -140,19 +141,7 @@ import static io.deephaven.web.client.api.barrage.WebBarrageUtils.*;
  * is left un-closed.
  */
 public class WorkerConnection {
-    private static final boolean useWebsockets;
 
-    static {
-        // TODO configurable, let us support this even when ssl?
-        if (DomGlobal.window.location.protocol.equals("http:")) {
-            useWebsockets = true;
-            Grpc.setDefaultTransport.onInvoke(options -> new MultiplexedWebsocketTransport(options, () -> {
-                Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
-            }));
-        } else {
-            useWebsockets = false;
-        }
-    }
 
     // All calls to the server should share this metadata instance, or copy from it if they need something custom
     private BrowserHeaders metadata = new BrowserHeaders();
@@ -231,24 +220,23 @@ public class WorkerConnection {
         this.config = new ClientConfiguration();
         state = State.Connecting;
         this.reviver = new TableReviver(this);
-        boolean debugGrpc = false;
-        sessionServiceClient = new SessionServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        tableServiceClient = new TableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        flightServiceClient = new FlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        sessionServiceClient = new SessionServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        tableServiceClient = new TableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        flightServiceClient = new FlightServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         applicationServiceClient =
-                new ApplicationServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new ApplicationServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         browserFlightServiceClient =
-                new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new BrowserFlightServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         inputTableServiceClient =
-                new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new InputTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         partitionedTableServiceClient =
-                new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        storageServiceClient = new StorageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        configServiceClient = new ConfigServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new PartitionedTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        storageServiceClient = new StorageServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        configServiceClient = new ConfigServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         hierarchicalTableServiceClient =
-                new HierarchicalTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new HierarchicalTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -431,7 +419,8 @@ public class WorkerConnection {
             // the streamfactory will automatically reference our existing metadata, but we can listen to update it
             BiDiStream<HandshakeRequest, HandshakeResponse> handshake = HandshakeStreamFactory.create(this);
             handshake.onHeaders(headers -> {
-                // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders != Metadata
+                // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
+                // Metadata
                 JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get("authorization");
                 if (authorization.length > 0 && metadata().get("authorization").length > 0) {
                     // use this new token
@@ -989,7 +978,7 @@ public class WorkerConnection {
     }
 
     public <ReqT, RespT> BiDiStream.Factory<ReqT, RespT> streamFactory() {
-        return new BiDiStream.Factory<>(this::metadata, config::newTicketInt, useWebsockets);
+        return new BiDiStream.Factory<>(this::metadata, config::newTicketInt);
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,
