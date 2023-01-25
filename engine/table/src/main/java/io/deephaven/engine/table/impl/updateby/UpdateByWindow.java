@@ -41,6 +41,9 @@ abstract class UpdateByWindow {
         protected final LongSegmentedSortedArray timestampSsa;
         /** This rowset will store row keys where the timestamp is not null (will mirror the SSA contents) */
         protected final TrackingRowSet timestampValidRowSet;
+
+        /** Were any timestamps modified in the current update? */
+        protected final boolean timestampsModified;
         /** An array of context objects for each underlying operator */
         protected final UpdateByOperator.UpdateContext[] opContext;
         /** Whether this is the creation phase of this window */
@@ -69,12 +72,14 @@ abstract class UpdateByWindow {
                 @Nullable final ColumnSource<?> timestampColumnSource,
                 @Nullable final LongSegmentedSortedArray timestampSsa,
                 final TrackingRowSet timestampValidRowSet,
+                final boolean timestampsModified,
                 final int chunkSize,
                 final boolean initialStep) {
             this.sourceRowSet = sourceRowSet;
             this.timestampColumnSource = timestampColumnSource;
             this.timestampSsa = timestampSsa;
             this.timestampValidRowSet = timestampValidRowSet;
+            this.timestampsModified = timestampsModified;
 
             this.opContext = new UpdateByOperator.UpdateContext[operators.length];
 
@@ -102,6 +107,7 @@ abstract class UpdateByWindow {
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final TrackingRowSet timestampValidRowSet,
+            final boolean timestampsModified,
             final int chunkSize,
             final boolean isInitializeStep);
 

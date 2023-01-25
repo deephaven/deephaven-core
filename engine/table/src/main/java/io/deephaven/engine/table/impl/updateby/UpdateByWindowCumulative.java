@@ -45,10 +45,11 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final TrackingRowSet timestampValidRowSet,
+            final boolean timestampsModified,
             final int chunkSize,
             final boolean isInitializeStep) {
         return new UpdateByWindowBucketContext(sourceRowSet, timestampColumnSource, timestampSsa, timestampValidRowSet,
-                chunkSize, isInitializeStep);
+                timestampsModified, chunkSize, isInitializeStep);
     }
 
     @Override
@@ -91,7 +92,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                 if (upstream.modifiedColumnSet().nonempty() && (op.getInputModifiedColumnSet() == null
                         || upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()))) {
                     dirtyOperators.set(opIdx);
-                    Arrays.stream(operatorInputSourceSlots[opIdx]).forEach(srcIdx -> dirtySourceIndices.set(srcIdx));
+                    Arrays.stream(operatorInputSourceSlots[opIdx]).forEach(dirtySourceIndices::set);
                 }
             }
             context.isDirty = !dirtyOperators.isEmpty();

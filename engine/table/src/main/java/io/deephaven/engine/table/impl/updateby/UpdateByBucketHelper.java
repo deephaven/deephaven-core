@@ -294,9 +294,17 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     public void prepareForUpdate(final TableUpdate upstream, final boolean initialStep) {
         Assert.eqFalse(isDirty, "UpdateBy bucket was marked dirty before processing an update");
 
+        final boolean timestampsModified;
+
         // add all the SSA data
         if (timestampColumnName != null) {
             processUpdateForSsa(upstream);
+
+            // test whether any timestamps were modified
+            timestampsModified =
+                    upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(timestampColumnSet);
+        } else {
+            timestampsModified = false;
         }
 
         final TrackingRowSet sourceRowSet = source.getRowSet();
@@ -308,6 +316,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                     timestampColumnSource,
                     timestampSsa,
                     timestampValidRowSet,
+                    timestampsModified,
                     control.chunkCapacityOrDefault(),
                     initialStep);
 

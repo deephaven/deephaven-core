@@ -39,7 +39,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
         UpdateByWindowTicksBucketContext(final TrackingRowSet sourceRowSet,
                 final int chunkSize, final boolean initialStep) {
-            super(sourceRowSet, null, null, null, chunkSize, initialStep);
+            super(sourceRowSet, null, null, null, false, chunkSize, initialStep);
         }
 
         @Override
@@ -84,6 +84,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final TrackingRowSet timestampValidRowSet,
+            final boolean timestampsModified,
             final int chunkSize,
             final boolean isInitializeStep) {
         return new UpdateByWindowTicksBucketContext(sourceRowSet, chunkSize, isInitializeStep);
