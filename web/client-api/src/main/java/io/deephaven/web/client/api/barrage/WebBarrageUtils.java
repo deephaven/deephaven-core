@@ -404,8 +404,7 @@ public class WebBarrageUtils {
                         boolArray[i] = wireValues.get(i);
                     }
                 }
-                return new ByteArrayColumnData(Js.uncheckedCast(boolArray));
-
+                return new BooleanArrayColumnData(boolArray);
             case "byte":
                 assert positions.length().toFloat64() >= size;
                 Int8Array byteArray =
