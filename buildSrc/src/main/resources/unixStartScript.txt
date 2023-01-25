@@ -165,11 +165,9 @@ case "\$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
-if [ -z "\$EXTRA_CLASSPATH" ]; then
-    CLASSPATH=$classpath
-else
-    CLASSPATH="\$EXTRA_CLASSPATH":$classpath
-fi
+# Deephaven edit.
+# Prepend EXTRA_CLASSPATH and colon if EXTRA_CLASSPATH is non-empty.
+CLASSPATH=\${EXTRA_CLASSPATH:+"\$EXTRA_CLASSPATH":}$classpath
 
 <% if ( mainClassName.startsWith('--module ') ) { %>
 MODULE_PATH=$modulePath
