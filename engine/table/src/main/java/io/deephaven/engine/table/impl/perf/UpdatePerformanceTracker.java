@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.perf;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.util.InternalTableLoggerWrapper;
+import io.deephaven.engine.table.impl.util.MemoryTableLogger;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
@@ -80,7 +81,8 @@ public class UpdatePerformanceTracker {
             @NotNull final TableDefinition logTableDefinition) {
         this.logger = logger;
         if (tableLoggerWrapperFactory == null) {
-            throw new IllegalStateException("Must set internal table logger wrapper factory.");
+            // TODO: factor this out when adapting MemoryLoggers
+            tableLoggerWrapperFactory = MemoryTableLogger::new;
         }
         tableLogger = tableLoggerWrapperFactory.create(logger, new UpdatePerformanceLogLogger(processInfoId), logTableDefinition);
     }
