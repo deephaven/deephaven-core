@@ -62,4 +62,14 @@ public class ResponseStreamWrapper<T> {
     public final ResponseStreamWrapper<T> onEnd(JsConsumer<Status> handler) {
         return on("end", Js.cast(handler));
     }
+
+    @JsOverlay
+    public final ResponseStreamWrapper<T> onHeaders(JsConsumer<Object> handler) {
+        try {
+            return on("headers", Js.cast(handler));
+        } catch (Exception ignore) {
+            // most implementations don't offer this, we can ignore this error
+            return this;
+        }
+    }
 }
