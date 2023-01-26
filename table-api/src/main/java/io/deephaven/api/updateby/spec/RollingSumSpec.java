@@ -17,22 +17,30 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
 
     // most common usages first, will complete the list later
 
-    public static RollingSumSpec ofTicks(long tickWindow) {
-        return of(WindowScale.ofTicks(tickWindow));
+    public static RollingSumSpec ofTicks(long prevTicks) {
+        return of(WindowScale.ofTicks(prevTicks));
     }
 
-    public static RollingSumSpec ofTicks(long prevTickWindow, long fwdTickWindow) {
-        return of(WindowScale.ofTicks(prevTickWindow), WindowScale.ofTicks(fwdTickWindow));
+    public static RollingSumSpec ofTicks(long prevTicks, long fwdTicks) {
+        return of(WindowScale.ofTicks(prevTicks), WindowScale.ofTicks(fwdTicks));
     }
 
-    public static RollingSumSpec ofTime(final String timestampCol, Duration prevWindowDuration) {
-        return of(WindowScale.ofTime(timestampCol, prevWindowDuration));
+    public static RollingSumSpec ofTime(final String timestampCol, Duration prevDuration) {
+        return of(WindowScale.ofTime(timestampCol, prevDuration));
     }
 
-    public static RollingSumSpec ofTime(final String timestampCol, Duration prevWindowDuration,
-            Duration fwdWindowDuration) {
-        return of(WindowScale.ofTime(timestampCol, prevWindowDuration),
-                WindowScale.ofTime(timestampCol, fwdWindowDuration));
+    public static RollingSumSpec ofTime(final String timestampCol, Duration prevDuration, Duration fwdDuration) {
+        return of(WindowScale.ofTime(timestampCol, prevDuration),
+                WindowScale.ofTime(timestampCol, fwdDuration));
+    }
+
+    public static RollingSumSpec ofTime(final String timestampCol, long prevDuration) {
+        return of(WindowScale.ofTime(timestampCol, prevDuration));
+    }
+
+    public static RollingSumSpec ofTime(final String timestampCol, long prevDuration, long fwdDuration) {
+        return of(WindowScale.ofTime(timestampCol, prevDuration),
+                WindowScale.ofTime(timestampCol, fwdDuration));
     }
 
     // general use constructors
@@ -44,53 +52,6 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
     public static RollingSumSpec of(WindowScale prevWindowScale, WindowScale fwdWindowScale) {
         return ImmutableRollingSumSpec.builder().prevTimeScale(prevWindowScale).fwdTimeScale(fwdWindowScale).build();
     }
-
-    // public static RollingSumSpec of(WindowScale prevTimeScale) {
-    // return ImmutableWindowedOpSpec.builder().prevTimeScale(prevTimeScale).build();
-    // }
-    //
-    // public static RollingSumSpec of(OperationControl control, WindowScale prevTimeScale, WindowScale fwdTimeScale) {
-    // return
-    // ImmutableWindowedOpSpec.builder().control(control).prevTimeScale(prevTimeScale).fwdTimeScale(fwdTimeScale).build();
-    // }
-    //
-    // public static RollingSumSpec ofTime(final OperationControl control,
-    // final String timestampCol,
-    // long prevWindowTimeScaleNanos) {
-    // return of(control, WindowScale.ofTime(timestampCol, prevWindowTimeScaleNanos));
-    // }
-    //
-    // public static RollingSumSpec ofTime(final OperationControl control,
-    // final String timestampCol,
-    // long prevWindowTimeScaleNanos,
-    // long fwdWindowTimeScaleNanos) {
-    // return of(control, WindowScale.ofTime(timestampCol, prevWindowTimeScaleNanos), WindowScale.ofTime(timestampCol,
-    // fwdWindowTimeScaleNanos));
-    // }
-    //
-    // public static RollingSumSpec ofTime(final OperationControl control,
-    // final String timestampCol,
-    // Duration prevWindowDuration) {
-    // return of(control, WindowScale.ofTime(timestampCol, prevWindowDuration));
-    // }
-    //
-    //
-    // public static RollingSumSpec ofTime(final OperationControl control,
-    // final String timestampCol,
-    // Duration prevWindowDuration,
-    // Duration fwdWindowDuration) {
-    // return of(control, WindowScale.ofTime(timestampCol, prevWindowDuration), WindowScale.ofTime(timestampCol,
-    // fwdWindowDuration));
-    // }
-    //
-    // public static RollingSumSpec ofTicks(OperationControl control, long prevTickWindow) {
-    // return of(control, WindowScale.ofTicks(prevTickWindow));
-    // }
-    //
-    // public static RollingSumSpec ofTicks(OperationControl control, long prevTickWindow, long fwdTickWindow) {
-    // return of(control, WindowScale.ofTicks(prevTickWindow), WindowScale.ofTicks(fwdTickWindow));
-    // }
-
 
     public abstract Optional<OperationControl> control();
 
@@ -104,17 +65,13 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
         return WindowScale.ofTicks(0);
     }
 
-    public final OperationControl controlOrDefault() {
-        return control().orElseGet(OperationControl::defaultInstance);
-    }
-
     @Override
     public final boolean applicableTo(Class<?> inputType) {
         return
         // is primitive numeric?
-        inputType.equals(double.class) || inputType.equals(float.class)
-                || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
-                || inputType.equals(byte.class)
+        inputType == double.class || inputType == float.class
+                || inputType == int.class || inputType == long.class || inputType == short.class
+                || inputType == byte.class
 
                 // is boxed numeric?
                 || Number.class.isAssignableFrom(inputType)

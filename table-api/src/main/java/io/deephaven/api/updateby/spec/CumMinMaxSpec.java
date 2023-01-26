@@ -21,9 +21,9 @@ public abstract class CumMinMaxSpec extends UpdateBySpecBase {
     public final boolean applicableTo(Class<?> inputType) {
         return
         // is primitive numeric?
-        inputType.equals(double.class) || inputType.equals(float.class)
-                || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
-                || inputType.equals(byte.class)
+        inputType == double.class || inputType == float.class
+                || inputType == int.class || inputType == long.class || inputType == short.class
+                || inputType == byte.class
 
                 // is boxed numeric?
                 || Number.class.isAssignableFrom(inputType)
