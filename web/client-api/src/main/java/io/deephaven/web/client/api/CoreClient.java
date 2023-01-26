@@ -96,7 +96,8 @@ public class CoreClient extends HasEventHandling {
                 JsLog.warn("username ignored for login type " + credentials.getType());
             }
         }
-        Promise<Void> login = ideConnection.connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
+        Promise<Void> login =
+                ideConnection.connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
 
         // fetch configs and check session timeout
         login.then(ignore -> getServerConfigValues()).then(configs -> {

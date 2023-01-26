@@ -31,7 +31,8 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         deathListenerCleanup = JsRunnable.doNothing();
 
         if (fromJava != Boolean.TRUE) {
-            JsLog.warn("dh.IdeConnection constructor is deprecated, please create a dh.CoreClient, call login(), then call getAsIdeConnection()");
+            JsLog.warn(
+                    "dh.IdeConnection constructor is deprecated, please create a dh.CoreClient, call login(), then call getAsIdeConnection()");
             token.setType("Anonymous");
             token.setValue("");
             connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
