@@ -4,18 +4,15 @@
 package io.deephaven.web.client.ide;
 
 import elemental2.promise.Promise;
-import io.deephaven.web.client.api.CoreClient;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsOptional;
-import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -23,27 +20,22 @@ import jsinterop.base.JsPropertyMap;
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
+    private final JsRunnable deathListenerCleanup;
     private final String serverUrl;
 
-    private final JsRunnable deathListenerCleanup;
-    private CoreClient coreClient;
+    private final ConnectToken token = new ConnectToken();
 
-    @JsIgnore
-    public IdeConnection(CoreClient coreClient) {
-        // Delegate to the js constructor so we can still expose it to JS
-        this(coreClient.getServerUrl());
-
-        this.coreClient = coreClient;
-    }
-
-    /**
-     * Direct connection to an already-running worker instance, without first authenticating to a client.
-     */
     @JsConstructor
-    @Deprecated
-    public IdeConnection(String serverUrl) {
+    public IdeConnection(String serverUrl, Boolean fromJava) {
         this.serverUrl = serverUrl;
-        this.deathListenerCleanup = JsRunnable.doNothing();
+        deathListenerCleanup = JsRunnable.doNothing();
+
+        if (fromJava != Boolean.TRUE) {
+            JsLog.warn("dh.IdeConnection constructor is deprecated, please create a dh.CoreClient, call login(), then call getAsIdeConnection()");
+            token.setType("Anonymous");
+            token.setValue("");
+            connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
+        }
     }
 
     @Override
@@ -51,12 +43,18 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         return "IdeConnection on " + getServerUrl() + ": ";
     }
 
+    /**
+     * Temporary method to split logic between IdeConnection and CoreClient
+     */
+    @JsIgnore
+    public ConnectToken getToken() {
+        return token;
+    }
+
+    @JsIgnore
     @Override
     public Promise<ConnectToken> getConnectToken() {
-        if (coreClient == null) {
-            return Promise.resolve(new ConnectToken());
-        }
-        return coreClient.getConnectToken();
+        return Promise.resolve(token);
     }
 
     public void close() {

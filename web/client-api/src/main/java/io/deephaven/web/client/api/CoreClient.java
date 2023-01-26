@@ -1,7 +1,6 @@
 package io.deephaven.web.client.api;
 
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
@@ -16,9 +15,8 @@ import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsConstructor;
-import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
-import jsinterop.base.JsPropertyMap;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -26,7 +24,7 @@ import java.util.function.Consumer;
 import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 @JsType(namespace = "dh")
-public class CoreClient extends QueryConnectable<CoreClient> {
+public class CoreClient extends HasEventHandling {
     public static final String EVENT_CONNECT = "connect",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
@@ -40,19 +38,11 @@ public class CoreClient extends QueryConnectable<CoreClient> {
             LOGIN_TYPE_OIDC = "oidc",
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
-    private final String serverUrl;
-
-    private final ConnectToken token = new ConnectToken();
+    private final IdeConnection ideConnection;
 
     @JsConstructor
     public CoreClient(String serverUrl) {
-        this.serverUrl = serverUrl;
-    }
-
-    @JsIgnore
-    @Override
-    public Promise<ConnectToken> getConnectToken() {
-        return Promise.resolve(token);
+        this.ideConnection = new IdeConnection(serverUrl, true);
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
@@ -66,19 +56,17 @@ public class CoreClient extends QueryConnectable<CoreClient> {
         });
     }
 
-    @Override
     public Promise<CoreClient> running() {
         // This assumes that once the connection has been initialized and left a usable state, it cannot be used again
-        if (!connection.isAvailable() || connection.get().isUsable()) {
+        if (!ideConnection.connection.isAvailable() || ideConnection.connection.get().isUsable()) {
             return Promise.resolve(this);
         } else {
             return Promise.reject("Cannot connect, session is dead.");
         }
     }
 
-    @Override
     public String getServerUrl() {
-        return serverUrl;
+        return ideConnection.getServerUrl();
     }
 
     public Promise<String[][]> getAuthConfigValues() {
@@ -92,6 +80,7 @@ public class CoreClient extends QueryConnectable<CoreClient> {
 
     public Promise<Void> login(LoginCredentials credentials) {
         Objects.requireNonNull(credentials.getType(), "type must be specified");
+        ConnectToken token = ideConnection.getToken();
         if (LOGIN_TYPE_PASSWORD.equals(credentials.getType())) {
             Objects.requireNonNull(credentials.getUsername(), "username must be specified for password login");
             Objects.requireNonNull(credentials.getToken(), "token must be specified for password login");
@@ -107,13 +96,13 @@ public class CoreClient extends QueryConnectable<CoreClient> {
                 JsLog.warn("username ignored for login type " + credentials.getType());
             }
         }
-        Promise<Void> login = connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
+        Promise<Void> login = ideConnection.connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
 
         // fetch configs and check session timeout
         login.then(ignore -> getServerConfigValues()).then(configs -> {
             for (String[] config : configs) {
                 if (config[0].equals("http.session.durationMs")) {
-                    connection.get().setSessionTimeoutMs(Double.parseDouble(config[1]));
+                    ideConnection.connection.get().setSessionTimeoutMs(Double.parseDouble(config[1]));
                 }
             }
             return null;
@@ -125,11 +114,15 @@ public class CoreClient extends QueryConnectable<CoreClient> {
         return login(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes()));
     }
 
+    public Promise<Void> onConnected(@JsOptional Double timeoutInMillis) {
+        return ideConnection.onConnected();
+    }
+
     public Promise<String[][]> getServerConfigValues() {
         return getConfigs(
-                c -> connection.get().configServiceClient().getConfigurationConstants(
+                c -> ideConnection.connection.get().configServiceClient().getConfigurationConstants(
                         new ConfigurationConstantsRequest(),
-                        connection.get().metadata(),
+                        ideConnection.connection.get().metadata(),
                         c::apply),
                 ConfigurationConstantsResponse::getConfigValuesMap);
     }
@@ -139,10 +132,14 @@ public class CoreClient extends QueryConnectable<CoreClient> {
     }
 
     public JsStorageService getStorageService() {
-        return new JsStorageService(connection.get());
+        return new JsStorageService(ideConnection.connection.get());
     }
 
     public Promise<IdeConnection> getAsIdeConnection() {
-        return Promise.resolve(new IdeConnection(this));
+        return Promise.resolve(ideConnection);
+    }
+
+    public void disconnect() {
+        ideConnection.close();
     }
 }
