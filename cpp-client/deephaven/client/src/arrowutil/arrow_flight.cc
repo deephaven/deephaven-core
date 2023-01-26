@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-#include "deephaven/client/arrowutil/arrow_util.h"
+#include "deephaven/client/arrowutil/arrow_flight.h"
 
 namespace deephaven::client::arrowutil {
 bool ArrowUtil::tryConvertTicketToFlightDescriptor(const std::string &ticket,

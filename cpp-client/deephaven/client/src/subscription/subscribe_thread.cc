@@ -3,11 +3,13 @@
  */
 #include "deephaven/client/subscription/subscribe_thread.h"
 
+#include <arrow/buffer.h>
 #include <flatbuffers/detached_buffer.h>
 #include "deephaven/client/ticking.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/index_decoder.h"
 #include "deephaven/client/subscription/update_processor.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/client/utility/misc.h"
@@ -95,8 +97,8 @@ struct CancelWrapper final : SubscriptionHandle {
   explicit CancelWrapper(std::shared_ptr<UpdateProcessor> updateProcessor) :
       updateProcessor_(std::move(updateProcessor)) {}
 
-  void cancel() final {
-    updateProcessor_->cancel();
+  void cancel(bool wait) final {
+    updateProcessor_->cancel(wait);
   }
 
   std::shared_ptr<UpdateProcessor> updateProcessor_;

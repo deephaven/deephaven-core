@@ -219,12 +219,12 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     }
 
     @Override
-    public void removeAll(final RowSequence outerRowKeys) {
+    public void removeAll(final RowSequence rowSequence) {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
 
-        outerRowKeys.forAllRowKeys(key -> updates.put(key, BASELINE_KEY_NOT_FOUND));
+        rowSequence.forAllRowKeys(key -> updates.put(key, BASELINE_KEY_NOT_FOUND));
     }
 
     @Override
