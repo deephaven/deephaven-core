@@ -103,8 +103,10 @@ abstract class UpdateByWindow {
             SafeCloseable.closeArray(opContexts);
             Arrays.fill(opContexts, null);
 
-            SafeCloseable.closeArray(inputSourceGetContexts);
-            Arrays.fill(inputSourceGetContexts, null);
+            if (inputSourceGetContexts != null) {
+                SafeCloseable.closeArray(inputSourceGetContexts);
+                Arrays.fill(inputSourceGetContexts, null);
+            }
         }
     }
 

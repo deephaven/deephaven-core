@@ -90,6 +90,13 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         clear();
     }
 
+    @VisibleForTesting
+    public static boolean rangesCollapse(final int x1, final int y1, final int x2, final int y2) {
+        // Ranges overlap when the start of each range is leq the end of the other.  In this case, we want  to extend
+        // detection to when the ranges are consecutive as well.  Do this by adding one to the range ends then compare.
+        return x1 <= (y2 + 1) && x2 <= (y1 + 1);
+    }
+
     private void evaluateRangeFast(int start, int end) {
         // everything in this range needs to be reevaluated
         for (int left = start & 0xFFFFFFFE; left <= end; left += 2) {
@@ -122,9 +129,9 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
     @VisibleForTesting
     public double evaluateTree(int startA, int endA, int startB, int endB) {
         while (endB > 1) {
-            if (endA >= startB - 1) {
+            if (rangesCollapse(startA, endA, startB, endB)) {
                 // all collapse together into a single range
-                return evaluateTree(startA, endB);
+                return evaluateTree(Math.min(startA, startB), Math.max(endA, endB));
             } else {
                 // compute this level
                 evaluateRangeFast(startA, endA);
@@ -143,15 +150,12 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
     @VisibleForTesting
     public double evaluateTree(int startA, int endA, int startB, int endB, int startC, int endC) {
         while (endC > 1) {
-            if (endA >= startC - 1 || (endA >= startB - 1 && endB >= startC - 1)) {
-                // all collapse together into a single range
-                return evaluateTree(startA, endC);
-            } else if (endA >= startB - 1) {
-                // A and B collapse
-                return evaluateTree(startA, endB, startC, endC);
-            } else if (endB >= startC - 1) {
-                // B and C collapse
-                return evaluateTree(startA, endA, startB, endC);
+            if (rangesCollapse(startA, endA, startB, endB)) {
+                // A and B overlap
+                return evaluateTree(Math.min(startA, startB), Math.max(endA, endB), startC, endC);
+            } else if (rangesCollapse(startB, endB, startC, endC)) {
+                // B and C overlap
+                return evaluateTree(startA, endA, Math.min(startB, startC), Math.max(endB, endC));
             } else {
                 // no collapse
                 evaluateRangeFast(startA, endA);
@@ -193,26 +197,19 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
                 // pop wrapped, push is not
                 value = evaluateTree(capacity, dirtyPopTail, dirtyPushHead, dirtyPushTail, dirtyPopHead, chunkSize - 1);
             } else {
-                // neither wrapped, do they overlap?
-                if (dirtyPushTail >= dirtyPopHead && dirtyPopTail >= dirtyPushHead) {
-                    value = evaluateTree(Math.min(dirtyPushHead, dirtyPopHead), Math.max(dirtyPushTail, dirtyPopTail));
-                } else {
-                    // no overlap
-                    if (dirtyPopHead < dirtyPushHead) {
-                        value = evaluateTree(dirtyPopHead, dirtyPopTail, dirtyPushHead, dirtyPushTail);
-                    } else {
-                        value = evaluateTree(dirtyPushHead, dirtyPushTail, dirtyPopHead, dirtyPopTail);
-                    }
-                }
+                // neither are wrapped, can evaluate directly
+                value = evaluateTree(dirtyPushHead, dirtyPushTail, dirtyPopHead, dirtyPopTail);
             }
         } else if (pushDirty) {
             if (dirtyPushHead > dirtyPushTail) {
+                // wrapped
                 value = evaluateTree(capacity, dirtyPushTail, dirtyPushHead, chunkSize - 1);
             } else {
                 value = evaluateTree(dirtyPushHead, dirtyPushTail);
             }
         } else if (popDirty) {
             if (dirtyPopHead > dirtyPopTail) {
+                // wrapped
                 value = evaluateTree(capacity, dirtyPopTail, dirtyPopHead, chunkSize - 1);
             } else {
                 value = evaluateTree(dirtyPopHead, dirtyPopTail);

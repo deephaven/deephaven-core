@@ -540,6 +540,36 @@ public class PairwiseFloatRingBufferTest extends TestCase {
         }
     }
 
+    public void testRangesCollapse() {
+        // overlapping
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(0, 2, 1, 3));
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(1, 3, 0, 2));
+
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(0, 10, 1, 3));
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(1, 3, 0, 10));
+
+        // fully contained
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(0, 3, 1, 2));
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(1, 2, 0, 3));
+
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(1, 2, 1, 1));
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(1, 1, 1, 2));
+
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(1, 2, 2, 2));
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(2, 2, 1, 2));
+
+        // consecutive
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(0, 1, 2, 3));
+        assertTrue(PairwiseFloatRingBuffer.rangesCollapse(2, 3, 0, 1));
+
+        // non-overlapping, non consecutive
+        assertFalse(PairwiseFloatRingBuffer.rangesCollapse(0, 1, 3, 4));
+        assertFalse(PairwiseFloatRingBuffer.rangesCollapse(3, 4, 0, 1));
+
+        assertFalse(PairwiseFloatRingBuffer.rangesCollapse(0, 1, 9, 10));
+        assertFalse(PairwiseFloatRingBuffer.rangesCollapse(9, 10, 0, 1));
+    }
+
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(4, (float) 0, Float::sum)) {
