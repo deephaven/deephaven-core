@@ -49,6 +49,7 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
 
     private int dirtyPushHead;
     private int dirtyPushTail;
+    private boolean allDirty;
     private int dirtyPopHead;
     private int dirtyPopTail;
 
@@ -179,7 +180,9 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
 
         final double value;
 
-        if (pushDirty && popDirty) {
+        if (allDirty) {
+            value = evaluateTree(capacity, chunkSize - 1);
+        } else if (pushDirty && popDirty) {
             if (dirtyPushHead > dirtyPushTail && dirtyPopHead > dirtyPopTail) {
                 // both are wrapped
                 value = evaluateTree(capacity, Math.max(dirtyPushTail, dirtyPopTail), Math.min(dirtyPushHead, dirtyPopHead), chunkSize - 1);
@@ -190,11 +193,16 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
                 // pop wrapped, push is not
                 value = evaluateTree(capacity, dirtyPopTail, dirtyPushHead, dirtyPushTail, dirtyPopHead, chunkSize - 1);
             } else {
-                // neither wrapped
-                if (dirtyPushHead > dirtyPopHead) {
-                    value = evaluateTree(dirtyPopHead, dirtyPopTail, dirtyPushHead, dirtyPushTail);
+                // neither wrapped, do they overlap?
+                if (dirtyPushTail >= dirtyPopHead && dirtyPopTail >= dirtyPushHead) {
+                    value = evaluateTree(Math.min(dirtyPushHead, dirtyPopHead), Math.max(dirtyPushTail, dirtyPopTail));
                 } else {
-                    value = evaluateTree(dirtyPushHead, dirtyPushTail, dirtyPopHead, dirtyPopTail);
+                    // no overlap
+                    if (dirtyPopHead < dirtyPushHead) {
+                        value = evaluateTree(dirtyPopHead, dirtyPopTail, dirtyPushHead, dirtyPushTail);
+                    } else {
+                        value = evaluateTree(dirtyPushHead, dirtyPushTail, dirtyPopHead, dirtyPopTail);
+                    }
                 }
             }
         } else if (pushDirty) {
@@ -276,6 +284,9 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
         storageChunk.set(tail, val);
         if (dirtyPushHead == NULL_INT) {
             dirtyPushHead = tail;
+        } else if (dirtyPushHead == tail) {
+            // wrapped around, everything will be dirty until evaluated
+            allDirty = true;
         }
         dirtyPushTail = tail;
 
@@ -315,8 +326,12 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
 
         if (dirtyPopHead == NULL_INT) {
             dirtyPopHead = head;
+        } else if (dirtyPopHead == head) {
+            // wrapped around, everything will be dirty until evaluated
+            allDirty = true;
         }
         dirtyPopTail = head;
+
 
         // move the head
         head = ((head + 1) % capacity) + capacity;
@@ -416,6 +431,8 @@ public class PairwiseDoubleRingBuffer implements SafeCloseable {
     private void clearDirty() {
         dirtyPushHead = dirtyPopHead = NULL_INT;
         dirtyPushTail = dirtyPopTail = NULL_INT;
+
+        allDirty = false;
     }
 
     public void clear() {

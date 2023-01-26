@@ -539,4 +539,46 @@ public class PairwiseFloatRingBufferTest extends TestCase {
             }
         }
     }
+
+    public void testSpecialCaseA() {
+        // overlapping push and pop ranges with popTail < pushTail
+        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(4, (float) 0, Float::sum)) {
+            rb.push((float)1);
+            assertEquals((float)1, rb.pop());
+            rb.push((float)2);
+            rb.push((float)3);
+            assertEquals((float)5, rb.evaluate());
+        }
+    }
+
+    public void testSpecialCaseB() {
+        // push the full capacity while wrapped
+        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(64, (float) 0, Float::sum)) {
+            rb.push((float)1);
+            assertEquals((float)1, rb.pop());
+
+            for (int i = 0; i < 64; i++) {
+                rb.push((float)1);
+            }
+            assertEquals((float)64, rb.evaluate());
+        }
+    }
+
+    public void testSpecialCaseC() {
+        // overlapping push and pop ranges with popTail < pushTail
+        try (final PairwiseFloatRingBuffer rb = new PairwiseFloatRingBuffer(16, (float) 0, Float::sum)) {
+            // move pointers to middle of storage
+            for (int i = 0; i < 8; i++) {
+                rb.push((float)1);
+                rb.pop();
+            }
+            assertEquals((float)0, rb.evaluate());
+
+            for (int i = 0; i < 11; i++) {
+                rb.push((float)1);
+            }
+            rb.pop();
+            assertEquals((float)10, rb.evaluate());
+        }
+    }
 }
