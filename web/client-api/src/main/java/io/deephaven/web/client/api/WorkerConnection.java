@@ -969,8 +969,6 @@ public class WorkerConnection {
     }
 
     public BrowserHeaders metadata() {
-        DomGlobal.console.log("metadata()", Global.JSON.stringify(metadata));
-
         return metadata;
     }
 
