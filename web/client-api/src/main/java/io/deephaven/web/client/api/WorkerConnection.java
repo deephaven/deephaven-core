@@ -3,9 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
-import elemental2.core.Function;
 import elemental2.core.Global;
-import elemental2.core.JSONType;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
@@ -21,9 +19,7 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_gene
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.MetadataVersion;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightService;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.ResponseStream;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeResponse;
@@ -31,12 +27,7 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Client;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Invoke;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.InvokeRpcOptions;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.Request;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
@@ -74,7 +65,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_serv
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
-import io.deephaven.web.client.api.barrage.WebGrpcUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -84,21 +74,24 @@ import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
-import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
-import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
-import io.deephaven.web.shared.data.*;
+import io.deephaven.web.shared.data.DeltaUpdates;
+import io.deephaven.web.shared.data.LogItem;
+import io.deephaven.web.shared.data.RangeSet;
+import io.deephaven.web.shared.data.TableSnapshot;
+import io.deephaven.web.shared.data.TableSubscriptionRequest;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsMethod;
@@ -119,10 +112,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.*;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.DeltaUpdatesBuilder;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.createSnapshot;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.deltaUpdates;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.typedArrayToLittleEndianByteBuffer;
 import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 /**
