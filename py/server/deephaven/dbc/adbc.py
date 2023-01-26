@@ -18,7 +18,8 @@ from deephaven import DHError
 try:
     import adbc_driver_manager.dbapi
 except ImportError:
-    raise DHError(message="import ADBC driver manager failed")
+    raise DHError(message="import ADBC driver manager failed, please install ADBC driver manager and your "
+                          "targeted database driver first.")
 
 
 def read_cursor(cursor: adbc_driver_manager.dbapi.Cursor) -> Table:

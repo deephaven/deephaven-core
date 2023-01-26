@@ -17,7 +17,8 @@ from deephaven.table import Table
 try:
     import turbodbc.cursor
 except ImportError:
-    raise DHError(message="import turbodbc failed")
+    raise DHError(message="import turbodbc failed, please install turbodbc, the ODBC driver manager, and the targeted "
+                          "database driver first.")
 
 
 def read_cursor(cursor: turbodbc.cursor.Cursor) -> Table:

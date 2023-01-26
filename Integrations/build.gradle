@@ -73,7 +73,6 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
 					  echo "Driver      = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so" >> /etc/odbcinst.ini; \\
 					  echo "Threading   = 2" >> /etc/odbcinst.ini'''
 
-//            apt-get install odbc-postgresql
             volume '/data'
             volume '/cache'
             environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath:/opt/deephaven/server/lib/*:/opt/deephaven/server/lib/'
