@@ -282,6 +282,12 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
         ctx.affectedRows = tmpAffected;
 
+        if (ctx.affectedRows.isEmpty()) {
+            // we really aren't dirty if no rows are affected by the update
+            ctx.isDirty = false;
+            return;
+        }
+
         // now get influencer rows for the affected rows
         // generate position data rowsets for efficiently computed position offsets
         ctx.affectedRowPositions = ctx.sourceRowSet.invert(ctx.affectedRows);

@@ -109,6 +109,13 @@ class UpdateByWindowCumulative extends UpdateByWindow {
         context.affectedRows = smallestModifiedKey == Long.MAX_VALUE
                 ? RowSetFactory.empty()
                 : context.sourceRowSet.subSetByKeyRange(smallestModifiedKey, context.sourceRowSet.lastRowKey());
+
+        if (context.affectedRows.isEmpty()) {
+            // we really aren't dirty if no rows are affected by the update
+            context.isDirty = false;
+            return;
+        }
+
         context.influencerRows = context.affectedRows;
 
         makeOperatorContexts(context);

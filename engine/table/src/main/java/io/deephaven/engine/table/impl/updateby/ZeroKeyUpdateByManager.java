@@ -96,7 +96,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
     @Override
     protected boolean upstreamSatisfied(final long step) {
-        // for Zero-Key, only need to verify the source is satisfied
-        return source.satisfied(step);
+        // for Zero-Key, verify the source and the single bucket are satisfied
+        return source.satisfied(step) && zeroKeyUpdateBy.result.satisfied(step);
     }
 }

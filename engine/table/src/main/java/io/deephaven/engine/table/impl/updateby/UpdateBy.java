@@ -206,6 +206,7 @@ public abstract class UpdateBy {
     /** Release the input sources that will not be needed for the rest of this update */
     private void releaseInputSources(int winIdx, ColumnSource<?>[] maybeCachedInputSources,
             WritableRowSet[] inputSourceRowSets, int[] inputSourceReferenceCounts) {
+
         final UpdateByWindow win = windows[winIdx];
         final int[] uniqueWindowSources = win.getUniqueSourceIndices();
 
@@ -264,6 +265,7 @@ public abstract class UpdateBy {
         final TableUpdate upstream;
         final boolean initialStep;
         final UpdateByBucketHelper[] dirtyBuckets;
+        final boolean[] dirtyWindows;
 
         /** The active set of sources to use for processing, each source may be cached or original */
         final ColumnSource<?>[] maybeCachedInputSources;
@@ -291,6 +293,8 @@ public abstract class UpdateBy {
 
             // determine which buckets we'll examine during this update
             dirtyBuckets = buckets.stream().filter(UpdateByBucketHelper::isDirty).toArray(UpdateByBucketHelper[]::new);
+            // which windows are dirty and need to be computed this cycle
+            dirtyWindows = new boolean[windows.length];
 
             if (inputCacheNeeded) {
                 maybeCachedInputSources = new ColumnSource[inputSources.length];
@@ -364,6 +368,7 @@ public abstract class UpdateBy {
                                 (int) Arrays.stream(windows).filter(win -> win.isSourceInUse(srcIdx)).count();
                     }
                 }
+                Arrays.fill(dirtyWindows, true);
                 resumeAction.run();
                 return;
             }
@@ -389,6 +394,8 @@ public abstract class UpdateBy {
                                         }
                                         // at least one dirty bucket will need this source
                                         srcNeeded = true;
+                                        // this window must be computed
+                                        dirtyWindows[winIdx] = true;
                                     }
                                 }
                                 if (srcNeeded) {
@@ -466,7 +473,7 @@ public abstract class UpdateBy {
                             // be exhausted and hasMore() will return false
                             remaining -= PARALLEL_CACHE_CHUNK_SIZE;
                         }
-                    }, resumeAction::run,
+                    }, resumeAction,
                     this::onError);
         }
 
@@ -475,15 +482,15 @@ public abstract class UpdateBy {
          * when the work is complete
          */
         private void cacheInputSources(final int winIdx, final Runnable resumeAction) {
-            if (inputCacheNeeded) {
+            if (inputCacheNeeded && dirtyWindows[winIdx]) {
                 final UpdateByWindow win = windows[winIdx];
                 final int[] uniqueWindowSources = win.getUniqueSourceIndices();
 
                 jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new,
                         0, uniqueWindowSources.length,
-                        (context, idx, sourceComplete) -> {
-                            createCachedColumnSource(uniqueWindowSources[idx], sourceComplete);
-                        }, resumeAction, this::onError);
+                        (context, idx, sourceComplete) -> createCachedColumnSource(uniqueWindowSources[idx],
+                                sourceComplete),
+                        resumeAction, this::onError);
             } else {
                 // no work to do, continue
                 resumeAction.run();
@@ -567,17 +574,21 @@ public abstract class UpdateBy {
                                 }
                             }
 
-                            processWindowBuckets(winIdx, () -> {
-                                if (inputCacheNeeded) {
-                                    // release the cached sources that are no longer needed
-                                    releaseInputSources(winIdx, maybeCachedInputSources, inputSourceRowSets,
-                                            inputSourceReferenceCounts);
-                                }
+                            if (dirtyWindows[winIdx]) {
+                                processWindowBuckets(winIdx, () -> {
+                                    if (inputCacheNeeded) {
+                                        // release the cached sources that are no longer needed
+                                        releaseInputSources(winIdx, maybeCachedInputSources, inputSourceRowSets,
+                                                inputSourceReferenceCounts);
+                                    }
 
-                                // signal that the work for this window is complete (will iterate to the next window
-                                // sequentially)
+                                    // signal that the work for this window is complete (will iterate to the next window
+                                    // sequentially)
+                                    windowComplete.run();
+                                });
+                            } else {
                                 windowComplete.run();
-                            });
+                            }
                         });
                     }, resumeAction, this::onError);
         }
@@ -782,12 +793,7 @@ public abstract class UpdateBy {
 
         @Override
         public boolean canExecute(final long step) {
-            if (!upstreamSatisfied(step)) {
-                return false;
-            }
-            synchronized (buckets) {
-                return buckets.stream().allMatch(b -> b.result.satisfied(step));
-            }
+            return upstreamSatisfied(step);
         }
     }
 
