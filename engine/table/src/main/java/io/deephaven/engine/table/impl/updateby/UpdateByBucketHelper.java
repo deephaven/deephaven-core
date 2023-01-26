@@ -18,11 +18,13 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -127,25 +129,23 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         return new UpdateByBucketHelperListener(description, source);
     }
 
-    private void processUpdateForSsa(TableUpdate upstream) {
+    private void processUpdateForSsa(final TableUpdate upstream, final boolean timestampsModified) {
         if (upstream.empty()) {
             return;
         }
 
-        final boolean stampModified = upstream.modifiedColumnSet().containsAny(timestampColumnSet);
-
         final int chunkSize = 1 << 12; // 4k
 
-        try (final RowSet addedAndModified = stampModified ? upstream.added().union(upstream.modified()) : null;
+        try (final RowSet addedAndModified = timestampsModified ? upstream.added().union(upstream.modified()) : null;
                 final RowSet removedAndModifiedPreShift =
-                        stampModified ? upstream.removed().union(upstream.getModifiedPreShift()) : null;
+                        timestampsModified ? upstream.removed().union(upstream.getModifiedPreShift()) : null;
                 final ChunkSource.GetContext context = timestampColumnSource.makeGetContext(chunkSize);
                 final WritableLongChunk<? extends Values> ssaValues = WritableLongChunk.makeWritableChunk(chunkSize);
                 final WritableLongChunk<OrderedRowKeys> ssaKeys = WritableLongChunk.makeWritableChunk(chunkSize);
                 final WritableLongChunk<OrderedRowKeys> nullTsKeys = WritableLongChunk.makeWritableChunk(chunkSize)) {
 
-            final RowSet restampAdditions = stampModified ? addedAndModified : upstream.added();
-            final RowSet restampRemovals = stampModified ? removedAndModifiedPreShift : upstream.removed();
+            final RowSet restampAdditions = timestampsModified ? addedAndModified : upstream.added();
+            final RowSet restampRemovals = timestampsModified ? removedAndModifiedPreShift : upstream.removed();
 
             // removes
             if (restampRemovals.isNonempty()) {
@@ -298,11 +298,11 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
         // add all the SSA data
         if (timestampColumnName != null) {
-            processUpdateForSsa(upstream);
-
             // test whether any timestamps were modified
             timestampsModified =
                     upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(timestampColumnSet);
+
+            processUpdateForSsa(upstream, timestampsModified);
         } else {
             timestampsModified = false;
         }
@@ -368,10 +368,8 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * Close the window contexts and release resources for this bucket
      */
     public void finalizeUpdate() {
-        for (int winIdx = 0; winIdx < windows.length; winIdx++) {
-            windowContexts[winIdx].close();
-            windowContexts[winIdx] = null;
-        }
+        SafeCloseable.closeArray(windowContexts);
+        Arrays.fill(windowContexts, null);
         isDirty = false;
     }
 

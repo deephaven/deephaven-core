@@ -1,7 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -74,7 +72,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
         // create contexts for the affected operators
         for (int opIdx : context.dirtyOperatorIndices) {
-            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
+            context.opContexts[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
                     operatorInputSourceSlots[opIdx].length);
         }
     }
@@ -212,29 +210,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
         }
 
         // determine which operators are affected by this update
-        boolean allAffected = upstream.added().isNonempty() || upstream.removed().isNonempty();
-
-        if (allAffected) {
-            // mark all operators as affected by this update
-            context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
-            context.dirtySourceIndices = getUniqueSourceIndices();
-            context.isDirty = true;
-        } else {
-            // determine which operators were affected by this update
-            TIntArrayList dirtyOperatorList = new TIntArrayList(operators.length);
-            TIntHashSet inputSourcesSet = new TIntHashSet(getUniqueSourceIndices().length);
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                UpdateByOperator op = operators[opIdx];
-                if (upstream.modifiedColumnSet().nonempty() && (op.getInputModifiedColumnSet() == null
-                        || upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()))) {
-                    dirtyOperatorList.add(opIdx);
-                    inputSourcesSet.addAll(operatorInputSourceSlots[opIdx]);
-                    context.isDirty = true;
-                }
-            }
-            context.dirtyOperatorIndices = dirtyOperatorList.toArray();
-            context.dirtySourceIndices = inputSourcesSet.toArray();
-        }
+        processUpdateForContext(context, upstream);
 
         if (!ctx.isDirty) {
             return;
@@ -243,7 +219,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
         // need a writable rowset
         final WritableRowSet tmpAffected = RowSetFactory.empty();
 
-        if (upstream.modified().isNonempty()) {
+        // consider the modifications only when input columns were modified
+        if (upstream.modified().isNonempty() && ctx.inputModified) {
             // compute the rows affected from these changes
             try (final WritableRowSet modifiedInverted = ctx.sourceRowSet.invert(upstream.modified());
                     final RowSet modifiedAffected =
@@ -309,7 +286,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
         for (int opIdx : context.dirtyOperatorIndices) {
             UpdateByWindowedOperator winOp = (UpdateByWindowedOperator) operators[opIdx];
             // call the specialized version of `intializeUpdate()` for these operators
-            winOp.initializeUpdate(ctx.opContext[opIdx]);
+            winOp.initializeUpdate(ctx.opContexts[opIdx]);
         }
 
         try (final RowSequence.Iterator it = ctx.affectedRows.getRowSequenceIterator();
@@ -363,7 +340,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
                 Arrays.fill(ctx.inputSourceChunks, null);
                 for (int opIdx : context.dirtyOperatorIndices) {
                     UpdateByWindowedOperator.Context opCtx =
-                            (UpdateByWindowedOperator.Context) context.opContext[opIdx];
+                            (UpdateByWindowedOperator.Context) context.opContexts[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
                     for (int ii = 0; ii < srcIndices.length; ii++) {
@@ -374,7 +351,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
                     }
 
                     // make the specialized call for windowed operators
-                    ((UpdateByWindowedOperator.Context) ctx.opContext[opIdx]).accumulate(
+                    ((UpdateByWindowedOperator.Context) ctx.opContexts[opIdx]).accumulate(
                             chunkRs,
                             opCtx.chunkArr,
                             pushChunk,
@@ -386,7 +363,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
         // call `finishUpdate()` function for each operator
         for (int opIdx : context.dirtyOperatorIndices) {
-            operators[opIdx].finishUpdate(context.opContext[opIdx]);
+            operators[opIdx].finishUpdate(context.opContexts[opIdx]);
         }
     }
 }

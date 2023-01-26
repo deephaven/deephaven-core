@@ -12,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -35,7 +34,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
         // create contexts for the affected operators
         for (int opIdx : context.dirtyOperatorIndices) {
-            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
+            context.opContexts[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
                     operatorInputSourceSlots[opIdx].length);
         }
     }
@@ -68,43 +67,21 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             context.dirtySourceIndices = getUniqueSourceIndices();
 
             makeOperatorContexts(context);
-            context.isDirty = !upstream.empty();
+            context.isDirty = true;
             return;
         }
 
         // determine which operators are affected by this update
-        context.isDirty = false;
-        boolean allAffected = upstream.added().isNonempty() ||
-                upstream.removed().isNonempty();
-
-        if (allAffected) {
-            // mark all operators as affected by this update
-            context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
-            context.dirtySourceIndices = getUniqueSourceIndices();
-            context.isDirty = true;
-        } else {
-            // determine which operators are affected by this update
-            BitSet dirtyOperators = new BitSet();
-            BitSet dirtySourceIndices = new BitSet();
-
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                UpdateByOperator op = operators[opIdx];
-                if (upstream.modifiedColumnSet().nonempty() && (op.getInputModifiedColumnSet() == null
-                        || upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()))) {
-                    dirtyOperators.set(opIdx);
-                    Arrays.stream(operatorInputSourceSlots[opIdx]).forEach(dirtySourceIndices::set);
-                }
-            }
-            context.isDirty = !dirtyOperators.isEmpty();
-            context.dirtyOperatorIndices = dirtyOperators.stream().toArray();
-            context.dirtySourceIndices = dirtySourceIndices.stream().toArray();
-        }
+        processUpdateForContext(context, upstream);
 
         if (!context.isDirty) {
             return;
         }
 
-        long smallestModifiedKey = smallestAffectedKey(upstream, context.sourceRowSet);
+        // we can ignore modifications if they do not affect our input columns
+        final boolean inputModified = context.inputModified
+                || (timestampColumnName != null && context.timestampsModified);
+        long smallestModifiedKey = smallestAffectedKey(upstream, context.sourceRowSet, inputModified);
 
         context.affectedRows = smallestModifiedKey == Long.MAX_VALUE
                 ? RowSetFactory.empty()
@@ -129,7 +106,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             // always at the beginning of the RowSet at creation phase
             for (int opIdx : context.dirtyOperatorIndices) {
                 UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
-                cumOp.initializeUpdate(context.opContext[opIdx], NULL_ROW_KEY, NULL_LONG);
+                cumOp.initializeUpdate(context.opContexts[opIdx], NULL_ROW_KEY, NULL_LONG);
             }
         } else {
             // find the key before the first affected row
@@ -141,12 +118,12 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                 UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
                 if (cumOp.getTimestampColumnName() == null || keyBefore == NULL_ROW_KEY) {
                     // this operator doesn't care about timestamps or we know we are at the beginning of the rowset
-                    cumOp.initializeUpdate(context.opContext[opIdx], keyBefore, NULL_LONG);
+                    cumOp.initializeUpdate(context.opContexts[opIdx], keyBefore, NULL_LONG);
                 } else {
                     // this operator cares about timestamps, so make sure it is starting from a valid value and
                     // valid timestamp by looking backward until the conditions are met
                     UpdateByCumulativeOperator.Context cumOpContext =
-                            (UpdateByCumulativeOperator.Context) context.opContext[opIdx];
+                            (UpdateByCumulativeOperator.Context) context.opContexts[opIdx];
                     long potentialResetTimestamp = context.timestampColumnSource.getLong(keyBefore);
 
                     if (potentialResetTimestamp == NULL_LONG || !cumOpContext.isValueValid(keyBefore)) {
@@ -164,7 +141,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                         }
                     }
                     // call the specialized version of `intializeUpdate()` for these operators
-                    cumOp.initializeUpdate(context.opContext[opIdx], keyBefore, potentialResetTimestamp);
+                    cumOp.initializeUpdate(context.opContexts[opIdx], keyBefore, potentialResetTimestamp);
                 }
             }
         }
@@ -184,7 +161,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
                 for (int opIdx : context.dirtyOperatorIndices) {
                     UpdateByCumulativeOperator.Context opCtx =
-                            (UpdateByCumulativeOperator.Context) context.opContext[opIdx];
+                            (UpdateByCumulativeOperator.Context) context.opContexts[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
                     for (int ii = 0; ii < srcIndices.length; ii++) {
@@ -195,7 +172,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                     }
 
                     // make the specialized call for cumulative operators
-                    ((UpdateByCumulativeOperator.Context) context.opContext[opIdx]).accumulate(
+                    ((UpdateByCumulativeOperator.Context) context.opContexts[opIdx]).accumulate(
                             rs,
                             opCtx.chunkArr,
                             tsChunk,
@@ -206,7 +183,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
         // call `finishUpdate()` function for each operator
         for (int opIdx : context.dirtyOperatorIndices) {
-            operators[opIdx].finishUpdate(context.opContext[opIdx]);
+            operators[opIdx].finishUpdate(context.opContexts[opIdx]);
         }
     }
 
@@ -216,11 +193,14 @@ class UpdateByWindowCumulative extends UpdateByWindow {
      *
      * @param upstream the {@link TableUpdate update} from upstream
      * @param affectedRowSet the {@link TrackingRowSet rowset} for the current bucket
+     * @param inputModified whether the input columns for this window were modified
      *
      * @return the smallest key that participated in any part of the update. This will be the minimum of the first key
      *         of each of added, modified and removed (post-shift) rows.
      */
-    private static long smallestAffectedKey(@NotNull TableUpdate upstream, @NotNull TrackingRowSet affectedRowSet) {
+    private static long smallestAffectedKey(final @NotNull TableUpdate upstream,
+            final @NotNull TrackingRowSet affectedRowSet,
+            final boolean inputModified) {
 
         long smallestModifiedKey = Long.MAX_VALUE;
         if (upstream.removed().isNonempty()) {
@@ -249,7 +229,8 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             smallestModifiedKey = Math.min(smallestModifiedKey, upstream.added().firstRowKey());
         }
 
-        if (upstream.modified().isNonempty()) {
+        // consider the modifications only when input columns were modified
+        if (upstream.modified().isNonempty() && inputModified) {
             smallestModifiedKey = Math.min(smallestModifiedKey, upstream.modified().firstRowKey());
         }
 

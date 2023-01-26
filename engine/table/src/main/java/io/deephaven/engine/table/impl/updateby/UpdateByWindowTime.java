@@ -1,7 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -85,7 +83,7 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         // create contexts for the affected operators
         for (int opIdx : context.dirtyOperatorIndices) {
-            context.opContext[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
+            context.opContexts[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
                     operatorInputSourceSlots[opIdx].length);
         }
     }
@@ -230,31 +228,7 @@ class UpdateByWindowTime extends UpdateByWindow {
         }
 
         // determine which operators are affected by this update
-        ctx.isDirty = false;
-        boolean allAffected = upstream.added().isNonempty() ||
-                upstream.removed().isNonempty();
-
-        if (allAffected) {
-            // mark all operators as affected by this update
-            context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
-            context.dirtySourceIndices = getUniqueSourceIndices();
-            context.isDirty = true;
-        } else {
-            // determine which operators are affected by this update
-            TIntArrayList dirtyOperatorList = new TIntArrayList(operators.length);
-            TIntHashSet inputSourcesSet = new TIntHashSet(getUniqueSourceIndices().length);
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                UpdateByOperator op = operators[opIdx];
-                if (upstream.modifiedColumnSet().nonempty() && (op.getInputModifiedColumnSet() == null
-                        || upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()))) {
-                    dirtyOperatorList.add(opIdx);
-                    inputSourcesSet.addAll(operatorInputSourceSlots[opIdx]);
-                    context.isDirty = true;
-                }
-            }
-            context.dirtyOperatorIndices = dirtyOperatorList.toArray();
-            context.dirtySourceIndices = inputSourcesSet.toArray();
-        }
+        processUpdateForContext(context, upstream);
 
         if (!ctx.isDirty) {
             return;
@@ -263,22 +237,26 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         final WritableRowSet tmpAffected = RowSetFactory.empty();
 
-        if (upstream.modified().isNonempty()) {
-            // TODO: we can omit these checks if we can prove no input columns or timestamp columns were modified
+        // consider the modifications only when input or timestamp columns were modified
+        if (upstream.modified().isNonempty() && (ctx.timestampsModified || ctx.inputModified)) {
+            // recompute all windows that have the modified rows in their window
             try (final RowSet modifiedAffected =
                     computeAffectedRowsTime(ctx, upstream.modified(), prevUnits, fwdUnits, false)) {
                 tmpAffected.insert(modifiedAffected);
             }
-            // modified timestamps and values will affect previous values
-            try (final WritableRowSet modifiedAffectedPrev =
-                    computeAffectedRowsTime(ctx, upstream.getModifiedPreShift(), prevUnits, fwdUnits, true)) {
-                // we used the SSA (post-shift) to get these keys, no need to shift
-                // retain only the rows that still exist in the sourceRowSet
-                modifiedAffectedPrev.retain(ctx.timestampValidRowSet);
-                tmpAffected.insert(modifiedAffectedPrev);
-            }
+
             if (ctx.timestampsModified) {
-                // compute all modified rows only if timestamps have changed
+                // recompute all windows that previously contained the modified rows, they may not contain this value
+                // after the timestamp modifications
+                try (final WritableRowSet modifiedAffectedPrev =
+                        computeAffectedRowsTime(ctx, upstream.getModifiedPreShift(), prevUnits, fwdUnits, true)) {
+                    // we used the SSA (post-shift) to get these keys, no need to shift
+                    // retain only the rows that still exist in the sourceRowSet
+                    modifiedAffectedPrev.retain(ctx.timestampValidRowSet);
+                    tmpAffected.insert(modifiedAffectedPrev);
+                }
+
+                // re-compute all modified rows, they have new windows after the timestamp modifications
                 tmpAffected.insert(upstream.modified());
             }
         }
@@ -338,7 +316,7 @@ class UpdateByWindowTime extends UpdateByWindow {
         for (int opIdx : context.dirtyOperatorIndices) {
             UpdateByWindowedOperator winOp = (UpdateByWindowedOperator) operators[opIdx];
             // call the specialized version of `intializeUpdate()` for these operators
-            winOp.initializeUpdate(ctx.opContext[opIdx]);
+            winOp.initializeUpdate(ctx.opContexts[opIdx]);
         }
 
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
@@ -426,7 +404,7 @@ class UpdateByWindowTime extends UpdateByWindow {
                 Arrays.fill(ctx.inputSourceChunks, null);
                 for (int opIdx : context.dirtyOperatorIndices) {
                     UpdateByWindowedOperator.Context opCtx =
-                            (UpdateByWindowedOperator.Context) context.opContext[opIdx];
+                            (UpdateByWindowedOperator.Context) context.opContexts[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
                     for (int ii = 0; ii < srcIndices.length; ii++) {
@@ -437,7 +415,7 @@ class UpdateByWindowTime extends UpdateByWindow {
                     }
 
                     // make the specialized call for windowed operators
-                    ((UpdateByWindowedOperator.Context) ctx.opContext[opIdx]).accumulate(
+                    ((UpdateByWindowedOperator.Context) ctx.opContexts[opIdx]).accumulate(
                             chunkAffectedRows,
                             opCtx.chunkArr,
                             pushChunk,
@@ -456,7 +434,7 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         // call `finishUpdate()` function for each operator
         for (int opIdx : context.dirtyOperatorIndices) {
-            operators[opIdx].finishUpdate(context.opContext[opIdx]);
+            operators[opIdx].finishUpdate(context.opContexts[opIdx]);
         }
     }
 }
