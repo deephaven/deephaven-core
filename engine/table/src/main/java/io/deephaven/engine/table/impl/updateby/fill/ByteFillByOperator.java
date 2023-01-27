@@ -37,9 +37,9 @@ public class ByteFillByOperator extends BaseByteUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            byte currentVal = byteValueChunk.get(pos);
-            if(currentVal != NULL_BYTE) {
-                curVal = currentVal;
+            byte val = byteValueChunk.get(pos);
+            if(val != NULL_BYTE) {
+                curVal = val;
             }
         }
     }

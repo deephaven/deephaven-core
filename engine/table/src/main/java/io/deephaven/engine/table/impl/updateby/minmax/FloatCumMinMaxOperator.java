@@ -34,15 +34,14 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final float currentVal = floatValueChunk.get(pos);
+            final float val = floatValueChunk.get(pos);
 
             if(curVal == NULL_FLOAT) {
-                curVal = currentVal;
-            } else if(currentVal != NULL_FLOAT) {
-                if ((isMax && currentVal > curVal) ||
-                        (!isMax && currentVal < curVal)) {
-                    curVal = currentVal;
+                curVal = val;
+            } else if(val != NULL_FLOAT) {
+                if ((isMax && val > curVal) ||
+                        (!isMax && val < curVal)) {
+                    curVal = val;
                 }
             }
         }

@@ -1,3 +1,63 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.updateby.minmax;
 
 import io.deephaven.base.verify.Assert;
@@ -10,6 +70,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
@@ -34,15 +95,14 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final short currentVal = shortValueChunk.get(pos);
+            final short val = shortValueChunk.get(pos);
 
             if (curVal == NULL_SHORT) {
-                curVal = currentVal;
-            } else if (currentVal != NULL_SHORT) {
-                if ((isMax && currentVal > curVal) ||
-                        (!isMax && currentVal < curVal)) {
-                    curVal = currentVal;
+                curVal = val;
+            } else if (val != NULL_SHORT) {
+                if ((isMax && val > curVal) ||
+                        (!isMax && val < curVal)) {
+                    curVal = val;
                 }
             }
         }

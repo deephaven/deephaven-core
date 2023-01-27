@@ -88,9 +88,6 @@ public abstract class BaseWindowedLongUpdateByOperator extends UpdateByWindowedO
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {}
 
         @Override
-        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}
-
-        @Override
         public void writeToOutputChunk(int outIdx) {
             outputValues.set(outIdx, curVal);
         }

@@ -39,15 +39,14 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final double currentVal = doubleValueChunk.get(pos);
+            final double val = doubleValueChunk.get(pos);
 
             if(curVal == NULL_DOUBLE) {
-                curVal = currentVal;
-            } else if(currentVal != NULL_DOUBLE) {
-                if ((isMax && currentVal > curVal) ||
-                        (!isMax && currentVal < curVal)) {
-                    curVal = currentVal;
+                curVal = val;
+            } else if(val != NULL_DOUBLE) {
+                if ((isMax && val > curVal) ||
+                        (!isMax && val < curVal)) {
+                    curVal = val;
                 }
             }
         }

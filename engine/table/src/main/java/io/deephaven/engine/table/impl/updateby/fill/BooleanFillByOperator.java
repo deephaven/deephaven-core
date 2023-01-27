@@ -44,9 +44,9 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            byte currentVal = booleanValueChunk.get(pos);
-            if(currentVal != NULL_BOOLEAN_AS_BYTE) {
-                curVal = currentVal;
+            byte val = booleanValueChunk.get(pos);
+            if(val != NULL_BOOLEAN_AS_BYTE) {
+                curVal = val;
             }
         }
     }

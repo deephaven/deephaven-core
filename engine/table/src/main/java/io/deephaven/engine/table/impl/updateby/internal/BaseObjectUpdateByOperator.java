@@ -54,7 +54,6 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
                                int len) {
 
             setValuesChunk(valueChunkArr[0]);
-            setTimestampChunk(tsChunk);
 
             // chunk processing
             for (int ii = 0; ii < len; ii++) {
@@ -76,8 +75,6 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByCumulativeOp
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {}
 
-        @Override
-        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {}
 
         @Override
         public void writeToOutputChunk(int outIdx) {

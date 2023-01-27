@@ -76,6 +76,7 @@ public final class BigIntegerRollingSumOperator extends BaseWindowedObjectUpdate
         public void writeToOutputChunk(int outIdx) {
             if (objectWindowValues.size() == nullCount) {
                 outputValues.set(outIdx, null);
+                curVal = null;
             } else {
                 outputValues.set(outIdx, curVal);
             }

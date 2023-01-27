@@ -45,9 +45,9 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            long currentVal = longValueChunk.get(pos);
-            if(currentVal != NULL_LONG) {
-                curVal = currentVal;
+            long val = longValueChunk.get(pos);
+            if(val != NULL_LONG) {
+                curVal = val;
             }
         }
     }

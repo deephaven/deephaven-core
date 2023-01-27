@@ -5,7 +5,6 @@
  */
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
-import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
@@ -17,7 +16,8 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class LongRollingSumOperator extends BaseWindowedLongUpdateByOperator {
     private static final int RING_BUFFER_INITIAL_CAPACITY = 512;

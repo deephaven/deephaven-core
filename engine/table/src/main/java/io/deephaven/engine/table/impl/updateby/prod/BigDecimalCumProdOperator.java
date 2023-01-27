@@ -33,16 +33,10 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final BigDecimal currentVal = objectValueChunk.get(pos);
+            final BigDecimal val = objectValueChunk.get(pos);
 
-            final boolean isCurrentNull = currentVal == null;
-            if (curVal == null) {
-                curVal = isCurrentNull ? null : currentVal;
-            } else {
-                if (!isCurrentNull) {
-                    curVal = curVal.multiply(objectValueChunk.get(pos), mathContext);
-                }
+            if (val != null) {
+                curVal = curVal == null ? val : curVal.multiply(val, mathContext);
             }
         }
 

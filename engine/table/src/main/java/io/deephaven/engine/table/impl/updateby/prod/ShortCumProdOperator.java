@@ -33,13 +33,10 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final short currentVal = shortValueChunk.get(pos);
+            final short val = shortValueChunk.get(pos);
 
-            if (curVal == NULL_LONG) {
-                curVal = currentVal == NULL_SHORT ? NULL_LONG : currentVal;
-            } else if (currentVal != NULL_SHORT) {
-                curVal *= currentVal;
+            if (val != NULL_SHORT) {
+                curVal = curVal == NULL_LONG ? val : curVal * val;
             }
         }
     }

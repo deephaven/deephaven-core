@@ -16,6 +16,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
 
 /**
@@ -58,8 +59,6 @@ public abstract class UpdateByOperator {
 
         void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
 
-        void setTimestampChunk(@NotNull LongChunk<? extends Values> valuesChunk);
-
         /**
          * Add values to the operators current data set
          *
@@ -88,6 +87,8 @@ public abstract class UpdateByOperator {
          * Reset the operator data values to a known state. This may occur during initialization or when a windowed
          * operator has an empty window
          */
+
+        @OverridingMethodsMustInvokeSuper
         void reset();
 
         /**

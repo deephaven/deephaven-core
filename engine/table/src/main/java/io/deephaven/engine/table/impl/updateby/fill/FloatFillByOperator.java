@@ -37,9 +37,9 @@ public class FloatFillByOperator extends BaseFloatUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            float currentVal = floatValueChunk.get(pos);
-            if(currentVal != NULL_FLOAT) {
-                curVal = currentVal;
+            float val = floatValueChunk.get(pos);
+            if(val != NULL_FLOAT) {
+                curVal = val;
             }
         }
     }

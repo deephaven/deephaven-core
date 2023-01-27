@@ -25,24 +25,19 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
 
         long lastStamp = NULL_LONG;
 
-        @Override
-        public void setTimestampChunk(@NotNull final LongChunk<? extends Values> valuesChunk) {
-            timestampValueChunk = valuesChunk;
-        }
-
         Context(final int chunkSize, final int chunkCount) {
             super(chunkSize, chunkCount);
         }
 
         @Override
         public void reset() {
-            curVal = NULL_DOUBLE;
+            super.reset();
             lastStamp = NULL_LONG;
         }
     }
 
     /**
-     * An operator that computes an EMA from a short column using an exponential decay function.
+     * An operator that computes an EMA from an input column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
@@ -74,14 +69,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         super.initializeUpdate(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
 
         final Context ctx = (Context) updateContext;
-        // If we set the last state to null, then we know it was a reset state and the timestamp must also
-        // have been reset.
-        if (ctx.curVal == NULL_DOUBLE || firstUnmodifiedKey == NULL_ROW_KEY) {
-            ctx.lastStamp = NULL_LONG;
-        } else {
-            // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)
-            ctx.lastStamp = firstUnmodifiedTimestamp;
-        }
+        // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)
+        ctx.lastStamp = firstUnmodifiedTimestamp;
     }
 
     void handleBadData(@NotNull final Context ctx,

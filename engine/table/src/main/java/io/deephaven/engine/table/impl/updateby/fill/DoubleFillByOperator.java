@@ -37,9 +37,9 @@ public class DoubleFillByOperator extends BaseDoubleUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            double currentVal = doubleValueChunk.get(pos);
-            if(currentVal != NULL_DOUBLE) {
-                curVal = currentVal;
+            double val = doubleValueChunk.get(pos);
+            if(val != NULL_DOUBLE) {
+                curVal = val;
             }
         }
     }

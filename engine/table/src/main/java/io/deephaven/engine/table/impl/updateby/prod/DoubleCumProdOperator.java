@@ -15,7 +15,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.*;
 
 public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
     // region extra-fields
@@ -37,13 +37,10 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final double currentVal = doubleValueChunk.get(pos);
+            final double val = doubleValueChunk.get(pos);
 
-            if (curVal == NULL_DOUBLE) {
-                curVal = currentVal;
-            } else if (currentVal != NULL_DOUBLE) {
-                curVal *= currentVal;
+            if (val != NULL_DOUBLE) {
+                curVal = curVal == NULL_DOUBLE ? val : curVal * val;
             }
         }
     }

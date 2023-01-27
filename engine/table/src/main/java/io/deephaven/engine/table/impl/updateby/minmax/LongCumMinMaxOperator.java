@@ -1,6 +1,66 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LongCumMinMaxOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.minmax;
@@ -22,6 +82,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
@@ -47,15 +108,14 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final long currentVal = longValueChunk.get(pos);
+            final long val = longValueChunk.get(pos);
 
             if (curVal == NULL_LONG) {
-                curVal = currentVal;
-            } else if (currentVal != NULL_LONG) {
-                if ((isMax && currentVal > curVal) ||
-                        (!isMax && currentVal < curVal)) {
-                    curVal = currentVal;
+                curVal = val;
+            } else if (val != NULL_LONG) {
+                if ((isMax && val > curVal) ||
+                        (!isMax && val < curVal)) {
+                    curVal = val;
                 }
             }
         }

@@ -11,6 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,6 +93,9 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                     timestampColumnName,
                     rowRedirection,
                     control);
+
+            bucket.parentUpdateBy = this;
+            bucket.createdStep = LogicalClock.DEFAULT.currentStep();
 
             // add this to the bucket list
             synchronized (buckets) {

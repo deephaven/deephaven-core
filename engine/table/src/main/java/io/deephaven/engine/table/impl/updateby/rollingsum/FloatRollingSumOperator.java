@@ -4,16 +4,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedFloatUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.PairwiseFloatRingBuffer;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
@@ -104,11 +100,5 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, rowRedirection);
         // region constructor
         // endregion constructor
-    }
-
-    @NotNull
-    @Override
-    public Map<String, ColumnSource<?>> getOutputColumns() {
-        return Collections.singletonMap(pair.leftColumn, outputSource);
     }
 }

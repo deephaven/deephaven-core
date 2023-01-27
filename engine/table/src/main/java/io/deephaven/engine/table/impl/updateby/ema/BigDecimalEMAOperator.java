@@ -27,7 +27,6 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                 LongChunk<? extends Values> tsChunk,
                 int len) {
             setValuesChunk(valueChunkArr[0]);
-            setTimestampChunk(tsChunk);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -67,15 +66,18 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
 
                         } else {
                             final long dt = timestamp - lastStamp;
-                            // alpha is dynamic, based on time
-                            BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseWindowScaleUnits));
-                            BigDecimal oneMinusAlpha =
-                                    BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+                            if (dt != 0) {
 
-                            curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                    .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
-                                            control.bigValueContextOrDefault());
-                            lastStamp = timestamp;
+                                // alpha is dynamic, based on time
+                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseWindowScaleUnits));
+                                BigDecimal oneMinusAlpha =
+                                        BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+
+                                curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
+                                        .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
+                                                control.bigValueContextOrDefault());
+                                lastStamp = timestamp;
+                            }
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -95,14 +97,13 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
     /**
      * An operator that computes an EMA from a BigDecimal column using an exponential decay function.
      *
-     * @param pair the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns the names of the columns that affect this ema
-     * @param control defines how to handle {@code null} input values.
-     * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
-     *        integer ticks.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
-     *        in ticks, otherwise it is measured in nanoseconds
-     * @param rowRedirection the row redirection for the EMA output column
+     * @param pair                the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns    the names of the columns that affect this ema
+     * @param control             defines how to handle {@code null} input values.
+     * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
+     * @param timeScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
+     * @param valueSource         a reference to the input column source for this operation
      */
     public BigDecimalEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,

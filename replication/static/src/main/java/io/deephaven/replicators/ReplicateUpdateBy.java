@@ -74,6 +74,7 @@ public class ReplicateUpdateBy {
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/ShortCumMinMaxOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/FloatCumMinMaxOperator.java");
+
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/ShortCumProdOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/FloatCumProdOperator.java");
@@ -196,6 +197,7 @@ public class ReplicateUpdateBy {
                 "boolean singletonVal", "byte singletonVal",
                 "QueryConstants", "BooleanUtils",
                 "boolean curVal", "byte curVal",
+                "boolean val", "byte val",
                 "getBoolean", "getByte",
                 "boolean previousVal", "byte previousVal",
                 "boolean currentVal", "byte currentVal",
@@ -287,7 +289,7 @@ public class ReplicateUpdateBy {
                 "new ObjectSparseArraySource\\(\\);", "new ObjectSparseArraySource<>(colType);",
                 "(?:QueryConstants\\.)?NULL_OBJECT", "null",
                 "Object lastValidValue", "T lastValidValue",
-                "Object currentVal", "T currentVal",
+                "Object val", "T val",
                 "Object curVal", "T curVal",
                 "Object previousVal", "T previousVal",
                 "Object singletonVal", "T singletonVal",

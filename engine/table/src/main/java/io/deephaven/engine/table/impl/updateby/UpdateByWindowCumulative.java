@@ -222,6 +222,9 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             // following the first remove
             if (smallestModifiedKey < affectedRowSet.lastRowKey()) {
                 smallestModifiedKey = affectedRowSet.get(affectedRowSet.find(smallestModifiedKey) + 1);
+            } else {
+                // all removes are after the end of the current rowset
+                smallestModifiedKey = Long.MAX_VALUE;
             }
         }
 

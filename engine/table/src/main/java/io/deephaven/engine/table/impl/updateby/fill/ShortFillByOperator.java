@@ -37,9 +37,9 @@ public class ShortFillByOperator extends BaseShortUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            short currentVal = shortValueChunk.get(pos);
-            if(currentVal != NULL_SHORT) {
-                curVal = currentVal;
+            short val = shortValueChunk.get(pos);
+            if(val != NULL_SHORT) {
+                curVal = val;
             }
         }
     }

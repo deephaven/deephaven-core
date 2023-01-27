@@ -32,9 +32,9 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            char currentVal = charValueChunk.get(pos);
-            if(currentVal != NULL_CHAR) {
-                curVal = currentVal;
+            char val = charValueChunk.get(pos);
+            if(val != NULL_CHAR) {
+                curVal = val;
             }
         }
     }

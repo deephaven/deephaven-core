@@ -36,7 +36,6 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
                                LongChunk<? extends Values> tsChunk,
                                int len) {
             setValuesChunk(valueChunkArr[0]);
-            setTimestampChunk(tsChunk);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -77,13 +76,8 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
                         curVal = input;
                         lastStamp = timestamp;
                     } else {
-                        final boolean currentPoisoned = Double.isNaN(curVal);
-                        if (currentPoisoned && lastStamp == NULL_LONG) {
-                            // If the current EMA was a NaN, we should accept the first good timestamp so that
-                            // we can handle reset behavior properly in the following else
-                            lastStamp = timestamp;
-                        } else {
-                            final long dt = timestamp - lastStamp;
+                        final long dt = timestamp - lastStamp;
+                        if (dt != 0) {
                             final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
                             curVal = alpha * curVal + ((1 - alpha) * input);
                             lastStamp = timestamp;
@@ -108,9 +102,6 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
             if (value == NULL_DOUBLE) {
                 return false;
             }
-
-            // Note that we don't care about Reset because in that case the current EMA at this key would be null
-            // and the superclass will do the right thing.
             return !Double.isNaN(value) || control.onNanValueOrDefault() != BadDataBehavior.SKIP;
         }
 
@@ -124,11 +115,13 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
     /**
      * An operator that computes an EMA from a double column using an exponential decay function.
      *
-     * @param pair the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns the names of the columns that affect this ema
-     * @param control        defines how to handle {@code null} input values.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
-     *                       in ticks, otherwise it is measured in nanoseconds
+     * @param pair                the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns    the names of the columns that affect this ema
+     * @param control             defines how to handle {@code null} input values.
+     * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
+     * @param timeScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
+     * @param valueSource         a reference to the input column source for this operation
      */
     public DoubleEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
@@ -139,7 +132,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
                             final ColumnSource<?> valueSource
                             // region extra-constructor-args
                             // endregion extra-constructor-args
-                            ) {
+    ) {
         super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, rowRedirection);
         this.valueSource = valueSource;
         // region constructor

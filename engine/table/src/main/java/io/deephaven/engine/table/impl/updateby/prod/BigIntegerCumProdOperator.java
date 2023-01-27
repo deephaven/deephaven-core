@@ -12,6 +12,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
+
 public final class BigIntegerCumProdOperator extends BaseObjectUpdateByOperator<BigInteger> {
     protected class Context extends BaseObjectUpdateByOperator<BigInteger>.Context {
         public ObjectChunk<BigInteger, ? extends Values> objectValueChunk;
@@ -29,16 +32,10 @@ public final class BigIntegerCumProdOperator extends BaseObjectUpdateByOperator<
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final BigInteger currentVal = objectValueChunk.get(pos);
+            final BigInteger val = objectValueChunk.get(pos);
 
-            final boolean isCurrentNull = currentVal == null;
-            if(curVal == null) {
-                curVal = isCurrentNull ? null : currentVal;
-            } else {
-                if(!isCurrentNull) {
-                    curVal = curVal.multiply(objectValueChunk.get(pos));
-                }
+            if (val != null) {
+                curVal = curVal == null ? val : curVal.multiply(val);
             }
         }
 

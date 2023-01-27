@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.*;
 
 public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
     // region extra-fields
@@ -32,13 +32,10 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final float currentVal = floatValueChunk.get(pos);
+            final float val = floatValueChunk.get(pos);
 
-            if (curVal == NULL_FLOAT) {
-                curVal = currentVal;
-            } else if (currentVal != NULL_FLOAT) {
-                curVal *= currentVal;
+            if (val != NULL_FLOAT) {
+                curVal = curVal == NULL_FLOAT ? val : curVal * val;
             }
         }
     }

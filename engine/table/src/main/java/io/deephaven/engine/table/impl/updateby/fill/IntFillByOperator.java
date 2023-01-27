@@ -37,9 +37,9 @@ public class IntFillByOperator extends BaseIntUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            int currentVal = intValueChunk.get(pos);
-            if(currentVal != NULL_INT) {
-                curVal = currentVal;
+            int val = intValueChunk.get(pos);
+            if(val != NULL_INT) {
+                curVal = val;
             }
         }
     }

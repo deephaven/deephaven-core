@@ -38,13 +38,10 @@ public class IntCumProdOperator extends BaseLongUpdateByOperator {
         public void push(long key, int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            // read the value from the values chunk
-            final int currentVal = intValueChunk.get(pos);
+            final int val = intValueChunk.get(pos);
 
-            if (curVal == NULL_LONG) {
-                curVal = currentVal == NULL_INT ? NULL_LONG : currentVal;
-            } else if (currentVal != NULL_INT) {
-                curVal *= currentVal;
+            if (val != NULL_INT) {
+                curVal = curVal == NULL_LONG ? val : curVal * val;
             }
         }
     }

@@ -12,6 +12,8 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
+
 import static io.deephaven.util.QueryConstants.*;
 
 public class ShortEMAOperator extends BasePrimitiveEMAOperator {
@@ -31,7 +33,6 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                                LongChunk<? extends Values> tsChunk,
                                int len) {
             setValuesChunk(valueChunkArr[0]);
-            setTimestampChunk(tsChunk);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -69,10 +70,12 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
-                        // alpha is dynamic, based on time
-                        final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                        curVal = alpha * curVal + (1 - alpha) * input;
-                        lastStamp = timestamp;
+                        if (dt != 0) {
+                            // alpha is dynamic, based on time
+                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            curVal = alpha * curVal + (1 - alpha) * input;
+                            lastStamp = timestamp;
+                        }
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -101,11 +104,13 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
     /**
      * An operator that computes an EMA from a short column using an exponential decay function.
      *
-     * @param pair             the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns the names of the columns that affect this ema
-     * @param control          defines how to handle {@code null} input values.
-     * @param timeScaleUnits   the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
-     *                         measured in ticks, otherwise it is measured in nanoseconds
+     * @param pair                the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns    the names of the columns that affect this ema
+     * @param control             defines how to handle {@code null} input values.
+     * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
+     * @param timeScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
+     * @param valueSource         a reference to the input column source for this operation
      */
     public ShortEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
