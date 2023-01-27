@@ -13,6 +13,7 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -26,7 +27,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     private final ConnectToken token = new ConnectToken();
 
     @JsConstructor
-    public IdeConnection(String serverUrl, Boolean fromJava) {
+    public IdeConnection(String serverUrl, @JsOptional Boolean fromJava) {
         this.serverUrl = serverUrl;
         deathListenerCleanup = JsRunnable.doNothing();
 

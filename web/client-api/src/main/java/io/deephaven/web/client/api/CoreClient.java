@@ -108,6 +108,9 @@ public class CoreClient extends HasEventHandling {
                 }
             }
             return null;
+        }).catch_(ignore -> {
+            // Ignore this failure and suppress browser logging, we have a safe fallback
+            return Promise.resolve((Object) null);
         });
         return login;
     }
