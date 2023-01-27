@@ -248,14 +248,13 @@ public class JsTreeTable extends HasEventHandling {
                 return depthColumn[offsetInSnapshot];
             }
 
-            public void appendKeyData(Object[][] keyTableData, boolean expanded, boolean expandAll) {
+            public void appendKeyData(Object[][] keyTableData, boolean expanded, double action) {
                 int i;
-                double expandAction = expandAll ? ACTION_EXPAND_WITH_DESCENDENTS : ACTION_EXPAND;
                 for (i = 0; i < keyColumns.length; i++) {
                     Js.<JsArray<Any>>cast(keyTableData[i]).push(keyColumns.getAt(i).get(this));
                 }
                 Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth());
-                Js.<JsArray<Double>>cast(keyTableData[i++]).push(expanded ? expandAction : ACTION_COLLAPSE);
+                Js.<JsArray<Double>>cast(keyTableData[i++]).push(action);
             }
         }
     }
@@ -739,7 +738,15 @@ public class JsTreeTable extends HasEventHandling {
     @JsMethod
     public void setExpanded(Object row, boolean isExpanded, @JsOptional Boolean expandAll) {
         // TODO check row number is within bounds
-        boolean expandAllValue = expandAll != null && expandAll == true;
+        final double action;
+        if (!isExpanded) {
+            action = ACTION_COLLAPSE;
+        } else if (expandAll == Boolean.TRUE) {
+            action = ACTION_EXPAND_WITH_DESCENDENTS;
+        } else {
+            action = ACTION_EXPAND;
+        }
+
         final TreeRow r;
         if (row instanceof Double) {
             r = currentViewportData.rows.getAt((int) ((double) row - currentViewportData.offset));
@@ -749,7 +756,7 @@ public class JsTreeTable extends HasEventHandling {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
 
-        r.appendKeyData(keyTableData, isExpanded, expandAllValue);
+        r.appendKeyData(keyTableData, isExpanded, action);
         if (keyTable != null) {
             keyTable.then(t -> {
                 t.close();
