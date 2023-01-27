@@ -10,8 +10,6 @@ import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.auth.AuthContext;
@@ -40,7 +38,6 @@ import java.util.stream.Collectors;
 
 @Singleton
 public class SessionService {
-    private static final Logger log = LoggerFactory.getLogger(SessionService.class);
 
     static final long MIN_COOKIE_EXPIRE_MS = 10_000; // 10 seconds
     private static final int MAX_STACK_TRACE_CAUSAL_DEPTH =
@@ -243,7 +240,6 @@ public class SessionService {
         final String payload = offset < 0 ? "" : token.substring(offset + 1);
         AuthenticationRequestHandler handler = authRequestHandlers.get(key);
         if (handler == null) {
-            log.info().append("No AuthenticationRequestHandler registered for type ").append(key).endl();
             throw new AuthenticationException();
         }
         return handler.login(payload, SessionServiceGrpcImpl::insertCallHeader)
