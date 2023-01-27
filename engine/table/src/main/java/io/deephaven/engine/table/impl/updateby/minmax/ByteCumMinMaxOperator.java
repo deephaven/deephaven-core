@@ -1,66 +1,6 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ByteCumMinMaxOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.minmax;
@@ -75,8 +15,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.*;
 
 public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     private final boolean isMax;
@@ -124,6 +63,8 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
         // region constructor
         // endregion constructor
     }
+    // region extra-methods
+    // endregion extra-methods
 
     @NotNull
     @Override
