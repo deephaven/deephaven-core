@@ -156,7 +156,8 @@ public interface JobScheduler {
      *
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
-     * @param taskThreadContextFactory the factory that supplies {@link JobContext contexts} for the tasks
+     * @param taskThreadContextFactory the factory that supplies {@link JobContext contexts} for the threads handling
+     *        the sub-tasks
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index is provided as a parameter

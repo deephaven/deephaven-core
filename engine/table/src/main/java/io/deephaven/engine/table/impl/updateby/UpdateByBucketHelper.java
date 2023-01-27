@@ -18,13 +18,13 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.util.SafeCloseable;
+import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -56,9 +56,14 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     /** Indicates this bucket needs to be processed (at least one window and operator are dirty) */
     boolean isDirty;
     /** This rowset will store row keys where the timestamp is not null (will mirror the SSA contents) */
-    TrackingWritableRowSet timestampValidRowSet;
+    TrackingRowSet timestampValidRowSet;
     /** Track how many rows in this bucket have NULL timestamps */
     long nullTimestampCount;
+
+    // TODO: remove these data collection entries when bug-hunt complete
+    public UpdateCommitter<UpdateByBucketHelper> committer;
+    public UpdateBy parentUpdateBy;
+    public long createdStep;
 
     /**
      * Perform updateBy operations on a single bucket of data (either zero-key or already limited through partitioning)
@@ -172,7 +177,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                                 timestampValidRowSet.close();
                                 timestampValidRowSet = source.getRowSet().writableCast();
                             } else {
-                                timestampValidRowSet.remove(ssaKeys, 0, ssaKeys.size());
+                                timestampValidRowSet.writableCast().remove(ssaKeys, 0, ssaKeys.size());
                             }
                         }
                     }
@@ -205,8 +210,12 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
                             final LongChunk<? extends Values> shiftValues =
                                     timestampColumnSource.getPrevChunk(getContext, subRowSet).asLongChunk();
-
-                            timestampSsa.applyShiftReverse(shiftValues, subRowSet.asRowKeyChunk(), sit.shiftDelta());
+                            if (sit.polarityReversed()) {
+                                timestampSsa.applyShiftReverse(shiftValues, subRowSet.asRowKeyChunk(),
+                                        sit.shiftDelta());
+                            } else {
+                                timestampSsa.applyShift(shiftValues, subRowSet.asRowKeyChunk(), sit.shiftDelta());
+                            }
                         }
                     }
                 }
@@ -232,20 +241,21 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                         if (timestampValidRowSet == source.getRowSet()) {
                             if (nullTimestampCount > 0) {
                                 // make a copy and remove the nulls
-                                timestampValidRowSet = source.getRowSet().copy().toTracking().writableCast();
-                                timestampValidRowSet.remove(nullTsKeys, 0, nullTsKeys.size());
+                                timestampValidRowSet = source.getRowSet().copy().toTracking();
+                                timestampValidRowSet.writableCast().remove(nullTsKeys, 0, nullTsKeys.size());
                             }
                         } else {
-                            timestampValidRowSet.insert(ssaKeys, 0, ssaKeys.size());
+                            timestampValidRowSet.writableCast().insert(ssaKeys, 0, ssaKeys.size());
                         }
                     }
                 }
             }
         }
+        Assert.eq(nullTimestampCount, "nullTimestampCount", source.size() - timestampValidRowSet.size());
     }
 
     /**
-     * helper function to fill a LongChunk while skipping values that are NULL_LONG. Used to populate an SSA from a
+     * Helper function to fill a LongChunk while skipping values that are NULL_LONG. Used to populate an SSA from a
      * source containing null values
      *
      * @return the number of NULL values found in the set
@@ -264,7 +274,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         for (int i = 0; i < valuesChunk.size(); i++) {
             long ts = valuesChunk.get(i);
             if (ts == NULL_LONG) {
-                // null timestamps will not cause problems
+                // track the nulls added during this operation
                 nullTimestampKeys.add(keysChunk.get(i));
                 nullCount++;
                 continue;
@@ -368,8 +378,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * Close the window contexts and release resources for this bucket
      */
     public void finalizeUpdate() {
-        SafeCloseable.closeArray(windowContexts);
-        Arrays.fill(windowContexts, null);
+        SafeCloseableArray.close(windowContexts);
         isDirty = false;
     }
 
@@ -387,6 +396,16 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         @Override
         public void onUpdate(TableUpdate upstream) {
             prepareForUpdate(upstream, false);
+
+            UpdateByBucketHelper.this.committer =
+                    new UpdateCommitter<UpdateByBucketHelper>(UpdateByBucketHelper.this, (bucket) -> {
+                        // ensure that the item has been cleaned up
+                        Assert.eqFalse(bucket.isDirty, "bucket.isDirty");
+                        for (UpdateByWindow.UpdateByWindowBucketContext ctx : bucket.windowContexts) {
+                            Assert.eqNull(ctx, "bucket.windowContexts[]");
+                        }
+                    });
+            UpdateByBucketHelper.this.committer.maybeActivate();
 
             // pass the update unchanged, just increment the ref count
             TableUpdate downstream = upstream.acquire();

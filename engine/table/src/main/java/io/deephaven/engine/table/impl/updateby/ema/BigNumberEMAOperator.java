@@ -27,7 +27,6 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
 
     public abstract class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
-        public LongChunk<? extends Values> timestampValueChunk;
         public ObjectChunk<T, ? extends Values> objectValueChunk;
 
         long lastStamp = NULL_LONG;
@@ -56,21 +55,22 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     /**
      * An operator that computes an EMA from a big number column using an exponential decay function.
      *
-     * @param pair                the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns    the names of the columns that affect this ema
-     * @param control             defines how to handle {@code null} input values.
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this ema
+     * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param timeScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
-     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
-     * @param valueSource         a reference to the input column source for this operation
+     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds
+     * @param rowRedirection the {@link RowRedirection} to use for dense output sources
+     * @param valueSource a reference to the input column source for this operation
      */
     public BigNumberEMAOperator(@NotNull final MatchPair pair,
-                                @NotNull final String[] affectingColumns,
-                                @NotNull final OperationControl control,
-                                @Nullable final String timestampColumnName,
-                                final long timeScaleUnits,
-                                @Nullable final RowRedirection rowRedirection,
-                                final ColumnSource<?> valueSource) {
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final long timeScaleUnits,
+            @Nullable final RowRedirection rowRedirection,
+            final ColumnSource<?> valueSource) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits, BigDecimal.class);
 
         this.control = control;
@@ -83,8 +83,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
 
     @Override
     public void initializeUpdate(@NotNull final UpdateContext updateContext,
-                                 final long firstUnmodifiedKey,
-                                 final long firstUnmodifiedTimestamp) {
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp) {
         super.initializeUpdate(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
 
         final Context ctx = (Context) updateContext;

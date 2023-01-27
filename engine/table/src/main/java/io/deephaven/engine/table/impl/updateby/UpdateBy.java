@@ -890,6 +890,11 @@ public abstract class UpdateBy {
             }
         }
 
+        if (!problems.isEmpty()) {
+            throw new UncheckedTableException(descriptionBuilder + ": resulting column names must be unique {" +
+                    String.join(", ", problems) + "}");
+        }
+
         // We will divide the operators into similar windows for efficient processing.
         final KeyedObjectHashMap<UpdateByOperator, List<UpdateByOperator>> windowMap =
                 new KeyedObjectHashMap<>(new KeyedObjectKey<>() {
