@@ -446,7 +446,7 @@ public class WorkerConnection {
                     resolve.onInvoke((Void) null);
                 } else {
                     // token is no longer valid, signal deauth for re-login
-                    // TODO
+                    // TODO deephaven-core#2564 fire an event for the UI to re-auth
                     checkStatus(status);
                     reject.onInvoke(status.getDetails());
                 }

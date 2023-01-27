@@ -36,7 +36,6 @@ public class CoreClient extends HasEventHandling {
 
     private final IdeConnection ideConnection;
 
-    @JsConstructor
     public CoreClient(String serverUrl) {
         ideConnection = new IdeConnection(serverUrl, true);
 
