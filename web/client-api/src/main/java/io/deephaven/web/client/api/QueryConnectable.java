@@ -8,7 +8,7 @@ import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.ide.shared.IdeSession;
+import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
