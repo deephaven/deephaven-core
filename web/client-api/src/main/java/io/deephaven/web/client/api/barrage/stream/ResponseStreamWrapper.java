@@ -12,6 +12,7 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 /**
  * Java wrapper to deal with the distinct ResponseStream types that are emitted. Provides strongly typed methods for
@@ -23,11 +24,35 @@ import jsinterop.base.Js;
 public class ResponseStreamWrapper<T> {
     @JsType(isNative = true)
     public interface Status {
+        @JsOverlay
+        static Status of(int code, String details, BrowserHeaders metadata) {
+            return (Status) JsPropertyMap.of(
+                    "code", (double) code,
+                    "details", details,
+                    "metadata", metadata);
+        }
+
         @JsProperty
-        double getCode();
+        int getCode();
 
         @JsProperty
         String getDetails();
+
+        @JsProperty
+        BrowserHeaders getMetadata();
+
+        @JsOverlay
+        default boolean isOk() {
+            return getCode() == Code.OK;
+        }
+    }
+    @JsType(isNative = true)
+    public interface ServiceError {
+        @JsProperty
+        int getCode();
+
+        @JsProperty
+        String getMessage();
 
         @JsProperty
         BrowserHeaders getMetadata();

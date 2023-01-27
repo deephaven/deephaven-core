@@ -15,7 +15,8 @@ import java.util.Optional;
  * authentication handler.
  */
 public class AnonymousAuthenticationHandler implements AuthenticationRequestHandler {
-    private static final boolean WARN_ANONYMOUS_ACCESS = Configuration.getInstance().getBoolean("authentication.anonymous.warn");
+    private static final boolean WARN_ANONYMOUS_ACCESS =
+            Configuration.getInstance().getBoolean("authentication.anonymous.warn");
     private final static Logger log = LoggerFactory.getLogger(AnonymousAuthenticationHandler.class);
 
     @Override
@@ -27,10 +28,12 @@ public class AnonymousAuthenticationHandler implements AuthenticationRequestHand
     public void initialize(String targetUrl) {
         if (WARN_ANONYMOUS_ACCESS) {
             log.warn().endl().endl().endl().endl().endl();
-            log.warn().append("================================================================================").endl();
+            log.warn().append("================================================================================")
+                    .endl();
             log.warn().append("WARNING! Anonymous authentication is enabled. This is not recommended!").endl();
             log.warn().append("       Listening on ").append(targetUrl).endl();
-            log.warn().append("================================================================================").endl();
+            log.warn().append("================================================================================")
+                    .endl();
             log.warn().endl().endl().endl().endl().endl();
         } else {
             log.info().append("Anonymous authentication is enabled. Listening on ").append(targetUrl).endl();

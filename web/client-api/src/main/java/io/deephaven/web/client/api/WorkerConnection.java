@@ -348,6 +348,10 @@ public class WorkerConnection {
                 });
     }
 
+    private boolean checkStatus(ResponseStreamWrapper.ServiceError fail) {
+        return checkStatus(ResponseStreamWrapper.Status.of(fail.getCode(), fail.getMessage(), fail.getMetadata()));
+    }
+
     public boolean checkStatus(ResponseStreamWrapper.Status status) {
         // TODO provide simpler hooks to retry auth, restart the stream
         final long now = System.currentTimeMillis();
@@ -422,6 +426,7 @@ public class WorkerConnection {
                     // use this new token
                     metadata().set("authorization", authorization);
                 }
+                handshake.end();
             });
             handshake.onStatus(status -> {
                 if (status.isOk()) {
@@ -440,7 +445,6 @@ public class WorkerConnection {
             });
 
             handshake.send(new HandshakeRequest());
-            handshake.end();
         });
     }
 
@@ -448,7 +452,7 @@ public class WorkerConnection {
         sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
                 (fail, success) -> {
                     if (fail != null) {
-                        if (checkStatus((ResponseStreamWrapper.Status) fail)) {
+                        if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                         } else {
@@ -461,7 +465,7 @@ public class WorkerConnection {
                     // welp; the server is gone -- let everyone know
                     info.notifyConnectionError(new ResponseStreamWrapper.Status() {
                         @Override
-                        public double getCode() {
+                        public int getCode() {
                             return Code.Unavailable;
                         }
 
