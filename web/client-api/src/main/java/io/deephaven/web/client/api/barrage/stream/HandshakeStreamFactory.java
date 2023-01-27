@@ -36,7 +36,7 @@ public class HandshakeStreamFactory {
                     Map<String, JsArray<Function>> listeners = listenerMap();
                     ClientRpcOptions options = ClientRpcOptions.create();
                     options.setHost(connection.flightServiceClient().serviceHost);
-                    options.setTransport(null);// ts doesnt expose these two, stick with defaults for now
+                    options.setTransport(null);// ts doesn't expose these two, stick with defaults for now
                     options.setDebug(false);
                     Client<HandshakeRequest, HandshakeResponse> client = Grpc.client(FlightService.Handshake,
                             (io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.ClientRpcOptions) options);

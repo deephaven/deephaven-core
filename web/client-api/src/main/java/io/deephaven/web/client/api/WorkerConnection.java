@@ -7,6 +7,7 @@ import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
+import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
@@ -113,6 +114,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static io.deephaven.web.client.api.CoreClient.EVENT_REFRESH_TOKEN_UPDATED;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.DeltaUpdatesBuilder;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.createSnapshot;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.deltaUpdates;
@@ -422,9 +424,15 @@ public class WorkerConnection {
                 // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
                 // Metadata
                 JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get("authorization");
-                if (authorization.length > 0 && metadata().get("authorization").length > 0) {
-                    // use this new token
-                    metadata().set("authorization", authorization);
+                if (authorization.length > 0) {
+                    JsArray<String> existing = metadata().get("authorization");
+                    if (!existing.getAt(0).equals(authorization.getAt(0))) {
+                        // use this new token
+                        metadata().set("authorization", authorization);
+                        CustomEventInit init = CustomEventInit.create();
+                        init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
+                        info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+                    }
                 }
                 handshake.end();
             });

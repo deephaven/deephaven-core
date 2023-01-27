@@ -32,17 +32,19 @@ public class CoreClient extends HasEventHandling {
             EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated";
 
     public static final String LOGIN_TYPE_PASSWORD = "password",
-            LOGIN_TYPE_SAML = "saml",
-            LOGIN_TYPE_REFRESH = "refresh",
-            LOGIN_TYPE_PSK = "psk",
-            LOGIN_TYPE_OIDC = "oidc",
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
     private final IdeConnection ideConnection;
 
     @JsConstructor
     public CoreClient(String serverUrl) {
-        this.ideConnection = new IdeConnection(serverUrl, true);
+        ideConnection = new IdeConnection(serverUrl, true);
+
+        // For now the only real connection is the IdeConnection, so we re-fire the auth token refresh
+        // event here for the UI to listen to
+        ideConnection.addEventListener(EVENT_REFRESH_TOKEN_UPDATED, event -> {
+            fireEvent(EVENT_REFRESH_TOKEN_UPDATED, event);
+        });
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
