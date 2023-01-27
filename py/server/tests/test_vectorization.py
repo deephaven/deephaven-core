@@ -54,7 +54,7 @@ class VectorizationTestCase(BaseTestCase):
 
             with self.assertRaises(DHError) as cm:
                 t1 = t.update("X = auto_func(i)")
-            self.assertRegex(str(cm.exception), r".*count.*mismatch", )
+            self.assertRegex(str(cm.exception), r"missing 1 required positional argument", )
 
         with self.subTest("can't cast return value"):
             with self.assertRaises(DHError) as cm:
