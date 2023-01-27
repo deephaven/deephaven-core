@@ -15,7 +15,7 @@ import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Client;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.InvokeRpcOptions;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.Request;
 import io.deephaven.web.client.api.WorkerConnection;
-import jsinterop.base.JsPropertyMap;
+import jsinterop.base.Js;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,19 +37,15 @@ public class HandshakeStreamFactory {
                     Map<String, JsArray<Function>> listeners = listenerMap();
                     ClientRpcOptions options = ClientRpcOptions.create();
                     options.setHost(connection.flightServiceClient().serviceHost);
-                    options.setTransport(null);// ts doesnt expose these two, stick with defaults for now
+                    options.setTransport(null);// ts doesn't expose these two, stick with defaults for now
                     options.setDebug(false);
                     Client<HandshakeRequest, HandshakeResponse> client = Grpc.client(FlightService.Handshake,
                             (io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.ClientRpcOptions) options);
                     client.onEnd((status, statusMessage, trailers) -> {
-                        listeners.get("status").forEach((item, index, arr) -> item.call(null, JsPropertyMap.of(
-                                "code", (double) status,
-                                "details", statusMessage,
-                                "metadata", trailers)));
-                        listeners.get("end").forEach((item, index, arr) -> item.call(null, JsPropertyMap.of(
-                                "code", (double) status,
-                                "details", statusMessage,
-                                "metadata", trailers)));
+                        listeners.get("status").forEach((item, index, arr) -> item.call(null,
+                                ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
+                        listeners.get("end").forEach((item, index, arr) -> item.call(null,
+                                ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
                         listeners.clear();
                     });
                     client.onMessage(message -> {
@@ -89,7 +85,8 @@ public class HandshakeStreamFactory {
                 },
                 (first, metadata) -> {
                     Map<String, JsArray<Function>> listeners = listenerMap();
-                    InvokeRpcOptions<HandshakeRequest, HandshakeResponse> props = InvokeRpcOptions.create();
+                    io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.InvokeRpcOptions<HandshakeRequest, HandshakeResponse> props =
+                            Js.cast(InvokeRpcOptions.create());
                     props.setRequest(first);
                     props.setHost(connection.browserFlightServiceClient().serviceHost);
                     props.setMetadata(metadata);
@@ -100,15 +97,17 @@ public class HandshakeStreamFactory {
                     });
                     props.setOnEnd((status, statusMessage, trailers) -> {
                         listeners.get("status").forEach(
-                                (item, index, arr) -> item.call(null, (double) status, statusMessage, trailers));
+                                (item, index, arr) -> item.call(null,
+                                        ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
                         listeners.get("end").forEach(
-                                (item, index, arr) -> item.call(null, (double) status, statusMessage, trailers));
+                                (item, index, arr) -> item.call(null,
+                                        ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
                         listeners.clear();
                     });
                     props.setOnHeaders(headers -> {
                         listeners.get("headers").forEach((item, index, arr) -> item.call(null, headers));
                     });
-                    Request client = Invoke.invoke(BrowserFlightService.OpenHandshake, props);
+                    Request client = Grpc.invoke.onInvoke(BrowserFlightService.OpenHandshake, props);
 
                     return new ResponseStream<HandshakeResponse>() {
                         @Override

@@ -220,7 +220,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
         @Override
         public void setNull(long key) {
-            set(key, NULL_LONG);
+            DateTimeArraySource.super.setNull(key);
         }
 
         @Override

@@ -117,18 +117,19 @@ void trueOrThrowHelper(const DebugInfo &debugInfo) {
 }
 }  // namespace internal
 
-void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status) {
-  if (status.ok()) {
-    return;
-  }
-
-  auto msg = stringf("Status: %o. Caller: %o", status, debugInfo);
-  throw std::runtime_error(msg);
-}
-
 std::string formatDebugString(const char *func, const char *file, size_t line,
     const std::string &message) {
   return stringf("%o@%o:%o: %o", func, file, line, message);
+}
+
+std::string getWhat(std::exception_ptr eptr) {
+  try {
+    std::rethrow_exception(std::move(eptr));
+  } catch (const std::exception &e) {
+    return e.what();
+  } catch (...) {
+    return "Some exception thrown, but could not get message";
+  }
 }
 
 namespace {

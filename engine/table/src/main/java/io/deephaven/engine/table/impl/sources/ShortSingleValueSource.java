@@ -81,13 +81,6 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_SHORT);
-        // endregion null set
-    }
-
-    @Override
     public final short getShort(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;

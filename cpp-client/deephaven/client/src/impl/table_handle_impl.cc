@@ -3,7 +3,10 @@
  */
 #include "deephaven/client/impl/table_handle_impl.h"
 
+#include <condition_variable>
+#include <deque>
 #include <map>
+#include <mutex>
 #include <set>
 #include <arrow/flight/client.h>
 #include <arrow/flight/types.h>
@@ -12,7 +15,7 @@
 #include <arrow/scalar.h>
 #include <arrow/type.h>
 #include <arrow/table.h>
-#include "deephaven/client/arrowutil/arrow_util.h"
+#include "deephaven/client/arrowutil/arrow_flight.h"
 #include "deephaven/client/impl/boolean_expression_impl.h"
 #include "deephaven/client/impl/columns_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
@@ -25,6 +28,7 @@
 #include "deephaven/client/ticking.h"
 #include "deephaven/client/subscription/subscribe_thread.h"
 #include "deephaven/client/subscription/subscription_handle.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/utility/misc.h"
 #include "deephaven/client/utility/utility.h"
@@ -56,6 +60,7 @@ using deephaven::client::utility::Callback;
 using deephaven::client::utility::CBPromise;
 using deephaven::client::utility::ColumnDefinitions;
 using deephaven::client::utility::Executor;
+using deephaven::client::utility::getWhat;
 using deephaven::client::utility::makeReservedVector;
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::separatedList;
@@ -366,12 +371,43 @@ std::shared_ptr<SubscriptionHandle> TableHandleImpl::subscribe(
   return handle;
 }
 
+namespace {
+class CStyleTickingCallback final : public TickingCallback {
+public:
+  CStyleTickingCallback(TableHandle::onTickCallback_t onTick, void *onTickUserData,
+     TableHandle::onErrorCallback_t onError, void *onErrorUserData) : onTick_(onTick),
+     onTickUserData_(onTickUserData), onError_(onError), onErrorUserData_(onErrorUserData) {}
+
+  void onTick(TickingUpdate update) final {
+    onTick_(std::move(update), onTickUserData_);
+  }
+
+  void onFailure(std::exception_ptr eptr) final {
+    auto what = getWhat(std::move(eptr));
+    onError_(std::move(what), onErrorUserData_);
+  }
+
+private:
+  TableHandle::onTickCallback_t onTick_ = nullptr;
+  void *onTickUserData_ = nullptr;
+  TableHandle::onErrorCallback_t onError_ = nullptr;
+  void *onErrorUserData_ = nullptr;
+};
+}
+
+std::shared_ptr<SubscriptionHandle>
+TableHandleImpl::subscribe(TableHandle::onTickCallback_t onTick, void *onTickUserData,
+    TableHandle::onErrorCallback_t onError, void *onErrorUserData) {
+  auto cb = std::make_shared<CStyleTickingCallback>(onTick, onTickUserData, onError, onErrorUserData);
+  return subscribe(std::move(cb));
+}
+
 void TableHandleImpl::unsubscribe(std::shared_ptr<SubscriptionHandle> handle) {
   auto node = subscriptions_.extract(handle);
   if (node.empty()) {
     return;
   }
-  node.value()->cancel();
+  node.value()->cancel(true);
 }
 
 std::vector<std::shared_ptr<ColumnImpl>> TableHandleImpl::getColumnImpls() {

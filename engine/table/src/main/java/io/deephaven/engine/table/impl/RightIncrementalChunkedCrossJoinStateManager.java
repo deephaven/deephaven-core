@@ -688,7 +688,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
     public void updateLeftRowRedirection(RowSet leftAdded, long slotLocation) {
         if (slotLocation == RowSequence.NULL_ROW_KEY) {
-            leftAdded.forAllRowKeys(leftRowToSlot::removeVoid);
+            leftRowToSlot.removeAll(leftAdded);
         } else {
             leftAdded.forAllRowKeys(ii -> leftRowToSlot.putVoid(ii, slotLocation));
         }

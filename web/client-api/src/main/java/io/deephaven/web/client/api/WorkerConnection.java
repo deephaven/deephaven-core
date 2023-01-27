@@ -3,11 +3,11 @@
  */
 package io.deephaven.web.client.api;
 
-import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
+import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
@@ -114,6 +114,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static io.deephaven.web.client.api.CoreClient.EVENT_REFRESH_TOKEN_UPDATED;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.DeltaUpdatesBuilder;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.createSnapshot;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.deltaUpdates;
@@ -349,6 +350,10 @@ public class WorkerConnection {
                 });
     }
 
+    private boolean checkStatus(ResponseStreamWrapper.ServiceError fail) {
+        return checkStatus(ResponseStreamWrapper.Status.of(fail.getCode(), fail.getMessage(), fail.getMetadata()));
+    }
+
     public boolean checkStatus(ResponseStreamWrapper.Status status) {
         // TODO provide simpler hooks to retry auth, restart the stream
         final long now = System.currentTimeMillis();
@@ -419,10 +424,17 @@ public class WorkerConnection {
                 // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
                 // Metadata
                 JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get("authorization");
-                if (authorization.length > 0 && metadata().get("authorization").length > 0) {
-                    // use this new token
-                    metadata().set("authorization", authorization);
+                if (authorization.length > 0) {
+                    JsArray<String> existing = metadata().get("authorization");
+                    if (!existing.getAt(0).equals(authorization.getAt(0))) {
+                        // use this new token
+                        metadata().set("authorization", authorization);
+                        CustomEventInit init = CustomEventInit.create();
+                        init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
+                        info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+                    }
                 }
+                handshake.end();
             });
             handshake.onStatus(status -> {
                 if (status.isOk()) {
@@ -434,14 +446,13 @@ public class WorkerConnection {
                     resolve.onInvoke((Void) null);
                 } else {
                     // token is no longer valid, signal deauth for re-login
-                    // TODO
+                    // TODO deephaven-core#2564 fire an event for the UI to re-auth
                     checkStatus(status);
                     reject.onInvoke(status.getDetails());
                 }
             });
 
             handshake.send(new HandshakeRequest());
-            handshake.end();
         });
     }
 
@@ -449,7 +460,7 @@ public class WorkerConnection {
         sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
                 (fail, success) -> {
                     if (fail != null) {
-                        if (checkStatus((ResponseStreamWrapper.Status) fail)) {
+                        if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                         } else {
@@ -462,7 +473,7 @@ public class WorkerConnection {
                     // welp; the server is gone -- let everyone know
                     info.notifyConnectionError(new ResponseStreamWrapper.Status() {
                         @Override
-                        public double getCode() {
+                        public int getCode() {
                             return Code.Unavailable;
                         }
 

@@ -714,6 +714,8 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>");
         lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte",
                 "getPrevBoolean", "getPrevByte");
+        lines = simpleFixup(lines, "nullByKeys", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByRanges", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
         lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
 
         lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(
@@ -1057,7 +1059,8 @@ public class ReplicateSourcesAndChunks {
                 "recycler2.borrowItem\\(\\)", "(T[][])recycler2.borrowItem()",
                 "recycler1.borrowItem\\(\\)", "(T[][][])recycler1.borrowItem()",
                 "recycler0.borrowItem\\(\\)", "(T[][][][])recycler0.borrowItem()",
-                "public final void set\\(long key, Object value\\) \\{", "public final void set(long key, T value) {");
+                "public final void set\\(long key, Object value\\) \\{", "public final void set(long key, T value) {",
+                "Object oldValue", "T oldValue");
 
         lines = replaceRegion(lines, "recyclers", Arrays.asList(
                 "    private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,",

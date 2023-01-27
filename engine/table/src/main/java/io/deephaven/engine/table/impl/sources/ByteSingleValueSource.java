@@ -81,13 +81,6 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_BYTE);
-        // endregion null set
-    }
-
-    @Override
     public final byte getByte(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;

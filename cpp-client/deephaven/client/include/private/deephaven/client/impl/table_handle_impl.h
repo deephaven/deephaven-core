@@ -106,7 +106,7 @@ private:
 };
 }  // namespace internal
 
-class TableHandleImpl {
+class TableHandleImpl : public std::enable_shared_from_this<TableHandleImpl> {
   struct Private {
   };
   typedef deephaven::client::SortPair SortPair;
@@ -192,6 +192,8 @@ public:
   void bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback);
 
   std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
+  std::shared_ptr<SubscriptionHandle> subscribe(TableHandle::onTickCallback_t onTick,
+      void *onTickUserData, TableHandle::onErrorCallback_t onError, void *onErrorUserData);
   void unsubscribe(std::shared_ptr<SubscriptionHandle> handle);
 
   /**

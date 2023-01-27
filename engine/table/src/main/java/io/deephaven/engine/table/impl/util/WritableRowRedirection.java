@@ -81,12 +81,12 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
     }
 
     /**
-     * Remove the specified {@code outerRowKeys}.
+     * Remove the specified {@code rowSequence}.
      *
-     * @param outerRowKeys The outer row keys to remove
+     * @param rowSequence The outer row keys to remove
      */
-    default void removeAll(final RowSequence outerRowKeys) {
-        outerRowKeys.forAllRowKeys(this::remove);
+    default void removeAll(final RowSequence rowSequence) {
+        rowSequence.forAllRowKeys(this::remove);
     }
 
     /**
