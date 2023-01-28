@@ -9,7 +9,6 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.BidirectionalStream;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightService;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Invoke;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.client.ClientRpcOptions;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Client;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.InvokeRpcOptions;
@@ -31,6 +30,12 @@ import java.util.Map;
  * are received.
  */
 public class HandshakeStreamFactory {
+
+    private static final String DATA_EVENT_LISTENER_NAME = "data";
+    private static final String END_EVENT_LISTENER_NAME = "end";
+    private static final String STATUS_EVENT_LISTENER_NAME = "status";
+    private static final String HEADERS_EVENT_LISTENER_NAME = "headers";
+
     public static BiDiStream<HandshakeRequest, HandshakeResponse> create(WorkerConnection connection) {
         return connection.<HandshakeRequest, HandshakeResponse>streamFactory().create(
                 metadata -> {
@@ -42,17 +47,18 @@ public class HandshakeStreamFactory {
                     Client<HandshakeRequest, HandshakeResponse> client = Grpc.client(FlightService.Handshake,
                             (io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.ClientRpcOptions) options);
                     client.onEnd((status, statusMessage, trailers) -> {
-                        listeners.get("status").forEach((item, index, arr) -> item.call(null,
+                        listeners.get(STATUS_EVENT_LISTENER_NAME).forEach((item, index, arr) -> item.call(null,
                                 ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
-                        listeners.get("end").forEach((item, index, arr) -> item.call(null,
+                        listeners.get(END_EVENT_LISTENER_NAME).forEach((item, index, arr) -> item.call(null,
                                 ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
                         listeners.clear();
                     });
                     client.onMessage(message -> {
-                        listeners.get("data").forEach((item, index, arr) -> item.call(null, message));
+                        listeners.get(DATA_EVENT_LISTENER_NAME).forEach((item, index, arr) -> item.call(null, message));
                     });
                     client.onHeaders(headers -> {
-                        listeners.get("headers").forEach((item, index, arr) -> item.call(null, headers));
+                        listeners.get(HEADERS_EVENT_LISTENER_NAME)
+                                .forEach((item, index, arr) -> item.call(null, headers));
                     });
                     client.start(metadata);
 
@@ -93,19 +99,21 @@ public class HandshakeStreamFactory {
                     props.setTransport(null);// ts doesnt expose these two, stick with defaults for now
                     props.setDebug(false);
                     props.setOnMessage(responseMessage -> {
-                        listeners.get("data").forEach((item, index, arr) -> item.call(null, responseMessage));
+                        listeners.get(DATA_EVENT_LISTENER_NAME)
+                                .forEach((item, index, arr) -> item.call(null, responseMessage));
                     });
                     props.setOnEnd((status, statusMessage, trailers) -> {
-                        listeners.get("status").forEach(
+                        listeners.get(STATUS_EVENT_LISTENER_NAME).forEach(
                                 (item, index, arr) -> item.call(null,
                                         ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
-                        listeners.get("end").forEach(
+                        listeners.get(END_EVENT_LISTENER_NAME).forEach(
                                 (item, index, arr) -> item.call(null,
                                         ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
                         listeners.clear();
                     });
                     props.setOnHeaders(headers -> {
-                        listeners.get("headers").forEach((item, index, arr) -> item.call(null, headers));
+                        listeners.get(HEADERS_EVENT_LISTENER_NAME)
+                                .forEach((item, index, arr) -> item.call(null, headers));
                     });
                     Request client = Grpc.invoke.onInvoke(BrowserFlightService.OpenHandshake, props);
 
@@ -130,10 +138,10 @@ public class HandshakeStreamFactory {
 
     private static Map<String, JsArray<Function>> listenerMap() {
         Map<String, JsArray<Function>> listeners = new HashMap<>();
-        listeners.put("data", new JsArray<>());
-        listeners.put("end", new JsArray<>());
-        listeners.put("status", new JsArray<>());
-        listeners.put("headers", new JsArray<>());
+        listeners.put(DATA_EVENT_LISTENER_NAME, new JsArray<>());
+        listeners.put(END_EVENT_LISTENER_NAME, new JsArray<>());
+        listeners.put(STATUS_EVENT_LISTENER_NAME, new JsArray<>());
+        listeners.put(HEADERS_EVENT_LISTENER_NAME, new JsArray<>());
         return listeners;
     }
 }

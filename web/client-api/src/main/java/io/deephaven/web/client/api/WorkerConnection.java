@@ -405,7 +405,7 @@ public class WorkerConnection {
     }
 
     /**
-     * Manages auth token update and rotation. A typical grpc/grpc-web client would support something like and
+     * Manages auth token update and rotation. A typical grpc/grpc-web client would support something like an
      * interceptor to be able to tweak requests and responses slightly, but our client doesn't have an easy way to add
      * something like that. Instead, this client will continue to call FlightService/Handshake at the specified
      * interval, with empty payloads.

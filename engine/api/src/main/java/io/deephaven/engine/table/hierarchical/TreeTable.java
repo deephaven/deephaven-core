@@ -3,6 +3,7 @@ package io.deephaven.engine.table.hierarchical;
 import io.deephaven.api.*;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -126,13 +127,19 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
         final ColumnName parent = ColumnName.of(parentColumn);
         final ColumnName identifier = ColumnName.of(idColumn);
         final ColumnName sentinel = ColumnName.of("__MATCHED_PARENT_IDENTIFIER__");
+        final Selectable[] viewColumns = source.getDefinition().getColumnStream()
+                .map(ColumnDefinition::getName)
+                .map((final String columnName) -> columnName.equals(parent.name())
+                        ? Selectable.of(parent,
+                                RawString.of("isNull(" + sentinel.name() + ") ? null : " + parent.name()))
+                        : ColumnName.of(columnName))
+                .toArray(Selectable[]::new);
         return LivenessScopeStack.computeEnclosed(
                 () -> source
                         .naturalJoin(source,
                                 List.of(JoinMatch.of(parent, identifier)),
                                 List.of(JoinAddition.of(sentinel, identifier)))
-                        .updateView(Selectable.of(parent,
-                                RawString.of("isNull(" + sentinel.name() + ") ? null : " + parent.name()))),
+                        .view(viewColumns),
                 source::isRefreshing,
                 DynamicNode::isRefreshing);
     }
