@@ -64,6 +64,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     public UpdateCommitter<UpdateByBucketHelper> committer;
     public UpdateBy parentUpdateBy;
     public long createdStep;
+    public UpdateBy.PhasedUpdateProcessor pup;
 
     /**
      * Perform updateBy operations on a single bucket of data (either zero-key or already limited through partitioning)
@@ -398,7 +399,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             prepareForUpdate(upstream, false);
 
             UpdateByBucketHelper.this.committer =
-                    new UpdateCommitter<UpdateByBucketHelper>(UpdateByBucketHelper.this, (bucket) -> {
+                    new UpdateCommitter<>(UpdateByBucketHelper.this, (bucket) -> {
                         // ensure that the item has been cleaned up
                         Assert.eqFalse(bucket.isDirty, "bucket.isDirty");
                         for (UpdateByWindow.UpdateByWindowBucketContext ctx : bucket.windowContexts) {

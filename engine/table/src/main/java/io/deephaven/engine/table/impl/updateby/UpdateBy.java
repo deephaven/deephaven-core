@@ -35,6 +35,7 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.IntStream;
 
 /**
@@ -205,7 +206,7 @@ public abstract class UpdateBy {
 
     /** Release the input sources that will not be needed for the rest of this update */
     private void releaseInputSources(int winIdx, ColumnSource<?>[] maybeCachedInputSources,
-            WritableRowSet[] inputSourceRowSets, int[] inputSourceReferenceCounts) {
+            AtomicReferenceArray<WritableRowSet> inputSourceRowSets, int[] inputSourceReferenceCounts) {
 
         final UpdateByWindow win = windows[winIdx];
         final int[] uniqueWindowSources = win.getUniqueSourceIndices();
@@ -218,22 +219,21 @@ public abstract class UpdateBy {
                 }
 
                 if (--inputSourceReferenceCounts[srcIdx] == 0) {
-                    // release any objects we are holding in the cache
-                    if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
-                        final long targetCapacity = inputSourceRowSets[srcIdx].size();
-                        for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
-                                backingChunk.size()) {
-                            ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
-                                    .resetWritableChunkToBackingStore(backingChunk, positionToNull);
-                            backingChunk.fillWithNullValue(0, backingChunk.size());
+                    // Last use of this set, let's clean up
+                    try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
+                        // release any objects we are holding in the cache
+                        if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
+                            final long targetCapacity = rows.size();
+                            for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
+                                    backingChunk.size()) {
+                                ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
+                                        .resetWritableChunkToBackingStore(backingChunk, positionToNull);
+                                backingChunk.fillWithNullValue(0, backingChunk.size());
+                            }
                         }
+                        inputSourceRowSets.set(srcIdx, null);
+                        maybeCachedInputSources[srcIdx] = null;
                     }
-
-                    // release the row set
-                    inputSourceRowSets[srcIdx].close();
-                    inputSourceRowSets[srcIdx] = null;
-
-                    maybeCachedInputSources[srcIdx] = null;
                 }
             }
         }
@@ -270,7 +270,7 @@ public abstract class UpdateBy {
         /** The active set of sources to use for processing, each source may be cached or original */
         final ColumnSource<?>[] maybeCachedInputSources;
         /** For cacheable sources, the minimal rowset to cache (union of bucket influencer rows) */
-        final WritableRowSet[] inputSourceRowSets;
+        final AtomicReferenceArray<WritableRowSet> inputSourceRowSets;
         /** For cacheable sources, track how many windows require this source */
         final int[] inputSourceReferenceCounts;
 
@@ -282,6 +282,7 @@ public abstract class UpdateBy {
          * {@code prepareForParallelPopulation()} calls
          */
         WritableRowSet changedRows;
+
         /***
          * These rows will be unused after this cycle and Object columns should NULL these keys
          */
@@ -291,6 +292,10 @@ public abstract class UpdateBy {
             this.upstream = upstream;
             this.initialStep = initialStep;
 
+            // TODO: remove this
+            for (UpdateByBucketHelper bucket : buckets) {
+                bucket.pup = this;
+            }
             // determine which buckets we'll examine during this update
             dirtyBuckets = buckets.stream().filter(UpdateByBucketHelper::isDirty).toArray(UpdateByBucketHelper[]::new);
             // which windows are dirty and need to be computed this cycle
@@ -298,7 +303,7 @@ public abstract class UpdateBy {
 
             if (inputCacheNeeded) {
                 maybeCachedInputSources = new ColumnSource[inputSources.length];
-                inputSourceRowSets = new WritableRowSet[inputSources.length];
+                inputSourceRowSets = new AtomicReferenceArray<>(inputSources.length);
                 inputSourceReferenceCounts = new int[inputSources.length];
 
                 // set the uncacheable columns into the array
@@ -361,7 +366,7 @@ public abstract class UpdateBy {
                 for (int srcIdx : cacheableSourceIndices) {
                     if (inputSourceCacheNeeded[srcIdx]) {
                         // create a RowSet to be used by `InverseWrappedRowSetWritableRowRedirection`
-                        inputSourceRowSets[srcIdx] = source.getRowSet().copy();
+                        inputSourceRowSets.set(srcIdx, source.getRowSet().copy());
 
                         // record how many windows require this input source
                         inputSourceReferenceCounts[srcIdx] =
@@ -385,12 +390,19 @@ public abstract class UpdateBy {
                                     UpdateByWindow.UpdateByWindowBucketContext winCtx = bucket.windowContexts[winIdx];
 
                                     if (win.isWindowDirty(winCtx)) {
-                                        // add this rowset to the running total for this input source
-                                        if (inputSourceRowSets[srcIdx] == null) {
-                                            inputSourceRowSets[srcIdx] =
-                                                    win.getInfluencerRows(winCtx).copy();
-                                        } else {
-                                            inputSourceRowSets[srcIdx].insert(win.getInfluencerRows(winCtx));
+                                        WritableRowSet rows = inputSourceRowSets.get(srcIdx);
+                                        if (rows == null) {
+                                            final WritableRowSet influencerCopy = win.getInfluencerRows(winCtx).copy();
+                                            if (!inputSourceRowSets.compareAndSet(srcIdx, null, influencerCopy)) {
+                                                influencerCopy.close();
+                                                rows = inputSourceRowSets.get(srcIdx);
+                                            }
+                                        }
+                                        if (rows != null) {
+                                            // if not null, then insert this window's rowset
+                                            synchronized (rows) {
+                                                rows.insert(win.getInfluencerRows(winCtx));
+                                            }
                                         }
                                         // at least one dirty bucket will need this source
                                         srcNeeded = true;
@@ -413,14 +425,15 @@ public abstract class UpdateBy {
          * when the work is complete
          */
         private void createCachedColumnSource(int srcIdx, final Runnable resumeAction) {
-            if (maybeCachedInputSources[srcIdx] != null || inputSourceRowSets[srcIdx] == null) {
+            final WritableRowSet inputRowSet = inputSourceRowSets.get(srcIdx);
+
+            if (maybeCachedInputSources[srcIdx] != null || inputRowSet == null) {
                 // already cached from another operator (or caching not needed)
                 resumeAction.run();
                 return;
             }
 
             final ColumnSource<?> inputSource = inputSources[srcIdx];
-            final WritableRowSet inputRowSet = inputSourceRowSets[srcIdx];
 
             // re-use the dense column cache if it still exists
             WritableColumnSource<?> innerSource;
