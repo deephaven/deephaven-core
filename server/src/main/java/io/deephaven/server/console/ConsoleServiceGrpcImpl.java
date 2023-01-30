@@ -41,6 +41,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
@@ -138,7 +139,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 GrpcUtil.safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
                 return;
             }
-            final LogsClient client = new LogsClient(request, responseObserver);
+            final LogsClient client =
+                    new LogsClient(request, (ServerCallStreamObserver<LogSubscriptionData>) responseObserver);
             client.start();
         });
     }
@@ -315,17 +317,21 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     private final class LogsClient implements LogBufferRecordListener, Runnable {
-        private final RingBuffer<LogSubscriptionData> buffer;
         private final LogSubscriptionRequest request;
         private final ServerCallStreamObserver<LogSubscriptionData> client;
-        private volatile boolean done = false;
+        private final RingBuffer<LogSubscriptionData> buffer;
+        private final AtomicBoolean guard;
+        private volatile boolean done;
 
         public LogsClient(
                 final LogSubscriptionRequest request,
-                final StreamObserver<LogSubscriptionData> client) {
+                final ServerCallStreamObserver<LogSubscriptionData> client) {
             this.request = Objects.requireNonNull(request);
-            this.client = (ServerCallStreamObserver<LogSubscriptionData>) Objects.requireNonNull(client);
+            this.client = Objects.requireNonNull(client);
             this.buffer = new RingBuffer<>(SUBSCRIBE_TO_LOGS_BUFFER_SIZE);
+            this.guard = new AtomicBoolean(false);
+            this.done = false;
+            this.client.setOnReadyHandler(this::onReady);
             this.client.setOnCancelHandler(this::onCancel);
             this.client.setOnCloseHandler(this::onClose);
         }
@@ -338,6 +344,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         public void stop() {
             GrpcUtil.safelyComplete(client);
         }
+
+        // ------------------------------------------------------------------------------------------------------------
 
         @Override
         public void record(LogBufferRecord record) {
@@ -364,15 +372,42 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             enqueue(payload);
         }
 
+        // ------------------------------------------------------------------------------------------------------------
+
         @Override
         public void run() {
-            LogSubscriptionData payload;
-            while (!done && (payload = dequeue()) != null) {
-                GrpcUtil.safelyOnNext(client, payload);
+            if (!guard.compareAndSet(false, true)) {
+                return;
             }
-            if (!done) {
+            final boolean isDone;
+            try {
+                isDone = sendInternal();
+            } finally {
+                guard.set(false);
+            }
+            if (isDone) {
+                // No need to reschedule, this RPC is done
+                return;
+            }
+            if (client.isReady()) {
+                // When !client.isReady(), onReady() is going to be called and will handle the schedule
                 scheduler.runAfterDelay(SUBSCRIBE_TO_LOGS_SEND_MILLIS, this);
             }
+        }
+
+        private boolean sendInternal() {
+            boolean isDone;
+            LogSubscriptionData payload;
+            while (!(isDone = done) && client.isReady() && (payload = dequeue()) != null) {
+                GrpcUtil.safelyOnNext(client, payload);
+            }
+            return isDone;
+        }
+
+        // ------------------------------------------------------------------------------------------------------------
+
+        private void onReady() {
+            scheduler.runImmediately(this);
         }
 
         private void onClose() {
