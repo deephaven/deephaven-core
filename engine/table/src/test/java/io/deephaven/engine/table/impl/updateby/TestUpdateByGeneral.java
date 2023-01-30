@@ -166,7 +166,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                 i(2, 4, 6).toTracking(),
                 col("Key", "A", "B", "A"),
                 intCol("Int", 2, 4, 6));
-        final QueryTable result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Fill("Filled=Int"), UpdateByOperation.RollingSum(2, "Sum=Int")), "Key");
+        final QueryTable result = (QueryTable) table.updateBy(
+                List.of(UpdateByOperation.Fill("Filled=Int"), UpdateByOperation.RollingSum(2, "Sum=Int")), "Key");
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8)); // Add to "B" bucket

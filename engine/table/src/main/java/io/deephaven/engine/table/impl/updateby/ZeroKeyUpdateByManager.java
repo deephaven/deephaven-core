@@ -69,7 +69,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
 
             // result will depend on zeroKeyUpdateBy
-            result.addParentReference(zeroKeyUpdateBy);
+            result.addParentReference(zeroKeyUpdateBy.result);
         } else {
             zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
                     resultSources, timestampColumnName, rowRedirection, control);
