@@ -51,9 +51,7 @@ public class LogBuffer implements LogBufferRecordListener {
 
     public synchronized void subscribe(final LogBufferRecordListener listener) {
         listeners.add(listener);
-        for (final RingBuffer<LogBufferRecord>.Iterator ri = history.iterator(); ri.hasNext();) {
-            listener.record(ri.next());
-        }
+        history.forEach(listener::record);
     }
 
     public synchronized void unsubscribe(final LogBufferRecordListener listener) {
