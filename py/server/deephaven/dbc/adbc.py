@@ -23,7 +23,7 @@ except ImportError:
 
 
 def read_cursor(cursor: adbc_driver_manager.dbapi.Cursor) -> Table:
-    """Converts the Arrow data of the provided cursor into a Deephaven table.
+    """Converts the result set of the provided cursor into a Deephaven table.
 
     Args:
         cursor (Any): an ADBC DB-API cursor. Prior to it being passed in, its execute() method must be called to
