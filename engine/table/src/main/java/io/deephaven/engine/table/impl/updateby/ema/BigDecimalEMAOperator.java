@@ -40,8 +40,8 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                         if (curVal == null) {
                             curVal = input;
                         } else {
-                            curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                    .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
+                            curVal = curVal.multiply(opAlpha, control.bigValueContextOrDefault())
+                                    .add(input.multiply(opOneMinusAlpha, control.bigValueContextOrDefault()),
                                             control.bigValueContextOrDefault());
                         }
                     }
@@ -68,11 +68,14 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                         } else {
                             final long dt = timestamp - lastStamp;
                             if (dt != 0) {
-
+                                // alpha is dynamic based on time, but only recalculated when needed
+                                if (dt != lastDt) {
+                                    alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseWindowScaleUnits));
+                                    oneMinusAlpha =
+                                            BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+                                    lastDt = dt;
+                                }
                                 // alpha is dynamic, based on time
-                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseWindowScaleUnits));
-                                BigDecimal oneMinusAlpha =
-                                        BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
 
                                 curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
                                         .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),

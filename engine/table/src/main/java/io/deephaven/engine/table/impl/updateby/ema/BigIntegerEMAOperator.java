@@ -42,8 +42,8 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                         if (curVal == null) {
                             curVal = decimalInput;
                         } else {
-                            curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                    .add(decimalInput.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
+                            curVal = curVal.multiply(opAlpha, control.bigValueContextOrDefault())
+                                    .add(decimalInput.multiply(opOneMinusAlpha, control.bigValueContextOrDefault()),
                                             control.bigValueContextOrDefault());
                         }
                     }
@@ -69,9 +69,12 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                         } else {
                             final long dt = timestamp - lastStamp;
                             if (dt != 0) {
-                                // alpha is dynamic, based on time
-                                BigDecimal alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseWindowScaleUnits));
-                                BigDecimal oneMinusAlpha = BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+                                // alpha is dynamic based on time, but only recalculated when needed
+                                if (dt != lastDt) {
+                                    alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseWindowScaleUnits));
+                                    oneMinusAlpha = BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+                                    lastDt = dt;
+                                }
 
                                 curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
                                         .add(decimalInput.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),

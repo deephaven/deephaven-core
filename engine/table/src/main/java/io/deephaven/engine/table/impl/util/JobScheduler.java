@@ -23,8 +23,11 @@ public interface JobScheduler {
      * A default context for the scheduled job actions. Override this to provide reusable resources for the serial and
      * parallel iterate actions.
      */
-    class JobContext implements Context {
+    interface JobThreadContext extends Context {
     }
+
+    JobThreadContext DEFAULT_CONTEXT = new JobThreadContext() {};
+    Supplier<JobThreadContext> DEFAULT_CONTEXT_FACTORY = () -> DEFAULT_CONTEXT;
 
     /**
      * Cause runnable to be executed.
@@ -58,7 +61,7 @@ public interface JobScheduler {
      * schedule the next iteration.
      */
     @FunctionalInterface
-    interface IterateAction<CONTEXT_TYPE extends JobContext> {
+    interface IterateAction<CONTEXT_TYPE extends JobThreadContext> {
         void run(CONTEXT_TYPE taskThreadContext, int index);
     }
 
@@ -72,11 +75,11 @@ public interface JobScheduler {
      * will not block the scheduler, but the {@code completeAction} {@link Runnable} will never be called.
      */
     @FunctionalInterface
-    interface IterateResumeAction<CONTEXT_TYPE extends JobContext> {
+    interface IterateResumeAction<CONTEXT_TYPE extends JobThreadContext> {
         void run(CONTEXT_TYPE taskThreadContext, int index, Runnable resume);
     }
 
-    class ErrorAccounter<CONTEXT_TYPE extends JobContext> extends ReferenceCounted
+    class ErrorAccounter<CONTEXT_TYPE extends JobThreadContext> extends ReferenceCounted
             implements Consumer<Exception>, Runnable {
         private final Supplier<CONTEXT_TYPE> taskThreadContextFactory;
         private final int start;
@@ -156,8 +159,8 @@ public interface JobScheduler {
      *
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
-     * @param taskThreadContextFactory the factory that supplies {@link JobContext contexts} for the threads handling
-     *        the sub-tasks
+     * @param taskThreadContextFactory the factory that supplies {@link JobThreadContext contexts} for the threads
+     *        handling the sub-tasks
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index is provided as a parameter
@@ -165,7 +168,7 @@ public interface JobScheduler {
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
-    default <CONTEXT_TYPE extends JobContext> void iterateParallel(
+    default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
             ExecutionContext executionContext,
             LogOutputAppendable description,
             Supplier<CONTEXT_TYPE> taskThreadContextFactory,
@@ -190,7 +193,7 @@ public interface JobScheduler {
      *
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
-     * @param taskThreadContextFactory the factory that supplies {@link JobContext contexts} for the tasks
+     * @param taskThreadContextFactory the factory that supplies {@link JobThreadContext contexts} for the tasks
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
@@ -198,7 +201,7 @@ public interface JobScheduler {
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
-    default <CONTEXT_TYPE extends JobContext> void iterateParallel(
+    default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
             ExecutionContext executionContext,
             LogOutputAppendable description,
             Supplier<CONTEXT_TYPE> taskThreadContextFactory,
@@ -233,7 +236,7 @@ public interface JobScheduler {
      *
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
-     * @param taskThreadContextFactory the factory that supplies {@link JobContext contexts} for the tasks
+     * @param taskThreadContextFactory the factory that supplies {@link JobThreadContext contexts} for the tasks
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
@@ -241,7 +244,7 @@ public interface JobScheduler {
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
-    default <CONTEXT_TYPE extends JobContext> void iterateSerial(ExecutionContext executionContext,
+    default <CONTEXT_TYPE extends JobThreadContext> void iterateSerial(ExecutionContext executionContext,
             LogOutputAppendable description,
             Supplier<CONTEXT_TYPE> taskThreadContextFactory,
             int start,

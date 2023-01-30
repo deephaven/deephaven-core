@@ -1,6 +1,6 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatCumMinMaxOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.minmax;
@@ -15,7 +15,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.*;
 
 public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
     private final boolean isMax;
@@ -41,9 +41,9 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
 
             final double val = doubleValueChunk.get(pos);
 
-            if(curVal == NULL_DOUBLE) {
+            if (curVal == NULL_DOUBLE) {
                 curVal = val;
-            } else if(val != NULL_DOUBLE) {
+            } else if (val != NULL_DOUBLE) {
                 if ((isMax && val > curVal) ||
                         (!isMax && val < curVal)) {
                     curVal = val;
@@ -55,14 +55,16 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
     public DoubleCumMinMaxOperator(@NotNull final MatchPair pair,
                                   final boolean isMax,
                                   @Nullable final RowRedirection rowRedirection
-                                  // region extra-constructor-args
-                                  // endregion extra-constructor-args
+                                // region extra-constructor-args
+                                // endregion extra-constructor-args
     ) {
         super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
         // endregion constructor
     }
+    // region extra-methods
+    // endregion extra-methods
 
     @NotNull
     @Override

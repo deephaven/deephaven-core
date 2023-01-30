@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -55,12 +56,10 @@ class UpdateByWindowTicks extends UpdateByWindow {
         this.prevUnits = prevUnits;
         this.fwdUnits = fwdUnits;
 
-        // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
-        final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-
-        if (prevUnits + fwdUnits > MAX_ARRAY_SIZE) {
-            throw (new IllegalArgumentException(
-                    "UpdateBy window size may not exceed MAX_ARRAY_SIZE (" + MAX_ARRAY_SIZE + ")"));
+        // this is also checked at RollingSumSpec creation against a hard-coded value (Integer.MAX_VALUE - 8)
+        if (prevUnits + fwdUnits > ArrayUtil.MAX_ARRAY_SIZE) {
+            throw new IllegalArgumentException(
+                    "UpdateBy window size may not exceed MAX_ARRAY_SIZE (" + ArrayUtil.MAX_ARRAY_SIZE + ")");
         }
     }
 

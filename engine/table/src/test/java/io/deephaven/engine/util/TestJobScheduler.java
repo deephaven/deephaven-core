@@ -32,7 +32,7 @@ public final class TestJobScheduler {
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    JobScheduler.JobContext::new,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     50,
                     (context, idx) -> {
@@ -81,7 +81,7 @@ public final class TestJobScheduler {
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    JobScheduler.JobContext::new,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     50,
                     (context, idx, resume) -> {
@@ -127,8 +127,8 @@ public final class TestJobScheduler {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
 
-            class TestJobContext extends JobScheduler.JobContext {
-                TestJobContext() {
+            class TestJobThreadContext implements JobScheduler.JobThreadContext {
+                TestJobThreadContext() {
                     openCount.incrementAndGet();
                 }
 
@@ -144,12 +144,12 @@ public final class TestJobScheduler {
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobContext::new,
+                    TestJobThreadContext::new,
                     0,
                     50,
                     (context, idx, resume) -> {
                         // verify the type is correct
-                        Assert.instanceOf(context, "context", TestJobContext.class);
+                        Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
                         completed[idx] = true;
                         resume.run();
@@ -200,7 +200,7 @@ public final class TestJobScheduler {
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
-                    JobScheduler.JobContext::new,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     50,
                     (context, idx, resume) -> {
@@ -247,8 +247,8 @@ public final class TestJobScheduler {
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
 
-            class TestJobContext extends JobScheduler.JobContext {
-                TestJobContext() {
+            class TestJobThreadContext implements JobScheduler.JobThreadContext {
+                TestJobThreadContext() {
                     openCount.incrementAndGet();
                 }
 
@@ -264,12 +264,12 @@ public final class TestJobScheduler {
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobContext::new,
+                    TestJobThreadContext::new,
                     0,
                     50,
                     (context, idx, resume) -> {
                         // verify the type is correct
-                        Assert.instanceOf(context, "context", TestJobContext.class);
+                        Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
                         completed[idx] = true;
                         resume.run();
@@ -319,7 +319,7 @@ public final class TestJobScheduler {
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
-                    JobScheduler.JobContext::new,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     0,
                     (context, idx, resume) -> {
@@ -360,7 +360,7 @@ public final class TestJobScheduler {
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    JobScheduler.JobContext::new,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     0,
                     (context, idx, resume) -> {
@@ -399,8 +399,8 @@ public final class TestJobScheduler {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
-            class TestJobContext extends JobScheduler.JobContext {
-                TestJobContext() {
+            class TestJobThreadContext implements JobScheduler.JobThreadContext {
+                TestJobThreadContext() {
                     openCount.incrementAndGet();
                 }
 
@@ -414,12 +414,12 @@ public final class TestJobScheduler {
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobContext::new,
+                    TestJobThreadContext::new,
                     0,
                     50,
                     (context, idx) -> {
                         // verify the type is correct
-                        Assert.instanceOf(context, "context", TestJobContext.class);
+                        Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
                         completed[idx] = true;
                         // throw after this is set to make verification easy
@@ -476,8 +476,8 @@ public final class TestJobScheduler {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
-            class TestJobContext extends JobScheduler.JobContext {
-                TestJobContext() {
+            class TestJobThreadContext implements JobScheduler.JobThreadContext {
+                TestJobThreadContext() {
                     openCount.incrementAndGet();
                 }
 
@@ -491,12 +491,12 @@ public final class TestJobScheduler {
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobContext::new,
+                    TestJobThreadContext::new,
                     0,
                     50,
                     (context, idx, resume) -> {
                         // verify the type is correct
-                        Assert.instanceOf(context, "context", TestJobContext.class);
+                        Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
                         completed[idx] = true;
 

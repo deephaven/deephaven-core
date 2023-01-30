@@ -116,13 +116,16 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         this.windowContexts = new UpdateByWindow.UpdateByWindowBucketContext[windows.length];
 
         // make a fake update with the initial rows of the table
-        final TableUpdateImpl initialUpdate = new TableUpdateImpl(source.getRowSet(),
+        final TableUpdateImpl initialUpdate = new TableUpdateImpl(
+                source.getRowSet().copy(), // send a copy since this will be closed by release()
                 RowSetFactory.empty(),
                 RowSetFactory.empty(),
                 RowSetShiftData.EMPTY,
                 ModifiedColumnSet.EMPTY);
 
         prepareForUpdate(initialUpdate, true);
+
+        initialUpdate.release();
 
         if (source.isRefreshing()) {
             final UpdateByBucketHelperListener listener = newListener(description);
@@ -407,10 +410,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                         }
                     });
             UpdateByBucketHelper.this.committer.maybeActivate();
-
-            // pass the update unchanged, just increment the ref count
-            TableUpdate downstream = upstream.acquire();
-            result.notifyListeners(downstream);
         }
     }
 }

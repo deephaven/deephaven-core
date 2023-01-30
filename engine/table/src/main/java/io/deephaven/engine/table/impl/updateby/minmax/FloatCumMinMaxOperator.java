@@ -1,3 +1,8 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.updateby.minmax;
 
 import io.deephaven.base.verify.Assert;
@@ -10,7 +15,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.*;
 
 public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
     private final boolean isMax;
@@ -36,9 +41,9 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
 
             final float val = floatValueChunk.get(pos);
 
-            if(curVal == NULL_FLOAT) {
+            if (curVal == NULL_FLOAT) {
                 curVal = val;
-            } else if(val != NULL_FLOAT) {
+            } else if (val != NULL_FLOAT) {
                 if ((isMax && val > curVal) ||
                         (!isMax && val < curVal)) {
                     curVal = val;
@@ -50,14 +55,16 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
     public FloatCumMinMaxOperator(@NotNull final MatchPair pair,
                                   final boolean isMax,
                                   @Nullable final RowRedirection rowRedirection
-                                  // region extra-constructor-args
-                                  // endregion extra-constructor-args
+                                // region extra-constructor-args
+                                // endregion extra-constructor-args
     ) {
         super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
         // endregion constructor
     }
+    // region extra-methods
+    // endregion extra-methods
 
     @NotNull
     @Override

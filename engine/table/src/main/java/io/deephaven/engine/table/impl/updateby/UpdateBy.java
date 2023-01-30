@@ -14,6 +14,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
@@ -21,6 +22,7 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -346,6 +348,7 @@ public abstract class UpdateBy {
                 waitForResult.completeExceptionally(error);
             } else {
                 cleanUpAfterError();
+                result().forceReferenceCountToZero();
                 // this is part of an update, need to notify downstream
                 result().notifyListenersOnError(error, null);
             }
@@ -378,8 +381,8 @@ public abstract class UpdateBy {
                 return;
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new,
-                    0, cacheableSourceIndices.length,
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, cacheableSourceIndices.length,
                     (context, idx) -> {
                         final int srcIdx = cacheableSourceIndices[idx];
                         for (int winIdx = 0; winIdx < windows.length; winIdx++) {
@@ -457,7 +460,7 @@ public abstract class UpdateBy {
             final int taskCount =
                     Math.toIntExact((inputRowSet.size() + PARALLEL_CACHE_BATCH_SIZE - 1) / PARALLEL_CACHE_BATCH_SIZE);
 
-            final class BatchContext extends JobScheduler.JobContext {
+            final class BatchThreadContext implements JobScheduler.JobThreadContext {
                 final RowSequence.Iterator rsIt = inputRowSet.getRowSequenceIterator();
                 final ChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(PARALLEL_CACHE_CHUNK_SIZE);
@@ -470,7 +473,7 @@ public abstract class UpdateBy {
                 }
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, BatchContext::new,
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, BatchThreadContext::new,
                     0, taskCount,
                     (ctx, idx) -> {
                         // advance to the first key of this block
@@ -499,8 +502,8 @@ public abstract class UpdateBy {
                 final UpdateByWindow win = windows[winIdx];
                 final int[] uniqueWindowSources = win.getUniqueSourceIndices();
 
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new,
-                        0, uniqueWindowSources.length,
+                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+                        JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, uniqueWindowSources.length,
                         (context, idx, sourceComplete) -> createCachedColumnSource(uniqueWindowSources[idx],
                                 sourceComplete),
                         resumeAction, this::onError);
@@ -517,7 +520,8 @@ public abstract class UpdateBy {
         private void processWindowBuckets(int winIdx, final Runnable resumeAction) {
             if (jobScheduler.threadCount() > 1 && dirtyBuckets.length > 1) {
                 // process the buckets in parallel
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new,
+                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+                        JobScheduler.DEFAULT_CONTEXT_FACTORY,
                         0, dirtyBuckets.length,
                         (context, bucketIdx) -> {
                             UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
@@ -540,7 +544,8 @@ public abstract class UpdateBy {
          * cached columns before starting the next window. Calls {@code completedAction} when the work is complete
          */
         private void processWindows(final Runnable resumeAction) {
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this, JobScheduler.JobContext::new, 0,
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                     windows.length,
                     (context, winIdx, windowComplete) -> {
                         UpdateByWindow win = windows[winIdx];
@@ -636,10 +641,10 @@ public abstract class UpdateBy {
                 }
             }
 
-            try (final RowSet ignoredRs = changedRows;
-                    final RowSet ignoredRs2 = toClear) {
-                // auto close these resources
-            }
+            SafeCloseable.closeArray(changedRows, toClear);
+
+            upstream.release();
+
             resumeAction.run();
         }
 
@@ -647,15 +652,14 @@ public abstract class UpdateBy {
          * Clean up the resources created during this update.
          */
         private void cleanUpAfterError() {
-            try (final RowSet ignoredRs = changedRows;
-                    final RowSet ignoredRs2 = toClear) {
-                // auto close these resources
-            }
-
             // allow the helpers to release their resources
             for (UpdateByBucketHelper bucket : dirtyBuckets) {
                 bucket.finalizeUpdate();
             }
+
+            SafeCloseable.closeArray(changedRows, toClear);
+
+            upstream.release();
         }
 
         /**
@@ -982,28 +986,30 @@ public abstract class UpdateBy {
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
         resultSources.putAll(opResultSources);
-
+        final String fTimestampColumnName = timestampColumnName;
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
-            final ZeroKeyUpdateByManager zkm = new ZeroKeyUpdateByManager(
-                    descriptionBuilder.toString(),
-                    opArr,
-                    windowArr,
-                    inputSourceArr,
-                    source,
-                    resultSources,
-                    timestampColumnName,
-                    rowRedirection,
-                    control);
+            return LivenessScopeStack.computeEnclosed(() -> {
+                final ZeroKeyUpdateByManager zkm = new ZeroKeyUpdateByManager(
+                        descriptionBuilder.toString(),
+                        opArr,
+                        windowArr,
+                        inputSourceArr,
+                        source,
+                        resultSources,
+                        fTimestampColumnName,
+                        rowRedirection,
+                        control);
 
-            if (source.isRefreshing()) {
-                // start tracking previous values
-                if (rowRedirection != null) {
-                    rowRedirection.startTrackingPrevValues();
+                if (source.isRefreshing()) {
+                    // start tracking previous values
+                    if (rowRedirection != null) {
+                        rowRedirection.startTrackingPrevValues();
+                    }
+                    ops.forEach(UpdateByOperator::startTrackingPrev);
                 }
-                ops.forEach(UpdateByOperator::startTrackingPrev);
-            }
-            return zkm.result;
+                return zkm.result;
+            }, source::isRefreshing, DynamicNode::isRefreshing);
         }
 
         descriptionBuilder.append(", pairs={").append(MatchPair.matchString(pairs)).append("})");
@@ -1019,26 +1025,28 @@ public abstract class UpdateBy {
                     String.join(", ", problems) + "}");
         }
 
-        final BucketedPartitionedUpdateByManager bm = new BucketedPartitionedUpdateByManager(
-                descriptionBuilder.toString(),
-                opArr,
-                windowArr,
-                inputSourceArr,
-                source,
-                resultSources,
-                byColumns,
-                timestampColumnName,
-                rowRedirection,
-                control);
+        return LivenessScopeStack.computeEnclosed(() -> {
+            final BucketedPartitionedUpdateByManager bm = new BucketedPartitionedUpdateByManager(
+                    descriptionBuilder.toString(),
+                    opArr,
+                    windowArr,
+                    inputSourceArr,
+                    source,
+                    resultSources,
+                    byColumns,
+                    fTimestampColumnName,
+                    rowRedirection,
+                    control);
 
-        if (source.isRefreshing()) {
-            // start tracking previous values
-            if (rowRedirection != null) {
-                rowRedirection.startTrackingPrevValues();
+            if (source.isRefreshing()) {
+                // start tracking previous values
+                if (rowRedirection != null) {
+                    rowRedirection.startTrackingPrevValues();
+                }
+                ops.forEach(UpdateByOperator::startTrackingPrev);
             }
-            ops.forEach(UpdateByOperator::startTrackingPrev);
-        }
-        return bm.result;
+            return bm.result;
+        }, source::isRefreshing, DynamicNode::isRefreshing);
     }
     // endregion
 }

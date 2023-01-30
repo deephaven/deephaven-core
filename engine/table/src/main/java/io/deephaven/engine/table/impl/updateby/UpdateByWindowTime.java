@@ -29,7 +29,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * a buffer of `influencer` values to add to the rolling window as the current row changes.
  */
 class UpdateByWindowTime extends UpdateByWindow {
-    /** growth rate after the contexts have exceeded the poolable chunk size */
+    /**
+     * growth rate after the contexts have exceeded the poolable chunk size
+     */
     private static final double CONTEXT_GROWTH_PERCENTAGE = 0.25;
     private static final int WINDOW_CHUNK_SIZE = 4096;
     private static final int RING_BUFFER_INITIAL_SIZE = 512;
@@ -335,8 +337,7 @@ class UpdateByWindowTime extends UpdateByWindow {
             Assert.eqTrue(affectedTsIt.hasNext(), "affectedTsIt.hasNext()");
 
             final long EXHAUSTED = -1L;
-            // long currentTimestamp = affectedTsIt.nextLong();
-            long affectedTs = affectedTsIt.hasNext() ? affectedTsIt.nextLong() : EXHAUSTED;
+            long affectedTs = affectedTsIt.nextLong();
 
             while (affectedRowsIt.hasMore()) {
                 // NOTE: we did not put null values into our SSA and our influencer rowset is built using the
@@ -346,8 +347,11 @@ class UpdateByWindowTime extends UpdateByWindow {
                 long totalPushCount = 0;
                 long skipCount = 0;
 
-                for (affectedRowIndex = 0; affectedRowIndex < ctx.workingChunkSize
-                        && affectedTs != EXHAUSTED; affectedRowIndex++) {
+                // @formatter:off
+                for (affectedRowIndex = 0;
+                     affectedRowIndex < ctx.workingChunkSize && affectedTs != EXHAUSTED;
+                     affectedRowIndex++) {
+                    // @formatter:on
                     if (affectedTs == NULL_LONG) {
                         // this signifies that does not belong to a time window
                         popChunk.set(affectedRowIndex, NULL_INT);

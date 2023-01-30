@@ -5,13 +5,16 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.test.types.ParallelTest;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -19,18 +22,21 @@ import java.time.Duration;
 import java.util.*;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.testutil.TstUtils.validate;
+import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
-@Category(ParallelTest.class)
+@Category(OutOfBandTest.class)
 public class TestUpdateByGeneral extends BaseUpdateByTest {
 
     @Test
     public void testMixedAppendOnlyZeroKey() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
+                System.out.println("Stating test: size " + size + ", seed " + seed);
                 doTestTicking(seed > 15, false, true, 20, size, seed);
             }
         }
@@ -40,6 +46,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedAppendOnlyBucketed() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
+                System.out.println("Stating test: size " + size + ", seed " + seed);
                 doTestTicking(seed > 15, true, true, 20, size, seed);
             }
         }
@@ -49,6 +56,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedGeneralZeroKey() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
+                System.out.println("Stating test: size " + size + ", seed " + seed);
                 doTestTicking(seed > 15, false, false, 20, size, seed);
             }
         }
@@ -58,6 +66,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedGeneralBucketed() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
+                System.out.println("Stating test: size " + size + ", seed " + seed);
                 doTestTicking(seed > 15, true, false, 20, size, seed);
             }
         }
@@ -125,6 +134,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
         };
 
         for (int step = 0; step < steps; step++) {
+            System.out.println("   beginning step " + step);
             try {
                 if (appendOnly) {
                     UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -148,5 +158,36 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                 .filter(cn -> !omissions.contains(cn))
                 .map(cn -> cn + suffix + "=" + cn)
                 .toArray(String[]::new);
+    }
+
+    @Test
+    public void testNewBuckets() {
+        final QueryTable table = TstUtils.testRefreshingTable(
+                i(2, 4, 6).toTracking(),
+                col("Key", "A", "B", "A"),
+                intCol("Int", 2, 4, 6));
+        final QueryTable result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Fill("Filled=Int"), UpdateByOperation.RollingSum(2, "Sum=Int")), "Key");
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8)); // Add to "B" bucket
+            table.notifyListeners(i(8), i(), i());
+        });
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // New "C" bucket in isolation
+            table.notifyListeners(i(9), i(), i());
+        });
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Row from "B" bucket to "C" bucket
+            table.notifyListeners(i(), i(), i(8));
+        });
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(10, 11), col("Key", "D", "C"), intCol("Int", 10, 11)); // New "D" bucket
+            table.notifyListeners(i(10, 11), i(), i());
+        });
+
+        TableTools.show(result);
     }
 }

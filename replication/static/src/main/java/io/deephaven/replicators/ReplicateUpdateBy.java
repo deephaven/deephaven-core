@@ -71,9 +71,23 @@ public class ReplicateUpdateBy {
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/ShortCumSumOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/FloatCumSumOperator.java");
-        replicateNumericOperator(
+
+        files = ReplicatePrimitiveCode.shortToAllNumericals(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/ShortCumMinMaxOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/FloatCumMinMaxOperator.java");
+                null);
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte") && (f.contains("CumSum") || f.contains("RollingSum"))) {
+                fixupByte(f);
+            }
+
+            if (f.contains("Long") && f.contains("MinMax")) {
+                augmentLongWithReinterps(f);
+            }
+        }
 
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/ShortCumProdOperator.java",

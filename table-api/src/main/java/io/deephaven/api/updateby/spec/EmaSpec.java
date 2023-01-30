@@ -60,14 +60,8 @@ public abstract class EmaSpec extends UpdateBySpecBase {
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {
-        return
-        // is primitive numeric?
-        inputType == double.class || inputType == float.class
-                || inputType == int.class || inputType == long.class || inputType == short.class
-                || inputType == byte.class
-
-                // is boxed numeric?
-                || Number.class.isAssignableFrom(inputType);
+        // is primitive or boxed numeric?
+        return applicableToNumeric(inputType);
     }
 
     @Override

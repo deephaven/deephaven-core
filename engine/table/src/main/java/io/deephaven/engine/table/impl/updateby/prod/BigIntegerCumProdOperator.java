@@ -12,9 +12,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
-
 public final class BigIntegerCumProdOperator extends BaseObjectUpdateByOperator<BigInteger> {
     protected class Context extends BaseObjectUpdateByOperator<BigInteger>.Context {
         public ObjectChunk<BigInteger, ? extends Values> objectValueChunk;

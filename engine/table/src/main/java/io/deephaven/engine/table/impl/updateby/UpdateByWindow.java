@@ -12,6 +12,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,12 +101,10 @@ abstract class UpdateByWindow {
                             influencerRows == affectedRows || influencerRows == timestampValidRowSet ? null
                                     : influencerRows) {
             }
-            SafeCloseable.closeArray(opContexts);
-            Arrays.fill(opContexts, null);
+            SafeCloseableArray.close(opContexts);
 
             if (inputSourceGetContexts != null) {
-                SafeCloseable.closeArray(inputSourceGetContexts);
-                Arrays.fill(inputSourceGetContexts, null);
+                SafeCloseableArray.close(inputSourceGetContexts);
             }
         }
     }
@@ -308,42 +307,37 @@ abstract class UpdateByWindow {
      */
     void processUpdateForContext(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
         boolean addsOrRemoves = upstream.added().isNonempty() || upstream.removed().isNonempty();
-
         if (addsOrRemoves) {
             // mark all operators as affected by this update
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
             context.dirtySourceIndices = getUniqueSourceIndices();
             context.isDirty = true;
-
             // still need to compute whether any input columns were modified
+            if (upstream.modifiedColumnSet().empty()) {
+                return;
+            }
             for (UpdateByOperator op : operators) {
-                final boolean opInputModified = upstream.modifiedColumnSet().nonempty() &&
-                        (op.getInputModifiedColumnSet() == null ||
-                                upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()));
-
+                final boolean opInputModified = op.getInputModifiedColumnSet() == null ||
+                        upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet());
                 if (opInputModified) {
                     context.inputModified = true;
                     break;
                 }
             }
-        } else {
+        } else if (upstream.modifiedColumnSet().nonempty()) {
             // determine which operators are affected by this update and whether any input columns were modified
             BitSet dirtyOperators = new BitSet();
             BitSet dirtySourceIndices = new BitSet();
-
             for (int opIdx = 0; opIdx < operators.length; opIdx++) {
                 UpdateByOperator op = operators[opIdx];
-                final boolean opInputModified = upstream.modifiedColumnSet().nonempty() &&
-                        (op.getInputModifiedColumnSet() == null ||
-                                upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet()));
-
+                final boolean opInputModified = op.getInputModifiedColumnSet() == null ||
+                        upstream.modifiedColumnSet().containsAny(op.getInputModifiedColumnSet());
                 if (opInputModified) {
                     dirtyOperators.set(opIdx);
                     Arrays.stream(operatorInputSourceSlots[opIdx]).forEach(dirtySourceIndices::set);
                     context.inputModified = true;
                 }
             }
-
             context.isDirty = !dirtyOperators.isEmpty();
             context.dirtyOperatorIndices = dirtyOperators.stream().toArray();
             context.dirtySourceIndices = dirtySourceIndices.stream().toArray();

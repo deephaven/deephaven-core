@@ -17,8 +17,6 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.math.BigDecimal;
-
 import static io.deephaven.util.QueryConstants.*;
 
 public class ByteEMAOperator extends BasePrimitiveEMAOperator {

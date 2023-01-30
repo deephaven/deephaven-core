@@ -3,7 +3,6 @@ package io.deephaven.engine.table.impl.updateby.ema;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
@@ -22,14 +21,17 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
     protected final ColumnSource<?> valueSource;
     protected final OperationControl control;
-    protected final BigDecimal alpha;
-    protected final BigDecimal oneMinusAlpha;
 
+    protected final BigDecimal opAlpha;
+    protected final BigDecimal opOneMinusAlpha;
 
     public abstract class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         public ObjectChunk<T, ? extends Values> objectValueChunk;
 
-        long lastStamp = NULL_LONG;
+        protected BigDecimal alpha;
+        protected BigDecimal oneMinusAlpha;
+        protected long lastDt = NULL_LONG;
+        protected long lastStamp = NULL_LONG;
 
         protected Context(final int chunkSize, final int chunkCount) {
             super(chunkSize, chunkCount);
@@ -76,9 +78,10 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         this.control = control;
         this.valueSource = valueSource;
 
-        alpha = BigDecimal.valueOf(Math.exp(-1.0 / (double) timeScaleUnits));
-        oneMinusAlpha =
-                timestampColumnName == null ? BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault()) : null;
+        opAlpha = BigDecimal.valueOf(Math.exp(-1.0 / (double) timeScaleUnits));
+        opOneMinusAlpha =
+                timestampColumnName == null ? BigDecimal.ONE.subtract(opAlpha, control.bigValueContextOrDefault())
+                        : null;
     }
 
     @Override

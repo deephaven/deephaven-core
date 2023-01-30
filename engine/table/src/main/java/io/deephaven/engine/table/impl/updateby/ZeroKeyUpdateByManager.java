@@ -78,7 +78,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
         }
 
         // make a dummy update to generate the initial row keys
-        final TableUpdateImpl fakeUpdate = new TableUpdateImpl(source.getRowSet(),
+        final TableUpdateImpl fakeUpdate = new TableUpdateImpl(
+                source.getRowSet().copy(), // send a copy since this will be closed by release()
                 RowSetFactory.empty(),
                 RowSetFactory.empty(),
                 RowSetShiftData.EMPTY,
