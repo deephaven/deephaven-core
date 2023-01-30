@@ -248,7 +248,7 @@ public class JsTreeTable extends HasEventHandling {
                 return depthColumn[offsetInSnapshot];
             }
 
-            public void appendKeyData(Object[][] keyTableData, boolean expanded, double action) {
+            public void appendKeyData(Object[][] keyTableData, double action) {
                 int i;
                 for (i = 0; i < keyColumns.length; i++) {
                     Js.<JsArray<Any>>cast(keyTableData[i]).push(keyColumns.getAt(i).get(this));
@@ -293,7 +293,7 @@ public class JsTreeTable extends HasEventHandling {
 
     // Tracking for the current/next key table contents. Note that the key table doesn't necessarily
     // only include key columns, but all HierarchicalTable.isExpandByColumn columns.
-    private final Object[][] keyTableData;
+    private Object[][] keyTableData;
     private Promise<JsTable> keyTable;
 
     private TicketAndPromise viewTicket;
@@ -726,8 +726,8 @@ public class JsTreeTable extends HasEventHandling {
     }
 
     @JsMethod
-    public void expand(Object row, @JsOptional Boolean expandAll) {
-        setExpanded(row, true, expandAll);
+    public void expand(Object row, @JsOptional Boolean expandDescendants) {
+        setExpanded(row, true, expandDescendants);
     }
 
     @JsMethod
@@ -736,12 +736,12 @@ public class JsTreeTable extends HasEventHandling {
     }
 
     @JsMethod
-    public void setExpanded(Object row, boolean isExpanded, @JsOptional Boolean expandAll) {
+    public void setExpanded(Object row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
         final double action;
         if (!isExpanded) {
             action = ACTION_COLLAPSE;
-        } else if (expandAll == Boolean.TRUE) {
+        } else if (expandDescendants == Boolean.TRUE) {
             action = ACTION_EXPAND_WITH_DESCENDENTS;
         } else {
             action = ACTION_EXPAND;
@@ -756,7 +756,40 @@ public class JsTreeTable extends HasEventHandling {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
 
-        r.appendKeyData(keyTableData, isExpanded, action);
+        r.appendKeyData(keyTableData, action);
+        if (keyTable != null) {
+            keyTable.then(t -> {
+                t.close();
+                return null;
+            });
+            keyTable = null;
+        }
+        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
+    }
+
+    @JsMethod
+    public void expandAll() {
+        keyTableData = new Object[keyColumns.length + 2][1]; 
+        int i = keyColumns.length;
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, (double) 0);
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, ACTION_EXPAND_WITH_DESCENDENTS); 
+
+        if (keyTable != null) {
+            keyTable.then(t -> {
+                t.close();
+                return null;
+            });
+            keyTable = null;
+        }
+        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
+    }
+
+    @JsMethod
+    public void collapseAll() {
+        keyTableData = new Object[keyColumns.length + 2][1]; 
+        int i = keyColumns.length;
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, (double) 0);
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, ACTION_COLLAPSE); 
         if (keyTable != null) {
             keyTable.then(t -> {
                 t.close();
