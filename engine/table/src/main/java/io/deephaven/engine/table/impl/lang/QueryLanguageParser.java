@@ -1892,16 +1892,18 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                                 + expressions[i]);
             }
         }
+
+        List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
+        if (paramTypes.size() != expressions.length) {
+            // note vectorization doesn't handle Python variadic arguments
+            throw new RuntimeException("Python function argument count mismatch: " + n + " " + paramTypes.size()
+                    + " vs. " + expressions.length);
+        }
     }
 
     private void prepareVectorizationArgs(MethodCallExpr n, QueryScope queryScope, Expression[] expressions,
             Class<?>[] argTypes,
             PyCallableWrapper pyCallableWrapper) {
-        List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
-        if (paramTypes.size() != expressions.length) {
-            throw new RuntimeException("Python function argument count mismatch: " + n + " " + paramTypes.size()
-                    + " vs. " + expressions.length);
-        }
 
         pyCallableWrapper.initializeChunkArguments();
         for (int i = 0; i < expressions.length; i++) {
@@ -1920,6 +1922,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 throw new IllegalStateException("Vectorizability check failed: " + n);
             }
 
+            List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
             if (!isSafelyCoerceable(argTypes[i], paramTypes.get(i))) {
                 throw new RuntimeException("Python vectorized function argument type mismatch: " + n + " "
                         + argTypes[i].getSimpleName() + " -> " + paramTypes.get(i).getSimpleName());

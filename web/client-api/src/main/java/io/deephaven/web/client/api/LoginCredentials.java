@@ -9,10 +9,13 @@ public class LoginCredentials {
 
     @JsOverlay
     public static LoginCredentials reconnect(String token) {
-        return null;
+        LoginCredentials loginCredentials = new LoginCredentials();
+        loginCredentials.setType("Bearer");
+        loginCredentials.setToken(token);
+        return loginCredentials;
     }
 
-    public String username, token, type, operateAs;
+    public String username, token, type;
 
     @JsOverlay
     public final String getUsername() {

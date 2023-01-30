@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.ide.shared;
+package io.deephaven.web.client.ide;
 
 import com.google.gwt.user.client.Timer;
 import elemental2.core.JsArray;
