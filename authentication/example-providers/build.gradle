@@ -10,6 +10,7 @@ project.subprojects { Project p ->
     p.dependencies {
         shadow project(':authentication')
         shadow project(':Configuration')
+        shadow project(':log-factory')
     }
 //    p.artifacts { h ->
 //        h.add('shadow', p.tasks.named('shadowJar'))

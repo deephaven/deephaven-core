@@ -356,6 +356,7 @@ include(':authentication:example-providers:psk')
 include(':authentication:example-providers:saml')
 include(':authentication:example-providers:oauth')
 include(':authentication:example-providers:sql-username-password')
+include(':authentication:example-providers:oidc')
 
 include ':clock'
 include ':clock-impl'

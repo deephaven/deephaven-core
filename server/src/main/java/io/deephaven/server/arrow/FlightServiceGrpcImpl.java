@@ -109,7 +109,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
             if (auth.isEmpty()) {
                 responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
-                        "authentication details invalid"));
+                        "Authentication details invalid"));
                 return;
             }
 

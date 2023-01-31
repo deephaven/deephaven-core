@@ -2,3 +2,7 @@ plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
 }
+
+dependencies {
+    shadow project(':grpc-java:grpc-mtls')
+}

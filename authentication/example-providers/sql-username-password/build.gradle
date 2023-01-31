@@ -2,13 +2,12 @@ plugins {
 }
 
 dependencies {
-    implementation 'org.postgresql:postgresql:42.4.0'
-    implementation 'org.mindrot:jbcrypt:0.4'
-
-    // Don't relocate or shadow the flight classes
-    Classpaths.inheritArrow(project, 'flight-core', 'shadow')
-
-    implementation project(':log-factory')
+    implementation('org.postgresql:postgresql:42.4.0') {
+        because 'Postgres driver to connect to a running DB to query for user information'
+    }
+    implementation('org.mindrot:jbcrypt:0.4') {
+        because 'bcrypt is used in this example to ensure passwords are never stored or queried in plain text'
+    }
 }
 
 shadowJar {
